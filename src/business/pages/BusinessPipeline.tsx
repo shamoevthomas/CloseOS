@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
@@ -11,6 +11,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { useCustomStages, type CustomStage } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
+import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
 
 const STAGES = [
@@ -81,7 +82,7 @@ const ROLE_OPTIONS = [
 
 export function BusinessPipeline() {
   const { prospects, updateProspect, deleteProspect } = useBusinessProspects()
-  const { user, ownerUserId, businessSettings } = useBusinessAuth()
+  const { user, ownerUserId, businessSettings, userTimezone } = useBusinessAuth()
   const effectiveUserId = ownerUserId || user?.id
   const { customStages, addCustomStage, deleteCustomStage, canManage } = useCustomStages()
   const crmProvider = businessSettings?.crm_provider || 'closeos'
@@ -120,12 +121,11 @@ export function BusinessPipeline() {
   const [nextAppointments, setNextAppointments] = useState<Record<number, { date: string; time: string }>>({})
   useEffect(() => {
     if (!effectiveUserId) return
-    const today = new Date().toISOString().split('T')[0]
+    const nowUtc = new Date().toISOString()
     supabase
       .from('business_appointments')
-      .select('prospect_id, date, time')
+      .select('prospect_id, date, time, datetime_utc')
       .eq('user_id', effectiveUserId)
-      .gte('date', today)
       .in('status', ['pending', 'confirmed'])
       .order('date', { ascending: true })
       .order('time', { ascending: true })
@@ -134,12 +134,22 @@ export function BusinessPipeline() {
         const map: Record<number, { date: string; time: string }> = {}
         for (const a of data) {
           if (a.prospect_id && !map[a.prospect_id]) {
-            map[a.prospect_id] = { date: a.date, time: a.time }
+            if (a.datetime_utc) {
+              if (a.datetime_utc > nowUtc) {
+                const local = fromUTC(a.datetime_utc, userTimezone)
+                map[a.prospect_id] = { date: local.date, time: local.time }
+              }
+            } else {
+              // Fallback for old appointments without datetime_utc
+              const localNow = fromUTC(nowUtc, userTimezone)
+              const isFuture = a.date > localNow.date || (a.date === localNow.date && a.time >= localNow.time)
+              if (isFuture) map[a.prospect_id] = { date: a.date, time: a.time?.slice(0, 5) }
+            }
           }
         }
         setNextAppointments(map)
       })
-  }, [effectiveUserId])
+  }, [effectiveUserId, userTimezone])
 
   // Pipeline dismissals (per-user)
   const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set())
@@ -405,12 +415,49 @@ export function BusinessPipeline() {
     return deal.contact || 'Prospect sans nom'
   }
 
+  // Auto-scroll during drag near viewport edges
+  const isDraggingRef = useRef(false)
+  const animFrameRef = useRef<number>(0)
+  const lastMouseY = useRef(0)
+
+  const onDragStart = useCallback(() => {
+    isDraggingRef.current = true
+    const tick = () => {
+      if (!isDraggingRef.current) return
+      const y = lastMouseY.current
+      const vh = window.innerHeight
+      const ZONE = 120
+      const MAX_SPEED = 20
+      const main = document.querySelector('main')
+      if (!main) { animFrameRef.current = requestAnimationFrame(tick); return }
+
+      const distFromBottom = vh - y
+      const distFromTop = y
+
+      if (distFromBottom < ZONE && distFromBottom > 0) {
+        main.scrollTop += MAX_SPEED * (1 - distFromBottom / ZONE)
+      } else if (distFromTop < ZONE && distFromTop > 0) {
+        main.scrollTop -= MAX_SPEED * (1 - distFromTop / ZONE)
+      }
+      animFrameRef.current = requestAnimationFrame(tick)
+    }
+    animFrameRef.current = requestAnimationFrame(tick)
+  }, [])
+
   const onDragEnd = (result: DropResult) => {
+    isDraggingRef.current = false
+    cancelAnimationFrame(animFrameRef.current)
     const { destination, source, draggableId } = result
     if (!destination) return
     if (destination.droppableId === source.droppableId && destination.index === source.index) return
     updateProspect(parseInt(draggableId), { stage: destination.droppableId })
   }
+
+  useEffect(() => {
+    const track = (e: MouseEvent) => { lastMouseY.current = e.clientY }
+    window.addEventListener('mousemove', track, true)
+    return () => window.removeEventListener('mousemove', track, true)
+  }, [])
 
   return (
     <div className="h-full flex flex-col">
@@ -682,7 +729,7 @@ export function BusinessPipeline() {
 
       {/* Kanban View */}
       {viewMode === 'kanban' && (
-        <DragDropContext onDragEnd={onDragEnd}>
+        <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
           <div className="flex-1 overflow-y-auto space-y-12 pr-2 custom-scrollbar">
             {/* FLUX ACTIF */}
             <section>

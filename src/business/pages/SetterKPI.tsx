@@ -12,6 +12,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import { cn } from '../../lib/utils'
+import { getProspectCA } from '../lib/getProspectCA'
 import toast from 'react-hot-toast'
 // @ts-ignore
 import html2pdf from 'html2pdf.js'
@@ -66,6 +67,8 @@ export function SetterKPI() {
   // Period filter
   const [periodFrom, setPeriodFrom] = useState('')
   const [periodTo, setPeriodTo] = useState('')
+  const [stripePayments, setStripePayments] = useState<{ prospect_id: number; amount: number }[]>([])
+  const [hasStripeData, setHasStripeData] = useState(false)
 
   // PDF export
   const pdfRef = useRef<HTMLDivElement>(null)
@@ -167,6 +170,14 @@ export function SetterKPI() {
         })
         setFormulaCommRates(map)
       })
+    // Fetch Stripe payments
+    fetch(`/api/business-payments-summary?user_id=${effectiveOwnerId}`)
+      .then(r => r.json())
+      .then(data => {
+        setHasStripeData(!!data.hasStripeData)
+        setStripePayments(data.payments || [])
+      })
+      .catch(() => {})
   }, [effectiveOwnerId])
 
   const saveConfig = async () => {
@@ -214,7 +225,7 @@ export function SetterKPI() {
     const memberRole = member?.role
     let total = 0
     for (const p of wonProspects) {
-      const value = p.value || 0
+      const value = hasStripeData ? getProspectCA(p, stripePayments) : (p.value || 0)
       if (!value) continue
       const formulaId = p.formula_id || p.offer_id
       const rates = formulaId ? formulaCommRates[formulaId] : null
@@ -262,7 +273,7 @@ export function SetterKPI() {
     const lost = src.filter((p: any) => p.stage === 'lost')
     const conversionRate = qualifiedAll.length > 0 ? (won.length / qualifiedAll.length) * 100 : 0
     const noShowRate = qualifiedAll.length > 0 ? (noShow.length / qualifiedAll.length) * 100 : 0
-    const revenue = won.reduce((sum: number, p: any) => sum + (p.value || 0), 0)
+    const revenue = won.reduce((sum: number, p: any) => sum + (hasStripeData ? getProspectCA(p, stripePayments) : (p.value || 0)), 0)
 
     return {
       contacted, responded, responseRate, booked, bookingRate,

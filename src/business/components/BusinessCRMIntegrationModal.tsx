@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { X, Check, ExternalLink, Loader2, RefreshCw, Link as LinkIcon, Copy, Info, ChevronDown, Key, Trash2, Zap, Eye, EyeOff, CalendarDays, Save } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Check, ExternalLink, Loader2, RefreshCw, Link as LinkIcon, Copy, Info, ChevronDown, Key, Trash2, Zap, Eye, EyeOff, CalendarDays, Save, Download, Upload, FileSpreadsheet, AlertTriangle, Sparkles } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext';
 import { supabase } from '../../lib/supabase';
 
 const CRM_OPTIONS = [
-  { id: 'closeos', name: 'CloseOS', description: 'CRM intégré CloseOS', color: 'bg-amber-500', textColor: 'text-amber-700', bgColor: 'bg-amber-50', borderColor: 'border-amber-300', iconBg: 'bg-[#1b1c1b]', iconText: 'text-white', logo: null },
+  { id: 'closeos', name: 'CloseOS CRM', description: 'CRM intégré CloseOS', color: 'bg-amber-500', textColor: 'text-amber-700', bgColor: 'bg-amber-50', borderColor: 'border-amber-300', iconBg: 'bg-[#1b1c1b]', iconText: 'text-white', logo: '/closeos-crm.png' },
   { id: 'iclosed', name: 'iClosed', description: 'Connectez via Webhook', color: 'bg-purple-500', textColor: 'text-purple-700', bgColor: 'bg-purple-50', borderColor: 'border-purple-300', iconBg: 'bg-emerald-100', iconText: 'text-emerald-700', logo: '/Iclosed.png' },
   { id: 'hubspot', name: 'HubSpot', description: 'Synchronisez avec HubSpot CRM', color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50', borderColor: 'border-orange-300', iconBg: 'bg-[#ff7a59]', iconText: 'text-white', logo: '/HubSpot.png' },
   { id: 'pipedrive', name: 'Pipedrive', description: 'Connectez votre pipeline Pipedrive', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-300', iconBg: 'bg-[#222222]', iconText: 'text-white', logo: '/Pipedrive.png' },
@@ -16,6 +17,7 @@ const CRM_OPTIONS = [
   { id: 'calendly', name: 'Calendly', description: 'Importez les RDV Calendly automatiquement', color: 'bg-[#006BFF]', textColor: 'text-[#006BFF]', bgColor: 'bg-blue-50', borderColor: 'border-blue-300', iconBg: 'bg-[#006bff]', iconText: 'text-white', logo: '/Calendly.png' },
   { id: 'airtable', name: 'Airtable', description: 'Synchronisez avec votre base Airtable', color: 'bg-[#18BFFF]', textColor: 'text-[#18BFFF]', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-300', iconBg: 'bg-[#18bfff]', iconText: 'text-white', logo: '/airtable.png' },
   { id: 'ghl', name: 'GoHighLevel', description: 'Synchronisez avec GoHighLevel', color: 'bg-[#FF6B35]', textColor: 'text-[#FF6B35]', bgColor: 'bg-orange-50', borderColor: 'border-orange-300', iconBg: 'bg-[#FF6B35]', iconText: 'text-white', logo: '/GHL.jpg' },
+  { id: 'csv', name: 'CSV', description: 'Importez / Exportez vos prospects en CSV', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-300', iconBg: 'bg-[#047857]', iconText: 'text-white', logo: '/LogoCSV.png' },
 ];
 
 const CLOSEOS_STAGES = [
@@ -34,7 +36,7 @@ interface Props {
 
 export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   const { user, businessSettings, updateBusinessSettings } = useBusinessAuth();
-  const { syncHubspot, syncPipedrive, syncAirtable, syncGhl, isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable, isSyncingGhl, hubspotConnected, pipedriveConnected, airtableConnected, ghlConnected } = useBusinessProspects();
+  const { prospects, addProspect, syncHubspot, syncPipedrive, syncAirtable, syncGhl, isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable, isSyncingGhl, hubspotConnected, pipedriveConnected, airtableConnected, ghlConnected } = useBusinessProspects();
 
   const [selected, setSelected] = useState(businessSettings?.crm_provider || 'closeos');
   const [saving, setSaving] = useState(false);
@@ -99,6 +101,12 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   const [airtableLoadingTables, setAirtableLoadingTables] = useState(false);
   const [airtableLoadingFields, setAirtableLoadingFields] = useState(false);
   const [airtableSavingConfig, setAirtableSavingConfig] = useState(false);
+
+  // CSV
+  const csvFileRef = useRef<HTMLInputElement>(null);
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvResult, setCsvResult] = useState<{ imported: number; skipped: number; defaulted: number } | null>(null);
+  const [csvPromptCopied, setCsvPromptCopied] = useState(false);
 
   // GHL
   const [ghlPipelines, setGhlPipelines] = useState<any[]>([]);
@@ -722,6 +730,148 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
     setWebhookCopied(true);
     setTimeout(() => setWebhookCopied(false), 2000);
   };
+
+  // ─── CSV Export ───
+  const handleCsvExport = () => {
+    const headers = ['contact', 'email', 'phone', 'company', 'stage', 'value', 'offer', 'notes', 'created_at']
+    const rows = prospects.map(p => headers.map(h => {
+      const val = (p as any)[h] ?? ''
+      const str = String(val).replace(/"/g, '""')
+      return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str}"` : str
+    }).join(','))
+    const csv = [headers.join(','), ...rows].join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `closeos-prospects-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success(`${prospects.length} prospects exportés`)
+  }
+
+  // ─── CSV Import ───
+  const VALID_STAGES = CLOSEOS_STAGES.map(s => s.id)
+  const STAGE_ALIASES: Record<string, string> = {
+    'prospect': 'prospect', 'new': 'prospect', 'nouveau': 'prospect', 'lead': 'prospect', 'nouveau lead': 'prospect',
+    'qualifié': 'qualified', 'qualified': 'qualified', 'qualifie': 'qualified',
+    'gagné': 'won', 'won': 'won', 'gagne': 'won', 'closed': 'won', 'closé': 'won', 'client': 'won',
+    'follow up': 'followup', 'followup': 'followup', 'follow-up': 'followup', 'relance': 'followup', 'suivi': 'followup',
+    'no show': 'noshow', 'noshow': 'noshow', 'no-show': 'noshow', 'absent': 'noshow',
+    'perdu': 'lost', 'lost': 'lost', 'refusé': 'lost', 'refuse': 'lost',
+  }
+
+  const resolveStage = (raw: string): { stage: string; wasDefault: boolean } => {
+    const normalized = raw.trim().toLowerCase()
+    if (!normalized) return { stage: 'prospect', wasDefault: true }
+    if (VALID_STAGES.includes(normalized)) return { stage: normalized, wasDefault: false }
+    if (STAGE_ALIASES[normalized]) return { stage: STAGE_ALIASES[normalized], wasDefault: false }
+    return { stage: 'prospect', wasDefault: true }
+  }
+
+  const parseCsvLine = (line: string): string[] => {
+    const result: string[] = []
+    let current = ''
+    let inQuotes = false
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i]
+      if (inQuotes) {
+        if (ch === '"' && line[i + 1] === '"') { current += '"'; i++ }
+        else if (ch === '"') inQuotes = false
+        else current += ch
+      } else {
+        if (ch === '"') inQuotes = true
+        else if (ch === ',' || ch === ';') { result.push(current.trim()); current = '' }
+        else current += ch
+      }
+    }
+    result.push(current.trim())
+    return result
+  }
+
+  const handleCsvImport = async (file: File) => {
+    setCsvImporting(true)
+    setCsvResult(null)
+    try {
+      const text = await file.text()
+      const lines = text.split(/\r?\n/).filter(l => l.trim())
+      if (lines.length < 2) { toast.error('Le fichier CSV est vide ou ne contient que les en-têtes.'); return }
+
+      const headers = parseCsvLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9_àâéèêëïôùûç]/g, ''))
+      const colMap: Record<string, number> = {}
+      const aliases: Record<string, string[]> = {
+        contact: ['contact', 'nom', 'name', 'fullname', 'full_name', 'nomdufamille', 'prenom', 'prénom'],
+        email: ['email', 'mail', 'emailaddress', 'adresseemail', 'courriel', 'e_mail'],
+        phone: ['phone', 'telephone', 'téléphone', 'tel', 'phonenumber', 'mobile', 'numéro'],
+        company: ['company', 'entreprise', 'société', 'societe', 'organisation', 'org'],
+        stage: ['stage', 'statut', 'status', 'étape', 'etape', 'pipeline', 'state'],
+        value: ['value', 'valeur', 'montant', 'amount', 'deal', 'revenue', 'ca'],
+        offer: ['offer', 'offre', 'produit', 'product', 'service', 'formule'],
+        notes: ['notes', 'note', 'commentaire', 'comment', 'description', 'remarque'],
+      }
+      for (const [field, aliasList] of Object.entries(aliases)) {
+        const idx = headers.findIndex(h => aliasList.some(a => h.includes(a)))
+        if (idx !== -1) colMap[field] = idx
+      }
+
+      if (colMap.contact === undefined && colMap.email === undefined) {
+        toast.error('Colonnes "contact" ou "email" introuvables. Vérifiez les en-têtes du CSV.')
+        return
+      }
+
+      let imported = 0, skipped = 0, defaulted = 0
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCsvLine(lines[i])
+        const contact = cols[colMap.contact] || ''
+        const email = cols[colMap.email] || ''
+        if (!contact && !email) { skipped++; continue }
+
+        const stageRaw = colMap.stage !== undefined ? (cols[colMap.stage] || '') : ''
+        const { stage, wasDefault } = resolveStage(stageRaw)
+        if (wasDefault && stageRaw) defaulted++
+
+        try {
+          await addProspect({
+            contact: contact || email.split('@')[0] || 'Sans nom',
+            email: email,
+            phone: colMap.phone !== undefined ? (cols[colMap.phone] || '') : '',
+            company: colMap.company !== undefined ? (cols[colMap.company] || '') : '',
+            stage,
+            value: colMap.value !== undefined ? (parseFloat(cols[colMap.value]?.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0) : 0,
+            offer: colMap.offer !== undefined ? (cols[colMap.offer] || '') : '',
+            notes: colMap.notes !== undefined ? (cols[colMap.notes] || '') : '',
+          })
+          imported++
+        } catch { skipped++ }
+      }
+      setCsvResult({ imported, skipped, defaulted })
+      toast.success(`${imported} prospects importés`)
+    } catch (err) {
+      console.error('CSV import error:', err)
+      toast.error('Erreur lors de l\'import du CSV.')
+    } finally {
+      setCsvImporting(false)
+      if (csvFileRef.current) csvFileRef.current.value = ''
+    }
+  }
+
+  const CSV_AI_PROMPT = `Transforme mon fichier CSV en un format compatible avec CloseOS CRM. Le CSV final doit avoir exactement ces colonnes en en-tête (première ligne) :
+
+contact,email,phone,company,stage,value,offer,notes
+
+Règles :
+- "contact" = nom complet du prospect (obligatoire)
+- "email" = adresse email (obligatoire si pas de contact)
+- "phone" = numéro de téléphone avec indicatif (ex: +33 6 12 34 56 78)
+- "company" = nom de l'entreprise
+- "stage" = un de ces statuts EXACTEMENT : prospect, qualified, won, followup, noshow, lost
+  → Si le statut actuel ne correspond à aucun, utilise "prospect"
+  → Correspondances : nouveau/lead/new → prospect, qualifié → qualified, gagné/closé/client → won, relance/suivi → followup, absent → noshow, perdu/refusé → lost
+- "value" = montant numérique (ex: 1500)
+- "offer" = nom du produit/offre
+- "notes" = commentaires/notes
+
+Le séparateur doit être une virgule. Les champs contenant des virgules doivent être entre guillemets. Encodage UTF-8.`
 
   const selectedCrm = CRM_OPTIONS.find(c => c.id === selected);
   const isConnected = (selected === 'hubspot' && hubspotConnected) ||
@@ -1430,6 +1580,116 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
                           </div>
                         </>
                       )}
+                    </div>
+                  )}
+
+                  {/* ─── CSV Import / Export ─── */}
+                  {selected === 'csv' && (
+                    <div className="space-y-6">
+                      {/* Export */}
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Download className="h-5 w-5 text-[#006c49]" />
+                          <h4 className="font-bold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Exporter le CRM</h4>
+                        </div>
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-5">Téléchargez tous vos prospects au format CSV ({prospects.length} prospect{prospects.length > 1 ? 's' : ''}).</p>
+                        <button
+                          onClick={handleCsvExport}
+                          disabled={prospects.length === 0}
+                          className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50"
+                        >
+                          <FileSpreadsheet className="h-4 w-4" /> Exporter en CSV
+                        </button>
+                      </div>
+
+                      {/* Import */}
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Upload className="h-5 w-5 text-[#006c49]" />
+                          <h4 className="font-bold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Importer des prospects</h4>
+                        </div>
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4">Importez un fichier CSV pour créer des prospects dans votre CRM.</p>
+
+                        <input
+                          ref={csvFileRef}
+                          type="file"
+                          accept=".csv"
+                          className="hidden"
+                          onChange={(e) => { if (e.target.files?.[0]) handleCsvImport(e.target.files[0]) }}
+                        />
+                        <button
+                          onClick={() => csvFileRef.current?.click()}
+                          disabled={csvImporting}
+                          className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50 mb-5"
+                        >
+                          {csvImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {csvImporting ? 'Import en cours...' : 'Choisir un fichier CSV'}
+                        </button>
+
+                        {csvResult && (
+                          <div className="p-4 rounded-xl bg-[#006c49]/5 border border-[#006c49]/10 text-sm space-y-1 mb-5">
+                            <p className="text-[#006c49] font-bold">{csvResult.imported} prospect{csvResult.imported > 1 ? 's' : ''} importé{csvResult.imported > 1 ? 's' : ''}</p>
+                            {csvResult.skipped > 0 && <p className="text-[#444748]">{csvResult.skipped} ligne{csvResult.skipped > 1 ? 's' : ''} ignorée{csvResult.skipped > 1 ? 's' : ''} (données manquantes)</p>}
+                            {csvResult.defaulted > 0 && <p className="text-amber-600 flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5" /> {csvResult.defaulted} statut{csvResult.defaulted > 1 ? 's' : ''} non reconnu{csvResult.defaulted > 1 ? 's' : ''} → mis en "Prospect"</p>}
+                          </div>
+                        )}
+
+                        {/* Warning */}
+                        <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 flex gap-3 mb-5">
+                          <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                          <p className="text-xs text-[#444748] dark:text-neutral-400">
+                            Les statuts non reconnus seront automatiquement assignés au statut <strong>"Prospect"</strong>. Utilisez de préférence les statuts exacts : <span className="font-mono text-[10px]">prospect, qualified, won, followup, noshow, lost</span>
+                          </p>
+                        </div>
+
+                        {/* Format guide */}
+                        <div className="p-5 rounded-xl bg-white dark:bg-neutral-900 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                          <h5 className="font-bold text-sm text-[#1b1c1b] dark:text-white mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>Format attendu du CSV</h5>
+                          <div className="overflow-x-auto mb-4">
+                            <table className="text-[11px] font-mono text-[#444748] dark:text-neutral-400 border-collapse w-full">
+                              <thead>
+                                <tr className="border-b border-[#c4c7c7]/20 dark:border-neutral-700">
+                                  <th className="text-left py-1.5 px-2 font-bold text-[#1b1c1b] dark:text-white">Colonne</th>
+                                  <th className="text-left py-1.5 px-2 font-bold text-[#1b1c1b] dark:text-white">Obligatoire</th>
+                                  <th className="text-left py-1.5 px-2 font-bold text-[#1b1c1b] dark:text-white">Exemple</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr className="border-b border-[#c4c7c7]/10 dark:border-neutral-800"><td className="py-1.5 px-2 font-bold">contact</td><td className="py-1.5 px-2 text-[#006c49]">Oui*</td><td className="py-1.5 px-2">Jean Dupont</td></tr>
+                                <tr className="border-b border-[#c4c7c7]/10 dark:border-neutral-800"><td className="py-1.5 px-2 font-bold">email</td><td className="py-1.5 px-2 text-[#006c49]">Oui*</td><td className="py-1.5 px-2">jean@example.com</td></tr>
+                                <tr className="border-b border-[#c4c7c7]/10 dark:border-neutral-800"><td className="py-1.5 px-2 font-bold">phone</td><td className="py-1.5 px-2">Non</td><td className="py-1.5 px-2">+33 6 12 34 56 78</td></tr>
+                                <tr className="border-b border-[#c4c7c7]/10 dark:border-neutral-800"><td className="py-1.5 px-2 font-bold">company</td><td className="py-1.5 px-2">Non</td><td className="py-1.5 px-2">Acme SAS</td></tr>
+                                <tr className="border-b border-[#c4c7c7]/10 dark:border-neutral-800"><td className="py-1.5 px-2 font-bold">stage</td><td className="py-1.5 px-2">Non</td><td className="py-1.5 px-2">prospect, qualified, won, followup, noshow, lost</td></tr>
+                                <tr className="border-b border-[#c4c7c7]/10 dark:border-neutral-800"><td className="py-1.5 px-2 font-bold">value</td><td className="py-1.5 px-2">Non</td><td className="py-1.5 px-2">1500</td></tr>
+                                <tr className="border-b border-[#c4c7c7]/10 dark:border-neutral-800"><td className="py-1.5 px-2 font-bold">offer</td><td className="py-1.5 px-2">Non</td><td className="py-1.5 px-2">Coaching Premium</td></tr>
+                                <tr><td className="py-1.5 px-2 font-bold">notes</td><td className="py-1.5 px-2">Non</td><td className="py-1.5 px-2">Intéressé par l'offre</td></tr>
+                              </tbody>
+                            </table>
+                          </div>
+                          <p className="text-[10px] text-[#747878] dark:text-neutral-500 mb-1">* Au moins "contact" ou "email" est requis. Les noms de colonnes sont flexibles (ex: "nom", "name", "téléphone", "statut"...).</p>
+                          <p className="text-[10px] text-[#747878] dark:text-neutral-500">Séparateur : virgule ou point-virgule. Encodage : UTF-8.</p>
+                        </div>
+                      </div>
+
+                      {/* AI Prompt helper */}
+                      <div className="p-8 rounded-2xl bg-gradient-to-br from-[#006c49]/5 to-[#006c49]/0 dark:from-emerald-900/10 dark:to-transparent border border-[#006c49]/10 dark:border-emerald-900/20">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Sparkles className="h-5 w-5 text-[#006c49]" />
+                          <h4 className="font-bold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>CSV pas au bon format ?</h4>
+                        </div>
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4">
+                          Si votre CSV vient d'un autre CRM ou a un format différent, copiez ce prompt et collez-le dans <strong>ChatGPT</strong>, <strong>Claude</strong> ou toute autre IA avec votre fichier CSV. L'IA reformatera automatiquement votre fichier pour qu'il soit compatible.
+                        </p>
+                        <div className="relative">
+                          <pre className="p-4 rounded-xl bg-[#1b1c1b] text-[#a3e635] text-xs font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto">{CSV_AI_PROMPT}</pre>
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(CSV_AI_PROMPT); setCsvPromptCopied(true); setTimeout(() => setCsvPromptCopied(false), 2000); toast.success('Prompt copié !') }}
+                            className="absolute top-3 right-3 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                          >
+                            {csvPromptCopied ? <Check className="h-4 w-4 text-[#a3e635]" /> : <Copy className="h-4 w-4 text-white/60" />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

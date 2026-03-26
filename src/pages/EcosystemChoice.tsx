@@ -26,7 +26,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
           '@type': 'Organization',
           name: 'CloseOS',
           url: 'https://www.closeos.fr',
-          logo: 'https://www.closeos.fr/CloseOS Logo.png',
+          logo: 'https://www.closeos.fr/closeos-logo.png',
           description: "Écosystème SaaS français pour la vente digitale. Outils pour closers indépendants et infopreneurs francophones.",
           sameAs: ['https://www.linkedin.com/in/thomas-shamoev-570885237/'],
           contactPoint: {

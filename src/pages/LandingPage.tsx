@@ -358,7 +358,7 @@ export function LandingPage() {
             <ChevronDown className="h-4 w-4 text-slate-500 group-hover:text-slate-300 transition-transform duration-300 group-hover:rotate-180" />
             <div className="absolute top-full left-0 right-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
               <a onClick={handleNavigateToBusiness} className="block rounded-xl border border-business-primary/10 bg-[#F5F0EB] p-3 shadow-xl hover:bg-[#EDE7E0] transition-colors cursor-pointer">
-                <img src="/CloseOS Buisness.png" alt="CloseOS Business" className="w-full h-auto" />
+                <img src="/closeos-business.png" alt="CloseOS Business" className="w-full h-auto" />
               </a>
             </div>
           </div>

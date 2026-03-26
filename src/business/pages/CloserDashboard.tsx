@@ -11,6 +11,7 @@ import { BusinessReminderBell } from '../components/BusinessReminderBell'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
+import { getProspectCA } from '../lib/getProspectCA'
 import toast from 'react-hot-toast'
 
 interface Appointment {
@@ -74,6 +75,8 @@ export function CloserDashboard() {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const [formulaCommRates, setFormulaCommRates] = useState<Record<string, { roles: Record<string, number>, members: Record<string, number> }>>({})
+  const [stripePayments, setStripePayments] = useState<{ prospect_id: number; amount: number }[]>([])
+  const [hasStripeData, setHasStripeData] = useState(false)
 
   const fetchData = useCallback(async () => {
     if (!teamMember?.id || !ownerUserId || !user?.id) return
@@ -115,10 +118,31 @@ export function CloserDashboard() {
       }
       setFormulaCommRates(map)
     })()
+    // Fetch Stripe payments
+    fetch(`/api/business-payments-summary?user_id=${effectiveOwnerId}`)
+      .then(r => r.json())
+      .then(data => {
+        setHasStripeData(!!data.hasStripeData)
+        setStripePayments(data.payments || [])
+      })
+      .catch(() => {})
   }, [effectiveOwnerId])
 
   // KPI from assigned prospects
   const myProspects = prospects.filter(p => p.assigned_to === teamMember?.id)
+
+  // Filter appointments to only this team member's prospects
+  const myProspectIds = useMemo(() => {
+    const ids = new Set<number>()
+    for (const p of prospects) {
+      if (p.assigned_to === teamMember?.id || p.assigned_setter === teamMember?.id) ids.add(p.id)
+    }
+    return ids
+  }, [prospects, teamMember?.id])
+  const myAppointments = useMemo(() =>
+    appointments.filter(a => a.prospect?.id != null && myProspectIds.has(a.prospect.id)),
+    [appointments, myProspectIds]
+  )
   const wonProspects = useMemo(() => myProspects.filter(p => p.stage === 'won'), [myProspects])
   const noShowProspects = useMemo(() => myProspects.filter(p => p.stage === 'noshow'), [myProspects])
   const lostProspects = useMemo(() => myProspects.filter(p => p.stage === 'lost'), [myProspects])
@@ -142,9 +166,9 @@ export function CloserDashboard() {
   const memberId = teamMember?.id
   const memberRole = teamMember?.role
 
-  const closerRevenue = wonProspects.reduce((s, p) => s + (Number(p.value) || 0), 0)
+  const closerRevenue = wonProspects.reduce((s, p) => s + (hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)), 0)
   const closerCommission = useMemo(() => Math.round(wonProspects.reduce((sum, p) => {
-    const value = Number(p.value) || 0
+    const value = hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)
     const formulaId = p.formula_id || (p as any).offer_id
     const rates = formulaId ? formulaCommRates[formulaId] : null
     let r = fallbackRate
@@ -154,7 +178,7 @@ export function CloserDashboard() {
       else if (rates.roles['Closer'] !== undefined) r = rates.roles['Closer'] / 100
     }
     return sum + value * r
-  }, 0)), [wonProspects, formulaCommRates, memberId, memberRole, fallbackRate])
+  }, 0)), [wonProspects, formulaCommRates, memberId, memberRole, fallbackRate, hasStripeData, stripePayments])
 
   // Setter commission: for Setter-Closer, include deals they also closed
   const wonAsSetter = useMemo(() => prospects.filter(p => {
@@ -163,9 +187,9 @@ export function CloserDashboard() {
     return p.assigned_to !== teamMember?.id
   }), [prospects, teamMember?.id, isSetterCloser])
 
-  const setterRevenue = wonAsSetter.reduce((s, p) => s + (Number(p.value) || 0), 0)
+  const setterRevenue = wonAsSetter.reduce((s, p) => s + (hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)), 0)
   const setterCommission = useMemo(() => Math.round(wonAsSetter.reduce((sum, p) => {
-    const value = Number(p.value) || 0
+    const value = hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)
     const formulaId = p.formula_id || (p as any).offer_id
     const rates = formulaId ? formulaCommRates[formulaId] : null
     let r = fallbackRate
@@ -176,26 +200,33 @@ export function CloserDashboard() {
       else if (rates.roles['Setter'] !== undefined) r = rates.roles['Setter'] / 100
     }
     return sum + value * r
-  }, 0)), [wonAsSetter, formulaCommRates, memberId, memberRole, fallbackRate])
+  }, 0)), [wonAsSetter, formulaCommRates, memberId, memberRole, fallbackRate, hasStripeData, stripePayments])
 
   const totalCommission = closerCommission + setterCommission
 
-  // Upcoming appointments
+  // Upcoming appointments (exclude past appointments of today using user timezone)
   const now = new Date()
   const upcomingAppts = useMemo(() => {
-    const todayLocal = fromUTC(now, userTimezone).date
-    return appointments
+    const nowLocal = fromUTC(now, userTimezone)
+    const todayDate = nowLocal.date
+    const nowTime = nowLocal.time
+    return myAppointments
       .filter(a => {
-        const localDate = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone).date : a.date
-        return localDate >= todayLocal && a.status !== 'cancelled'
+        if (a.status === 'cancelled') return false
+        const local = a.datetime_utc
+          ? fromUTC(a.datetime_utc, userTimezone)
+          : { date: a.date, time: a.time?.slice(0, 5) || '00:00' }
+        if (local.date > todayDate) return true
+        if (local.date === todayDate) return local.time >= nowTime
+        return false
       })
       .sort((a, b) => {
-        const aKey = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone).date : a.date
-        const bKey = b.datetime_utc ? fromUTC(b.datetime_utc, userTimezone).date : b.date
-        return aKey.localeCompare(bKey)
+        const aLocal = a.datetime_utc ? fromUTC(a.datetime_utc, userTimezone) : { date: a.date, time: a.time?.slice(0, 5) || '00:00' }
+        const bLocal = b.datetime_utc ? fromUTC(b.datetime_utc, userTimezone) : { date: b.date, time: b.time?.slice(0, 5) || '00:00' }
+        return (aLocal.date + aLocal.time).localeCompare(bLocal.date + bLocal.time)
       })
       .slice(0, 5)
-  }, [appointments, userTimezone])
+  }, [myAppointments, userTimezone])
 
   // Reminder actions
   const handleMarkDone = async (id: number) => {

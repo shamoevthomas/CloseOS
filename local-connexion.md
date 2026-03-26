@@ -44,6 +44,26 @@ server: {
 }
 ```
 
+## Accès depuis un autre appareil (même réseau)
+
+### 1. Trouver l'IP locale du Mac
+
+```bash
+ipconfig getifaddr en0
+```
+
+### 2. Lancer Vite avec `--host`
+
+```bash
+npx vite --port 5173 --host
+```
+
+### 3. Accéder depuis l'autre appareil
+
+Ouvrir dans le navigateur : `http://<IP_LOCALE>:5173`
+
+> Exemple : `http://192.168.1.42:5173`
+
 ## Résultat attendu
 
 - Serveur accessible sur **http://localhost:5173**

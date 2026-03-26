@@ -4,7 +4,7 @@
 <head>
   <!-- Start cookieyes banner -->
   <script id="cookieyes" type="text/javascript"
-    src="https://cdn-cookieyes.com/client_data/e7fb9a198c41139782e3f8609587c29b/script.js"></script>
+    src="https://cdn-cookieyes.com/client_data/e7fb9a198c41139782e3f8609587c29b/script.js" defer></script>
   <!-- End cookieyes banner -->
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-CD3VW4QM4Z" type="text/plain"
@@ -30,28 +30,49 @@
   <!-- SEO PRIMARY -->
   <title>CloseOS — Écosystème SaaS pour la vente digitale | CRM Closer & Management Infopreneur</title>
   <meta name="description"
-    content="CloseOS est l'écosystème SaaS francophone pour la vente digitale. Outil pour closer : CRM, pipeline, VoIP, KPIs, facturation automatique. Logiciel infopreneur : gestion équipe de closers, campagnes d'acquisition, analytics. Alternative iClosed. Essai gratuit 10 jours.">
-  <meta name="keywords" content="CloseOS, closeos, outil pour closer, CRM closer, logiciel closer high ticket, CRM closer france, logiciel closing francophone, pipeline closer, KPI closing, facturation automatique closer, application closer freelance, gérer équipe de closers, pilotage équipe closing, logiciel infopreneur closing, CRM acquisition infopreneur, outil gestion setter closer, alternative iClosed, iclosed, tableau de bord infopreneur, écosystème SaaS vente digitale, outils infopreneurs francophones, outil gestion closing, gérer ses prospects closing, outil suivi calls closing, piloter campagne acquisition closing">
+    content="CloseOS est l'écosystème SaaS francophone pour la vente digitale. Outil pour closer : CRM, pipeline, VoIP, KPIs, facturation automatique. Logiciel infopreneur : gestion équipe de closers, campagnes d'acquisition, analytics. Alternative iClosed.">
   <meta name="author" content="CloseOS">
-  <link rel="canonical" href="https://www.closeos.fr/" />
+  <link rel="canonical" href="https://www.closeos.fr/" id="canonical" />
 
   <!-- OPEN GRAPH / FACEBOOK / LINKEDIN -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.closeos.fr/">
-  <meta property="og:title" content="CloseOS — Écosystème SaaS pour la vente digitale francophone">
+  <meta property="og:url" content="https://www.closeos.fr/" id="og-url">
+  <meta property="og:title" content="CloseOS — Écosystème SaaS pour la vente digitale francophone" id="og-title">
   <meta property="og:description"
-    content="Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed. Essai gratuit 10 jours.">
-  <meta property="og:image" content="https://www.closeos.fr/CloseOS Logo.png">
+    content="Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed." id="og-description">
+  <meta property="og:image" content="https://www.closeos.fr/closeos-logo.png" id="og-image">
   <meta property="og:locale" content="fr_FR">
   <meta property="og:site_name" content="CloseOS">
 
   <!-- TWITTER -->
   <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://www.closeos.fr/">
-  <meta property="twitter:title" content="CloseOS — Écosystème SaaS pour la vente digitale francophone">
+  <meta property="twitter:url" content="https://www.closeos.fr/" id="tw-url">
+  <meta property="twitter:title" content="CloseOS — Écosystème SaaS pour la vente digitale francophone" id="tw-title">
   <meta property="twitter:description"
-    content="Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed. Essai gratuit 10 jours.">
-  <meta property="twitter:image" content="https://www.closeos.fr/CloseOS Logo.png">
+    content="Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed." id="tw-description">
+  <meta property="twitter:image" content="https://www.closeos.fr/closeos-logo.png" id="tw-image">
+
+  <!-- STRUCTURED DATA -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "CloseOS",
+    "url": "https://www.closeos.fr",
+    "logo": "https://www.closeos.fr/closeos-logo.png",
+    "description": "Écosystème SaaS français pour la vente digitale. Outils pour closers indépendants et infopreneurs francophones.",
+    "email": "support@closeos.fr"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "CloseOS",
+    "url": "https://www.closeos.fr",
+    "inLanguage": "fr"
+  }
+  </script>
 
   <!-- FirstPromoter - Script de suivi principal -->
   <script>
@@ -66,7 +87,12 @@
   <!-- Promotekit - Script d'affiliation -->
   <script async src="https://cdn.promotekit.com/promotekit.js"
     data-promotekit="da9294d4-89d4-41a6-9838-7ba2ae155ba6"></script>
-  <!-- Custom Tracking Script -->
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+  <!-- Custom Tracking Script (deferred to avoid blocking render) -->
   <script>
     (function () {
       var d = "closeos.fr";
@@ -104,11 +130,6 @@
       }, true);
     })();
   </script>
-</head>
-
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
 </body>
 
 </html>

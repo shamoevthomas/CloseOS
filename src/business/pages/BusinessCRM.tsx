@@ -402,7 +402,7 @@ export function BusinessCRM() {
   }
 
   const crmProvider = businessSettings?.crm_provider || 'closeos'
-  const crmLabel = crmProvider === 'closeos' ? 'CloseOS' : crmProvider === 'iclosed' ? 'iClosed' : crmProvider === 'hubspot' ? 'HubSpot' : crmProvider === 'pipedrive' ? 'Pipedrive' : crmProvider === 'ghl' ? 'GoHighLevel' : crmProvider
+  const crmLabel = crmProvider === 'closeos' ? 'CloseOS CRM' : crmProvider === 'iclosed' ? 'iClosed' : crmProvider === 'hubspot' ? 'HubSpot' : crmProvider === 'pipedrive' ? 'Pipedrive' : crmProvider === 'ghl' ? 'GoHighLevel' : crmProvider
 
   if (loading) {
     return (
@@ -417,13 +417,17 @@ export function BusinessCRM() {
       {/* CRM Integration Banner */}
       <div className="mb-4 flex items-center justify-between rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] px-6 py-5">
         <div className="flex items-center gap-3">
-          <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+          <div className={`h-8 w-8 rounded-lg flex items-center justify-center overflow-hidden ${
             crmProvider === 'hubspot' ? 'bg-orange-500' :
             crmProvider === 'pipedrive' ? 'bg-green-500' :
             crmProvider === 'iclosed' ? 'bg-purple-500' :
-            crmProvider === 'ghl' ? 'bg-[#FF6B35]' : 'bg-amber-500'
+            crmProvider === 'ghl' ? 'bg-[#FF6B35]' : 'bg-white'
           }`}>
-            <span className="text-white font-bold text-xs">{crmLabel[0]}</span>
+            {crmProvider === 'closeos' ? (
+              <img src="/closeos-crm.png" alt="CloseOS" className="w-7 h-7 object-contain" />
+            ) : (
+              <span className="text-white font-bold text-xs">{crmLabel[0]}</span>
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2">

@@ -22,10 +22,12 @@ import {
   Receipt,
   MoreVertical,
   Clock,
+  DollarSign,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useTheme } from '../contexts/BusinessThemeContext'
 import { supabase } from '../../lib/supabase'
 
 interface NavItem {
@@ -47,6 +49,7 @@ const ownerNavigation: NavItem[] = [
   { name: 'Agenda', href: '/business/agenda', icon: Calendar },
   { name: 'Rappels', href: '/business/rappels', icon: Bell },
   { name: 'Factures', href: '/business/factures', icon: Receipt },
+  { name: "Chiffre d'affaires", href: '/business/revenue', icon: DollarSign },
   { name: 'Rapport', href: '/business/report', icon: FileText },
   { name: 'KPI Setter', href: '/business/setter-kpi', icon: TrendingUp },
   { name: 'KPI Closer', href: '/business/closer-kpi', icon: TrendingUp },
@@ -68,6 +71,7 @@ const getHeadOfSalesNavigation = (canManageCampaigns?: boolean): NavItem[] => {
     { name: 'Agenda', href: '/business/agenda', icon: Calendar },
     { name: 'Rappels', href: '/business/rappels', icon: Bell },
     { name: 'Factures', href: '/business/factures', icon: Receipt },
+    { name: "Chiffre d'affaires", href: '/business/revenue', icon: DollarSign },
     { name: 'Rapport', href: '/business/report', icon: FileText },
     { name: 'KPI Setter', href: '/business/setter-kpi', icon: TrendingUp },
     { name: 'KPI Closer', href: '/business/closer-kpi', icon: TrendingUp },
@@ -113,6 +117,7 @@ interface BusinessSidebarProps {
 
 export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, onCollapseChange }: BusinessSidebarProps) {
   const navigate = useNavigate()
+  const { dark } = useTheme()
   const { logout, user, businessProfile, businessSettings, isTeamMember, teamMember } = useBusinessAuth()
   const hasAcknowledgedOnboarding = !isTeamMember || !!teamMember?.onboarding_acknowledged
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
@@ -223,10 +228,13 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "fixed z-50 flex flex-col backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] transition-all duration-300 ease-in-out",
+          "fixed z-50 flex flex-col transition-all duration-300 ease-in-out",
           collapsed
-            ? "lg:fixed lg:left-4 lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-20 lg:rounded-[3rem] lg:border lg:border-neutral-900/5 lg:items-center lg:py-4 bg-[rgba(244,242,241,0.8)] dark:bg-neutral-900/80"
-            : "inset-y-0 left-0 lg:static lg:w-72 bg-white/60 dark:bg-neutral-900/80 border-r border-neutral-900/5 dark:border-neutral-800",
+            ? (dark
+              ? "lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-24 lg:items-center lg:py-4 bg-[#141211] lg:border-r lg:border-neutral-800"
+              : "lg:fixed lg:left-4 lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-20 lg:rounded-[3rem] lg:border lg:border-neutral-200 lg:items-center lg:py-4 bg-[#f4f2f1] shadow-[0_20px_40px_rgba(27,28,27,0.04)]"
+            )
+            : "shadow-[0_20px_40px_rgba(27,28,27,0.04)] backdrop-blur-xl inset-y-0 left-0 lg:static lg:w-72 bg-white/60 dark:bg-neutral-900/80 border-r border-neutral-900/5 dark:border-neutral-800",
           // Mobile: fixed slide-in
           isOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0"
         )}

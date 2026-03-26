@@ -265,6 +265,7 @@ export function CloserAgenda() {
 
   const dayScrollRef = useRef<HTMLDivElement>(null)
   const weekScrollRef = useRef<HTMLDivElement>(null)
+
   const dateInputRef = useRef<HTMLInputElement>(null)
 
   // Fetch team members (for owner filter + assignment dropdown)
@@ -381,14 +382,12 @@ export function CloserAgenda() {
     return () => clearInterval(t)
   }, [])
 
-  // Auto-scroll to current hour
-  useEffect(() => {
-    const ref = view === 'day' ? dayScrollRef.current : view === 'week' ? weekScrollRef.current : null
-    if (ref) {
-      const h = Math.max(0, new Date().getHours() - 2)
-      ref.scrollTop = h * ROW_H
-    }
-  }, [view])
+  // Auto-scroll the time grid to current hour via callback ref
+  const scrollTimeGridToNow = (node: HTMLDivElement | null) => {
+    if (!node) return
+    const h = Math.max(0, new Date().getHours() - 2)
+    node.scrollTop = h * ROW_H
+  }
 
   // Fetch prospect when selecting an event linked to one
   useEffect(() => {
@@ -752,7 +751,7 @@ export function CloserAgenda() {
             ))}
           </div>
         )}
-        <div ref={dayScrollRef} className="flex-1 overflow-y-auto">
+        <div ref={scrollTimeGridToNow} className="flex-1 overflow-y-auto">
           <div className="relative" style={{ minHeight: `${HOURS.length * ROW_H}px` }}>
             {/* Time labels */}
             <div className="absolute left-0 top-0 w-20 border-r border-stone-100 dark:border-white/10 bg-stone-50/30 dark:bg-white/5">
@@ -860,7 +859,7 @@ export function CloserAgenda() {
           )}
 
           {/* Time grid */}
-          <div className="relative overflow-y-auto" style={{ maxHeight: '800px' }}>
+          <div ref={scrollTimeGridToNow} className="relative overflow-y-auto" style={{ maxHeight: '800px' }}>
             <div className="grid grid-cols-[80px_1fr]">
               {/* Time column */}
               <div className="bg-stone-50/30 dark:bg-white/5">

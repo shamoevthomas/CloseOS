@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 
 // Imports des Contextes
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -25,41 +25,45 @@ import { CheckoutForm } from './components/CheckoutForm'
 // CheckoutStarter supprimé — un seul plan Pro maintenant
 import { Return } from './components/Return'
 
-// Imports des Pages
+// Imports des Pages (eager — public/landing)
 import { LandingPage } from './pages/LandingPage'
-import { Dashboard } from './pages/Dashboard'
-import { Pipeline } from './pages/Pipeline'
-import { Contacts } from './pages/Contacts'
-import { Offers } from './pages/Offers'
-import { Agenda } from './pages/Agenda'
-import { CallsPage } from './pages/CallsPage'
-import { CallDetails } from './pages/CallDetails'
-import { TelephonyPage } from './pages/TelephonyPage'
-import { AICoachPage } from './pages/AICoachPage'
-import { InvoicesPage } from './pages/InvoicesPage'
-import { KPIPage } from './pages/KPIPage'
-import { RendezVous } from './pages/RendezVous'
-import { MessagesPage } from './pages/MessagesPage'
-import { PublicBooking } from './pages/PublicBooking'
-import { BookingSettings } from './pages/BookingSettings'
-import CallRoom from './pages/CallRoom'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import { Legal } from './pages/Legal'
-import { WelcomeFounder } from './pages/WelcomeFounder'
-import { ComingSoon } from './pages/ComingSoon'
 import { CGU } from './pages/CGU'
 import { CGV } from './pages/CGV'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import { BusinessPolitiqueUtilisation } from './pages/BusinessPolitiqueUtilisation'
-import ConfirmEmailUpdate from './pages/ConfirmEmailUpdate'
-import { SubscriptionRetention } from './pages/SubscriptionRetention'
-import { SpectatorPage } from './pages/SpectatorPage'
-import { RemindersPage } from './pages/RemindersPage'
-import { TrialExpiredModal } from './pages/TrialExpired'
 import { FounderOnlyGuard } from './components/FounderOnlyGuard'
 import { BusinessLanding } from './pages/BusinessLanding'
 import { EcosystemChoice } from './pages/EcosystemChoice'
+import { CaptureForm } from './pages/CaptureForm'
+import { PublicBooking } from './pages/PublicBooking'
+import { AppointmentManage } from './pages/AppointmentManage'
+
+// Imports lazy (pages authentifiées — chargées à la demande)
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })))
+const Pipeline = lazy(() => import('./pages/Pipeline').then(m => ({ default: m.Pipeline })))
+const Contacts = lazy(() => import('./pages/Contacts').then(m => ({ default: m.Contacts })))
+const Offers = lazy(() => import('./pages/Offers').then(m => ({ default: m.Offers })))
+const Agenda = lazy(() => import('./pages/Agenda').then(m => ({ default: m.Agenda })))
+const CallsPage = lazy(() => import('./pages/CallsPage').then(m => ({ default: m.CallsPage })))
+const CallDetails = lazy(() => import('./pages/CallDetails').then(m => ({ default: m.CallDetails })))
+const TelephonyPage = lazy(() => import('./pages/TelephonyPage').then(m => ({ default: m.TelephonyPage })))
+const AICoachPage = lazy(() => import('./pages/AICoachPage').then(m => ({ default: m.AICoachPage })))
+const InvoicesPage = lazy(() => import('./pages/InvoicesPage').then(m => ({ default: m.InvoicesPage })))
+const KPIPage = lazy(() => import('./pages/KPIPage').then(m => ({ default: m.KPIPage })))
+const RendezVous = lazy(() => import('./pages/RendezVous').then(m => ({ default: m.RendezVous })))
+const MessagesPage = lazy(() => import('./pages/MessagesPage').then(m => ({ default: m.MessagesPage })))
+const BookingSettings = lazy(() => import('./pages/BookingSettings').then(m => ({ default: m.BookingSettings })))
+const CallRoom = lazy(() => import('./pages/CallRoom'))
+const WelcomeFounder = lazy(() => import('./pages/WelcomeFounder').then(m => ({ default: m.WelcomeFounder })))
+const ComingSoon = lazy(() => import('./pages/ComingSoon').then(m => ({ default: m.ComingSoon })))
+const ConfirmEmailUpdate = lazy(() => import('./pages/ConfirmEmailUpdate'))
+const SubscriptionRetention = lazy(() => import('./pages/SubscriptionRetention').then(m => ({ default: m.SubscriptionRetention })))
+const SpectatorPage = lazy(() => import('./pages/SpectatorPage').then(m => ({ default: m.SpectatorPage })))
+const RemindersPage = lazy(() => import('./pages/RemindersPage').then(m => ({ default: m.RemindersPage })))
+const TrialExpiredModal = lazy(() => import('./pages/TrialExpired').then(m => ({ default: m.TrialExpiredModal })))
 
 // Business Module Imports
 import { BusinessAuthProvider, useBusinessAuth } from './business/contexts/BusinessAuthContext'
@@ -68,40 +72,39 @@ import { BusinessGoogleCalendarProvider } from './business/contexts/BusinessGoog
 import { BusinessLayout } from './business/layouts/BusinessLayout'
 import BusinessLogin from './business/pages/BusinessLogin'
 import BusinessRegister from './business/pages/BusinessRegister'
-import { BusinessDashboard } from './business/pages/BusinessDashboard'
-import { BusinessCRM } from './business/pages/BusinessCRM'
-import { BusinessTeam } from './business/pages/BusinessTeam'
 import { BusinessInvitation } from './business/pages/BusinessInvitation'
-// BusinessKPI retiré — utiliser SetterKPI et CloserKPI
-import { BusinessCampaigns } from './business/pages/BusinessCampaigns'
-import { BusinessFormules } from './business/pages/BusinessFormules'
-import { BusinessObjectives } from './business/pages/BusinessObjectives'
-import { BusinessAppointments } from './business/pages/BusinessAppointments'
-import { BusinessReminders } from './business/pages/BusinessReminders'
-import { BusinessAcquisition } from './business/pages/BusinessAcquisition'
-import { BusinessReport } from './business/pages/BusinessReport'
-import { BusinessPipeline } from './business/pages/BusinessPipeline'
-// BusinessClosers and BusinessSetters removed — merged into BusinessTeam
-import { BusinessOrganization } from './business/pages/BusinessOrganization'
-import BusinessTest from './business/pages/BusinessTest'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
-import { CaptureForm } from './pages/CaptureForm'
-import { AppointmentManage } from './pages/AppointmentManage'
-import { CloserPipeline } from './business/pages/CloserPipeline'
-import { CloserRendezVous } from './business/pages/CloserRendezVous'
-import { CloserDisponibilite } from './business/pages/CloserDisponibilite'
-import { CloserKPI } from './business/pages/CloserKPI'
-import { SetterKPI } from './business/pages/SetterKPI'
-import { CloserAppels } from './business/pages/CloserAppels'
-import { CloserObjectifs } from './business/pages/CloserObjectifs'
-import { CloserCallDetails } from './business/pages/CloserCallDetails'
-import { SetterCallDetails } from './business/pages/SetterCallDetails'
-import { CloserCallRoom } from './business/pages/CloserCallRoom'
-import { CloserDashboard } from './business/pages/CloserDashboard'
-import { CloserFormules } from './business/pages/CloserFormules'
-import { CloserAgenda } from './business/pages/CloserAgenda'
-import { CloserFactures } from './business/pages/CloserFactures'
-import { OwnerFactures } from './business/pages/OwnerFactures'
+
+// Business lazy imports
+const BusinessDashboard = lazy(() => import('./business/pages/BusinessDashboard').then(m => ({ default: m.BusinessDashboard })))
+const BusinessCRM = lazy(() => import('./business/pages/BusinessCRM').then(m => ({ default: m.BusinessCRM })))
+const BusinessTeam = lazy(() => import('./business/pages/BusinessTeam').then(m => ({ default: m.BusinessTeam })))
+const BusinessCampaigns = lazy(() => import('./business/pages/BusinessCampaigns').then(m => ({ default: m.BusinessCampaigns })))
+const BusinessFormules = lazy(() => import('./business/pages/BusinessFormules').then(m => ({ default: m.BusinessFormules })))
+const BusinessObjectives = lazy(() => import('./business/pages/BusinessObjectives').then(m => ({ default: m.BusinessObjectives })))
+const BusinessAppointments = lazy(() => import('./business/pages/BusinessAppointments').then(m => ({ default: m.BusinessAppointments })))
+const BusinessReminders = lazy(() => import('./business/pages/BusinessReminders').then(m => ({ default: m.BusinessReminders })))
+const BusinessAcquisition = lazy(() => import('./business/pages/BusinessAcquisition').then(m => ({ default: m.BusinessAcquisition })))
+const BusinessReport = lazy(() => import('./business/pages/BusinessReport').then(m => ({ default: m.BusinessReport })))
+const BusinessPipeline = lazy(() => import('./business/pages/BusinessPipeline').then(m => ({ default: m.BusinessPipeline })))
+const BusinessOrganization = lazy(() => import('./business/pages/BusinessOrganization').then(m => ({ default: m.BusinessOrganization })))
+const BusinessTest = lazy(() => import('./business/pages/BusinessTest'))
+const CloserPipeline = lazy(() => import('./business/pages/CloserPipeline').then(m => ({ default: m.CloserPipeline })))
+const CloserRendezVous = lazy(() => import('./business/pages/CloserRendezVous').then(m => ({ default: m.CloserRendezVous })))
+const CloserDisponibilite = lazy(() => import('./business/pages/CloserDisponibilite').then(m => ({ default: m.CloserDisponibilite })))
+const CloserKPI = lazy(() => import('./business/pages/CloserKPI').then(m => ({ default: m.CloserKPI })))
+const SetterKPI = lazy(() => import('./business/pages/SetterKPI').then(m => ({ default: m.SetterKPI })))
+const CloserAppels = lazy(() => import('./business/pages/CloserAppels').then(m => ({ default: m.CloserAppels })))
+const CloserObjectifs = lazy(() => import('./business/pages/CloserObjectifs').then(m => ({ default: m.CloserObjectifs })))
+const CloserCallDetails = lazy(() => import('./business/pages/CloserCallDetails').then(m => ({ default: m.CloserCallDetails })))
+const SetterCallDetails = lazy(() => import('./business/pages/SetterCallDetails').then(m => ({ default: m.SetterCallDetails })))
+const CloserCallRoom = lazy(() => import('./business/pages/CloserCallRoom').then(m => ({ default: m.CloserCallRoom })))
+const CloserDashboard = lazy(() => import('./business/pages/CloserDashboard').then(m => ({ default: m.CloserDashboard })))
+const CloserFormules = lazy(() => import('./business/pages/CloserFormules').then(m => ({ default: m.CloserFormules })))
+const CloserAgenda = lazy(() => import('./business/pages/CloserAgenda').then(m => ({ default: m.CloserAgenda })))
+const CloserFactures = lazy(() => import('./business/pages/CloserFactures').then(m => ({ default: m.CloserFactures })))
+const OwnerFactures = lazy(() => import('./business/pages/OwnerFactures').then(m => ({ default: m.OwnerFactures })))
+const BusinessRevenue = lazy(() => import('./business/pages/BusinessRevenue').then(m => ({ default: m.BusinessRevenue })))
 
 // Owner-only route guard for business pages (Head of Sales also allowed)
 function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
@@ -291,6 +294,7 @@ function AuthenticatedApp() {
   // Le spinner ne s'affiche que dans ProtectedRoute pour les pages nécessitant une connexion.
   return (
     <>
+      <Suspense fallback={<LoadingScreen />}>
       <Routes>
         {/* Business Landing */}
         <Route path="/business" element={<BusinessLanding />} />
@@ -331,6 +335,7 @@ function AuthenticatedApp() {
           <Route path="rendez-vous" element={<TeamOnboardingGuard><BusinessAppointments /></TeamOnboardingGuard>} />
           <Route path="rappels" element={<TeamOnboardingGuard><BusinessReminders /></TeamOnboardingGuard>} />
           <Route path="report" element={<OwnerOnlyWrapper><BusinessReport /></OwnerOnlyWrapper>} />
+          <Route path="revenue" element={<OwnerOnlyWrapper><BusinessRevenue /></OwnerOnlyWrapper>} />
           <Route path="team" element={<TeamOnboardingGuard><BusinessTeam /></TeamOnboardingGuard>} />
           <Route path="closers" element={<Navigate to="/business/team" replace />} />
           <Route path="setters" element={<Navigate to="/business/team" replace />} />
@@ -442,6 +447,7 @@ function AuthenticatedApp() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
+      </Suspense>
 
       {user && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && !location.pathname.startsWith('/book') && (
         <>

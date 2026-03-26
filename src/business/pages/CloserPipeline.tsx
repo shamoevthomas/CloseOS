@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
@@ -31,8 +31,7 @@ const INACTIVE_STAGES = [
 export function CloserPipeline() {
   const { prospects, updateProspect, loading } = useBusinessProspects()
   const { teamMember, user } = useBusinessAuth()
-  const { getStagesForRole } = useCustomStages()
-  const myCustomStages = getStagesForRole(teamMember?.role)
+  const { customStages } = useCustomStages()
 
   // Next appointments per prospect
   const [nextAppointments, setNextAppointments] = useState<Record<number, { date: string; time: string }>>({})
@@ -91,12 +90,49 @@ export function CloserPipeline() {
   const getDealsForStage = (stageId: string) => filteredProspects.filter(d => d.stage === stageId)
   const getTotalForStage = (stageId: string) => getDealsForStage(stageId).reduce((sum, d) => sum + (d.value || 0), 0)
 
+  // Auto-scroll during drag near viewport edges
+  const isDraggingRef = useRef(false)
+  const animFrameRef = useRef<number>(0)
+  const lastMouseY = useRef(0)
+
+  const onDragStart = useCallback(() => {
+    isDraggingRef.current = true
+    const tick = () => {
+      if (!isDraggingRef.current) return
+      const y = lastMouseY.current
+      const vh = window.innerHeight
+      const ZONE = 120
+      const MAX_SPEED = 20
+      const main = document.querySelector('main')
+      if (!main) { animFrameRef.current = requestAnimationFrame(tick); return }
+
+      const distFromBottom = vh - y
+      const distFromTop = y
+
+      if (distFromBottom < ZONE && distFromBottom > 0) {
+        main.scrollTop += MAX_SPEED * (1 - distFromBottom / ZONE)
+      } else if (distFromTop < ZONE && distFromTop > 0) {
+        main.scrollTop -= MAX_SPEED * (1 - distFromTop / ZONE)
+      }
+      animFrameRef.current = requestAnimationFrame(tick)
+    }
+    animFrameRef.current = requestAnimationFrame(tick)
+  }, [])
+
   const onDragEnd = (result: DropResult) => {
+    isDraggingRef.current = false
+    cancelAnimationFrame(animFrameRef.current)
     const { destination, source, draggableId } = result
     if (!destination) return
     if (destination.droppableId === source.droppableId && destination.index === source.index) return
     updateProspect(parseInt(draggableId), { stage: destination.droppableId })
   }
+
+  useEffect(() => {
+    const track = (e: MouseEvent) => { lastMouseY.current = e.clientY }
+    window.addEventListener('mousemove', track, true)
+    return () => window.removeEventListener('mousemove', track, true)
+  }, [])
 
   const toggleColumn = (stageId: string) => {
     const newCollapsed = new Set(collapsedColumns)
@@ -155,7 +191,7 @@ export function CloserPipeline() {
           <p className="text-sm text-stone-500 dark:text-neutral-400">Votre manager doit vous assigner des prospects depuis le CRM.</p>
         </div>
       ) : (
-        <DragDropContext onDragEnd={onDragEnd}>
+        <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
           <div className="flex-1 h-full flex flex-col space-y-12 overflow-y-auto pr-2 custom-scrollbar">
             {/* FLUX ACTIF */}
             <section>
@@ -345,7 +381,7 @@ export function CloserPipeline() {
             </section>
 
             {/* CUSTOM STAGES */}
-            {myCustomStages.length > 0 && (
+            {customStages.length > 0 && (
               <section>
                 <div className="flex items-baseline space-x-3 mb-8">
                   <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Statuts Personnalisés</h2>
@@ -354,7 +390,7 @@ export function CloserPipeline() {
                 </div>
 
                 <div className="grid grid-cols-4 gap-6">
-                  {myCustomStages.map((cs) => {
+                  {customStages.map((cs) => {
                     const stageId = `custom_${cs.id}`
                     const stageDeals = filteredProspects.filter(d => d.stage === stageId)
                     const stageTotal = stageDeals.reduce((sum, d) => sum + (d.value || 0), 0)

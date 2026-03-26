@@ -12,6 +12,7 @@ import {
   AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import { cn } from '../../lib/utils'
+import { getProspectCA } from '../lib/getProspectCA'
 import toast from 'react-hot-toast'
 // @ts-ignore
 import html2pdf from 'html2pdf.js'
@@ -63,6 +64,8 @@ export function CloserKPI() {
   const [formulaCommRates, setFormulaCommRates] = useState<Record<string, { roles: Record<string, number>; members: Record<string, number> }>>({})
   const [periodFrom, setPeriodFrom] = useState('')
   const [periodTo, setPeriodTo] = useState('')
+  const [stripePayments, setStripePayments] = useState<{ prospect_id: number; amount: number }[]>([])
+  const [hasStripeData, setHasStripeData] = useState(false)
 
   // Autre modal
   const [showAutreModal, setShowAutreModal] = useState(false)
@@ -183,6 +186,14 @@ export function CloserKPI() {
         })
         setFormulaCommRates(map)
       })
+    // Fetch Stripe payments
+    fetch(`/api/business-payments-summary?user_id=${effectiveOwnerId}`)
+      .then(r => r.json())
+      .then(data => {
+        setHasStripeData(!!data.hasStripeData)
+        setStripePayments(data.payments || [])
+      })
+      .catch(() => {})
   }, [effectiveOwnerId])
 
   const saveConfig = async () => {
@@ -214,7 +225,7 @@ export function CloserKPI() {
     const won = src.filter((p: any) => p.stage === 'won')
     const noShow = src.filter((p: any) => p.stage === 'noshow')
     const lost = src.filter((p: any) => p.stage === 'lost')
-    const revenue = won.reduce((sum: number, p: any) => sum + (p.value || 0), 0)
+    const revenue = won.reduce((sum: number, p: any) => sum + (hasStripeData ? getProspectCA(p, stripePayments) : (p.value || 0)), 0)
     // Conversion: no-shows count only if they came from follow-up
     const noshowFromFollowup = noShow.filter((p: any) => p.previous_stage === 'followup')
     const closedTotal = won.length + lost.length + noshowFromFollowup.length
@@ -246,7 +257,7 @@ export function CloserKPI() {
     const memberRole = member?.role
     let total = 0
     for (const p of wonProspects) {
-      const value = p.value || 0
+      const value = hasStripeData ? getProspectCA(p, stripePayments) : (p.value || 0)
       if (!value) continue
       const formulaId = p.formula_id || p.offer_id
       const rates = formulaId ? formulaCommRates[formulaId] : null

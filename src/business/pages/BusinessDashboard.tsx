@@ -13,6 +13,7 @@ import { CloserDashboard } from './CloserDashboard'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { getProspectCA } from '../lib/getProspectCA'
 
 // ─── Types ───
 
@@ -24,6 +25,15 @@ interface Prospect {
   campaign_id: string | null
   assigned_to: string | null
   formula_id: string | null
+  stripe_subscription_id?: string | null
+}
+
+interface StripePayment {
+  prospect_id: number
+  amount: number
+  assigned_to: string | null
+  assigned_setter: string | null
+  paid_at: string
 }
 
 interface Campaign {
@@ -160,6 +170,8 @@ export function BusinessDashboard() {
   const [commissionRates, setCommissionRates] = useState<Record<string, { roles: Record<string, number>; members: Record<string, number> }>>({})
   const [teams, setTeams] = useState<BusinessTeam[]>([])
   const [teamTab, setTeamTab] = useState<'all' | 'teams'>('all')
+  const [stripePayments, setStripePayments] = useState<StripePayment[]>([])
+  const [hasStripeData, setHasStripeData] = useState(false)
 
   const isMemberAbsent = (memberId: string) => {
     const today = new Date().toISOString().slice(0, 10)
@@ -208,6 +220,15 @@ export function BusinessDashboard() {
           })
           setCommissionRates(map)
         })
+
+      // Fetch Stripe payments (for CA calculations)
+      fetch(`/api/business-payments-summary?user_id=${effectiveUserId}`)
+        .then(r => r.json())
+        .then(data => {
+          setHasStripeData(!!data.hasStripeData)
+          setStripePayments(data.payments || [])
+        })
+        .catch(() => { /* silent — fallback to prospect.value */ })
     } catch (err) {
       console.error('Error fetching dashboard data:', err)
     } finally {
@@ -224,11 +245,12 @@ export function BusinessDashboard() {
     for (const p of wonProspects) {
       if (!p.formula_id || !commissionRates[p.formula_id]) continue
       const rates = commissionRates[p.formula_id]
+      const pValue = hasStripeData ? getProspectCA(p, stripePayments) : (p.value || 0)
       // Member-specific rate first
       if (rates.members[memberId] !== undefined) {
-        total += (p.value || 0) * rates.members[memberId] / 100
+        total += pValue * rates.members[memberId] / 100
       } else if (rates.roles[memberRole] !== undefined) {
-        total += (p.value || 0) * rates.roles[memberRole] / 100
+        total += pValue * rates.roles[memberRole] / 100
       }
     }
     return Math.round(total)
@@ -307,21 +329,23 @@ export function BusinessDashboard() {
       .sort((a, b) => b.value - a.value)
   }, [periodProspects])
 
-  const totalRevenue = useMemo(() => wonProspects.reduce((s, p) => s + (Number(p.value) || 0), 0), [wonProspects])
+  const totalRevenue = useMemo(() =>
+    wonProspects.reduce((s, p) => s + (hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)), 0),
+    [wonProspects, hasStripeData, stripePayments])
 
   const revenueThisMonth = useMemo(() =>
     wonProspects
       .filter(p => { const d = new Date(p.created_at); return d.getMonth() === currentMonth && d.getFullYear() === currentYear })
-      .reduce((s, p) => s + (Number(p.value) || 0), 0),
-    [wonProspects, currentMonth, currentYear])
+      .reduce((s, p) => s + (hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)), 0),
+    [wonProspects, currentMonth, currentYear, hasStripeData, stripePayments])
 
   const revenueLastMonth = useMemo(() => {
     const lm = currentMonth === 0 ? 11 : currentMonth - 1
     const ly = currentMonth === 0 ? currentYear - 1 : currentYear
     return wonProspects
       .filter(p => { const d = new Date(p.created_at); return d.getMonth() === lm && d.getFullYear() === ly })
-      .reduce((s, p) => s + (Number(p.value) || 0), 0)
-  }, [wonProspects, currentMonth, currentYear])
+      .reduce((s, p) => s + (hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)), 0)
+  }, [wonProspects, currentMonth, currentYear, hasStripeData, stripePayments])
 
   const revenueDelta = revenueLastMonth > 0
     ? ((revenueThisMonth - revenueLastMonth) / revenueLastMonth * 100)
@@ -767,7 +791,7 @@ export function BusinessDashboard() {
                 const teamMembersList = visibleMembers.filter(m => m.team_id === team.id)
                 const teamCA = teamMembersList.reduce((total, m) => {
                   const memberWon = baseProspects.filter(p => p.stage === 'won' && p.assigned_to === m.id)
-                  return total + memberWon.reduce((s, p) => s + (Number(p.value) || 0), 0)
+                  return total + memberWon.reduce((s, p) => s + (hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)), 0)
                 }, 0)
                 return (
                   <div key={team.id} className="rounded-2xl bg-neutral-50/80 dark:bg-neutral-800/50 p-5">

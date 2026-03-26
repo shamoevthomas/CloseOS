@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 import {
@@ -116,16 +116,23 @@ export function CloserDisponibilite() {
     setShowOnboardingPopup(false)
   }
 
-  // Notify owner + HOS when availability/absence changes (skip if owner is editing their own)
-  const notifyOwnerAndHoS = async (title: string, description: string) => {
-    if (isOwner) return // Owner doesn't need to notify themselves
-    if (!teamMember?.id || !ownerUserId) return
+  // Notify owner + HOS when availability/absence changes (debounced: batches changes over 5s)
+  const pendingChangesRef = useRef<string[]>([])
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const flushNotifications = useCallback(async () => {
+    if (isOwner || !teamMember?.id || !ownerUserId) return
+    const changes = [...pendingChangesRef.current]
+    pendingChangesRef.current = []
+    if (changes.length === 0) return
+
+    const title = `Disponibilité modifiée — ${isOwner ? 'Owner' : (`${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || 'Un membre')}`
+    const description = changes.join('\n')
+
     try {
-      // Owner notification
       const rows: { user_id: string; title: string; description: string; reminder_date: string; is_done: boolean }[] = [
         { user_id: ownerUserId, title, description, reminder_date: new Date().toISOString(), is_done: false },
       ]
-      // HOS notifications
       const { data: hosMembers } = await supabase
         .from('business_team_members')
         .select('user_id')
@@ -137,7 +144,6 @@ export function CloserDisponibilite() {
         }
       }
       await supabase.from('reminders').insert(rows)
-      // Send email notification
       const userIds = rows.map(r => r.user_id)
       fetch('/api/business-send-notification-email', {
         method: 'POST',
@@ -147,6 +153,21 @@ export function CloserDisponibilite() {
     } catch (err) {
       console.error('Notification error:', err)
     }
+  }, [isOwner, teamMember, ownerUserId])
+
+  // Flush on unmount (page leave)
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+      if (pendingChangesRef.current.length > 0) flushNotifications()
+    }
+  }, [flushNotifications])
+
+  const notifyOwnerAndHoS = async (_title: string, description: string) => {
+    if (isOwner) return
+    pendingChangesRef.current.push(description)
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    debounceTimerRef.current = setTimeout(() => flushNotifications(), 60000)
   }
 
   const memberName = isOwner ? 'Owner' : (`${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || 'Un membre')
@@ -211,6 +232,38 @@ export function CloserDisponibilite() {
     setCopyingDay(null)
     setSelectedCopyTargets([])
     fetchData()
+  }
+
+  // Helper: shift time string HH:MM by N hours, clamped 00:00–23:00
+  const shiftTime = (time: string, hours: number) => {
+    const [h, m] = time.split(':').map(Number)
+    const nh = Math.max(0, Math.min(h + hours, 23))
+    return `${String(nh).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+
+  // Open "add slot" form with smart defaults based on existing slots
+  const handleStartAdding = (dayIdx: number) => {
+    const daySlots = slots.filter(s => s.day_of_week === dayIdx).sort((a, b) => a.end_time.localeCompare(b.end_time))
+    if (daySlots.length > 0) {
+      const lastEnd = daySlots[daySlots.length - 1].end_time
+      const start = shiftTime(lastEnd, 1)
+      setNewStart(start)
+      setNewEnd(shiftTime(start, 3))
+    } else {
+      setNewStart('09:00')
+      setNewEnd('12:00')
+    }
+    setAddingDay(dayIdx)
+  }
+
+  // Enforce start < end constraints on time inputs
+  const handleStartChange = (val: string) => {
+    setNewStart(val)
+    if (val >= newEnd) setNewEnd(shiftTime(val, 1))
+  }
+  const handleEndChange = (val: string) => {
+    setNewEnd(val)
+    if (val <= newStart) setNewStart(shiftTime(val, -1))
   }
 
   const handleAddAbsence = async () => {
@@ -327,15 +380,15 @@ export function CloserDisponibilite() {
 
                     {addingDay === idx ? (
                       <div className="flex items-center gap-2">
-                        <input type="time" value={newStart} onChange={e => setNewStart(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                        <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                         <span className="text-xs text-stone-400 dark:text-neutral-500">à</span>
-                        <input type="time" value={newEnd} onChange={e => setNewEnd(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                        <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                         <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition-all">OK</button>
                         <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300">Annuler</button>
                       </div>
                     ) : (
                       <button
-                        onClick={() => setAddingDay(idx)}
+                        onClick={() => handleStartAdding(idx)}
                         className="flex items-center gap-2 border border-dashed border-[#c4c7c7] dark:border-neutral-700/50 px-4 py-2 rounded-full text-sm text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:border-stone-400 transition-all"
                       >
                         <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -355,8 +408,8 @@ export function CloserDisponibilite() {
                       </button>
                       {copyingDay === idx && (
                         <>
-                          <div className="fixed inset-0 z-10" onClick={() => { setCopyingDay(null); setSelectedCopyTargets([]) }} />
-                          <div className="absolute top-full right-0 mt-1 z-20 rounded-2xl bg-white dark:bg-white/5 shadow-xl ring-1 ring-black/5 dark:ring-white/10 py-2 min-w-[180px] dark:backdrop-blur-xl">
+                          <div className="fixed inset-0 z-40" onClick={() => { setCopyingDay(null); setSelectedCopyTargets([]) }} />
+                          <div className="absolute bottom-full right-0 mb-1 z-50 rounded-2xl bg-white dark:bg-white/5 shadow-xl ring-1 ring-black/5 dark:ring-white/10 py-2 min-w-[180px] dark:backdrop-blur-xl">
                             {DAYS.map((targetDay, targetIdx) => {
                               if (targetIdx === idx) return null
                               const isSelected = selectedCopyTargets.includes(targetIdx)
@@ -439,9 +492,9 @@ export function CloserDisponibilite() {
                     </div>
                     {addingDay === idx ? (
                       <div className="flex items-center gap-2 mt-3">
-                        <input type="time" value={newStart} onChange={e => setNewStart(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                        <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                         <span className="text-xs text-stone-400 dark:text-neutral-500">à</span>
-                        <input type="time" value={newEnd} onChange={e => setNewEnd(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                        <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                         <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:opacity-90">OK</button>
                         <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300">
                           <X className="h-3 w-3" />
@@ -449,7 +502,7 @@ export function CloserDisponibilite() {
                       </div>
                     ) : (
                       <button
-                        onClick={() => setAddingDay(idx)}
+                        onClick={() => handleStartAdding(idx)}
                         className="mt-3 flex items-center gap-1.5 text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 transition-colors"
                       >
                         <Plus className="h-3 w-3" strokeWidth={1.5} />

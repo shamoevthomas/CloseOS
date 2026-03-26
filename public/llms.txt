@@ -1,0 +1,20 @@
+# CloseOS
+
+> Ecosysteme SaaS francophone pour la vente digitale.
+
+CloseOS est compose de deux produits independants :
+
+## CloseOS Sales
+CRM pour closers high ticket francophones. Pipeline de vente visuel, VoIP integre, agenda & booking, facturation automatique, KPIs de closing. Destine aux closers independants et freelances.
+URL : https://www.closeos.fr/landing
+
+## CloseOS Business
+Plateforme de management pour infopreneurs et Head of Sales. Gestion d'equipe de closers et setters, pilotage de campagnes d'acquisition, CRM acquisition, tableau de bord infopreneur, KPIs d'equipe, onboarding automatise des closers.
+URL : https://www.closeos.fr/business
+
+## Integrations natives
+HubSpot (bidirectionnel), Pipedrive (bidirectionnel), GoHighLevel (bidirectionnel), Airtable (bidirectionnel), Systeme.io (webhook), iClosed (webhook), Google Calendar, Stripe, Calendly, Zapier, Make, n8n.
+
+## Contact
+Email : support@closeos.fr
+Site : https://www.closeos.fr

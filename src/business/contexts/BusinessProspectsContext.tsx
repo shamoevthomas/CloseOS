@@ -45,6 +45,15 @@ export interface BusinessProspect {
   loss_reason?: string
   loss_details?: string
   pipeline_visible?: boolean
+  // Stripe subscription matching
+  stripe_customer_id?: string
+  stripe_subscription_id?: string
+  subscription_status?: string
+  subscription_amount?: number
+  subscription_interval?: string
+  matched_via?: string
+  last_payment_date?: string
+  next_payment_date?: string
 }
 
 interface BusinessProspectsContextType {
@@ -67,6 +76,7 @@ interface BusinessProspectsContextType {
   airtableConnected: boolean
   ghlConnected: boolean
   nextSyncSeconds: number
+  matchStripeManually: (prospectId: number, stripeCustomerId: string, stripeSubscriptionId: string) => Promise<void>
 }
 
 const BusinessProspectsContext = createContext<BusinessProspectsContextType | undefined>(undefined)
@@ -525,6 +535,60 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       pushToSystemeioIfNeeded(data[0], prevStage)
       pushToAirtableIfNeeded(data[0], prevStage)
       pushToGhlIfNeeded(data[0])
+
+      // Auto-match Stripe on stage=won (Method 2)
+      if (updates.stage === 'won' && data[0].email && !data[0].stripe_subscription_id && userId) {
+        fetch('/api/business-auto-match-stripe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, prospect_id: id, email: data[0].email }),
+        })
+          .then(r => r.json())
+          .then(result => {
+            if (result.matched) {
+              setProspects(prev => prev.map(p => p.id === id ? {
+                ...p,
+                stripe_customer_id: result.stripe_customer_id,
+                stripe_subscription_id: result.stripe_subscription_id,
+                subscription_status: result.subscription_status,
+                subscription_amount: result.subscription_amount,
+                subscription_interval: result.subscription_interval,
+                matched_via: result.matched_via,
+                last_payment_date: result.last_payment_date,
+                next_payment_date: result.next_payment_date,
+              } : p))
+            }
+          })
+          .catch(() => { /* silent — manual fallback available */ })
+      }
+    }
+  }
+
+  const matchStripeManually = async (prospectId: number, stripeCustomerId: string, stripeSubscriptionId: string) => {
+    if (!userId) return
+    try {
+      const response = await fetch('/api/business-stripe-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, prospect_id: prospectId, stripe_customer_id: stripeCustomerId, stripe_subscription_id: stripeSubscriptionId }),
+      })
+      const result = await response.json()
+      if (result.matched) {
+        setProspects(prev => prev.map(p => p.id === prospectId ? {
+          ...p,
+          stripe_customer_id: stripeCustomerId,
+          stripe_subscription_id: stripeSubscriptionId,
+          subscription_status: result.subscription_status,
+          subscription_amount: result.subscription_amount,
+          subscription_interval: result.subscription_interval,
+          matched_via: 'manual',
+        } : p))
+        toast.success('Abonnement Stripe lié avec succès')
+      } else {
+        toast.error('Impossible de lier l\'abonnement')
+      }
+    } catch {
+      toast.error('Erreur lors du matching Stripe')
     }
   }
 
@@ -550,6 +614,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable, isSyncingGhl,
       hubspotConnected, pipedriveConnected, airtableConnected, ghlConnected,
       nextSyncSeconds,
+      matchStripeManually,
     }}>
       {children}
     </BusinessProspectsContext.Provider>

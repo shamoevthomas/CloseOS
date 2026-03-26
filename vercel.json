@@ -1,4 +1,16 @@
 {
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(self), geolocation=()" },
+        { "key": "X-DNS-Prefetch-Control", "value": "on" }
+      ]
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/process-deletions",
@@ -85,8 +97,17 @@
     { "source": "/api/business-send-invitation-email", "destination": "/api/business?action=send-invitation-email" },
     { "source": "/api/business-send-reset-org-code", "destination": "/api/business?action=send-reset-org-code" },
     { "source": "/api/business-reset-organization", "destination": "/api/business?action=reset-organization" },
+    { "source": "/api/business-delete-member", "destination": "/api/business?action=delete-member" },
     { "source": "/api/business-send-delete-owner-code", "destination": "/api/business?action=send-delete-owner-code" },
     { "source": "/api/business-delete-owner-account", "destination": "/api/business?action=delete-owner-account" },
+
+    { "source": "/api/business-stripe-webhook", "destination": "/api/business-stripe-webhook" },
+    { "source": "/api/business-revenue-summary", "destination": "/api/business?action=revenue-summary" },
+    { "source": "/api/business-stripe-search", "destination": "/api/business?action=stripe-search" },
+    { "source": "/api/business-stripe-match", "destination": "/api/business?action=stripe-match" },
+    { "source": "/api/business-auto-match-stripe", "destination": "/api/business?action=auto-match-stripe" },
+    { "source": "/api/business-charges", "destination": "/api/business?action=charges" },
+    { "source": "/api/business-payments-summary", "destination": "/api/business?action=payments-summary" },
 
     { "source": "/(.*)", "destination": "/index.html" }
   ]

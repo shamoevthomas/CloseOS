@@ -328,10 +328,17 @@ export function BusinessTeam() {
   }
 
   const handleDeleteMember = async (memberId: string) => {
-    const { error } = await supabase.from('business_team_members').delete().eq('id', memberId)
-    if (!error) {
+    try {
+      const res = await fetch('/api/business-delete-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner_id: effectiveUserId, member_id: memberId })
+      })
+      if (!res.ok) throw new Error('Erreur lors de la suppression')
       setMembers(prev => prev.filter(m => m.id !== memberId))
       if (selectedMemberId === memberId) setSelectedMemberId(null)
+    } catch (err) {
+      console.error('Delete member error:', err)
     }
   }
 

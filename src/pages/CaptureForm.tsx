@@ -280,11 +280,9 @@ export function CaptureForm() {
     if (!isEmbed) return
     let lastHeight = 0
     const sendHeight = () => {
-      // Measure actual content height using multiple methods for reliability
-      const docH = document.documentElement.scrollHeight
-      const bodyH = document.body.scrollHeight
-      const refH = formRef.current ? Math.max(formRef.current.scrollHeight, formRef.current.offsetHeight) : 0
-      const h = Math.max(docH, bodyH, refH)
+      // Use offsetHeight of the form ref (reflects actual rendered size including CSS transitions)
+      // scrollHeight stays large during max-h collapse animations, offsetHeight tracks the real size
+      const h = formRef.current ? formRef.current.offsetHeight : document.documentElement.scrollHeight
       if (h > 0 && h !== lastHeight) {
         lastHeight = h
         window.parent.postMessage({ type: 'closeos-capture-resize', height: h }, '*')
@@ -305,14 +303,13 @@ export function CaptureForm() {
     }
     window.addEventListener('resize', sendHeight)
     return () => { clearInterval(fast); clearInterval(slow); clearTimeout(timeout); window.removeEventListener('resize', sendHeight) }
-  }, [isEmbed, selectedDate, infoCollapsed])
+  }, [isEmbed, selectedDate, selectedTime, infoCollapsed])
   const prospectTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
 
   // Real availability slots from API
   const [realSlots, setRealSlots] = useState<{ date: string; time: string; member_ids: string[]; datetime_utc?: string }[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [freeMode, setFreeMode] = useState(true)
-  const [distribution, setDistribution] = useState<string>('round_robin')
 
   useEffect(() => {
     const fetchCampaign = async () => {
@@ -348,7 +345,6 @@ export function CaptureForm() {
         } else {
           setFreeMode(false)
           setRealSlots(data.slots || [])
-          setDistribution(data.distribution || 'round_robin')
         }
       })
       .catch(() => setFreeMode(true))
@@ -432,6 +428,13 @@ export function CaptureForm() {
 
   const isInscriptionMode = campaign?.capture_type === 'without_rdv'
 
+  // Auto-collapse info section in horizontal mode when date is selected
+  useEffect(() => {
+    if (isHorizontal && !isInscriptionMode && selectedDate && isInfoComplete && !infoCollapsed) {
+      setInfoCollapsed(true)
+    }
+  }, [selectedDate, isHorizontal, isInscriptionMode, isInfoComplete, infoCollapsed])
+
   const handleSubmit = async () => {
     if (!isInfoComplete) return
     if (!isInscriptionMode && (!selectedDate || !selectedTime)) return
@@ -450,18 +453,9 @@ export function CaptureForm() {
           const matchSlot = prospectSlots.find(s => s.date === dateStr && s.time === selectedTime)
           payload.datetime_utc = matchSlot?.datetime_utc || toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
 
-          // Assign to a team member based on availability
+          // Send available members for this slot — server handles assignment
           if (matchSlot && matchSlot.member_ids.length > 0) {
-            if (matchSlot.member_ids.length === 1) {
-              payload.assigned_member_id = matchSlot.member_ids[0]
-            } else if (distribution === 'random') {
-              payload.assigned_member_id = matchSlot.member_ids[Math.floor(Math.random() * matchSlot.member_ids.length)]
-            } else {
-              // round_robin: pick based on time hash for deterministic distribution
-              const hash = dateStr.replace(/-/g, '') + selectedTime.replace(/:/g, '')
-              const idx = parseInt(hash, 10) % matchSlot.member_ids.length
-              payload.assigned_member_id = matchSlot.member_ids[isNaN(idx) ? 0 : idx]
-            }
+            payload.available_member_ids = matchSlot.member_ids
           }
         } else {
           payload.datetime_utc = toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
@@ -634,13 +628,13 @@ export function CaptureForm() {
             )}
 
             {/* Horizontal layout wrapper */}
-            <div className={isHorizontal && !isInscriptionMode ? (isEmbed ? 'flex flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
+            <div className={isHorizontal && !isInscriptionMode && !infoCollapsed ? (isEmbed ? 'flex flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
             {/* Left column in horizontal mode */}
-            <div className={isHorizontal && !isInscriptionMode ? 'flex-1 min-w-0 flex flex-col' : ''}>
+            <div className={isHorizontal && !isInscriptionMode && !infoCollapsed ? 'flex-1 min-w-0 flex flex-col' : ''}>
 
             {/* INFO SECTION - collapsible */}
-            <div className={`transition-all duration-500 ease-in-out ${!isHorizontal && infoCollapsed ? 'max-h-16 overflow-hidden' : 'max-h-[2000px]'}`}>
-              {!isHorizontal && infoCollapsed && (
+            <div className={`transition-all duration-500 ease-in-out ${infoCollapsed ? 'max-h-16 overflow-hidden' : 'max-h-[2000px]'}`}>
+              {infoCollapsed && (
                 <button
                   onClick={() => setInfoCollapsed(false)}
                   className="w-full flex items-center justify-between rounded-full border border-[#006c49]/20 bg-[#006c49]/5 px-5 py-3 mb-6 text-left transition-colors hover:bg-[#006c49]/10"

@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 import { fromZonedTime } from 'date-fns-tz'
+import Stripe from 'stripe'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -2018,28 +2019,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'END:VCALENDAR',
       ].join('\r\n')
 
-      const icsBase64 = Buffer.from(icsContent).toString('base64')
-
+      // Build ICS attachment
+      let icsBase64: string | null = null
       try {
-        await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
-          headers: { 'api-key': BREVO_API_KEY || '', 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sender: { name: 'CloseOS', email: 'support@closeos.fr' },
-            to: [{ email: prospectEmail, name: prospectName }],
-            subject: `Votre rendez-vous du ${apptDate}${apptTime ? ` a ${apptTime}` : ''}`,
-            htmlContent: emailHtml,
-            attachment: [{
-              content: icsBase64,
-              name: 'invitation.ics',
-            }],
-          }),
-        })
-        return res.status(200).json({ sent: true })
-      } catch (emailErr) {
-        console.error('Failed to send appointment confirmation email:', emailErr)
-        return res.status(500).json({ error: 'Email send failed' })
+        icsBase64 = Buffer.from(icsContent).toString('base64')
+      } catch { /* skip attachment if Buffer fails */ }
+
+      const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (!BREVO_API_KEY) return res.status(500).json({ error: 'BREVO_API_KEY missing' })
+
+      const emailPayload: Record<string, any> = {
+        sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+        to: [{ email: prospectEmail, name: prospectName }],
+        subject: `Votre rendez-vous du ${apptDate}${apptTime ? ` a ${apptTime}` : ''}`,
+        htmlContent: emailHtml,
       }
+      if (icsBase64) {
+        emailPayload.attachment = [{ content: icsBase64, name: 'invitation.ics' }]
+      }
+
+      const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+        body: JSON.stringify(emailPayload),
+      })
+
+      const emailData = await emailRes.json().catch(() => ({}))
+      if (!emailRes.ok) {
+        console.error('Brevo appointment email error:', emailRes.status, JSON.stringify(emailData))
+        return res.status(500).json({ error: 'Email send failed', details: emailData })
+      }
+      return res.status(200).json({ sent: true })
     }
 
     if (action === 'appointments-update' && req.method === 'PUT') {
@@ -2255,11 +2265,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Send via Brevo
+      const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (!BREVO_API_KEY) return res.status(500).json({ error: 'BREVO_API_KEY missing' })
+
       const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
           'accept': 'application/json',
-          'api-key': BREVO_API_KEY || '',
+          'api-key': BREVO_API_KEY,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
@@ -2398,13 +2411,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Separate owner from team members
       const ownerId = campaign.user_id
-      const isOwnerIncluded = memberIds.includes(ownerId)
-      const teamMemberIds = memberIds.filter(id => id !== ownerId)
 
       if (memberIds.length === 0) {
-        // No members configured — return free mode (all slots available)
-        return res.status(200).json({ slots: [], freeMode: true })
+        // No members configured — fall back to owner availability
+        memberIds = [ownerId]
       }
+
+      const isOwnerIncluded = memberIds.includes(ownerId)
+      const teamMemberIds = memberIds.filter(id => id !== ownerId)
 
       // Fetch member timezones + booking constraints (team members + owner)
       const memberTimezones: Record<string, string> = {}
@@ -2467,12 +2481,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fetchPromises.push(Promise.resolve({ data: [] }))
       }
 
-      // Appointments
+      // Appointments for team members
       fetchPromises.push(
         supabase.from('business_appointments').select('date, time, duration, assigned_to').in('assigned_to', memberIds).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
       )
+      // Owner appointments (assigned_to is NULL because owner can't be FK'd)
+      if (isOwnerIncluded) {
+        fetchPromises.push(
+          supabase.from('business_appointments').select('date, time, duration, assigned_to').eq('user_id', ownerId).is('assigned_to', null).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
+        )
+      } else {
+        fetchPromises.push(Promise.resolve({ data: [] }))
+      }
 
-      const [teamSlotsRes, ownerSlotsRes, teamAbsRes, ownerAbsRes, appointmentsRes] = await Promise.all(fetchPromises)
+      const [teamSlotsRes, ownerSlotsRes, teamAbsRes, ownerAbsRes, appointmentsRes, ownerApptsRes] = await Promise.all(fetchPromises)
 
       // Normalize owner slots to use ownerId as "member_id" for unified processing
       const ownerSlots = (ownerSlotsRes.data || []).map((s: any) => ({ ...s, team_member_id: ownerId }))
@@ -2480,7 +2502,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const allSlots = [...(teamSlotsRes.data || []), ...ownerSlots]
       const allAbsences = [...(teamAbsRes.data || []), ...ownerAbsences]
-      const allAppointments = appointmentsRes.data || []
+      // Normalize owner appointments: set assigned_to = ownerId so conflict check works
+      const ownerAppts = (ownerApptsRes.data || []).map((a: any) => ({ ...a, assigned_to: ownerId }))
+      const allAppointments = [...(appointmentsRes.data || []), ...ownerAppts]
 
       // ─── Google Calendar conflict checking ───
       // Map member_id → auth user_id for Google Calendar token lookup
@@ -2518,9 +2542,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const availableSlots: { date: string; time: string; member_ids: string[]; datetime_utc: string }[] = []
 
       for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
-        const dateObj = new Date(now)
-        dateObj.setDate(dateObj.getDate() + dayOffset)
-        const jsDay = dateObj.getDay()
+        const dateObj = new Date(now.getTime() + dayOffset * 86400000)
+        const jsDay = dateObj.getUTCDay()
         const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1
         const dateStr = dateObj.toISOString().split('T')[0]
 
@@ -2553,20 +2576,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const m = mins % 60
               const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 
-              // Skip past times for today
-              if (dayOffset === 0) {
-                const slotTime = new Date(dateObj)
-                slotTime.setHours(h, m, 0, 0)
-                if (slotTime <= now) continue
-              }
+              // Convert member's local time to UTC for all comparisons
+              const slotUtcMs = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
+
+              // Skip past slots (timezone-aware)
+              if (slotUtcMs <= now.getTime()) continue
 
               // Min booking notice: slot must be at least X hours in the future
               if (constraints.min_booking_notice > 0) {
-                const slotLocalDate = new Date(dateObj)
-                slotLocalDate.setHours(h, m, 0, 0)
-                const slotUtcTime = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
                 const minNoticeMs = constraints.min_booking_notice * 60 * 60 * 1000
-                if (slotUtcTime - now.getTime() < minNoticeMs) continue
+                if (slotUtcMs - now.getTime() < minNoticeMs) continue
               }
 
               // Check appointment conflicts (with buffer)
@@ -2583,7 +2602,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               // Check Google Calendar conflicts (with buffer)
               const gcalEvents = googleEventsPerMember[memberId]
               if (gcalEvents && gcalEvents.length > 0) {
-                const slotStartUtc = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
+                const slotStartUtc = slotUtcMs
                 const slotEndUtc = slotStartUtc + duration * 60 * 1000
                 const bufferMs = buffer * 60 * 1000
                 const hasGcalConflict = gcalEvents.some(ev => {
@@ -2594,10 +2613,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (hasGcalConflict) continue
               }
 
-              // Convert member's local time to UTC
-              const localDateTimeStr = `${dateStr}T${timeStr}:00`
-              const utcDate = fromZonedTime(localDateTimeStr, memberTz)
-              const datetimeUtc = utcDate.toISOString()
+              // Use already-computed UTC time
+              const datetimeUtc = new Date(slotUtcMs).toISOString()
 
               if (!utcToMembers[datetimeUtc]) {
                 utcToMembers[datetimeUtc] = { member_ids: [], date: dateStr, time: timeStr }
@@ -3630,7 +3647,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ─── Public capture endpoint (no auth) ───
     if (action === 'capture-submit' && req.method === 'POST') {
-      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, assigned_member_id } = req.body
+      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids } = req.body
       if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
 
       // Find campaign by slug
@@ -3642,6 +3659,72 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single()
 
       if (campErr || !campaign) return res.status(404).json({ error: 'Campaign not found or inactive' })
+
+      // ─── Server-side assignment (round_robin / random) ───
+      const targetRole = campaign.booking_with === 'setter' ? 'Setter' : 'Closer'
+      const assignField = campaign.booking_with === 'setter' ? 'assigned_setter' : 'assigned_to'
+      let eligibleMemberIds: string[] = []
+
+      if (campaign.booking_assign_mode === 'specific' && Array.isArray(campaign.booking_assigned_members) && campaign.booking_assigned_members.length > 0) {
+        eligibleMemberIds = campaign.booking_assigned_members
+      } else if (campaign.booking_assign_mode === 'multiple' && Array.isArray(campaign.booking_assigned_members) && campaign.booking_assigned_members.length > 0) {
+        eligibleMemberIds = campaign.booking_assigned_members
+      } else {
+        // all_role: fetch all team members with matching role
+        const { data: roleMembers } = await supabase
+          .from('business_team_members')
+          .select('id, role')
+          .eq('business_owner_id', campaign.user_id)
+          .in('role', targetRole === 'Closer' ? ['Closer', 'Setter-Closer'] : ['Setter', 'Setter-Closer'])
+        eligibleMemberIds = (roleMembers || []).map((m: any) => m.id)
+      }
+
+      // Fallback to owner if no team members configured
+      if (eligibleMemberIds.length === 0) {
+        eligibleMemberIds = [campaign.user_id]
+      }
+
+      // For with_rdv: filter to members actually available at the selected slot
+      if (Array.isArray(available_member_ids) && available_member_ids.length > 0) {
+        const filtered = eligibleMemberIds.filter((id: string) => available_member_ids.includes(id))
+        if (filtered.length > 0) eligibleMemberIds = filtered
+      }
+
+      // Apply distribution logic
+      let assigned_member_id: string | null = null
+      if (eligibleMemberIds.length === 1) {
+        assigned_member_id = eligibleMemberIds[0]
+      } else if (eligibleMemberIds.length > 1) {
+        if (campaign.booking_distribution === 'random') {
+          assigned_member_id = eligibleMemberIds[Math.floor(Math.random() * eligibleMemberIds.length)]
+        } else {
+          // Round robin: pick the member with fewest assignments for this campaign
+          const sortedMembers = [...eligibleMemberIds].sort()
+          const countPromises = sortedMembers.map(async (memberId: string) => {
+            if (memberId === campaign.user_id) {
+              // Owner can't be stored in FK — NULL in assignField means owner
+              const { count } = await supabase
+                .from('business_prospects')
+                .select('*', { count: 'exact', head: true })
+                .eq('campaign_id', campaign.id)
+                .is(assignField, null)
+                .neq('stage', 'partial')
+              return { memberId, count: count || 0 }
+            } else {
+              const { count } = await supabase
+                .from('business_prospects')
+                .select('*', { count: 'exact', head: true })
+                .eq('campaign_id', campaign.id)
+                .eq(assignField, memberId)
+                .neq('stage', 'partial')
+              return { memberId, count: count || 0 }
+            }
+          })
+          const counts = await Promise.all(countPromises)
+          counts.sort((a, b) => a.count - b.count || a.memberId.localeCompare(b.memberId))
+          assigned_member_id = counts[0].memberId
+        }
+      }
 
       // L'owner n'est pas un team_member — ne pas l'assigner dans les FK prospect/appointment
       const isOwnerAssigned = assigned_member_id === campaign.user_id
@@ -3772,11 +3855,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
 
                 const apptDuration = campaign.booking_duration || 30
-                const startDateTime = `${date}T${time}:00`
-                const [eH, eM] = time.split(':').map(Number)
-                const endMins = eH * 60 + eM + apptDuration
-                const endTime = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
-                const endDateTime = `${date}T${endTime}:00`
+                // Use datetime_utc for accurate timezone-safe Google Calendar event
+                let startDateTime: string
+                let endDateTime: string
+                if (datetime_utc) {
+                  // Pass UTC ISO strings — Google Calendar API handles timezone display via timeZone param
+                  startDateTime = new Date(datetime_utc).toISOString()
+                  endDateTime = new Date(new Date(datetime_utc).getTime() + apptDuration * 60 * 1000).toISOString()
+                } else {
+                  // Fallback: prospect's local time (freeMode bookings)
+                  startDateTime = `${date}T${time}:00`
+                  const [eH, eM] = time.split(':').map(Number)
+                  const endMins = eH * 60 + eM + apptDuration
+                  const endTime = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+                  endDateTime = `${date}T${endTime}:00`
+                }
 
                 // Récupérer le nom du membre assigné pour les variables
                 let assigneeName = ''
@@ -4945,6 +5038,571 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const emailData = await emailRes.json()
       if (!emailRes.ok) return res.status(500).json({ error: `Email error: ${JSON.stringify(emailData)}` })
+
+      return res.status(200).json({ success: true })
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Revenue & Stripe matching actions
+    // ═══════════════════════════════════════════════════════════════════════
+
+    const stripeKey = process.env.STRIPE_SECRET_KEY
+    const getStripe = () => new Stripe(stripeKey as string)
+
+    // ─── Auto-match prospect to Stripe on stage=won (Method 2) ───
+    if (action === 'auto-match-stripe' && req.method === 'POST') {
+      const { user_id, prospect_id, email } = req.body
+      if (!user_id || !prospect_id || !email) return res.status(400).json({ error: 'user_id, prospect_id, email required' })
+      if (!stripeKey) return res.status(500).json({ error: 'STRIPE_SECRET_KEY missing' })
+
+      const { data: profile } = await supabase.from('profiles').select('stripe_account_id, stripe_connected').eq('id', user_id).maybeSingle()
+      if (!profile?.stripe_account_id || !profile?.stripe_connected) {
+        return res.status(200).json({ matched: false, reason: 'stripe_not_connected' })
+      }
+
+      const s = getStripe()
+      const customers = await s.customers.list({ email, limit: 1 }, { stripeAccount: profile.stripe_account_id })
+
+      if (customers.data.length === 0) {
+        return res.status(200).json({ matched: false, reason: 'no_customer_found' })
+      }
+
+      const customer = customers.data[0]
+      const subs = await s.subscriptions.list({ customer: customer.id, limit: 1, status: 'all' }, { stripeAccount: profile.stripe_account_id })
+
+      if (subs.data.length === 0) {
+        return res.status(200).json({ matched: false, reason: 'no_subscription_found', stripe_customer_id: customer.id })
+      }
+
+      const sub = subs.data[0]
+      const item = sub.items.data[0]
+
+      await supabase.from('business_prospects').update({
+        stripe_customer_id: customer.id,
+        stripe_subscription_id: sub.id,
+        subscription_status: sub.status,
+        subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+        subscription_interval: item?.price?.recurring?.interval || 'month',
+        matched_via: 'auto_won',
+        last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
+        next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+      }).eq('id', prospect_id)
+
+      return res.status(200).json({
+        matched: true,
+        stripe_customer_id: customer.id,
+        stripe_subscription_id: sub.id,
+        subscription_status: sub.status,
+        subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+        subscription_interval: item?.price?.recurring?.interval || 'month',
+        matched_via: 'auto_won',
+        last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
+        next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+      })
+    }
+
+    // ─── Search Stripe customers by email (for manual matching) ───
+    if (action === 'stripe-search' && req.method === 'GET') {
+      const user_id = req.query.user_id as string
+      const email = req.query.email as string
+      if (!user_id || !email) return res.status(400).json({ error: 'user_id and email required' })
+      if (!stripeKey) return res.status(500).json({ error: 'STRIPE_SECRET_KEY missing' })
+
+      const { data: profile } = await supabase.from('profiles').select('stripe_account_id, stripe_connected').eq('id', user_id).maybeSingle()
+      if (!profile?.stripe_account_id || !profile?.stripe_connected) {
+        return res.status(200).json({ customers: [], reason: 'stripe_not_connected' })
+      }
+
+      const s = getStripe()
+      const customers = await s.customers.list({ email, limit: 10 }, { stripeAccount: profile.stripe_account_id })
+
+      const results = await Promise.all(
+        customers.data.map(async (cust) => {
+          const subs = await s.subscriptions.list({ customer: cust.id, limit: 5, status: 'all' }, { stripeAccount: profile.stripe_account_id })
+          return {
+            id: cust.id,
+            email: cust.email,
+            name: cust.name,
+            subscriptions: subs.data.map((sub) => {
+              const item = sub.items.data[0]
+              return {
+                id: sub.id,
+                status: sub.status,
+                amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+                interval: item?.price?.recurring?.interval || 'month',
+                current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+              }
+            })
+          }
+        })
+      )
+
+      return res.status(200).json({ customers: results })
+    }
+
+    // ─── Manual Stripe match (Method 3) ───
+    if (action === 'stripe-match' && req.method === 'POST') {
+      const { user_id, prospect_id, stripe_customer_id, stripe_subscription_id } = req.body
+      if (!user_id || !prospect_id || !stripe_customer_id || !stripe_subscription_id) {
+        return res.status(400).json({ error: 'user_id, prospect_id, stripe_customer_id, stripe_subscription_id required' })
+      }
+      if (!stripeKey) return res.status(500).json({ error: 'STRIPE_SECRET_KEY missing' })
+
+      const { data: profile } = await supabase.from('profiles').select('stripe_account_id').eq('id', user_id).maybeSingle()
+      if (!profile?.stripe_account_id) return res.status(400).json({ error: 'Stripe not connected' })
+
+      const s = getStripe()
+      const sub = await s.subscriptions.retrieve(stripe_subscription_id, { stripeAccount: profile.stripe_account_id })
+      const item = sub.items.data[0]
+
+      await supabase.from('business_prospects').update({
+        stripe_customer_id,
+        stripe_subscription_id,
+        subscription_status: sub.status,
+        subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+        subscription_interval: item?.price?.recurring?.interval || 'month',
+        matched_via: 'manual',
+        last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
+        next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+      }).eq('id', prospect_id)
+
+      return res.status(200).json({
+        matched: true,
+        subscription_status: sub.status,
+        subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+        subscription_interval: item?.price?.recurring?.interval || 'month',
+      })
+    }
+
+    // ─── Revenue summary ───
+    if (action === 'revenue-summary' && req.method === 'GET') {
+      const user_id = req.query.user_id as string
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+      const targetMonth = (req.query.month as string) || new Date().toISOString().slice(0, 7) // YYYY-MM
+
+      // Build 6-month range
+      const months: string[] = []
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(`${targetMonth}-01`)
+        d.setMonth(d.getMonth() - i)
+        months.push(d.toISOString().slice(0, 7))
+      }
+
+      // Fetch all prospects with subscriptions
+      const { data: allProspects } = await supabase
+        .from('business_prospects')
+        .select('id, contact, email, value, stage, assigned_to, assigned_setter, formula_id, stripe_customer_id, stripe_subscription_id, subscription_status, subscription_amount, subscription_interval, matched_via, last_payment_date, next_payment_date, created_at')
+        .eq('user_id', user_id)
+
+      const prospects = allProspects || []
+      const matchedProspects = prospects.filter(p => p.stripe_subscription_id)
+
+      // Calculate per-month data
+      const monthlyData = months.map(m => {
+        const monthStart = new Date(`${m}-01T00:00:00Z`)
+        const monthEnd = new Date(monthStart)
+        monthEnd.setMonth(monthEnd.getMonth() + 1)
+
+        // Active subscriptions at this point
+        const active = matchedProspects.filter(p => p.subscription_status === 'active' || p.subscription_status === 'trialing')
+        const canceled = matchedProspects.filter(p => p.subscription_status === 'canceled')
+
+        // MRR: sum subscription amounts, converting yearly to monthly
+        let mrr = 0
+        active.forEach(p => {
+          const amount = Number(p.subscription_amount) || 0
+          mrr += p.subscription_interval === 'year' ? amount / 12 : amount
+        })
+
+        // CA = payments received in this month
+        let ca = 0
+        matchedProspects.forEach(p => {
+          if (p.last_payment_date) {
+            const payDate = new Date(p.last_payment_date)
+            if (payDate >= monthStart && payDate < monthEnd) {
+              ca += Number(p.subscription_amount) || 0
+            }
+          }
+        })
+        // If current month and CA is 0, use MRR as estimate
+        if (m === targetMonth && ca === 0) ca = mrr
+
+        return { month: m, mrr: Math.round(mrr * 100) / 100, ca: Math.round(ca * 100) / 100 }
+      })
+
+      const currentData = monthlyData[monthlyData.length - 1]
+      const prevData = monthlyData.length > 1 ? monthlyData[monthlyData.length - 2] : null
+
+      // Counts for current month
+      const activeCount = matchedProspects.filter(p => p.subscription_status === 'active' || p.subscription_status === 'trialing').length
+      const canceledCount = matchedProspects.filter(p => p.subscription_status === 'canceled').length
+      const newClients = matchedProspects.filter(p => {
+        if (!p.last_payment_date) return false
+        return p.last_payment_date.startsWith(targetMonth)
+      }).length
+
+      const churnRate = activeCount + canceledCount > 0
+        ? Math.round((canceledCount / (activeCount + canceledCount)) * 10000) / 100
+        : 0
+
+      const evolution = prevData && prevData.mrr > 0
+        ? Math.round(((currentData.mrr - prevData.mrr) / prevData.mrr) * 10000) / 100
+        : 0
+
+      // Active subscriptions list
+      const activeSubscriptions = matchedProspects
+        .filter(p => p.subscription_status === 'active' || p.subscription_status === 'trialing')
+        .map(p => ({
+          id: p.id,
+          contact: p.contact,
+          email: p.email,
+          subscription_amount: p.subscription_amount,
+          subscription_interval: p.subscription_interval,
+          subscription_status: p.subscription_status,
+          last_payment_date: p.last_payment_date,
+          next_payment_date: p.next_payment_date,
+        }))
+
+      // Commissions: fetch team members + formula commissions
+      const { data: teamMembers } = await supabase
+        .from('business_team_members')
+        .select('id, first_name, last_name, role, commission_rate, compensation_type, fixed_salary')
+        .eq('business_owner_id', user_id)
+
+      const { data: formulaCommissions } = await supabase
+        .from('business_formula_commissions')
+        .select('*')
+        .eq('business_owner_id', user_id)
+
+      // Won prospects this month
+      const wonProspects = prospects.filter(p => p.stage === 'won')
+
+      let totalCommissions = 0
+      const commissionDetails = (teamMembers || []).map(member => {
+        // Prospects assigned to this member
+        const memberWon = wonProspects.filter(p => p.assigned_to === member.id || p.assigned_setter === member.id)
+
+        if (member.compensation_type === 'fixed salary') {
+          totalCommissions += Number(member.fixed_salary) || 0
+          return {
+            id: member.id,
+            name: `${member.first_name || ''} ${member.last_name || ''}`.trim(),
+            role: member.role,
+            type: 'fixed',
+            amount: Number(member.fixed_salary) || 0,
+          }
+        }
+
+        let memberTotal = 0
+        memberWon.forEach(p => {
+          const val = Number(p.value) || 0
+          // Find commission rate: formula-specific > role-level > fallback
+          let rate = Number(member.commission_rate) || 0
+          if (formulaCommissions && p.formula_id) {
+            const memberSpecific = formulaCommissions.find(fc => fc.formula_id === p.formula_id && fc.team_member_id === member.id)
+            const roleLevel = formulaCommissions.find(fc => fc.formula_id === p.formula_id && fc.role === member.role && !fc.team_member_id)
+            if (memberSpecific) rate = Number(memberSpecific.rate) || rate
+            else if (roleLevel) rate = Number(roleLevel.rate) || rate
+          }
+          memberTotal += val * (rate / 100)
+        })
+
+        totalCommissions += memberTotal
+        return {
+          id: member.id,
+          name: `${member.first_name || ''} ${member.last_name || ''}`.trim(),
+          role: member.role,
+          type: 'commission',
+          amount: Math.round(memberTotal * 100) / 100,
+        }
+      })
+
+      // Charges
+      const { data: charges } = await supabase
+        .from('business_charges')
+        .select('*')
+        .eq('business_owner_id', user_id)
+
+      const currentMonthCharges = (charges || []).filter(c => c.month && c.month.startsWith(targetMonth))
+      const fixedCharges = currentMonthCharges.filter(c => c.type === 'fixed')
+      const variableCharges = currentMonthCharges.filter(c => c.type === 'variable')
+      const totalFixed = fixedCharges.reduce((sum, c) => sum + (Number(c.amount) || 0), 0)
+      const totalVariable = variableCharges.reduce((sum, c) => sum + (Number(c.amount) || 0), 0)
+
+      // Net margin
+      const totalCharges = totalCommissions + totalFixed + totalVariable
+      const netMargin = currentData.ca - totalCharges
+
+      // Monthly history with charges for chart
+      const history = monthlyData.map(md => {
+        const mCharges = (charges || []).filter(c => c.month && c.month.startsWith(md.month))
+        const mFixed = mCharges.filter(c => c.type === 'fixed').reduce((s, c) => s + (Number(c.amount) || 0), 0)
+        const mVar = mCharges.filter(c => c.type === 'variable').reduce((s, c) => s + (Number(c.amount) || 0), 0)
+        return {
+          month: md.month,
+          ca: md.ca,
+          mrr: md.mrr,
+          charges: Math.round((totalCommissions + mFixed + mVar) * 100) / 100,
+          margin: Math.round((md.ca - totalCommissions - mFixed - mVar) * 100) / 100,
+        }
+      })
+
+      return res.status(200).json({
+        mrr: currentData.mrr,
+        ca: currentData.ca,
+        evolution,
+        newClients,
+        canceledCount,
+        churnRate,
+        activeSubscriptions,
+        commissions: { total: Math.round(totalCommissions * 100) / 100, details: commissionDetails },
+        charges: { fixed: fixedCharges, variable: variableCharges, totalFixed, totalVariable },
+        netMargin: Math.round(netMargin * 100) / 100,
+        history,
+        month: targetMonth,
+      })
+    }
+
+    // ─── Charges CRUD ───
+    if (action === 'charges') {
+      const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+      if (req.method === 'GET') {
+        const user_id = req.query.user_id as string
+        const month = req.query.month as string
+        if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+        let query = supabase.from('business_charges').select('*').eq('business_owner_id', user_id).order('created_at', { ascending: false })
+        if (month) query = query.gte('month', `${month}-01`).lt('month', `${month}-32`)
+
+        const { data, error } = await query
+        if (error) return res.status(500).json({ error: error.message })
+        return res.status(200).json({ charges: data })
+      }
+
+      if (req.method === 'POST') {
+        const { user_id, label, amount, type, month } = req.body
+        if (!user_id || !label || amount === undefined || !type || !month) {
+          return res.status(400).json({ error: 'user_id, label, amount, type, month required' })
+        }
+
+        const { data, error } = await supabase.from('business_charges').insert({
+          business_owner_id: user_id,
+          label,
+          amount,
+          type,
+          month: `${month}-01`,
+        }).select().single()
+
+        if (error) return res.status(500).json({ error: error.message })
+        return res.status(201).json(data)
+      }
+
+      if (req.method === 'PUT') {
+        const { charge_id, label, amount, type, month } = req.body
+        if (!charge_id) return res.status(400).json({ error: 'charge_id required' })
+
+        const updates: any = {}
+        if (label !== undefined) updates.label = label
+        if (amount !== undefined) updates.amount = amount
+        if (type !== undefined) updates.type = type
+        if (month !== undefined) updates.month = `${month}-01`
+
+        const { data, error } = await supabase.from('business_charges').update(updates).eq('id', charge_id).select().single()
+        if (error) return res.status(500).json({ error: error.message })
+        return res.status(200).json(data)
+      }
+
+      if (req.method === 'DELETE') {
+        const charge_id = req.query.charge_id as string || req.body?.charge_id
+        if (!charge_id) return res.status(400).json({ error: 'charge_id required' })
+
+        const { error } = await supabase.from('business_charges').delete().eq('id', charge_id)
+        if (error) return res.status(500).json({ error: error.message })
+        return res.status(200).json({ deleted: true })
+      }
+    }
+
+    // ─── Payments summary (for dashboard CA calculations) ─────────────────────
+    if (action === 'payments-summary' && req.method === 'GET') {
+      const user_id = req.query.user_id as string
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+
+      const { data: payments, error } = await supabase
+        .from('business_payments')
+        .select('prospect_id, amount, assigned_to, assigned_setter, paid_at')
+        .eq('business_owner_id', user_id)
+        .order('paid_at', { ascending: false })
+
+      if (error) return res.status(500).json({ error: error.message })
+
+      const hasStripeData = payments && payments.length > 0
+
+      return res.status(200).json({
+        hasStripeData,
+        payments: payments || [],
+      })
+    }
+
+    // ─── Delete team member with KPI email ───
+    if (action === 'delete-member') {
+      const { owner_id, member_id } = req.body
+      if (!owner_id || !member_id) return res.status(400).json({ error: 'owner_id and member_id required' })
+
+      // Get member data
+      const { data: member } = await supabase
+        .from('business_team_members')
+        .select('*')
+        .eq('id', member_id)
+        .eq('business_owner_id', owner_id)
+        .maybeSingle()
+
+      if (!member) return res.status(404).json({ error: 'Membre introuvable' })
+
+      // Get member email from auth
+      let memberEmail: string | null = null
+      if (member.user_id) {
+        const { data: authUser } = await supabase.auth.admin.getUserById(member.user_id)
+        memberEmail = authUser?.user?.email || null
+      }
+
+      // Get org name
+      const { data: settings } = await supabase
+        .from('business_settings')
+        .select('company_name')
+        .eq('user_id', owner_id)
+        .maybeSingle()
+      const orgName = settings?.company_name || 'CloseOS Business'
+
+      // Get all prospects for KPI
+      const { data: allProspects } = await supabase
+        .from('business_prospects')
+        .select('id, stage, value, assigned_to, assigned_setter, formula_id, campaign_id, created_at')
+        .eq('user_id', owner_id)
+
+      // Get formula commissions
+      const { data: allCommissions } = await supabase
+        .from('business_formula_commissions')
+        .select('*')
+        .eq('business_owner_id', owner_id)
+
+      const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Membre'
+      const prospects = allProspects || []
+      const commissions = allCommissions || []
+
+      const isCloser = member.role === 'Closer' || member.role === 'Setter-Closer'
+      const isSetter = member.role === 'Setter' || member.role === 'Setter-Closer'
+
+      const closerProspects = prospects.filter(p => p.assigned_to === member.id)
+      const setterProspects = prospects.filter(p => p.assigned_setter === member.id)
+
+      const closerWon = closerProspects.filter(p => p.stage === 'won')
+      const closerLost = closerProspects.filter(p => p.stage === 'lost')
+      const closerNoShow = closerProspects.filter(p => p.stage === 'noshow')
+      const closerRevenue = closerWon.reduce((s, p) => s + (p.value || 0), 0)
+
+      const setterContacted = setterProspects.filter(p => p.stage !== 'prospect')
+      const setterBooked = setterProspects.filter(p => ['qualified', 'won', 'lost', 'noshow', 'followup'].includes(p.stage))
+      const setterWon = setterProspects.filter(p => p.stage === 'won')
+      const setterRevenue = setterWon.reduce((s, p) => s + (p.value || 0), 0)
+
+      let closerCommission = 0
+      let setterCommission = 0
+      if (isCloser) {
+        for (const p of closerWon) {
+          const mc = commissions.find(c => c.formula_id === p.formula_id && c.role_key === member.id)
+          const rc = commissions.find(c => c.formula_id === p.formula_id && c.role_key === 'Closer')
+          const rate = mc?.rate ?? rc?.rate ?? 0
+          closerCommission += (p.value || 0) * rate / 100
+        }
+      }
+      if (isSetter) {
+        for (const p of setterWon) {
+          const mc = commissions.find(c => c.formula_id === p.formula_id && c.role_key === `${member.id}:setter`)
+          const rc = commissions.find(c => c.formula_id === p.formula_id && c.role_key === 'Setter')
+          const rate = mc?.rate ?? rc?.rate ?? 0
+          setterCommission += (p.value || 0) * rate / 100
+        }
+      }
+
+      // Build CSV
+      let csvLines = ['Métrique,Valeur']
+      csvLines.push(`Nom,${memberName}`)
+      csvLines.push(`Rôle,${member.role}`)
+      csvLines.push(`Organisation,${orgName}`)
+      csvLines.push(`Date export,${new Date().toLocaleDateString('fr-FR')}`)
+      csvLines.push('')
+      if (isCloser) {
+        const closerTotal = closerWon.length + closerLost.length + closerNoShow.length
+        csvLines.push('--- KPI Closer ---,')
+        csvLines.push(`Prospects assignés,${closerProspects.length}`)
+        csvLines.push(`Gagnés,${closerWon.length}`)
+        csvLines.push(`Perdus,${closerLost.length}`)
+        csvLines.push(`No-show,${closerNoShow.length}`)
+        csvLines.push(`Taux de conversion,${closerTotal > 0 ? ((closerWon.length / closerTotal) * 100).toFixed(1) : 0}%`)
+        csvLines.push(`Chiffre d'affaires,${closerRevenue.toFixed(2)} €`)
+        csvLines.push(`Commission closer,${closerCommission.toFixed(2)} €`)
+      }
+      if (isSetter) {
+        csvLines.push('')
+        csvLines.push('--- KPI Setter ---,')
+        csvLines.push(`Prospects settés,${setterProspects.length}`)
+        csvLines.push(`Contactés,${setterContacted.length}`)
+        csvLines.push(`RDV bookés,${setterBooked.length}`)
+        csvLines.push(`Taux de booking,${setterContacted.length > 0 ? ((setterBooked.length / setterContacted.length) * 100).toFixed(1) : 0}%`)
+        csvLines.push(`Gagnés (via setting),${setterWon.length}`)
+        csvLines.push(`CA généré,${setterRevenue.toFixed(2)} €`)
+        csvLines.push(`Commission setter,${setterCommission.toFixed(2)} €`)
+      }
+
+      const csvContent = csvLines.join('\n')
+      const csvBase64 = Buffer.from(csvContent, 'utf-8').toString('base64')
+
+      // Send email if member has email
+      const BREVO_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (BREVO_KEY && memberEmail) {
+        const notifHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:42px;color:#111111;text-align:left;line-height:1.1;">Compte<br>supprim&#233;</h1><p class="inter" style="margin:0 0 40px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong style="color:#111111;">${memberName}</strong>,</p><p class="inter" style="margin:0 0 40px;font-size:16px;color:#1b1c1b;text-align:left;">Votre compte a &#233;t&#233; retir&#233; de l'organisation <strong style="color:#111111;">${orgName}</strong> par son propri&#233;taire. Vous n'avez plus acc&#232;s &#224; la plateforme.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:24px;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">&#128206;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Vous trouverez en pi&#232;ce jointe un <strong>export de vos KPI personnels</strong> au format CSV.</p></td></tr></table></div><div style="background-color:#fbf9f8;border-radius:24px;padding:24px;border-left:4px solid #ffb95f;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">&#128161;</div></td><td><p class="inter" style="margin:0;font-size:13px;color:#1b1c1b;">Si vous pensez qu'il s'agit d'une erreur, contactez directement le propri&#233;taire de l'organisation.</p></td></tr></table></div></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p><p class="inter" style="margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement, merci de ne pas y r&#233;pondre.</p></td></tr></table></td></tr></table></body></html>`
+
+        fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'accept': 'application/json', 'api-key': BREVO_KEY, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+            to: [{ email: memberEmail }],
+            subject: `Vous avez été retiré de ${orgName}`,
+            htmlContent: notifHtml,
+            attachment: [{ content: csvBase64, name: `KPI_${memberName.replace(/\s/g, '_')}.csv` }]
+          })
+        }).catch(() => {})
+      }
+
+      // Delete member related data
+      const memberIds = [member.id]
+      const memberUserIds = member.user_id ? [member.user_id] : []
+
+      await Promise.all([
+        supabase.from('business_personal_objectives').delete().in('team_member_id', memberIds),
+        supabase.from('business_availability_slots').delete().in('team_member_id', memberIds),
+        supabase.from('business_absences').delete().in('team_member_id', memberIds),
+        supabase.from('business_user_scripts').delete().in('team_member_id', memberIds),
+        supabase.from('business_kpi_config').delete().in('team_member_id', memberIds),
+        supabase.from('business_connection_log').delete().in('team_member_id', memberIds),
+        supabase.from('business_team_bonuses').delete().in('team_member_id', memberIds),
+        ...(memberUserIds.length > 0 ? [
+          supabase.from('business_device_tokens').delete().in('user_id', memberUserIds),
+          supabase.from('business_verification_codes').delete().in('user_id', memberUserIds),
+          supabase.from('reminders').delete().in('user_id', memberUserIds),
+        ] : []),
+      ])
+
+      // Delete team member
+      await supabase.from('business_team_members').delete().eq('id', member_id)
+
+      // Delete auth user
+      if (member.user_id) {
+        await supabase.auth.admin.deleteUser(member.user_id).catch(() => {})
+      }
 
       return res.status(200).json({ success: true })
     }

@@ -105,6 +105,12 @@ export function BusinessOnboardingModal() {
   const [niche, setNiche] = useState('');
   const [nicheCustom, setNicheCustom] = useState('');
 
+  // Sync avatar & name from Google metadata once user loads
+  useEffect(() => {
+    if (!avatarUrl && user?.user_metadata?.avatar_url) setAvatarUrl(user.user_metadata.avatar_url);
+    if (!fullName && (user?.user_metadata?.full_name || user?.user_metadata?.name)) setFullName(user.user_metadata.full_name || user.user_metadata.name);
+  }, [user]);
+
   // Close country dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -127,6 +133,11 @@ export function BusinessOnboardingModal() {
   const [isTmCountryOpen, setIsTmCountryOpen] = useState(false);
   const tmCountryRef = useRef<HTMLDivElement>(null);
   const tmFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync team member avatar from Google metadata once user loads
+  useEffect(() => {
+    if (!tmAvatarUrl && user?.user_metadata?.avatar_url) setTmAvatarUrl(user.user_metadata.avatar_url);
+  }, [user]);
 
   // Close team member country dropdown on outside click
   useEffect(() => {

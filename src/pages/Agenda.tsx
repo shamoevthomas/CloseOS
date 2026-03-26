@@ -325,21 +325,26 @@ export function Agenda() {
     return percentage
   }
 
+  // Scroll to current hour on mount and view change
   useEffect(() => {
-    if (view === 'day' && dayViewScrollRef.current) {
-      const now = new Date()
-      const currentHour = now.getHours()
-      const scrollToHour = Math.max(0, currentHour - 2)
-      const scrollPosition = scrollToHour * 80
-      dayViewScrollRef.current.scrollTop = scrollPosition
-    } else if (view === 'week' && weekViewScrollRef.current) {
-      const now = new Date()
-      const currentHour = now.getHours()
-      const scrollToHour = Math.max(0, currentHour - 2)
-      const scrollPosition = scrollToHour * 80
-      weekViewScrollRef.current.scrollTop = scrollPosition
+    const doScroll = () => {
+      const ref = view === 'day' ? dayViewScrollRef.current : view === 'week' ? weekViewScrollRef.current : null
+      if (!ref) return
+      const hour = new Date().getHours()
+      const pos = Math.max(0, hour - 2) * 80
+      ref.scrollTo({ top: pos, behavior: 'instant' as ScrollBehavior })
     }
-  }, [view])
+    // Try immediately, then after DOM paint, then after data load
+    doScroll()
+    requestAnimationFrame(() => {
+      doScroll()
+      requestAnimationFrame(doScroll)
+    })
+    const t1 = setTimeout(doScroll, 300)
+    const t2 = setTimeout(doScroll, 800)
+    const t3 = setTimeout(doScroll, 1500)
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+  }, [view, meetings, googleEvents, isLoading])
 
   const getMeetingsForDate = (date: Date) => {
     const localMeetings = meetings.filter(meeting => {

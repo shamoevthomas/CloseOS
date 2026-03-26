@@ -29,7 +29,8 @@ import {
   ArrowRight,
   Zap,
   Megaphone,
-  ClipboardList
+  ClipboardList,
+  DollarSign
 } from 'lucide-react';
 
 export const BusinessLanding: React.FC = () => {
@@ -39,6 +40,7 @@ export const BusinessLanding: React.FC = () => {
   const [isExiting, setIsExiting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Dynamic iframe height from embed postMessage
   useEffect(() => {
@@ -59,11 +61,26 @@ export const BusinessLanding: React.FC = () => {
 
   // SEO meta tags for Business landing
   useEffect(() => {
+    // Title & Description
     document.title = "CloseOS Business — Gérer Équipe de Closers | Logiciel Infopreneur Closing & Pilotage";
     document.querySelector('meta[name="description"]')?.setAttribute('content',
-      "CloseOS Business est la plateforme pour gérer une équipe de closers et setters. Pilotage équipe closing, CRM acquisition infopreneur, campagnes d'acquisition, tableau de bord infopreneur, KPIs d'équipe. Alternative iClosed. Logiciel infopreneur closing francophone."
+      "CloseOS Business est la plateforme pour gérer une équipe de closers et setters. Pilotage équipe closing, CRM acquisition infopreneur, campagnes d'acquisition, tableau de bord infopreneur, KPIs d'équipe. Logiciel infopreneur closing francophone."
     );
 
+    // Canonical & Open Graph
+    document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/business');
+    document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/business');
+    document.getElementById('og-title')?.setAttribute('content', 'CloseOS Business — Plateforme de management pour infopreneurs et Head of Sales');
+    document.getElementById('og-description')?.setAttribute('content', "Gérez votre équipe de closers, pilotez vos campagnes d'acquisition et suivez les KPIs de votre équipe. Logiciel infopreneur closing francophone.");
+    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/closeos-business.png');
+
+    // Twitter Card
+    document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/business');
+    document.getElementById('tw-title')?.setAttribute('content', 'CloseOS Business — Plateforme de management pour infopreneurs et Head of Sales');
+    document.getElementById('tw-description')?.setAttribute('content', "Gérez votre équipe de closers, pilotez vos campagnes d'acquisition et suivez les KPIs de votre équipe.");
+    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/closeos-business.png');
+
+    // SoftwareApplication Schema
     const existingLd = document.querySelector('script[data-closeos-biz-ld]');
     if (!existingLd) {
       const script = document.createElement('script');
@@ -81,6 +98,7 @@ export const BusinessLanding: React.FC = () => {
           '@type': 'Offer',
           price: '0',
           priceCurrency: 'EUR',
+          availability: 'https://schema.org/PreOrder',
           description: 'Liste d\'attente — tarifs early adopters',
         },
         featureList: "Gérer équipe de closers, Pilotage équipe closing, Logiciel infopreneur closing, CRM acquisition infopreneur, Outil gestion setter closer, Piloter campagne acquisition closing, Tableau de bord infopreneur, KPIs d'équipe, Onboarding closers automatisé",
@@ -133,7 +151,7 @@ export const BusinessLanding: React.FC = () => {
           },
           {
             '@type': 'Question',
-            name: 'C\'est quoi CloseOS Business ?',
+            name: 'Qu\'est-ce que CloseOS Business ?',
             acceptedAnswer: {
               '@type': 'Answer',
               text: "CloseOS Business est la plateforme de management pour infopreneurs et Head of Sales francophones. Elle permet de gérer une équipe de closers et setters, piloter les campagnes d'acquisition, suivre les KPIs d'équipe et automatiser l'onboarding des closers. C'est l'alternative française à iClosed, conçue pour le pilotage d'équipe closing.",
@@ -161,6 +179,20 @@ export const BusinessLanding: React.FC = () => {
     }
 
     return () => {
+      // Restore defaults
+      document.title = "CloseOS — Écosystème SaaS pour la vente digitale | CRM Closer & Management Infopreneur";
+      document.querySelector('meta[name="description"]')?.setAttribute('content',
+        "CloseOS est l'écosystème SaaS francophone pour la vente digitale. Outil pour closer : CRM, pipeline, VoIP, KPIs, facturation automatique. Logiciel infopreneur : gestion équipe de closers, campagnes d'acquisition, analytics. Alternative iClosed."
+      );
+      document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/');
+      document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/');
+      document.getElementById('og-title')?.setAttribute('content', 'CloseOS — Écosystème SaaS pour la vente digitale francophone');
+      document.getElementById('og-description')?.setAttribute('content', "Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed.");
+      document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/closeos-logo.png');
+      document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/');
+      document.getElementById('tw-title')?.setAttribute('content', 'CloseOS — Écosystème SaaS pour la vente digitale francophone');
+      document.getElementById('tw-description')?.setAttribute('content', "Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed.");
+      document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/closeos-logo.png');
       document.querySelector('script[data-closeos-biz-ld]')?.remove();
       document.querySelector('script[data-closeos-biz-faq-ld]')?.remove();
     };
@@ -204,9 +236,9 @@ export const BusinessLanding: React.FC = () => {
         <div className="bg-white/80 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-2 flex items-center justify-between shadow-sm">
           <div className="relative group flex items-center gap-1 cursor-pointer">
             <img
-              alt="CloseOS Logo"
+              alt="CloseOS Business"
               className="w-auto object-contain h-12"
-              src="/CloseOS Buisness.png"
+              src="/closeos-business.png"
             />
             <ChevronDown className="h-4 w-4 text-stone-400 group-hover:text-stone-800 transition-transform duration-300 group-hover:rotate-180" />
             <div className="absolute top-full left-0 right-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
@@ -217,9 +249,9 @@ export const BusinessLanding: React.FC = () => {
           </div>
           
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
+            <a href="#integrations" className="hover:text-[#111111] transition-colors">Intégrations</a>
             <a href="#features" className="hover:text-[#111111] transition-colors">Management</a>
             <a href="#crm" className="hover:text-[#111111] transition-colors">CRM</a>
-            <a href="#integrations" className="hover:text-[#111111] transition-colors">Intégrations</a>
             <a href="#roles" className="hover:text-[#111111] transition-colors">Rôles</a>
             <a href="#demo" className="hover:text-[#111111] transition-colors">Démo</a>
             <a href="#faq" className="hover:text-[#111111] transition-colors">FAQ</a>
@@ -232,11 +264,27 @@ export const BusinessLanding: React.FC = () => {
             >
               Liste d'attente
             </button>
-            <button className="md:hidden p-2 text-stone-600">
-              <Menu className="size-5" />
+            <button className="md:hidden p-2 text-stone-600" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
           </div>
         </div>
+        {isMobileMenuOpen && (
+          <div className="md:hidden mt-2 bg-white/90 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-4 shadow-lg flex flex-col gap-4 text-sm font-medium text-stone-600">
+            <a href="#integrations" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">Intégrations</a>
+            <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">Management</a>
+            <a href="#crm" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">CRM</a>
+            <a href="#roles" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">Rôles</a>
+            <a href="#demo" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">Démo</a>
+            <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">FAQ</a>
+            <button
+              onClick={() => { setIsMobileMenuOpen(false); setIsModalOpen(true); }}
+              className="flex items-center justify-center rounded-lg h-10 px-5 text-white text-sm font-semibold tracking-wide hover:opacity-90 transition-all bg-[#111111] sm:hidden"
+            >
+              Liste d'attente
+            </button>
+          </div>
+        )}
       </nav>
 
       <main className="flex flex-col flex-1 pt-16">
@@ -299,49 +347,63 @@ export const BusinessLanding: React.FC = () => {
         </section>
 
         {/* Compact Integrations Strip */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.5 }}
-          id="integrations"
-          className="px-6 md:px-20 pt-2 pb-4 max-w-7xl mx-auto"
-        >
-          <p className="text-center text-xs font-bold uppercase tracking-[0.2em] text-stone-400 mb-1">Integrations natives : synchronisez vos outils existants</p>
-          <p className="text-center text-[11px] text-stone-400 mb-5">12+ integrations natives · 7 000+ via Zapier, Make & n8n</p>
-          <div className="relative overflow-hidden">
-            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#f4f2f1] to-transparent z-10 pointer-events-none" />
-            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#f4f2f1] to-transparent z-10 pointer-events-none" />
-            <div className="flex animate-scroll-left gap-4 w-max">
-              {[...Array(2)].map((_, dup) => (
-                <div key={dup} className="flex gap-4">
-                  {[
-                    { name: 'HubSpot', logo: '/HubSpot.png' },
-                    { name: 'Pipedrive', logo: '/Pipedrive.png' },
-                    { name: 'GoHighLevel', logo: '/GHL.jpg' },
-                    { name: 'Airtable', logo: '/airtable.png' },
-                    { name: 'Systeme.io', logo: '/Systemeio.png' },
-                    { name: 'iClosed', logo: '/Iclosed.png' },
-                    { name: 'Google Calendar', logo: '/Gcalendar.svg.png' },
-                    { name: 'Stripe', logo: '/Stripe.png' },
-                    { name: 'Calendly', logo: '/Calendly.png' },
-                    { name: 'Zapier', logo: '/Zapier.png' },
-                    { name: 'Make', logo: '/make.png' },
-                    { name: 'n8n', logo: '/N8N.png' },
-                  ].map((integration) => (
-                    <div
-                      key={`${dup}-${integration.name}`}
-                      className="flex items-center gap-2.5 px-4 py-2.5 bg-white rounded-xl border border-stone-200/80 shadow-sm min-w-[130px]"
-                    >
-                      <img src={integration.logo} alt={integration.name} className="h-5 w-auto object-contain" />
-                      <span className="text-xs font-semibold text-[#111111] whitespace-nowrap">{integration.name}</span>
+        <section id="integrations" className="pt-8 pb-4 w-full overflow-hidden">
+          <div className="text-center mb-4 md:mb-5 px-6 md:px-20">
+            <h3 className="text-lg md:text-xs font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] text-[#111111] md:text-stone-500 mb-2 md:mb-1">Integrations natives</h3>
+            <p className="text-sm md:text-[11px] text-stone-500 md:text-stone-400">Synchronisez vos outils · 12+ natives · 7 000+ via Zapier</p>
+          </div>
+          {(() => {
+            const allIntegrations = [
+              { name: 'HubSpot', logo: '/HubSpot.png' },
+              { name: 'Pipedrive', logo: '/Pipedrive.png' },
+              { name: 'GoHighLevel', logo: '/GHL.jpg' },
+              { name: 'Airtable', logo: '/airtable.png' },
+              { name: 'Systeme.io', logo: '/Systemeio.png' },
+              { name: 'iClosed', logo: '/Iclosed.png' },
+              { name: 'Google Calendar', logo: '/Gcalendar.svg.png' },
+              { name: 'Stripe', logo: '/Stripe.png' },
+              { name: 'Calendly', logo: '/Calendly.png' },
+              { name: 'Zapier', logo: '/Zapier.png' },
+              { name: 'Make', logo: '/make.png' },
+              { name: 'n8n', logo: '/N8N.png' },
+            ];
+            const topRow = allIntegrations.filter((_, i) => i % 2 === 0);
+            const bottomRow = allIntegrations.filter((_, i) => i % 2 === 1);
+            const IntegrationCard = ({ integration, dupKey }: { integration: { name: string; logo: string }; dupKey: string }) => (
+              <div
+                key={dupKey}
+                className="flex items-center gap-2.5 px-4 py-2.5 bg-white rounded-xl border border-stone-200/80 shadow-sm min-w-[130px]"
+              >
+                <img src={integration.logo} alt={integration.name} className="h-5 w-auto object-contain" />
+                <span className="text-xs font-semibold text-[#111111] whitespace-nowrap">{integration.name}</span>
+              </div>
+            );
+            return (
+              <div className="relative overflow-hidden space-y-3">
+                <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#f4f2f1] to-transparent z-10 pointer-events-none" />
+                <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#f4f2f1] to-transparent z-10 pointer-events-none" />
+                <div className="flex animate-scroll-left gap-4 w-max">
+                  {[...Array(3)].map((_, dup) => (
+                    <div key={dup} className="flex gap-4">
+                      {topRow.map((integration) => (
+                        <IntegrationCard key={`${dup}-${integration.name}`} integration={integration} dupKey={`${dup}-${integration.name}`} />
+                      ))}
                     </div>
                   ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </motion.section>
+                <div className="flex animate-scroll-right gap-4 w-max">
+                  {[...Array(3)].map((_, dup) => (
+                    <div key={dup} className="flex gap-4">
+                      {bottomRow.map((integration) => (
+                        <IntegrationCard key={`${dup}-${integration.name}`} integration={integration} dupKey={`${dup}-${integration.name}`} />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </section>
 
         {/* Dashboard Macro Section (Bento Grid) */}
         <motion.section
@@ -368,7 +430,7 @@ export const BusinessLanding: React.FC = () => {
                 <p className="text-stone-500">Suivez vos KPIs stratégiques en temps réel pour prendre les meilleures décisions.</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KPIBox index={0} title="CA Total" value="145,000€" change="+15%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
+                <KPIBox index={0} title="CA Réel Stripe" value="145,000€" change="+15%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
                 <KPIBox index={1} title="CA par Closer" value="12,400€" change="+5%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
                 <KPIBox index={2} title="Taux de Closing" value="28%" change="-2%" icon={<ArrowDown className="text-rose-500 size-5" />} positive={false} />
                 <KPIBox index={3} title="Taux de No-show" value="12%" change="-4%" icon={<ArrowDown className="text-rose-500 size-5" />} positive={false} />
@@ -520,23 +582,23 @@ export const BusinessLanding: React.FC = () => {
               />
               <FAQItem
                 question="Mes données sont-elles sécurisées et conformes au RGPD ?"
-                answer={<p>Oui. CloseOS Business est <strong>100% conforme au RGPD</strong>. Toutes les données sont hébergées de manière sécurisée, isolées par organisation, et aucun tiers n'y a accès. Tu restes propriétaire de tes données à tout moment.</p>}
+                answer={<p>Oui. CloseOS Business est <strong>100% conforme au RGPD</strong>. Toutes les données sont hébergées de manière sécurisée, isolées par organisation, et aucun tiers n'y a accès. Vous restez propriétaire de vos données à tout moment.</p>}
               />
               <FAQItem
                 question="Mes closers ont-ils accès à toutes les données ?"
-                answer={<p>Non. Tu définis toi-même les niveaux d'accès. Chaque closer voit uniquement ses prospects, ses KPIs et son pipeline. Les données sensibles (CA global, marges, contacts stratégiques) restent visibles par toi seul.</p>}
+                answer={<p>Non. Vous définissez vous-même les niveaux d'accès. Chaque closer voit uniquement ses prospects, ses KPIs et son pipeline. Les données sensibles (CA global, marges, contacts stratégiques) restent visibles par vous seul.</p>}
               />
               <FAQItem
                 question="Combien de closers puis-je ajouter ?"
-                answer={<p>Autant que tu veux. CloseOS Business n'impose <strong>aucune limite</strong> sur la taille de ton équipe.</p>}
+                answer={<p>Autant que vous voulez. CloseOS Business n'impose <strong>aucune limite</strong> sur la taille de votre équipe.</p>}
               />
               <FAQItem
                 question="Est-ce difficile à prendre en main pour mes closers ?"
-                answer={<p>Non. L'onboarding est <strong>100% autonome</strong> — tes closers sont guidés dès leur première connexion avec tes scripts, ressources et KPIs de progression. Tu n'as rien à expliquer manuellement.</p>}
+                answer={<p>Non. L'onboarding est <strong>100% autonome</strong> — vos closers sont guidés dès leur première connexion avec vos scripts, ressources et KPIs de progression. Vous n'avez rien à expliquer manuellement.</p>}
               />
               <FAQItem
                 question="Est-ce que CloseOS Business sera parfaitement adapté à mon business ?"
-                answer={<p>C'est justement l'objectif. <strong>CloseOS Business se construit avec les infopreneurs inscrits sur la liste d'attente.</strong> Tes retours, tes besoins et tes cas d'usage concrets façonnent directement l'outil. Tu ne découvres pas un produit fini — tu participes à créer le meilleur outil de closing du marché.</p>}
+                answer={<p>C'est justement l'objectif. <strong>CloseOS Business se construit avec les infopreneurs inscrits sur la liste d'attente.</strong> Vos retours, vos besoins et vos cas d'usage concrets façonnent directement l'outil. Vous ne découvrez pas un produit fini — vous participez à créer le meilleur outil de closing du marché.</p>}
               />
             </div>
           </div>
@@ -568,14 +630,23 @@ export const BusinessLanding: React.FC = () => {
       <footer className="px-6 md:px-20 py-6 border-t border-stone-200 bg-[#f4f2f1] flex flex-col md:flex-row items-center justify-between gap-4 pb-16">
         <div className="flex items-center gap-2">
           <img
-            alt="CloseOS Logo"
+            alt="CloseOS Business"
             className="w-auto object-contain h-10"
-            src="/CloseOS Buisness.png"
+            src="/closeos-business.png"
           />
         </div>
-        <div className="flex items-center gap-4">
-          <Link to="/business/politique-utilisation" className="text-stone-500 hover:text-stone-700 text-xs font-medium transition-colors">Politique d'utilisation</Link>
-          <p className="text-stone-500 text-xs font-medium">&copy; 2026 CloseOS. All rights reserved.</p>
+        <div className="flex flex-wrap justify-center items-center gap-4 text-xs text-stone-500 font-medium">
+          <span>&copy; 2026 CloseOS</span>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/mentions-legales" className="hover:text-stone-700 transition-colors">Mentions légales</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/cgu" className="hover:text-stone-700 transition-colors">CGU</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/cgv" className="hover:text-stone-700 transition-colors">CGV</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/confidentialite" className="hover:text-stone-700 transition-colors">Confidentialité</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/business/politique-utilisation" className="hover:text-stone-700 transition-colors">Politique d'utilisation</Link>
         </div>
       </footer>
 
@@ -1211,6 +1282,17 @@ const rolesData: RoleData[] = [
           '8 KPI globaux sur période sélectionnable',
           'Feed d\'activité du jour + Export PDF',
           'Graphiques : stages, CA par campagne, commissions',
+        ],
+      },
+      {
+        icon: <DollarSign className="size-5" />,
+        title: "Chiffre d'affaires & Stripe",
+        items: [
+          'Connexion Stripe Connect : liez votre compte et suivez vos revenus réels',
+          'Matching automatique prospects ↔ abonnements Stripe (webhook, auto-match, manuel)',
+          'CA récurrent : chaque paiement Stripe incrémente le CA du closer qui a closé le deal',
+          'MRR, abonnements actifs, churn et marge nette en temps réel',
+          'Gestion des charges fixes/variables et commissions pour calculer votre marge',
         ],
       },
       {

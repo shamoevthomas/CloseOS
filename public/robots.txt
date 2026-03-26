@@ -2,7 +2,6 @@ User-agent: *
 Allow: /
 Allow: /business
 Allow: /landing
-
 Disallow: /dashboard
 Disallow: /login
 Disallow: /register
@@ -10,5 +9,37 @@ Disallow: /business/dashboard
 Disallow: /business/login
 Disallow: /business/register
 Disallow: /api/
+
+# AI Search Crawlers (allowed on public pages)
+User-agent: GPTBot
+Allow: /business
+Allow: /landing
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /business
+Allow: /landing
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /business
+Allow: /landing
+Allow: /
+Disallow: /dashboard
+Disallow: /api/
+
+# AI Training-only Crawlers (blocked)
+User-agent: CCBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
 
 Sitemap: https://www.closeos.fr/sitemap.xml

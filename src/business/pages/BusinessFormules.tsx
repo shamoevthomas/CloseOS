@@ -336,7 +336,7 @@ export function BusinessFormules() {
           const resourceCount = (formula.resources || []).length
           const commissionRoles = activeRoles.filter(r => (roleRates[r] ?? 0) > 0).length
           return (
-            <div key={formula.id} className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl transition-all border border-stone-100/50 dark:border-neutral-700/30">
+            <div key={formula.id} onClick={() => openEdit(formula)} className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-xl transition-all border border-stone-100/50 dark:border-neutral-700/30 cursor-pointer">
               {/* Top: badge + actions */}
               <div className="flex justify-between items-start mb-6">
                 <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${
@@ -348,15 +348,15 @@ export function BusinessFormules() {
                 </span>
                 <div className="flex gap-1">
                   {isTeamMember ? (
-                    <button onClick={() => openEdit(formula)} className="p-2 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); openEdit(formula) }} className="p-2 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
                       <Eye className="h-4 w-4" />
                     </button>
                   ) : (
                     <>
-                      <button onClick={() => openEdit(formula)} className="p-2 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(formula) }} className="p-2 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => deleteFormula(formula)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full text-stone-400 dark:text-neutral-500 hover:text-red-500 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); deleteFormula(formula) }} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full text-stone-400 dark:text-neutral-500 hover:text-red-500 transition-colors">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </>
@@ -399,7 +399,7 @@ export function BusinessFormules() {
                   <File className="h-3.5 w-3.5" /> {resourceCount} Ressource{resourceCount !== 1 ? 's' : ''}
                 </div>
                 {!isTeamMember && (
-                  <button onClick={() => toggleActive(formula)} className="ml-auto">
+                  <button onClick={(e) => { e.stopPropagation(); toggleActive(formula) }} className="ml-auto">
                     {formula.is_active ? <ToggleRight className="h-5 w-5 text-emerald-600" /> : <ToggleLeft className="h-5 w-5 text-stone-300 dark:text-neutral-600" />}
                   </button>
                 )}

@@ -963,23 +963,64 @@ window.addEventListener('message',function(e){
                       <p className="text-xs text-[#747878] dark:text-neutral-500 italic">Aucun champ personnalisé. Cliquez sur "Ajouter un champ" pour en créer.</p>
                     )}
                     {formCustomFields.map((field, idx) => (
-                      <div key={idx} className="flex items-center gap-2 mb-2">
-                        <input type="text" value={field.label} onChange={(e) => updateCustomField(idx, { label: e.target.value })} placeholder="Nom du champ" className={`flex-1 ${smallInputCls}`} />
-                        <select value={field.type} onChange={(e) => updateCustomField(idx, { type: e.target.value as CustomField['type'] })} className={`${smallInputCls} text-[#1b1c1b]`}>
-                          <option value="text">Texte</option>
-                          <option value="email">Email</option>
-                          <option value="phone">Téléphone</option>
-                          <option value="number">Numéro</option>
-                          <option value="select">Sélection</option>
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => updateCustomField(idx, { required: !field.required })}
-                          className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${field.required ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
-                        >
-                          {field.required ? 'Obligatoire' : 'Optionnel'}
-                        </button>
-                        <button onClick={() => removeCustomField(idx)} className="text-red-400 hover:text-red-600"><X className="h-4 w-4" /></button>
+                      <div key={idx} className="mb-2">
+                        <div className="flex items-center gap-2">
+                          <input type="text" value={field.label} onChange={(e) => updateCustomField(idx, { label: e.target.value })} placeholder="Nom du champ" className={`flex-1 ${smallInputCls}`} />
+                          <select value={field.type} onChange={(e) => updateCustomField(idx, { type: e.target.value as CustomField['type'], ...(e.target.value === 'select' ? { options: field.options || [''] } : { options: undefined }) })} className={`${smallInputCls} text-[#1b1c1b]`}>
+                            <option value="text">Texte</option>
+                            <option value="email">Email</option>
+                            <option value="phone">Téléphone</option>
+                            <option value="number">Numéro</option>
+                            <option value="select">Sélection</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => updateCustomField(idx, { required: !field.required })}
+                            className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${field.required ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
+                          >
+                            {field.required ? 'Obligatoire' : 'Optionnel'}
+                          </button>
+                          <button onClick={() => removeCustomField(idx)} className="text-red-400 hover:text-red-600"><X className="h-4 w-4" /></button>
+                        </div>
+                        {field.type === 'select' && (
+                          <div className="ml-2 mt-2 pl-3 border-l-2 border-[#c4c7c7]/30 dark:border-neutral-700 space-y-1.5">
+                            <p className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">Options de sélection</p>
+                            {(field.options || ['']).map((opt, optIdx) => (
+                              <div key={optIdx} className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={opt}
+                                  onChange={(e) => {
+                                    const newOptions = [...(field.options || [''])]
+                                    newOptions[optIdx] = e.target.value
+                                    updateCustomField(idx, { options: newOptions })
+                                  }}
+                                  placeholder={`Option ${optIdx + 1}`}
+                                  className={`flex-1 ${smallInputCls}`}
+                                />
+                                {(field.options || ['']).length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newOptions = (field.options || ['']).filter((_, i) => i !== optIdx)
+                                      updateCustomField(idx, { options: newOptions })
+                                    }}
+                                    className="text-red-400 hover:text-red-600"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => updateCustomField(idx, { options: [...(field.options || ['']), ''] })}
+                              className="flex items-center gap-1 text-[10px] font-bold text-[#747878] dark:text-neutral-500 hover:text-[#1b1c1b] dark:hover:text-white"
+                            >
+                              <Plus className="h-3 w-3" /> Ajouter une option
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

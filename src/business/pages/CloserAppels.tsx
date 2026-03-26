@@ -61,6 +61,9 @@ export function CloserAppels() {
   const [editingCallId, setEditingCallId] = useState<number | null>(null)
   const [editingName, setEditingName] = useState('')
 
+  // Menu dropdown
+  const [openMenuCallId, setOpenMenuCallId] = useState<number | null>(null)
+
   const myProspects = isOwnerView ? prospects : prospects.filter(p => p.assigned_to === teamMember?.id)
 
   // Load call history
@@ -273,14 +276,6 @@ export function CloserAppels() {
       {/* Title bar */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Appels Récents</h2>
-        <div className="flex gap-2">
-          <button className="p-2.5 bg-[#eae8e7] dark:bg-white/5 rounded-full hover:bg-[#dbdad9] dark:hover:bg-white/10 transition-colors">
-            <SlidersHorizontal className="h-4 w-4 text-stone-600" strokeWidth={1.5} />
-          </button>
-          <button className="p-2.5 bg-[#eae8e7] dark:bg-white/5 rounded-full hover:bg-[#dbdad9] dark:hover:bg-white/10 transition-colors">
-            <MoreVertical className="h-4 w-4 text-stone-600" strokeWidth={1.5} />
-          </button>
-        </div>
       </div>
 
       {/* Call Cards List */}
@@ -347,9 +342,35 @@ export function CloserAppels() {
                 <Eye className="h-4 w-4" strokeWidth={1.5} />
                 Détails
               </button>
-              <button className="p-3 text-stone-400 hover:text-stone-700 transition-colors">
-                <MoreVertical className="h-5 w-5" strokeWidth={1.5} />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOpenMenuCallId(openMenuCallId === call.id ? null : call.id) }}
+                  className="p-3 text-stone-400 hover:text-stone-700 dark:hover:text-white transition-colors"
+                >
+                  <MoreVertical className="h-5 w-5" strokeWidth={1.5} />
+                </button>
+                {openMenuCallId === call.id && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setOpenMenuCallId(null)} />
+                    <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-neutral-800 rounded-xl shadow-lg border border-stone-200 dark:border-neutral-700 py-1 min-w-[140px]">
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          if (!confirm('Supprimer cet appel ?')) return
+                          await supabase.from('business_call_history').delete().eq('id', call.id)
+                          setCallHistory(prev => prev.filter(c => c.id !== call.id))
+                          setOpenMenuCallId(null)
+                          toast.success('Appel supprimé')
+                        }}
+                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Supprimer
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         ))}

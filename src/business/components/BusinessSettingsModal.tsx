@@ -97,7 +97,7 @@ interface BusinessSettingsModalProps {
 }
 
 export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' }: BusinessSettingsModalProps) {
-  const { user, businessProfile, updateBusinessProfile, businessSettings, updateBusinessSettings, isTeamMember, teamMember, refreshProfile } = useBusinessAuth()
+  const { user, businessProfile, updateBusinessProfile, businessSettings, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile } = useBusinessAuth()
   const { dark, toggle: toggleDark } = useTheme()
 
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'interface' | 'devices' | 'organisation' | 'support' | 'delete_account'>(initialTab)
@@ -1338,7 +1338,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                           const { error } = await supabase
                             .from('business_settings')
                             .update({ dashboard_period: opt.value })
-                            .eq('user_id', user.id)
+                            .eq('user_id', ownerUserId || user.id)
                           if (error) {
                             setMessage({ type: 'error', text: `Erreur: ${error.message}` })
                           } else {

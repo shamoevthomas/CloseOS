@@ -6,13 +6,15 @@ import {
   MessageCircle, Save, Clock, Plus, ChevronDown,
   Bell, Check, Loader2, FileText, ClipboardList,
   Package, ExternalLink, PhoneCall, Tag, Camera,
-  CreditCard, Wallet,
+  CreditCard, Wallet, Link2,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
+import { StripeMatchModal } from './StripeMatchModal'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
+import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
 
 const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-xl'
@@ -71,7 +73,7 @@ export function BusinessProspectView({
   onDismissFromPipeline,
 }: BusinessProspectViewProps) {
   const navigate = useNavigate()
-  const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
+  const { user, isTeamMember, teamMember, ownerUserId, userTimezone } = useBusinessAuth()
   const { customStages } = useCustomStages()
   const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string; setter_scope?: string }[]>([])
 
@@ -91,7 +93,6 @@ export function BusinessProspectView({
 
   // Fetch team members + owner for assignment
   useEffect(() => {
-    if (!canAssign) return
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId) return
     Promise.all([
@@ -105,7 +106,7 @@ export function BusinessProspectView({
       }
       setTeamMembers(list)
     })
-  }, [user?.id, ownerUserId, isTeamMember, canAssign])
+  }, [user?.id, ownerUserId, isTeamMember])
 
   const [local, setLocal] = useState<BusinessProspect>(prospect)
   // Sync local when prospect changes (e.g., realtime update from call details)
@@ -118,6 +119,7 @@ export function BusinessProspectView({
 
   // Payment details
   const [editingPayment, setEditingPayment] = useState(false)
+  const [stripeMatchOpen, setStripeMatchOpen] = useState(false)
   const [paymentMode, setPaymentMode] = useState<'cash' | 'installments'>(prospect.payment_type === 'installments' ? 'installments' : 'cash')
   const [editedInstallments, setEditedInstallments] = useState(prospect.installments || 1)
   const [editedValue, setEditedValue] = useState(prospect.value || 0)
@@ -195,21 +197,30 @@ export function BusinessProspectView({
   useEffect(() => {
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId || !prospect.id) return
-    const today = new Date().toISOString().split('T')[0]
+    const nowUtc = new Date().toISOString()
     supabase
       .from('business_appointments')
-      .select('date, time, status')
+      .select('date, time, status, datetime_utc')
       .eq('prospect_id', prospect.id)
-      .gte('date', today)
       .in('status', ['pending', 'confirmed'])
       .order('date', { ascending: true })
       .order('time', { ascending: true })
-      .limit(1)
-      .maybeSingle()
       .then(({ data }) => {
-        setNextAppointment(data || null)
+        const future = (data || []).find(a => {
+          if (a.datetime_utc) return a.datetime_utc > nowUtc
+          // Fallback for old appointments without datetime_utc
+          const now = new Date()
+          const localNow = fromUTC(now.toISOString(), userTimezone)
+          return a.date > localNow.date || (a.date === localNow.date && a.time >= localNow.time)
+        })
+        if (future && future.datetime_utc) {
+          const local = fromUTC(future.datetime_utc, userTimezone)
+          setNextAppointment({ date: local.date, time: local.time, status: future.status })
+        } else {
+          setNextAppointment(future ? { date: future.date, time: future.time?.slice(0, 5), status: future.status } : null)
+        }
       })
-  }, [prospect.id, user?.id, ownerUserId, isTeamMember])
+  }, [prospect.id, user?.id, ownerUserId, isTeamMember, userTimezone])
 
   // Client edit
   const [editingClient, setEditingClient] = useState(false)
@@ -794,8 +805,71 @@ export function BusinessProspectView({
                 </div>
               )}
 
+              {/* SECTION ABONNEMENT STRIPE — visible quand prospect matche */}
+              {local.stripe_subscription_id && (
+                <div className="animate-in slide-in-from-top-4 fade-in duration-300">
+                  <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-[#635BFF] mb-3">
+                    <CreditCard className="h-4 w-4" /> Abonnement Stripe
+                  </h3>
+                  <div className="rounded-2xl border border-[#635BFF]/20 bg-[#635BFF]/5 p-5 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Statut</span>
+                      <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full', {
+                        'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400': local.subscription_status === 'active',
+                        'bg-amber-500/10 text-amber-600 dark:text-amber-400': local.subscription_status === 'past_due',
+                        'bg-red-500/10 text-red-600 dark:text-red-400': local.subscription_status === 'canceled',
+                        'bg-blue-500/10 text-blue-600 dark:text-blue-400': local.subscription_status === 'trialing',
+                      })}>
+                        {local.subscription_status === 'active' ? 'Actif' : local.subscription_status === 'past_due' ? 'En retard' : local.subscription_status === 'canceled' ? 'Annule' : local.subscription_status === 'trialing' ? 'Essai' : local.subscription_status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Montant</span>
+                      <span className="text-sm font-extrabold text-stone-900 dark:text-white">
+                        {(Number(local.subscription_amount) || 0).toFixed(2)} EUR / {local.subscription_interval === 'month' ? 'mois' : 'an'}
+                      </span>
+                    </div>
+                    {local.last_payment_date && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Dernier paiement</span>
+                        <span className="text-xs text-stone-700 dark:text-neutral-300">{new Date(local.last_payment_date).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                    )}
+                    {local.next_payment_date && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Prochain paiement</span>
+                        <span className="text-xs text-stone-700 dark:text-neutral-300">{new Date(local.next_payment_date).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                    )}
+                    <div className="pt-2 border-t border-[#635BFF]/10 text-center">
+                      <span className="text-[10px] font-bold text-[#635BFF]/50 uppercase tracking-widest">
+                        {local.matched_via === 'webhook' ? 'Lie automatiquement (webhook)' : local.matched_via === 'auto_won' ? 'Lie automatiquement' : 'Lie manuellement'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bouton matching Stripe manuel — visible quand won et pas matche */}
+              {local.stage === 'won' && !local.stripe_subscription_id && !(isTeamMember && teamMember?.role === 'Setter') && (
+                <button
+                  onClick={() => setStripeMatchOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[#635BFF]/30 text-[#635BFF] hover:bg-[#635BFF]/5 transition-colors text-sm font-bold"
+                >
+                  <Link2 className="h-4 w-4" />
+                  Lier un abonnement Stripe
+                </button>
+              )}
+
+              <StripeMatchModal
+                isOpen={stripeMatchOpen}
+                onClose={() => setStripeMatchOpen(false)}
+                prospectId={local.id}
+                prospectEmail={local.email}
+              />
+
               {/* Assignment */}
-              {canAssign && teamMembers.length > 0 && (() => {
+              {teamMembers.length > 0 && (() => {
                 const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales' || tm.role === 'Admin')
                 const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales' || tm.role === 'Admin')
 
@@ -808,7 +882,8 @@ export function BusinessProspectView({
                           <select
                             value={closers.find(c => c.id === (local as any).assigned_to)?.id || ''}
                             onChange={(e) => handleUpdate({ assigned_to: e.target.value || null } as any)}
-                            className={cn(SELECT_CLS, 'text-sm font-semibold font-sans')}
+                            disabled={!canAssign}
+                            className={cn(SELECT_CLS, 'text-sm font-semibold font-sans', !canAssign && 'opacity-60 cursor-not-allowed')}
                           >
                             <option value="">Aucun</option>
                             {closers.map(tm => (
@@ -822,7 +897,7 @@ export function BusinessProspectView({
                       </div>
                     )}
 
-                    {(!isTeamMember || isHosOrAdmin) && setters.length > 0 && (
+                    {setters.length > 0 && (
                       <div>
                         <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Assigner un Setter</label>
                         <div className="relative">
@@ -839,7 +914,8 @@ export function BusinessProspectView({
                               }
                               handleUpdate(updates)
                             }}
-                            className={cn(SELECT_CLS, 'text-sm font-semibold font-sans')}
+                            disabled={!(!isTeamMember || isHosOrAdmin)}
+                            className={cn(SELECT_CLS, 'text-sm font-semibold font-sans', !(!isTeamMember || isHosOrAdmin) && 'opacity-60 cursor-not-allowed')}
                           >
                             <option value="">Aucun</option>
                             {setters.map(tm => (
