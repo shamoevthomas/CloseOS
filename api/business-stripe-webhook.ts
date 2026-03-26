@@ -184,7 +184,7 @@ export default async function handler(req: Request) {
                             phone: customer.phone || null,
                             stage: 'won',
                             value: amount,
-                            source: 'Stripe',
+
                             stripe_customer_id: customer.id,
                             stripe_subscription_id: subscription.id,
                             subscription_status: subscription.status,
@@ -367,7 +367,7 @@ export default async function handler(req: Request) {
                                     phone: customerPhone,
                                     stage: 'won',
                                     value: paymentAmount,
-                                    source: 'Stripe',
+        
                                     stripe_customer_id: customerId,
                                     stripe_subscription_id: subscriptionId,
                                     subscription_status: 'active',

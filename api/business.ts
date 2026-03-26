@@ -5208,7 +5208,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               phone: customer.phone || null,
               stage: 'won',
               value: amount.toString(),
-              source: 'Stripe',
+
               ...stripeData,
             })
             .select('id')
