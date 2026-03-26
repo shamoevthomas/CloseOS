@@ -5182,7 +5182,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         startingAfter = undefined
         try {
           while (hasMore) {
-            const params: Stripe.SubscriptionListParams = { limit: 100, status: syncStatus, expand: ['data.latest_invoice'] }
+            const params: Stripe.SubscriptionListParams = { limit: 100, status: syncStatus, expand: ['data.discount'] }
             if (startingAfter) params.starting_after = startingAfter
             const batch = useDirectQuery
               ? await s.subscriptions.list(params)
@@ -5214,7 +5214,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           startingAfter = undefined
           try {
             while (hasMore) {
-              const params: Stripe.SubscriptionListParams = { limit: 100, status: syncStatus, expand: ['data.latest_invoice'] }
+              const params: Stripe.SubscriptionListParams = { limit: 100, status: syncStatus, expand: ['data.discount'] }
               if (startingAfter) params.starting_after = startingAfter
               const batch = await s.subscriptions.list(params)
               allSubs = allSubs.concat(batch.data)
@@ -5262,13 +5262,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const baseAmount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0
         const interval = item?.price?.recurring?.interval || 'month'
 
-        // Use latest invoice total (includes all discounts) if available
-        const latestInvoice = sub.latest_invoice as Stripe.Invoice | null
+        // Get the real amount after all discounts via upcoming invoice preview
         let amount = baseAmount
-        if (latestInvoice && typeof latestInvoice === 'object' && typeof latestInvoice.total === 'number') {
-          amount = Math.max(0, latestInvoice.total / 100)
-        } else {
-          // Fallback: apply subscription-level discount
+        try {
+          const preview = await s.invoices.createPreview({
+            customer: customerId,
+            subscription: sub.id,
+          })
+          if (typeof preview.total === 'number') {
+            amount = Math.max(0, preview.total / 100)
+          }
+          console.log(`[stripe-sync-all] Sub ${sub.id}: base=${baseAmount}, after_discount=${amount}`)
+        } catch {
+          // Fallback: try subscription.discount or customer.discount
           const discount = sub.discount
           if (discount?.coupon) {
             if (discount.coupon.percent_off) {
