@@ -5182,7 +5182,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         startingAfter = undefined
         try {
           while (hasMore) {
-            const params: Stripe.SubscriptionListParams = { limit: 100, status: syncStatus }
+            const params: Stripe.SubscriptionListParams = { limit: 100, status: syncStatus, expand: ['data.latest_invoice'] }
             if (startingAfter) params.starting_after = startingAfter
             const batch = useDirectQuery
               ? await s.subscriptions.list(params)
@@ -5214,7 +5214,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           startingAfter = undefined
           try {
             while (hasMore) {
-              const params: Stripe.SubscriptionListParams = { limit: 100, status: syncStatus }
+              const params: Stripe.SubscriptionListParams = { limit: 100, status: syncStatus, expand: ['data.latest_invoice'] }
               if (startingAfter) params.starting_after = startingAfter
               const batch = await s.subscriptions.list(params)
               allSubs = allSubs.concat(batch.data)
@@ -5259,16 +5259,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
 
         const item = sub.items.data[0]
-        let amount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0
+        const baseAmount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0
         const interval = item?.price?.recurring?.interval || 'month'
 
-        // Apply discount/coupon if present
-        const discount = sub.discount
-        if (discount?.coupon) {
-          if (discount.coupon.percent_off) {
-            amount = Math.round(amount * (1 - discount.coupon.percent_off / 100) * 100) / 100
-          } else if (discount.coupon.amount_off) {
-            amount = Math.max(0, amount - discount.coupon.amount_off / 100)
+        // Use latest invoice total (includes all discounts) if available
+        const latestInvoice = sub.latest_invoice as Stripe.Invoice | null
+        let amount = baseAmount
+        if (latestInvoice && typeof latestInvoice === 'object' && typeof latestInvoice.total === 'number') {
+          amount = Math.max(0, latestInvoice.total / 100)
+        } else {
+          // Fallback: apply subscription-level discount
+          const discount = sub.discount
+          if (discount?.coupon) {
+            if (discount.coupon.percent_off) {
+              amount = Math.round(baseAmount * (1 - discount.coupon.percent_off / 100) * 100) / 100
+            } else if (discount.coupon.amount_off) {
+              amount = Math.max(0, baseAmount - discount.coupon.amount_off / 100)
+            }
           }
         }
 
