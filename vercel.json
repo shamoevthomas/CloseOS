@@ -108,6 +108,7 @@
     { "source": "/api/business-auto-match-stripe", "destination": "/api/business?action=auto-match-stripe" },
     { "source": "/api/business-charges", "destination": "/api/business?action=charges" },
     { "source": "/api/business-payments-summary", "destination": "/api/business?action=payments-summary" },
+    { "source": "/api/business-stripe-sync-all", "destination": "/api/business?action=stripe-sync-all" },
 
     { "source": "/(.*)", "destination": "/index.html" }
   ]

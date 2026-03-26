@@ -5101,6 +5101,144 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
+    // ─── Sync ALL Stripe subscriptions → create/match prospects + payments ───
+    if (action === 'stripe-sync-all' && req.method === 'POST') {
+      const { user_id } = req.body
+      if (!user_id) return res.status(400).json({ error: 'user_id required' })
+      if (!stripeKey) return res.status(500).json({ error: 'STRIPE_SECRET_KEY missing' })
+
+      const { data: profile } = await supabase.from('profiles').select('stripe_account_id, stripe_connected').eq('id', user_id).maybeSingle()
+      if (!profile?.stripe_account_id || !profile?.stripe_connected) {
+        return res.status(200).json({ synced: 0, created: 0, matched: 0, reason: 'stripe_not_connected' })
+      }
+
+      const s = getStripe()
+      const accountId = profile.stripe_account_id
+
+      // Fetch ALL subscriptions (active + past_due + trialing)
+      let allSubs: Stripe.Subscription[] = []
+      let hasMore = true
+      let startingAfter: string | undefined
+      while (hasMore) {
+        const params: Stripe.SubscriptionListParams = { limit: 100, status: 'all' }
+        if (startingAfter) params.starting_after = startingAfter
+        const batch = await s.subscriptions.list(params, { stripeAccount: accountId })
+        allSubs = allSubs.concat(batch.data)
+        hasMore = batch.has_more
+        if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
+      }
+
+      // Fetch existing prospects for this owner
+      const { data: existingProspects } = await supabase
+        .from('business_prospects')
+        .select('id, email, stripe_subscription_id')
+        .eq('user_id', user_id)
+
+      const existingByEmail = new Map<string, number>()
+      const existingBySub = new Set<string>()
+      ;(existingProspects || []).forEach(p => {
+        if (p.email) existingByEmail.set(p.email.toLowerCase(), p.id)
+        if (p.stripe_subscription_id) existingBySub.add(p.stripe_subscription_id)
+      })
+
+      let created = 0, matched = 0
+
+      for (const sub of allSubs) {
+        // Skip if already linked
+        if (existingBySub.has(sub.id)) continue
+
+        const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
+        let customer: Stripe.Customer
+        try {
+          customer = await s.customers.retrieve(customerId, { stripeAccount: accountId }) as Stripe.Customer
+        } catch { continue }
+
+        if (!customer.email) continue
+
+        const item = sub.items.data[0]
+        const amount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0
+        const interval = item?.price?.recurring?.interval || 'month'
+
+        const stripeData = {
+          stripe_customer_id: customer.id,
+          stripe_subscription_id: sub.id,
+          subscription_status: sub.status,
+          subscription_amount: amount,
+          subscription_interval: interval,
+          matched_via: 'sync',
+          last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
+          next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+        }
+
+        const existingId = existingByEmail.get(customer.email.toLowerCase())
+
+        if (existingId) {
+          // Match existing prospect
+          await supabase.from('business_prospects').update(stripeData).eq('id', existingId)
+          existingBySub.add(sub.id)
+          matched++
+
+          // Create initial payment if amount > 0 (check-then-insert to avoid partial index issues)
+          if (amount > 0) {
+            const syncInvoiceId = `sync_${sub.id}`
+            const { data: existingPayment } = await supabase.from('business_payments').select('id').eq('stripe_invoice_id', syncInvoiceId).maybeSingle()
+            if (!existingPayment) {
+              const { data: fullP } = await supabase.from('business_prospects').select('assigned_to, assigned_setter').eq('id', existingId).single()
+              await supabase.from('business_payments').insert({
+                business_owner_id: user_id,
+                prospect_id: existingId,
+                stripe_invoice_id: syncInvoiceId,
+                amount,
+                currency: item?.price?.currency || 'eur',
+                paid_at: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : new Date().toISOString(),
+                assigned_to: fullP?.assigned_to || null,
+                assigned_setter: fullP?.assigned_setter || null,
+              })
+            }
+          }
+        } else {
+          // Create new prospect
+          const customerName = customer.name || customer.email
+          const { data: newProspect } = await supabase
+            .from('business_prospects')
+            .insert({
+              user_id,
+              contact: customerName,
+              email: customer.email,
+              phone: customer.phone || null,
+              stage: 'won',
+              value: amount.toString(),
+              source: 'Stripe',
+              ...stripeData,
+            })
+            .select('id')
+            .single()
+
+          if (newProspect) {
+            existingByEmail.set(customer.email.toLowerCase(), newProspect.id)
+            existingBySub.add(sub.id)
+            created++
+
+            // Create initial payment
+            if (amount > 0) {
+              await supabase.from('business_payments').insert({
+                business_owner_id: user_id,
+                prospect_id: newProspect.id,
+                stripe_invoice_id: `sync_${sub.id}`,
+                amount,
+                currency: item?.price?.currency || 'eur',
+                paid_at: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : new Date().toISOString(),
+                assigned_to: null,
+                assigned_setter: null,
+              })
+            }
+          }
+        }
+      }
+
+      return res.status(200).json({ synced: created + matched, created, matched, total_subscriptions: allSubs.length })
+    }
+
     // ─── Search Stripe customers by email (for manual matching) ───
     if (action === 'stripe-search' && req.method === 'GET') {
       const user_id = req.query.user_id as string
@@ -5179,17 +5317,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const user_id = req.query.user_id as string
       if (!user_id) return res.status(400).json({ error: 'user_id required' })
 
-      const targetMonth = (req.query.month as string) || new Date().toISOString().slice(0, 7) // YYYY-MM
+      const period = (req.query.period as string) || '1m' // 1m, 3m, 6m, 12m, all
+      const now = new Date()
+      const currentMonth = now.toISOString().slice(0, 7)
 
-      // Build 6-month range
-      const months: string[] = []
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(`${targetMonth}-01`)
-        d.setMonth(d.getMonth() - i)
-        months.push(d.toISOString().slice(0, 7))
+      // Determine period range
+      let monthsBack: number
+      switch (period) {
+        case '3m': monthsBack = 3; break
+        case '6m': monthsBack = 6; break
+        case '12m': monthsBack = 12; break
+        case 'all': monthsBack = 0; break
+        default: monthsBack = 1; break
       }
 
-      // Fetch all prospects with subscriptions
+      // Period start date
+      let periodStartISO: string
+      if (period === 'all') {
+        periodStartISO = '2020-01-01T00:00:00Z'
+      } else {
+        const ps = new Date(now)
+        ps.setMonth(ps.getMonth() - monthsBack + 1)
+        ps.setDate(1)
+        periodStartISO = ps.toISOString()
+      }
+
+      // Build months for chart history
+      const chartLength = period === 'all' ? 12 : Math.max(monthsBack, 6)
+      const chartMonths: string[] = []
+      for (let i = chartLength - 1; i >= 0; i--) {
+        const d = new Date(now)
+        d.setMonth(d.getMonth() - i)
+        chartMonths.push(d.toISOString().slice(0, 7))
+      }
+
+      // Fetch all prospects
       const { data: allProspects } = await supabase
         .from('business_prospects')
         .select('id, contact, email, value, stage, assigned_to, assigned_setter, formula_id, stripe_customer_id, stripe_subscription_id, subscription_status, subscription_amount, subscription_interval, matched_via, last_payment_date, next_payment_date, created_at')
@@ -5198,56 +5360,87 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const prospects = allProspects || []
       const matchedProspects = prospects.filter(p => p.stripe_subscription_id)
 
-      // Calculate per-month data
-      const monthlyData = months.map(m => {
+      // Fetch payments from business_payments for accurate CA
+      const { data: allPayments } = await supabase
+        .from('business_payments')
+        .select('prospect_id, amount, paid_at')
+        .eq('business_owner_id', user_id)
+        .order('paid_at', { ascending: false })
+
+      const hasPayments = allPayments && allPayments.length > 0
+
+      // Calculate per-month data for chart
+      const monthlyData = chartMonths.map(m => {
         const monthStart = new Date(`${m}-01T00:00:00Z`)
         const monthEnd = new Date(monthStart)
         monthEnd.setMonth(monthEnd.getMonth() + 1)
 
-        // Active subscriptions at this point
-        const active = matchedProspects.filter(p => p.subscription_status === 'active' || p.subscription_status === 'trialing')
-        const canceled = matchedProspects.filter(p => p.subscription_status === 'canceled')
-
-        // MRR: sum subscription amounts, converting yearly to monthly
+        // MRR: current active subscriptions
         let mrr = 0
-        active.forEach(p => {
-          const amount = Number(p.subscription_amount) || 0
-          mrr += p.subscription_interval === 'year' ? amount / 12 : amount
-        })
-
-        // CA = payments received in this month
-        let ca = 0
         matchedProspects.forEach(p => {
-          if (p.last_payment_date) {
-            const payDate = new Date(p.last_payment_date)
-            if (payDate >= monthStart && payDate < monthEnd) {
-              ca += Number(p.subscription_amount) || 0
-            }
+          if (p.subscription_status === 'active' || p.subscription_status === 'trialing') {
+            const amount = Number(p.subscription_amount) || 0
+            mrr += p.subscription_interval === 'year' ? amount / 12 : amount
           }
         })
-        // If current month and CA is 0, use MRR as estimate
-        if (m === targetMonth && ca === 0) ca = mrr
+
+        // CA for this specific month
+        let ca = 0
+        if (hasPayments) {
+          allPayments!.forEach(p => {
+            const payDate = new Date(p.paid_at)
+            if (payDate >= monthStart && payDate < monthEnd) {
+              ca += Number(p.amount) || 0
+            }
+          })
+        } else {
+          matchedProspects.forEach(p => {
+            if (p.last_payment_date) {
+              const payDate = new Date(p.last_payment_date)
+              if (payDate >= monthStart && payDate < monthEnd) {
+                ca += Number(p.subscription_amount) || 0
+              }
+            }
+          })
+        }
+        // Current month with no payments yet: estimate from MRR
+        if (m === currentMonth && ca === 0) ca = mrr
 
         return { month: m, mrr: Math.round(mrr * 100) / 100, ca: Math.round(ca * 100) / 100 }
       })
 
-      const currentData = monthlyData[monthlyData.length - 1]
-      const prevData = monthlyData.length > 1 ? monthlyData[monthlyData.length - 2] : null
+      // Aggregate CA for the selected period
+      let periodCA = 0
+      if (period === '1m') {
+        periodCA = monthlyData[monthlyData.length - 1].ca
+      } else {
+        const periodStartDate = new Date(periodStartISO)
+        periodCA = monthlyData
+          .filter(md => new Date(`${md.month}-01`) >= periodStartDate)
+          .reduce((sum, md) => sum + md.ca, 0)
+      }
 
-      // Counts for current month
+      const currentMRR = monthlyData[monthlyData.length - 1].mrr
+      const firstMRR = monthlyData[0].mrr
+
+      // Evolution: MRR growth
+      const evolution = firstMRR > 0
+        ? Math.round(((currentMRR - firstMRR) / firstMRR) * 10000) / 100
+        : 0
+
+      // Counts
       const activeCount = matchedProspects.filter(p => p.subscription_status === 'active' || p.subscription_status === 'trialing').length
       const canceledCount = matchedProspects.filter(p => p.subscription_status === 'canceled').length
+
+      // New clients in period
+      const periodStartDate = new Date(periodStartISO)
       const newClients = matchedProspects.filter(p => {
-        if (!p.last_payment_date) return false
-        return p.last_payment_date.startsWith(targetMonth)
+        if (!p.created_at) return false
+        return new Date(p.created_at) >= periodStartDate
       }).length
 
       const churnRate = activeCount + canceledCount > 0
         ? Math.round((canceledCount / (activeCount + canceledCount)) * 10000) / 100
-        : 0
-
-      const evolution = prevData && prevData.mrr > 0
-        ? Math.round(((currentData.mrr - prevData.mrr) / prevData.mrr) * 10000) / 100
         : 0
 
       // Active subscriptions list
@@ -5264,7 +5457,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           next_payment_date: p.next_payment_date,
         }))
 
-      // Commissions: fetch team members + formula commissions
+      // Commissions
       const { data: teamMembers } = await supabase
         .from('business_team_members')
         .select('id, first_name, last_name, role, commission_rate, compensation_type, fixed_salary')
@@ -5275,29 +5468,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select('*')
         .eq('business_owner_id', user_id)
 
-      // Won prospects this month
       const wonProspects = prospects.filter(p => p.stage === 'won')
 
       let totalCommissions = 0
       const commissionDetails = (teamMembers || []).map(member => {
-        // Prospects assigned to this member
         const memberWon = wonProspects.filter(p => p.assigned_to === member.id || p.assigned_setter === member.id)
 
         if (member.compensation_type === 'fixed salary') {
-          totalCommissions += Number(member.fixed_salary) || 0
+          const salary = Number(member.fixed_salary) || 0
+          const periodSalary = period === '1m' ? salary : period === 'all' ? salary : salary * monthsBack
+          totalCommissions += periodSalary
           return {
             id: member.id,
             name: `${member.first_name || ''} ${member.last_name || ''}`.trim(),
             role: member.role,
             type: 'fixed',
-            amount: Number(member.fixed_salary) || 0,
+            amount: periodSalary,
           }
         }
 
         let memberTotal = 0
         memberWon.forEach(p => {
           const val = Number(p.value) || 0
-          // Find commission rate: formula-specific > role-level > fallback
           let rate = Number(member.commission_rate) || 0
           if (formulaCommissions && p.formula_id) {
             const memberSpecific = formulaCommissions.find(fc => fc.formula_id === p.formula_id && fc.team_member_id === member.id)
@@ -5318,39 +5510,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       })
 
-      // Charges
+      // Charges — aggregate across the period
       const { data: charges } = await supabase
         .from('business_charges')
         .select('*')
         .eq('business_owner_id', user_id)
 
-      const currentMonthCharges = (charges || []).filter(c => c.month && c.month.startsWith(targetMonth))
-      const fixedCharges = currentMonthCharges.filter(c => c.type === 'fixed')
-      const variableCharges = currentMonthCharges.filter(c => c.type === 'variable')
+      // Filter charges for the period (month is a date column, returns as YYYY-MM-DD)
+      const periodCharges = (charges || []).filter(c => {
+        if (!c.month) return false
+        if (period === 'all') return true
+        return new Date(c.month) >= periodStartDate
+      })
+      const fixedCharges = periodCharges.filter(c => c.type === 'fixed')
+      const variableCharges = periodCharges.filter(c => c.type === 'variable')
       const totalFixed = fixedCharges.reduce((sum, c) => sum + (Number(c.amount) || 0), 0)
       const totalVariable = variableCharges.reduce((sum, c) => sum + (Number(c.amount) || 0), 0)
 
       // Net margin
-      const totalCharges = totalCommissions + totalFixed + totalVariable
-      const netMargin = currentData.ca - totalCharges
+      const totalChargesAmount = totalCommissions + totalFixed + totalVariable
+      const netMargin = periodCA - totalChargesAmount
 
-      // Monthly history with charges for chart
+      // History for chart
       const history = monthlyData.map(md => {
         const mCharges = (charges || []).filter(c => c.month && c.month.startsWith(md.month))
         const mFixed = mCharges.filter(c => c.type === 'fixed').reduce((s, c) => s + (Number(c.amount) || 0), 0)
         const mVar = mCharges.filter(c => c.type === 'variable').reduce((s, c) => s + (Number(c.amount) || 0), 0)
+        // For chart, use per-month commission estimate
+        const monthlyCommission = period === '1m' ? totalCommissions : totalCommissions / (monthsBack || chartLength)
         return {
           month: md.month,
           ca: md.ca,
           mrr: md.mrr,
-          charges: Math.round((totalCommissions + mFixed + mVar) * 100) / 100,
-          margin: Math.round((md.ca - totalCommissions - mFixed - mVar) * 100) / 100,
+          charges: Math.round((monthlyCommission + mFixed + mVar) * 100) / 100,
+          margin: Math.round((md.ca - monthlyCommission - mFixed - mVar) * 100) / 100,
         }
       })
 
       return res.status(200).json({
-        mrr: currentData.mrr,
-        ca: currentData.ca,
+        mrr: currentMRR,
+        ca: Math.round(periodCA * 100) / 100,
         evolution,
         newClients,
         canceledCount,
@@ -5360,7 +5559,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         charges: { fixed: fixedCharges, variable: variableCharges, totalFixed, totalVariable },
         netMargin: Math.round(netMargin * 100) / 100,
         history,
-        month: targetMonth,
+        period,
       })
     }
 
