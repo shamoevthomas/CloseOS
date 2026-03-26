@@ -5115,18 +5115,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const s = getStripe()
       const accountId = profile.stripe_account_id
 
+      // Diagnostic: check connected account state
+      let accountInfo: any = {}
+      try {
+        const acct = await s.accounts.retrieve(accountId)
+        accountInfo = {
+          id: acct.id,
+          type: acct.type,
+          charges_enabled: acct.charges_enabled,
+          payouts_enabled: acct.payouts_enabled,
+          details_submitted: acct.details_submitted,
+          email: acct.email,
+          business_type: acct.business_type,
+        }
+        console.log('[stripe-sync-all] Connected account:', JSON.stringify(accountInfo))
+      } catch (err: any) {
+        console.error('[stripe-sync-all] Cannot retrieve account:', err.message)
+        return res.status(200).json({ synced: 0, created: 0, matched: 0, reason: 'account_error', error: err.message, accountId })
+      }
+
+      // Try listing customers first (simpler check)
+      let customerCount = 0
+      try {
+        const customers = await s.customers.list({ limit: 5 }, { stripeAccount: accountId })
+        customerCount = customers.data.length
+        console.log(`[stripe-sync-all] Customers on connected account: ${customerCount}`)
+        if (customerCount > 0) {
+          console.log('[stripe-sync-all] Sample customer:', customers.data[0].email, customers.data[0].name)
+        }
+      } catch (err: any) {
+        console.error('[stripe-sync-all] Cannot list customers:', err.message)
+      }
+
       // Fetch ALL subscriptions (active + past_due + trialing)
       let allSubs: Stripe.Subscription[] = []
       let hasMore = true
       let startingAfter: string | undefined
-      while (hasMore) {
-        const params: Stripe.SubscriptionListParams = { limit: 100, status: 'all' }
-        if (startingAfter) params.starting_after = startingAfter
-        const batch = await s.subscriptions.list(params, { stripeAccount: accountId })
-        allSubs = allSubs.concat(batch.data)
-        hasMore = batch.has_more
-        if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
+      try {
+        while (hasMore) {
+          const params: Stripe.SubscriptionListParams = { limit: 100, status: 'all' }
+          if (startingAfter) params.starting_after = startingAfter
+          const batch = await s.subscriptions.list(params, { stripeAccount: accountId })
+          allSubs = allSubs.concat(batch.data)
+          hasMore = batch.has_more
+          if (batch.data.length > 0) startingAfter = batch.data[batch.data.length - 1].id
+        }
+      } catch (err: any) {
+        console.error('[stripe-sync-all] Cannot list subscriptions:', err.message)
+        return res.status(200).json({ synced: 0, created: 0, matched: 0, reason: 'subscription_list_error', error: err.message, accountInfo })
       }
+      console.log(`[stripe-sync-all] Found ${allSubs.length} subscriptions on account ${accountId}`)
 
       // Fetch existing prospects for this owner
       const { data: existingProspects } = await supabase
@@ -5236,7 +5274,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      return res.status(200).json({ synced: created + matched, created, matched, total_subscriptions: allSubs.length })
+      return res.status(200).json({ synced: created + matched, created, matched, total_subscriptions: allSubs.length, customers_found: customerCount, accountInfo })
     }
 
     // ─── Search Stripe customers by email (for manual matching) ───
