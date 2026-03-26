@@ -694,7 +694,9 @@ function IndividualView({
   appointments,
   connectionLogs,
   isOwnerView,
+  onRoleChange,
   onPayDayChange,
+  onDelete,
   onMemberUpdate,
 }: {
   member: TeamMember
@@ -802,7 +804,7 @@ function IndividualView({
       invoice_id: newBonusInvoice || null,
       label: newBonusLabel.trim(),
       amount: parseFloat(newBonusAmount) || 0,
-      status: newBonusInvoice ? 'en attente' : 'en attente',
+      status: 'en attente',
     }
     const { data, error } = await supabase
       .from('business_team_bonuses')

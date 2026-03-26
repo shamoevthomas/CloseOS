@@ -6,9 +6,10 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 interface BusinessStripeConnectModalProps {
   isOpen: boolean;
   onClose: () => void;
+  returnPath?: string;
 }
 
-export function BusinessStripeConnectModal({ isOpen, onClose }: BusinessStripeConnectModalProps) {
+export function BusinessStripeConnectModal({ isOpen, onClose, returnPath = '/business/factures' }: BusinessStripeConnectModalProps) {
   const { user } = useBusinessAuth();
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
@@ -49,7 +50,7 @@ export function BusinessStripeConnectModal({ isOpen, onClose }: BusinessStripeCo
         body: JSON.stringify({
           userId: user.id,
           email: user.email,
-          returnPath: '/business/factures',
+          returnPath,
         }),
       });
 

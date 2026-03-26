@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   DollarSign, TrendingUp, TrendingDown, Users, UserMinus, Percent,
   Loader2, CreditCard, Plus, Trash2, Pencil, Check, X, AlertCircle,
@@ -117,6 +117,20 @@ export function BusinessRevenue() {
 
   useEffect(() => { checkStripe() }, [checkStripe])
   useEffect(() => { fetchRevenue() }, [fetchRevenue])
+
+  // Handle return from Stripe Connect OAuth
+  const handledStripeReturn = useRef(false)
+  useEffect(() => {
+    if (handledStripeReturn.current) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('stripe_connected') === 'true') {
+      handledStripeReturn.current = true
+      window.history.replaceState({}, '', window.location.pathname)
+      toast.success('Compte Stripe connecté avec succès !')
+      checkStripe()
+      fetchRevenue()
+    }
+  }, [])
 
   // Charge CRUD
   const addCharge = async (type: 'fixed' | 'variable') => {
@@ -459,7 +473,7 @@ export function BusinessRevenue() {
         </div>
       )}
 
-      <BusinessStripeConnectModal isOpen={stripeModalOpen} onClose={() => { setStripeModalOpen(false); checkStripe() }} />
+      <BusinessStripeConnectModal isOpen={stripeModalOpen} onClose={() => { setStripeModalOpen(false); checkStripe() }} returnPath="/business/revenue" />
     </div>
   )
 }

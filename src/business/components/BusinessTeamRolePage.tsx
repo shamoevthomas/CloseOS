@@ -210,7 +210,7 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
     } finally {
       setLoading(false)
     }
-  }, [user?.id, roleFilter])
+  }, [effectiveUserId, roleFilter])
 
   useEffect(() => { loadData() }, [loadData])
 

@@ -170,7 +170,57 @@ export default async function handler(req: Request) {
                         }
                     }
                 } else {
-                    console.log(`No prospect found for email ${customer.email} (owner: ${ownerUserId})`);
+                    // No matching prospect — auto-create one with stage 'won'
+                    const item = subscription.items.data[0];
+                    const amount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0;
+                    const customerName = customer.name || customer.email || 'Client Stripe';
+
+                    const { data: newProspect } = await supabaseAdmin
+                        .from('business_prospects')
+                        .insert({
+                            user_id: ownerUserId,
+                            contact: customerName,
+                            email: customer.email,
+                            phone: customer.phone || null,
+                            stage: 'won',
+                            value: amount,
+                            source: 'Stripe',
+                            stripe_customer_id: customer.id,
+                            stripe_subscription_id: subscription.id,
+                            subscription_status: subscription.status,
+                            subscription_amount: amount,
+                            subscription_interval: item?.price?.recurring?.interval || 'month',
+                            matched_via: 'auto-created',
+                            last_payment_date: subscription.current_period_start
+                                ? new Date(subscription.current_period_start * 1000).toISOString()
+                                : null,
+                            next_payment_date: subscription.current_period_end
+                                ? new Date(subscription.current_period_end * 1000).toISOString()
+                                : null,
+                        })
+                        .select('id')
+                        .single();
+
+                    if (newProspect) {
+                        // Create initial payment record
+                        if (amount > 0) {
+                            await supabaseAdmin
+                                .from('business_payments')
+                                .insert({
+                                    business_owner_id: ownerUserId,
+                                    prospect_id: newProspect.id,
+                                    stripe_invoice_id: `initial_${subscription.id}`,
+                                    amount,
+                                    currency: item?.price?.currency || 'eur',
+                                    paid_at: subscription.current_period_start
+                                        ? new Date(subscription.current_period_start * 1000).toISOString()
+                                        : new Date().toISOString(),
+                                    assigned_to: null,
+                                    assigned_setter: null,
+                                });
+                        }
+                        console.log(`Auto-created prospect ${newProspect.id} from Stripe customer ${customer.email}`);
+                    }
                 }
                 break;
             }
@@ -213,6 +263,11 @@ export default async function handler(req: Request) {
                     .eq('stripe_subscription_id', subscriptionId)
                     .maybeSingle();
 
+                const invoiceAmountPaid = (invoice as any).amount_paid;
+                const paymentAmount = typeof invoiceAmountPaid === 'number'
+                    ? invoiceAmountPaid / 100
+                    : 0;
+
                 if (prospect) {
                     // Update prospect payment info
                     await supabaseAdmin
@@ -224,11 +279,6 @@ export default async function handler(req: Request) {
                         .eq('id', prospect.id);
 
                     // Record individual payment in business_payments
-                    const invoiceAmountPaid = (invoice as any).amount_paid;
-                    const paymentAmount = typeof invoiceAmountPaid === 'number'
-                        ? invoiceAmountPaid / 100
-                        : 0;
-
                     if (paymentAmount > 0) {
                         const stripeInvoiceId = invoice.id;
 
@@ -257,6 +307,94 @@ export default async function handler(req: Request) {
                     }
 
                     console.log(`Updated last_payment_date for prospect ${prospect.id}`);
+                } else if (paymentAmount > 0) {
+                    // No matching prospect — auto-create one from invoice data
+                    const customerId = typeof invoice.customer === 'string'
+                        ? invoice.customer
+                        : (invoice.customer as any)?.id;
+
+                    let customerEmail = invoice.customer_email || null;
+                    let customerName = invoice.customer_name || null;
+                    let customerPhone: string | null = null;
+
+                    // Fetch full customer details if needed
+                    if (customerId && (!customerEmail || !customerName)) {
+                        try {
+                            const cust = await stripe.customers.retrieve(customerId, {
+                                stripeAccount: connectedAccountId,
+                            }) as Stripe.Customer;
+                            customerEmail = customerEmail || cust.email;
+                            customerName = customerName || cust.name;
+                            customerPhone = cust.phone || null;
+                        } catch {}
+                    }
+
+                    if (customerEmail) {
+                        // Check if prospect already exists by email (may not be linked to this subscription yet)
+                        const existingByEmail = await matchProspectByEmail(ownerUserId, customerEmail);
+
+                        if (existingByEmail) {
+                            // Link existing prospect to this subscription
+                            const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+                                stripeAccount: connectedAccountId,
+                            });
+                            const cust = await stripe.customers.retrieve(customerId, {
+                                stripeAccount: connectedAccountId,
+                            }) as Stripe.Customer;
+                            await updateProspectStripeData(existingByEmail.id, sub, cust, 'webhook');
+
+                            await supabaseAdmin
+                                .from('business_payments')
+                                .insert({
+                                    business_owner_id: ownerUserId,
+                                    prospect_id: existingByEmail.id,
+                                    stripe_invoice_id: invoice.id,
+                                    amount: paymentAmount,
+                                    currency: invoice.currency || 'eur',
+                                    paid_at: new Date().toISOString(),
+                                    assigned_to: null,
+                                    assigned_setter: null,
+                                });
+                            console.log(`Linked existing prospect ${existingByEmail.id} via invoice payment`);
+                        } else {
+                            // Create new prospect
+                            const { data: newProspect } = await supabaseAdmin
+                                .from('business_prospects')
+                                .insert({
+                                    user_id: ownerUserId,
+                                    contact: customerName || customerEmail,
+                                    email: customerEmail,
+                                    phone: customerPhone,
+                                    stage: 'won',
+                                    value: paymentAmount,
+                                    source: 'Stripe',
+                                    stripe_customer_id: customerId,
+                                    stripe_subscription_id: subscriptionId,
+                                    subscription_status: 'active',
+                                    subscription_amount: paymentAmount,
+                                    matched_via: 'auto-created',
+                                    last_payment_date: new Date().toISOString(),
+                                })
+                                .select('id')
+                                .single();
+
+                            if (newProspect) {
+                                await supabaseAdmin
+                                    .from('business_payments')
+                                    .insert({
+                                        business_owner_id: ownerUserId,
+                                        prospect_id: newProspect.id,
+                                        stripe_invoice_id: invoice.id,
+                                        amount: paymentAmount,
+                                        currency: invoice.currency || 'eur',
+                                        paid_at: new Date().toISOString(),
+                                        assigned_to: null,
+                                        assigned_setter: null,
+                                    });
+                                console.log(`Auto-created prospect ${newProspect.id} from invoice ${invoice.id} (${customerEmail})`);
+                            }
+                        }
+                    }
                 }
                 break;
             }

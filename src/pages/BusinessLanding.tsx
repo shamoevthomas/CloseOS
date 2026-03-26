@@ -130,7 +130,7 @@ export const BusinessLanding: React.FC = () => {
             name: 'CloseOS Business est-il compatible avec mes outils CRM actuels ?',
             acceptedAnswer: {
               '@type': 'Answer',
-              text: "Oui. CloseOS Business se connecte nativement à 6 plateformes : HubSpot (bidirectionnel), Pipedrive (bidirectionnel), GoHighLevel GHL (bidirectionnel), Airtable (bidirectionnel), Systeme.io (webhook) et iClosed (unidirectionnel via webhook). Le CRM intégré CloseOS Business offre les meilleures performances pour l'écosystème.",
+              text: "Oui. CloseOS Business se connecte nativement à 6 plateformes : HubSpot (bidirectionnel), Pipedrive (bidirectionnel), GoHighLevel GHL (bidirectionnel), Airtable (bidirectionnel), Systeme.io (webhook) et iClosed (unidirectionnel via webhook). Vous pouvez aussi importer/exporter vos prospects en CSV depuis n'importe quel outil. Le CRM intégré CloseOS Business offre les meilleures performances pour l'écosystème.",
             },
           },
           {
@@ -366,6 +366,7 @@ export const BusinessLanding: React.FC = () => {
               { name: 'Zapier', logo: '/Zapier.png' },
               { name: 'Make', logo: '/make.png' },
               { name: 'n8n', logo: '/N8N.png' },
+              { name: 'CSV', logo: '/LogoCSV.png' },
             ];
             const topRow = allIntegrations.filter((_, i) => i % 2 === 0);
             const bottomRow = allIntegrations.filter((_, i) => i % 2 === 1);
@@ -443,6 +444,9 @@ export const BusinessLanding: React.FC = () => {
             {/* Shared Pipeline */}
             <SharedPipeline />
 
+            {/* Revenue & Stripe */}
+            <RevenueStripe />
+
             {/* Onboarding */}
             <Onboarding />
           </div>
@@ -476,6 +480,7 @@ export const BusinessLanding: React.FC = () => {
                 <CRMFeature icon={<Layers className="size-5" />} title="Pipeline CRM indépendant" description="Double vue stratégique : vue individuelle pour chaque closer vs vue globale temps réel pour l'infopreneur." />
                 <CRMFeature icon={<Bell className="size-5" />} title="Relances automatiques" extra={<div className="mt-3 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 w-fit"><ArrowUp className="size-3.5" /> RAPPELER DANS 3 JOURS</div>} />
                 <CRMFeature icon={<Tag className="size-5" />} title="Tags illimités & Filtres" extra={<div className="flex gap-2 mt-3 text-left"><span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">Froid</span><span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">Rappel</span><span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">Urgent</span></div>} />
+                <CRMFeature icon={<FileText className="size-5" />} title="Import / Export CSV" description="Importez vos prospects depuis n'importe quel CRM via CSV, ou exportez votre base en un clic. Un prompt IA intégré reformate automatiquement vos fichiers." />
               </div>
             </div>
 
@@ -574,7 +579,7 @@ export const BusinessLanding: React.FC = () => {
               />
               <FAQItem
                 question="CloseOS Business est-il compatible avec mes outils CRM actuels ?"
-                answer={<div className="space-y-3"><p>Oui. En plus de notre propre CRM intégré, CloseOS Business se connecte nativement à <strong>6 plateformes</strong> :</p><ul className="list-disc pl-5 space-y-1"><li><strong>HubSpot</strong> — synchronisation complète bidirectionnelle</li><li><strong>Pipedrive</strong> — synchronisation complète bidirectionnelle</li><li><strong>GoHighLevel (GHL)</strong> — synchronisation complète bidirectionnelle</li><li><strong>Airtable</strong> — synchronisation complète bidirectionnelle</li><li><strong>Systeme.io</strong> — import de contacts via webhook</li><li><strong>iClosed</strong> — synchronisation unidirectionnelle via webhook</li></ul><p>Cela dit, nous recommandons d'utiliser le <strong>CRM intégré CloseOS Business</strong> : c'est lui qui offre les meilleures performances et la gestion la plus simple dans cet écosystème. Tout est conçu pour fonctionner ensemble, sans friction.</p></div>}
+                answer={<div className="space-y-3"><p>Oui. En plus de notre propre CRM intégré, CloseOS Business se connecte nativement à <strong>6 plateformes</strong> :</p><ul className="list-disc pl-5 space-y-1"><li><strong>HubSpot</strong> — synchronisation complète bidirectionnelle</li><li><strong>Pipedrive</strong> — synchronisation complète bidirectionnelle</li><li><strong>GoHighLevel (GHL)</strong> — synchronisation complète bidirectionnelle</li><li><strong>Airtable</strong> — synchronisation complète bidirectionnelle</li><li><strong>Systeme.io</strong> — import de contacts via webhook</li><li><strong>iClosed</strong> — synchronisation unidirectionnelle via webhook</li><li><strong>CSV</strong> — importez/exportez vos prospects depuis n'importe quel outil</li></ul><p>Un <strong>prompt IA intégré</strong> permet de reformater automatiquement n'importe quel fichier CSV pour le rendre compatible avec CloseOS.</p><p>Cela dit, nous recommandons d'utiliser le <strong>CRM intégré CloseOS Business</strong> : c'est lui qui offre les meilleures performances et la gestion la plus simple dans cet écosystème. Tout est conçu pour fonctionner ensemble, sans friction.</p></div>}
               />
               <FAQItem
                 question="Pourquoi utiliser le CRM CloseOS si j'ai déjà HubSpot ou Pipedrive ?"
@@ -758,6 +763,82 @@ const SharedPipeline = () => (
         <span className="text-xs font-bold text-stone-400">12</span>
       </div>
       <PipelineCard name="Michel Robert" source="MAI 24 - 14:00" highlight={false} />
+    </div>
+  </motion.div>
+);
+
+const RevenueStripe = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-100px" }}
+    transition={{ duration: 0.8, delay: 0.3 }}
+    className="lg:col-span-3 bg-gradient-to-br from-[#635BFF]/[0.03] to-white rounded-3xl p-8 md:p-10 border border-[#635BFF]/10 shadow-sm relative overflow-hidden"
+  >
+    <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#635BFF]/10 to-emerald-500/5 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
+
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 relative z-10">
+      {/* Left — Texte */}
+      <div className="lg:col-span-2 flex flex-col justify-center">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-12 h-12 rounded-xl bg-[#635BFF]/10 flex items-center justify-center">
+            <DollarSign className="size-6 text-[#635BFF]" />
+          </div>
+          <span className="px-3 py-1 rounded-full bg-[#635BFF]/10 text-[#635BFF] text-xs font-bold uppercase tracking-wider">Stripe Connect</span>
+        </div>
+        <h3 className="text-2xl md:text-3xl font-bold text-[#111111] mb-3 tracking-tight">Chiffre d'affaires en temps réel</h3>
+        <p className="text-stone-500 mb-6 leading-relaxed">
+          Connectez votre Stripe et suivez vos revenus réels — pas des estimations. Chaque paiement récurrent incrémente automatiquement le CA du closer qui a closé le deal.
+        </p>
+        <ul className="space-y-3">
+          <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
+            <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> MRR, abonnements actifs et churn en un coup d'œil
+          </li>
+          <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
+            <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> Matching auto prospects ↔ clients Stripe
+          </li>
+          <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
+            <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> Charges, commissions et marge nette calculés
+          </li>
+          <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
+            <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> Nouveau client Stripe = fiche prospect auto créée
+          </li>
+        </ul>
+      </div>
+
+      {/* Right — Mini dashboard preview */}
+      <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">MRR</p>
+          <p className="text-2xl font-black text-[#111111]">8,450€</p>
+          <p className="text-xs text-emerald-600 font-semibold mt-1">+12% vs mois dernier</p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">CA du mois</p>
+          <p className="text-2xl font-black text-[#111111]">24,800€</p>
+          <p className="text-xs text-emerald-600 font-semibold mt-1">+8% vs mois dernier</p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">Marge nette</p>
+          <p className="text-2xl font-black text-[#111111]">18,200€</p>
+          <p className="text-xs text-emerald-600 font-semibold mt-1">73% du CA</p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">Abonnements</p>
+          <p className="text-2xl font-black text-[#111111]">47</p>
+          <p className="text-xs text-stone-400 font-semibold mt-1">actifs ce mois</p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">Commissions</p>
+          <p className="text-2xl font-black text-[#111111]">4,960€</p>
+          <p className="text-xs text-stone-400 font-semibold mt-1">3 closers</p>
+        </div>
+        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">Churn</p>
+          <p className="text-2xl font-black text-[#111111]">2.1%</p>
+          <p className="text-xs text-emerald-600 font-semibold mt-1">-0.5% vs dernier</p>
+        </div>
+      </div>
     </div>
   </motion.div>
 );
@@ -1250,7 +1331,7 @@ const rolesData: RoleData[] = [
         items: [
           'Vue Kanban drag-drop + Tableau de TOUS les prospects',
           'Assignation setter/closer : manuelle, tournante ou hasard',
-          '8 stages avec sync HubSpot, Pipedrive, GoHighLevel, Airtable, Systeme.io, iClosed',
+          'Stages personnalisables à l\'infini + sync HubSpot, Pipedrive, GoHighLevel, Airtable, Systeme.io, iClosed, CSV',
           'Filtres avancés : période, membre, statut, offre',
         ],
       },
