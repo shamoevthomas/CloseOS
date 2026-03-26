@@ -7,9 +7,24 @@ interface BusinessStripeConnectModalProps {
   isOpen: boolean;
   onClose: () => void;
   returnPath?: string;
+  benefits?: string[];
+  connectedDescription?: string;
 }
 
-export function BusinessStripeConnectModal({ isOpen, onClose, returnPath = '/business/factures' }: BusinessStripeConnectModalProps) {
+const DEFAULT_BENEFITS = [
+  'Recevez vos commissions par CB directement sur votre compte bancaire.',
+  'Vos clients paient en 1 clic depuis le PDF de la facture.',
+];
+
+const DEFAULT_CONNECTED_DESC = 'Votre compte Stripe est correctement relié. Vous pouvez recevoir des paiements directement sur vos factures.';
+
+export function BusinessStripeConnectModal({
+  isOpen,
+  onClose,
+  returnPath = '/business/factures',
+  benefits = DEFAULT_BENEFITS,
+  connectedDescription = DEFAULT_CONNECTED_DESC,
+}: BusinessStripeConnectModalProps) {
   const { user } = useBusinessAuth();
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
@@ -128,8 +143,7 @@ export function BusinessStripeConnectModal({ isOpen, onClose, returnPath = '/bus
                 Compte actif
               </h3>
               <p className="text-sm text-[#444748] dark:text-neutral-400 mb-6 px-4">
-                Votre compte Stripe est correctement relié. Vous pouvez recevoir des paiements
-                directement sur vos factures.
+                {connectedDescription}
               </p>
 
               <div className="bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl p-3 border border-[#c4c7c7]/10 dark:border-neutral-700 mb-6 text-left flex items-center justify-between">
@@ -160,18 +174,14 @@ export function BusinessStripeConnectModal({ isOpen, onClose, returnPath = '/bus
             /* Disconnected state */
             <div className="space-y-6">
               <div className="space-y-3">
-                <div className="flex items-start gap-3 bg-[#006c49]/5 border border-[#006c49]/10 rounded-xl p-3">
-                  <CheckCircle2 className="h-5 w-5 text-[#006c49] shrink-0 mt-0.5" />
-                  <p className="text-sm text-[#444748] dark:text-neutral-300">
-                    Recevez vos commissions par CB directement sur votre compte bancaire.
-                  </p>
-                </div>
-                <div className="flex items-start gap-3 bg-[#006c49]/5 border border-[#006c49]/10 rounded-xl p-3">
-                  <CheckCircle2 className="h-5 w-5 text-[#006c49] shrink-0 mt-0.5" />
-                  <p className="text-sm text-[#444748] dark:text-neutral-300">
-                    Vos clients paient en 1 clic depuis le PDF de la facture.
-                  </p>
-                </div>
+                {benefits.map((text, i) => (
+                  <div key={i} className="flex items-start gap-3 bg-[#006c49]/5 border border-[#006c49]/10 rounded-xl p-3">
+                    <CheckCircle2 className="h-5 w-5 text-[#006c49] shrink-0 mt-0.5" />
+                    <p className="text-sm text-[#444748] dark:text-neutral-300">
+                      {text}
+                    </p>
+                  </div>
+                ))}
               </div>
 
               <button

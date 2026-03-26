@@ -77,7 +77,10 @@ export function BusinessRevenue() {
   const { user } = useBusinessAuth()
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<RevenueSummary | null>(null)
-  const [stripeConnected, setStripeConnected] = useState(false)
+  // If returning from Stripe Connect, assume connected immediately (prevents race condition with checkStripe)
+  const [stripeConnected, setStripeConnected] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('stripe_connected') === 'true' } catch { return false }
+  })
   const [stripeModalOpen, setStripeModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'revenue' | 'charges' | 'margin'>('revenue')
 
@@ -121,16 +124,23 @@ export function BusinessRevenue() {
   // Handle return from Stripe Connect OAuth
   const handledStripeReturn = useRef(false)
   useEffect(() => {
-    if (handledStripeReturn.current) return
+    if (handledStripeReturn.current || !user?.id) return
     const params = new URLSearchParams(window.location.search)
     if (params.get('stripe_connected') === 'true') {
       handledStripeReturn.current = true
       window.history.replaceState({}, '', window.location.pathname)
-      toast.success('Compte Stripe connecté avec succès !')
-      checkStripe()
-      fetchRevenue()
+      // Mark as connected in DB (same pattern as InvoicesPage)
+      supabase
+        .from('profiles')
+        .update({ stripe_connected: true })
+        .eq('id', user.id)
+        .then(() => {
+          setStripeConnected(true)
+          toast.success('Compte Stripe connecté avec succès !')
+          fetchRevenue()
+        })
     }
-  }, [])
+  }, [user?.id])
 
   // Charge CRUD
   const addCharge = async (type: 'fixed' | 'variable') => {
@@ -473,7 +483,17 @@ export function BusinessRevenue() {
         </div>
       )}
 
-      <BusinessStripeConnectModal isOpen={stripeModalOpen} onClose={() => { setStripeModalOpen(false); checkStripe() }} returnPath="/business/revenue" />
+      <BusinessStripeConnectModal
+        isOpen={stripeModalOpen}
+        onClose={() => { setStripeModalOpen(false); checkStripe() }}
+        returnPath="/business/revenue"
+        benefits={[
+          "Suivez votre chiffre d'affaires réel basé sur les paiements Stripe.",
+          "Chaque paiement récurrent met à jour automatiquement le CA de vos closers.",
+          "Visualisez MRR, abonnements actifs, churn et marge nette en temps réel.",
+        ]}
+        connectedDescription="Votre compte Stripe est connecté. Vos revenus et abonnements sont synchronisés en temps réel."
+      />
     </div>
   )
 }
