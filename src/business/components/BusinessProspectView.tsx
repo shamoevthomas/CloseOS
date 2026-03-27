@@ -46,6 +46,7 @@ interface Formula {
   price: number
   description: string | null
   resources: { name: string; url: string; type: string }[]
+  billing_type?: 'one_time' | 'subscription' | 'quote'
 }
 
 interface Campaign {
@@ -805,8 +806,8 @@ export function BusinessProspectView({
                 </div>
               )}
 
-              {/* SECTION ABONNEMENT STRIPE — visible quand prospect matche */}
-              {local.stripe_subscription_id && (
+              {/* SECTION ABONNEMENT STRIPE — visible quand prospect matche ET formule abonnement */}
+              {local.stripe_subscription_id && formula?.billing_type === 'subscription' && (
                 <div className="animate-in slide-in-from-top-4 fade-in duration-300">
                   <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-[#635BFF] mb-3">
                     <CreditCard className="h-4 w-4" /> Abonnement Stripe
@@ -850,8 +851,8 @@ export function BusinessProspectView({
                 </div>
               )}
 
-              {/* Bouton matching Stripe manuel — visible quand won et pas matche */}
-              {local.stage === 'won' && !local.stripe_subscription_id && !(isTeamMember && teamMember?.role === 'Setter') && (
+              {/* Bouton matching Stripe manuel — visible quand won, formule abonnement, et pas matche */}
+              {local.stage === 'won' && formula?.billing_type === 'subscription' && !local.stripe_subscription_id && !(isTeamMember && teamMember?.role === 'Setter') && (
                 <button
                   onClick={() => setStripeMatchOpen(true)}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[#635BFF]/30 text-[#635BFF] hover:bg-[#635BFF]/5 transition-colors text-sm font-bold"

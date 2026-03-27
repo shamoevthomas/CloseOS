@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
-import { fromZonedTime } from 'date-fns-tz'
+import { fromZonedTime, toZonedTime } from 'date-fns-tz'
 import Stripe from 'stripe'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
@@ -2542,24 +2542,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const availableSlots: { date: string; time: string; member_ids: string[]; datetime_utc: string }[] = []
 
       for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
-        const dateObj = new Date(now.getTime() + dayOffset * 86400000)
-        const jsDay = dateObj.getUTCDay()
-        const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1
-        const dateStr = dateObj.toISOString().split('T')[0]
-
         // Key by datetime_utc to group members at the same absolute time
-        const utcToMembers: Record<string, { member_ids: string[]; date: string; time: string }> = {}
+        const utcToMembers: Record<string, { member_ids: string[] }> = {}
 
         for (const memberId of memberIds) {
-          // Check absence
-          const isAbsent = allAbsences.some((a: any) => a.team_member_id === memberId && dateStr >= a.start_date && dateStr <= a.end_date)
+          const memberTz = memberTimezones[memberId] || 'Europe/Paris'
+
+          // Compute the member's local date for this day offset
+          const memberNow = toZonedTime(now, memberTz)
+          const memberDateObj = new Date(memberNow.getTime() + dayOffset * 86400000)
+          const memberDateStr = `${memberDateObj.getFullYear()}-${String(memberDateObj.getMonth() + 1).padStart(2, '0')}-${String(memberDateObj.getDate()).padStart(2, '0')}`
+          const jsDay = memberDateObj.getDay()
+          const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1
+
+          // Check absence (absences are in member's local dates)
+          const isAbsent = allAbsences.some((a: any) => a.team_member_id === memberId && memberDateStr >= a.start_date && memberDateStr <= a.end_date)
           if (isAbsent) continue
 
           const memberSlots = allSlots.filter((s: any) => s.team_member_id === memberId && s.day_of_week === dayOfWeek)
           if (memberSlots.length === 0) continue
 
-          const memberAppts = allAppointments.filter((a: any) => a.assigned_to === memberId && a.date === dateStr)
-          const memberTz = memberTimezones[memberId] || 'Europe/Paris'
+          // Filter appointments for this member on this local date
+          const memberAppts = allAppointments.filter((a: any) => a.assigned_to === memberId && a.date === memberDateStr)
           const constraints = memberConstraints[memberId] || { max_calls_per_day: null, buffer_before_booking: 0, min_booking_notice: 0 }
 
           // Max calls per day check
@@ -2576,8 +2580,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const m = mins % 60
               const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 
-              // Convert member's local time to UTC for all comparisons
-              const slotUtcMs = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
+              // Convert member's local time to UTC using the correct local date
+              const slotUtcMs = fromZonedTime(`${memberDateStr}T${timeStr}:00`, memberTz).getTime()
 
               // Skip past slots (timezone-aware)
               if (slotUtcMs <= now.getTime()) continue
@@ -2594,7 +2598,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const [aH, aM] = appt.time.split(':').map(Number)
                 const apptStart = aH * 60 + aM
                 const apptEnd = apptStart + (appt.duration || 30)
-                // Slot must not overlap with appointment + buffer zone
                 return mins < (apptEnd + buffer) && (mins + duration) > (apptStart - buffer)
               })
               if (hasConflict) continue
@@ -2613,20 +2616,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (hasGcalConflict) continue
               }
 
-              // Use already-computed UTC time
               const datetimeUtc = new Date(slotUtcMs).toISOString()
 
               if (!utcToMembers[datetimeUtc]) {
-                utcToMembers[datetimeUtc] = { member_ids: [], date: dateStr, time: timeStr }
+                utcToMembers[datetimeUtc] = { member_ids: [] }
               }
               utcToMembers[datetimeUtc].member_ids.push(memberId)
             }
           }
         }
 
-        // Add all available time slots for this date
+        // Add all available time slots for this date (date/time will be derived from datetime_utc by client)
         for (const [datetimeUtc, info] of Object.entries(utcToMembers)) {
-          availableSlots.push({ date: info.date, time: info.time, member_ids: info.member_ids, datetime_utc: datetimeUtc })
+          availableSlots.push({ date: '', time: '', member_ids: info.member_ids, datetime_utc: datetimeUtc })
         }
       }
 
@@ -3801,6 +3803,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Create appointment if date/time provided
       let appointment = null
+      // Compute member's local date/time from datetime_utc (for correct storage & conflict checking)
+      let memberLocalDate = date
+      let memberLocalTime = time
+      let memberTzForAppt = 'Europe/Paris'
+      if (datetime_utc && assigned_member_id) {
+        if (assigned_member_id === campaign.user_id) {
+          const { data: ownerTzD } = await supabase.from('business_users').select('timezone').eq('id', campaign.user_id).single()
+          memberTzForAppt = ownerTzD?.timezone || 'Europe/Paris'
+        } else {
+          const { data: tmTzD } = await supabase.from('business_team_members').select('timezone').eq('id', assigned_member_id).single()
+          memberTzForAppt = tmTzD?.timezone || 'Europe/Paris'
+        }
+        const memberLocal = toZonedTime(new Date(datetime_utc), memberTzForAppt)
+        memberLocalDate = `${memberLocal.getFullYear()}-${String(memberLocal.getMonth() + 1).padStart(2, '0')}-${String(memberLocal.getDate()).padStart(2, '0')}`
+        memberLocalTime = `${String(memberLocal.getHours()).padStart(2, '0')}:${String(memberLocal.getMinutes()).padStart(2, '0')}`
+      }
+      // Compute prospect's local date/time from datetime_utc (for emails)
+      let prospectLocalDate = date
+      let prospectLocalTime = time
+      if (datetime_utc && prospect_timezone) {
+        const prospectLocal = toZonedTime(new Date(datetime_utc), prospect_timezone)
+        prospectLocalDate = `${prospectLocal.getFullYear()}-${String(prospectLocal.getMonth() + 1).padStart(2, '0')}-${String(prospectLocal.getDate()).padStart(2, '0')}`
+        prospectLocalTime = `${String(prospectLocal.getHours()).padStart(2, '0')}:${String(prospectLocal.getMinutes()).padStart(2, '0')}`
+      }
       if (date && time) {
         const { data: appt, error: apptErr } = await supabase
           .from('business_appointments')
@@ -3808,8 +3834,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             user_id: campaign.user_id,
             campaign_id: campaign.id,
             prospect_id: prospect.id,
-            date,
-            time,
+            date: memberLocalDate,
+            time: memberLocalTime,
             duration: campaign.booking_duration || 30,
             status: 'pending',
             datetime_utc: datetime_utc || null,
@@ -3881,14 +3907,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   assigneeName = tmProfile?.name || ''
                 }
 
-                // Remplacer les variables template dans le titre et la description
+                // Remplacer les variables template dans le titre et la description (member's local time for calendar)
                 const replaceVars = (text: string) => text
                   .replace(/\{\{lead_name\}\}/gi, name || '')
                   .replace(/\{\{lead_email\}\}/gi, email || '')
                   .replace(/\{\{lead_phone\}\}/gi, phone || '')
                   .replace(/\{\{assignee_name\}\}/gi, assigneeName)
-                  .replace(/\{\{date\}\}/gi, date || '')
-                  .replace(/\{\{time\}\}/gi, time || '')
+                  .replace(/\{\{date\}\}/gi, memberLocalDate || '')
+                  .replace(/\{\{time\}\}/gi, memberLocalTime || '')
 
                 const rawTitle = campaign.booking_title || `Rendez-vous avec ${name}`
                 const summary = replaceVars(rawTitle)
@@ -3947,21 +3973,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           memberDisplayName = tmP?.name || ''
         }
 
-        // Remplacer les variables template
+        // Remplacer les variables template (prospect's timezone for customer-facing content)
         const replaceBookingVars = (text: string) => text
           .replace(/\{\{lead_name\}\}/gi, name || '')
           .replace(/\{\{lead_email\}\}/gi, email || '')
           .replace(/\{\{lead_phone\}\}/gi, phone || '')
           .replace(/\{\{assignee_name\}\}/gi, memberDisplayName)
-          .replace(/\{\{date\}\}/gi, date || '')
-          .replace(/\{\{time\}\}/gi, time || '')
+          .replace(/\{\{date\}\}/gi, prospectLocalDate || '')
+          .replace(/\{\{time\}\}/gi, prospectLocalTime || '')
 
         const eventTitle = replaceBookingVars(campaign.booking_title || `Rendez-vous avec ${name}`)
 
         // 1) Notification in-app (reminders) pour owner + HoS + membre assigné
         try {
           const notifTitle = `Nouveau rendez-vous : ${name}`
-          const notifDesc = `${name} a réservé un créneau le ${date} à ${time} (${apptDuration} min)${email ? ` — ${email}` : ''}`
+          const notifDesc = `${name} a réservé un créneau le ${memberLocalDate} à ${memberLocalTime} (${apptDuration} min)${email ? ` — ${email}` : ''}`
 
           const reminderRows: { user_id: string; title: string; description: string; reminder_date: string; is_done: boolean; is_notification: boolean }[] = []
 
@@ -4001,7 +4027,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               if (authU?.user?.email) notifEmails.push(authU.user.email)
             }
 
-            const notifHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Nouveau rendez-vous</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;"><strong>${name}</strong> a r&#233;serv&#233; un cr&#233;neau via votre page de capture.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:12px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Date</span><br><span class="inter" style="font-size:16px;color:#111111;font-weight:500;">${date} &#224; ${time}</span></td></tr><tr><td style="padding-bottom:12px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Prospect</span><br><span class="inter" style="font-size:16px;color:#111111;font-weight:500;">${name}${email ? ` &mdash; ${email}` : ''}${phone ? ` &mdash; ${phone}` : ''}</span></td></tr>${appointment.google_meet_link ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Google Meet</span><br><a href="${appointment.google_meet_link}" style="font-size:16px;color:#1a73e8;text-decoration:none;font-weight:500;">${appointment.google_meet_link}</a></td></tr>` : ''}</table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center"><a href="https://www.closeos.fr/business/rendez-vous" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Voir les rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
+            const notifHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Nouveau rendez-vous</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;"><strong>${name}</strong> a r&#233;serv&#233; un cr&#233;neau via votre page de capture.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:40px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:12px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Date</span><br><span class="inter" style="font-size:16px;color:#111111;font-weight:500;">${memberLocalDate} &#224; ${memberLocalTime}</span></td></tr><tr><td style="padding-bottom:12px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Prospect</span><br><span class="inter" style="font-size:16px;color:#111111;font-weight:500;">${name}${email ? ` &mdash; ${email}` : ''}${phone ? ` &mdash; ${phone}` : ''}</span></td></tr>${appointment.google_meet_link ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">Google Meet</span><br><a href="${appointment.google_meet_link}" style="font-size:16px;color:#1a73e8;text-decoration:none;font-weight:500;">${appointment.google_meet_link}</a></td></tr>` : ''}</table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center"><a href="https://www.closeos.fr/business/rendez-vous" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Voir les rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
 
             for (const em of notifEmails) {
               fetch('https://api.brevo.com/v3/smtp/email', {
@@ -4010,7 +4036,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 body: JSON.stringify({
                   sender: { name: 'CloseOS', email: 'support@closeos.fr' },
                   to: [{ email: em }],
-                  subject: `Nouveau rendez-vous : ${name} — ${date} à ${time}`,
+                  subject: `Nouveau rendez-vous : ${name} — ${memberLocalDate} à ${memberLocalTime}`,
                   htmlContent: notifHtml,
                 })
               }).catch(() => {})
@@ -4023,14 +4049,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // 3) Email de confirmation au prospect avec fichier ICS + lien Meet
         if (email && BREVO_KEY) {
           try {
-            const [eH, eM] = time.split(':').map(Number)
+            const [eH, eM] = prospectLocalTime.split(':').map(Number)
             const endMins = eH * 60 + eM + apptDuration
             const endTimeStr = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
 
             // Générer le fichier ICS
             const icsUid = `closeos-${appointment.id}@closeos.fr`
-            const dtStart = `${date.replace(/-/g, '')}T${time.replace(/:/g, '')}00`
-            const dtEnd = `${date.replace(/-/g, '')}T${endTimeStr.replace(/:/g, '')}00`
+            const dtStart = `${prospectLocalDate.replace(/-/g, '')}T${prospectLocalTime.replace(/:/g, '')}00`
+            const dtEnd = `${prospectLocalDate.replace(/-/g, '')}T${endTimeStr.replace(/:/g, '')}00`
             const tzId = prospect_timezone || 'Europe/Paris'
             const meetLink = appointment.google_meet_link || ''
             const nowStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
@@ -4057,8 +4083,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             const icsBase64 = Buffer.from(icsContent).toString('base64')
 
-            // Date formatée en français
-            const dateObj = new Date(`${date}T${time}:00`)
+            // Date formatée en français (prospect's local timezone)
+            const dateObj = new Date(`${prospectLocalDate}T${prospectLocalTime}:00`)
             const joursSemaine = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
             const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
             const dateFr = `${joursSemaine[dateObj.getDay()]} ${dateObj.getDate()} ${mois[dateObj.getMonth()]} ${dateObj.getFullYear()}`
@@ -4070,7 +4096,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const cancelUrl = `https://www.closeos.fr/appointment/${appointment.cancel_token}?action=cancel`
             const rescheduleUrl = `https://www.closeos.fr/appointment/${appointment.reschedule_token}?action=reschedule`
 
-            const confirmHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Rendez-vous confirm&#233;</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong>${name}</strong>, votre rendez-vous a bien &#233;t&#233; enregistr&#233;.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128197; Date</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${dateFr}</span></td></tr><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128337; Horaire</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${time} &mdash; ${endTimeStr} (${apptDuration} min)</span></td></tr>${memberDisplayName ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128100; Avec</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${memberDisplayName}</span></td></tr>` : ''}</table></div>${meetSection}<div style="background-color:#f5f3f2;border-radius:16px;padding:20px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:18px;line-height:1;">&#128206;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Un fichier d'invitation (.ics) est joint &#224; cet email. Ouvrez-le pour ajouter le rendez-vous &#224; votre calendrier.</p></td></tr></table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center" style="padding-bottom:12px;"><a href="${rescheduleUrl}" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Reprogrammer le rendez-vous</a></td></tr><tr><td align="center"><a href="${cancelUrl}" style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#ba1a1a;text-decoration:none;">Annuler le rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
+            const confirmHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.1;">Rendez-vous confirm&#233;</h1><p class="inter" style="margin:0 0 32px;font-size:16px;color:#1b1c1b;text-align:left;">Bonjour <strong>${name}</strong>, votre rendez-vous a bien &#233;t&#233; enregistr&#233;.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128197; Date</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${dateFr}</span></td></tr><tr><td style="padding-bottom:16px;"><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128337; Horaire</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${prospectLocalTime} &mdash; ${endTimeStr} (${apptDuration} min)</span></td></tr>${memberDisplayName ? `<tr><td><span class="inter" style="font-size:14px;color:#1b1c1b;opacity:0.6;">&#128100; Avec</span><br><span class="inter" style="font-size:18px;color:#111111;font-weight:500;">${memberDisplayName}</span></td></tr>` : ''}</table></div>${meetSection}<div style="background-color:#f5f3f2;border-radius:16px;padding:20px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:18px;line-height:1;">&#128206;</div></td><td><p class="inter" style="margin:0;font-size:14px;color:#1b1c1b;">Un fichier d'invitation (.ics) est joint &#224; cet email. Ouvrez-le pour ajouter le rendez-vous &#224; votre calendrier.</p></td></tr></table></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center" style="padding-bottom:12px;"><a href="${rescheduleUrl}" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Reprogrammer le rendez-vous</a></td></tr><tr><td align="center"><a href="${cancelUrl}" style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#ba1a1a;text-decoration:none;">Annuler le rendez-vous</a></td></tr></table></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p></td></tr></table></td></tr></table></body></html>`
 
             await fetch('https://api.brevo.com/v3/smtp/email', {
               method: 'POST',
@@ -5500,6 +5526,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const ps = new Date(now)
         ps.setMonth(ps.getMonth() - monthsBack + 1)
         ps.setDate(1)
+        ps.setHours(0, 0, 0, 0)
         periodStartISO = ps.toISOString()
       }
 
@@ -5677,14 +5704,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select('*')
         .eq('business_owner_id', user_id)
 
-      // Filter charges for the period (month is a date column, returns as YYYY-MM-DD)
-      const periodCharges = (charges || []).filter(c => {
-        if (!c.month) return false
-        if (period === 'all') return true
-        return new Date(c.month) >= periodStartDate
-      })
-      const fixedCharges = periodCharges.filter(c => c.type === 'fixed')
-      const variableCharges = periodCharges.filter(c => c.type === 'variable')
+      // Charges: always show all (not filtered by period)
+      const allCharges = (charges || []).filter(c => !!c.month)
+      const fixedCharges = allCharges.filter(c => c.type === 'fixed')
+      const variableCharges = allCharges.filter(c => c.type === 'variable')
       const totalFixed = fixedCharges.reduce((sum, c) => sum + (Number(c.amount) || 0), 0)
       const totalVariable = variableCharges.reduce((sum, c) => sum + (Number(c.amount) || 0), 0)
 
@@ -5965,6 +5988,120 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       return res.status(200).json({ success: true })
+    }
+
+    // ─── Send login code (forgot password / magic code login) ───
+    if (action === 'send-login-code') {
+      const { email } = req.body
+      if (!email) return res.status(400).json({ error: 'Email requis' })
+
+      // Check that a user exists with this email
+      const { data: userList } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+      const matchedUser = userList?.users?.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
+      if (!matchedUser) {
+        // Don't reveal if email exists — send generic success
+        return res.status(200).json({ success: true })
+      }
+
+      // Check the user is linked to a business (owner or team member)
+      const { data: bizOwner } = await supabase.from('business_users').select('id').eq('id', matchedUser.id).maybeSingle()
+      const { data: bizMember } = await supabase.from('business_team_members').select('id').eq('user_id', matchedUser.id).maybeSingle()
+      if (!bizOwner && !bizMember) {
+        return res.status(200).json({ success: true })
+      }
+
+      // Generate 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString()
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString()
+
+      // Invalidate old codes
+      await supabase
+        .from('business_login_codes')
+        .update({ used: true })
+        .eq('email', email.toLowerCase())
+        .eq('used', false)
+
+      // Insert new code
+      const { error: insertErr } = await supabase
+        .from('business_login_codes')
+        .insert({ email: email.toLowerCase(), code, expires_at: expiresAt })
+
+      if (insertErr) return res.status(500).json({ error: insertErr.message })
+
+      // Format code with space: "847 291"
+      const displayCode = code.slice(0, 3) + ' ' + code.slice(3)
+
+      const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (!BREVO_API_KEY) return res.status(500).json({ error: 'BREVO_API_KEY missing' })
+
+      const htmlContent = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"><style>.manrope{font-family:'Manrope',Arial,sans-serif!important;font-weight:800!important;letter-spacing:-0.04em!important}.inter{font-family:'Inter',Helvetica,sans-serif!important;line-height:1.6!important}.gradient-text{background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8}</style></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><div class="manrope" style="font-size:28px;color:#111111;">Close<span class="gradient-text">OS</span></div></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 class="manrope" style="margin:0 0 16px;font-size:42px;color:#111111;text-align:left;line-height:1.1;">Code de<br>connexion</h1><p class="inter" style="margin:0 0 48px;font-size:16px;color:#1b1c1b;text-align:left;">Utilisez le code ci-dessous pour vous connecter \u00e0 CloseOS Business.</p><div style="background-color:#f5f3f2;border-radius:48px;padding:40px 24px;text-align:center;margin-bottom:48px;"><div class="manrope" style="font-size:48px;color:#111111;letter-spacing:12px;margin-left:12px;">${displayCode}</div></div><p class="inter" style="margin:0 0 32px;font-size:14px;color:#1b1c1b;text-align:left;">Ce code expire dans <strong style="color:#111111;">10 minutes</strong>. Ne le partagez avec personne.</p><div style="background-color:#fbf9f8;border-radius:24px;padding:24px;border-left:4px solid #ffb95f;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="width:32px;vertical-align:top;"><div style="font-size:20px;line-height:1;">\ud83d\udca1</div></td><td><p class="inter" style="margin:0;font-size:13px;color:#1b1c1b;">Si vous n'avez pas demand\u00e9 ce code, ignorez cet e-mail. Quelqu'un a peut-\u00eatre saisi votre adresse par erreur.</p></td></tr></table></div></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p class="inter" style="margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r\u00e9serv\u00e9s</p><p class="inter" style="margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a \u00e9t\u00e9 envoy\u00e9 automatiquement, merci de ne pas y r\u00e9pondre.</p></td></tr></table></td></tr></table></body></html>`
+
+      const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+          to: [{ email }],
+          subject: 'Votre code de connexion CloseOS',
+          htmlContent
+        })
+      })
+
+      if (!emailRes.ok) return res.status(500).json({ error: 'Erreur envoi email' })
+
+      return res.status(200).json({ success: true })
+    }
+
+    // ─── Verify login code & sign in ───
+    if (action === 'verify-login-code') {
+      const { email, code } = req.body
+      if (!email || !code) return res.status(400).json({ error: 'Email et code requis' })
+
+      // Find valid code
+      const { data: codeRow } = await supabase
+        .from('business_login_codes')
+        .select('*')
+        .eq('email', email.toLowerCase())
+        .eq('code', code.replace(/\s/g, ''))
+        .eq('used', false)
+        .gte('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!codeRow) return res.status(401).json({ error: 'Code invalide ou expiré' })
+
+      // Mark code as used
+      await supabase
+        .from('business_login_codes')
+        .update({ used: true })
+        .eq('id', codeRow.id)
+
+      // Find user and generate a magic link to sign them in
+      const { data: userList } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+      const matchedUser = userList?.users?.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
+      if (!matchedUser) return res.status(404).json({ error: 'Utilisateur introuvable' })
+
+      // Generate a magic link (OTP) for this user
+      const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: email.toLowerCase(),
+        options: {
+          redirectTo: `${process.env.VITE_APP_URL || 'https://closeos.fr'}/business/dashboard`
+        }
+      })
+
+      if (linkErr) return res.status(500).json({ error: linkErr.message })
+
+      // Return the token hash so the frontend can verify the OTP
+      const hashed_token = linkData.properties?.hashed_token
+      if (!hashed_token) return res.status(500).json({ error: 'Impossible de générer le lien de connexion' })
+
+      return res.status(200).json({
+        success: true,
+        token_hash: hashed_token,
+        email: email.toLowerCase()
+      })
     }
 
     return res.status(400).json({ error: 'Invalid action' })

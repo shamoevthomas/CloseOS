@@ -100,6 +100,8 @@
     { "source": "/api/business-delete-member", "destination": "/api/business?action=delete-member" },
     { "source": "/api/business-send-delete-owner-code", "destination": "/api/business?action=send-delete-owner-code" },
     { "source": "/api/business-delete-owner-account", "destination": "/api/business?action=delete-owner-account" },
+    { "source": "/api/business-send-login-code", "destination": "/api/business?action=send-login-code" },
+    { "source": "/api/business-verify-login-code", "destination": "/api/business?action=verify-login-code" },
 
     { "source": "/api/business-stripe-webhook", "destination": "/api/business-stripe-webhook" },
     { "source": "/api/business-revenue-summary", "destination": "/api/business?action=revenue-summary" },

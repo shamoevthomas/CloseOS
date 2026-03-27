@@ -94,6 +94,19 @@ export function BusinessRevenue() {
   const [activeTab, setActiveTab] = useState<'revenue' | 'charges' | 'margin'>('revenue')
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>('1m')
 
+  // Check if user has subscription formulas
+  const [hasSubscriptionFormula, setHasSubscriptionFormula] = useState(false)
+  useEffect(() => {
+    if (!user?.id) return
+    fetch(`/api/business?action=formulas-list&user_id=${user.id}`)
+      .then(r => r.json())
+      .then(data => {
+        const formulas = data.formulas || data || []
+        setHasSubscriptionFormula(formulas.some((f: any) => f.billing_type === 'subscription'))
+      })
+      .catch(() => {})
+  }, [user?.id])
+
   // Charge editing
   const [syncing, setSyncing] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
@@ -117,6 +130,23 @@ export function BusinessRevenue() {
   const [editingCharge, setEditingCharge] = useState<string | null>(null)
   const [editLabel, setEditLabel] = useState('')
   const [editAmount, setEditAmount] = useState('')
+
+  // Charges: managed separately with own state
+  const [localCharges, setLocalCharges] = useState<any[]>([])
+  const fetchCharges = useCallback(async () => {
+    if (!user?.id) return
+    try {
+      const res = await fetch(`/api/business-charges?user_id=${user.id}`)
+      const json = await res.json()
+      setLocalCharges(json.charges || [])
+    } catch {}
+  }, [user?.id])
+  useEffect(() => { fetchCharges() }, [fetchCharges])
+  const localFixed = localCharges.filter(c => c.type === 'fixed')
+  const localVariable = localCharges.filter(c => c.type === 'variable')
+  const localTotalFixed = localFixed.reduce((s, c) => s + (Number(c.amount) || 0), 0)
+  const localTotalVariable = localVariable.reduce((s, c) => s + (Number(c.amount) || 0), 0)
+  const localTotalCharges = localTotalFixed + localTotalVariable
 
   const checkStripe = useCallback(async () => {
     if (!user?.id) return
@@ -153,9 +183,9 @@ export function BusinessRevenue() {
     return false
   }, [user?.id])
 
-  const fetchRevenue = useCallback(async () => {
+  const fetchRevenue = useCallback(async (silent = false) => {
     if (!user?.id) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     try {
       const res = await fetch(`/api/business-revenue-summary?user_id=${user.id}&period=${selectedPeriod}`)
       const json = await res.json()
@@ -163,16 +193,16 @@ export function BusinessRevenue() {
     } catch {
       toast.error('Erreur lors du chargement des donnees')
     }
-    setLoading(false)
+    if (!silent) setLoading(false)
   }, [user?.id, selectedPeriod])
 
   useEffect(() => { checkStripe() }, [checkStripe])
   useEffect(() => { fetchRevenue() }, [fetchRevenue])
 
-  // Auto-sync: when Stripe is connected but no active subscriptions found
+  // Auto-sync: when Stripe is connected but no active subscriptions found (only for subscription formulas)
   const hasSynced = useRef(false)
   useEffect(() => {
-    if (hasSynced.current || !stripeConnected || loading || !data) return
+    if (hasSynced.current || !hasSubscriptionFormula || !stripeConnected || loading || !data) return
     if (data.activeSubscriptions.length === 0 && data.mrr === 0) {
       hasSynced.current = true
       syncStripeData().then(didSync => {
@@ -207,15 +237,17 @@ export function BusinessRevenue() {
   const addCharge = async (type: 'fixed' | 'variable') => {
     if (!newLabel.trim() || !newAmount.trim() || !user?.id) return
     try {
-      await fetch('/api/business-charges', {
+      const res = await fetch('/api/business-charges', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id, label: newLabel.trim(), amount: parseFloat(newAmount), type, month: currentMonth }),
       })
+      const json = await res.json()
+      if (json.charge) setLocalCharges(prev => [...prev, json.charge])
+      else fetchCharges()
       setNewLabel('')
       setNewAmount('')
       setAddingCharge(null)
-      fetchRevenue()
       toast.success('Charge ajoutee')
     } catch {
       toast.error('Erreur')
@@ -229,8 +261,8 @@ export function BusinessRevenue() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ charge_id: chargeId, label: editLabel.trim(), amount: parseFloat(editAmount) }),
       })
+      setLocalCharges(prev => prev.map(c => c.id === chargeId ? { ...c, label: editLabel.trim(), amount: parseFloat(editAmount) } : c))
       setEditingCharge(null)
-      fetchRevenue()
     } catch {
       toast.error('Erreur')
     }
@@ -239,7 +271,7 @@ export function BusinessRevenue() {
   const deleteCharge = async (chargeId: string) => {
     try {
       await fetch(`/api/business-charges?charge_id=${chargeId}`, { method: 'DELETE' })
-      fetchRevenue()
+      setLocalCharges(prev => prev.filter(c => c.id !== chargeId))
     } catch {
       toast.error('Erreur')
     }
@@ -270,8 +302,8 @@ export function BusinessRevenue() {
   return (
     <div className="space-y-8">
 
-      {/* ═══ Stripe not connected ═══ */}
-      {!stripeConnected && (
+      {/* ═══ Stripe not connected — only if subscription formulas exist ═══ */}
+      {hasSubscriptionFormula && !stripeConnected && (
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#635BFF]/5 via-white to-[#006c49]/5 dark:from-[#635BFF]/10 dark:via-neutral-900 dark:to-[#006c49]/10 p-8">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#635BFF]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="relative flex items-center justify-between gap-6">
@@ -328,7 +360,7 @@ export function BusinessRevenue() {
               {tab === 'revenue' ? 'Revenus' : tab === 'charges' ? 'Charges' : 'Marge nette'}
             </button>
           ))}
-          {stripeConnected && (
+          {hasSubscriptionFormula && stripeConnected && (
             <>
               <button
                 onClick={() => syncStripeData().then(ok => ok && fetchRevenue())}
@@ -354,8 +386,9 @@ export function BusinessRevenue() {
       {activeTab === 'revenue' && data && (
         <div className="space-y-8">
           {/* Hero KPI row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* MRR - Hero card */}
+          <div className={`grid grid-cols-1 ${hasSubscriptionFormula ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-6`}>
+            {/* MRR - Hero card (subscription formulas only) */}
+            {hasSubscriptionFormula && (
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#006c49] to-[#004d35] p-7 text-white">
               <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3" />
               <div className="relative">
@@ -372,6 +405,7 @@ export function BusinessRevenue() {
                 )}
               </div>
             </div>
+            )}
 
             {/* CA */}
             <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
@@ -388,23 +422,29 @@ export function BusinessRevenue() {
             </div>
 
             {/* Marge nette */}
-            <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
-              <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 ${data.netMargin >= 0 ? 'bg-[#006c49]/5' : 'bg-red-500/5'}`} />
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className={`p-1.5 rounded-lg ${data.netMargin >= 0 ? 'bg-[#006c49]/10' : 'bg-red-500/10'}`}>
-                    <Percent className={`h-4 w-4 ${data.netMargin >= 0 ? 'text-[#006c49]' : 'text-red-500'}`} />
+            {(() => {
+              const margin = data.ca - localTotalCharges - (data.commissions?.total || 0)
+              return (
+              <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
+                <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 ${margin >= 0 ? 'bg-[#006c49]/5' : 'bg-red-500/5'}`} />
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className={`p-1.5 rounded-lg ${margin >= 0 ? 'bg-[#006c49]/10' : 'bg-red-500/10'}`}>
+                      <Percent className={`h-4 w-4 ${margin >= 0 ? 'text-[#006c49]' : 'text-red-500'}`} />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">Marge nette</span>
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">Marge nette</span>
+                  <p className={`text-3xl font-extrabold font-['Manrope'] tracking-tight ${margin >= 0 ? 'text-[#006c49]' : 'text-red-500'}`}>
+                    {margin >= 0 ? '+' : ''}{fmt(margin)} <span className="text-base opacity-40">EUR</span>
+                  </p>
                 </div>
-                <p className={`text-3xl font-extrabold font-['Manrope'] tracking-tight ${data.netMargin >= 0 ? 'text-[#006c49]' : 'text-red-500'}`}>
-                  {data.netMargin >= 0 ? '+' : ''}{fmt(data.netMargin)} <span className="text-base opacity-40">EUR</span>
-                </p>
               </div>
-            </div>
+              )
+            })()}
           </div>
 
-          {/* Secondary KPIs */}
+          {/* Secondary KPIs — subscription metrics only */}
+          {hasSubscriptionFormula && (
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -428,8 +468,10 @@ export function BusinessRevenue() {
               <p className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.churnRate}%</p>
             </div>
           </div>
+          )}
 
-          {/* Active subscriptions */}
+          {/* Active subscriptions — subscription formulas only */}
+          {hasSubscriptionFormula && (
           <div className="rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400">
@@ -474,6 +516,7 @@ export function BusinessRevenue() {
               </div>
             )}
           </div>
+          )}
         </div>
       )}
 
@@ -515,8 +558,8 @@ export function BusinessRevenue() {
           <ChargesSection
             title="Charges fixes"
             type="fixed"
-            charges={data.charges.fixed}
-            total={data.charges.totalFixed}
+            charges={localFixed}
+            total={localTotalFixed}
             addingCharge={addingCharge}
             setAddingCharge={setAddingCharge}
             newLabel={newLabel}
@@ -538,8 +581,8 @@ export function BusinessRevenue() {
           <ChargesSection
             title="Charges variables"
             type="variable"
-            charges={data.charges.variable}
-            total={data.charges.totalVariable}
+            charges={localVariable}
+            total={localTotalVariable}
             addingCharge={addingCharge}
             setAddingCharge={setAddingCharge}
             newLabel={newLabel}
@@ -563,21 +606,27 @@ export function BusinessRevenue() {
       {activeTab === 'margin' && data && (
         <div className="space-y-8">
           {/* Hero margin card */}
-          <div className={`relative overflow-hidden rounded-3xl p-8 ${data.netMargin >= 0 ? 'bg-gradient-to-br from-[#006c49] to-[#004d35]' : 'bg-gradient-to-br from-red-600 to-red-700'} text-white`}>
-            <div className="absolute top-0 right-0 w-56 h-56 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-            <div className="relative flex items-end justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] opacity-60 mb-3">Marge nette {PERIODS.find(p => p.key === selectedPeriod)?.label}</p>
-                <p className="text-5xl font-extrabold font-['Manrope'] tracking-tight">
-                  {data.netMargin >= 0 ? '+' : ''}{fmt(data.netMargin)} <span className="text-xl opacity-40">EUR</span>
-                </p>
-              </div>
-              <div className="text-right space-y-2 opacity-80">
-                <p className="text-sm">CA <span className="font-extrabold">{fmt(data.ca)}</span></p>
-                <p className="text-sm">Charges <span className="font-extrabold">{fmt(data.commissions.total + data.charges.totalFixed + data.charges.totalVariable)}</span></p>
+          {(() => {
+            const margin = data.ca - localTotalCharges - (data.commissions?.total || 0)
+            const totalAllCharges = localTotalCharges + (data.commissions?.total || 0)
+            return (
+            <div className={`relative overflow-hidden rounded-3xl p-8 ${margin >= 0 ? 'bg-gradient-to-br from-[#006c49] to-[#004d35]' : 'bg-gradient-to-br from-red-600 to-red-700'} text-white`}>
+              <div className="absolute top-0 right-0 w-56 h-56 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+              <div className="relative flex items-end justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] opacity-60 mb-3">Marge nette {PERIODS.find(p => p.key === selectedPeriod)?.label}</p>
+                  <p className="text-5xl font-extrabold font-['Manrope'] tracking-tight">
+                    {margin >= 0 ? '+' : ''}{fmt(margin)} <span className="text-xl opacity-40">EUR</span>
+                  </p>
+                </div>
+                <div className="text-right space-y-2 opacity-80">
+                  <p className="text-sm">CA <span className="font-extrabold">{fmt(data.ca)}</span></p>
+                  <p className="text-sm">Charges <span className="font-extrabold">{fmt(totalAllCharges)}</span></p>
+                </div>
               </div>
             </div>
-          </div>
+            )
+          })()}
 
           {/* Chart */}
           <div className="rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
@@ -700,8 +749,8 @@ function ChargesSection({
           <div key={c.id} className="flex items-center justify-between py-3.5 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors group">
             {editingCharge === c.id ? (
               <div className="flex items-center gap-2 flex-1">
-                <input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="flex-1 px-3 py-2 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm border-none outline-none focus:ring-2 focus:ring-[#006c49]/20" />
-                <input value={editAmount} onChange={e => setEditAmount(e.target.value)} type="number" className="w-24 px-3 py-2 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm border-none outline-none focus:ring-2 focus:ring-[#006c49]/20" />
+                <input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="flex-1 px-3 py-2 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20" />
+                <input value={editAmount} onChange={e => setEditAmount(e.target.value)} type="number" className="w-24 px-3 py-2 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20" />
                 <button onClick={() => updateCharge(c.id)} className="p-2 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors"><Check className="h-4 w-4" /></button>
                 <button onClick={() => setEditingCharge(null)} className="p-2 text-[#444748] hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-full transition-colors"><X className="h-4 w-4" /></button>
               </div>
@@ -720,8 +769,8 @@ function ChargesSection({
 
         {addingCharge === type && (
           <div className="flex items-center gap-2 pt-3">
-            <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Libelle" className="flex-1 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
-            <input value={newAmount} onChange={e => setNewAmount(e.target.value)} type="number" placeholder="Montant" className="w-28 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
+            <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Libelle" className="flex-1 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
+            <input value={newAmount} onChange={e => setNewAmount(e.target.value)} type="number" placeholder="Montant" className="w-28 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
             <button onClick={() => addCharge(type)} className="p-2.5 bg-[#1b1c1b] dark:bg-white text-white dark:text-[#1b1c1b] rounded-full hover:opacity-80 transition-opacity"><Check className="h-4 w-4" /></button>
             <button onClick={() => setAddingCharge(null)} className="p-2.5 text-[#444748] hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-full transition-colors"><X className="h-4 w-4" /></button>
           </div>

@@ -5,6 +5,7 @@ import {
   Globe, Building2, User as UserIcon, Eye, EyeOff, Shield, MapPin,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import BusinessVerification from './BusinessVerification';
 
 export function BusinessInvitation() {
   const { token } = useParams<{ token: string }>();
@@ -24,6 +25,7 @@ export function BusinessInvitation() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState<{ userId: string; email: string; authMethod: 'classic' | 'google' } | null>(null);
 
   useEffect(() => {
     const validateToken = async () => {
@@ -112,8 +114,8 @@ export function BusinessInvitation() {
       }
 
       await acceptInvitation(userId, userEmail, firstName, lastName);
-      setSuccess(true);
-      setTimeout(() => navigate('/business/organisation'), 2500);
+      // Show verification before onboarding
+      setPendingVerification({ userId, email: userEmail, authMethod: 'classic' });
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue.');
     } finally {
@@ -168,8 +170,8 @@ export function BusinessInvitation() {
         parts[0] || '',
         parts.slice(1).join(' ') || '',
       );
-      setSuccess(true);
-      setTimeout(() => navigate('/business/organisation'), 2500);
+      // Show verification before onboarding
+      setPendingVerification({ userId: user.id, email: user.email || '', authMethod: 'google' });
     } catch (err: any) {
       oauthAcceptedRef.current = false; // allow retry
       setError(err.message || "Erreur lors de l'acceptation.");
@@ -215,6 +217,14 @@ export function BusinessInvitation() {
     };
   }, [tryAcceptOAuth]);
 
+  // ─── Success: redirect after verification ───
+  useEffect(() => {
+    if (success) {
+      const t = setTimeout(() => navigate('/business/organisation'), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [success, navigate]);
+
   const inviterName = invitation?.inviter?.full_name || 'Un manager';
   const inviterFirstName = inviterName.split(' ')[0];
   const companyName = ownerSettings?.company_name || 'une organisation';
@@ -248,7 +258,22 @@ export function BusinessInvitation() {
     );
   }
 
-  // ─── Success ───
+  // ─── Verification ───
+  if (pendingVerification) {
+    return (
+      <BusinessVerification
+        userId={pendingVerification.userId}
+        email={pendingVerification.email}
+        authMethod={pendingVerification.authMethod}
+        onVerified={() => {
+          setSuccess(true);
+          setPendingVerification(null);
+        }}
+        onCancel={() => setPendingVerification(null)}
+      />
+    );
+  }
+
   if (success) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-stone-50 dark:bg-neutral-900 px-4">

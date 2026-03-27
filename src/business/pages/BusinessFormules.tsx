@@ -5,6 +5,7 @@ import {
   Plus, Package, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, FileText, Video, Link2, File,
   Percent, ChevronDown, ChevronUp, Users, Eye, Upload,
+  CreditCard, CheckCircle2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -79,6 +80,14 @@ export function BusinessFormules() {
   const [teamMembers, setTeamMembers] = useState<TeamMemberBasic[]>([])
   const [teams, setTeams] = useState<BusinessTeam[]>([])
   const [formTeamId, setFormTeamId] = useState<string | null>(null)
+
+  // Stripe connection status
+  const [stripeConnected, setStripeConnected] = useState(false)
+  useEffect(() => {
+    if (!effectiveUserId) return
+    supabase.from('profiles').select('stripe_connected, stripe_account_id').eq('id', effectiveUserId).maybeSingle()
+      .then(({ data }) => setStripeConnected(!!(data?.stripe_connected && data?.stripe_account_id)))
+  }, [effectiveUserId])
 
   const fetchFormulas = useCallback(async () => {
     if (!effectiveUserId) return
@@ -467,22 +476,41 @@ export function BusinessFormules() {
 
               {/* Subscription prices */}
               {formBillingType === 'subscription' && (
-                <div className="rounded-2xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 p-5 space-y-4">
-                  <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">Tarification abonnement</p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">Prix mensuel (€) *</label>
-                      <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="49.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 p-5 space-y-4">
+                    <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">Tarification abonnement</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">Prix mensuel (€) *</label>
+                        <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="49.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">Prix annuel (€)</label>
+                        <input type="number" min="0" step="0.01" value={formYearlyPrice} onChange={(e) => setFormYearlyPrice(e.target.value)} placeholder="490.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                        <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">Laissez vide si pas d'option annuelle</p>
+                        {formYearlyPrice && parseFloat(formYearlyPrice) > 0 && (
+                          <p className="text-[11px] text-stone-600 dark:text-neutral-300 mt-1 font-semibold">
+                            ≈ {(parseFloat(formYearlyPrice) / 12).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / mois
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">Prix annuel (€)</label>
-                      <input type="number" min="0" step="0.01" value={formYearlyPrice} onChange={(e) => setFormYearlyPrice(e.target.value)} placeholder="490.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
-                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">Laissez vide si pas d'option annuelle</p>
-                      {formYearlyPrice && parseFloat(formYearlyPrice) > 0 && (
-                        <p className="text-[11px] text-stone-600 dark:text-neutral-300 mt-1 font-semibold">
-                          ≈ {(parseFloat(formYearlyPrice) / 12).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / mois
-                        </p>
-                      )}
+                  </div>
+
+                  {/* Stripe connection indicator */}
+                  <div className={`rounded-2xl border p-4 flex items-center gap-3 ${stripeConnected ? 'border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-500/5' : 'border-[#635BFF]/20 bg-[#635BFF]/5'}`}>
+                    <div className={`p-2 rounded-xl ${stripeConnected ? 'bg-emerald-500/10' : 'bg-[#635BFF]/10'}`}>
+                      {stripeConnected ? <CheckCircle2 className="h-5 w-5 text-emerald-600" /> : <CreditCard className="h-5 w-5 text-[#635BFF]" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm font-bold ${stripeConnected ? 'text-emerald-700 dark:text-emerald-400' : 'text-[#635BFF]'}`}>
+                        {stripeConnected ? 'Stripe connecte' : 'Stripe non connecte'}
+                      </p>
+                      <p className="text-[11px] text-stone-500 dark:text-neutral-400">
+                        {stripeConnected
+                          ? 'Les paiements recurrents seront automatiquement lies aux prospects gagnes avec cette formule.'
+                          : 'Connectez Stripe dans Chiffre d\'affaires pour lier automatiquement les paiements recurrents.'}
+                      </p>
                     </div>
                   </div>
                 </div>

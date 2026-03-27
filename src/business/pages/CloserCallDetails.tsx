@@ -4,7 +4,8 @@ import {
   ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign,
   Calendar, Award, Bell, Loader2,
   User, Shuffle, ArrowRightCircle, CalendarCheck, AlertCircle,
-  ChevronLeft, ChevronRight, PhoneMissed,
+  ChevronLeft, ChevronRight, PhoneMissed, UserPlus, Lock,
+  CreditCard, Search, Link2, Zap,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -43,6 +44,7 @@ interface Formula {
   name: string
   price: number
   commission?: string
+  billing_type?: 'one_time' | 'subscription' | 'quote'
 }
 
 interface CloserMember {
@@ -82,7 +84,7 @@ export function CloserCallDetails() {
   const isSetterCloser = isTeamMember && teamMember?.role === 'Setter-Closer'
   const isSetterCloserSelf = isSetterCloser && teamMember?.setter_scope === 'self'
   const showSetterOutcomes = isOwnerView || isSetterCloser
-  const { prospects, updateProspect } = useBusinessProspects()
+  const { prospects, addProspect, updateProspect } = useBusinessProspects()
   const { createEvent: createGoogleEvent, isConnected: isGoogleConnected } = useBusinessGoogleCalendar()
 
   const [call, setCall] = useState<any>(null)
@@ -115,8 +117,26 @@ export function CloserCallDetails() {
   const [reminderTime, setReminderTime] = useState('')
   const [isSavingReminder, setIsSavingReminder] = useState(false)
 
+  // Create prospect from call
+  const [creatingProspect, setCreatingProspect] = useState(false)
+  const [newProspectEmail, setNewProspectEmail] = useState('')
+  const [newProspectPhone, setNewProspectPhone] = useState('')
+  const [newProspectCompany, setNewProspectCompany] = useState('')
+
   // Formulas for commission calc
   const [formulas, setFormulas] = useState<Formula[]>([])
+
+  // Stripe linking
+  const [stripeConnected, setStripeConnected] = useState(false)
+  const [stripeLinkMode, setStripeLinkMode] = useState<'auto' | 'search' | 'manual'>('auto')
+  const [stripeSearchEmail, setStripeSearchEmail] = useState('')
+  const [stripeSearching, setStripeSearching] = useState(false)
+  const [stripeSearchResults, setStripeSearchResults] = useState<any[]>([])
+  const [stripeSearched, setStripeSearched] = useState(false)
+  const [stripeMatching, setStripeMatching] = useState(false)
+  const [stripeManualCustomerId, setStripeManualCustomerId] = useState('')
+  const [stripeManualSubId, setStripeManualSubId] = useState('')
+  const [stripeAutoResult, setStripeAutoResult] = useState<{ status: 'idle' | 'loading' | 'matched' | 'not_found'; data?: any }>({ status: 'idle' })
 
   // Closer assignment (for setter outcomes: qualified)
   const [closerMembers, setCloserMembers] = useState<CloserMember[]>([])
@@ -173,6 +193,15 @@ export function CloserCallDetails() {
     })
   }, [showSetterOutcomes, effectiveOwnerId])
 
+  // Check Stripe connection
+  useEffect(() => {
+    if (!effectiveOwnerId) return
+    supabase.from('profiles').select('stripe_connected, stripe_account_id').eq('id', effectiveOwnerId).maybeSingle()
+      .then(({ data }) => {
+        setStripeConnected(!!(data?.stripe_connected && data?.stripe_account_id))
+      })
+  }, [effectiveOwnerId])
+
   // Find linked prospect
   const prospect = call?.contact_id
     ? prospects.find(p => p.id === call.contact_id)
@@ -225,6 +254,91 @@ export function CloserCallDetails() {
   const totalCommission = amount > 0 ? (amount * commissionRate) / 100 : 0
   const monthlyCommission = paymentType === 'installments' && installmentsCount > 0
     ? totalCommission / installmentsCount : 0
+
+  // Stripe: auto-match by email
+  const handleStripeAutoMatch = useCallback(async () => {
+    if (!effectiveOwnerId || !prospect?.email) return
+    setStripeAutoResult({ status: 'loading' })
+    try {
+      const res = await fetch('/api/business-auto-match-stripe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: effectiveOwnerId, prospect_id: prospect.id, email: prospect.email }),
+      })
+      const data = await res.json()
+      if (data.matched) {
+        setStripeAutoResult({ status: 'matched', data })
+        toast.success('Abonnement Stripe lie automatiquement')
+      } else {
+        setStripeAutoResult({ status: 'not_found' })
+      }
+    } catch {
+      setStripeAutoResult({ status: 'not_found' })
+    }
+  }, [effectiveOwnerId, prospect?.email, prospect?.id])
+
+  // Stripe: search by email
+  const handleStripeSearch = useCallback(async () => {
+    if (!effectiveOwnerId || !stripeSearchEmail.trim()) return
+    setStripeSearching(true)
+    setStripeSearched(false)
+    try {
+      const res = await fetch(`/api/business-stripe-search?user_id=${effectiveOwnerId}&email=${encodeURIComponent(stripeSearchEmail.trim())}`)
+      const data = await res.json()
+      setStripeSearchResults(data.customers || [])
+      setStripeSearched(true)
+    } catch {
+      setStripeSearchResults([])
+      setStripeSearched(true)
+    }
+    setStripeSearching(false)
+  }, [effectiveOwnerId, stripeSearchEmail])
+
+  // Stripe: select a subscription from search results
+  const handleStripeSelectSub = useCallback(async (customerId: string, subscriptionId: string) => {
+    if (!effectiveOwnerId || !prospect) return
+    setStripeMatching(true)
+    try {
+      const res = await fetch('/api/business-stripe-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: effectiveOwnerId, prospect_id: prospect.id, stripe_customer_id: customerId, stripe_subscription_id: subscriptionId }),
+      })
+      const data = await res.json()
+      if (data.matched) {
+        toast.success('Abonnement Stripe lie avec succes')
+        setStripeAutoResult({ status: 'matched', data })
+      } else {
+        toast.error('Impossible de lier l\'abonnement')
+      }
+    } catch {
+      toast.error('Erreur de liaison Stripe')
+    }
+    setStripeMatching(false)
+  }, [effectiveOwnerId, prospect])
+
+  // Stripe: manual match
+  const handleStripeManualMatch = useCallback(async () => {
+    if (!effectiveOwnerId || !prospect || !stripeManualCustomerId.trim() || !stripeManualSubId.trim()) return
+    setStripeMatching(true)
+    try {
+      const res = await fetch('/api/business-stripe-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: effectiveOwnerId, prospect_id: prospect.id, stripe_customer_id: stripeManualCustomerId.trim(), stripe_subscription_id: stripeManualSubId.trim() }),
+      })
+      const data = await res.json()
+      if (data.matched) {
+        toast.success('Abonnement Stripe lie manuellement')
+        setStripeAutoResult({ status: 'matched', data })
+      } else {
+        toast.error('Impossible de lier l\'abonnement')
+      }
+    } catch {
+      toast.error('Erreur de liaison Stripe')
+    }
+    setStripeMatching(false)
+  }, [effectiveOwnerId, prospect, stripeManualCustomerId, stripeManualSubId])
 
   // Round-robin: get next closer
   const getNextCloser = useCallback(async () => {
@@ -561,6 +675,51 @@ export function CloserCallDetails() {
     setIsSavingReminder(false)
   }
 
+  const handleCreateProspect = async () => {
+    if (!call?.contact_name || !effectiveOwnerId) return
+    setCreatingProspect(true)
+    try {
+      const role = teamMember?.role
+      const memberId = teamMember?.id
+      const prospectData: any = {
+        contact: call.contact_name,
+        email: newProspectEmail,
+        phone: newProspectPhone,
+        company: newProspectCompany,
+        stage: 'prospect',
+      }
+      // Auto-assign based on role
+      if (role === 'Closer') {
+        prospectData.assigned_to = memberId
+      } else if (role === 'Setter') {
+        prospectData.assigned_setter = memberId
+      } else if (role === 'Setter-Closer') {
+        prospectData.assigned_setter = memberId
+        prospectData.assigned_to = memberId
+      }
+      await addProspect(prospectData)
+      // Link call to new prospect
+      const { data: newProspect } = await supabase
+        .from('business_prospects')
+        .select('id')
+        .eq('user_id', user?.id)
+        .eq('contact', call.contact_name)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      if (newProspect) {
+        await supabase.from('business_call_history')
+          .update({ contact_id: newProspect.id })
+          .eq('id', call.id)
+        setCall((prev: any) => ({ ...prev, contact_id: newProspect.id }))
+      }
+      toast.success('Prospect créé et lié à l\'appel')
+    } catch {
+      toast.error('Erreur lors de la création du prospect')
+    }
+    setCreatingProspect(false)
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-stone-400" /></div>
   }
@@ -708,7 +867,79 @@ export function CloserCallDetails() {
       {/* Tab content */}
       {/* QUALIFICATION TAB */}
       {activeTab === 'qualification' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="relative">
+          {/* No prospect linked — blur overlay + create prospect */}
+          {!prospect && !isReadonly && (
+            <div className="absolute inset-0 z-30 flex items-start justify-center pt-16">
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl p-8 max-w-md w-full mx-4 space-y-5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-3 rounded-full bg-stone-100 dark:bg-white/10">
+                    <Lock className="h-5 w-5 text-stone-500 dark:text-neutral-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Manrope'] text-lg font-extrabold text-stone-900 dark:text-white">Aucun prospect lié</h3>
+                    <p className="text-sm text-stone-500 dark:text-neutral-400">Créez un prospect pour qualifier cet appel</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Nom</label>
+                    <input
+                      type="text"
+                      value={call?.contact_name || ''}
+                      readOnly
+                      className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50 dark:bg-neutral-800 px-4 py-2.5 text-sm text-stone-900 dark:text-white cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Email</label>
+                    <input
+                      type="email"
+                      value={newProspectEmail}
+                      onChange={(e) => setNewProspectEmail(e.target.value)}
+                      placeholder="email@exemple.com"
+                      className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Téléphone</label>
+                    <input
+                      type="tel"
+                      value={newProspectPhone}
+                      onChange={(e) => setNewProspectPhone(e.target.value)}
+                      placeholder="+33 6 00 00 00 00"
+                      className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Entreprise</label>
+                    <input
+                      type="text"
+                      value={newProspectCompany}
+                      onChange={(e) => setNewProspectCompany(e.target.value)}
+                      placeholder="Nom de l'entreprise"
+                      className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCreateProspect}
+                  disabled={creatingProspect}
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-6 py-3.5 font-['Manrope'] font-bold text-sm transition-all hover:bg-stone-800 dark:hover:bg-neutral-100 shadow-lg active:scale-95 disabled:opacity-50"
+                >
+                  {creatingProspect ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Création...</>
+                  ) : (
+                    <><UserPlus className="h-4 w-4" /> Créer le prospect</>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+        <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-10", !prospect && !isReadonly && "blur-sm pointer-events-none select-none")}>
           {/* Left Column */}
           <div className="lg:col-span-7 space-y-10">
             {/* Closer Outcomes */}
@@ -777,6 +1008,201 @@ export function CloserCallDetails() {
                     <p className="mt-2 text-xs text-stone-400 dark:text-neutral-500">Taux de commission: {commissionRate}%</p>
                   </div>
                 )}
+              </section>
+            )}
+
+            {/* Won: Stripe already linked */}
+            {selectedOutcome === 'won' && prospectFormula?.billing_type === 'subscription' && prospect?.stripe_subscription_id && (
+              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-emerald-500/20 shadow-sm p-7">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-emerald-500/10 rounded-xl">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <h3 className="font-['Manrope'] text-lg font-bold text-emerald-600">Abonnement Stripe lie</h3>
+                </div>
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-xs text-stone-500 dark:text-neutral-400">Montant</span>
+                    <span className="text-sm font-bold text-stone-900 dark:text-white">{(Number((prospect as any).subscription_amount) || 0).toFixed(2)} EUR / {(prospect as any).subscription_interval === 'month' ? 'mois' : 'an'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-xs text-stone-500 dark:text-neutral-400">Statut</span>
+                    <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full', {
+                      'bg-emerald-500/10 text-emerald-600': (prospect as any).subscription_status === 'active',
+                      'bg-amber-500/10 text-amber-600': (prospect as any).subscription_status === 'past_due',
+                      'bg-red-500/10 text-red-600': (prospect as any).subscription_status === 'canceled',
+                    })}>
+                      {(prospect as any).subscription_status === 'active' ? 'Actif' : (prospect as any).subscription_status === 'past_due' ? 'En retard' : (prospect as any).subscription_status === 'canceled' ? 'Annule' : (prospect as any).subscription_status}
+                    </span>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Won: Stripe Linking — 3 methods (only for subscription formulas) */}
+            {selectedOutcome === 'won' && prospectFormula?.billing_type === 'subscription' && stripeConnected && prospect && !prospect.stripe_subscription_id && stripeAutoResult.status !== 'matched' && (
+              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-[#635BFF]/20 shadow-sm p-7 space-y-5">
+                <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-[#635BFF]">
+                  <CreditCard className="h-5 w-5" /> Lier a Stripe
+                </h3>
+
+                {/* 3 mode tabs */}
+                <div className="flex rounded-xl bg-stone-100 dark:bg-neutral-800 p-1">
+                  <button onClick={() => setStripeLinkMode('auto')}
+                    className={cn('flex-1 rounded-lg py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5',
+                      stripeLinkMode === 'auto' ? 'bg-[#635BFF] text-white shadow-md' : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white')}>
+                    <Zap className="h-3.5 w-3.5" /> Auto
+                  </button>
+                  <button onClick={() => setStripeLinkMode('search')}
+                    className={cn('flex-1 rounded-lg py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5',
+                      stripeLinkMode === 'search' ? 'bg-[#635BFF] text-white shadow-md' : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white')}>
+                    <Search className="h-3.5 w-3.5" /> Recherche
+                  </button>
+                  <button onClick={() => setStripeLinkMode('manual')}
+                    className={cn('flex-1 rounded-lg py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5',
+                      stripeLinkMode === 'manual' ? 'bg-[#635BFF] text-white shadow-md' : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white')}>
+                    <Link2 className="h-3.5 w-3.5" /> Manuel
+                  </button>
+                </div>
+
+                {/* MODE 1: Auto-match by email */}
+                {stripeLinkMode === 'auto' && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-stone-500 dark:text-neutral-400">
+                      Recherche automatique d'un abonnement Stripe lie a l'email <span className="font-bold text-stone-700 dark:text-white">{prospect.email || '—'}</span>
+                    </p>
+                    {stripeAutoResult.status === 'not_found' && (
+                      <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-3">
+                        <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">Aucun abonnement Stripe trouve pour cet email. Essayez la recherche ou la saisie manuelle.</p>
+                      </div>
+                    )}
+                    <button
+                      onClick={handleStripeAutoMatch}
+                      disabled={!prospect.email || stripeAutoResult.status === 'loading'}
+                      className="w-full py-3 bg-[#635BFF] hover:bg-[#5349E0] disabled:opacity-50 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                    >
+                      {stripeAutoResult.status === 'loading' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <><Zap className="h-4 w-4" /> Rechercher automatiquement</>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* MODE 2: Search by email */}
+                {stripeLinkMode === 'search' && (
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={stripeSearchEmail || prospect.email || ''}
+                        onChange={e => setStripeSearchEmail(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleStripeSearch()}
+                        placeholder="Email du client Stripe"
+                        className="flex-1 px-4 py-2.5 bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30"
+                      />
+                      <button
+                        onClick={handleStripeSearch}
+                        disabled={stripeSearching}
+                        className="px-4 py-2.5 bg-[#635BFF] hover:bg-[#5349E0] disabled:opacity-50 text-white font-bold rounded-xl transition-colors flex items-center gap-2"
+                      >
+                        {stripeSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      </button>
+                    </div>
+
+                    {stripeSearched && stripeSearchResults.length === 0 && (
+                      <p className="text-sm text-stone-500 dark:text-neutral-400 text-center py-4">Aucun client Stripe trouve.</p>
+                    )}
+
+                    {stripeSearchResults.map((customer: any) => (
+                      <div key={customer.id} className="bg-stone-50 dark:bg-neutral-800 rounded-xl p-4 border border-stone-200 dark:border-neutral-700">
+                        <div className="mb-2">
+                          <p className="text-sm font-bold text-stone-900 dark:text-white">{customer.name || customer.email}</p>
+                          <p className="text-[10px] text-stone-500 dark:text-neutral-500 font-mono">{customer.id}</p>
+                        </div>
+                        {customer.subscriptions?.length === 0 ? (
+                          <p className="text-xs text-stone-400">Aucun abonnement</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {customer.subscriptions?.map((sub: any) => (
+                              <button
+                                key={sub.id}
+                                onClick={() => handleStripeSelectSub(customer.id, sub.id)}
+                                disabled={stripeMatching}
+                                className="w-full flex items-center justify-between p-3 bg-white dark:bg-neutral-900 rounded-lg border border-stone-200 dark:border-neutral-700 hover:border-[#635BFF]/30 hover:bg-[#635BFF]/5 transition-all text-left group"
+                              >
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`inline-block w-2 h-2 rounded-full ${sub.status === 'active' ? 'bg-emerald-500' : sub.status === 'past_due' ? 'bg-amber-500' : 'bg-red-500'}`} />
+                                    <span className="text-sm font-medium text-stone-900 dark:text-white">{sub.amount?.toFixed(2)} EUR / {sub.interval === 'month' ? 'mois' : 'an'}</span>
+                                  </div>
+                                  <p className="text-[10px] text-stone-500 font-mono mt-0.5">{sub.id}</p>
+                                </div>
+                                {stripeMatching ? <Loader2 className="h-4 w-4 animate-spin text-[#635BFF]" /> : <CheckCircle2 className="h-5 w-5 text-[#635BFF] opacity-0 group-hover:opacity-100 transition-opacity" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* MODE 3: Manual IDs */}
+                {stripeLinkMode === 'manual' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 dark:text-neutral-200 mb-1.5">Customer ID Stripe</label>
+                      <input
+                        type="text"
+                        value={stripeManualCustomerId}
+                        onChange={e => setStripeManualCustomerId(e.target.value)}
+                        placeholder="cus_..."
+                        className="w-full px-4 py-2.5 bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl text-sm text-stone-900 dark:text-white font-mono placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 dark:text-neutral-200 mb-1.5">Subscription ID Stripe</label>
+                      <input
+                        type="text"
+                        value={stripeManualSubId}
+                        onChange={e => setStripeManualSubId(e.target.value)}
+                        placeholder="sub_..."
+                        className="w-full px-4 py-2.5 bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl text-sm text-stone-900 dark:text-white font-mono placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30"
+                      />
+                    </div>
+                    <button
+                      onClick={handleStripeManualMatch}
+                      disabled={stripeMatching || !stripeManualCustomerId.trim() || !stripeManualSubId.trim()}
+                      className="w-full py-3 bg-[#635BFF] hover:bg-[#5349E0] disabled:opacity-50 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-2"
+                    >
+                      {stripeMatching ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Lier cet abonnement'}
+                    </button>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Won: Stripe linked success */}
+            {selectedOutcome === 'won' && prospectFormula?.billing_type === 'subscription' && stripeAutoResult.status === 'matched' && stripeAutoResult.data && (
+              <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-emerald-500/20 shadow-sm p-7">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-emerald-500/10 rounded-xl">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <h3 className="font-['Manrope'] text-lg font-bold text-emerald-600">Abonnement Stripe lie</h3>
+                </div>
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-xs text-stone-500 dark:text-neutral-400">Montant</span>
+                    <span className="text-sm font-bold text-stone-900 dark:text-white">{stripeAutoResult.data.subscription_amount?.toFixed(2)} EUR / {stripeAutoResult.data.subscription_interval === 'month' ? 'mois' : 'an'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-xs text-stone-500 dark:text-neutral-400">Statut</span>
+                    <span className="text-xs font-bold text-emerald-600">{stripeAutoResult.data.subscription_status === 'active' ? 'Actif' : stripeAutoResult.data.subscription_status}</span>
+                  </div>
+                </div>
               </section>
             )}
 
@@ -1018,6 +1444,7 @@ export function CloserCallDetails() {
               </section>
             </div>
           )}
+        </div>
         </div>
       )}
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Loader2, Check, AlertCircle, KeyRound } from 'lucide-react';
+import { Mail, Lock, Loader2, Check, AlertCircle } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { supabase } from '../../lib/supabase';
 import BusinessVerification, { getDeviceFingerprint } from './BusinessVerification';
@@ -26,37 +26,89 @@ export default function BusinessLogin() {
 
   const [pendingVerification, setPendingVerification] = useState<{ userId: string; email: string; authMethod: 'google' | 'classic' } | null>(null);
 
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetMessage, setResetMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  // ─── Login code modal state ───
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [codeStep, setCodeStep] = useState<'email' | 'code'>('email');
+  const [codeEmail, setCodeEmail] = useState('');
+  const [loginCode, setLoginCode] = useState('');
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeMessage, setCodeMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [resendCountdown, setResendCountdown] = useState(0);
 
-  const handleResetPassword = async (e: FormEvent) => {
+  // Resend countdown timer
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const t = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCountdown]);
+
+  const resetCodeModal = () => {
+    setIsCodeModalOpen(false);
+    setCodeStep('email');
+    setCodeEmail('');
+    setLoginCode('');
+    setCodeMessage(null);
+    setResendCountdown(0);
+  };
+
+  const handleSendLoginCode = async (e: FormEvent) => {
     e.preventDefault();
-    if (!resetEmail) return;
+    if (!codeEmail) return;
 
-    setResetLoading(true);
-    setResetMessage(null);
+    setCodeLoading(true);
+    setCodeMessage(null);
 
     try {
-      const response = await fetch('/api/request-password-reset', {
+      const response = await fetch('/api/business-send-login-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail })
+        body: JSON.stringify({ email: codeEmail })
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Erreur lors de l'envoi");
 
-      if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de la demande");
-      }
-
-      setResetMessage({ type: 'success', text: 'Un email de réinitialisation a été envoyé. Vérifiez votre boîte de réception (et vos spams).' });
-      setResetEmail('');
-    } catch (error: any) {
-      setResetMessage({ type: 'error', text: error.message || "Une erreur est survenue." });
+      setCodeStep('code');
+      setResendCountdown(60);
+      setCodeMessage({ type: 'success', text: `Code envoyé à ${codeEmail}` });
+    } catch (err: any) {
+      setCodeMessage({ type: 'error', text: err.message || "Une erreur est survenue." });
     } finally {
-      setResetLoading(false);
+      setCodeLoading(false);
+    }
+  };
+
+  const handleVerifyLoginCode = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!loginCode || loginCode.replace(/\s/g, '').length !== 6) return;
+
+    setCodeLoading(true);
+    setCodeMessage(null);
+
+    try {
+      const response = await fetch('/api/business-verify-login-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: codeEmail, code: loginCode })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Code invalide");
+
+      // Use the token_hash to verify the OTP and create a session
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        token_hash: data.token_hash,
+        type: 'magiclink',
+      });
+
+      if (otpError) throw new Error("Erreur de connexion. Veuillez réessayer.");
+
+      await refreshProfile();
+      navigate('/business/dashboard');
+    } catch (err: any) {
+      setCodeMessage({ type: 'error', text: err.message || "Code invalide ou expiré." });
+    } finally {
+      setCodeLoading(false);
     }
   };
 
@@ -217,7 +269,7 @@ export default function BusinessLogin() {
               <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400" htmlFor="login-password">
                 Mot de passe
               </label>
-              <button type="button" onClick={() => setIsResetModalOpen(true)} className="text-xs font-semibold text-emerald-700 hover:underline transition-colors">
+              <button type="button" onClick={() => setIsCodeModalOpen(true)} className="text-xs font-semibold text-emerald-700 hover:underline transition-colors">
                 Oublié ?
               </button>
             </div>
@@ -299,66 +351,142 @@ export default function BusinessLogin() {
         </div>
       </div>
 
-      {/* Password Reset Modal */}
-      {isResetModalOpen && (
+      {/* Login Code Modal */}
+      {isCodeModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-stone-900/20 backdrop-blur-md" onClick={() => { setIsResetModalOpen(false); setResetMessage(null); setResetEmail(''); }} />
+          <div className="absolute inset-0 bg-stone-900/20 backdrop-blur-md" onClick={resetCodeModal} />
           <div className="relative w-full max-w-sm bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-stone-100/80 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                <KeyRound className="h-7 w-7 text-stone-900 dark:text-white" />
+                <Mail className="h-7 w-7 text-stone-900 dark:text-white" />
               </div>
-              <h3 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
-                R&eacute;initialisation
-              </h3>
-              <p className="text-sm text-stone-500 dark:text-neutral-400 mb-7">
-                Entrez votre email pour recevoir un lien de r&eacute;cup&eacute;ration.
-              </p>
 
-              {resetMessage && (
-                <div className={`mb-6 p-4 rounded-xl border flex items-start gap-3 text-left ${resetMessage.type === 'success'
-                  ? 'bg-emerald-50/50 border-emerald-200/30 text-emerald-700'
-                  : 'bg-red-50/50 border-red-200/30 text-red-600'
-                  }`}>
-                  {resetMessage.type === 'success' ? (
-                    <Check className="h-5 w-5 mt-0.5 shrink-0" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
+              {codeStep === 'email' ? (
+                <>
+                  <h3 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+                    Connexion par code
+                  </h3>
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-7">
+                    Entrez votre email pour recevoir un code de connexion.
+                  </p>
+
+                  {codeMessage && (
+                    <div className={`mb-6 p-4 rounded-xl border flex items-start gap-3 text-left ${codeMessage.type === 'success'
+                      ? 'bg-emerald-50/50 border-emerald-200/30 text-emerald-700'
+                      : 'bg-red-50/50 border-red-200/30 text-red-600'
+                    }`}>
+                      {codeMessage.type === 'success' ? <Check className="h-5 w-5 mt-0.5 shrink-0" /> : <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />}
+                      <p className="text-sm font-medium leading-relaxed">{codeMessage.text}</p>
+                    </div>
                   )}
-                  <p className="text-sm font-medium leading-relaxed">{resetMessage.text}</p>
-                </div>
-              )}
 
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <div>
-                  <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1 mb-2 text-left" htmlFor="reset-email">
-                    Email
-                  </label>
-                  <input
-                    id="reset-email"
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 px-5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 outline-none placeholder:text-stone-400"
-                    placeholder="Votre email"
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={resetLoading || !resetEmail}
-                  className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {resetLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Envoyer le lien'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setIsResetModalOpen(false); setResetMessage(null); setResetEmail(''); }}
-                  className="text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors mt-2"
-                >
-                  Retour
-                </button>
-              </form>
+                  <form onSubmit={handleSendLoginCode} className="space-y-4">
+                    <div>
+                      <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1 mb-2 text-left" htmlFor="code-email">
+                        Email
+                      </label>
+                      <input
+                        id="code-email"
+                        type="email"
+                        value={codeEmail}
+                        onChange={(e) => setCodeEmail(e.target.value)}
+                        className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 px-5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 outline-none placeholder:text-stone-400"
+                        placeholder="Votre email"
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={codeLoading || !codeEmail}
+                      className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {codeLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Envoyer le code'}
+                    </button>
+                    <button type="button" onClick={resetCodeModal} className="text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors mt-2">
+                      Retour
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
+                    Entrez le code
+                  </h3>
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-7">
+                    Un code à 6 chiffres a été envoyé à <span className="font-semibold text-stone-700 dark:text-neutral-200">{codeEmail}</span>
+                  </p>
+
+                  {codeMessage && codeMessage.type === 'error' && (
+                    <div className="mb-6 p-4 rounded-xl border flex items-start gap-3 text-left bg-red-50/50 border-red-200/30 text-red-600">
+                      <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
+                      <p className="text-sm font-medium leading-relaxed">{codeMessage.text}</p>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleVerifyLoginCode} className="space-y-4">
+                    <div>
+                      <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1 mb-2 text-left" htmlFor="login-code">
+                        Code
+                      </label>
+                      <input
+                        id="login-code"
+                        type="text"
+                        inputMode="numeric"
+                        value={loginCode}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/[^\d\s]/g, '');
+                          if (v.replace(/\s/g, '').length <= 6) setLoginCode(v);
+                        }}
+                        className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 px-5 text-center text-2xl font-extrabold tracking-[0.3em] text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 outline-none placeholder:text-stone-400 placeholder:text-base placeholder:tracking-normal placeholder:font-normal"
+                        placeholder="000 000"
+                        required
+                        autoFocus
+                        autoComplete="one-time-code"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={codeLoading || loginCode.replace(/\s/g, '').length !== 6}
+                      className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {codeLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Se connecter'}
+                    </button>
+                    <div className="flex items-center justify-center gap-4 mt-3">
+                      <button
+                        type="button"
+                        disabled={resendCountdown > 0 || codeLoading}
+                        onClick={async () => {
+                          setCodeLoading(true);
+                          setCodeMessage(null);
+                          try {
+                            const res = await fetch('/api/business-send-login-code', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ email: codeEmail })
+                            });
+                            if (!res.ok) throw new Error();
+                            setResendCountdown(60);
+                            setLoginCode('');
+                            setCodeMessage({ type: 'success', text: 'Nouveau code envoyé !' });
+                          } catch {
+                            setCodeMessage({ type: 'error', text: 'Erreur lors du renvoi.' });
+                          } finally {
+                            setCodeLoading(false);
+                          }
+                        }}
+                        className="text-xs font-bold text-emerald-700 hover:underline transition-colors disabled:opacity-40 disabled:no-underline"
+                      >
+                        {resendCountdown > 0 ? `Renvoyer (${resendCountdown}s)` : 'Renvoyer le code'}
+                      </button>
+                      <span className="text-stone-300 dark:text-neutral-600">|</span>
+                      <button type="button" onClick={() => { setCodeStep('email'); setLoginCode(''); setCodeMessage(null); }} className="text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">
+                        Changer d'email
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         </div>

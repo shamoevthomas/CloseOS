@@ -536,30 +536,38 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       pushToAirtableIfNeeded(data[0], prevStage)
       pushToGhlIfNeeded(data[0])
 
-      // Auto-match Stripe on stage=won (Method 2)
+      // Auto-match Stripe on stage=won (Method 2) — only for subscription formulas
       if (updates.stage === 'won' && data[0].email && !data[0].stripe_subscription_id && userId) {
-        fetch('/api/business-auto-match-stripe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, prospect_id: id, email: data[0].email }),
-        })
-          .then(r => r.json())
-          .then(result => {
-            if (result.matched) {
-              setProspects(prev => prev.map(p => p.id === id ? {
-                ...p,
-                stripe_customer_id: result.stripe_customer_id,
-                stripe_subscription_id: result.stripe_subscription_id,
-                subscription_status: result.subscription_status,
-                subscription_amount: result.subscription_amount,
-                subscription_interval: result.subscription_interval,
-                matched_via: result.matched_via,
-                last_payment_date: result.last_payment_date,
-                next_payment_date: result.next_payment_date,
-              } : p))
-            }
+        const formulaId = data[0].formula_id
+        const shouldAutoMatch = formulaId
+          ? await supabase.from('business_formulas').select('billing_type').eq('id', formulaId).maybeSingle()
+              .then(({ data: f }) => f?.billing_type === 'subscription')
+          : false
+
+        if (shouldAutoMatch) {
+          fetch('/api/business-auto-match-stripe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, prospect_id: id, email: data[0].email }),
           })
-          .catch(() => { /* silent — manual fallback available */ })
+            .then(r => r.json())
+            .then(result => {
+              if (result.matched) {
+                setProspects(prev => prev.map(p => p.id === id ? {
+                  ...p,
+                  stripe_customer_id: result.stripe_customer_id,
+                  stripe_subscription_id: result.stripe_subscription_id,
+                  subscription_status: result.subscription_status,
+                  subscription_amount: result.subscription_amount,
+                  subscription_interval: result.subscription_interval,
+                  matched_via: result.matched_via,
+                  last_payment_date: result.last_payment_date,
+                  next_payment_date: result.next_payment_date,
+                } : p))
+              }
+            })
+            .catch(() => { /* silent — manual fallback available */ })
+        }
       }
     }
   }
