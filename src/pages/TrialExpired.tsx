@@ -304,7 +304,7 @@ export function TrialExpiredModal() {
                         <div className="p-8 md:p-10 flex flex-col justify-between border-r border-slate-800/50">
                             <div>
                                 <div className="flex items-center gap-2.5 mb-8">
-                                    <img src="/logo Sales.png" alt="CloseOS Logo" className="h-14 w-auto" />
+                                    <img src="/logo-sales.png" alt="CloseOS Logo" className="h-14 w-auto" />
                                 </div>
                                 <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-tight mb-4">
                                     {isTrialExpiredShow
@@ -400,7 +400,7 @@ export function TrialExpiredModal() {
                             <ArrowLeft className="h-4 w-4" />
                             Retour
                         </button>
-                        <img src="/logo Sales.png" alt="CloseOS Logo" className="h-11 w-auto" />
+                        <img src="/logo-sales.png" alt="CloseOS Logo" className="h-11 w-auto" />
                         <div className="w-16" />
                     </div>
 

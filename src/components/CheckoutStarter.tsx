@@ -158,7 +158,7 @@ export const CheckoutStarter = () => {
           </button>
 
           <div className="flex items-center gap-2">
-            <img src="/logo Sales.png" alt="CloseOS Logo" className="h-12 w-auto" />
+            <img src="/logo-sales.png" alt="CloseOS Logo" className="h-12 w-auto" />
           </div>
 
           <div className="w-10"></div>

@@ -1,6 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, ChevronRight } from 'lucide-react';
+import { TrendingUp, ChevronRight, Globe } from 'lucide-react';
+import { ecoTranslations, detectEcoLang } from './ecosystemChoiceI18n';
+import type { EcoLang } from './ecosystemChoiceI18n';
 
 interface EcosystemChoiceProps {
   onChooseSales: () => void;
@@ -8,76 +10,20 @@ interface EcosystemChoiceProps {
 }
 
 export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales, onChooseBusiness }) => {
+  const [lang, setLang] = useState<EcoLang>('fr');
+  const t = ecoTranslations[lang];
+
   useEffect(() => {
-    document.title = "CloseOS — Écosystème SaaS pour la vente digitale | CRM Closer & Management Infopreneur";
-    document.querySelector('meta[name="description"]')?.setAttribute('content',
-      "CloseOS est l'écosystème SaaS francophone pour la vente digitale. Outil pour closer : CRM, pipeline, VoIP, KPIs, facturation automatique. Logiciel infopreneur : gestion équipe de closers, campagnes d'acquisition, analytics. Alternative iClosed. Essai gratuit."
-    );
-
-    // JSON-LD structured data — Organization + 2 SoftwareApplication
-    const existingLd = document.querySelector('script[data-closeos-ld]');
-    if (!existingLd) {
-      const script = document.createElement('script');
-      script.type = 'application/ld+json';
-      script.setAttribute('data-closeos-ld', 'true');
-      script.textContent = JSON.stringify([
-        {
-          '@context': 'https://schema.org',
-          '@type': 'Organization',
-          name: 'CloseOS',
-          url: 'https://www.closeos.fr',
-          logo: 'https://www.closeos.fr/closeos-logo.png',
-          description: "Écosystème SaaS français pour la vente digitale. Outils pour closers indépendants et infopreneurs francophones.",
-          sameAs: ['https://www.linkedin.com/in/thomas-shamoev-570885237/'],
-          contactPoint: {
-            '@type': 'ContactPoint',
-            email: 'support@closeos.fr',
-            contactType: 'customer service',
-            availableLanguage: 'French',
-          },
-        },
-        {
-          '@context': 'https://schema.org',
-          '@type': 'SoftwareApplication',
-          name: 'CloseOS Sales',
-          url: 'https://www.closeos.fr',
-          applicationCategory: 'BusinessApplication',
-          operatingSystem: 'Web',
-          description: "CRM pour closer, pipeline de vente, VoIP intégré, agenda, facturation automatique et KPIs de closing. Le logiciel tout-en-un des closers high ticket francophones.",
-          offers: {
-            '@type': 'Offer',
-            price: '0',
-            priceCurrency: 'EUR',
-            description: 'Essai gratuit 10 jours, sans carte bancaire',
-          },
-          featureList: 'CRM closer, Pipeline visuel, VoIP intégré, Agenda & booking, Facturation automatique, KPIs de closing, Suivi calls closing',
-          inLanguage: 'fr',
-        },
-        {
-          '@context': 'https://schema.org',
-          '@type': 'SoftwareApplication',
-          name: 'CloseOS Business',
-          url: 'https://www.closeos.fr/business',
-          applicationCategory: 'BusinessApplication',
-          operatingSystem: 'Web',
-          description: "Plateforme de management pour infopreneurs et Head of Sales. Gestion d'équipe de closers et setters, pilotage campagnes d'acquisition, tableau de bord analytics. Alternative iClosed.",
-          offers: {
-            '@type': 'Offer',
-            price: '0',
-            priceCurrency: 'EUR',
-            description: 'Liste d\'attente — tarifs early adopters',
-          },
-          featureList: "Gestion équipe closers, Pilotage campagnes acquisition, CRM acquisition infopreneur, Tableau de bord infopreneur, KPIs d'équipe, Onboarding closers",
-          inLanguage: 'fr',
-        },
-      ]);
-      document.head.appendChild(script);
-    }
-
-    return () => {
-      document.querySelector('script[data-closeos-ld]')?.remove();
-    };
+    setLang(detectEcoLang());
   }, []);
+
+  useEffect(() => {
+    document.title = t.seo_title;
+    document.querySelector('meta[name="description"]')?.setAttribute('content', t.seo_description);
+    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.png');
+    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.png');
+    document.documentElement.lang = lang;
+  }, [lang, t]);
 
   return (
     <div
@@ -88,6 +34,15 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
         color: '#e2e2e8',
       }}
     >
+      {/* Language toggle — fixed top right */}
+      <button
+        onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
+        className="fixed top-5 right-5 z-50 flex items-center gap-2 px-3.5 py-2 rounded-full border border-[#45474b]/30 bg-[#1a1c20]/80 backdrop-blur-md text-[#909095] hover:text-[#e2e2e8] hover:border-[#45474b]/60 transition-all text-xs font-bold uppercase tracking-wider"
+      >
+        <Globe className="h-3.5 w-3.5" />
+        {lang === 'fr' ? 'EN' : 'FR'}
+      </button>
+
       {/* Main Content */}
       <main
         className="flex-grow flex flex-col items-center justify-center relative py-12 overflow-hidden"
@@ -108,12 +63,12 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             transition={{ duration: 0.6 }}
             className="text-center mb-16 space-y-4"
           >
-            <p className="text-[#909095]/60 text-xs font-bold uppercase tracking-[0.2em] mb-2">Écosystème SaaS vente digitale francophone</p>
+            <p className="text-[#909095]/60 text-xs font-bold uppercase tracking-[0.2em] mb-2">{t.badge}</p>
             <h1 className="text-5xl md:text-6xl font-extrabold tracking-tighter text-[#e2e2e8] leading-tight">
-              Le logiciel pour closers<br className="hidden md:block" /> et infopreneurs
+              {t.title_line1}<br className="hidden md:block" /> {t.title_line2}
             </h1>
             <p className="text-[#909095] text-lg max-w-2xl mx-auto font-medium">
-              CRM closer, pipeline de vente, VoIP et KPIs de closing pour closers freelance. Management d'équipe de closers, campagnes d'acquisition et tableau de bord analytics pour infopreneurs. L'alternative francophone à iClosed.
+              {t.subtitle}
             </p>
           </motion.div>
 
@@ -149,16 +104,16 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 </div>
                 <h2 className="text-3xl font-bold mb-4 text-[#e2e2e8]">CloseOS Sales</h2>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-[#282a2e] text-[#b6c4ff] text-xs font-bold uppercase tracking-wider mb-6 border border-[#45474b]/30">
-                  Outil pour Closers & Setters
+                  {t.sales_tag}
                 </span>
                 <p className="text-[#909095] leading-relaxed mb-4 max-w-xs">
-                  Le logiciel tout-en-un pour closers high ticket et setters freelance. Gérez vos prospects closing, suivez vos calls et automatisez votre facturation.
+                  {t.sales_description}
                 </p>
                 <ul className="text-[#909095]/70 text-sm space-y-1.5 mb-8 max-w-xs">
-                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />CRM closer & pipeline visuel</li>
-                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />VoIP intégré & suivi calls closing</li>
-                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />Facturation auto & KPIs closing</li>
-                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />Agenda & booking intégré</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />{t.sales_feat1}</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />{t.sales_feat2}</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />{t.sales_feat3}</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#b6c4ff]/50" />{t.sales_feat4}</li>
                 </ul>
               </div>
 
@@ -167,7 +122,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                   onClick={(e) => { e.stopPropagation(); onChooseSales(); }}
                   className="w-full flex items-center justify-between px-8 py-5 bg-[#e2e2e8] text-[#1a1c20] rounded-xl font-bold text-lg hover:opacity-90 transition-all group-hover:scale-[1.02] duration-300"
                 >
-                  Accéder
+                  {t.sales_cta}
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
@@ -212,21 +167,21 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                     </svg>
                   </div>
                   <span className="bg-[#00e475] text-[#003918] px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest">
-                    Nouveau
+                    {t.business_new}
                   </span>
                 </div>
                 <h2 className="text-3xl font-bold mb-4 text-[#e2e2e8]">CloseOS Business</h2>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-[#282a2e] text-[#00e475] text-xs font-bold uppercase tracking-wider mb-6 border border-[#45474b]/30">
-                  Logiciel Infopreneur & Head of Sales
+                  {t.business_tag}
                 </span>
                 <p className="text-[#909095] leading-relaxed mb-4 max-w-xs">
-                  Gérez votre équipe de closers et setters, pilotez vos campagnes d'acquisition et suivez la performance avec un tableau de bord infopreneur complet. L'alternative à iClosed.
+                  {t.business_description}
                 </p>
                 <ul className="text-[#909095]/70 text-sm space-y-1.5 mb-8 max-w-xs">
-                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />Gestion équipe closers & setters</li>
-                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />Pilotage campagnes acquisition</li>
-                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />CRM acquisition & intégrations</li>
-                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />Tableau de bord & KPIs d'équipe</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />{t.business_feat1}</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />{t.business_feat2}</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />{t.business_feat3}</li>
+                  <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#00e475]/50" />{t.business_feat4}</li>
                 </ul>
               </div>
 
@@ -235,7 +190,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                   onClick={(e) => { e.stopPropagation(); onChooseBusiness(); }}
                   className="w-full flex items-center justify-between px-8 py-5 bg-[#00e475] text-[#003918] rounded-xl font-bold text-lg hover:brightness-110 transition-all group-hover:scale-[1.02] duration-300"
                 >
-                  Accéder
+                  {t.business_cta}
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
@@ -244,25 +199,24 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
 
           {/* "Qu'est-ce que CloseOS" — GEO-optimized definition section */}
           <div className="mt-24 max-w-3xl mx-auto text-center space-y-6">
-            <h2 className="text-2xl font-bold text-[#e2e2e8]/80 tracking-tight">Qu'est-ce que CloseOS ?</h2>
+            <h2 className="text-2xl font-bold text-[#e2e2e8]/80 tracking-tight">{t.def_title}</h2>
             <p className="text-[#909095] text-sm leading-relaxed">
-              CloseOS est un <strong className="text-[#e2e2e8]/70">écosystème SaaS français pour la vente digitale</strong>. Il regroupe deux outils complémentaires conçus pour les professionnels du closing francophone.
+              {lang === 'fr'
+                ? <>CloseOS est un <strong className="text-[#e2e2e8]/70">écosystème SaaS français pour la vente digitale</strong>. Il regroupe deux outils complémentaires conçus pour les professionnels du closing francophone.</>
+                : <>CloseOS is a <strong className="text-[#e2e2e8]/70">SaaS ecosystem for digital sales</strong>. It combines two complementary tools designed for sales professionals.</>
+              }
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
               <div className="p-5 rounded-xl border border-[#45474b]/10">
-                <h3 className="text-sm font-bold text-[#b6c4ff]/80 mb-2">CloseOS Sales — L'outil pour closer</h3>
+                <h3 className="text-sm font-bold text-[#b6c4ff]/80 mb-2">{t.def_sales_title}</h3>
                 <p className="text-[#909095]/70 text-xs leading-relaxed">
-                  Le CRM pour closer en France. Pipeline de vente visuel, VoIP intégré, suivi calls closing, agenda & booking,
-                  facturation automatique et KPIs de closing. L'application closer freelance tout-en-un pour gérer ses prospects
-                  et closer du high ticket. Essai gratuit 10 jours.
+                  {t.def_sales_text}
                 </p>
               </div>
               <div className="p-5 rounded-xl border border-[#45474b]/10">
-                <h3 className="text-sm font-bold text-[#00e475]/80 mb-2">CloseOS Business — Le logiciel infopreneur</h3>
+                <h3 className="text-sm font-bold text-[#00e475]/80 mb-2">{t.def_business_title}</h3>
                 <p className="text-[#909095]/70 text-xs leading-relaxed">
-                  La plateforme pour gérer une équipe de closers et setters. Pilotage équipe closing, CRM acquisition infopreneur,
-                  campagnes d'acquisition, tableau de bord infopreneur et KPIs d'équipe. L'alternative française à iClosed
-                  pour les infopreneurs et Head of Sales.
+                  {t.def_business_text}
                 </p>
               </div>
             </div>
@@ -281,15 +235,15 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
           <div className="flex flex-wrap justify-center gap-4 text-xs text-[#909095]">
             <span>© 2026 CloseOS.fr</span>
             <span className="hidden sm:inline">•</span>
-            <a href="/mentions-legales" className="hover:text-[#e2e2e8] transition-colors">Mentions Légales</a>
+            <a href="/mentions-legales" className="hover:text-[#e2e2e8] transition-colors">{t.footer_legal}</a>
             <span className="hidden sm:inline">•</span>
-            <a href="/cgu" className="hover:text-[#e2e2e8] transition-colors">CGU</a>
+            <a href="/cgu" className="hover:text-[#e2e2e8] transition-colors">{t.footer_cgu}</a>
             <span className="hidden sm:inline">•</span>
-            <a href="/cgv" className="hover:text-[#e2e2e8] transition-colors">CGV</a>
+            <a href="/cgv" className="hover:text-[#e2e2e8] transition-colors">{t.footer_cgv}</a>
             <span className="hidden sm:inline">•</span>
-            <a href="/confidentialite" className="hover:text-[#e2e2e8] transition-colors">Politique de Confidentialite</a>
+            <a href="/confidentialite" className="hover:text-[#e2e2e8] transition-colors">{t.footer_privacy}</a>
             <span className="hidden sm:inline">&bull;</span>
-            <a href="/business/politique-utilisation" className="hover:text-[#e2e2e8] transition-colors">Politique d'Utilisation Business</a>
+            <a href="/business/politique-utilisation" className="hover:text-[#e2e2e8] transition-colors">{t.footer_business_policy}</a>
           </div>
 
           <div className="flex gap-6 text-xs">

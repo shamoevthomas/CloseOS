@@ -75,8 +75,7 @@ export function CloserDashboard() {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const [formulaCommRates, setFormulaCommRates] = useState<Record<string, { roles: Record<string, number>, members: Record<string, number> }>>({})
-  const [stripePayments, setStripePayments] = useState<{ prospect_id: number; amount: number }[]>([])
-  const [hasStripeData, setHasStripeData] = useState(false)
+  const [formulaBillingTypes, setFormulaBillingTypes] = useState<Record<string, string>>({})
 
   const fetchData = useCallback(async () => {
     if (!teamMember?.id || !ownerUserId || !user?.id) return
@@ -102,30 +101,34 @@ export function CloserDashboard() {
   useEffect(() => {
     if (!effectiveOwnerId) return
     ;(async () => {
-      const { data } = await supabase
-        .from('business_formula_commissions')
-        .select('formula_id, role, rate, team_member_id')
-        .eq('business_owner_id', effectiveOwnerId)
-      if (!data) return
-      const map: Record<string, { roles: Record<string, number>, members: Record<string, number> }> = {}
-      for (const row of data) {
-        if (!map[row.formula_id]) map[row.formula_id] = { roles: {}, members: {} }
-        if (row.team_member_id) {
-          map[row.formula_id].members[row.team_member_id] = row.rate
-        } else {
-          map[row.formula_id].roles[row.role] = row.rate
+      try {
+        const { data } = await supabase
+          .from('business_formula_commissions')
+          .select('formula_id, role, rate, team_member_id')
+          .eq('business_owner_id', effectiveOwnerId)
+        if (!data) return
+        const map: Record<string, { roles: Record<string, number>, members: Record<string, number> }> = {}
+        for (const row of data) {
+          if (!map[row.formula_id]) map[row.formula_id] = { roles: {}, members: {} }
+          if (row.team_member_id) {
+            map[row.formula_id].members[row.team_member_id] = row.rate
+          } else {
+            map[row.formula_id].roles[row.role] = row.rate
+          }
         }
+        setFormulaCommRates(map)
+      } catch (err) {
+        console.error('[CloserDashboard] Error loading commission rates:', err)
       }
-      setFormulaCommRates(map)
     })()
-    // Fetch Stripe payments
-    fetch(`/api/business-payments-summary?user_id=${effectiveOwnerId}`)
-      .then(r => r.json())
-      .then(data => {
-        setHasStripeData(!!data.hasStripeData)
-        setStripePayments(data.payments || [])
+    // Fetch formula billing types
+    supabase.from('business_formulas').select('id, billing_type').eq('user_id', effectiveOwnerId)
+      .then(({ data }) => {
+        const map: Record<string, string> = {}
+        ;(data || []).forEach(f => { map[f.id] = f.billing_type || 'one_time' })
+        setFormulaBillingTypes(map)
       })
-      .catch(() => {})
+      .catch(err => console.error('[CloserDashboard] Error loading formula billing types:', err))
   }, [effectiveOwnerId])
 
   // KPI from assigned prospects
@@ -166,9 +169,9 @@ export function CloserDashboard() {
   const memberId = teamMember?.id
   const memberRole = teamMember?.role
 
-  const closerRevenue = wonProspects.reduce((s, p) => s + (hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)), 0)
+  const closerRevenue = wonProspects.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
   const closerCommission = useMemo(() => Math.round(wonProspects.reduce((sum, p) => {
-    const value = hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)
+    const value = getProspectCA(p, formulaBillingTypes)
     const formulaId = p.formula_id || (p as any).offer_id
     const rates = formulaId ? formulaCommRates[formulaId] : null
     let r = fallbackRate
@@ -178,7 +181,7 @@ export function CloserDashboard() {
       else if (rates.roles['Closer'] !== undefined) r = rates.roles['Closer'] / 100
     }
     return sum + value * r
-  }, 0)), [wonProspects, formulaCommRates, memberId, memberRole, fallbackRate, hasStripeData, stripePayments])
+  }, 0)), [wonProspects, formulaCommRates, memberId, memberRole, fallbackRate, formulaBillingTypes])
 
   // Setter commission: for Setter-Closer, include deals they also closed
   const wonAsSetter = useMemo(() => prospects.filter(p => {
@@ -187,9 +190,9 @@ export function CloserDashboard() {
     return p.assigned_to !== teamMember?.id
   }), [prospects, teamMember?.id, isSetterCloser])
 
-  const setterRevenue = wonAsSetter.reduce((s, p) => s + (hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)), 0)
+  const setterRevenue = wonAsSetter.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
   const setterCommission = useMemo(() => Math.round(wonAsSetter.reduce((sum, p) => {
-    const value = hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)
+    const value = getProspectCA(p, formulaBillingTypes)
     const formulaId = p.formula_id || (p as any).offer_id
     const rates = formulaId ? formulaCommRates[formulaId] : null
     let r = fallbackRate
@@ -200,7 +203,7 @@ export function CloserDashboard() {
       else if (rates.roles['Setter'] !== undefined) r = rates.roles['Setter'] / 100
     }
     return sum + value * r
-  }, 0)), [wonAsSetter, formulaCommRates, memberId, memberRole, fallbackRate, hasStripeData, stripePayments])
+  }, 0)), [wonAsSetter, formulaCommRates, memberId, memberRole, fallbackRate, formulaBillingTypes])
 
   const totalCommission = closerCommission + setterCommission
 

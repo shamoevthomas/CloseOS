@@ -8,15 +8,19 @@ import BusinessVerification, { getDeviceFingerprint } from './BusinessVerificati
 
 export default function BusinessLogin() {
   const navigate = useNavigate();
-  const { login, user, loading: authLoading, businessProfile, isTeamMember, refreshProfile, needsVerification } = useBusinessAuth();
+  const { login, user, loading: authLoading, businessProfile, isTeamMember, refreshProfile, needsVerification, isSalesUser } = useBusinessAuth();
 
   useEffect(() => {
     if (!authLoading && user && !needsVerification) {
+      if (isSalesUser) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
       if (businessProfile || isTeamMember) {
         navigate('/business/dashboard', { replace: true });
       }
     }
-  }, [user, authLoading, businessProfile, isTeamMember, navigate, needsVerification]);
+  }, [user, authLoading, businessProfile, isTeamMember, navigate, needsVerification, isSalesUser]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -215,13 +219,9 @@ export default function BusinessLogin() {
       {/* Glass morphism card */}
       <div className="w-full max-w-md mx-4 bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-10">
         {/* Brand header */}
-        <div className="flex items-center justify-center gap-2.5 mb-10">
-          <div className="w-8 h-8 bg-stone-900 dark:bg-white rounded-lg flex items-center justify-center">
-            <span className="text-white dark:text-black text-xs font-extrabold">C</span>
-          </div>
-          <span className="font-extrabold text-stone-900 dark:text-white text-lg tracking-tight" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
-            CloseOS Business
-          </span>
+        <div className="flex items-center justify-center mb-10">
+          <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-10 w-auto dark:hidden" />
+          <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-10 w-auto hidden dark:block" />
         </div>
 
         {/* Headline */}

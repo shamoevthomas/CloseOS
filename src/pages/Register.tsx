@@ -21,6 +21,24 @@ export default function Register() {
     setLoading(true);
 
     try {
+      // Check if email already has a Business account
+      const { data: businessUser } = await supabase
+        .from('business_users')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+      const { data: businessTeam } = await supabase
+        .from('business_team_members')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (businessUser || businessTeam) {
+        setError("Cet email est déjà associé à un compte CloseOS Business. Veuillez utiliser un autre email.");
+        setLoading(false);
+        return;
+      }
+
       const result = await register({
         email,
         password,
@@ -93,7 +111,7 @@ export default function Register() {
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
           <Link to="/" className="inline-block">
-            <img src="/logo Sales.png" alt="CloseOS" className="h-12 w-auto mx-auto" />
+            <img src="/logo-sales.png" alt="CloseOS" className="h-12 w-auto mx-auto" />
           </Link>
         </div>
 

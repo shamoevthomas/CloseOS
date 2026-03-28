@@ -64,8 +64,7 @@ export function CloserKPI() {
   const [formulaCommRates, setFormulaCommRates] = useState<Record<string, { roles: Record<string, number>; members: Record<string, number> }>>({})
   const [periodFrom, setPeriodFrom] = useState('')
   const [periodTo, setPeriodTo] = useState('')
-  const [stripePayments, setStripePayments] = useState<{ prospect_id: number; amount: number }[]>([])
-  const [hasStripeData, setHasStripeData] = useState(false)
+  const [formulaBillingTypes, setFormulaBillingTypes] = useState<Record<string, string>>({})
 
   // Autre modal
   const [showAutreModal, setShowAutreModal] = useState(false)
@@ -138,7 +137,7 @@ export function CloserKPI() {
         ))
       }
       setTeamClosers(allMembers)
-    })
+    }).catch(err => console.error('[CloserKPI] Error loading team closers:', err))
   }, [effectiveOwnerId])
 
   // Load teams + member team_ids
@@ -150,7 +149,7 @@ export function CloserKPI() {
     ]).then(([teamsRes, membersRes]) => {
       if (teamsRes.data) setTeams(teamsRes.data)
       if (membersRes.data) setAllTeamMembers(membersRes.data)
-    })
+    }).catch(err => console.error('[CloserKPI] Error loading teams:', err))
   }, [effectiveOwnerId])
 
   // Load campaigns
@@ -167,6 +166,7 @@ export function CloserKPI() {
           if (!selectedSource) setSelectedSource(data[0].source || 'Direct')
         }
       })
+      .catch(err => console.error('[CloserKPI] Error loading campaigns:', err))
   }, [effectiveOwnerId])
 
   // Load formula commission rates
@@ -186,14 +186,15 @@ export function CloserKPI() {
         })
         setFormulaCommRates(map)
       })
-    // Fetch Stripe payments
-    fetch(`/api/business-payments-summary?user_id=${effectiveOwnerId}`)
-      .then(r => r.json())
-      .then(data => {
-        setHasStripeData(!!data.hasStripeData)
-        setStripePayments(data.payments || [])
+      .catch(err => console.error('[CloserKPI] Error loading commission rates:', err))
+    // Fetch formula billing types
+    supabase.from('business_formulas').select('id, billing_type').eq('user_id', effectiveOwnerId)
+      .then(({ data }) => {
+        const map: Record<string, string> = {}
+        ;(data || []).forEach(f => { map[f.id] = f.billing_type || 'one_time' })
+        setFormulaBillingTypes(map)
       })
-      .catch(() => {})
+      .catch(err => console.error('[CloserKPI] Error loading formula billing types:', err))
   }, [effectiveOwnerId])
 
   const saveConfig = async () => {
@@ -225,7 +226,7 @@ export function CloserKPI() {
     const won = src.filter((p: any) => p.stage === 'won')
     const noShow = src.filter((p: any) => p.stage === 'noshow')
     const lost = src.filter((p: any) => p.stage === 'lost')
-    const revenue = won.reduce((sum: number, p: any) => sum + (hasStripeData ? getProspectCA(p, stripePayments) : (p.value || 0)), 0)
+    const revenue = won.reduce((sum: number, p: any) => sum + getProspectCA(p, formulaBillingTypes), 0)
     // Conversion: no-shows count only if they came from follow-up
     const noshowFromFollowup = noShow.filter((p: any) => p.previous_stage === 'followup')
     const closedTotal = won.length + lost.length + noshowFromFollowup.length
@@ -257,7 +258,7 @@ export function CloserKPI() {
     const memberRole = member?.role
     let total = 0
     for (const p of wonProspects) {
-      const value = hasStripeData ? getProspectCA(p, stripePayments) : (p.value || 0)
+      const value = getProspectCA(p, formulaBillingTypes)
       if (!value) continue
       const formulaId = p.formula_id || p.offer_id
       const rates = formulaId ? formulaCommRates[formulaId] : null

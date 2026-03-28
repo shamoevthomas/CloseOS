@@ -324,6 +324,21 @@ export default async function handler(req: Request) {
                         }
                     }
 
+                    // Log renewal in prospect history
+                    if (paymentAmount > 0) {
+                        await supabaseAdmin.from('business_prospect_history').insert({
+                            prospect_id: prospect.id,
+                            business_owner_id: ownerUserId,
+                            changed_by_id: 'stripe',
+                            changed_by_name: 'Stripe',
+                            change_type: 'stripe_renewal',
+                            field_name: 'subscription',
+                            old_value: null,
+                            new_value: `${paymentAmount} ${invoice.currency || 'eur'}`,
+                            metadata: { invoice_id: invoice.id, amount: paymentAmount },
+                        }).catch(() => {});
+                    }
+
                     console.log(`Updated last_payment_date for prospect ${prospect.id}`);
                 } else if (paymentAmount > 0) {
                     // No matching prospect — auto-create one from invoice data

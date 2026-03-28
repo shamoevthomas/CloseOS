@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { toZonedTime } from 'date-fns-tz';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -21,9 +22,7 @@ function wrapEmailHtml(bodyContent: string): string {
   <tr><td align="center">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
       <tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;">
-        <div style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;color:#111111;letter-spacing:-0.04em;">
-          Close<span style="background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8;">OS</span>
-        </div>
+        <img src="https://closeos.fr/closeos-business-logo-ecrit.png" alt="CloseOS Business" width="160" style="display:block;">
       </td></tr>
       <tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
         ${bodyContent}
@@ -96,7 +95,7 @@ function replaceVars(text: string, vars: Record<string, string>): string {
 }
 
 // ─── Timing logic ───
-function shouldSendReminder(timing: string, appointmentDatetimeUtc: string, nowUtc: Date): boolean {
+function shouldSendReminder(timing: string, appointmentDatetimeUtc: string, nowUtc: Date, timezone: string = 'Europe/Paris'): boolean {
   const apptTime = new Date(appointmentDatetimeUtc);
   const diffMs = apptTime.getTime() - nowUtc.getTime();
   const diffMinutes = diffMs / 60000;
@@ -106,15 +105,14 @@ function shouldSendReminder(timing: string, appointmentDatetimeUtc: string, nowU
       // Send between 24h and 23h before
       return diffMinutes <= 1440 && diffMinutes > 1380;
     case '10h_same_day':
-      // Send if appointment is today and it's between 10:00 and 10:59 UTC+1 (Europe/Paris)
-      // We check if it's the same calendar day in Europe/Paris and current hour is ~10
+      // Send if appointment is today (in the appointment's timezone) and current hour is 10
       {
-        const parisNow = new Date(nowUtc.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-        const parisAppt = new Date(apptTime.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-        const sameDay = parisNow.getFullYear() === parisAppt.getFullYear() &&
-                        parisNow.getMonth() === parisAppt.getMonth() &&
-                        parisNow.getDate() === parisAppt.getDate();
-        return sameDay && parisNow.getHours() === 10 && diffMinutes > 0;
+        const zonedNow = toZonedTime(nowUtc, timezone);
+        const zonedAppt = toZonedTime(apptTime, timezone);
+        const sameDay = zonedNow.getFullYear() === zonedAppt.getFullYear() &&
+                        zonedNow.getMonth() === zonedAppt.getMonth() &&
+                        zonedNow.getDate() === zonedAppt.getDate();
+        return sameDay && zonedNow.getHours() === 10 && diffMinutes > 0;
       }
     case '5h':
       return diffMinutes <= 300 && diffMinutes > 240;
@@ -245,7 +243,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Check each reminder
         for (const reminder of ownerRems) {
-          if (!shouldSendReminder(reminder.timing, appt.datetime_utc, now)) continue;
+          if (!shouldSendReminder(reminder.timing, appt.datetime_utc, now, appt.timezone || 'Europe/Paris')) continue;
 
           // Check if already sent
           const { data: existing } = await supabaseAdmin

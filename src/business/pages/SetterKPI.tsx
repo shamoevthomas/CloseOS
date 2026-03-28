@@ -67,8 +67,7 @@ export function SetterKPI() {
   // Period filter
   const [periodFrom, setPeriodFrom] = useState('')
   const [periodTo, setPeriodTo] = useState('')
-  const [stripePayments, setStripePayments] = useState<{ prospect_id: number; amount: number }[]>([])
-  const [hasStripeData, setHasStripeData] = useState(false)
+  const [formulaBillingTypes, setFormulaBillingTypes] = useState<Record<string, string>>({})
 
   // PDF export
   const pdfRef = useRef<HTMLDivElement>(null)
@@ -134,7 +133,7 @@ export function SetterKPI() {
         ))
       }
       setTeamSetters(allMembers)
-    })
+    }).catch(err => console.error('[SetterKPI] Error loading team setters:', err))
   }, [effectiveOwnerId])
 
   // Load campaigns
@@ -151,6 +150,7 @@ export function SetterKPI() {
           if (!selectedSource) setSelectedSource(data[0].source || 'Direct')
         }
       })
+      .catch(err => console.error('[SetterKPI] Error loading campaigns:', err))
   }, [effectiveOwnerId])
 
   // Load formula commission rates
@@ -170,14 +170,15 @@ export function SetterKPI() {
         })
         setFormulaCommRates(map)
       })
-    // Fetch Stripe payments
-    fetch(`/api/business-payments-summary?user_id=${effectiveOwnerId}`)
-      .then(r => r.json())
-      .then(data => {
-        setHasStripeData(!!data.hasStripeData)
-        setStripePayments(data.payments || [])
+      .catch(err => console.error('[SetterKPI] Error loading commission rates:', err))
+    // Fetch formula billing types
+    supabase.from('business_formulas').select('id, billing_type').eq('user_id', effectiveOwnerId)
+      .then(({ data }) => {
+        const map: Record<string, string> = {}
+        ;(data || []).forEach(f => { map[f.id] = f.billing_type || 'one_time' })
+        setFormulaBillingTypes(map)
       })
-      .catch(() => {})
+      .catch(err => console.error('[SetterKPI] Error loading formula billing types:', err))
   }, [effectiveOwnerId])
 
   const saveConfig = async () => {
@@ -225,7 +226,7 @@ export function SetterKPI() {
     const memberRole = member?.role
     let total = 0
     for (const p of wonProspects) {
-      const value = hasStripeData ? getProspectCA(p, stripePayments) : (p.value || 0)
+      const value = getProspectCA(p, formulaBillingTypes)
       if (!value) continue
       const formulaId = p.formula_id || p.offer_id
       const rates = formulaId ? formulaCommRates[formulaId] : null
@@ -273,7 +274,7 @@ export function SetterKPI() {
     const lost = src.filter((p: any) => p.stage === 'lost')
     const conversionRate = qualifiedAll.length > 0 ? (won.length / qualifiedAll.length) * 100 : 0
     const noShowRate = qualifiedAll.length > 0 ? (noShow.length / qualifiedAll.length) * 100 : 0
-    const revenue = won.reduce((sum: number, p: any) => sum + (hasStripeData ? getProspectCA(p, stripePayments) : (p.value || 0)), 0)
+    const revenue = won.reduce((sum: number, p: any) => sum + getProspectCA(p, formulaBillingTypes), 0)
 
     return {
       contacted, responded, responseRate, booked, bookingRate,
@@ -368,9 +369,9 @@ export function SetterKPI() {
   const v = getTabValues()
   const avgCommission = v.sales > 0 ? Math.round(v.commission / v.sales) : 0
 
-  // Setter-specific display values (personal tab only)
-  const setterDisplay = personal
-  const showSetterCards = activeTab === 'personal'
+  // Setter-specific display values (follows active tab)
+  const setterDisplay = activeTab === 'org' ? orgKpis : activeTab === 'offer' ? formulaKpis : activeTab === 'campaign' ? campaignKpis : activeTab === 'source' ? sourceKpis : personal
+  const showSetterCards = true
 
   const inputCls = "w-full rounded-xl border border-stone-200 dark:border-white/10 px-4 py-2.5 text-sm text-stone-900 dark:text-white dark:bg-neutral-800 placeholder:text-stone-400 dark:placeholder:text-neutral-500 focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
 

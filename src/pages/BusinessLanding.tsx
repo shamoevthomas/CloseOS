@@ -30,8 +30,11 @@ import {
   Zap,
   Megaphone,
   ClipboardList,
-  DollarSign
+  DollarSign,
+  Globe
 } from 'lucide-react';
+import { translations, detectLang, LangContext, useLang } from './businessLandingI18n';
+import type { Lang } from './businessLandingI18n';
 
 export const BusinessLanding: React.FC = () => {
   const navigate = useNavigate();
@@ -41,6 +44,12 @@ export const BusinessLanding: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [lang, setLang] = useState<Lang>('fr');
+  const t = translations[lang];
+
+  useEffect(() => {
+    setLang(detectLang());
+  }, []);
 
   // Dynamic iframe height from embed postMessage
   useEffect(() => {
@@ -62,141 +71,186 @@ export const BusinessLanding: React.FC = () => {
   // SEO meta tags for Business landing
   useEffect(() => {
     // Title & Description
-    document.title = "CloseOS Business — Gérer Équipe de Closers | Logiciel Infopreneur Closing & Pilotage";
-    document.querySelector('meta[name="description"]')?.setAttribute('content',
-      "CloseOS Business est la plateforme pour gérer une équipe de closers et setters. Pilotage équipe closing, CRM acquisition infopreneur, campagnes d'acquisition, tableau de bord infopreneur, KPIs d'équipe. Logiciel infopreneur closing francophone."
-    );
+    document.title = t.seo_title;
+    document.querySelector('meta[name="description"]')?.setAttribute('content', t.seo_description);
 
     // Canonical & Open Graph
     document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/business');
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/business');
-    document.getElementById('og-title')?.setAttribute('content', 'CloseOS Business — Plateforme de management pour infopreneurs et Head of Sales');
-    document.getElementById('og-description')?.setAttribute('content', "Gérez votre équipe de closers, pilotez vos campagnes d'acquisition et suivez les KPIs de votre équipe. Logiciel infopreneur closing francophone.");
-    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/closeos-business.png');
+    document.getElementById('og-title')?.setAttribute('content', t.seo_og_title);
+    document.getElementById('og-description')?.setAttribute('content', t.seo_og_description);
+    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-business.png');
 
     // Twitter Card
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/business');
-    document.getElementById('tw-title')?.setAttribute('content', 'CloseOS Business — Plateforme de management pour infopreneurs et Head of Sales');
-    document.getElementById('tw-description')?.setAttribute('content', "Gérez votre équipe de closers, pilotez vos campagnes d'acquisition et suivez les KPIs de votre équipe.");
-    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/closeos-business.png');
+    document.getElementById('tw-title')?.setAttribute('content', t.seo_og_title);
+    document.getElementById('tw-description')?.setAttribute('content', t.seo_og_description);
+    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-business.png');
+    document.documentElement.lang = lang;
 
-    // SoftwareApplication Schema
+    // hreflang tags
+    document.querySelectorAll('link[data-hreflang]').forEach(el => el.remove());
+    const hreflangs = [
+      { lang: 'fr', href: 'https://www.closeos.fr/business' },
+      { lang: 'en', href: 'https://www.closeos.fr/business?lang=en' },
+      { lang: 'x-default', href: 'https://www.closeos.fr/business' },
+    ];
+    hreflangs.forEach(({ lang: hl, href }) => {
+      const link = document.createElement('link');
+      link.rel = 'alternate';
+      link.hreflang = hl;
+      link.href = href;
+      link.setAttribute('data-hreflang', 'true');
+      document.head.appendChild(link);
+    });
+
+    // WebApplication Schema
     const existingLd = document.querySelector('script[data-closeos-biz-ld]');
-    if (!existingLd) {
-      const script = document.createElement('script');
-      script.type = 'application/ld+json';
-      script.setAttribute('data-closeos-biz-ld', 'true');
-      script.textContent = JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'SoftwareApplication',
-        name: 'CloseOS Business',
-        url: 'https://www.closeos.fr/business',
-        applicationCategory: 'BusinessApplication',
-        operatingSystem: 'Web',
-        description: "Plateforme de management pour infopreneurs et Head of Sales. Gestion d'équipe de closers et setters, pilotage campagnes d'acquisition, CRM acquisition, tableau de bord infopreneur. Alternative à iClosed, 100% en français.",
-        offers: {
-          '@type': 'Offer',
-          price: '0',
-          priceCurrency: 'EUR',
-          availability: 'https://schema.org/PreOrder',
-          description: 'Liste d\'attente — tarifs early adopters',
-        },
-        featureList: "Gérer équipe de closers, Pilotage équipe closing, Logiciel infopreneur closing, CRM acquisition infopreneur, Outil gestion setter closer, Piloter campagne acquisition closing, Tableau de bord infopreneur, KPIs d'équipe, Onboarding closers automatisé",
-        inLanguage: 'fr',
-      });
-      document.head.appendChild(script);
-    }
+    if (existingLd) existingLd.remove();
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-closeos-biz-ld', 'true');
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'CloseOS Business',
+      url: 'https://www.closeos.fr/business',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      description: t.sd_description,
+      offers: {
+        '@type': 'AggregateOffer',
+        lowPrice: '0',
+        highPrice: '99',
+        priceCurrency: 'EUR',
+        availability: 'https://schema.org/InStock',
+        offerCount: '3',
+      },
+      featureList: t.sd_feature_list,
+      inLanguage: lang,
+    });
+    document.head.appendChild(script);
 
     // FAQ structured data for GEO
     const existingFaqLd = document.querySelector('script[data-closeos-biz-faq-ld]');
-    if (!existingFaqLd) {
-      const faqScript = document.createElement('script');
-      faqScript.type = 'application/ld+json';
-      faqScript.setAttribute('data-closeos-biz-faq-ld', 'true');
-      faqScript.textContent = JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [
-          {
-            '@type': 'Question',
-            name: 'A qui est destiné CloseOS Business ?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: "CloseOS Business est destiné à toute personne qui vend en ligne : infopreneurs, agences, Head of Sales, solopreneurs et ceux qui lancent des Challenges. Même un closer seul ou un duo setter/closer peut tirer parti de l'outil de management.",
-            },
+    if (existingFaqLd) existingFaqLd.remove();
+    const faqScript = document.createElement('script');
+    faqScript.type = 'application/ld+json';
+    faqScript.setAttribute('data-closeos-biz-faq-ld', 'true');
+    faqScript.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: t.sd_faq_who_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_who_a,
           },
-          {
-            '@type': 'Question',
-            name: 'CloseOS Business est-il compatible avec mes outils CRM actuels ?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: "Oui. CloseOS Business se connecte nativement à 6 plateformes : HubSpot (bidirectionnel), Pipedrive (bidirectionnel), GoHighLevel GHL (bidirectionnel), Airtable (bidirectionnel), Systeme.io (webhook) et iClosed (unidirectionnel via webhook). Vous pouvez aussi importer/exporter vos prospects en CSV depuis n'importe quel outil. Le CRM intégré CloseOS Business offre les meilleures performances pour l'écosystème.",
-            },
+        },
+        {
+          '@type': 'Question',
+          name: t.sd_faq_compat_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_compat_a,
           },
-          {
-            '@type': 'Question',
-            name: 'Pourquoi utiliser le CRM CloseOS si j\'ai déjà HubSpot ou Pipedrive ?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: "CloseOS ne remplace pas forcément votre CRM — il s'y connecte. Gardez HubSpot, Pipedrive, GoHighLevel ou Airtable comme source marketing, et utilisez CloseOS comme cockpit de closing optimisé. La synchronisation bidirectionnelle assure que chaque prospect est à jour des deux côtés. Le CRM natif CloseOS offre l'assignation automatique setter/closer, capture de leads, tracking campagnes et analytics intégrés.",
-            },
+        },
+        {
+          '@type': 'Question',
+          name: t.sd_faq_why_crm_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_why_crm_a,
           },
-          {
-            '@type': 'Question',
-            name: 'Mes closers ont-ils accès à toutes les données ?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: "Non. Vous définissez les niveaux d'accès. Chaque closer voit uniquement ses prospects, ses KPIs et son pipeline. Les données sensibles (CA global, marges, contacts stratégiques) restent visibles par vous seul.",
-            },
+        },
+        {
+          '@type': 'Question',
+          name: t.sd_faq_data_access_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_data_access_a,
           },
-          {
-            '@type': 'Question',
-            name: 'Qu\'est-ce que CloseOS Business ?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: "CloseOS Business est la plateforme de management pour infopreneurs et Head of Sales francophones. Elle permet de gérer une équipe de closers et setters, piloter les campagnes d'acquisition, suivre les KPIs d'équipe et automatiser l'onboarding des closers. C'est l'alternative française à iClosed, conçue pour le pilotage d'équipe closing.",
-            },
+        },
+        {
+          '@type': 'Question',
+          name: t.sd_faq_what_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_what_a,
           },
-          {
-            '@type': 'Question',
-            name: 'Combien de closers puis-je ajouter dans CloseOS Business ?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: "Autant que vous voulez. CloseOS Business n'impose aucune limite sur la taille de votre équipe de closers et setters.",
-            },
+        },
+        {
+          '@type': 'Question',
+          name: t.sd_faq_how_many_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_how_many_a,
           },
-          {
-            '@type': 'Question',
-            name: 'Les données sont-elles sécurisées et conformes au RGPD ?',
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: "Oui. CloseOS Business est 100% conforme au RGPD. Toutes les données sont hébergées de manière sécurisée, isolées par organisation, et aucun tiers n'y a accès. Vous restez propriétaire de vos données à tout moment.",
-            },
+        },
+        {
+          '@type': 'Question',
+          name: t.sd_faq_gdpr_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_gdpr_a,
           },
-        ],
-      });
-      document.head.appendChild(faqScript);
-    }
+        },
+      ],
+    });
+    document.head.appendChild(faqScript);
+
+    // BreadcrumbList
+    const existingBreadcrumb = document.querySelector('script[data-closeos-biz-breadcrumb-ld]');
+    if (existingBreadcrumb) existingBreadcrumb.remove();
+    const breadcrumbScript = document.createElement('script');
+    breadcrumbScript.type = 'application/ld+json';
+    breadcrumbScript.setAttribute('data-closeos-biz-breadcrumb-ld', 'true');
+    breadcrumbScript.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'CloseOS', item: 'https://www.closeos.fr' },
+        { '@type': 'ListItem', position: 2, name: 'CloseOS Business', item: 'https://www.closeos.fr/business' },
+      ],
+    });
+    document.head.appendChild(breadcrumbScript);
+
+    document.querySelector('script[data-closeos-biz-person-ld]')?.remove();
+    const personScript = document.createElement('script');
+    personScript.type = 'application/ld+json';
+    personScript.setAttribute('data-closeos-biz-person-ld', 'true');
+    personScript.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: 'Thomas Shamoev',
+      jobTitle: 'Fondateur',
+      worksFor: { '@type': 'Organization', name: 'CloseOS' },
+      image: 'https://qwjvdwpixewsctircibl.supabase.co/storage/v1/object/public/avatars/business-7d48e479-cede-480e-b405-39611a48d333-0.3286628360007747.jpg',
+    });
+    document.head.appendChild(personScript);
 
     return () => {
       // Restore defaults
-      document.title = "CloseOS — Écosystème SaaS pour la vente digitale | CRM Closer & Management Infopreneur";
-      document.querySelector('meta[name="description"]')?.setAttribute('content',
-        "CloseOS est l'écosystème SaaS francophone pour la vente digitale. Outil pour closer : CRM, pipeline, VoIP, KPIs, facturation automatique. Logiciel infopreneur : gestion équipe de closers, campagnes d'acquisition, analytics. Alternative iClosed."
-      );
+      document.title = t.seo_default_title;
+      document.querySelector('meta[name="description"]')?.setAttribute('content', t.seo_default_description);
       document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/');
       document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/');
-      document.getElementById('og-title')?.setAttribute('content', 'CloseOS — Écosystème SaaS pour la vente digitale francophone');
-      document.getElementById('og-description')?.setAttribute('content', "Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed.");
-      document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/closeos-logo.png');
+      document.getElementById('og-title')?.setAttribute('content', t.seo_default_og_title);
+      document.getElementById('og-description')?.setAttribute('content', t.seo_default_og_description);
+      document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.png');
       document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/');
-      document.getElementById('tw-title')?.setAttribute('content', 'CloseOS — Écosystème SaaS pour la vente digitale francophone');
-      document.getElementById('tw-description')?.setAttribute('content', "Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed.");
-      document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/closeos-logo.png');
+      document.getElementById('tw-title')?.setAttribute('content', t.seo_default_og_title);
+      document.getElementById('tw-description')?.setAttribute('content', t.seo_default_og_description);
+      document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.png');
       document.querySelector('script[data-closeos-biz-ld]')?.remove();
       document.querySelector('script[data-closeos-biz-faq-ld]')?.remove();
+      document.querySelector('script[data-closeos-biz-breadcrumb-ld]')?.remove();
+      document.querySelector('script[data-closeos-biz-person-ld]')?.remove();
+      document.querySelectorAll('link[data-hreflang]').forEach(el => el.remove());
     };
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -204,33 +258,39 @@ export const BusinessLanding: React.FC = () => {
     };
     window.addEventListener('scroll', handleScroll);
 
-    // Chatbot initialization
-    const s = document.createElement('script');
-    s.src = '/chatbot-widget.js';
-    s.setAttribute('data-chatbot-id', 'acb35233-a6de-4738-9ba0-7e25c82c2a61');
-    s.setAttribute('data-supabase-url', 'https://mkxcircbzcsjamslijde.supabase.co');
-    s.setAttribute('data-supabase-key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1reGNpcmNiemNzamFtc2xpamRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjM0MDAsImV4cCI6MjA4NzQ5OTQwMH0.9-abq1tEFsmjfRkLJjrkXlG3z-9o2HKYjyp5eBIl178');
-    document.body.appendChild(s);
+    // Chatbot initialization (deferred 5s)
+    let chatbotScript: HTMLScriptElement | null = null;
+    const chatbotTimer = setTimeout(() => {
+      chatbotScript = document.createElement('script');
+      chatbotScript.src = '/chatbot-widget.js';
+      chatbotScript.setAttribute('data-chatbot-id', 'acb35233-a6de-4738-9ba0-7e25c82c2a61');
+      chatbotScript.setAttribute('data-supabase-url', 'https://mkxcircbzcsjamslijde.supabase.co');
+      chatbotScript.setAttribute('data-supabase-key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1reGNpcmNiemNzamFtc2xpamRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjM0MDAsImV4cCI6MjA4NzQ5OTQwMH0.9-abq1tEFsmjfRkLJjrkXlG3z-9o2HKYjyp5eBIl178');
+      chatbotScript.setAttribute('data-lang', lang);
+      document.body.appendChild(chatbotScript);
+    }, 5000);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      if (document.body.contains(s)) {
-        document.body.removeChild(s);
+      clearTimeout(chatbotTimer);
+      if (chatbotScript && document.body.contains(chatbotScript)) {
+        document.body.removeChild(chatbotScript);
       }
       const chatbotContainer = document.getElementById('chatbot-widget-container');
       if (chatbotContainer) {
         chatbotContainer.remove();
       }
     };
-  }, []);
+  }, [lang]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
+    <LangContext.Provider value={{ lang, setLang, t }}>
     <div ref={pageRef} className={`bg-[#f4f2f1] font-sans text-[#111111] min-h-screen selection:bg-[#8a43e1]/20 transition-all duration-500 ${isExiting ? 'translate-y-full opacity-0' : 'animate-[pageEnterFromTop_0.5s_ease-out]'}`}>
-      
+
       {/* Navigation */}
       <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-5xl">
         <div className="bg-white/80 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-2 flex items-center justify-between shadow-sm">
@@ -238,50 +298,68 @@ export const BusinessLanding: React.FC = () => {
             <img
               alt="CloseOS Business"
               className="w-auto object-contain h-12"
-              src="/closeos-business.png"
+              src="/closeos-business-logo-ecrit.png"
+              fetchPriority="high"
+              width={180}
+              height={48}
             />
             <ChevronDown className="h-4 w-4 text-stone-400 group-hover:text-stone-800 transition-transform duration-300 group-hover:rotate-180" />
             <div className="absolute top-full left-0 right-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
               <a onClick={handleNavigateToSales} className="block rounded-xl border border-white/10 bg-[#020617] p-3 shadow-xl hover:bg-[#0f172a] transition-colors cursor-pointer">
-                <img src="/logo Sales.png" alt="CloseOS Sales" className="w-full h-auto" />
+                <img src="/logo-sales.png" alt="CloseOS Sales" className="w-full h-auto" loading="lazy" width={200} height={40} />
               </a>
             </div>
           </div>
-          
+
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
-            <a href="#integrations" className="hover:text-[#111111] transition-colors">Intégrations</a>
-            <a href="#features" className="hover:text-[#111111] transition-colors">Management</a>
-            <a href="#crm" className="hover:text-[#111111] transition-colors">CRM</a>
-            <a href="#roles" className="hover:text-[#111111] transition-colors">Rôles</a>
-            <a href="#demo" className="hover:text-[#111111] transition-colors">Démo</a>
-            <a href="#faq" className="hover:text-[#111111] transition-colors">FAQ</a>
+            <a href="#integrations" className="hover:text-[#111111] transition-colors">{t.nav_integrations}</a>
+            <a href="#features" className="hover:text-[#111111] transition-colors">{t.nav_management}</a>
+            <a href="#crm" className="hover:text-[#111111] transition-colors">{t.nav_crm}</a>
+            <a href="#roles" className="hover:text-[#111111] transition-colors">{t.nav_roles}</a>
+            <a href="#demo" className="hover:text-[#111111] transition-colors">{t.nav_demo}</a>
+            <a href="#faq" className="hover:text-[#111111] transition-colors">{t.nav_faq}</a>
           </div>
 
           <div className="flex items-center gap-4">
             <button
+              onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
+              className="hidden md:flex items-center gap-1.5 p-3 rounded-lg hover:bg-stone-100 transition-colors text-stone-500"
+              aria-label="Change language"
+            >
+              <Globe className="size-4" />
+              <span className="text-xs font-bold uppercase">{lang === 'fr' ? 'EN' : 'FR'}</span>
+            </button>
+            <button
               onClick={() => setIsModalOpen(true)}
               className="hidden sm:flex items-center justify-center rounded-lg h-10 px-5 text-white text-sm font-semibold tracking-wide hover:opacity-90 transition-all bg-[#111111]"
             >
-              Liste d'attente
+              {t.nav_waitlist}
             </button>
-            <button className="md:hidden p-2 text-stone-600" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            <button
+              onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
+              className="md:hidden p-2 text-stone-600"
+              aria-label="Change language"
+            >
+              <Globe className="size-5" />
+            </button>
+            <button className="md:hidden p-3 text-stone-600" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label="Menu" aria-expanded={isMobileMenuOpen}>
               {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
           </div>
         </div>
         {isMobileMenuOpen && (
           <div className="md:hidden mt-2 bg-white/90 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-4 shadow-lg flex flex-col gap-4 text-sm font-medium text-stone-600">
-            <a href="#integrations" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">Intégrations</a>
-            <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">Management</a>
-            <a href="#crm" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">CRM</a>
-            <a href="#roles" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">Rôles</a>
-            <a href="#demo" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">Démo</a>
-            <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">FAQ</a>
+            <a href="#integrations" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_integrations}</a>
+            <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_management}</a>
+            <a href="#crm" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_crm}</a>
+            <a href="#roles" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_roles}</a>
+            <a href="#demo" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_demo}</a>
+            <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_faq}</a>
             <button
               onClick={() => { setIsMobileMenuOpen(false); setIsModalOpen(true); }}
               className="flex items-center justify-center rounded-lg h-10 px-5 text-white text-sm font-semibold tracking-wide hover:opacity-90 transition-all bg-[#111111] sm:hidden"
             >
-              Liste d'attente
+              {t.nav_waitlist}
             </button>
           </div>
         )}
@@ -290,7 +368,7 @@ export const BusinessLanding: React.FC = () => {
       <main className="flex flex-col flex-1 pt-16">
         {/* Hero Section */}
         <section className="px-6 md:px-20 py-10 md:py-14 max-w-6xl mx-auto text-center relative">
-          
+
           {/* Abstract Background Blobs */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[500px] opacity-30 pointer-events-none -z-10">
             <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#ff2f2f] rounded-full mix-blend-multiply filter blur-[100px] animate-blob"></div>
@@ -298,7 +376,7 @@ export const BusinessLanding: React.FC = () => {
             <div className="absolute -bottom-8 left-1/3 w-64 h-64 bg-[#8a43e1] rounded-full mix-blend-multiply filter blur-[100px] animate-blob animation-delay-4000"></div>
           </div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -306,28 +384,28 @@ export const BusinessLanding: React.FC = () => {
           >
             <div className="flex items-center gap-3 flex-wrap justify-center">
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
-                <span className="text-xs font-bold text-emerald-700">RGPD</span>
+                <span className="text-xs font-bold text-emerald-700">{t.hero_badge_rgpd}</span>
               </div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm">
                 <span className="text-sm font-medium text-stone-800">
-                  🚀 Déjà <span className="font-bold bg-gradient-to-r from-[#ff2f2f] via-[#ef7b16] to-[#d511fd] text-transparent bg-clip-text">+150 closers</span> qui valident CloseOS Sales
+                  🚀 {t.hero_badge_closers_text.split('{count}')[0]}<span className="font-bold bg-gradient-to-r from-[#ff2f2f] via-[#ef7b16] to-[#d511fd] text-transparent bg-clip-text">{t.hero_badge_closers}</span>{t.hero_badge_closers_text.split('{count}')[1]}
                 </span>
               </div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
-                <span className="text-xs font-bold text-emerald-700">Eco-responsable</span>
+                <span className="text-xs font-bold text-emerald-700">{t.hero_badge_eco}</span>
               </div>
             </div>
 
             <h1 className="text-5xl md:text-7xl lg:text-[80px] font-bold leading-[1.1] tracking-tight text-[#111111]">
-              Gérez votre équipe de closers et pilotez votre acquisition.
+              {t.hero_title}
             </h1>
 
             <p className="text-stone-500 text-base font-semibold bg-red-50 border border-red-100 px-5 py-2.5 rounded-full">
-              70% des infopreneurs perdent du CA parce qu'ils ne savent pas quoi améliorer.
+              {t.hero_pain}
             </p>
 
             <p className="text-stone-600 text-lg md:text-xl font-medium leading-relaxed max-w-2xl">
-              CRM, équipe, campagnes, KPIs — tout ce dont un infopreneur a besoin pour structurer son acquisition et scaler.
+              {t.hero_subtitle}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-4">
@@ -335,12 +413,12 @@ export const BusinessLanding: React.FC = () => {
                 onClick={() => setIsModalOpen(true)}
                 className="flex min-w-[200px] items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-semibold shadow-lg hover:-translate-y-1 transition-all bg-[#111111]"
               >
-                Rejoindre la liste d'attente — Tarifs early adopters le 4 avril
+                {t.hero_cta}
               </button>
             </div>
 
             <p className="text-sm text-stone-500 font-medium mt-6">
-              Validé par <span className="font-bold text-[#111111]">+12 infopreneurs</span> francophones
+              {t.hero_social_proof.split('{count}')[0]}<span className="font-bold text-[#111111]">{t.hero_social_proof_count}</span>{t.hero_social_proof.split('{count}')[1]}
             </p>
 
           </motion.div>
@@ -349,24 +427,24 @@ export const BusinessLanding: React.FC = () => {
         {/* Compact Integrations Strip */}
         <section id="integrations" className="pt-8 pb-4 w-full overflow-hidden">
           <div className="text-center mb-4 md:mb-5 px-6 md:px-20">
-            <h3 className="text-lg md:text-xs font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] text-[#111111] md:text-stone-500 mb-2 md:mb-1">Integrations natives</h3>
-            <p className="text-sm md:text-[11px] text-stone-500 md:text-stone-400">Synchronisez vos outils · 12+ natives · 7 000+ via Zapier</p>
+            <h2 className="text-lg md:text-xs font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] text-[#111111] md:text-stone-500 mb-2 md:mb-1">{t.integrations_header}</h2>
+            <p className="text-sm md:text-[11px] text-stone-500 md:text-stone-400">{t.integrations_subheader}</p>
           </div>
           {(() => {
             const allIntegrations = [
-              { name: 'HubSpot', logo: '/HubSpot.png' },
-              { name: 'Pipedrive', logo: '/Pipedrive.png' },
-              { name: 'GoHighLevel', logo: '/GHL.jpg' },
-              { name: 'Airtable', logo: '/airtable.png' },
-              { name: 'Systeme.io', logo: '/Systemeio.png' },
-              { name: 'iClosed', logo: '/Iclosed.png' },
-              { name: 'Google Calendar', logo: '/Gcalendar.svg.png' },
-              { name: 'Stripe', logo: '/Stripe.png' },
-              { name: 'Calendly', logo: '/Calendly.png' },
-              { name: 'Zapier', logo: '/Zapier.png' },
-              { name: 'Make', logo: '/make.png' },
-              { name: 'n8n', logo: '/N8N.png' },
-              { name: 'CSV', logo: '/LogoCSV.png' },
+              { name: 'HubSpot', logo: '/hubspot.webp' },
+              { name: 'Pipedrive', logo: '/pipedrive.webp' },
+              { name: 'GoHighLevel', logo: '/ghl.webp' },
+              { name: 'Airtable', logo: '/airtable.webp' },
+              { name: 'Systeme.io', logo: '/systemeio.webp' },
+              { name: 'iClosed', logo: '/iclosed.webp' },
+              { name: 'Google Calendar', logo: '/gcalendar.webp' },
+              { name: 'Stripe', logo: '/stripe.webp' },
+              { name: 'Calendly', logo: '/calendly.webp' },
+              { name: 'Zapier', logo: '/zapier.webp' },
+              { name: 'Make', logo: '/make.webp' },
+              { name: 'n8n', logo: '/n8n.webp' },
+              { name: 'CSV', logo: '/logocsv.webp' },
             ];
             const topRow = allIntegrations.filter((_, i) => i % 2 === 0);
             const bottomRow = allIntegrations.filter((_, i) => i % 2 === 1);
@@ -375,7 +453,7 @@ export const BusinessLanding: React.FC = () => {
                 key={dupKey}
                 className="flex items-center gap-2.5 px-4 py-2.5 bg-white rounded-xl border border-stone-200/80 shadow-sm min-w-[130px]"
               >
-                <img src={integration.logo} alt={integration.name} className="h-5 w-auto object-contain" />
+                <img src={integration.logo} alt={integration.name} className="h-5 w-auto object-contain" loading="lazy" width={80} height={20} />
                 <span className="text-xs font-semibold text-[#111111] whitespace-nowrap">{integration.name}</span>
               </div>
             );
@@ -417,24 +495,24 @@ export const BusinessLanding: React.FC = () => {
         >
           <div className="text-center mb-16 space-y-4">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
-              <span className="text-sm font-semibold text-stone-800">Centre de Commandement Manager</span>
+              <span className="text-sm font-semibold text-stone-800">{t.management_badge}</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight">Pilotez et gérez votre écosystème de vente avec une autorité absolue</h2>
-            <p className="text-stone-600 text-lg max-w-2xl mx-auto">Centralisez tout votre management dans un OS puissant. Du tableau de bord stratégique macro à la gestion de chaque closer et l'automatisation de leur formation, vous ne gérez plus, vous pilotez la croissance.</p>
+            <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight">{t.management_title}</h2>
+            <p className="text-stone-600 text-lg max-w-2xl mx-auto">{t.management_description}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Macro Dashboard */}
             <div className="lg:col-span-3 bg-white rounded-3xl p-8 border border-stone-200 shadow-sm">
               <div className="mb-8">
-                <h3 className="text-2xl font-bold text-[#111111] mb-2">Tableau de Bord Macro</h3>
-                <p className="text-stone-500">Suivez vos KPIs stratégiques en temps réel pour prendre les meilleures décisions.</p>
+                <h3 className="text-2xl font-bold text-[#111111] mb-2">{t.dashboard_title}</h3>
+                <p className="text-stone-500">{t.dashboard_description}</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KPIBox index={0} title="CA Réel Stripe" value="145,000€" change="+15%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
-                <KPIBox index={1} title="CA par Closer" value="12,400€" change="+5%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
-                <KPIBox index={2} title="Taux de Closing" value="28%" change="-2%" icon={<ArrowDown className="text-rose-500 size-5" />} positive={false} />
-                <KPIBox index={3} title="Taux de No-show" value="12%" change="-4%" icon={<ArrowDown className="text-rose-500 size-5" />} positive={false} />
+                <KPIBox index={0} title={t.kpi_ca_reel} value="145,000€" change="+15%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
+                <KPIBox index={1} title={t.kpi_ca_closer} value="12,400€" change="+5%" icon={<ArrowUp className="text-emerald-500 size-5" />} positive={true} />
+                <KPIBox index={2} title={t.kpi_taux_closing} value="28%" change="-2%" icon={<ArrowDown className="text-rose-500 size-5" />} positive={false} />
+                <KPIBox index={3} title={t.kpi_taux_noshow} value="12%" change="-4%" icon={<ArrowDown className="text-rose-500 size-5" />} positive={false} />
               </div>
             </div>
 
@@ -453,22 +531,22 @@ export const BusinessLanding: React.FC = () => {
         </motion.section>
 
         {/* CRM Feature Teaser */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="px-6 md:px-20 py-32 bg-white border-y border-stone-200 relative overflow-hidden" 
+          className="px-6 md:px-20 py-32 bg-white border-y border-stone-200 relative overflow-hidden"
           id="crm"
         >
           <div className="max-w-7xl mx-auto relative z-10">
             <div className="text-center mb-20">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6">
-                <span className="text-sm font-semibold text-stone-800 uppercase tracking-widest">L'outil tout-en-un</span>
+                <span className="text-sm font-semibold text-stone-800 uppercase tracking-widest">{t.crm_badge}</span>
               </div>
-              <h2 className="text-5xl md:text-6xl font-bold mb-6 text-[#111111] tracking-tight">CloseOS devient votre Système d'acquisition</h2>
+              <h2 className="text-5xl md:text-6xl font-bold mb-6 text-[#111111] tracking-tight">{t.crm_title}</h2>
               <p className="text-stone-500 text-xl max-w-3xl mx-auto font-medium">
-                Un CRM conçu exclusivement pour le closing haute performance — avec synchronisation native vers vos outils existants.
+                {t.crm_subtitle}
               </p>
             </div>
 
@@ -477,10 +555,10 @@ export const BusinessLanding: React.FC = () => {
                 <LeadProfile />
               </div>
               <div className="lg:col-span-5 flex flex-col justify-center gap-4">
-                <CRMFeature icon={<Layers className="size-5" />} title="Pipeline CRM indépendant" description="Double vue stratégique : vue individuelle pour chaque closer vs vue globale temps réel pour l'infopreneur." />
-                <CRMFeature icon={<Bell className="size-5" />} title="Relances automatiques" extra={<div className="mt-3 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 w-fit"><ArrowUp className="size-3.5" /> RAPPELER DANS 3 JOURS</div>} />
-                <CRMFeature icon={<Tag className="size-5" />} title="Tags illimités & Filtres" extra={<div className="flex gap-2 mt-3 text-left"><span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">Froid</span><span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">Rappel</span><span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">Urgent</span></div>} />
-                <CRMFeature icon={<FileText className="size-5" />} title="Import / Export CSV" description="Importez vos prospects depuis n'importe quel CRM via CSV, ou exportez votre base en un clic. Un prompt IA intégré reformate automatiquement vos fichiers." />
+                <CRMFeatureCard icon={<Layers className="size-5" />} titleKey="crm_feature_pipeline_title" descKey="crm_feature_pipeline_desc" />
+                <CRMFeatureRelances />
+                <CRMFeatureTags />
+                <CRMFeatureCard icon={<FileText className="size-5" />} titleKey="crm_feature_csv_title" descKey="crm_feature_csv_desc" />
               </div>
             </div>
 
@@ -488,9 +566,9 @@ export const BusinessLanding: React.FC = () => {
             <CaptureSection />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-16 border-t border-stone-200">
-              <CRMKPI index={0} title="KPI CRM • Pipeline" value="452,000€" description="Valeur totale du pipeline en cours" />
-              <CRMKPI index={1} title="KPI CRM • Performance" value="4,850€" description="Deal moyen encaissé" />
-              <CRMKPI index={2} title="KPI CRM • Vélocité" value="12 Jours" description="Cycle de vente moyen (Lead to Close)" />
+              <CRMKPIBox index={0} titleKey="crm_kpi_pipeline_title" valueKey="crm_kpi_pipeline_value" descKey="crm_kpi_pipeline_desc" />
+              <CRMKPIBox index={1} titleKey="crm_kpi_performance_title" valueKey="crm_kpi_performance_value" descKey="crm_kpi_performance_desc" />
+              <CRMKPIBox index={2} titleKey="crm_kpi_velocity_title" valueKey="crm_kpi_velocity_value" descKey="crm_kpi_velocity_desc" />
             </div>
 
             <div className="flex justify-center mt-12">
@@ -498,7 +576,7 @@ export const BusinessLanding: React.FC = () => {
                 href="#demo"
                 className="flex items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-semibold shadow-lg hover:-translate-y-1 transition-all bg-[#111111]"
               >
-                Réserver une démo
+                {t.crm_book_demo}
               </a>
             </div>
           </div>
@@ -512,7 +590,7 @@ export const BusinessLanding: React.FC = () => {
             onClick={() => setIsModalOpen(true)}
             className="flex items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-semibold shadow-lg hover:-translate-y-1 transition-all bg-[#111111]"
           >
-            Rejoindre la liste d'attente
+            {t.roles_cta}
           </button>
         </div>
 
@@ -527,24 +605,24 @@ export const BusinessLanding: React.FC = () => {
         >
           <div className="space-y-8">
             <div className="text-center max-w-2xl mx-auto">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-3">Démo personnalisée</p>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-3">{t.demo_label}</p>
               <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight mb-4">
-                Réservez une démo avec notre équipe
+                {t.demo_title}
               </h2>
               <p className="text-stone-500 text-lg mb-4">
-                15 minutes pour découvrir comment CloseOS peut s'adapter à votre business. On vous montre l'outil, on répond à vos questions.
+                {t.demo_description}
               </p>
               <div className="flex flex-wrap justify-center gap-6 text-stone-600 font-medium text-sm">
-                <span className="flex items-center gap-2"><CheckCircle className="size-4 text-emerald-500 shrink-0" /> Démo adaptée à votre structure</span>
-                <span className="flex items-center gap-2"><CheckCircle className="size-4 text-emerald-500 shrink-0" /> Réponses à toutes vos questions</span>
-                <span className="flex items-center gap-2"><CheckCircle className="size-4 text-emerald-500 shrink-0" /> 100% gratuit</span>
+                <span className="flex items-center gap-2"><CheckCircle className="size-4 text-emerald-500 shrink-0" /> {t.demo_check_adapted}</span>
+                <span className="flex items-center gap-2"><CheckCircle className="size-4 text-emerald-500 shrink-0" /> {t.demo_check_questions}</span>
+                <span className="flex items-center gap-2"><CheckCircle className="size-4 text-emerald-500 shrink-0" /> {t.demo_check_free}</span>
               </div>
             </div>
             <div className="max-w-[1200px] mx-auto">
               <iframe
                 ref={demoIframeRef}
                 id="closeos-embed"
-                src="/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&layout=horizontal"
+                src={`/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&layout=horizontal&lang=${lang}`}
                 width="100%"
                 height={530}
                 frameBorder="0"
@@ -556,61 +634,10 @@ export const BusinessLanding: React.FC = () => {
         </motion.section>
 
         {/* FAQ Section */}
-        <motion.section 
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="px-6 md:px-20 pt-16 pb-32 bg-[#f4f2f1]"
-          id="faq"
-        >
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-16 space-y-4">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
-                <span className="text-sm font-semibold text-stone-800">FAQs</span>
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight">Questions fréquentes</h2>
-              <p className="text-stone-500 text-lg">Tout ce que vous devez savoir avant de rejoindre la liste d'attente.</p>
-            </div>
-            <div className="space-y-4">
-              <FAQItem
-                question="A qui est destiné cet outil ?"
-                answer={<p>Il est destiné à toute personne qui vend en ligne : <strong>infopreneurs</strong>, <strong>agences</strong>, <strong>Head of Sales</strong>, mais aussi les <strong>solopreneurs</strong> et ceux qui lancent des <strong>Challenges</strong>. Quand on parle d'équipe, on ne parle pas forcément d'une grosse structure — même un closer seul ou un duo setter/closer peut tirer parti de l'outil.</p>}
-              />
-              <FAQItem
-                question="CloseOS Business est-il compatible avec mes outils CRM actuels ?"
-                answer={<div className="space-y-3"><p>Oui. En plus de notre propre CRM intégré, CloseOS Business se connecte nativement à <strong>6 plateformes</strong> :</p><ul className="list-disc pl-5 space-y-1"><li><strong>HubSpot</strong> — synchronisation complète bidirectionnelle</li><li><strong>Pipedrive</strong> — synchronisation complète bidirectionnelle</li><li><strong>GoHighLevel (GHL)</strong> — synchronisation complète bidirectionnelle</li><li><strong>Airtable</strong> — synchronisation complète bidirectionnelle</li><li><strong>Systeme.io</strong> — import de contacts via webhook</li><li><strong>iClosed</strong> — synchronisation unidirectionnelle via webhook</li><li><strong>CSV</strong> — importez/exportez vos prospects depuis n'importe quel outil</li></ul><p>Un <strong>prompt IA intégré</strong> permet de reformater automatiquement n'importe quel fichier CSV pour le rendre compatible avec CloseOS.</p><p>Cela dit, nous recommandons d'utiliser le <strong>CRM intégré CloseOS Business</strong> : c'est lui qui offre les meilleures performances et la gestion la plus simple dans cet écosystème. Tout est conçu pour fonctionner ensemble, sans friction.</p></div>}
-              />
-              <FAQItem
-                question="Pourquoi utiliser le CRM CloseOS si j'ai déjà HubSpot ou Pipedrive ?"
-                answer={<div className="space-y-3"><p>CloseOS ne remplace pas forcément votre CRM actuel — il <strong>s'y connecte</strong>. Vous pouvez garder HubSpot, Pipedrive, GoHighLevel ou Airtable comme source de vérité marketing, et utiliser CloseOS comme <strong>cockpit de closing</strong> optimisé pour votre équipe.</p><p>La synchronisation bidirectionnelle signifie que chaque prospect ajouté ou mis à jour d'un côté est reflété de l'autre. Vos closers travaillent dans CloseOS (pipeline, appels, KPIs), et vos données marketing restent à jour dans votre stack existante.</p><p>Pour les équipes qui veulent tout centraliser, le <strong>CRM natif CloseOS</strong> offre les meilleures performances : assignation automatique setter/closer, capture de leads, tracking de campagnes et analytics intégrés sans aucune config externe.</p></div>}
-              />
-              <FAQItem
-                question="Mes données sont-elles sécurisées et conformes au RGPD ?"
-                answer={<p>Oui. CloseOS Business est <strong>100% conforme au RGPD</strong>. Toutes les données sont hébergées de manière sécurisée, isolées par organisation, et aucun tiers n'y a accès. Vous restez propriétaire de vos données à tout moment.</p>}
-              />
-              <FAQItem
-                question="Mes closers ont-ils accès à toutes les données ?"
-                answer={<p>Non. Vous définissez vous-même les niveaux d'accès. Chaque closer voit uniquement ses prospects, ses KPIs et son pipeline. Les données sensibles (CA global, marges, contacts stratégiques) restent visibles par vous seul.</p>}
-              />
-              <FAQItem
-                question="Combien de closers puis-je ajouter ?"
-                answer={<p>Autant que vous voulez. CloseOS Business n'impose <strong>aucune limite</strong> sur la taille de votre équipe.</p>}
-              />
-              <FAQItem
-                question="Est-ce difficile à prendre en main pour mes closers ?"
-                answer={<p>Non. L'onboarding est <strong>100% autonome</strong> — vos closers sont guidés dès leur première connexion avec vos scripts, ressources et KPIs de progression. Vous n'avez rien à expliquer manuellement.</p>}
-              />
-              <FAQItem
-                question="Est-ce que CloseOS Business sera parfaitement adapté à mon business ?"
-                answer={<p>C'est justement l'objectif. <strong>CloseOS Business se construit avec les infopreneurs inscrits sur la liste d'attente.</strong> Vos retours, vos besoins et vos cas d'usage concrets façonnent directement l'outil. Vous ne découvrez pas un produit fini — vous participez à créer le meilleur outil de closing du marché.</p>}
-              />
-            </div>
-          </div>
-        </motion.section>
+        <FAQSection />
 
         {/* Final CTA */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -618,42 +645,41 @@ export const BusinessLanding: React.FC = () => {
           className="px-6 md:px-20 py-32 bg-white text-center border-t border-stone-200"
         >
           <div className="max-w-3xl mx-auto space-y-10">
-            <h2 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight text-[#111111]">Prêt à scaler votre écosystème de closing ?</h2>
-            <p className="text-stone-500 text-xl">Inscrivez-vous maintenant et débloquez un tarif early adopter imbattable, dévoilé le 4 avril.</p>
+            <h2 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight text-[#111111]">{t.final_cta_title}</h2>
+            <p className="text-stone-500 text-xl">{t.final_cta_subtitle}</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="w-full sm:w-auto flex min-w-[240px] items-center justify-center rounded-xl h-16 px-10 text-white text-lg font-semibold shadow-xl hover:-translate-y-1 transition-all bg-[#111111]"
               >
-                Rejoindre la liste d'attente — Tarifs le 4 avril
+                {t.final_cta_button}
               </button>
             </div>
           </div>
         </motion.section>
       </main>
 
-      <footer className="px-6 md:px-20 py-6 border-t border-stone-200 bg-[#f4f2f1] flex flex-col md:flex-row items-center justify-between gap-4 pb-16">
-        <div className="flex items-center gap-2">
+      {/* Founder */}
+      <section className="py-20 border-t border-stone-200 bg-white">
+        <div className="max-w-4xl mx-auto px-6 flex flex-col md:flex-row items-center gap-8">
           <img
-            alt="CloseOS Business"
-            className="w-auto object-contain h-10"
-            src="/closeos-business.png"
+            src="https://qwjvdwpixewsctircibl.supabase.co/storage/v1/object/public/avatars/business-7d48e479-cede-480e-b405-39611a48d333-0.3286628360007747.jpg"
+            alt="Thomas Shamoev, fondateur de CloseOS"
+            width={120}
+            height={120}
+            loading="lazy"
+            className="rounded-full w-28 h-28 object-cover flex-shrink-0"
           />
+          <div>
+            <p className="text-sm text-[#111111] font-medium mb-1">{t.founder_section_title}</p>
+            <h2 className="text-2xl font-bold text-[#111111] mb-1">Thomas Shamoev</h2>
+            <p className="text-stone-500 text-sm mb-4">{t.founder_role}</p>
+            <p className="text-stone-500 leading-relaxed">{t.founder_bio}</p>
+          </div>
         </div>
-        <div className="flex flex-wrap justify-center items-center gap-4 text-xs text-stone-500 font-medium">
-          <span>&copy; 2026 CloseOS</span>
-          <span className="hidden sm:inline">&middot;</span>
-          <Link to="/mentions-legales" className="hover:text-stone-700 transition-colors">Mentions légales</Link>
-          <span className="hidden sm:inline">&middot;</span>
-          <Link to="/cgu" className="hover:text-stone-700 transition-colors">CGU</Link>
-          <span className="hidden sm:inline">&middot;</span>
-          <Link to="/cgv" className="hover:text-stone-700 transition-colors">CGV</Link>
-          <span className="hidden sm:inline">&middot;</span>
-          <Link to="/confidentialite" className="hover:text-stone-700 transition-colors">Confidentialité</Link>
-          <span className="hidden sm:inline">&middot;</span>
-          <Link to="/business/politique-utilisation" className="hover:text-stone-700 transition-colors">Politique d'utilisation</Link>
-        </div>
-      </footer>
+      </section>
+
+      <FooterSection />
 
       {/* Fixed bottom blur cue */}
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#f4f2f1] via-[#f4f2f1]/80 to-transparent backdrop-blur-[1px] pointer-events-none z-[80]" />
@@ -664,7 +690,7 @@ export const BusinessLanding: React.FC = () => {
       <button
         onClick={scrollToTop}
         className={`fixed bottom-8 left-8 z-[90] p-4 rounded-full bg-white border border-stone-200 shadow-lg transition-all duration-500 hover:scale-110 hover:-translate-y-1 group ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
-        aria-label="Retour en haut"
+        aria-label={t.scroll_top_label}
       >
         <ArrowUp className="size-5 text-stone-800 group-hover:animate-bounce" />
       </button>
@@ -691,220 +717,239 @@ export const BusinessLanding: React.FC = () => {
         }
       `}</style>
     </div>
+    </LangContext.Provider>
   );
 }
 
 // --- Sub-components ---
 
-const KPIBox = ({ title, value, change, icon, positive, index }: any) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 30 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-50px" }}
-    transition={{ duration: 0.6, delay: (index || 0) * 0.1, ease: "easeOut" }}
-    className="bg-stone-50 p-6 rounded-2xl border border-stone-100 flex flex-col gap-3 hover:shadow-md transition-all duration-300"
-  >
-    <div className="flex items-center justify-between">
-      <span className="text-stone-500 text-xs font-bold uppercase tracking-widest">{title}</span>
-      <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-stone-100">
-        {icon}
+const KPIBox = ({ title, value, change, icon, positive, index }: any) => {
+  const { t } = useLang();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, delay: (index || 0) * 0.1, ease: "easeOut" }}
+      className="bg-stone-50 p-6 rounded-2xl border border-stone-100 flex flex-col gap-3 hover:shadow-md transition-all duration-300"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-stone-500 text-xs font-bold uppercase tracking-widest">{title}</span>
+        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-stone-100">
+          {icon}
+        </div>
       </div>
-    </div>
-    <p className="text-[#111111] text-3xl font-bold tracking-tight">{value}</p>
-    <p className={`${positive ? 'text-emerald-600' : 'text-rose-500'} text-xs font-semibold flex items-center gap-1`}>
-      {change} vs mois dernier
-    </p>
-  </motion.div>
-);
-
-const TeamManagement = () => (
-  <motion.div 
-    initial={{ opacity: 0, y: 30 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-100px" }}
-    transition={{ duration: 0.8, delay: 0.2 }}
-    className="lg:col-span-2 bg-white rounded-3xl p-8 border border-stone-200 shadow-sm flex flex-col justify-between"
-  >
-    <div>
-      <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-6">
-        <Layers className="size-6 text-stone-800" />
-      </div>
-      <h3 className="text-2xl font-bold text-[#111111] mb-3">Gestion de l'Équipe complète</h3>
-      <p className="text-stone-500 mb-8">
-        Créez des équipes dédiées (Closers, Setters, mixtes), assignez des rôles précis (Closer, Setter, Setter-Closer, Head of Sales, Admin) et suivez en temps réel qui est connecté. Gérez les disponibilités, absences, primes et commissions de chaque membre. Invitez par lien avec onboarding automatique adapté au rôle.
+      <p className="text-[#111111] text-3xl font-bold tracking-tight">{value}</p>
+      <p className={`${positive ? 'text-emerald-600' : 'text-rose-500'} text-xs font-semibold flex items-center gap-1`}>
+        {change} {t.kpi_vs_last_month}
       </p>
-    </div>
-    <div className="space-y-3">
-      <TeamMember index={0} name="Julien Durand" role="Closer Senior" conv="34%" />
-      <TeamMember index={1} name="Marie Lefebvre" role="Setter" conv="21%" />
-      <TeamMember index={2} name="Sophie Martin" role="Setter-Closer" conv="28%" />
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
-const SharedPipeline = () => (
-  <motion.div 
-    initial={{ opacity: 0, y: 30 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-100px" }}
-    transition={{ duration: 0.8, delay: 0.4 }}
-    className="lg:col-span-1 bg-white rounded-3xl p-8 border border-stone-200 shadow-sm flex flex-col"
-  >
-    <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-6">
-      <Tag className="size-6 text-stone-800" />
-    </div>
-    <h3 className="text-2xl font-bold text-[#111111] mb-3">Pipeline Partagé</h3>
-    <p className="text-stone-500 mb-8">
-      Un kanban visuel clair avec code couleur et drag-and-drop pour un suivi impeccable.
-    </p>
-    <div className="mt-auto bg-stone-50 rounded-2xl p-4 border border-stone-100">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-bold uppercase tracking-wider text-stone-500">RDV Fixé</span>
-        <span className="text-xs font-bold text-stone-400">12</span>
-      </div>
-      <PipelineCard name="Michel Robert" source="MAI 24 - 14:00" highlight={false} />
-    </div>
-  </motion.div>
-);
-
-const RevenueStripe = () => (
-  <motion.div
-    initial={{ opacity: 0, y: 30 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-100px" }}
-    transition={{ duration: 0.8, delay: 0.3 }}
-    className="lg:col-span-3 bg-gradient-to-br from-[#635BFF]/[0.03] to-white rounded-3xl p-8 md:p-10 border border-[#635BFF]/10 shadow-sm relative overflow-hidden"
-  >
-    <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#635BFF]/10 to-emerald-500/5 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
-
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 relative z-10">
-      {/* Left — Texte */}
-      <div className="lg:col-span-2 flex flex-col justify-center">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-12 h-12 rounded-xl bg-[#635BFF]/10 flex items-center justify-center">
-            <DollarSign className="size-6 text-[#635BFF]" />
-          </div>
-          <span className="px-3 py-1 rounded-full bg-[#635BFF]/10 text-[#635BFF] text-xs font-bold uppercase tracking-wider">Stripe Connect</span>
-        </div>
-        <h3 className="text-2xl md:text-3xl font-bold text-[#111111] mb-3 tracking-tight">Chiffre d'affaires en temps réel</h3>
-        <p className="text-stone-500 mb-6 leading-relaxed">
-          Connectez votre Stripe et suivez vos revenus réels — pas des estimations. Chaque paiement récurrent incrémente automatiquement le CA du closer qui a closé le deal.
-        </p>
-        <ul className="space-y-3">
-          <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
-            <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> MRR, abonnements actifs et churn en un coup d'œil
-          </li>
-          <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
-            <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> Matching auto prospects ↔ clients Stripe
-          </li>
-          <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
-            <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> Charges, commissions et marge nette calculés
-          </li>
-          <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
-            <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> Nouveau client Stripe = fiche prospect auto créée
-          </li>
-        </ul>
-      </div>
-
-      {/* Right — Mini dashboard preview */}
-      <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">MRR</p>
-          <p className="text-2xl font-black text-[#111111]">8,450€</p>
-          <p className="text-xs text-emerald-600 font-semibold mt-1">+12% vs mois dernier</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">CA du mois</p>
-          <p className="text-2xl font-black text-[#111111]">24,800€</p>
-          <p className="text-xs text-emerald-600 font-semibold mt-1">+8% vs mois dernier</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">Marge nette</p>
-          <p className="text-2xl font-black text-[#111111]">18,200€</p>
-          <p className="text-xs text-emerald-600 font-semibold mt-1">73% du CA</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">Abonnements</p>
-          <p className="text-2xl font-black text-[#111111]">47</p>
-          <p className="text-xs text-stone-400 font-semibold mt-1">actifs ce mois</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">Commissions</p>
-          <p className="text-2xl font-black text-[#111111]">4,960€</p>
-          <p className="text-xs text-stone-400 font-semibold mt-1">3 closers</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">Churn</p>
-          <p className="text-2xl font-black text-[#111111]">2.1%</p>
-          <p className="text-xs text-emerald-600 font-semibold mt-1">-0.5% vs dernier</p>
-        </div>
-      </div>
-    </div>
-  </motion.div>
-);
-
-const Onboarding = () => (
-  <motion.div 
-    initial={{ opacity: 0, y: 30 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-100px" }}
-    transition={{ duration: 0.8, delay: 0.6 }}
-    className="lg:col-span-3 bg-[#111111] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden"
-  >
-    <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#ff2f2f]/20 to-[#8a43e1]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-    
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
-      <div className="flex flex-col justify-center">
-        <span className="text-stone-400 font-bold text-sm tracking-[0.2em] uppercase mb-4">Autonomie Totale</span>
-        <h3 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">Onboarding des closers simplifié</h3>
-        <p className="text-stone-300 text-lg mb-8 leading-relaxed">
-          Arrêtez de perdre du temps à former chaque nouveau closer manuellement. Notre système automatisé les guide de A à Z avec vos scripts, ressources et KPIs de suivi de progression.
-        </p>
-        <ul className="space-y-4">
-          <li className="flex items-center gap-3 text-stone-200 font-medium">
-            <CheckCircle className="text-emerald-400 size-5" /> Monday Morning Reporting (Auto)
-          </li>
-          <li className="flex items-center gap-3 text-stone-200 font-medium">
-            <CheckCircle className="text-emerald-400 size-5" /> Exports hebdomadaires par email
-          </li>
-        </ul>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <BoxItem index={0} icon={<FileText className="size-6 text-white" />} title="Scripts & Playbooks" description="Centralisez vos meilleures méthodes." dark />
-        <BoxItem index={1} icon={<Video className="size-6 text-white" />} title="Vidéos de Formation" description="Onboarding 100% autonome." dark />
-        <BoxItem index={2} icon={<CheckCircle className="size-6 text-white" />} title="Suivi Progression" description="Vérifiez les acquis avant le 1er call." dark />
-        <BoxItem index={3} icon={<ArrowDown className="size-6 text-white" />} title="Exports Auto" description="Data exportable en CSV/PDF." dark />
-      </div>
-    </div>
-  </motion.div>
-);
-
-const TeamMember = ({ name, role, conv, index }: any) => (
-  <motion.div 
-    initial={{ opacity: 0, x: -20 }}
-    whileInView={{ opacity: 1, x: 0 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.5, delay: (index || 0) * 0.1 }}
-    className="flex items-center justify-between p-4 bg-stone-50 rounded-xl border border-stone-100 hover:shadow-sm transition-all duration-300"
-  >
-    <div className="flex items-center gap-4">
-      <div className="w-10 h-10 rounded-full bg-stone-200 flex items-center justify-center font-bold text-stone-600 text-sm">
-        {name.split(' ').map((n: string) => n[0]).join('')}
-      </div>
+const TeamManagement = () => {
+  const { t } = useLang();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, delay: 0.2 }}
+      className="lg:col-span-2 bg-white rounded-3xl p-8 border border-stone-200 shadow-sm flex flex-col justify-between"
+    >
       <div>
-        <p className="text-[#111111] font-bold text-sm">{name}</p>
-        <p className="text-stone-500 text-xs font-medium">{role}</p>
+        <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-6">
+          <Layers className="size-6 text-stone-800" />
+        </div>
+        <h3 className="text-2xl font-bold text-[#111111] mb-3">{t.team_title}</h3>
+        <p className="text-stone-500 mb-8">
+          {t.team_description}
+        </p>
       </div>
-    </div>
-    <div className="text-right flex flex-col items-end gap-1">
-      <p className="text-[#111111] font-bold text-sm">{conv} Conv.</p>
-      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-bold uppercase tracking-wider">Online</span>
-    </div>
-  </motion.div>
-);
+      <div className="space-y-3">
+        <TeamMember index={0} name="Julien Durand" role="Closer Senior" conv="34%" />
+        <TeamMember index={1} name="Marie Lefebvre" role="Setter" conv="21%" />
+        <TeamMember index={2} name="Sophie Martin" role="Setter-Closer" conv="28%" />
+      </div>
+    </motion.div>
+  );
+};
+
+const SharedPipeline = () => {
+  const { t } = useLang();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, delay: 0.4 }}
+      className="lg:col-span-1 bg-white rounded-3xl p-8 border border-stone-200 shadow-sm flex flex-col"
+    >
+      <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-6">
+        <Tag className="size-6 text-stone-800" />
+      </div>
+      <h3 className="text-2xl font-bold text-[#111111] mb-3">{t.pipeline_title}</h3>
+      <p className="text-stone-500 mb-8">
+        {t.pipeline_description}
+      </p>
+      <div className="mt-auto bg-stone-50 rounded-2xl p-4 border border-stone-100">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xs font-bold uppercase tracking-wider text-stone-500">{t.pipeline_rdv_fixe}</span>
+          <span className="text-xs font-bold text-stone-400">12</span>
+        </div>
+        <PipelineCard name="Michel Robert" source="MAI 24 - 14:00" highlight={false} />
+      </div>
+    </motion.div>
+  );
+};
+
+const RevenueStripe = () => {
+  const { t } = useLang();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, delay: 0.3 }}
+      className="lg:col-span-3 bg-gradient-to-br from-[#635BFF]/[0.03] to-white rounded-3xl p-8 md:p-10 border border-[#635BFF]/10 shadow-sm relative overflow-hidden"
+    >
+      <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#635BFF]/10 to-emerald-500/5 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 relative z-10">
+        {/* Left — Texte */}
+        <div className="lg:col-span-2 flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-12 h-12 rounded-xl bg-[#635BFF]/10 flex items-center justify-center">
+              <DollarSign className="size-6 text-[#635BFF]" />
+            </div>
+            <span className="px-3 py-1 rounded-full bg-[#635BFF]/10 text-[#635BFF] text-xs font-bold uppercase tracking-wider">{t.revenue_stripe_connect}</span>
+          </div>
+          <h3 className="text-2xl md:text-3xl font-bold text-[#111111] mb-3 tracking-tight">{t.revenue_title}</h3>
+          <p className="text-stone-500 mb-6 leading-relaxed">
+            {t.revenue_description}
+          </p>
+          <ul className="space-y-3">
+            <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
+              <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> {t.revenue_item_mrr}
+            </li>
+            <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
+              <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> {t.revenue_item_matching}
+            </li>
+            <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
+              <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> {t.revenue_item_charges}
+            </li>
+            <li className="flex items-center gap-3 text-stone-700 text-sm font-medium">
+              <CheckCircle className="text-[#635BFF] size-4 shrink-0" /> {t.revenue_item_new_client}
+            </li>
+          </ul>
+        </div>
+
+        {/* Right — Mini dashboard preview */}
+        <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">{t.revenue_kpi_mrr}</p>
+            <p className="text-2xl font-black text-[#111111]">8,450€</p>
+            <p className="text-xs text-emerald-600 font-semibold mt-1">{t.revenue_kpi_mrr_change}</p>
+          </div>
+          <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">{t.revenue_kpi_ca_mois}</p>
+            <p className="text-2xl font-black text-[#111111]">24,800€</p>
+            <p className="text-xs text-emerald-600 font-semibold mt-1">{t.revenue_kpi_ca_mois_change}</p>
+          </div>
+          <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">{t.revenue_kpi_marge}</p>
+            <p className="text-2xl font-black text-[#111111]">18,200€</p>
+            <p className="text-xs text-emerald-600 font-semibold mt-1">{t.revenue_kpi_marge_pct}</p>
+          </div>
+          <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">{t.revenue_kpi_abonnements}</p>
+            <p className="text-2xl font-black text-[#111111]">47</p>
+            <p className="text-xs text-stone-400 font-semibold mt-1">{t.revenue_kpi_abonnements_sub}</p>
+          </div>
+          <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">{t.revenue_kpi_commissions}</p>
+            <p className="text-2xl font-black text-[#111111]">4,960€</p>
+            <p className="text-xs text-stone-400 font-semibold mt-1">{t.revenue_kpi_commissions_sub}</p>
+          </div>
+          <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">{t.revenue_kpi_churn}</p>
+            <p className="text-2xl font-black text-[#111111]">2.1%</p>
+            <p className="text-xs text-emerald-600 font-semibold mt-1">{t.revenue_kpi_churn_change}</p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const Onboarding = () => {
+  const { t } = useLang();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, delay: 0.6 }}
+      className="lg:col-span-3 bg-[#111111] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden"
+    >
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#ff2f2f]/20 to-[#8a43e1]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
+        <div className="flex flex-col justify-center">
+          <span className="text-stone-400 font-bold text-sm tracking-[0.2em] uppercase mb-4">{t.onboarding_label}</span>
+          <h3 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">{t.onboarding_title}</h3>
+          <p className="text-stone-300 text-lg mb-8 leading-relaxed">
+            {t.onboarding_description}
+          </p>
+          <ul className="space-y-4">
+            <li className="flex items-center gap-3 text-stone-200 font-medium">
+              <CheckCircle className="text-emerald-400 size-5" /> {t.onboarding_item_reporting}
+            </li>
+            <li className="flex items-center gap-3 text-stone-200 font-medium">
+              <CheckCircle className="text-emerald-400 size-5" /> {t.onboarding_item_exports}
+            </li>
+          </ul>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <BoxItem index={0} icon={<FileText className="size-6 text-white" />} title={t.onboarding_box_scripts_title} description={t.onboarding_box_scripts_desc} dark />
+          <BoxItem index={1} icon={<Video className="size-6 text-white" />} title={t.onboarding_box_videos_title} description={t.onboarding_box_videos_desc} dark />
+          <BoxItem index={2} icon={<CheckCircle className="size-6 text-white" />} title={t.onboarding_box_progress_title} description={t.onboarding_box_progress_desc} dark />
+          <BoxItem index={3} icon={<ArrowDown className="size-6 text-white" />} title={t.onboarding_box_exports_title} description={t.onboarding_box_exports_desc} dark />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const TeamMember = ({ name, role, conv, index }: any) => {
+  const { t } = useLang();
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay: (index || 0) * 0.1 }}
+      className="flex items-center justify-between p-4 bg-stone-50 rounded-xl border border-stone-100 hover:shadow-sm transition-all duration-300"
+    >
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-full bg-stone-200 flex items-center justify-center font-bold text-stone-600 text-sm">
+          {name.split(' ').map((n: string) => n[0]).join('')}
+        </div>
+        <div>
+          <p className="text-[#111111] font-bold text-sm">{name}</p>
+          <p className="text-stone-500 text-xs font-medium">{role}</p>
+        </div>
+      </div>
+      <div className="text-right flex flex-col items-end gap-1">
+        <p className="text-[#111111] font-bold text-sm">{conv} {t.team_member_conv}</p>
+        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-bold uppercase tracking-wider">{t.team_member_online}</span>
+      </div>
+    </motion.div>
+  );
+};
 
 const PipelineCard = ({ name, source, time, highlight }: any) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, scale: 0.95 }}
     whileInView={{ opacity: 1, scale: 1 }}
     viewport={{ once: true }}
@@ -919,7 +964,7 @@ const PipelineCard = ({ name, source, time, highlight }: any) => (
 );
 
 const BoxItem = ({ icon, title, description, dark, index }: any) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
@@ -933,7 +978,7 @@ const BoxItem = ({ icon, title, description, dark, index }: any) => (
 );
 
 const CRMFeature = ({ icon, title, description, extra, index }: any) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, x: 20 }}
     whileInView={{ opacity: 1, x: 0 }}
     viewport={{ once: true }}
@@ -951,7 +996,47 @@ const CRMFeature = ({ icon, title, description, extra, index }: any) => (
   </motion.div>
 );
 
+const CRMFeatureCard = ({ icon, titleKey, descKey }: { icon: React.ReactNode; titleKey: keyof typeof translations.fr; descKey: keyof typeof translations.fr }) => {
+  const { t } = useLang();
+  return (
+    <CRMFeature icon={icon} title={t[titleKey]} description={t[descKey]} />
+  );
+};
+
+const CRMFeatureRelances = () => {
+  const { t } = useLang();
+  return (
+    <CRMFeature
+      icon={<Bell className="size-5" />}
+      title={t.crm_feature_relances_title}
+      extra={
+        <div className="mt-3 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 w-fit">
+          <ArrowUp className="size-3.5" /> {t.crm_feature_relances_reminder}
+        </div>
+      }
+    />
+  );
+};
+
+const CRMFeatureTags = () => {
+  const { t } = useLang();
+  return (
+    <CRMFeature
+      icon={<Tag className="size-5" />}
+      title={t.crm_feature_tags_title}
+      extra={
+        <div className="flex gap-2 mt-3 text-left">
+          <span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">{t.crm_feature_tag_froid}</span>
+          <span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">{t.crm_feature_tag_rappel}</span>
+          <span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">{t.crm_feature_tag_urgent}</span>
+        </div>
+      }
+    />
+  );
+};
+
 const CaptureSection = () => {
+  const { t } = useLang();
   const [captureTab, setCaptureTab] = useState<'page' | 'embed' | 'popup'>('page');
 
   return (
@@ -960,29 +1045,29 @@ const CaptureSection = () => {
       <div className="lg:col-span-5 flex flex-col justify-center">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6 w-fit">
           <Megaphone className="size-3.5 text-stone-600" />
-          <span className="text-xs font-bold text-stone-600 uppercase tracking-widest">Capture de Leads</span>
+          <span className="text-xs font-bold text-stone-600 uppercase tracking-widest">{t.capture_badge}</span>
         </div>
-        <h3 className="text-3xl md:text-4xl font-bold text-[#111111] tracking-tight mb-4">Captez vos prospects automatiquement</h3>
+        <h3 className="text-3xl md:text-4xl font-bold text-[#111111] tracking-tight mb-4">{t.capture_title}</h3>
         <p className="text-stone-500 text-lg font-medium leading-relaxed mb-6">
-          Créez des pages de capture, intégrez un formulaire en embed ou lancez un popup directement sur votre site. Chaque lead est automatiquement injecté dans votre CRM avec le bon setter/closer assigné.
+          {t.capture_description}
         </p>
         <div className="space-y-3">
           <div className="flex items-start gap-3 text-stone-700 font-medium">
             <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-            <span>100% personnalisable : couleur de fond, police, titre, sous-titre et description</span>
+            <span>{t.capture_item_custom}</span>
           </div>
           <div className="flex items-start gap-3 text-stone-700 font-medium">
             <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-            <span>Embed iframe intégrable sur n'importe quel site</span>
+            <span>{t.capture_item_embed}</span>
           </div>
           <div className="flex items-start gap-3 text-stone-700 font-medium">
             <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-            <span>Popup déclenchable au clic ou en automatique</span>
+            <span>{t.capture_item_popup}</span>
           </div>
           {captureTab === 'page' && (
             <div className="flex items-start gap-3 text-stone-700 font-medium">
               <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-              <span>Ajoutez une vidéo de présentation avec un lien de redirection</span>
+              <span>{t.capture_item_video}</span>
             </div>
           )}
         </div>
@@ -1000,9 +1085,9 @@ const CaptureSection = () => {
           {/* Tab bar */}
           <div className="flex border-b border-stone-100 bg-stone-50">
             {([
-              { key: 'page' as const, label: 'Page' },
-              { key: 'embed' as const, label: 'Embed' },
-              { key: 'popup' as const, label: 'Popup' },
+              { key: 'page' as const, label: t.capture_tab_page },
+              { key: 'embed' as const, label: t.capture_tab_embed },
+              { key: 'popup' as const, label: t.capture_tab_popup },
             ]).map((tab) => (
               <button
                 key={tab.key}
@@ -1037,14 +1122,14 @@ const CaptureSection = () => {
                 <div className="bg-gradient-to-br from-[#111111] to-[#1a1a2e] rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
                   {/* Left — Registration form */}
                   <div className="space-y-3">
-                    <h4 className="text-white text-lg font-bold leading-tight">Réservez votre appel stratégique</h4>
-                    <p className="text-stone-400 text-xs font-medium">Remplissez vos informations pour accéder au calendrier</p>
+                    <h4 className="text-white text-lg font-bold leading-tight">{t.capture_page_title}</h4>
+                    <p className="text-stone-400 text-xs font-medium">{t.capture_page_subtitle}</p>
                     <div className="space-y-2">
-                      <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-xs text-stone-400">Votre prénom</div>
-                      <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-xs text-stone-400">votre@email.com</div>
-                      <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-xs text-stone-400">+33 6 00 00 00 00</div>
+                      <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-xs text-stone-400">{t.capture_page_prenom}</div>
+                      <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-xs text-stone-400">{t.capture_page_email}</div>
+                      <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2.5 text-xs text-stone-400">{t.capture_page_phone}</div>
                     </div>
-                    <div className="bg-white text-[#111111] rounded-lg px-4 py-2.5 text-xs font-bold text-center">Continuer</div>
+                    <div className="bg-white text-[#111111] rounded-lg px-4 py-2.5 text-xs font-bold text-center">{t.capture_page_continue}</div>
                   </div>
                   {/* Right — Blurred agenda */}
                   <div className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10 p-4">
@@ -1053,13 +1138,13 @@ const CaptureSection = () => {
                         <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-2">
                           <Calendar className="size-5 text-white/60" />
                         </div>
-                        <p className="text-white/70 text-xs font-bold">D'abord remplir les informations</p>
+                        <p className="text-white/70 text-xs font-bold">{t.capture_page_calendar_blur}</p>
                       </div>
                     </div>
                     {/* Fake calendar grid behind blur */}
                     <div className="opacity-30 space-y-2">
                       <div className="flex gap-1">
-                        {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'].map(d => (
+                        {t.capture_calendar_days.map(d => (
                           <div key={d} className="flex-1 text-center text-[8px] text-white/50 font-bold">{d}</div>
                         ))}
                       </div>
@@ -1071,8 +1156,8 @@ const CaptureSection = () => {
                         </div>
                       ))}
                       <div className="space-y-1 mt-2">
-                        {['09:00', '09:30', '10:00', '10:30'].map(t => (
-                          <div key={t} className="bg-white/10 rounded px-2 py-1 text-[8px] text-white/40">{t}</div>
+                        {['09:00', '09:30', '10:00', '10:30'].map(tm => (
+                          <div key={tm} className="bg-white/10 rounded px-2 py-1 text-[8px] text-white/40">{tm}</div>
                         ))}
                       </div>
                     </div>
@@ -1098,7 +1183,7 @@ const CaptureSection = () => {
                 <div className="bg-[#020617] rounded-2xl overflow-hidden">
                   {/* Fake nav */}
                   <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
-                    <img src="/logo Sales.png" alt="CloseOS Sales" className="h-6 object-contain" />
+                    <img src="/logo-sales.png" alt="CloseOS Sales" className="h-6 object-contain" loading="lazy" width={72} height={24} />
                     <div className="flex gap-4">
                       <div className="h-2 w-12 bg-white/20 rounded" />
                       <div className="h-2 w-12 bg-white/20 rounded" />
@@ -1115,12 +1200,12 @@ const CaptureSection = () => {
                     {/* Embedded capture form */}
                     <div className="border-2 border-dashed border-white/20 rounded-xl p-1">
                       <div className="bg-gradient-to-br from-[#111111] to-[#1a1a2e] rounded-lg p-5 space-y-3 text-center">
-                        <h4 className="text-white text-sm font-bold">Rejoignez le Mastermind</h4>
-                        <p className="text-stone-400 text-[10px]">Réservez votre appel découverte</p>
+                        <h4 className="text-white text-sm font-bold">{t.capture_embed_title}</h4>
+                        <p className="text-stone-400 text-[10px]">{t.capture_embed_subtitle}</p>
                         <div className="space-y-2 max-w-[200px] mx-auto">
-                          <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-[10px] text-stone-400 text-left">Prénom</div>
-                          <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-[10px] text-stone-400 text-left">Email</div>
-                          <div className="bg-white text-[#111111] rounded-lg px-3 py-2 text-[10px] font-bold">Réserver</div>
+                          <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-[10px] text-stone-400 text-left">{t.capture_embed_prenom}</div>
+                          <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-[10px] text-stone-400 text-left">{t.capture_embed_email}</div>
+                          <div className="bg-white text-[#111111] rounded-lg px-3 py-2 text-[10px] font-bold">{t.capture_embed_reserver}</div>
                         </div>
                       </div>
                     </div>
@@ -1178,12 +1263,12 @@ const CaptureSection = () => {
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-[#111111] font-bold text-base">Dernières places !</h4>
-                      <p className="text-stone-400 text-xs mt-1">Inscrivez-vous avant la clôture</p>
+                      <h4 className="text-[#111111] font-bold text-base">{t.capture_popup_title}</h4>
+                      <p className="text-stone-400 text-xs mt-1">{t.capture_popup_subtitle}</p>
                     </div>
                     <div className="space-y-2">
-                      <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400">votre@email.com</div>
-                      <div className="bg-[#111111] text-white rounded-lg px-3 py-2 text-xs font-bold text-center">Je m'inscris</div>
+                      <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-400">{t.capture_popup_email}</div>
+                      <div className="bg-[#111111] text-white rounded-lg px-3 py-2 text-xs font-bold text-center">{t.capture_popup_cta}</div>
                     </div>
                   </div>
                 </div>
@@ -1196,79 +1281,88 @@ const CaptureSection = () => {
   );
 };
 
-const CRMKPI = ({ title, value, description, index }: any) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 30 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.6, delay: (index || 0) * 0.1 }}
-    className="flex flex-col gap-2 items-center text-center p-6 rounded-3xl bg-stone-50 border border-stone-200"
-  >
-    <span className="text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em]">{title}</span>
-    <h4 className="text-4xl font-bold text-[#111111] tracking-tight my-2">{value}</h4>
-    <p className="text-stone-500 text-sm font-medium">{description}</p>
-  </motion.div>
-);
+const CRMKPIBox = ({ titleKey, valueKey, descKey, index }: { titleKey: keyof typeof translations.fr; valueKey: keyof typeof translations.fr; descKey: keyof typeof translations.fr; index: number }) => {
+  const { t } = useLang();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6, delay: (index || 0) * 0.1 }}
+      className="flex flex-col gap-2 items-center text-center p-6 rounded-3xl bg-stone-50 border border-stone-200"
+    >
+      <span className="text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em]">{t[titleKey] as string}</span>
+      <h4 className="text-4xl font-bold text-[#111111] tracking-tight my-2">{t[valueKey] as string}</h4>
+      <p className="text-stone-500 text-sm font-medium">{t[descKey] as string}</p>
+    </motion.div>
+  );
+};
 
-const LeadProfile = () => (
-  <motion.div 
-    initial={{ opacity: 0, scale: 0.98 }}
-    whileInView={{ opacity: 1, scale: 1 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.8 }}
-    className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
-  >
-    <div className="p-6 border-b border-stone-100 bg-stone-50 flex justify-between items-center">
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#ff2f2f] to-[#8a43e1] flex items-center justify-center text-white font-bold text-xl shadow-inner">JP</div>
-        <div>
-          <h4 className="font-bold text-xl text-[#111111] mb-1">Jean-Philippe Morel</h4>
-          <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">ID: #89234 • Ajouté hier</span>
-        </div>
-      </div>
-      <div className="hidden sm:flex gap-2">
-        <span className="px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-[10px] font-bold uppercase tracking-wider">Chaud 🔥</span>
-        <span className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold uppercase tracking-wider">Ready to Buy</span>
-      </div>
-    </div>
-    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div className="space-y-8">
-        <div>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">Infos Contact</p>
-          <div className="space-y-3 text-sm font-medium text-stone-700">
-            <div className="flex items-center gap-3"><Mail className="size-4 text-stone-400" /> jp.morel@gmail.com</div>
-            <div className="flex items-center gap-3"><Phone className="size-4 text-stone-400" /> +33 6 12 34 56 78</div>
-            <div className="flex items-center gap-3"><ArrowUp className="size-4 text-stone-400" /> Source: <span className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Ads Instagram</span></div>
+const LeadProfile = () => {
+  const { t } = useLang();
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.8 }}
+      className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
+    >
+      <div className="p-6 border-b border-stone-100 bg-stone-50 flex justify-between items-center">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#ff2f2f] to-[#8a43e1] flex items-center justify-center text-white font-bold text-xl shadow-inner">JP</div>
+          <div>
+            <h4 className="font-bold text-xl text-[#111111] mb-1">{t.lead_name}</h4>
+            <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">{t.lead_id}</span>
           </div>
         </div>
-        <div>
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">Historique d'Interaction</p>
-          <div className="space-y-4">
-            <InteractionItem icon={<MessageSquare className="size-3" />} text='"Je suis intéressé par le programme Mastermind..."' subtext="WhatsApp - 10:45" color="bg-emerald-100 text-emerald-700" italic={true} />
-            <InteractionItem icon={<Phone className="size-3" />} text="Discovery Call complété (12 min)" subtext="Hier - 16:30" color="bg-sky-100 text-sky-700" />
+        <div className="hidden sm:flex gap-2">
+          <span className="px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-[10px] font-bold uppercase tracking-wider">{t.lead_tag_hot}</span>
+          <span className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold uppercase tracking-wider">{t.lead_tag_ready}</span>
+        </div>
+      </div>
+      <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-8">
+          <div>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">{t.lead_contact_info}</p>
+            <div className="space-y-3 text-sm font-medium text-stone-700">
+              <div className="flex items-center gap-3"><Mail className="size-4 text-stone-400" /> jp.morel@gmail.com</div>
+              <div className="flex items-center gap-3"><Phone className="size-4 text-stone-400" /> +33 6 12 34 56 78</div>
+              <div className="flex items-center gap-3"><ArrowUp className="size-4 text-stone-400" /> {t.lead_source_label} <span className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">{t.lead_source_value}</span></div>
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">{t.lead_interaction_history}</p>
+            <div className="space-y-4">
+              <InteractionItem icon={<MessageSquare className="size-3" />} text={t.lead_interaction_msg} subtext={t.lead_interaction_msg_sub} color="bg-emerald-100 text-emerald-700" italic={true} />
+              <InteractionItem icon={<Phone className="size-3" />} text={t.lead_interaction_call} subtext={t.lead_interaction_call_sub} color="bg-sky-100 text-sky-700" />
+            </div>
+          </div>
+        </div>
+        <div className="space-y-8">
+          <div className="bg-stone-50 p-5 rounded-2xl border border-stone-200">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">{t.lead_notes_title}</p>
+            <p className="text-sm text-stone-600 font-medium leading-relaxed">
+              {t.lead_notes_content.split('\n').map((line, i) => (
+                <React.Fragment key={i}>
+                  {line}
+                  {i < t.lead_notes_content.split('\n').length - 1 && <br />}
+                </React.Fragment>
+              ))}
+            </p>
+          </div>
+          <div className="p-5 border border-stone-200 rounded-2xl bg-white shadow-sm">
+            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">{t.lead_offer_title}</p>
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-stone-800">{t.lead_offer_name}</span>
+              <span className="font-black text-xl text-[#111111]">7,500€</span>
+            </div>
           </div>
         </div>
       </div>
-      <div className="space-y-8">
-        <div className="bg-stone-50 p-5 rounded-2xl border border-stone-200">
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">Notes & Objections</p>
-          <p className="text-sm text-stone-600 font-medium leading-relaxed">
-            - Frein principal : Disponibilité immédiate.<br />
-            - OK sur le prix (7,500€).<br />
-            - Proposer l'accès direct aux modules si paiement aujourd'hui.
-          </p>
-        </div>
-        <div className="p-5 border border-stone-200 rounded-2xl bg-white shadow-sm">
-          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">Offre Présentée</p>
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-stone-800">Accompagnement VIP</span>
-            <span className="font-black text-xl text-[#111111]">7,500€</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 const FAQItem = ({ question, answer }: { question: string; answer: React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -1289,6 +1383,66 @@ const FAQItem = ({ question, answer }: { question: string; answer: React.ReactNo
         </div>
       )}
     </div>
+  );
+};
+
+const FAQSection = () => {
+  const { t } = useLang();
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="px-6 md:px-20 pt-16 pb-32 bg-[#f4f2f1]"
+      id="faq"
+    >
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-16 space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
+            <span className="text-sm font-semibold text-stone-800">{t.faq_badge}</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight">{t.faq_title}</h2>
+          <p className="text-stone-500 text-lg">{t.faq_subtitle}</p>
+        </div>
+        <div className="space-y-4">
+          {t.faqs.map((faq, i) => (
+            <FAQItem key={i} question={faq.question} answer={<p>{faq.answer}</p>} />
+          ))}
+        </div>
+      </div>
+    </motion.section>
+  );
+};
+
+const FooterSection = () => {
+  const { t } = useLang();
+  return (
+    <footer className="px-6 md:px-20 py-6 border-t border-stone-200 bg-[#f4f2f1] flex flex-col md:flex-row items-center justify-between gap-4 pb-16">
+      <div className="flex items-center gap-2">
+        <img
+          alt="CloseOS Business"
+          className="w-auto object-contain h-10"
+          src="/closeos-business-logo-ecrit.png"
+          loading="lazy"
+          width={150}
+          height={40}
+        />
+      </div>
+      <div className="flex flex-wrap justify-center items-center gap-4 text-xs text-stone-500 font-medium">
+        <span>{t.footer_copyright}</span>
+        <span className="hidden sm:inline">&middot;</span>
+        <Link to="/mentions-legales" className="hover:text-stone-700 transition-colors">{t.footer_mentions}</Link>
+        <span className="hidden sm:inline">&middot;</span>
+        <Link to="/cgu" className="hover:text-stone-700 transition-colors">{t.footer_cgu}</Link>
+        <span className="hidden sm:inline">&middot;</span>
+        <Link to="/cgv" className="hover:text-stone-700 transition-colors">{t.footer_cgv}</Link>
+        <span className="hidden sm:inline">&middot;</span>
+        <Link to="/confidentialite" className="hover:text-stone-700 transition-colors">{t.footer_confidentialite}</Link>
+        <span className="hidden sm:inline">&middot;</span>
+        <Link to="/business/politique-utilisation" className="hover:text-stone-700 transition-colors">{t.footer_politique}</Link>
+      </div>
+    </footer>
   );
 };
 
@@ -1316,209 +1470,64 @@ interface RoleData {
 
 const roleEase = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
-const rolesData: RoleData[] = [
+const getRolesData = (t: typeof translations.fr): RoleData[] => [
   {
     id: 'owner',
-    label: 'Owner / Admin',
+    label: t.role_owner.label,
     icon: <Crown className="size-5" />,
-    tagline: 'Contrôle total',
-    description: 'Pilotez l\'intégralité de votre écosystème de vente. CRM, équipes, KPIs, campagnes — tout depuis un seul tableau de bord.',
+    tagline: t.role_owner.tagline,
+    description: t.role_owner.description,
     color: 'from-amber-500 to-orange-600',
-    features: [
-      {
-        icon: <Layers className="size-5" />,
-        title: 'CRM & Pipeline Global',
-        items: [
-          'Vue Kanban drag-drop + Tableau de TOUS les prospects',
-          'Assignation setter/closer : manuelle, tournante ou hasard',
-          'Stages personnalisables à l\'infini + sync HubSpot, Pipedrive, GoHighLevel, Airtable, Systeme.io, iClosed, CSV',
-          'Filtres avancés : période, membre, statut, offre',
-        ],
-      },
-      {
-        icon: <Megaphone className="size-5" />,
-        title: 'Campagnes de Capture',
-        items: [
-          '2 modes : avec RDV ou inscription seule',
-          'Page de capture personnalisable + embed iframe/popup',
-          'Assignation configurable + tracking UTM',
-          'Analytics : vues, leads, taux de conversion, CA',
-        ],
-      },
-      {
-        icon: <Phone className="size-5" />,
-        title: 'Appels & Cockpit',
-        items: [
-          'Cockpit plein écran : script, notes, offre, fiche prospect',
-          'Enregistrement appel (écran + micro)',
-          'Post-appel : toutes les issues setter ET closer',
-          'Google Meet intégré',
-        ],
-      },
-      {
-        icon: <BarChart3 className="size-5" />,
-        title: 'KPI & Rapports',
-        items: [
-          '3 onglets : Organisation, Par Offre, Par Membre',
-          '8 KPI globaux sur période sélectionnable',
-          'Feed d\'activité du jour + Export PDF',
-          'Graphiques : stages, CA par campagne, commissions',
-        ],
-      },
-      {
-        icon: <DollarSign className="size-5" />,
-        title: "Chiffre d'affaires & Stripe",
-        items: [
-          'Connexion Stripe Connect : liez votre compte et suivez vos revenus réels',
-          'Matching automatique prospects ↔ abonnements Stripe (webhook, auto-match, manuel)',
-          'CA récurrent : chaque paiement Stripe incrémente le CA du closer qui a closé le deal',
-          'MRR, abonnements actifs, churn et marge nette en temps réel',
-          'Gestion des charges fixes/variables et commissions pour calculer votre marge',
-        ],
-      },
-      {
-        icon: <Users className="size-5" />,
-        title: 'Équipe & Organisation',
-        items: [
-          'Créez des équipes dédiées et groupez closers/setters par spécialité',
-          'Statut online temps réel + historique connexion 7j de chaque membre',
-          'Disponibilités, absences, primes et commissions individuelles par membre',
-          '5 rôles avec permissions : Closer, Setter, Setter-Closer, Head of Sales, Admin',
-          'Invitation par lien unique + onboarding automatique adapté au rôle assigné',
-          'Objectifs individuels et collectifs avec suivi de progression en temps réel',
-        ],
-      },
-      {
-        icon: <Calendar className="size-5" />,
-        title: 'Agenda & RDV',
-        items: [
-          'Booker un RDV pour n\'importe quel membre',
-          'Booking links partageables + Google Meet',
-          'Agenda de chaque membre ou tous combinés',
-          'Sync Google Calendar bidirectionnelle',
-        ],
-      },
-    ],
+    features: t.role_owner.features.map((f, i) => ({
+      icon: [<Layers className="size-5" />, <Megaphone className="size-5" />, <Phone className="size-5" />, <BarChart3 className="size-5" />, <DollarSign className="size-5" />, <Users className="size-5" />, <Calendar className="size-5" />][i],
+      title: f.title,
+      items: f.items,
+    })),
   },
   {
     id: 'closer',
-    label: 'Closer',
+    label: t.role_closer.label,
     icon: <Target className="size-5" />,
-    tagline: 'Fermer des deals',
-    description: 'Votre espace optimisé pour closer. Pipeline personnel, cockpit d\'appel, KPIs de performance et gestion autonome de vos prospects.',
+    tagline: t.role_closer.tagline,
+    description: t.role_closer.description,
     color: 'from-emerald-500 to-teal-600',
-    features: [
-      {
-        icon: <Layers className="size-5" />,
-        title: 'Pipeline Personnel',
-        items: [
-          'Vos prospects assignés uniquement',
-          '2 sections : Flux Actif + Flux Inactif',
-          'Drag-drop entre colonnes',
-          'Création de prospect → auto-assignation closer',
-        ],
-      },
-      {
-        icon: <Phone className="size-5" />,
-        title: 'Cockpit d\'Appel',
-        items: [
-          'Script affiché + notes en direct + fiche prospect',
-          'Post-appel : Gagné, Follow Up, Perdu, No Show',
-          'Raison d\'objection si Gagné',
-          'Enregistrement + Google Meet',
-        ],
-      },
-      {
-        icon: <BarChart3 className="size-5" />,
-        title: 'KPI Closer',
-        items: [
-          '3 onglets : Personnel, Organisation, Par Offre',
-          'CA, ventes, taux closing, commission, no-show',
-          'Graphiques et pipeline summary',
-          'Objectifs personnels configurables',
-        ],
-      },
-      {
-        icon: <FileText className="size-5" />,
-        title: 'Factures',
-        items: [
-          'Générer une facture → envoyée à l\'Owner',
-          'KPI : CA généré, commission 10%, payé, en attente',
-          'Détail comptant vs échelonné',
-          'Lien Stripe + téléchargement PDF',
-        ],
-      },
-    ],
+    features: t.role_closer.features.map((f, i) => ({
+      icon: [<Layers className="size-5" />, <Phone className="size-5" />, <BarChart3 className="size-5" />, <FileText className="size-5" />][i],
+      title: f.title,
+      items: f.items,
+    })),
   },
   {
     id: 'setter',
-    label: 'Setter',
+    label: t.role_setter.label,
     icon: <Phone className="size-5" />,
-    tagline: 'Qualifier & Booker',
-    description: 'Focalisé sur la qualification et le booking. Qualifiez vos prospects, assignez les closers et gérez votre flow de prise de RDV.',
+    tagline: t.role_setter.tagline,
+    description: t.role_setter.description,
     color: 'from-sky-500 to-blue-600',
-    features: [
-      {
-        icon: <Layers className="size-5" />,
-        title: 'CRM & Pipeline Setter',
-        items: [
-          'Création prospect → auto-assignation setter',
-          'Pipeline personnel avec Flux Actif/Inactif',
-          'Recherche, filtrage et actions rapides',
-        ],
-      },
-      {
-        icon: <Phone className="size-5" />,
-        title: 'Qualification Post-Appel',
-        items: [
-          '4 issues : Qualifié, Book Later, Non-qualifié, Pas de réponse',
-          'Qualifié → assigner un closer + sélectionner un créneau',
-          'Grille 14 jours, intervalles 30min, conflits exclus',
-        ],
-      },
-      {
-        icon: <BarChart3 className="size-5" />,
-        title: 'KPI Setter',
-        items: [
-          'Taux de réponse, taux de booking, conversion',
-          'Commission, no-show, perdus',
-          '3 onglets : Personnel, Organisation, Par Offre',
-        ],
-      },
-    ],
+    features: t.role_setter.features.map((f, i) => ({
+      icon: [<Layers className="size-5" />, <Phone className="size-5" />, <BarChart3 className="size-5" />][i],
+      title: f.title,
+      items: f.items,
+    })),
   },
   {
     id: 'setter-closer',
-    label: 'Setter-Closer',
+    label: t.role_setter_closer.label,
     icon: <Zap className="size-5" />,
-    tagline: 'Le combo ultime',
-    description: 'Combinez les droits Setter ET Closer. Auto-assignation complète, accès aux 8 issues post-appel et aux deux pages KPI.',
+    tagline: t.role_setter_closer.tagline,
+    description: t.role_setter_closer.description,
     color: 'from-rose-500 to-pink-600',
-    features: [
-      {
-        icon: <Zap className="size-5" />,
-        title: 'Double Rôle',
-        items: [
-          'Création prospect → auto-assignation setter ET closer',
-          '8 issues post-appel (4 setter + 4 closer)',
-          'Scope "self" : auto-assignation closer systématique',
-          'Scope "all" : peut set pour d\'autres closers',
-        ],
-      },
-      {
-        icon: <BarChart3 className="size-5" />,
-        title: 'Double KPI',
-        items: [
-          'Accès KPI Setter ET KPI Closer',
-          'Graphiques et pipeline summary des deux côtés',
-          'Objectifs personnels configurables',
-        ],
-      },
-    ],
+    features: t.role_setter_closer.features.map((f, i) => ({
+      icon: [<Zap className="size-5" />, <BarChart3 className="size-5" />][i],
+      title: f.title,
+      items: f.items,
+    })),
   },
 ];
 
 const FeaturesByRole = () => {
+  const { t } = useLang();
+  const rolesData = getRolesData(t);
   const [activeRole, setActiveRole] = useState<RoleKey>('owner');
   const currentRole = rolesData.find(r => r.id === activeRole)!;
   const tabContainerRef = useRef<HTMLDivElement>(null);
@@ -1548,17 +1557,16 @@ const FeaturesByRole = () => {
         className="text-center mb-16 space-y-4"
       >
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
-          <span className="text-sm font-semibold text-stone-800">Fonctionnalités par Rôle</span>
+          <span className="text-sm font-semibold text-stone-800">{t.roles_badge}</span>
         </div>
         <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-[#111111] tracking-tight text-balance">
-          Chaque rôle a ses outils. Chaque outil a sa place.
+          {t.roles_title}
         </h2>
         <p className="text-stone-500 text-base sm:text-lg max-w-2xl mx-auto text-pretty">
-          Owner, Closer, Setter ou Setter-Closer — chacun accède exactement à ce dont il a besoin, rien de plus.
+          {t.roles_subtitle}
         </p>
       </motion.div>
 
-      {/* Role Tabs — Liquid Glass */}
       {/* Role Tabs — Desktop: single row with bubble / Mobile: 2x2 grid */}
       {/* Desktop */}
       <div className="hidden sm:flex justify-center mb-12">
@@ -1680,10 +1688,10 @@ const FeaturesByRole = () => {
             className="mt-6 bg-stone-100 rounded-2xl p-6 border border-stone-200"
           >
             <p className="text-sm text-stone-500 font-medium text-center">
-              <span className="font-bold text-[#111111]">+ Accès partagé :</span>{' '}
+              <span className="font-bold text-[#111111]">{t.shared_access_label}</span>{' '}
               {activeRole === 'setter-closer'
-                ? 'Pipeline personnel, RDV, Agenda, Rappels, Objectifs (les deux KPI), Formules (lecture), Factures, Disponibilités, Organisation, Équipe, Dashboard.'
-                : 'Pipeline personnel, RDV, Agenda, Rappels, Objectifs, Formules (lecture), Factures, Disponibilités, Organisation (lecture), Équipe, Dashboard.'}
+                ? t.shared_access_setter_closer
+                : t.shared_access_default}
             </p>
           </motion.div>
         )}
@@ -1699,19 +1707,19 @@ const FeaturesByRole = () => {
             <div className="bg-stone-100 rounded-2xl p-6 border border-stone-200">
               <div className="flex items-center gap-2.5 mb-2">
                 <Shield className="size-4 text-[#111111]" />
-                <span className="font-bold text-[#111111] text-sm">Admin</span>
+                <span className="font-bold text-[#111111] text-sm">{t.admin_label}</span>
               </div>
               <p className="text-sm text-stone-500 font-medium">
-                Exactement les mêmes droits que l'Owner. Accès complet à tout.
+                {t.admin_description}
               </p>
             </div>
             <div className="bg-stone-100 rounded-2xl p-6 border border-stone-200">
               <div className="flex items-center gap-2.5 mb-2">
                 <ClipboardList className="size-4 text-[#111111]" />
-                <span className="font-bold text-[#111111] text-sm">Head of Sales</span>
+                <span className="font-bold text-[#111111] text-sm">{t.hos_label}</span>
               </div>
               <p className="text-sm text-stone-500 font-medium">
-                Mêmes droits que l'Owner sauf : Campagnes (si autorisé) et pas d'accès aux Paramètres.
+                {t.hos_description}
               </p>
             </div>
           </motion.div>
@@ -1722,6 +1730,7 @@ const FeaturesByRole = () => {
 };
 
 const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const { t } = useLang();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -1740,7 +1749,7 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
       if (error) {
         if (error.code === '23505') {
-          setErrorMessage("Vous êtes déjà inscrit avec ce mail");
+          setErrorMessage(t.modal_error_already_registered);
           setStatus('error');
           return;
         }
@@ -1763,13 +1772,13 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
     } catch (err: any) {
       console.error('Error joining waiting list:', err);
       setStatus('error');
-      setErrorMessage(err.message || "Une erreur est survenue. Veuillez rééssayer.");
+      setErrorMessage(err.message || t.modal_error_generic);
     }
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#111111]/40 backdrop-blur-sm">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative"
@@ -1790,9 +1799,9 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           {status === 'success' ? (
             <div className="space-y-6">
               <div className="space-y-2">
-                <h3 className="text-[#111111] text-3xl font-bold tracking-tight">C'est noté ! 🚀</h3>
+                <h3 className="text-[#111111] text-3xl font-bold tracking-tight">{t.modal_success_title}</h3>
                 <p className="text-stone-500 font-medium text-center">
-                  Merci de votre intérêt. Regardez cette vidéo en attendant l'ouverture !
+                  {t.modal_success_description}
                 </p>
               </div>
 
@@ -1814,7 +1823,7 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-all shadow-sm"
                 >
-                  Canal WhatsApp
+                  {t.modal_whatsapp}
                   <ExternalLink className="size-4" />
                 </a>
                 <a
@@ -1823,7 +1832,7 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full bg-[#111111] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-all shadow-sm"
                 >
-                  Vos besoins (Google Form)
+                  {t.modal_google_form}
                   <ExternalLink className="size-4" />
                 </a>
                 <a
@@ -1832,28 +1841,28 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full bg-[#0A66C2] text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-all shadow-sm"
                 >
-                  Suivre sur LinkedIn
+                  {t.modal_linkedin}
                   <ExternalLink className="size-4" />
                 </a>
               </div>
             </div>
           ) : (
             <>
-              <h3 className="text-[#111111] text-3xl font-bold mb-3 tracking-tight">Rejoindre la liste d'attente</h3>
+              <h3 className="text-[#111111] text-3xl font-bold mb-3 tracking-tight">{t.modal_title}</h3>
               <p className="text-stone-500 mb-8 font-medium">
-                Inscrivez-vous et recevez le <strong className="text-[#111111]">4 avril</strong> un tarif early adopter concurrentiel et imbattable, réservé uniquement aux inscrits — <strong className="text-[#111111]">verrouillé à vie</strong>.
+                {t.modal_description.split('{date}')[0]}<strong className="text-[#111111]">{t.modal_description_date}</strong>{t.modal_description.split('{date}')[1]?.split('{locked}')[0]}<strong className="text-[#111111]">{t.modal_description_locked}</strong>{t.modal_description.split('{locked}')[1]}
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="relative text-left">
                   <label htmlFor="email" className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1 mb-1 block">
-                    Votre Email Professionnel
+                    {t.modal_email_label}
                   </label>
                   <input
                     id="email"
                     type="email"
                     required
-                    placeholder="votre@email.com"
+                    placeholder={t.modal_email_placeholder}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-4 focus:ring-2 focus:ring-[#111111] focus:border-transparent outline-none transition-all text-stone-800 font-semibold placeholder:font-medium"
@@ -1872,15 +1881,15 @@ const WaitingListModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   {status === 'loading' ? (
                     <>
                       <Loader2 className="size-5 animate-spin" />
-                      Inscription...
+                      {t.modal_loading}
                     </>
                   ) : (
-                    "M'inscrire maintenant"
+                    t.modal_submit
                   )}
                 </button>
 
                 <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest text-center mt-4">
-                  Accès prioritaire • Sans engagement
+                  {t.modal_footer}
                 </p>
               </form>
             </>

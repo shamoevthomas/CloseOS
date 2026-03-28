@@ -738,12 +738,12 @@ export function BusinessPipeline() {
                 <div className="h-1 w-1 rounded-full bg-stone-300" />
                 <span className={LABEL_STYLE}>Opérations Prioritaires</span>
               </div>
-              <div className="grid grid-cols-4 gap-4" style={{ minHeight: '400px' }}>
+              <div className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '400px' }}>
                 {ACTIVE_STAGES.map((stage) => {
                   const stageDeals = filtered.filter(d => d.stage === stage.id)
 
                   return (
-                    <div key={stage.id} className="flex flex-col gap-4">
+                    <div key={stage.id} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 flex flex-col gap-4">
                       <div className="flex items-center justify-between px-2">
                         <div className="flex items-center gap-2">
                           <div className={cn("h-3 w-3 rounded-full", stage.color)} />
@@ -760,7 +760,7 @@ export function BusinessPipeline() {
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                             className={cn(
-                              "flex-1 bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto",
+                              "flex-1 bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 rounded-[2rem] p-4 flex flex-col gap-3 shadow-sm overflow-y-auto max-h-[295px]",
                               snapshot.isDraggingOver && "bg-stone-50/50"
                             )}
                           >
@@ -779,13 +779,13 @@ export function BusinessPipeline() {
                                       )}
                                     >
                                       <div className="flex items-start justify-between mb-1">
-                                        <div className="flex items-center gap-2">
-                                          <div className="h-7 w-7 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <div className="h-7 w-7 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
                                             <User className="h-3.5 w-3.5 text-stone-500" />
                                           </div>
-                                          <div>
-                                            <p className="text-sm font-extrabold text-stone-900 dark:text-white leading-tight">{getDisplayName(deal)}</p>
-                                            {deal.company && <p className="text-xs text-stone-500 dark:text-neutral-400">{deal.company}</p>}
+                                          <div className="min-w-0">
+                                            <p className="text-sm font-extrabold text-stone-900 dark:text-white leading-tight truncate">{getDisplayName(deal)}</p>
+                                            {deal.company && <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">{deal.company}</p>}
                                           </div>
                                         </div>
                                         <button
@@ -845,12 +845,12 @@ export function BusinessPipeline() {
                 <div className="h-1 w-1 rounded-full bg-stone-300" />
                 <span className={LABEL_STYLE}>Archives & Rejets</span>
               </div>
-              <div className="grid grid-cols-4 gap-4" style={{ minHeight: '150px' }}>
+              <div className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '150px' }}>
                 {INACTIVE_STAGES.map((stage) => {
                   const stageDeals = filtered.filter(d => d.stage === stage.id)
 
                   return (
-                    <div key={stage.id} className="flex flex-col gap-4">
+                    <div key={stage.id} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 flex flex-col gap-4">
                       <div className="flex items-center justify-between px-2">
                         <div className="flex items-center gap-2">
                           <div className={cn("h-2.5 w-2.5 rounded-full", stage.id === 'lost' ? 'bg-[#ba1a1a]/40' : 'bg-stone-300')} />
@@ -867,7 +867,7 @@ export function BusinessPipeline() {
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                             className={cn(
-                              "flex-1 rounded-xl border border-stone-200/50 dark:border-neutral-700/50 bg-stone-50/50 dark:bg-neutral-800/50 p-3 flex flex-col gap-2 overflow-y-auto",
+                              "flex-1 rounded-xl border border-stone-200/50 dark:border-neutral-700/50 bg-stone-50/50 dark:bg-neutral-800/50 p-3 flex flex-col gap-2 overflow-y-auto max-h-[295px]",
                               snapshot.isDraggingOver && "bg-stone-100/50"
                             )}
                           >
@@ -885,8 +885,8 @@ export function BusinessPipeline() {
                                         snapshot.isDragging && "shadow-2xl ring-1 ring-stone-300 z-[9999]"
                                       )}
                                     >
-                                      <div className="flex items-center justify-between">
-                                        <p className="text-sm font-medium text-stone-600">{getDisplayName(deal)}</p>
+                                      <div className="flex items-center justify-between gap-2">
+                                        <p className="text-sm font-medium text-stone-600 truncate">{getDisplayName(deal)}</p>
                                         <button
                                           onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
                                           className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"
@@ -926,13 +926,13 @@ export function BusinessPipeline() {
                   <div className="h-1 w-1 rounded-full bg-stone-300" />
                   <span className={LABEL_STYLE}>Créés par votre équipe</span>
                 </div>
-                <div className="grid grid-cols-4 gap-4" style={{ minHeight: '250px' }}>
+                <div className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '250px' }}>
                   {customStages.map((cs) => {
                     const stageId = `custom_${cs.id}`
                     const stageDeals = filtered.filter(d => d.stage === stageId)
 
                     return (
-                      <div key={stageId} className="flex flex-col gap-4">
+                      <div key={stageId} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 flex flex-col gap-4">
                         <div className="flex items-center justify-between px-2">
                           <div className="flex items-center gap-2">
                             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cs.color }} />
@@ -979,13 +979,13 @@ export function BusinessPipeline() {
                                         )}
                                       >
                                         <div className="flex items-start justify-between mb-1">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-7 w-7 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <div className="h-7 w-7 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
                                               <User className="h-3.5 w-3.5 text-stone-500" />
                                             </div>
-                                            <div>
-                                              <p className="text-sm font-extrabold text-stone-900 dark:text-white leading-tight">{getDisplayName(deal)}</p>
-                                              {deal.company && <p className="text-xs text-stone-500 dark:text-neutral-400">{deal.company}</p>}
+                                            <div className="min-w-0">
+                                              <p className="text-sm font-extrabold text-stone-900 dark:text-white leading-tight truncate">{getDisplayName(deal)}</p>
+                                              {deal.company && <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">{deal.company}</p>}
                                             </div>
                                           </div>
                                           <button

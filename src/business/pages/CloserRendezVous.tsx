@@ -194,7 +194,7 @@ export function CloserRendezVous() {
             <Calendar className="h-5 w-5 text-stone-600 dark:text-neutral-300" />
           </div>
           <div>
-            <h2 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">Mes Rendez-vous</h2>
+            <h2 className="font-['Manrope'] text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">Mes Rendez-vous</h2>
             <p className="text-sm text-stone-500 dark:text-neutral-400">{myAppointments.length} rendez-vous assignes</p>
           </div>
         </div>
@@ -215,16 +215,16 @@ export function CloserRendezVous() {
             <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             <input
               type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)}
-              className="rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-3 py-2 text-xs text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
+              className="rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-2 sm:px-3 py-2 text-xs text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
               placeholder="Du"
             />
             <span className="text-xs text-stone-400">au</span>
             <input
               type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)}
-              className="rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-3 py-2 text-xs text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
+              className="rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-2 sm:px-3 py-2 text-xs text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
               placeholder="Au"
             />
           </div>

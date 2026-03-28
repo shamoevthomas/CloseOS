@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
+import { supabase } from '../../lib/supabase';
 
 export default function BusinessRegister() {
   const navigate = useNavigate();
@@ -20,6 +21,19 @@ export default function BusinessRegister() {
     setLoading(true);
 
     try {
+      // Check if email already has a Sales account
+      const { data: salesProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (salesProfile) {
+        setError("Cet email est déjà associé à un compte CloseOS Sales. Veuillez utiliser un autre email.");
+        setLoading(false);
+        return;
+      }
+
       const result = await register({ email, password, full_name: name });
 
       if (result?.error) {
@@ -54,12 +68,10 @@ export default function BusinessRegister() {
 
       <div className="relative z-10 w-full max-w-md py-12">
         {/* Brand header */}
-        <div className="mb-10 flex items-center justify-center gap-3">
-          <Link to="/business" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-stone-900 dark:bg-white">
-              <span className="text-lg font-black text-white dark:text-black font-['Manrope']">C</span>
-            </div>
-            <span className="text-xl font-extrabold text-stone-900 dark:text-white font-['Manrope'] tracking-tight">CloseOS Business</span>
+        <div className="mb-10 flex items-center justify-center">
+          <Link to="/business">
+            <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-10 w-auto dark:hidden" />
+            <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-10 w-auto hidden dark:block" />
           </Link>
         </div>
 

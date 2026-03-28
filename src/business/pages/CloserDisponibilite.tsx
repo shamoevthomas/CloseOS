@@ -330,15 +330,15 @@ export function CloserDisponibilite() {
           <span className="h-px w-10 bg-[#c4c7c7]/30" />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Workspace</span>
         </div>
-        <h1 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Disponibilité</h1>
+        <h1 className="text-2xl md:text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Disponibilité</h1>
         <p className="text-stone-500 dark:text-neutral-400 text-base max-w-2xl font-light italic opacity-80">Gérez vos créneaux et absences pour optimiser votre tunnel de vente.</p>
       </header>
 
       {/* Bento Grid */}
-      <div className="grid grid-cols-12 gap-8">
+      <div className="grid grid-cols-12 gap-4 md:gap-8">
         {/* ─── Left: Weekly Slots ─── */}
         <section className="col-span-12 xl:col-span-8 space-y-6">
-          <h3 className="font-business-display font-extrabold text-2xl tracking-tight flex items-center gap-3 text-stone-900 dark:text-white">
+          <h3 className="font-business-display font-extrabold text-lg md:text-2xl tracking-tight flex items-center gap-3 text-stone-900 dark:text-white">
             Créneaux hebdomadaires
           </h3>
 
@@ -352,12 +352,12 @@ export function CloserDisponibilite() {
                   key={idx}
                   className={cn(
                     GLASS_PANEL,
-                    'rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-shadow'
+                    'rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-shadow'
                   )}
                 >
-                  <div className="flex items-center gap-6 min-w-[140px]">
+                  <div className="flex items-center gap-3 md:gap-6 min-w-[100px] md:min-w-[140px]">
                     <span className={cn(
-                      'font-business-display font-extrabold text-xl w-12',
+                      'font-business-display font-extrabold text-base md:text-xl w-12',
                       hasSlots ? 'text-stone-900 dark:text-white' : 'text-stone-300 dark:text-neutral-600'
                     )}>
                       {DAYS_SHORT[idx]}
@@ -367,9 +367,9 @@ export function CloserDisponibilite() {
 
                   <div className="flex flex-wrap gap-2 flex-grow items-center">
                     {daySlots.map(slot => (
-                      <div key={slot.id} className="flex items-center gap-2 bg-[#ffddb8] dark:bg-amber-900/30 text-[#2a1700] dark:text-amber-400 px-4 py-2 rounded-full text-sm font-semibold">
+                      <div key={slot.id} className="flex items-center gap-2 bg-[#ffddb8] dark:bg-amber-900/30 text-[#2a1700] dark:text-amber-400 px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-semibold min-h-[44px]">
                         {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
-                        <button onClick={() => handleDeleteSlot(slot.id)} className="hover:text-[#ba1a1a] dark:hover:text-red-400 transition-colors">
+                        <button onClick={() => handleDeleteSlot(slot.id)} className="hover:text-[#ba1a1a] dark:hover:text-red-400 transition-colors min-h-[44px] min-w-[28px] flex items-center justify-center">
                           <X className="h-3 w-3" strokeWidth={2} />
                         </button>
                       </div>
@@ -379,17 +379,17 @@ export function CloserDisponibilite() {
                     )}
 
                     {addingDay === idx ? (
-                      <div className="flex items-center gap-2">
-                        <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 min-h-[44px]" />
                         <span className="text-xs text-stone-400 dark:text-neutral-500">à</span>
-                        <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
-                        <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition-all">OK</button>
-                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300">Annuler</button>
+                        <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 min-h-[44px]" />
+                        <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition-all min-h-[44px]">OK</button>
+                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 min-h-[44px]">Annuler</button>
                       </div>
                     ) : (
                       <button
                         onClick={() => handleStartAdding(idx)}
-                        className="flex items-center gap-2 border border-dashed border-[#c4c7c7] dark:border-neutral-700/50 px-4 py-2 rounded-full text-sm text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:border-stone-400 transition-all"
+                        className="flex items-center gap-2 border border-dashed border-[#c4c7c7] dark:border-neutral-700/50 px-4 py-2 rounded-full text-xs md:text-sm text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:border-stone-400 transition-all min-h-[44px]"
                       >
                         <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
                         Ajouter un créneau
@@ -519,9 +519,9 @@ export function CloserDisponibilite() {
         {/* ─── Right: Absences ─── */}
         <aside className="col-span-12 xl:col-span-4 space-y-8">
           {/* Absences Card */}
-          <div className={cn(GLASS_PANEL, 'rounded-2xl p-8 shadow-lg relative overflow-hidden')}>
+          <div className={cn(GLASS_PANEL, 'rounded-2xl p-5 md:p-8 shadow-lg relative overflow-hidden')}>
             <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
-            <h3 className="font-business-display font-extrabold text-2xl mb-6 relative z-10 text-stone-900 dark:text-white">Absences</h3>
+            <h3 className="font-business-display font-extrabold text-lg md:text-2xl mb-6 relative z-10 text-stone-900 dark:text-white">Absences</h3>
 
             <div className="space-y-4 mb-6 relative z-10">
               {absences.length === 0 ? (
@@ -587,9 +587,9 @@ export function CloserDisponibilite() {
           </div>
 
           {/* Booking Constraints Card */}
-          <div className={cn(GLASS_PANEL, 'rounded-2xl p-8 shadow-lg relative overflow-hidden')}>
+          <div className={cn(GLASS_PANEL, 'rounded-2xl p-5 md:p-8 shadow-lg relative overflow-hidden')}>
             <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
-            <h3 className="font-business-display font-extrabold text-2xl mb-2 relative z-10 flex items-center gap-3 text-stone-900 dark:text-white">
+            <h3 className="font-business-display font-extrabold text-lg md:text-2xl mb-2 relative z-10 flex items-center gap-3 text-stone-900 dark:text-white">
               <Settings2 className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
               Paramètres de booking
             </h3>

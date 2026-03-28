@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { supabase } from '../../lib/supabase'
+import { useCustomStages } from '../hooks/useCustomStages'
 
 const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
@@ -51,6 +52,7 @@ function getDisplayName(p: BusinessProspect) {
 export function CloserCRM() {
   const { prospects, addProspect, updateProspect, deleteProspect, loading } = useBusinessProspects()
   const { user, teamMember, ownerUserId } = useBusinessAuth()
+  const { customStages } = useCustomStages()
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -263,23 +265,23 @@ export function CloserCRM() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">GESTION DES PROSPECTS</p>
-            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">CRM</h1>
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">CRM</h1>
             <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1">
               {filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}
               {hasActiveFilters && ' (filtré)'}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
-            <div className="relative">
+            <div className="relative w-full md:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
               <input
                 type="text"
                 placeholder="Rechercher..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 text-sm rounded-full border-none bg-stone-100 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/20 w-64"
+                className="pl-10 pr-4 py-2 text-sm rounded-full border-none bg-stone-100 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/20 w-full md:w-64"
               />
             </div>
 
@@ -315,8 +317,8 @@ export function CloserCRM() {
 
         {/* Filter bar */}
         {showFilters && (
-          <div className="mt-4 p-4 bg-white dark:bg-neutral-800 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
-            <div className="flex flex-wrap gap-4 items-end">
+          <div className="mt-4 p-3 md:p-4 bg-white dark:bg-neutral-800 rounded-2xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
+            <div className="flex flex-wrap gap-3 md:gap-4 items-end">
               {/* Date range */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">Période</label>
@@ -376,6 +378,9 @@ export function CloserCRM() {
                     {ALL_STAGES.map(s => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
+                    {customStages.map(cs => (
+                      <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>{cs.name}</option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
                 </div>
@@ -419,15 +424,15 @@ export function CloserCRM() {
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
             <tr className="bg-stone-50/50 dark:bg-neutral-900/50 border-b border-stone-100 dark:border-neutral-700">
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Contact</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden md:table-cell">Entreprise</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden lg:table-cell">Email</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden lg:table-cell">Téléphone</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Statut</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden md:table-cell">Assigné à</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden xl:table-cell">Offre</th>
-              <th className="text-right px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Valeur</th>
-              <th className="text-left px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden xl:table-cell">Date</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Contact</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden md:table-cell">Entreprise</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden lg:table-cell">Email</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden lg:table-cell">Téléphone</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Statut</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden md:table-cell">Assigné à</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden xl:table-cell">Offre</th>
+              <th className="text-right px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Valeur</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden xl:table-cell">Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
@@ -449,13 +454,13 @@ export function CloserCRM() {
                     className="hover:bg-stone-50/30 dark:hover:bg-neutral-700/30 cursor-pointer transition-colors"
                   >
                     {/* Contact */}
-                    <td className="px-4 py-3">
+                    <td className="px-3 md:px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className="h-8 w-8 rounded-full bg-stone-100 dark:bg-white/10 flex items-center justify-center shrink-0">
                           <User className="h-4 w-4 text-stone-400 dark:text-neutral-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-stone-900 dark:text-white truncate">{getDisplayName(p)}</p>
+                          <p className="font-bold text-stone-900 dark:text-white truncate max-w-[120px] md:max-w-[180px]">{getDisplayName(p)}</p>
                           <p className="text-xs text-stone-400 dark:text-neutral-500 md:hidden truncate">{p.company || ''}</p>
                         </div>
                       </div>
@@ -486,7 +491,7 @@ export function CloserCRM() {
                     </td>
 
                     {/* Statut */}
-                    <td className="px-4 py-3">
+                    <td className="px-3 md:px-4 py-3">
                       <span className={cn(
                         'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
                         stage.bgLight,
@@ -514,7 +519,7 @@ export function CloserCRM() {
                     </td>
 
                     {/* Valeur */}
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 md:px-4 py-3 text-right">
                       <span className={cn(
                         'font-medium',
                         p.value ? 'text-stone-900 dark:text-white font-bold' : 'text-stone-400 dark:text-neutral-500'

@@ -232,7 +232,7 @@ export function CloserAppels() {
           <span className="h-px w-10 bg-[#c4c7c7]/30" />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Workspace</span>
         </div>
-        <h1 className="text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Appels</h1>
+        <h1 className="text-2xl md:text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Appels</h1>
         <p className="text-stone-500 dark:text-neutral-400 text-base max-w-2xl font-light italic opacity-80">Gérez vos appels, scripts et suivez vos prospects.</p>
       </header>
 
@@ -248,27 +248,27 @@ export function CloserAppels() {
             className="w-full pl-14 pr-6 py-5 bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 rounded-[2rem] shadow-sm group-hover:shadow-md transition-shadow focus:ring-2 focus:ring-[#006c49]/10 focus:border-[#006c49] outline-none font-medium text-stone-900 dark:text-white dark:placeholder-neutral-500"
           />
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4 flex-wrap">
           <button
             onClick={() => setIsScriptModalOpen(true)}
-            className="px-8 py-5 bg-[#ffddb8] text-[#2a1700] rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-3 shadow-lg shadow-[#ffddb8]/10"
+            className="px-4 md:px-8 py-3 md:py-5 bg-[#ffddb8] text-[#2a1700] rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-[#ffddb8]/10"
           >
             <FileText className="h-5 w-5" strokeWidth={1.5} />
-            Script
+            <span className="hidden sm:inline">Script</span>
           </button>
           <button
             onClick={handleQuickCall}
-            className="px-8 py-5 bg-[#006c49] text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-3 shadow-lg shadow-[#006c49]/10"
+            className="px-4 md:px-8 py-3 md:py-5 bg-[#006c49] text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-[#006c49]/10"
           >
             <Video className="h-5 w-5" strokeWidth={1.5} />
-            Call Rapide
+            <span className="hidden sm:inline">Call Rapide</span>
           </button>
           <button
             onClick={() => setIsNewCallModalOpen(true)}
-            className="px-8 py-5 bg-stone-900 text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-3 shadow-lg shadow-stone-900/10"
+            className="px-4 md:px-8 py-3 md:py-5 bg-stone-900 text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-stone-900/10"
           >
             <Phone className="h-5 w-5" strokeWidth={1.5} />
-            Nouvel Appel
+            <span className="hidden sm:inline">Nouvel Appel</span>
           </button>
         </div>
       </div>
@@ -285,12 +285,12 @@ export function CloserAppels() {
             key={call.id}
             className={cn(
               GLASS_PANEL,
-              'p-6 rounded-2xl group hover:border-[#006c49]/20 hover:shadow-md transition-all flex items-center justify-between'
+              'px-4 md:px-6 py-3 md:py-4 rounded-2xl group hover:border-[#006c49]/20 hover:shadow-md transition-all flex items-center justify-between'
             )}
           >
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-[#eae8e7] dark:bg-white/5 rounded-xl flex items-center justify-center shadow-inner group-hover:bg-[#ffddb8] transition-colors">
-                <Video className="h-7 w-7 text-stone-700 dark:text-neutral-200" strokeWidth={1.5} />
+            <div className="flex items-center gap-3 md:gap-6 min-w-0">
+              <div className="w-10 h-10 md:w-16 md:h-16 bg-[#eae8e7] dark:bg-white/5 rounded-xl flex items-center justify-center shadow-inner group-hover:bg-[#ffddb8] transition-colors shrink-0">
+                <Video className="h-5 w-5 md:h-7 md:w-7 text-stone-700 dark:text-neutral-200" strokeWidth={1.5} />
               </div>
               <div>
                 {editingCallId === call.id ? (
@@ -337,10 +337,10 @@ export function CloserAppels() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate(`/business/appels/${call.id}?readonly=1`)}
-                className="flex items-center gap-2 px-6 py-3 bg-[#eae8e7] dark:bg-white/5 hover:bg-[#dbdad9] dark:hover:bg-white/10 text-stone-900 dark:text-white rounded-full font-bold text-sm transition-all"
+                className="flex items-center gap-2 px-3 md:px-6 py-2 md:py-3 bg-[#eae8e7] dark:bg-white/5 hover:bg-[#dbdad9] dark:hover:bg-white/10 text-stone-900 dark:text-white rounded-full font-bold text-sm transition-all"
               >
                 <Eye className="h-4 w-4" strokeWidth={1.5} />
-                Détails
+                <span className="hidden sm:inline">Détails</span>
               </button>
               <div className="relative">
                 <button

@@ -254,34 +254,16 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
                 />
               </div>
             ) : (
-              <div className="w-12 h-12 bg-neutral-900 flex items-center justify-center rounded-xl shadow-sm shrink-0">
-                <img
-                  src="/logo.PNG"
-                  alt="CloseOS"
-                  className="h-8 w-8 object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-white font-black text-lg" style="font-family:Manrope,sans-serif">C</span>'
-                  }}
-                />
+              <div className="w-12 h-12 flex items-center justify-center shrink-0">
+                <img src="/closeos-business-logo.png" alt="CloseOS Business" className="h-10 w-10 object-contain dark:hidden" />
+                <img src="/closeos-business-logo-dark.png" alt="CloseOS Business" className="h-10 w-10 object-contain hidden dark:block" />
               </div>
             )
           ) : (
             <>
-              <div className="w-10 h-10 bg-neutral-900 flex items-center justify-center rounded-lg shadow-sm shrink-0">
-                <img
-                  src="/logo.PNG"
-                  alt="CloseOS"
-                  className="h-8 w-8 object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-white font-black text-lg" style="font-family:Manrope,sans-serif">C</span>'
-                  }}
-                />
-              </div>
-              <div className="overflow-hidden">
-                <h1 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tighter" style={{ fontFamily: 'Manrope, sans-serif' }}>CloseOS</h1>
-                <p className="text-[10px] font-extrabold uppercase text-neutral-500 dark:text-neutral-400 opacity-70 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Business Suite</p>
+              <div className="shrink-0">
+                <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-14 w-auto object-contain dark:hidden" />
+                <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-14 w-auto object-contain hidden dark:block" />
               </div>
               <button onClick={onClose} className="lg:hidden ml-auto p-2 text-neutral-400 hover:text-neutral-900">
                 <X className="h-5 w-5" />

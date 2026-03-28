@@ -902,9 +902,9 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
         </div>
 
         {/* Modal Content (Split Layout) */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
           {/* Left Sidebar — CRM Selection */}
-          <div className="w-72 bg-[#f5f3f2] dark:bg-neutral-900 border-r border-[#c4c7c7]/10 dark:border-neutral-700 overflow-y-auto p-4 space-y-2 flex-shrink-0">
+          <div className="w-full md:w-72 bg-[#f5f3f2] dark:bg-neutral-900 md:border-r border-b md:border-b-0 border-[#c4c7c7]/10 dark:border-neutral-700 md:overflow-y-auto overflow-x-auto p-4 md:space-y-2 flex md:flex-col flex-row gap-2 md:gap-0 flex-shrink-0">
             <label className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#444748]/50 block">Available Integrations</label>
             {CRM_OPTIONS.map((crm) => {
               const isActive = selected === crm.id;

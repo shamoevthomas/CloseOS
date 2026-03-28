@@ -35,6 +35,7 @@ import { CGV } from './pages/CGV'
 import { PrivacyPolicy } from './pages/PrivacyPolicy'
 import { BusinessPolitiqueUtilisation } from './pages/BusinessPolitiqueUtilisation'
 import { FounderOnlyGuard } from './components/FounderOnlyGuard'
+import NotFound from './pages/NotFound'
 import { BusinessLanding } from './pages/BusinessLanding'
 import { EcosystemChoice } from './pages/EcosystemChoice'
 import { CaptureForm } from './pages/CaptureForm'
@@ -64,6 +65,13 @@ const SubscriptionRetention = lazy(() => import('./pages/SubscriptionRetention')
 const SpectatorPage = lazy(() => import('./pages/SpectatorPage').then(m => ({ default: m.SpectatorPage })))
 const RemindersPage = lazy(() => import('./pages/RemindersPage').then(m => ({ default: m.RemindersPage })))
 const TrialExpiredModal = lazy(() => import('./pages/TrialExpired').then(m => ({ default: m.TrialExpiredModal })))
+
+// SEO Pages (lazy)
+const Tarifs = lazy(() => import('./pages/Tarifs'))
+const FonctionnalitesHub = lazy(() => import('./pages/fonctionnalites/FonctionnalitesHub'))
+const CrmCloser = lazy(() => import('./pages/fonctionnalites/CrmCloser'))
+const AlternativeIclosed = lazy(() => import('./pages/comparatifs/AlternativeIclosed'))
+const CloseosVsIclosed = lazy(() => import('./pages/comparatifs/CloseosVsIclosed'))
 
 // Business Module Imports
 import { BusinessAuthProvider, useBusinessAuth } from './business/contexts/BusinessAuthContext'
@@ -159,7 +167,7 @@ function FacturesRouter() {
 
 // Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
 function SmartHome() {
-  const { user, loading } = useAuth()
+  const { user, loading, isBusinessUser } = useAuth()
   const navigate = useNavigate()
   const [product, setProduct] = useState<'sales' | 'business' | 'choice' | 'loading'>('loading')
 
@@ -182,8 +190,13 @@ function SmartHome() {
     //    This prevents redirecting logged-in users to /business landing
     if (loading) return
 
-    // 3. If user is logged in, go to dashboard (Sales or Business)
-    if (user) return // handled by the render below
+    // 3. If user is logged in, route to correct product
+    if (user) {
+      if (isBusinessUser) {
+        navigate('/business/dashboard', { replace: true })
+      }
+      return // Sales users handled by the render below
+    }
 
     // 4. Check localStorage preference (only for non-logged-in users)
     const saved = localStorage.getItem('closeos_product')
@@ -192,9 +205,12 @@ function SmartHome() {
 
     // 5. No preference → show choice
     setProduct('choice')
-  }, [navigate, loading, user])
+  }, [navigate, loading, user, isBusinessUser])
 
-  // Logged-in users go straight to dashboard
+  // Logged-in Business users → Business dashboard
+  if (!loading && user && isBusinessUser) return <Navigate to="/business/dashboard" replace />
+
+  // Logged-in Sales users → Sales dashboard
   if (!loading && user) return <Navigate to="/dashboard" replace />
 
   // While auth loads, check for cached session
@@ -202,7 +218,14 @@ function SmartHome() {
     const hasCachedSession = Object.keys(localStorage).some(
       k => k.startsWith('sb-') && k.endsWith('-auth-token')
     )
-    if (hasCachedSession) return <LoadingScreen />
+    if (hasCachedSession) {
+      // Show neutral loader if user might be a Business user (based on localStorage preference)
+      const savedProduct = localStorage.getItem('closeos_product')
+      if (savedProduct === 'business') {
+        return <div className="flex items-center justify-center min-h-screen bg-[#f4f2f1] dark:bg-neutral-900"><div className="w-10 h-10 border-4 border-stone-300 border-t-stone-900 rounded-full animate-spin" /></div>
+      }
+      return <LoadingScreen />
+    }
   }
 
   if (product === 'loading') return null
@@ -227,12 +250,17 @@ function SmartHome() {
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, loading, isBusinessUser } = useAuth()
 
   if (loading) return <LoadingScreen />
 
   if (!user) {
     return <Navigate to="/" replace />
+  }
+
+  // Block Business users from accessing Sales
+  if (isBusinessUser) {
+    return <Navigate to="/business/login" replace />
   }
 
   return <>{children}</>
@@ -252,7 +280,7 @@ function OnboardingWrapper({ onComplete }: { onComplete?: () => void }) {
 }
 
 function AuthenticatedApp() {
-  const { user, loading } = useAuth()
+  const { user, loading, isBusinessUser } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const [isVideoOnboardingOpen, setIsVideoOnboardingOpen] = useState(false);
@@ -292,13 +320,17 @@ function AuthenticatedApp() {
 
   // Plus de blocage global : la landing et les routes publiques s'affichent immédiatement.
   // Le spinner ne s'affiche que dans ProtectedRoute pour les pages nécessitant une connexion.
+  const suspenseFallback = location.pathname.startsWith('/business')
+    ? <div className="flex items-center justify-center min-h-screen bg-[#f4f2f1] dark:bg-neutral-900"><div className="w-10 h-10 border-4 border-stone-300 border-t-stone-900 rounded-full animate-spin" /></div>
+    : <LoadingScreen />
+
   return (
     <>
-      <Suspense fallback={<LoadingScreen />}>
+      <Suspense fallback={suspenseFallback}>
       <Routes>
         {/* Business Landing */}
         <Route path="/business" element={<BusinessLanding />} />
-        <Route path="/buisness" element={<BusinessLanding />} />
+        <Route path="/buisness" element={<Navigate to="/business" replace />} />
 
         {/* Business Public Routes */}
         <Route path="/business/login" element={
@@ -375,6 +407,12 @@ function AuthenticatedApp() {
         <Route path="/business/politique-utilisation" element={<BusinessPolitiqueUtilisation />} />
 
         <Route path="/landing" element={<LandingPage />} />
+        <Route path="/sales" element={<LandingPage />} />
+        <Route path="/tarifs" element={<Tarifs />} />
+        <Route path="/fonctionnalites" element={<FonctionnalitesHub />} />
+        <Route path="/fonctionnalites/crm-closer" element={<CrmCloser />} />
+        <Route path="/comparatifs/alternative-iclosed" element={<AlternativeIclosed />} />
+        <Route path="/comparatifs/closeos-vs-iclosed" element={<CloseosVsIclosed />} />
         <Route
           path="/"
           element={<SmartHome />}
@@ -443,13 +481,16 @@ function AuthenticatedApp() {
           <Route path="reminders" element={<RemindersPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
 
-          {/* Si page inconnue, on renvoie vers le dashboard */}
+          {/* Si page inconnue dans le layout, on renvoie vers le dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
+
+        {/* 404 — Page non trouvée (catch-all public) */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
 
-      {user && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && !location.pathname.startsWith('/book') && (
+      {user && !isBusinessUser && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && !location.pathname.startsWith('/book') && (
         <>
           <TrialExpiredModal />
           <OnboardingWrapper onComplete={() => {

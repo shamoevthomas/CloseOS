@@ -223,9 +223,9 @@ export default async function handler(req: Request) {
         // ─── 1. Fin d'essai (10 jours après inscription) ───
         const trialEndStart = new Date(now);
         trialEndStart.setDate(trialEndStart.getDate() - 10);
-        trialEndStart.setHours(0, 0, 0, 0);
+        trialEndStart.setUTCHours(0, 0, 0, 0);
         const trialEndEnd = new Date(trialEndStart);
-        trialEndEnd.setHours(23, 59, 59, 999);
+        trialEndEnd.setUTCHours(23, 59, 59, 999);
 
         const { data: trialEndUsers } = await supabaseAdmin
             .from('profiles')
@@ -243,9 +243,9 @@ export default async function handler(req: Request) {
         // ─── 2. Demande d'avis (12 jours après inscription) ───
         const reviewStart = new Date(now);
         reviewStart.setDate(reviewStart.getDate() - 12);
-        reviewStart.setHours(0, 0, 0, 0);
+        reviewStart.setUTCHours(0, 0, 0, 0);
         const reviewEnd = new Date(reviewStart);
-        reviewEnd.setHours(23, 59, 59, 999);
+        reviewEnd.setUTCHours(23, 59, 59, 999);
 
         const { data: reviewUsers } = await supabaseAdmin
             .from('profiles')
@@ -262,9 +262,9 @@ export default async function handler(req: Request) {
         // ─── 3. Parrainage (2 jours après abonnement) ───
         const refStart = new Date(now);
         refStart.setDate(refStart.getDate() - 2);
-        refStart.setHours(0, 0, 0, 0);
+        refStart.setUTCHours(0, 0, 0, 0);
         const refEnd = new Date(refStart);
-        refEnd.setHours(23, 59, 59, 999);
+        refEnd.setUTCHours(23, 59, 59, 999);
 
         const { data: refUsers } = await supabaseAdmin
             .from('profiles')

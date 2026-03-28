@@ -818,7 +818,7 @@ export function CloserCallDetails() {
           </div>
         )}
 
-        <h1 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">
+        <h1 className="font-['Manrope'] text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">
           {isReadonly ? "Détails de l'appel avec" : isSetterCloser ? "Résumé d'appel avec" : 'Résumé de Vente avec'} {call.contact_name}
         </h1>
         <div className="flex items-center gap-2 text-stone-500 dark:text-neutral-400">
@@ -847,7 +847,7 @@ export function CloserCallDetails() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-8 mb-10 border-b border-stone-200/60 dark:border-white/10">
+      <div className="flex gap-4 md:gap-8 mb-10 border-b border-stone-200/60 dark:border-white/10 overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -1299,7 +1299,7 @@ export function CloserCallDetails() {
                         </select>
                       </div>
 
-                      <div className="flex gap-3 mb-6">
+                      <div className="flex flex-col sm:flex-row gap-3 mb-6">
                         <button
                           onClick={() => handleAssign('suivant')}
                           className={cn(
@@ -1526,7 +1526,7 @@ export function CloserCallDetails() {
 
       {/* Footer Actions */}
       {!isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-end gap-5 z-40 border-t border-stone-200/40 dark:border-white/10">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-4 md:px-8 py-4 md:py-5 flex items-center justify-end gap-3 md:gap-5 z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
             className="px-8 py-3 rounded-full border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 font-['Manrope'] font-bold text-sm hover:bg-stone-50 dark:hover:bg-white/5 transition-all">
             Annuler
@@ -1543,7 +1543,7 @@ export function CloserCallDetails() {
         </div>
       )}
       {isReadonly && (
-        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-8 py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-white/10">
+        <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-4 md:px-8 py-4 md:py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
             className="px-10 py-3 rounded-full bg-stone-900 text-white font-['Manrope'] font-bold text-sm hover:bg-stone-800 transition-all shadow-xl active:scale-95">
             Retour aux appels

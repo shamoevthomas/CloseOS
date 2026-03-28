@@ -4,6 +4,7 @@
   const chatbotId = script.getAttribute('data-chatbot-id');
   const supabaseUrl = script.getAttribute('data-supabase-url');
   const supabaseKey = script.getAttribute('data-supabase-key');
+  const widgetLang = script.getAttribute('data-lang') || 'fr';
 
   if (!chatbotId || !supabaseUrl || !supabaseKey) {
     console.error('ChatBot Widget: Missing required attributes');
@@ -91,11 +92,11 @@
           <div class="cw-msg bot">${bot.welcome_message}</div>
         </div>
         <div class="cw-input-area">
-          <input id="cw-input" placeholder="Écrivez un message..." onkeydown="if(event.key==='Enter')document.getElementById('cw-send').click()">
+          <input id="cw-input" placeholder="${widgetLang === 'en' ? 'Type a message...' : 'Écrivez un message...'}" onkeydown="if(event.key==='Enter')document.getElementById('cw-send').click()">
           <button id="cw-send" style="background:${bot.primary_color}"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
         </div>
       </div>
-      <div id="cw-tooltip">Une question ? N'hésite pas</div>
+      <div id="cw-tooltip">${widgetLang === 'en' ? 'Got a question? Ask away' : "Une question ? N'hésite pas"}</div>
       <button id="chatbot-widget-btn" style="background:${bot.primary_color}">
         <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
       </button>

@@ -400,7 +400,10 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
             p.id === prospect.id ? { ...p, ghl_contact_id: data.ghl_contact_id, ghl_opportunity_id: data.ghl_opportunity_id } : p
           ))
         }
-      }).catch(err => console.error('[GHL] Push error:', err))
+      }).catch(err => {
+        console.error('[GHL] Push error:', err)
+        toast.error('Erreur de synchronisation GHL', { id: 'ghl-push-error' })
+      })
     } catch (err) {
       console.error('[GHL] Push check error:', err)
     }
@@ -419,7 +422,10 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
           stage: prospect.stage,
           airtable_record_id: prospect.airtable_record_id,
         }),
-      }).catch(err => console.error('[Airtable] Push error:', err))
+      }).catch(err => {
+        console.error('[Airtable] Push error:', err)
+        toast.error('Erreur de synchronisation Airtable', { id: 'airtable-push-error' })
+      })
     } catch (err) {
       console.error('[Airtable] Push check error:', err)
     }
@@ -449,7 +455,10 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
             p.id === prospect.id ? { ...p, hubspot_contact_id: data.hubspot_contact_id } : p
           ))
         }
-      }).catch(err => console.error('[HubSpot] Push error:', err))
+      }).catch(err => {
+        console.error('[HubSpot] Push error:', err)
+        toast.error('Erreur de synchronisation HubSpot', { id: 'hubspot-push-error' })
+      })
     } catch (err) {
       console.error('[HubSpot] Push check error:', err)
     }
@@ -469,7 +478,10 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
           previous_stage: previousStage,
           systemeio_contact_id: prospect.systemeio_contact_id,
         }),
-      }).catch(err => console.error('[Systeme.io] Push error:', err))
+      }).catch(err => {
+        console.error('[Systeme.io] Push error:', err)
+        toast.error('Erreur de synchronisation Systeme.io', { id: 'systemeio-push-error' })
+      })
     } catch (err) {
       console.error('[Systeme.io] Push check error:', err)
     }
@@ -499,14 +511,53 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     }
   }
 
+  // ─── History logging ────────────────────────────────────────────────
+  const TRACKED_FIELDS: Record<string, string> = {
+    contact: 'Nom', email: 'Email', phone: 'Telephone', company: 'Entreprise',
+    stage: 'Etape', value: 'Montant', formula_id: 'Offre',
+    assigned_to: 'Closer', assigned_setter: 'Setter',
+    payment_type: 'Mode de paiement', installments: 'Mensualites',
+    stripe_subscription_id: 'Abonnement Stripe', subscription_status: 'Statut abonnement',
+    notes: 'Notes',
+  }
+
+  const logProspectHistory = useCallback(async (
+    prospectId: number,
+    ownerId: string,
+    changes: { field: string; old: any; new_: any; type?: string }[],
+  ) => {
+    const changerName = isTeamMember
+      ? `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || 'Membre'
+      : 'Owner'
+    const changerId = isTeamMember ? (teamMember?.id || user?.id || '') : (user?.id || '')
+
+    const rows = changes
+      .filter(c => String(c.old ?? '') !== String(c.new_ ?? ''))
+      .map(c => ({
+        prospect_id: prospectId,
+        business_owner_id: ownerId,
+        changed_by_id: changerId,
+        changed_by_name: changerName,
+        change_type: c.type || (c.field === 'stage' ? 'stage_change' : 'field_update'),
+        field_name: c.field,
+        old_value: c.old != null ? String(c.old) : null,
+        new_value: c.new_ != null ? String(c.new_) : null,
+      }))
+
+    if (rows.length > 0) {
+      await supabase.from('business_prospect_history').insert(rows).throwOnError().catch(() => {})
+    }
+  }, [isTeamMember, teamMember, user?.id])
+
   const updateProspect = async (id: number, updates: Partial<BusinessProspect>) => {
     const previousProspects = prospects
+    const current = prospects.find(p => p.id === id)
 
     // Track who changed the stage + save previous stage
     if (updates.stage) {
       const changedBy = isTeamMember ? (teamMember?.id || user?.id) : 'owner'
       updates.stage_changed_by = changedBy
-      const currentStage = prospects.find(p => p.id === id)?.stage
+      const currentStage = current?.stage
       if (currentStage && currentStage !== updates.stage) {
         ;(updates as any).previous_stage = currentStage
       }
@@ -527,6 +578,24 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       setProspects(previousProspects)
       toast.error('Impossible de modifier le prospect.')
       return
+    }
+
+    // Log history for tracked fields
+    if (current && userId) {
+      const changes: { field: string; old: any; new_: any; type?: string }[] = []
+      for (const key of Object.keys(TRACKED_FIELDS)) {
+        if (key in updates && (current as any)[key] !== (updates as any)[key]) {
+          changes.push({
+            field: key,
+            old: (current as any)[key],
+            new_: (updates as any)[key],
+            type: key === 'stage' ? 'stage_change' : key === 'stripe_subscription_id' ? 'stripe_linked' : 'field_update',
+          })
+        }
+      }
+      if (changes.length > 0) {
+        logProspectHistory(id, userId, changes)
+      }
     }
 
     if (updates.stage && data?.[0]) {

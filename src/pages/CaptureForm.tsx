@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight, ChevronDown } from 'lucide-react'
 import { toUTC, fromUTC } from '../lib/timezone'
+import { captureTranslations, detectCaptureLang } from './captureFormI18n'
+import type { CaptureFormLang } from './captureFormI18n'
 
 interface CustomField {
   label: string
@@ -66,8 +68,6 @@ function getCalendarDays(year: number, month: number) {
   return days
 }
 
-const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
-const DAYS_FR = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 const TIME_SLOTS = generateTimeSlots()
 
 const isValidEmail = (e: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(e)
@@ -221,6 +221,9 @@ export function CaptureForm() {
 
   const hasCustomStyle = !!(paramPc || paramBg || paramTc || paramBr || paramFont)
 
+  const [lang] = useState<CaptureFormLang>(() => detectCaptureLang(searchParams))
+  const t = captureTranslations[lang]
+
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -273,7 +276,18 @@ export function CaptureForm() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
 
-  const [infoCollapsed, setInfoCollapsed] = useState(false)
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
+
+  // Questionnaire state
+  const [questionnaire, setQuestionnaire] = useState<{ id: string; enabled: boolean; required: boolean; max_eliminatory: number } | null>(null)
+  const [captureQuestions, setCaptureQuestions] = useState<{ id: string; question_text: string; question_type: string; is_required: boolean; options: string[]; sort_order: number }[]>([])
+  const [answers, setAnswers] = useState<Record<string, any>>({})
+  const [disqualifiedMsg, setDisqualifiedMsg] = useState(false)
+
+  const hasQuestionnaire = !!(questionnaire?.enabled && captureQuestions.length > 0)
+  const bookingStep: 2 | 3 = hasQuestionnaire ? 3 : 2
+  // Backward compatibility alias
+  const infoCollapsed = currentStep > 1
 
   // Send height to parent iframe for dynamic resize
   useEffect(() => {
@@ -303,7 +317,7 @@ export function CaptureForm() {
     }
     window.addEventListener('resize', sendHeight)
     return () => { clearInterval(fast); clearInterval(slow); clearTimeout(timeout); window.removeEventListener('resize', sendHeight) }
-  }, [isEmbed, selectedDate, selectedTime, infoCollapsed])
+  }, [isEmbed, selectedDate, selectedTime, currentStep])
   const prospectTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
 
   // Real availability slots from API
@@ -319,6 +333,8 @@ export function CaptureForm() {
         const data = await res.json()
         if (data.campaign) {
           setCampaign(data.campaign)
+          if (data.questionnaire) setQuestionnaire(data.questionnaire)
+          if (data.questions) setCaptureQuestions(data.questions)
           // Track page view (fire-and-forget)
           fetch(`${API_URL}?action=capture-view`, {
             method: 'POST',
@@ -396,8 +412,8 @@ export function CaptureForm() {
 
   // Re-expand form if user deletes required fields while collapsed
   useEffect(() => {
-    if (!isInfoComplete && infoCollapsed) setInfoCollapsed(false)
-  }, [isInfoComplete, infoCollapsed])
+    if (!isInfoComplete && currentStep > 1) setCurrentStep(1)
+  }, [isInfoComplete, currentStep])
 
   // Passive lead tracking: save partial prospect when email or phone is entered
   const partialSavedRef = useRef(false)
@@ -428,12 +444,26 @@ export function CaptureForm() {
 
   const isInscriptionMode = campaign?.capture_type === 'without_rdv'
 
+  // Questionnaire completeness check
+  const isQuestionnaireComplete = useMemo(() => {
+    if (!hasQuestionnaire) return true
+    if (!questionnaire?.required) return true
+    for (const q of captureQuestions) {
+      if (q.is_required) {
+        const ans = answers[q.id]
+        if (ans === undefined || ans === null || ans === '') return false
+        if (Array.isArray(ans) && ans.length === 0) return false
+      }
+    }
+    return true
+  }, [hasQuestionnaire, questionnaire, captureQuestions, answers])
+
   // Auto-collapse info section in horizontal mode when date is selected
   useEffect(() => {
-    if (isHorizontal && !isInscriptionMode && selectedDate && isInfoComplete && !infoCollapsed) {
-      setInfoCollapsed(true)
+    if (isHorizontal && !isInscriptionMode && selectedDate && isInfoComplete && currentStep === 1) {
+      setCurrentStep(hasQuestionnaire ? 2 : (bookingStep as 2 | 3))
     }
-  }, [selectedDate, isHorizontal, isInscriptionMode, isInfoComplete, infoCollapsed])
+  }, [selectedDate, isHorizontal, isInscriptionMode, isInfoComplete, currentStep, hasQuestionnaire, bookingStep])
 
   const handleSubmit = async () => {
     if (!isInfoComplete) return
@@ -442,6 +472,10 @@ export function CaptureForm() {
     try {
       const name = `${firstName} ${lastName}`.trim()
       const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData }
+      // Add questionnaire answers
+      if (hasQuestionnaire && Object.keys(answers).length > 0) {
+        payload.answers = Object.entries(answers).map(([question_id, answer_value]) => ({ question_id, answer_value }))
+      }
       if (!isInscriptionMode && selectedDate && selectedTime) {
         const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
         payload.date = dateStr
@@ -468,18 +502,23 @@ export function CaptureForm() {
       })
       const data = await res.json()
       if (data.prospect) {
-        setSubmitted(true)
-        // Notify parent window (for popup mode)
-        if (window.parent !== window) {
-          window.parent.postMessage('closeos-capture-done', '*')
+        if (data.disqualified) {
+          setDisqualifiedMsg(true)
+          if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
+        } else {
+          setSubmitted(true)
+          // Notify parent window (for popup mode)
+          if (window.parent !== window) {
+            window.parent.postMessage('closeos-capture-done', '*')
+          }
+          const rUrl = data.redirect_url || campaign?.redirect_url
+          if (rUrl) {
+            setRedirectUrl(rUrl)
+            setTimeout(() => { window.location.href = rUrl }, 2000)
+          }
         }
-        const rUrl = data.redirect_url || campaign?.redirect_url
-        if (rUrl) {
-          setRedirectUrl(rUrl)
-          setTimeout(() => { window.location.href = rUrl }, 2000)
-        }
-      } else alert(data.error || 'Une erreur est survenue')
-    } catch { alert('Erreur réseau') }
+      } else alert(data.error || t.error_generic)
+    } catch { alert(t.error_network) }
     finally { setSubmitting(false) }
   }
 
@@ -501,8 +540,28 @@ export function CaptureForm() {
           <div className="w-20 h-20 rounded-full bg-[#f5f3f2] flex items-center justify-center mx-auto mb-6">
             <svg className="w-8 h-8 text-[#444748]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </div>
-          <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>Campagne introuvable</h1>
-          <p className="text-[#444748]">Ce lien de capture n'est plus actif ou n'existe pas.</p>
+          <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.not_found_title}</h1>
+          <p className="text-[#444748]">{t.not_found_text}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (disqualifiedMsg) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`}>
+        <div className="max-w-md mx-auto text-center p-8">
+          <div className="flex justify-center mb-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#f5f3f2]">
+              <svg className="w-8 h-8 text-[#444748]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+          </div>
+          <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {t.disqualified_title || 'Merci pour vos réponses'}
+          </h1>
+          <p className="text-[#444748] leading-relaxed">
+            {t.disqualified_text || 'Malheureusement, votre profil ne correspond pas à nos critères actuels. Nous vous souhaitons bonne chance dans vos démarches.'}
+          </p>
         </div>
       </div>
     )
@@ -517,20 +576,20 @@ export function CaptureForm() {
               <CheckCircle2 className="h-10 w-10 text-[#006c49]" />
             </div>
           </div>
-          <h2 className="text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>Merci !</h2>
-          <p className="text-[#444748] mb-4">{isInscriptionMode ? 'Votre inscription a bien été enregistrée.' : 'Votre demande a bien été envoyée.'}</p>
+          <h2 className="text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.success_title}</h2>
+          <p className="text-[#444748] mb-4">{isInscriptionMode ? t.success_inscription : t.success_rdv}</p>
           {!isInscriptionMode && selectedDate && selectedTime && (
             <div className="rounded-2xl bg-[#f5f3f2] p-5 mb-4">
-              <p className="text-sm font-bold text-[#1b1c1b]">Rendez-vous confirmé</p>
+              <p className="text-sm font-bold text-[#1b1c1b]">{t.success_confirmed}</p>
               <p className="text-sm text-[#444748] mt-1">
-                {selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} à {selectedTime}
+                {selectedDate.toLocaleDateString(t.date_locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} {t.at_time} {selectedTime}
               </p>
             </div>
           )}
           {redirectUrl ? (
-            <p className="text-xs text-[#444748]/60 animate-pulse">Vous allez être redirigé...</p>
+            <p className="text-xs text-[#444748]/60 animate-pulse">{t.success_redirect}</p>
           ) : (
-            <p className="text-xs text-[#444748]/60">Vous recevrez une confirmation par email.</p>
+            <p className="text-xs text-[#444748]/60">{t.success_email}</p>
           )}
         </div>
       </div>
@@ -578,7 +637,7 @@ export function CaptureForm() {
             )}
 
             <h1 className="text-5xl xl:text-6xl font-extrabold tracking-tighter leading-[0.9] text-[#1b1c1b] mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              {campaign?.landing_title || campaign?.name || 'Prenez rendez-vous'}
+              {campaign?.landing_title || campaign?.name || t.fallback_title}
             </h1>
 
             {campaign?.landing_text && (
@@ -600,7 +659,7 @@ export function CaptureForm() {
 
             <div className="mt-auto pt-8">
               <p className="text-[10px] tracking-widest uppercase text-[#444748]/40 font-bold">
-                Propulsé par <span className="text-[#444748]/60">CloseOS Business</span>
+                {t.powered_by} <span className="text-[#444748]/60">CloseOS Business</span>
               </p>
             </div>
           </div>
@@ -619,7 +678,7 @@ export function CaptureForm() {
                   </span>
                 )}
                 <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  {campaign?.landing_title || campaign?.name || 'Prenez rendez-vous'}
+                  {campaign?.landing_title || campaign?.name || t.fallback_title}
                 </h1>
                 {campaign?.landing_text && (
                   <p className="text-sm text-[#444748]">{campaign.landing_text}</p>
@@ -628,15 +687,15 @@ export function CaptureForm() {
             )}
 
             {/* Horizontal layout wrapper */}
-            <div className={isHorizontal && !isInscriptionMode && !infoCollapsed ? (isEmbed ? 'flex flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
+            <div className={isHorizontal && !isInscriptionMode && currentStep >= bookingStep ? (isEmbed ? 'flex flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
             {/* Left column in horizontal mode */}
-            <div className={isHorizontal && !isInscriptionMode && !infoCollapsed ? 'flex-1 min-w-0 flex flex-col' : ''}>
+            <div className={isHorizontal && !isInscriptionMode && currentStep >= bookingStep ? 'flex-1 min-w-0 flex flex-col' : ''}>
 
             {/* INFO SECTION - collapsible */}
             <div className={`transition-all duration-500 ease-in-out ${infoCollapsed ? 'max-h-16 overflow-hidden' : 'max-h-[2000px]'}`}>
               {infoCollapsed && (
                 <button
-                  onClick={() => setInfoCollapsed(false)}
+                  onClick={() => setCurrentStep(1)}
                   className="w-full flex items-center justify-between rounded-full border border-[#006c49]/20 bg-[#006c49]/5 px-5 py-3 mb-6 text-left transition-colors hover:bg-[#006c49]/10"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -644,7 +703,7 @@ export function CaptureForm() {
                     <span className="text-sm font-bold text-[#1b1c1b] truncate">{firstName} {lastName}</span>
                     {email && <span className="text-xs text-[#006c49] truncate hidden sm:inline">{email}</span>}
                   </div>
-                  <span className="text-xs text-[#006c49] font-bold flex-shrink-0 ml-2 uppercase tracking-wider">Modifier</span>
+                  <span className="text-xs text-[#006c49] font-bold flex-shrink-0 ml-2 uppercase tracking-wider">{t.modify}</span>
                 </button>
               )}
 
@@ -653,33 +712,33 @@ export function CaptureForm() {
                   {/* Step 1 header */}
                   <div className="flex items-center gap-3">
                     <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full bg-[#1b1c1b] flex items-center justify-center text-white font-bold flex-shrink-0`}>1</div>
-                    <h2 className={`${isHorizontal ? 'text-lg' : 'text-2xl'} font-bold text-[#1b1c1b]`} style={{ fontFamily: 'Manrope, sans-serif' }}>Informations personnelles</h2>
+                    <h2 className={`${isHorizontal ? 'text-lg' : 'text-2xl'} font-bold text-[#1b1c1b]`} style={{ fontFamily: 'Manrope, sans-serif' }}>{t.step1_title}</h2>
                   </div>
 
                   {/* Prénom / Nom côte à côte */}
                   <div className={`flex gap-4 ${isHorizontal ? 'mb-2' : 'mb-0'}`}>
                     <div className="flex-1 space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Prénom *</label>
-                      <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" className={inputCls} style={inputStyle} />
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">{t.label_firstname} *</label>
+                      <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t.placeholder_firstname} className={inputCls} style={inputStyle} />
                     </div>
                     <div className="flex-1 space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Nom</label>
-                      <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Dupont" className={inputCls} style={inputStyle} />
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">{t.label_lastname}</label>
+                      <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t.placeholder_lastname} className={inputCls} style={inputStyle} />
                     </div>
                   </div>
 
                   {/* Email */}
                   <div className={`space-y-2 ${isHorizontal ? 'mb-2' : ''}`}>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Email {campaign?.email_required ? '*' : ''}</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">{t.label_email} {campaign?.email_required ? '*' : ''}</label>
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@example.com" className={`${inputCls} ${email.trim() && !isValidEmail(email.trim()) ? 'border-red-400 focus:border-red-400' : ''}`} style={inputStyle} />
                     {email.trim() && !isValidEmail(email.trim()) && (
-                      <p className="text-xs text-red-500 mt-1">Veuillez entrer une adresse email valide</p>
+                      <p className="text-xs text-red-500 mt-1">{t.email_invalid}</p>
                     )}
                   </div>
 
                   {/* Téléphone */}
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Téléphone {campaign?.phone_required ? '*' : ''}</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">{t.label_phone} {campaign?.phone_required ? '*' : ''}</label>
                     <div className="relative flex gap-0 z-20" ref={countryPickerRef}>
                       <button
                         type="button"
@@ -697,7 +756,7 @@ export function CaptureForm() {
                               type="text"
                               value={countrySearch}
                               onChange={(e) => setCountrySearch(e.target.value)}
-                              placeholder="Rechercher un pays..."
+                              placeholder={t.search_country}
                               className="w-full rounded-full border border-[#c4c7c7]/20 bg-[#f5f3f2] px-3.5 py-2 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:outline-none focus:ring-1 focus:ring-[#006c49]"
                               autoFocus
                             />
@@ -734,7 +793,7 @@ export function CaptureForm() {
                       <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">{field.label} {field.required ? '*' : ''}</label>
                       {field.type === 'select' ? (
                         <select value={customData[field.label] || ''} onChange={(e) => setCustomData({ ...customData, [field.label]: e.target.value })} className="w-full bg-transparent border-b-2 border-[#c4c7c7]/30 py-3 text-sm text-[#1b1c1b] focus:border-[#006c49] focus:ring-0 transition-colors outline-none font-medium appearance-none cursor-pointer" style={inputStyle}>
-                          <option value="">Sélectionner...</option>
+                          <option value="">{t.select_placeholder}</option>
                           {(field.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                         </select>
                       ) : (
@@ -743,15 +802,15 @@ export function CaptureForm() {
                     </div>
                   ))}
 
-                  {/* Manual continue button for RDV mode (hidden in horizontal layout) */}
-                  {!isInscriptionMode && !isHorizontal && (
+                  {/* Continue button → advance to questionnaire or booking */}
+                  {(!isInscriptionMode || hasQuestionnaire) && !isHorizontal && (
                     <button
-                      onClick={() => setInfoCollapsed(true)}
+                      onClick={() => setCurrentStep(hasQuestionnaire ? 2 : (bookingStep as 2 | 3))}
                       disabled={!isInfoComplete}
                       className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
                       style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                     >
-                      <span>Continuer</span>
+                      <span>{t.continue_btn}</span>
                       <ArrowRight className="h-5 w-5" />
                     </button>
                   )}
@@ -759,8 +818,151 @@ export function CaptureForm() {
               )}
             </div>
 
-            {/* INSCRIPTION MODE - Submit button */}
-            {isInscriptionMode && (
+            {/* QUESTIONNAIRE STEP */}
+            {hasQuestionnaire && (
+              <div className={`transition-all duration-[600ms] ease-in-out overflow-hidden ${currentStep === 2 ? 'max-h-[4000px] opacity-100' : currentStep > 2 ? 'max-h-16' : 'max-h-0'}`}>
+                {currentStep > 2 && (
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="w-full flex items-center justify-between rounded-full border border-[#006c49]/20 bg-[#006c49]/5 px-5 py-3 mb-6 text-left transition-colors hover:bg-[#006c49]/10"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <CheckCircle2 className="h-5 w-5 text-[#006c49] flex-shrink-0" />
+                      <span className="text-sm font-bold text-[#1b1c1b] truncate">{t.questionnaire_complete || 'Questionnaire complété'}</span>
+                    </div>
+                    <span className="text-xs text-[#006c49] font-bold flex-shrink-0 ml-2 uppercase tracking-wider">{t.modify}</span>
+                  </button>
+                )}
+                {currentStep === 2 && (
+                  <div className="space-y-6 mb-6">
+                    {/* Step header */}
+                    <div className="flex items-center gap-3">
+                      <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full bg-[#1b1c1b] flex items-center justify-center text-white font-bold flex-shrink-0`}>2</div>
+                      <h2 className={`${isHorizontal ? 'text-lg' : 'text-2xl'} font-bold text-[#1b1c1b]`} style={{ fontFamily: 'Manrope, sans-serif' }}>{t.questionnaire_title || 'Quelques questions'}</h2>
+                    </div>
+
+                    {/* Questions */}
+                    {captureQuestions.map((q) => (
+                      <div key={q.id} className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">
+                          {q.question_text} {q.is_required ? '*' : ''}
+                        </label>
+
+                        {q.question_type === 'text' && (
+                          <input
+                            type="text"
+                            value={answers[q.id] || ''}
+                            onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                            placeholder="Votre réponse..."
+                            className={inputCls}
+                            style={inputStyle}
+                          />
+                        )}
+
+                        {q.question_type === 'number' && (
+                          <input
+                            type="number"
+                            value={answers[q.id] ?? ''}
+                            onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                            placeholder="0"
+                            className={inputCls}
+                            style={inputStyle}
+                          />
+                        )}
+
+                        {q.question_type === 'select' && (
+                          <div className="flex flex-wrap gap-2">
+                            {(q.options || []).map((opt, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))}
+                                className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all ${answers[q.id] === opt ? 'bg-[#1b1c1b] text-white scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
+                                style={answers[q.id] === opt ? btnStyle : undefined}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {q.question_type === 'multiple_choice' && (
+                          <div className="flex flex-wrap gap-2">
+                            {(q.options || []).map((opt, i) => {
+                              const selected = Array.isArray(answers[q.id]) ? answers[q.id] : []
+                              const isSelected = selected.includes(opt)
+                              return (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => {
+                                    const newSel = isSelected ? selected.filter((s: string) => s !== opt) : [...selected, opt]
+                                    setAnswers(prev => ({ ...prev, [q.id]: newSel }))
+                                  }}
+                                  className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all ${isSelected ? 'bg-[#1b1c1b] text-white scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
+                                  style={isSelected ? btnStyle : undefined}
+                                >
+                                  {opt}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Continue / Skip buttons */}
+                    {!isInscriptionMode && (
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => setCurrentStep(bookingStep as 2 | 3)}
+                          disabled={questionnaire?.required && !isQuestionnaireComplete}
+                          className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
+                          style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
+                        >
+                          <span>{t.continue_btn}</span>
+                          <ArrowRight className="h-5 w-5" />
+                        </button>
+                        {!questionnaire?.required && (
+                          <button
+                            onClick={() => setCurrentStep(bookingStep as 2 | 3)}
+                            className="w-full text-center text-xs text-[#006c49] font-bold py-2 hover:underline"
+                          >
+                            {t.questionnaire_skip || 'Passer et choisir un créneau'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Inscription mode: submit after questionnaire */}
+                    {isInscriptionMode && (
+                      <div className="space-y-3">
+                        <button
+                          onClick={handleSubmit}
+                          disabled={(!isQuestionnaireComplete && questionnaire?.required) || submitting}
+                          className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
+                          style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
+                        >
+                          {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>{t.inscribe_btn}</span><ArrowRight className="h-5 w-5" /></>}
+                        </button>
+                        {!questionnaire?.required && (
+                          <button
+                            onClick={handleSubmit}
+                            disabled={submitting}
+                            className="w-full text-center text-xs text-[#006c49] font-bold py-2 hover:underline"
+                          >
+                            {t.questionnaire_skip || "Passer et s'inscrire"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* INSCRIPTION MODE - Submit button (only when no questionnaire) */}
+            {isInscriptionMode && !hasQuestionnaire && (
               <div className="pt-8 border-t border-[#c4c7c7]/10">
                 <button
                   onClick={handleSubmit}
@@ -768,10 +970,10 @@ export function CaptureForm() {
                   className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
                   style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                 >
-                  {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>S'inscrire</span><ArrowRight className="h-5 w-5" /></>}
+                  {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>{t.inscribe_btn}</span><ArrowRight className="h-5 w-5" /></>}
                 </button>
                 <p className="text-center text-[10px] text-[#444748]/40 mt-6 font-medium leading-relaxed">
-                  En continuant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées dans notre base de données.
+                  {t.consent_text}
                 </p>
               </div>
             )}
@@ -780,7 +982,7 @@ export function CaptureForm() {
             {isEmbed && (
               <div className="mt-auto pt-6">
                 <p className="text-[10px] tracking-widest uppercase text-[#444748]/40 font-bold">
-                  Propulsé par <span className="text-[#444748]/60">CloseOS</span>
+                  {t.powered_by} <span className="text-[#444748]/60">CloseOS</span>
                 </p>
               </div>
             )}
@@ -789,21 +991,21 @@ export function CaptureForm() {
 
             {/* CALENDAR SECTION - RDV mode only */}
             {!isInscriptionMode && <div className={`relative ${isHorizontal ? 'flex-1 min-w-0' : 'mt-4'}`}>
-              {/* Overlay */}
-              {!isInfoComplete && (
+              {/* Overlay — lock until booking step is reached */}
+              {currentStep < bookingStep && (
                 <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] rounded-2xl flex items-center justify-center cursor-not-allowed">
                   <div className="bg-white p-5 rounded-2xl shadow-xl flex items-center gap-3 border border-[#c4c7c7]/10">
                     <Lock className="h-5 w-5 text-[#006c49]" />
-                    <p className="text-sm font-bold text-[#444748]">Remplissez vos informations pour continuer</p>
+                    <p className="text-sm font-bold text-[#444748]">{t.fill_info}</p>
                   </div>
                 </div>
               )}
 
-              <div className={`transition-opacity duration-300 ${isInfoComplete ? 'opacity-100' : 'opacity-30 grayscale pointer-events-none'}`}>
-                {/* Step 2 header */}
+              <div className={`transition-opacity duration-300 ${currentStep >= bookingStep ? 'opacity-100' : 'opacity-30 grayscale pointer-events-none'}`}>
+                {/* Booking step header */}
                 <div className={`flex items-center gap-3 ${isHorizontal ? 'mb-4' : 'mb-6'}`}>
-                  <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full flex items-center justify-center font-bold flex-shrink-0 ${isInfoComplete ? 'bg-[#1b1c1b] text-white' : 'border-2 border-[#c4c7c7] text-[#c4c7c7]'}`}>2</div>
-                  <h2 className={`${isHorizontal ? 'text-lg' : 'text-2xl'} font-bold ${isInfoComplete ? 'text-[#1b1c1b]' : 'text-[#1b1c1b]/40'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>Choisissez un créneau</h2>
+                  <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full flex items-center justify-center font-bold flex-shrink-0 ${currentStep >= bookingStep ? 'bg-[#1b1c1b] text-white' : 'border-2 border-[#c4c7c7] text-[#c4c7c7]'}`}>{bookingStep}</div>
+                  <h2 className={`${isHorizontal ? 'text-lg' : 'text-2xl'} font-bold ${currentStep >= bookingStep ? 'text-[#1b1c1b]' : 'text-[#1b1c1b]/40'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{t.step2_title}</h2>
                 </div>
 
                 {/* Compact horizontal layout: calendar swaps with time slots */}
@@ -813,7 +1015,7 @@ export function CaptureForm() {
                     <div className={`transition-all duration-500 ease-in-out overflow-hidden ${selectedDate ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100'}`}>
                       <div>
                         <div className="flex items-center justify-between mb-3 px-1">
-                          <span className="text-lg font-bold text-[#1b1c1b]">{MONTHS_FR[calMonth]} {calYear}</span>
+                          <span className="text-lg font-bold text-[#1b1c1b]">{t.months[calMonth]} {calYear}</span>
                           <div className="flex gap-1">
                             <button onClick={prevMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
                               <ChevronLeft className="h-5 w-5 text-[#1b1c1b]" />
@@ -824,7 +1026,7 @@ export function CaptureForm() {
                           </div>
                         </div>
                         <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                          {DAYS_FR.map((d, i) => (
+                          {t.days.map((d, i) => (
                             <div key={i} className="py-1 text-[10px] font-bold text-[#444748]/40 uppercase tracking-widest">{d}</div>
                           ))}
                         </div>
@@ -843,7 +1045,7 @@ export function CaptureForm() {
                                 key={i}
                                 disabled={disabled}
                                 onClick={() => { setSelectedDate(day); setSelectedTime(null) }}
-                                className={`p-2.5 rounded-full text-sm font-medium transition-all ${
+                                className={`aspect-square flex items-center justify-center rounded-full text-sm font-medium transition-all ${
                                   selected ? 'bg-[#006c49] text-white shadow-lg shadow-[#006c49]/20'
                                     : isToday && !disabled ? 'bg-[#006c49]/10 text-[#006c49] hover:bg-[#006c49]/20'
                                     : disabled ? 'text-[#c4c7c7] cursor-not-allowed'
@@ -870,14 +1072,14 @@ export function CaptureForm() {
                             <ChevronLeft className="h-4 w-4 text-[#006c49] group-hover:-translate-x-0.5 transition-transform" />
                             <Calendar className="h-4 w-4 text-[#006c49]" />
                             <span className="text-sm font-bold text-[#006c49]">
-                              {selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                              {selectedDate.toLocaleDateString(t.date_locale, { weekday: 'long', day: 'numeric', month: 'long' })}
                             </span>
-                            <span className="text-xs text-[#006c49]/60 font-medium">— Changer de date</span>
+                            <span className="text-xs text-[#006c49]/60 font-medium">— {t.change_date}</span>
                           </button>
 
                           {/* Time slots in wide grid */}
                           <div>
-                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-3">Créneaux disponibles</h3>
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-3">{t.available_slots}</h3>
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                               {(freeMode ? TIME_SLOTS : (availableTimesForDate || []).map(s => s.time)).map(slot => (
                                 <button
@@ -895,7 +1097,7 @@ export function CaptureForm() {
                               ))}
                             </div>
                             {!freeMode && availableTimesForDate && availableTimesForDate.length === 0 && (
-                              <p className="text-xs text-[#444748]/40 mt-2">Aucun créneau disponible ce jour. Essayez une autre date.</p>
+                              <p className="text-xs text-[#444748]/40 mt-2">{t.no_slots}</p>
                             )}
                           </div>
                         </div>
@@ -908,7 +1110,7 @@ export function CaptureForm() {
                     {/* Calendar */}
                     <div>
                       <div className="flex items-center justify-between mb-4 px-1">
-                        <span className="text-lg font-bold text-[#1b1c1b]">{MONTHS_FR[calMonth]} {calYear}</span>
+                        <span className="text-lg font-bold text-[#1b1c1b]">{t.months[calMonth]} {calYear}</span>
                         <div className="flex gap-1">
                           <button onClick={prevMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
                             <ChevronLeft className="h-5 w-5 text-[#1b1c1b]" />
@@ -920,7 +1122,7 @@ export function CaptureForm() {
                       </div>
 
                       <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                        {DAYS_FR.map((d, i) => (
+                        {t.days.map((d, i) => (
                           <div key={i} className="py-1 text-[10px] font-bold text-[#444748]/40 uppercase tracking-widest">{d}</div>
                         ))}
                       </div>
@@ -955,7 +1157,7 @@ export function CaptureForm() {
 
                     {/* Time slots */}
                     <div>
-                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-4">Créneaux disponibles</h3>
+                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-4">{t.available_slots}</h3>
                       {selectedDate ? (
                         <div className="max-h-72 overflow-y-auto pr-1">
                           <div className="grid grid-cols-2 gap-2">
@@ -975,11 +1177,11 @@ export function CaptureForm() {
                             ))}
                           </div>
                           {!freeMode && availableTimesForDate && availableTimesForDate.length === 0 && (
-                            <p className="text-xs text-[#444748]/40 mt-2">Aucun créneau disponible ce jour. Essayez une autre date.</p>
+                            <p className="text-xs text-[#444748]/40 mt-2">{t.no_slots}</p>
                           )}
                         </div>
                       ) : (
-                        <p className="text-sm text-[#444748]/40">Sélectionnez une date pour voir les créneaux.</p>
+                        <p className="text-sm text-[#444748]/40">{t.select_date}</p>
                       )}
                     </div>
                   </div>
@@ -988,7 +1190,7 @@ export function CaptureForm() {
                 {slotsLoading && (
                   <div className="flex items-center justify-center py-6">
                     <Loader2 className="h-5 w-5 text-[#006c49] animate-spin" />
-                    <span className="text-sm text-[#444748] ml-2">Chargement des disponibilités...</span>
+                    <span className="text-sm text-[#444748] ml-2">{t.loading_slots}</span>
                   </div>
                 )}
 
@@ -1000,11 +1202,11 @@ export function CaptureForm() {
                     className={`w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] ${isHorizontal ? 'py-3.5 text-sm' : 'py-5 text-base'} font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-2xl group`}
                     style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                   >
-                    {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Confirmer le rendez-vous</span><ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" /></>}
+                    {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>{t.confirm_rdv}</span><ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" /></>}
                   </button>
 
                   <p className={`text-center text-[10px] text-[#444748]/40 ${isHorizontal ? 'mt-3' : 'mt-6'} font-medium leading-relaxed`}>
-                    En continuant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées dans notre base de données.
+                    {t.consent_text}
                   </p>
                 </div>
               </div>
@@ -1022,7 +1224,7 @@ export function CaptureForm() {
           <div className="flex flex-col md:flex-row justify-between items-center max-w-screen-2xl mx-auto w-full gap-6">
             <div className="font-bold text-[#1b1c1b] text-lg" style={{ fontFamily: 'Manrope, sans-serif' }}>CloseOS</div>
             <div className="text-[10px] tracking-widest uppercase text-[#444748]/40 font-bold">
-              Propulsé par CloseOS Business
+              {t.powered_by_footer}
             </div>
           </div>
         </footer>

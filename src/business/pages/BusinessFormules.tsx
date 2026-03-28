@@ -316,7 +316,7 @@ export function BusinessFormules() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <span className="text-xs uppercase tracking-[0.2em] text-stone-400 dark:text-neutral-500 font-bold">Gestion Commerciale</span>
-          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">Formules</h1>
+          <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">Formules</h1>
         </div>
         {!isTeamMember && (
           <button onClick={openCreate} className="flex items-center gap-2 bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-7 py-3.5 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm">
@@ -340,7 +340,7 @@ export function BusinessFormules() {
       )}
 
       {/* Formula cards */}
-      <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {formulas.map((formula) => {
           const resourceCount = (formula.resources || []).length
           const commissionRoles = activeRoles.filter(r => (roleRates[r] ?? 0) > 0).length
@@ -421,9 +421,9 @@ export function BusinessFormules() {
       {/* Modal Create/Edit */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl">
+          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl md:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl">
             {/* Modal header */}
-            <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 px-8 py-5 flex-shrink-0">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 px-4 md:px-8 py-4 md:py-5 flex-shrink-0">
               <h3 className="text-xl font-extrabold text-stone-900 dark:text-white">
                 {isTeamMember ? 'Détails de la formule' : editingFormula ? 'Modifier la formule' : 'Nouvelle formule'}
               </h3>
@@ -433,7 +433,7 @@ export function BusinessFormules() {
             </div>
 
             {/* Content - scrollable */}
-            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-6 space-y-6">
               {/* Name */}
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Nom de la formule *</label>
@@ -451,7 +451,7 @@ export function BusinessFormules() {
               {/* Billing type */}
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Type de facturation</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {([
                     { value: 'one_time', label: 'Paiement unique' },
                     { value: 'subscription', label: 'Abonnement' },
@@ -479,7 +479,7 @@ export function BusinessFormules() {
                 <div className="space-y-4">
                   <div className="rounded-2xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 p-5 space-y-4">
                     <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">Tarification abonnement</p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">Prix mensuel (€) *</label>
                         <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="49.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
@@ -620,7 +620,7 @@ export function BusinessFormules() {
                     <Percent className="h-4 w-4 text-stone-600 dark:text-neutral-300" />
                     <label className="text-sm font-semibold text-stone-900 dark:text-white">Commission</label>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 overflow-x-auto">
                     {activeRoles.map(role => {
                       const roleRate = roleRates[role] ?? 0
                       const isSetterCloser = role === 'Setter-Closer'
@@ -818,7 +818,7 @@ export function BusinessFormules() {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-8 py-5 flex-shrink-0">
+            <div className="flex flex-wrap justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-4 md:px-8 py-4 md:py-5 flex-shrink-0">
               <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-full border border-stone-200 dark:border-neutral-800 px-6 py-2.5 text-sm font-semibold text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
                 {isTeamMember ? 'Fermer' : 'Annuler'}
               </button>

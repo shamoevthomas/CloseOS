@@ -137,8 +137,7 @@ export function BusinessReport() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [reminders, setReminders] = useState<any[]>([])
-  const [stripePayments, setStripePayments] = useState<{ prospect_id: number; amount: number }[]>([])
-  const [hasStripeData, setHasStripeData] = useState(false)
+  const [formulaBillingTypes, setFormulaBillingTypes] = useState<Record<string, string>>({})
 
   const fetchAll = useCallback(async () => {
     if (!effectiveUserId) return
@@ -147,7 +146,7 @@ export function BusinessReport() {
       const [membersRes, ownerRes, prospectsRes, campaignsRes, appointmentsRes, remindersRes] = await Promise.all([
         supabase.from('business_team_members').select('id, first_name, last_name, email, role, joined_at, avatar_url').eq('business_owner_id', effectiveUserId),
         supabase.from('business_users').select('id, full_name, email, created_at, avatar_url').eq('id', effectiveUserId).single(),
-        supabase.from('business_prospects').select('id, stage, value, created_at, campaign_id, payment_type, installments, assigned_to, contact, loss_reason, loss_details, call_notes, stripe_subscription_id').eq('user_id', effectiveUserId),
+        supabase.from('business_prospects').select('id, stage, value, created_at, campaign_id, payment_type, installments, assigned_to, contact, loss_reason, loss_details, call_notes, stripe_subscription_id, subscription_amount, formula_id').eq('user_id', effectiveUserId),
         supabase.from('business_campaigns').select('id, name, views, is_active, created_at').eq('user_id', effectiveUserId),
         supabase.from('business_appointments').select('id, status, date, campaign_id, prospect_id, created_at, assigned_to').eq('user_id', effectiveUserId),
         supabase.from('reminders').select('id, title, reminder_date, created_at, is_done, user_id, created_by_member_id').eq('user_id', effectiveUserId),
@@ -163,14 +162,14 @@ export function BusinessReport() {
       setAppointments(appointmentsRes.data || [])
       setReminders(remindersRes.data || [])
 
-      // Fetch Stripe payments
-      fetch(`/api/business-payments-summary?user_id=${effectiveUserId}`)
-        .then(r => r.json())
-        .then(data => {
-          setHasStripeData(!!data.hasStripeData)
-          setStripePayments(data.payments || [])
+      // Fetch formula billing types
+      supabase.from('business_formulas').select('id, billing_type').eq('user_id', effectiveUserId)
+        .then(({ data }) => {
+          const map: Record<string, string> = {}
+          ;(data || []).forEach(f => { map[f.id] = f.billing_type || 'one_time' })
+          setFormulaBillingTypes(map)
         })
-        .catch(() => {})
+        .catch(err => console.error('[BusinessReport] Error loading formula billing types:', err))
     } catch (err) {
       console.error('Error fetching report data:', err)
     } finally {
@@ -189,7 +188,7 @@ export function BusinessReport() {
     ]).then(([teamsRes, membersRes]) => {
       if (teamsRes.data) setTeams(teamsRes.data)
       if (membersRes.data) setAllTeamMembers(membersRes.data)
-    })
+    }).catch(err => console.error('[BusinessReport] Error loading teams:', err))
   }, [effectiveUserId])
 
   // ─── Filter by period ───
@@ -217,7 +216,7 @@ export function BusinessReport() {
   const followupLeads = filteredProspects.filter(p => p.stage === 'followup')
   const activeLeads = filteredProspects.filter(p => ['prospect', 'qualified', 'followup'].includes(p.stage))
 
-  const totalCA = wonLeads.reduce((s, p) => s + (hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)), 0)
+  const totalCA = wonLeads.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
   const totalPipeline = filteredProspects.filter(p => p.stage !== 'unqualified').reduce((s, p) => s + (Number(p.value) || 0), 0)
   const avgDeal = wonLeads.length > 0 ? totalCA / wonLeads.length : 0
   // No-shows only count if they came from follow-up stage
@@ -244,7 +243,7 @@ export function BusinessReport() {
     return campaigns.map(c => {
       const campProspects = filteredProspects.filter(p => p.campaign_id === c.id)
       const campWon = campProspects.filter(p => p.stage === 'won')
-      const campCA = campWon.reduce((s, p) => s + (hasStripeData ? getProspectCA(p, stripePayments) : (Number(p.value) || 0)), 0)
+      const campCA = campWon.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
       const campCommission = campCA * (COMMISSION_RATE / 100)
       const inscriptions = campProspects.length
       const conversionRate = c.views > 0 ? (inscriptions / c.views) * 100 : 0

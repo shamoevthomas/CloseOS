@@ -8,6 +8,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isBusinessUser, setIsBusinessUser] = useState(false);
   const isMountedRef = useRef(true);
 
   // Role admin simple : base uniquement sur l'email
@@ -28,6 +29,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
+      // Check if user is a Business user (owner or team member)
+      const [businessOwner, businessTeam] = await Promise.all([
+        supabase.from('business_users').select('id').eq('id', userId).maybeSingle(),
+        supabase.from('business_team_members').select('id').eq('user_id', userId).maybeSingle(),
+      ]);
+
+      if (businessOwner.data || businessTeam.data) {
+        if (isMountedRef.current) setIsBusinessUser(true);
+        localStorage.setItem('closeos_product', 'business');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -164,6 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     setUser(null);
     setProfile(null);
+    setIsBusinessUser(false);
     await supabase.auth.signOut();
   }, []);
 
@@ -234,6 +248,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isPaying,
       subscriptionStatus,
       loading,
+      isBusinessUser,
       login,
       register,
       loginWithGoogle,

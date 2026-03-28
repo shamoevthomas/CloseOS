@@ -434,9 +434,9 @@ export function BusinessTeam() {
   return (
     <div className="max-w-5xl mx-auto space-y-10">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="font-business-display text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
+          <h2 className="font-business-display text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
             {members.length + 1} membre{members.length > 0 ? 's' : ''}
           </h2>
           <p className="text-sm text-stone-400 dark:text-neutral-500 mt-1">Gérez votre équipe et consultez les fiches détaillées</p>
@@ -532,7 +532,7 @@ export function BusinessTeam() {
                       <button
                         key={member.id}
                         onClick={() => setSelectedMemberId(member.id)}
-                        className="w-full rounded-xl bg-white/90 dark:bg-neutral-800/90 p-5 text-left hover:bg-white dark:hover:bg-neutral-700 hover:shadow-[0_20px_40px_rgba(27,28,27,0.06)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] transition-all duration-300"
+                        className="w-full rounded-xl bg-white/90 dark:bg-neutral-800/90 p-3 md:p-5 text-left hover:bg-white dark:hover:bg-neutral-700 hover:shadow-[0_20px_40px_rgba(27,28,27,0.06)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] transition-all duration-300"
                       >
                         <div className="flex items-start gap-4">
                           <div className="relative">
@@ -969,9 +969,9 @@ function IndividualView({
       )}
 
       {/* ─── Main Body Grid ─── */}
-      <div className="grid grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* ─── Left Column (Settings) ─── */}
-        <div className="col-span-12 lg:col-span-4 space-y-8">
+        <div className="lg:col-span-4 space-y-8">
           {/* Role Management */}
           {isOwnerView && (
             <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
@@ -1374,7 +1374,7 @@ function IndividualView({
         </div>
 
         {/* ─── Right Column (Data) ─── */}
-        <div className="col-span-12 lg:col-span-8 space-y-8">
+        <div className="lg:col-span-8 space-y-8">
           {/* Pipeline */}
           {isOwnerView && (
             <div className={cn(WHITE_CARD, 'p-8')}>

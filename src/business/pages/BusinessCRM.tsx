@@ -19,13 +19,16 @@ import {
   Filter,
   Calendar,
   Tag,
+  Download,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { ExportProspectsModal } from '../components/ExportProspectsModal'
 import { BusinessCRMIntegrationModal } from '../components/BusinessCRMIntegrationModal'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { supabase } from '../../lib/supabase'
+import { useCustomStages } from '../hooks/useCustomStages'
 import toast from 'react-hot-toast'
 
 interface BusinessTag {
@@ -76,6 +79,7 @@ export function BusinessCRM() {
     nextSyncSeconds,
   } = useBusinessProspects()
   const { businessSettings, user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
+  const { customStages } = useCustomStages()
   const isReadOnly = false
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
@@ -90,6 +94,7 @@ export function BusinessCRM() {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
   const [isIntegrationModalOpen, setIsIntegrationModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false)
 
   // Tags state
   const [tags, setTags] = useState<BusinessTag[]>([])
@@ -415,7 +420,7 @@ export function BusinessCRM() {
   return (
     <div className="h-full flex flex-col">
       {/* CRM Integration Banner */}
-      <div className="mb-4 flex items-center justify-between rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] px-6 py-5">
+      <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] px-4 md:px-6 py-4 md:py-5">
         <div className="flex items-center gap-3">
           <div className={`h-8 w-8 rounded-lg flex items-center justify-center overflow-hidden ${
             crmProvider === 'hubspot' ? 'bg-orange-500' :
@@ -446,7 +451,7 @@ export function BusinessCRM() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {!isReadOnly && crmProvider === 'hubspot' && hubspotConnected && (
             <button
               onClick={() => syncHubspot()}
@@ -530,6 +535,14 @@ export function BusinessCRM() {
             <span className="hidden sm:inline">Tags</span>
           </button>
         )}
+
+        <button
+          onClick={() => setIsExportModalOpen(true)}
+          className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
+        >
+          <Download className="h-4 w-4" />
+          <span className="hidden sm:inline">Exporter</span>
+        </button>
 
         {!isReadOnly && (
           <button
@@ -642,6 +655,21 @@ export function BusinessCRM() {
                     {s.name} <span className="opacity-60">({filterCounts.byStage[s.id] || 0})</span>
                   </button>
                 ))}
+                {customStages.map(cs => (
+                  <button
+                    key={`custom_${cs.id}`}
+                    onClick={() => toggleMultiSelect(selectedStages, setSelectedStages, `custom_${cs.id}`)}
+                    className={cn(
+                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
+                      selectedStages.includes(`custom_${cs.id}`)
+                        ? 'bg-stone-900 text-white'
+                        : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
+                    )}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cs.color }} />
+                    {cs.name} <span className="opacity-60">({filterCounts.byStage[`custom_${cs.id}`] || 0})</span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -697,7 +725,7 @@ export function BusinessCRM() {
       )}
 
       {/* Stats */}
-      <div className="mb-3 flex items-center gap-4 text-xs text-stone-500 dark:text-neutral-400">
+      <div className="mb-3 flex flex-wrap items-center gap-2 md:gap-4 text-xs text-stone-500 dark:text-neutral-400">
         <span className="font-medium text-stone-700 dark:text-neutral-200">{filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}</span>
         {ALL_STAGES.map(s => {
           const count = filteredProspects.filter(p => p.stage === s.id).length
@@ -716,14 +744,14 @@ export function BusinessCRM() {
         <table className="w-full min-w-[800px]">
           <thead className="sticky top-0 z-10 bg-stone-50/50 dark:bg-neutral-800/50 border-b border-stone-100 dark:border-neutral-700">
             <tr>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Contact</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Entreprise</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Email</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Téléphone</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Étape</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Tags</th>
-              <th className="text-right text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Valeur</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Date</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Contact</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Entreprise</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Email</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Téléphone</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Étape</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Tags</th>
+              <th className="text-right text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Valeur</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Date</th>
               {!isReadOnly && (
                 <th className="text-right text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Actions</th>
               )}
@@ -745,19 +773,19 @@ export function BusinessCRM() {
                     onClick={() => setSelectedProspect(deal)}
                     className="cursor-pointer hover:bg-stone-50/30 dark:hover:bg-neutral-800/30 transition-colors"
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-3 md:px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className="h-8 w-8 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
                           <User className="h-4 w-4 text-stone-500" />
                         </div>
-                        <span className="text-sm font-semibold text-stone-900 dark:text-white">{getDisplayName(deal)}</span>
+                        <span className="text-sm font-semibold text-stone-900 dark:text-white truncate max-w-[120px] md:max-w-[180px]">{getDisplayName(deal)}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 md:px-4 py-3">
                       {deal.company ? (
                         <div className="flex items-center gap-1.5">
                           <Building2 className="h-3.5 w-3.5 text-stone-400 flex-shrink-0" />
-                          <span className="text-sm text-stone-600 dark:text-neutral-300">{deal.company}</span>
+                          <span className="text-sm text-stone-600 dark:text-neutral-300 truncate max-w-[120px]">{deal.company}</span>
                         </div>
                       ) : (
                         <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
@@ -861,6 +889,18 @@ export function BusinessCRM() {
           }}
         />
       )}
+
+      {/* Export Modal */}
+      <ExportProspectsModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        prospects={prospects}
+        allTeamMembers={allTeamMembers}
+        formulas={formulas}
+        tags={tags}
+        prospectTags={prospectTags}
+        customStages={customStages}
+      />
 
       {/* Add Prospect Modal */}
       {isAddModalOpen && (

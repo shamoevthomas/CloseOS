@@ -1144,7 +1144,7 @@ export function BusinessAppointments() {
   <tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;">
       <tr><td style="padding-bottom:32px;text-align:left;padding-left:16px;">
-        <div style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:22px;color:#111111;letter-spacing:-0.04em;">Close<span style="background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8;">OS</span></div>
+        <img src="https://closeos.fr/closeos-business-logo-ecrit.png" alt="CloseOS Business" width="140" style="display:block;">
       </td></tr>
       <tr><td style="background-color:#ffffff;border-radius:36px;padding:48px 36px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
         <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 12px;font-size:32px;color:#111111;text-align:left;line-height:1.1;letter-spacing:-0.04em;">Rappel de<br>rendez-vous</h1>
@@ -1282,7 +1282,7 @@ export function BusinessAppointments() {
         <p style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;opacity:0.5;font-size:11px;margin:0;"><strong style="opacity:0.8;">Objet :</strong> ${subject}</p>
       </td></tr>
       <tr><td style="padding-bottom:24px;text-align:left;padding-left:16px;">
-        <div style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:22px;color:#111111;letter-spacing:-0.04em;">Close<span style="background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8;">OS</span></div>
+        <img src="https://closeos.fr/closeos-business-logo-ecrit.png" alt="CloseOS Business" width="140" style="display:block;">
       </td></tr>
       <tr><td style="background-color:#ffffff;border-radius:36px;padding:40px 32px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
         <div style="font-family:'Inter',Helvetica,sans-serif;font-size:14px;color:#1b1c1b;line-height:1.6;">${html}</div>

@@ -28,9 +28,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- SEO PRIMARY -->
-  <title>CloseOS — Écosystème SaaS pour la vente digitale | CRM Closer & Management Infopreneur</title>
+  <title>CloseOS — L'écosystème SaaS pour la vente digitale</title>
   <meta name="description"
-    content="CloseOS est l'écosystème SaaS francophone pour la vente digitale. Outil pour closer : CRM, pipeline, VoIP, KPIs, facturation automatique. Logiciel infopreneur : gestion équipe de closers, campagnes d'acquisition, analytics. Alternative iClosed.">
+    content="CRM pour closers et plateforme de management pour infopreneurs. Pipeline, callroom, KPIs, facturation auto. Essai gratuit 20 jours.">
   <meta name="author" content="CloseOS">
   <link rel="canonical" href="https://www.closeos.fr/" id="canonical" />
 
@@ -40,7 +40,10 @@
   <meta property="og:title" content="CloseOS — Écosystème SaaS pour la vente digitale francophone" id="og-title">
   <meta property="og:description"
     content="Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed." id="og-description">
-  <meta property="og:image" content="https://www.closeos.fr/closeos-logo.png" id="og-image">
+  <meta property="og:image" content="https://www.closeos.fr/og-eco.png" id="og-image">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/png">
   <meta property="og:locale" content="fr_FR">
   <meta property="og:site_name" content="CloseOS">
 
@@ -50,27 +53,43 @@
   <meta property="twitter:title" content="CloseOS — Écosystème SaaS pour la vente digitale francophone" id="tw-title">
   <meta property="twitter:description"
     content="Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed." id="tw-description">
-  <meta property="twitter:image" content="https://www.closeos.fr/closeos-logo.png" id="tw-image">
+  <meta property="twitter:image" content="https://www.closeos.fr/og-eco.png" id="tw-image">
 
   <!-- STRUCTURED DATA -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "CloseOS",
-    "url": "https://www.closeos.fr",
-    "logo": "https://www.closeos.fr/closeos-logo.png",
-    "description": "Écosystème SaaS français pour la vente digitale. Outils pour closers indépendants et infopreneurs francophones.",
-    "email": "support@closeos.fr"
-  }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "CloseOS",
-    "url": "https://www.closeos.fr",
-    "inLanguage": "fr"
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.closeos.fr/#organization",
+        "name": "CloseOS",
+        "url": "https://www.closeos.fr",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.closeos.fr/closeos-logo.png",
+          "width": 512,
+          "height": 512
+        },
+        "description": "Écosystème SaaS français pour la vente digitale.",
+        "email": "support@closeos.fr",
+        "sameAs": ["https://www.linkedin.com/in/thomas-shamoev-570885237/"],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "support@closeos.fr",
+          "contactType": "customer service",
+          "availableLanguage": ["French", "English"]
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.closeos.fr/#website",
+        "name": "CloseOS",
+        "url": "https://www.closeos.fr",
+        "inLanguage": ["fr", "en"],
+        "publisher": { "@id": "https://www.closeos.fr/#organization" }
+      }
+    ]
   }
   </script>
 
@@ -84,13 +103,29 @@
   </script>
   <script src="https://cdn.firstpromoter.com/fpr.js" async onload="window.fprScriptLoaded = true;"></script>
 
-  <!-- Promotekit - Script d'affiliation -->
-  <script async src="https://cdn.promotekit.com/promotekit.js"
-    data-promotekit="da9294d4-89d4-41a6-9838-7ba2ae155ba6"></script>
+  <!-- Promotekit - Script d'affiliation (deferred 5s after load) -->
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.promotekit.com/promotekit.js';
+        s.setAttribute('data-promotekit', 'da9294d4-89d4-41a6-9838-7ba2ae155ba6');
+        document.head.appendChild(s);
+      }, 5000);
+    });
+  </script>
 </head>
 
 <body>
   <div id="root"></div>
+  <noscript>
+    <div style="text-align:center;padding:4rem 2rem;font-family:system-ui,sans-serif">
+      <h1>CloseOS</h1>
+      <p>CloseOS est l'écosystème SaaS pour la vente digitale : CRM pour closers et plateforme de management pour infopreneurs.</p>
+      <p>JavaScript est requis pour utiliser cette application.</p>
+      <p>Contact : <a href="mailto:support@closeos.fr">support@closeos.fr</a></p>
+    </div>
+  </noscript>
   <script type="module" src="/src/main.tsx"></script>
   <!-- Custom Tracking Script (deferred to avoid blocking render) -->
   <script>

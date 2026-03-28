@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { toZonedTime } from 'date-fns-tz';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -20,9 +21,7 @@ function wrapEmailHtml(bodyContent: string): string {
   <tr><td align="center">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
       <tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;">
-        <div style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;color:#111111;letter-spacing:-0.04em;">
-          Close<span style="background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#a03cf8;">OS</span>
-        </div>
+        <img src="https://closeos.fr/closeos-business-logo-ecrit.png" alt="CloseOS Business" width="160" style="display:block;">
       </td></tr>
       <tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
         ${bodyContent}
@@ -68,7 +67,7 @@ const PERIOD_LABELS: Record<string, string> = {
 };
 
 function isCycleEndToday(period: string): boolean {
-  const now = new Date();
+  const now = toZonedTime(new Date(), 'Europe/Paris');
   const day = now.getDay(); // 0=Sunday
   const date = now.getDate();
   const month = now.getMonth();

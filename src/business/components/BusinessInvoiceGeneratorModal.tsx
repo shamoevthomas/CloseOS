@@ -715,7 +715,7 @@ export function BusinessInvoiceGeneratorModal({
       <div
         className={cn(
           "relative bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700 w-full",
-          step === 2 ? 'max-h-[90vh] overflow-hidden w-fit' : 'max-w-4xl max-h-[90vh] overflow-y-auto'
+          step === 2 ? 'max-h-[90vh] overflow-hidden w-full max-w-4xl' : 'max-w-4xl max-h-[90vh] overflow-y-auto'
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -729,7 +729,7 @@ export function BusinessInvoiceGeneratorModal({
 
         {/* ==================== STEP 1: CONFIGURATION ==================== */}
         {step === 1 && (
-          <div className="p-8">
+          <div className="p-4 md:p-8">
             <h2 className="mb-6 text-2xl font-bold text-[#1b1c1b] dark:text-white">
               Configuration de la Facture
             </h2>
@@ -970,9 +970,9 @@ export function BusinessInvoiceGeneratorModal({
             </div>
 
             {/* Split: Edit Left | Preview Right */}
-            <div className="flex flex-1 min-h-0">
+            <div className="flex flex-col md:flex-row flex-1 min-h-0">
               {/* ─── LEFT: EDIT PANEL ─── */}
-              <div className="w-[340px] shrink-0 border-r border-[#c4c7c7]/10 dark:border-neutral-800 overflow-y-auto p-4 space-y-4">
+              <div className="w-full md:w-[340px] shrink-0 md:border-r border-b md:border-b-0 border-[#c4c7c7]/10 dark:border-neutral-800 overflow-y-auto p-4 space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-500 flex items-center gap-2">
                   <Pencil className="h-3.5 w-3.5" />
                   Modifier la facture
@@ -1255,7 +1255,7 @@ export function BusinessInvoiceGeneratorModal({
               </div>
 
               {/* ─── RIGHT: LIVE PREVIEW ─── */}
-              <div className="overflow-y-auto bg-white dark:bg-neutral-950">
+              <div className="overflow-y-auto overflow-x-auto bg-white dark:bg-neutral-950 flex-1 min-w-0">
                   <div
                     id="invoice-preview-content"
                     ref={invoiceRef}

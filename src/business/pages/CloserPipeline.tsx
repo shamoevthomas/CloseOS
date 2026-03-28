@@ -196,18 +196,18 @@ export function CloserPipeline() {
             {/* FLUX ACTIF */}
             <section>
               <div className="flex items-baseline space-x-3 mb-8">
-                <h2 className="font-business-display text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">Flux Actif</h2>
+                <h2 className="font-business-display text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">Flux Actif</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
                 <span className={LABEL_STYLE}>Opérations Prioritaires</span>
               </div>
 
-              <div className="grid grid-cols-4 gap-6">
+              <div className="flex overflow-x-auto gap-6 pb-2">
                 {ACTIVE_STAGES.map((stage) => {
                   const stageDeals = getDealsForStage(stage.id)
                   const stageTotal = getTotalForStage(stage.id)
 
                   return (
-                    <div key={stage.id} className="space-y-4">
+                    <div key={stage.id} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 space-y-4">
                       {/* Column header */}
                       <div className="flex justify-between items-center px-2">
                         <div className="flex items-center space-x-2">
@@ -227,7 +227,7 @@ export function CloserPipeline() {
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                             className={cn(
-                              'space-y-3 min-h-[400px] rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
+                              'space-y-3 min-h-[200px] max-h-[295px] overflow-y-auto custom-scrollbar rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
                               snapshot.isDraggingOver && 'bg-stone-100/30 dark:bg-neutral-800/30'
                             )}
                           >
@@ -310,13 +310,13 @@ export function CloserPipeline() {
                 <span className={LABEL_STYLE}>Archives & Rejets</span>
               </div>
 
-              <div className="grid grid-cols-4 gap-6">
+              <div className="flex overflow-x-auto gap-6 pb-2">
                 {INACTIVE_STAGES.map((stage) => {
                   const stageDeals = getDealsForStage(stage.id)
                   const isCollapsed = collapsedColumns.has(stage.id)
 
                   return (
-                    <div key={stage.id} className="space-y-4">
+                    <div key={stage.id} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 space-y-4">
                       <div
                         className="flex items-center space-x-2 px-2 cursor-pointer"
                         onClick={() => toggleColumn(stage.id)}
@@ -340,7 +340,7 @@ export function CloserPipeline() {
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               className={cn(
-                                'space-y-2 min-h-[100px] rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
+                                'space-y-2 min-h-[100px] max-h-[295px] overflow-y-auto custom-scrollbar rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
                                 snapshot.isDraggingOver && 'bg-stone-100/30 dark:bg-neutral-800/30'
                               )}
                             >
@@ -359,7 +359,7 @@ export function CloserPipeline() {
                                         )}
                                         style={provided.draggableProps.style}
                                       >
-                                        <p className="text-sm text-stone-600 dark:text-neutral-300 font-medium">{getDisplayName(deal)}</p>
+                                        <p className="text-sm text-stone-600 dark:text-neutral-300 font-medium truncate">{getDisplayName(deal)}</p>
                                         {deal.value ? (
                                           <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{deal.value.toLocaleString()} €</p>
                                         ) : null}
@@ -389,14 +389,14 @@ export function CloserPipeline() {
                   <span className={LABEL_STYLE}>Créés par votre équipe</span>
                 </div>
 
-                <div className="grid grid-cols-4 gap-6">
+                <div className="flex overflow-x-auto gap-6 pb-2">
                   {customStages.map((cs) => {
                     const stageId = `custom_${cs.id}`
                     const stageDeals = filteredProspects.filter(d => d.stage === stageId)
                     const stageTotal = stageDeals.reduce((sum, d) => sum + (d.value || 0), 0)
 
                     return (
-                      <div key={stageId} className="space-y-4">
+                      <div key={stageId} className="min-w-[260px] sm:min-w-[280px] shrink-0 flex-1 space-y-4">
                         <div className="flex justify-between items-center px-2">
                           <div className="flex items-center space-x-2">
                             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cs.color }} />
@@ -414,7 +414,7 @@ export function CloserPipeline() {
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               className={cn(
-                                'space-y-3 min-h-[200px] rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
+                                'space-y-3 min-h-[200px] max-h-[295px] overflow-y-auto custom-scrollbar rounded-lg border-2 border-dashed border-stone-200/30 dark:border-neutral-700/30 p-1 transition-colors',
                                 snapshot.isDraggingOver && 'bg-stone-100/30 dark:bg-neutral-800/30'
                               )}
                               style={{ borderTop: `3px solid ${cs.color}` }}

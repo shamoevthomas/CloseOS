@@ -137,13 +137,9 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
 
       <div className="w-full max-w-md mx-4 bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-10">
         {/* Brand */}
-        <div className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="w-8 h-8 bg-stone-900 dark:bg-white rounded-lg flex items-center justify-center">
-            <span className="text-white dark:text-black text-xs font-extrabold">C</span>
-          </div>
-          <span className="font-extrabold text-stone-900 dark:text-white text-lg tracking-tight">
-            CloseOS Business
-          </span>
+        <div className="flex items-center justify-center mb-8">
+          <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-10 w-auto dark:hidden" />
+          <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-10 w-auto hidden dark:block" />
         </div>
 
         {/* Icon */}

@@ -1423,9 +1423,8 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-stone-200/60 dark:border-neutral-700 shadow-lg overflow-hidden h-full">
                         {/* Mini header */}
                         <div className="px-3 py-3 border-b border-stone-100 dark:border-neutral-800 flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-md bg-stone-900 flex items-center justify-center">
-                            <span className="text-[8px] font-black text-white">C</span>
-                          </div>
+                          <img src="/closeos-business-logo.png" alt="CloseOS Business" className="h-5 w-5 object-contain dark:hidden" />
+                          <img src="/closeos-business-logo-dark.png" alt="CloseOS Business" className="h-5 w-5 object-contain hidden dark:block" />
                           <div>
                             <p className="text-[8px] font-black text-stone-900 dark:text-white leading-none">CloseOS</p>
                             <p className="text-[6px] text-stone-400 uppercase tracking-wider">Business</p>

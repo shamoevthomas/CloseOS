@@ -67,6 +67,15 @@ function genId() {
 
 const DEFAULT_ROLES = ['Général', 'Closer', 'Setter', 'Setter-Closer', 'Head of Sales', 'Admin']
 
+const ONBOARDING_NOTION_URLS: Record<string, string> = {
+  'owner': 'https://www.notion.so/Guide-d-onboarding-CloseOS-Business-Owner-Admin-32faef2e488f8111b6bbc202c0ffb0c8',
+  'Admin': 'https://www.notion.so/Guide-d-onboarding-CloseOS-Business-Owner-Admin-32faef2e488f8111b6bbc202c0ffb0c8',
+  'Head of Sales': 'https://www.notion.so/Guide-d-onboarding-CloseOS-Business-HOS-330aef2e488f80b99e45fbc867a5c418',
+  'Closer': 'https://www.notion.so/Guide-d-onboarding-CloseOS-Business-Closer-330aef2e488f80139641d9b1e36c9c81',
+  'Setter': 'https://www.notion.so/Guide-d-onboarding-CloseOS-Business-Setter-330aef2e488f80faac0ee4549b1bcc6d',
+  'Setter-Closer': 'https://www.notion.so/Guide-d-onboarding-CloseOS-Business-Setter-Closer-330aef2e488f80db8147c828fcf27edf',
+}
+
 const blockColors: Record<string, { border: string; bg: string; text: string }> = {
   text: { border: 'border-l-[#006c49]', bg: 'bg-[#006c49]/10', text: 'text-[#006c49]' },
   video: { border: 'border-l-[#ffb95f]', bg: 'bg-[#ffddb8]/30', text: 'text-[#b87500]' },
@@ -161,7 +170,7 @@ function SectionEditor({
 
       {sections.map(section => (
         <div key={section.id} className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
-          <div className="flex items-center gap-2 px-5 py-4 bg-[#f5f3f2]/60 dark:bg-neutral-800/60">
+          <div className="flex items-center gap-2 px-3 md:px-5 py-4 bg-[#f5f3f2]/60 dark:bg-neutral-800/60 min-h-[44px]">
             <GripVertical className="h-4 w-4 text-[#c4c7c7] shrink-0" />
             <input
               type="text"
@@ -414,17 +423,17 @@ function TeamMemberOrganizationView() {
     <div className="max-w-5xl mx-auto pb-12">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">Organisation</h1>
+        <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">Organisation</h1>
         <p className="text-[#444748] dark:text-neutral-400 mt-3 leading-relaxed max-w-xl">Informations et parcours d'intégration de votre organisation.</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-10 mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800">
+      <div className="flex gap-6 md:gap-10 mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800 overflow-x-auto whitespace-nowrap">
         {allTabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`pb-4 font-['Manrope'] font-extrabold text-sm tracking-tight transition-colors ${
+            className={`pb-4 font-['Manrope'] font-extrabold text-sm tracking-tight transition-colors shrink-0 ${
               activeTab === tab.key
                 ? 'border-b-2 border-[#000000] text-[#000000]'
                 : 'text-[#444748] hover:text-[#1b1c1b]'
@@ -526,6 +535,28 @@ function TeamMemberOrganizationView() {
       {/* Onboarding tab (read-only) */}
       {activeTab === 'onboarding' && (
         <div className="space-y-8 animate-in fade-in duration-300">
+          {/* Notion onboarding guide */}
+          {ONBOARDING_NOTION_URLS[memberRole] && (
+            <a
+              href={ONBOARDING_NOTION_URLS[memberRole]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-[#000000] hover:bg-[#1b1c1b] rounded-2xl p-8 transition-all active:scale-[0.99] group"
+              style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.15)' }}
+            >
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                  <Rocket className="h-7 w-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-['Manrope'] font-extrabold text-2xl text-white leading-tight">📖 Guide d'onboarding — {memberRole}</h3>
+                  <p className="text-white/60 text-sm mt-1 font-medium">Lecture obligatoire avant de commencer. Cliquez pour ouvrir le guide complet.</p>
+                </div>
+                <ExternalLink className="h-6 w-6 text-white/40 group-hover:text-white transition-colors shrink-0" />
+              </div>
+            </a>
+          )}
+
           {/* General onboarding */}
           <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
             <div className="flex items-center gap-4">
@@ -805,7 +836,7 @@ export function BusinessOrganization() {
       {/* ─── Cropper overlay ─── */}
       {!isHoS && imageSrc && (
         <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-[#444748]/20 bg-[#1b1c1b] mb-6">
+          <div className="w-full max-w-full md:max-w-lg h-[300px] md:h-[400px] relative rounded-xl overflow-hidden border border-[#444748]/20 bg-[#1b1c1b] mb-6">
             <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
           </div>
           <div className="w-full max-w-lg space-y-6">
@@ -836,9 +867,9 @@ export function BusinessOrganization() {
       )}
 
       {/* ─── Page Header ─── */}
-      <div className="flex items-end justify-between mb-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">Organisation</h1>
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">Organisation</h1>
           <p className="text-[#444748] dark:text-neutral-400 mt-3 leading-relaxed max-w-xl">Personnalisez votre identité de marque et définissez les parcours d'intégration de votre équipe.</p>
         </div>
         <button
@@ -1018,9 +1049,9 @@ export function BusinessOrganization() {
       {/* ═══════════════════ ORGANISATION TAB (Owner edit) ═══════════════════ */}
       {!isHoS && activeTab === 'organisation' && (
         <div className="animate-in fade-in duration-300">
-          <div className="grid grid-cols-12 gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
             {/* Branding Card */}
-            <div className="col-span-12 lg:col-span-4">
+            <div className="lg:col-span-4">
               <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 h-full" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
                 <h2 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white mb-8">Brand Identity</h2>
 
@@ -1047,10 +1078,10 @@ export function BusinessOrganization() {
             </div>
 
             {/* Form Card */}
-            <div className="col-span-12 lg:col-span-8">
+            <div className="lg:col-span-8">
               <div className="bg-white dark:bg-neutral-800 rounded-xl p-8" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-                <div className="grid grid-cols-2 gap-x-8 gap-y-8">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-8">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className={stoneLabelClass}>Nom de l'entreprise</label>
                     <input
                       type="text"
@@ -1060,7 +1091,7 @@ export function BusinessOrganization() {
                       placeholder="Votre entreprise"
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className={stoneLabelClass}>Description</label>
                     <textarea
                       value={formData.description}
@@ -1090,8 +1121,8 @@ export function BusinessOrganization() {
             </div>
 
             {/* Facturation */}
-            <div className="col-span-12">
-              <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
+            <div className="lg:col-span-12">
+              <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 md:p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-lg bg-[#ffddb8]/30 flex items-center justify-center text-[#b87500]">
                     <Receipt className="h-5 w-5" />
@@ -1102,8 +1133,8 @@ export function BusinessOrganization() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-8 gap-y-8">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-8">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className={stoneLabelClass}>Raison sociale</label>
                     <input type="text" value={formData.raison_sociale} onChange={(e) => setFormData({ ...formData, raison_sociale: e.target.value })} className={stoneInputClass} placeholder="Raison sociale de votre entreprise" />
                   </div>
@@ -1119,8 +1150,8 @@ export function BusinessOrganization() {
 
                 <div className="h-px bg-[#c4c7c7]/10 my-2" />
 
-                <div className="grid grid-cols-2 gap-x-8 gap-y-8">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-8">
+                  <div className="col-span-1 sm:col-span-2">
                     <label className={stoneLabelClass}>Adresse de facturation</label>
                     <input type="text" value={formData.billing_address} onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })} className={stoneInputClass} placeholder="123 rue de la Facturation" />
                   </div>
@@ -1146,6 +1177,32 @@ export function BusinessOrganization() {
       {/* ═══════════════════ ONBOARDING TAB ═══════════════════ */}
       {activeTab === 'onboarding' && (
         <div className="animate-in fade-in duration-300">
+          {/* Notion onboarding guide for current user */}
+          {(() => {
+            const notionUrl = isHoS ? ONBOARDING_NOTION_URLS[teamMember?.role || ''] : ONBOARDING_NOTION_URLS['owner']
+            const roleLabel = isHoS ? teamMember?.role : 'Owner / Admin'
+            return notionUrl ? (
+              <a
+                href={notionUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block bg-[#000000] hover:bg-[#1b1c1b] rounded-2xl p-8 mb-10 transition-all active:scale-[0.99] group"
+                style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.15)' }}
+              >
+                <div className="flex items-center gap-5">
+                  <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                    <Rocket className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-['Manrope'] font-extrabold text-2xl text-white leading-tight">📖 Guide d'onboarding — {roleLabel}</h3>
+                    <p className="text-white/60 text-sm mt-1 font-medium">Lecture obligatoire avant de commencer. Cliquez pour ouvrir le guide complet.</p>
+                  </div>
+                  <ExternalLink className="h-6 w-6 text-white/40 group-hover:text-white transition-colors shrink-0" />
+                </div>
+              </a>
+            ) : null
+          })()}
+
           <div className="flex flex-col lg:flex-row gap-10">
             {/* Role Selector */}
             <div className="w-full lg:w-1/3 space-y-4">

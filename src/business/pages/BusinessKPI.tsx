@@ -32,6 +32,7 @@ import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { supabase } from '../../lib/supabase'
 import { useEffect } from 'react'
+import { getProspectCA } from '../lib/getProspectCA'
 
 // ============================================================================
 // HELPERS
@@ -116,7 +117,7 @@ function KpiCard({
 // COMPUTE KPIs FROM PROSPECTS
 // ============================================================================
 
-function computeKpis(prospects: any[]) {
+function computeKpis(prospects: any[], formulaBillingTypes: Record<string, string>) {
   const won = prospects.filter(p => p.stage === 'won')
   const lost = prospects.filter(p => p.stage === 'lost')
   const noshow = prospects.filter(p => p.stage === 'noshow')
@@ -125,7 +126,7 @@ function computeKpis(prospects: any[]) {
   const noshowFromFollowup = noshow.filter(p => p.previous_stage === 'followup')
   const totalDecided = won.length + lost.length + noshowFromFollowup.length
 
-  const caGenere = won.reduce((sum, p) => sum + (p.value || 0), 0)
+  const caGenere = won.reduce((sum, p) => sum + getProspectCA(p, formulaBillingTypes), 0)
   const ventesTotales = won.length
   const tauxConversion = totalDecided > 0 ? (won.length / totalDecided) * 100 : 0
   const prospectsActifs = active.length
@@ -206,8 +207,9 @@ export function BusinessKPI() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [teams, setTeams] = useState<BusinessTeam[]>([])
   const [globalMemberId, setGlobalMemberId] = useState<string | null>(null)
+  const [formulaBillingTypes, setFormulaBillingTypes] = useState<Record<string, string>>({})
 
-  // Fetch team members + teams
+  // Fetch team members + teams + formula billing types
   useEffect(() => {
     if (!effectiveUserId) return
     supabase
@@ -220,12 +222,24 @@ export function BusinessKPI() {
           full_name: `${m.first_name} ${m.last_name}`.trim(),
         })))
       })
+      .catch(err => console.error('[BusinessKPI] Error loading team members:', err))
     supabase
       .from('business_teams')
       .select('id, name')
       .eq('business_owner_id', effectiveUserId)
       .order('position')
       .then(({ data }) => setTeams(data || []))
+      .catch(err => console.error('[BusinessKPI] Error loading teams:', err))
+    supabase
+      .from('business_formulas')
+      .select('id, billing_type')
+      .eq('user_id', effectiveUserId)
+      .then(({ data }) => {
+        const map: Record<string, string> = {}
+        ;(data || []).forEach(f => { map[f.id] = f.billing_type || 'one_time' })
+        setFormulaBillingTypes(map)
+      })
+      .catch(err => console.error('[BusinessKPI] Error loading formula billing types:', err))
   }, [effectiveUserId])
 
   const TABS = useMemo(() => {
@@ -241,7 +255,7 @@ export function BusinessKPI() {
   }, [prospects, globalMemberId])
 
   // ---- GLOBAL KPIs ----
-  const globalKpis = useMemo(() => computeKpis(filteredProspects), [filteredProspects])
+  const globalKpis = useMemo(() => computeKpis(filteredProspects, formulaBillingTypes), [filteredProspects, formulaBillingTypes])
 
   // ---- LOSS REASON DATA (for pie chart) ----
   const lossReasonData = useMemo(() => computeLossReasonData(filteredProspects), [filteredProspects])
@@ -269,7 +283,7 @@ export function BusinessKPI() {
         months[key].total++
         if (p.stage === 'won') {
           months[key].won++
-          months[key].ca += p.value || 0
+          months[key].ca += getProspectCA(p, formulaBillingTypes)
         }
       }
     })
@@ -291,7 +305,7 @@ export function BusinessKPI() {
     })
   }, [filteredProspects, currentDate])
 
-  const periodKpis = useMemo(() => computeKpis(periodProspects), [periodProspects])
+  const periodKpis = useMemo(() => computeKpis(periodProspects, formulaBillingTypes), [periodProspects, formulaBillingTypes])
 
   // Previous month for comparison
   const prevPeriodKpis = useMemo(() => {
@@ -303,8 +317,8 @@ export function BusinessKPI() {
       const d = new Date(p.created_at)
       return d.getFullYear() === year && d.getMonth() === month
     })
-    return computeKpis(prev)
-  }, [filteredProspects, currentDate])
+    return computeKpis(prev, formulaBillingTypes)
+  }, [filteredProspects, currentDate, formulaBillingTypes])
 
   function compareBadge(current: number, previous: number) {
     if (previous === 0) return null
@@ -706,7 +720,7 @@ export function BusinessKPI() {
                     const memberWon = memberProspects.filter(p => p.stage === 'won')
                     const memberLost = memberProspects.filter(p => p.stage === 'lost')
                     const memberNoshow = memberProspects.filter(p => p.stage === 'noshow')
-                    const memberCA = memberWon.reduce((s, p) => s + (p.value || 0), 0)
+                    const memberCA = memberWon.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
                     const memberDecided = memberWon.length + memberLost.length + memberNoshow.length
                     const memberConv = memberDecided > 0 ? (memberWon.length / memberDecided) * 100 : 0
 
@@ -752,7 +766,7 @@ export function BusinessKPI() {
         const mLost = memberProspects.filter(p => p.stage === 'lost')
         const mNoshow = memberProspects.filter(p => p.stage === 'noshow')
         const mActive = memberProspects.filter(p => ['prospect', 'qualified', 'followup'].includes(p.stage))
-        const mRevenue = mWon.reduce((s, p) => s + (p.value || 0), 0)
+        const mRevenue = mWon.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
         const mDecided = mWon.length + mLost.length + mNoshow.length
         const mConversion = mDecided > 0 ? (mWon.length / mDecided) * 100 : 0
         const mNoShowRate = mDecided > 0 ? (mNoshow.length / mDecided) * 100 : 0
@@ -770,7 +784,7 @@ export function BusinessKPI() {
             monthMap[key].total++
             if (p.stage === 'won') {
               monthMap[key].won++
-              monthMap[key].commission += Math.round((p.value || 0) * 0.10)
+              monthMap[key].commission += Math.round(getProspectCA(p, formulaBillingTypes) * 0.10)
             }
           })
           return Object.entries(monthMap)
@@ -948,7 +962,7 @@ export function BusinessKPI() {
             const teamWon = teamProspects.filter(p => p.stage === 'won')
             const teamLost = teamProspects.filter(p => p.stage === 'lost')
             const teamNoshow = teamProspects.filter(p => p.stage === 'noshow')
-            const teamCA = teamWon.reduce((s, p) => s + (p.value || 0), 0)
+            const teamCA = teamWon.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
             const teamDecided = teamWon.length + teamLost.length + teamNoshow.length
             const teamConv = teamDecided > 0 ? (teamWon.length / teamDecided) * 100 : 0
 
@@ -995,7 +1009,7 @@ export function BusinessKPI() {
                         {teamMembersList.map(member => {
                           const mp = filteredProspects.filter(p => p.assigned_to === member.id)
                           const mw = mp.filter(p => p.stage === 'won')
-                          const mCA = mw.reduce((s, p) => s + (p.value || 0), 0)
+                          const mCA = mw.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
                           return (
                             <tr
                               key={member.id}

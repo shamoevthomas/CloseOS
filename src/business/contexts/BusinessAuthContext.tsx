@@ -23,9 +23,14 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const [isTeamMember, setIsTeamMember] = useState(false);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = useState(false);
+  const [isSalesUser, setIsSalesUser] = useState(false);
+  const [authError, setAuthError] = useState(false);
   const isMountedRef = useRef(true);
   // Guard: tracks the latest initUser call to discard stale results
   const initVersionRef = useRef(0);
+  // Refs to avoid stale closures in visibility/token handlers
+  const businessProfileRef = useRef<any>(null);
+  const teamMemberRef = useRef<any>(null);
 
   const applyUserData = useCallback((version: number, data: {
     teamMember: any;
@@ -41,17 +46,22 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     setOwnerUserId(data.ownerUserId);
     setBusinessProfile(data.businessProfile);
     setBusinessSettings(data.businessSettings);
+    // Keep refs in sync for use in event handlers (avoids stale closures)
+    businessProfileRef.current = data.businessProfile;
+    teamMemberRef.current = data.teamMember;
   }, []);
 
   const initUser = useCallback(async (userId: string) => {
     const version = ++initVersionRef.current;
+    setAuthError(false);
 
     try {
       console.log('[BusinessAuth] initUser called for:', userId);
-      // Fetch business_users AND team_members in parallel
-      const [profileRes, teamRes] = await Promise.all([
+      // Fetch business_users, team_members AND Sales profile in parallel
+      const [profileRes, teamRes, salesRes] = await Promise.all([
         supabase.from('business_users').select('*').eq('id', userId).maybeSingle(),
         supabase.from('business_team_members').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('profiles').select('id').eq('id', userId).maybeSingle(),
       ]);
 
       console.log('[BusinessAuth] profileRes:', profileRes.data, profileRes.error);
@@ -59,8 +69,26 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
       if (!isMountedRef.current || initVersionRef.current !== version) return;
 
+      // Block Sales users: has a profiles row but NO business_users/team_members row
+      const hasBusinessAccount = !!(profileRes.data || teamRes.data);
+      if (salesRes.data && !hasBusinessAccount) {
+        setIsSalesUser(true);
+        if (isMountedRef.current) setLoading(false);
+        return;
+      }
+
       // Team member takes priority
       if (!teamRes.error && teamRes.data) {
+        // Auto-fill Google avatar if missing
+        if (!teamRes.data.avatar_url) {
+          const { data: authData } = await supabase.auth.getUser();
+          const googleAvatar = authData?.user?.user_metadata?.avatar_url || authData?.user?.user_metadata?.picture;
+          if (googleAvatar) {
+            await supabase.from('business_team_members').update({ avatar_url: googleAvatar }).eq('id', teamRes.data.id);
+            teamRes.data.avatar_url = googleAvatar;
+          }
+        }
+
         const { data: ownerSettings } = await supabase
           .from('business_settings')
           .select('*')
@@ -80,23 +108,42 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       // Not a team member — regular owner flow
       let profile = (!profileRes.error && profileRes.data) ? profileRes.data : null;
 
+      // Auto-fill Google avatar for existing owners if missing
+      if (profile && !profile.avatar_url) {
+        const { data: authData } = await supabase.auth.getUser();
+        const googleAvatar = authData?.user?.user_metadata?.avatar_url || authData?.user?.user_metadata?.picture;
+        if (googleAvatar) {
+          await supabase.from('business_users').update({ avatar_url: googleAvatar }).eq('id', profile.id);
+          profile.avatar_url = googleAvatar;
+        }
+      }
+
       // Auto-create business_users row if missing (Google OAuth, race condition, etc.)
       if (!profile) {
+        // Double-check: don't auto-create if user is a Sales user
+        if (salesRes.data) {
+          setIsSalesUser(true);
+          if (isMountedRef.current) setLoading(false);
+          return;
+        }
+
         const { data: authData } = await supabase.auth.getUser();
         if (authData?.user) {
           const fullName = authData.user.user_metadata?.full_name || authData.user.user_metadata?.name || '';
           const email = authData.user.email || '';
+          const googleAvatar = authData.user.user_metadata?.avatar_url || authData.user.user_metadata?.picture || null;
           const { data: inserted } = await supabase
             .from('business_users')
             .upsert({
               id: authData.user.id,
               full_name: fullName,
               email,
+              avatar_url: googleAvatar,
             }, { onConflict: 'id' })
             .select()
             .single();
           // Use inserted row, or create a minimal fallback so UI never shows "Utilisateur"
-          profile = inserted || { id: authData.user.id, full_name: fullName, email };
+          profile = inserted || { id: authData.user.id, full_name: fullName, email, avatar_url: googleAvatar };
         }
       }
 
@@ -115,8 +162,10 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       });
     } catch (err) {
       console.error('Exception in initUser:', err);
-      // Ensure loading ends even on error
-      if (isMountedRef.current) setLoading(false);
+      if (isMountedRef.current) {
+        setAuthError(true);
+        setLoading(false);
+      }
     }
   }, [applyUserData]);
 
@@ -128,6 +177,10 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     setIsTeamMember(false);
     setOwnerUserId(null);
     setNeedsVerification(false);
+    setIsSalesUser(false);
+    setAuthError(false);
+    businessProfileRef.current = null;
+    teamMemberRef.current = null;
   }, []);
 
   const checkDeviceVerified = useCallback(async (userId: string): Promise<boolean> => {
@@ -168,7 +221,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
         if (currentUser) {
           // TOKEN_REFRESHED: session is still valid, only re-init if user data is missing
           if (event === 'TOKEN_REFRESHED') {
-            if (!businessProfile && !teamMember) {
+            if (!businessProfileRef.current && !teamMemberRef.current) {
               await initUser(currentUser.id);
             }
           } else {
@@ -227,7 +280,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       if (!isMountedRef.current) return;
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (currentUser && !businessProfile && !teamMember) {
+      if (currentUser && !businessProfileRef.current && !teamMemberRef.current) {
         await initUser(currentUser.id);
       } else if (!currentUser) {
         clearUserData();
@@ -441,6 +494,8 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       userTimezone,
       needsVerification,
       setNeedsVerification,
+      isSalesUser,
+      authError,
       refreshProfile: async () => {
         if (user) {
           await initUser(user.id);

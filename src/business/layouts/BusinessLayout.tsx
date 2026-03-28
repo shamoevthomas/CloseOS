@@ -52,7 +52,7 @@ const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 export function BusinessLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isTeamMember, teamMember, businessProfile, user, loading, refreshProfile, needsVerification, setNeedsVerification, logout, hasOnboarded } = useBusinessAuth()
+  const { isTeamMember, teamMember, businessProfile, user, loading, refreshProfile, needsVerification, setNeedsVerification, logout, hasOnboarded, isSalesUser, authError } = useBusinessAuth()
   const pageTitles = isTeamMember ? TEAM_PAGE_TITLES : OWNER_PAGE_TITLES
 
   // Handle dynamic routes like /business/appels/:id
@@ -109,13 +109,42 @@ export function BusinessLayout() {
     return null
   }
 
+  // Block Sales users from accessing Business
+  if (!loading && isSalesUser) {
+    navigate('/dashboard', { replace: true })
+    return null
+  }
+
   // Show loading while auth is initializing
-  if (loading || (!businessProfile && !teamMember && user)) {
+  if (loading || (!businessProfile && !teamMember && !isSalesUser && !authError && user)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#f4f2f1]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
           <p className="text-sm text-stone-500 font-medium">Chargement...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state when auth initialization failed
+  if (authError && user && !businessProfile && !teamMember) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#f4f2f1]">
+        <div className="flex flex-col items-center gap-4 text-center px-6">
+          <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+            <X className="h-6 w-6 text-red-500" />
+          </div>
+          <h2 className="text-lg font-bold text-stone-900">Erreur de connexion</h2>
+          <p className="text-sm text-stone-500 max-w-sm">
+            Impossible de charger votre profil. Veuillez vérifier votre connexion internet et réessayer.
+          </p>
+          <button
+            onClick={() => refreshProfile()}
+            className="mt-2 bg-stone-900 text-white px-6 py-2.5 rounded-full font-bold text-sm hover:opacity-90 transition-opacity"
+          >
+            Réessayer
+          </button>
         </div>
       </div>
     )

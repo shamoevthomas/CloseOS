@@ -244,7 +244,22 @@ export function CloserCallRoom() {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#fbf9f8] dark:bg-neutral-900 text-stone-900 dark:text-white flex-col overflow-hidden relative" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <>
+    {/* Mobile block */}
+    <div className="md:hidden flex h-screen w-screen bg-[#fbf9f8] dark:bg-neutral-900 items-center justify-center px-6">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
+          <Monitor className="h-7 w-7 text-stone-400" />
+        </div>
+        <h2 className="text-lg font-extrabold text-stone-900 dark:text-white tracking-tight">Disponible sur ordinateur uniquement</h2>
+        <p className="text-sm text-stone-500 dark:text-neutral-400 max-w-xs">La Call Room necessite un ecran large pour fonctionner correctement.</p>
+        <button onClick={() => navigate('/business/dashboard')} className="mt-2 bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-6 py-2.5 rounded-full font-bold text-sm hover:opacity-90 transition-opacity">
+          Retour au dashboard
+        </button>
+      </div>
+    </div>
+    {/* Desktop content */}
+    <div className="hidden md:flex h-screen w-screen bg-[#fbf9f8] dark:bg-neutral-900 text-stone-900 dark:text-white flex-col overflow-hidden relative" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* ─── TopAppBar ─── */}
       <header className="h-[72px] shrink-0 bg-white/80 dark:bg-white/5 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] px-8 flex items-center justify-between z-50 border-b border-stone-200/10 dark:border-white/10">
         <div className="flex items-center gap-6">
@@ -677,9 +692,7 @@ export function CloserCallRoom() {
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
           <tr>
             <td style="padding-bottom:48px;text-align:left;padding-left:24px;">
-              <div class="manrope" style="font-size:28px;color:#111111;">
-                Close<span class="gradient-text">OS</span>
-              </div>
+              <img src="https://closeos.fr/closeos-business-logo-ecrit.png" alt="CloseOS Business" width="160" style="display:block;">
             </td>
           </tr>
           <tr>
@@ -755,5 +768,6 @@ export function CloserCallRoom() {
         </div>
       )}
     </div>
+    </>
   )
 }

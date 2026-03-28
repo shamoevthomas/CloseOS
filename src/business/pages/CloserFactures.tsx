@@ -326,7 +326,7 @@ export function CloserFactures() {
       </div>
 
       {/* Filter Bar — Glass pill */}
-      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-full p-3 px-6 flex flex-wrap items-center gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-white/40 dark:border-white/10">
+      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl md:rounded-full p-3 px-6 flex flex-col md:flex-row flex-wrap items-start md:items-center gap-4 md:gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-white/40 dark:border-white/10">
         <div className="flex items-center gap-3 border-r border-stone-200/40 dark:border-white/10 pr-6">
           <span className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">Période</span>
           <div className="flex items-center gap-2">
@@ -576,13 +576,13 @@ export function CloserFactures() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-stone-50/50 dark:bg-white/5">
-                <th className="px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>N° Facture</th>
-                <th className="px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Date</th>
-                <th className="px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Client & Offre</th>
-                <th className="px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Montant TTC</th>
-                <th className="px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Échéance</th>
-                <th className="px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut</th>
-                <th className="px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>Actions</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>N° Facture</th>
+                <th className="hidden md:table-cell px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Date</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Client & Offre</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Montant TTC</th>
+                <th className="hidden md:table-cell px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Échéance</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut</th>
+                <th className="hidden sm:table-cell px-8 py-5 text-[11px] font-black text-stone-500 dark:text-neutral-400 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100/50 dark:divide-white/10">
@@ -591,18 +591,23 @@ export function CloserFactures() {
                 const isOverdue = inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'payé'
                 return (
                   <tr key={inv.id} className="hover:bg-stone-50/50 dark:hover:bg-white/5 transition-colors group">
-                    <td className="px-8 py-6 font-mono text-xs font-bold text-stone-700 dark:text-neutral-200">{inv.invoice_number}</td>
-                    <td className="px-8 py-6 text-sm text-stone-700 dark:text-neutral-200 font-medium">
+                    <td className="px-4 md:px-8 py-4 md:py-6 font-mono text-xs font-bold text-stone-700 dark:text-neutral-200">
+                      {inv.invoice_number}
+                      <span className="md:hidden block text-[10px] font-medium text-stone-500 dark:text-neutral-400 font-sans">
+                        {new Date(inv.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </td>
+                    <td className="hidden md:table-cell px-8 py-6 text-sm text-stone-700 dark:text-neutral-200 font-medium">
                       {new Date(inv.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-4 md:px-8 py-4 md:py-6">
                       <div className="flex flex-col">
-                        <span className="font-bold text-sm text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{inv.client_name}</span>
+                        <span className="font-bold text-sm text-stone-900 dark:text-white truncate max-w-[120px] md:max-w-none" style={{ fontFamily: 'Manrope, sans-serif' }}>{inv.client_name}</span>
                         {inv.offer_name && <span className="text-[10px] text-stone-500 dark:text-neutral-400 font-medium">{inv.offer_name}</span>}
                       </div>
                     </td>
-                    <td className="px-8 py-6 text-sm font-extrabold text-stone-900 dark:text-white">{formatCurrency(inv.amount_ttc || 0)}</td>
-                    <td className="px-8 py-6">
+                    <td className="px-4 md:px-8 py-4 md:py-6 text-sm font-extrabold text-stone-900 dark:text-white whitespace-nowrap">{formatCurrency(inv.amount_ttc || 0)}</td>
+                    <td className="hidden md:table-cell px-8 py-6">
                       {inv.due_date ? (
                         <span className={cn("text-xs font-semibold", isOverdue ? "text-red-500" : "text-stone-500 dark:text-neutral-400")}>
                           {new Date(inv.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
@@ -612,7 +617,7 @@ export function CloserFactures() {
                         <span className="text-xs text-stone-400 dark:text-neutral-600">—</span>
                       )}
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-4 md:px-8 py-4 md:py-6">
                       <div className="flex justify-center">
                         <select
                           value={inv.status || ''}
@@ -631,7 +636,7 @@ export function CloserFactures() {
                         </select>
                       </div>
                     </td>
-                    <td className="px-8 py-6 text-right">
+                    <td className="hidden sm:table-cell px-8 py-6 text-right">
                       <div className="flex justify-end gap-2">
                         {inv.stripe_payment_link && (
                           <button

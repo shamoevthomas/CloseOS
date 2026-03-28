@@ -222,10 +222,10 @@ export function OwnerFactures() {
       </div>
 
       {/* Filter Bar — Glass pill */}
-      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl rounded-full p-3 px-6 flex flex-wrap items-center gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-[#c4c7c7]/10 dark:ring-neutral-700">
-        <div className="flex items-center gap-3 border-r border-[#c4c7c7]/20 dark:border-neutral-700 pr-6">
-          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter">Période</span>
-          <div className="flex items-center gap-2">
+      <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl rounded-2xl md:rounded-full p-3 px-4 md:px-6 flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 md:gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-[#c4c7c7]/10 dark:ring-neutral-700">
+        <div className="flex items-center gap-3 md:border-r border-[#c4c7c7]/20 dark:border-neutral-700 md:pr-6">
+          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">Période</span>
+          <div className="flex items-center gap-2 min-w-0">
             <input
               type="date"
               value={startDate}
@@ -269,12 +269,12 @@ export function OwnerFactures() {
         </div>
 
         {teamMembers.length > 0 && (
-          <div className="flex items-center gap-3 border-r border-[#c4c7c7]/20 dark:border-neutral-700 pr-6">
-            <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter">Membre</span>
+          <div className="flex items-center gap-3 md:border-r border-[#c4c7c7]/20 dark:border-neutral-700 md:pr-6">
+            <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">Membre</span>
             <select
               value={filterMember}
               onChange={e => setFilterMember(e.target.value)}
-              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white"
+              className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white min-w-0"
             >
               <option value="all">Tous les membres</option>
               {teamMembers.map(m => (
@@ -285,11 +285,11 @@ export function OwnerFactures() {
         )}
 
         <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter">Statut</span>
+          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">Statut</span>
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
-            className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white"
+            className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white min-w-0"
           >
             <option value="all">Tous les statuts</option>
             {STATUS_OPTIONS.map(s => (
@@ -298,7 +298,7 @@ export function OwnerFactures() {
           </select>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="md:ml-auto flex items-center gap-2 justify-end">
           <button className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors text-[#444748] dark:text-neutral-400">
             <Filter className="h-5 w-5" />
           </button>
@@ -314,14 +314,14 @@ export function OwnerFactures() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#f5f3f2]/50 dark:bg-neutral-900/50">
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>N° Facture</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Date</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Client & Offre</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Membre</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Montant TTC</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Échéance</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut</th>
-                <th className="px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>Actions</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>N° Facture</th>
+                <th className="hidden md:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Date</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Client</th>
+                <th className="hidden lg:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Membre</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Montant</th>
+                <th className="hidden md:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Échéance</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut</th>
+                <th className="hidden sm:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#c4c7c7]/10 dark:divide-neutral-700">
@@ -332,15 +332,18 @@ export function OwnerFactures() {
 
                 return (
                   <tr key={inv.id} className="hover:bg-[#efedec]/30 dark:hover:bg-neutral-700/30 transition-colors group">
-                    <td className="px-8 py-6 font-mono text-xs font-bold text-[#444748] dark:text-neutral-300">{inv.invoice_number}</td>
-                    <td className="px-8 py-6 text-sm text-[#1b1c1b] dark:text-white font-medium">{formatDate(inv.created_at)}</td>
-                    <td className="px-8 py-6">
+                    <td className="px-4 md:px-8 py-4 md:py-6 font-mono text-xs font-bold text-[#444748] dark:text-neutral-300">
+                      {inv.invoice_number}
+                      <span className="md:hidden block text-[10px] font-medium text-[#444748]/60 dark:text-neutral-500 mt-0.5">{formatDate(inv.created_at)}</span>
+                    </td>
+                    <td className="hidden md:table-cell px-8 py-6 text-sm text-[#1b1c1b] dark:text-white font-medium">{formatDate(inv.created_at)}</td>
+                    <td className="px-4 md:px-8 py-4 md:py-6">
                       <div className="flex flex-col">
-                        <span className="font-bold text-sm text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{inv.client_name}</span>
-                        {inv.offer_name && <span className="text-[10px] text-[#444748] dark:text-neutral-400 font-medium">{inv.offer_name}</span>}
+                        <span className="font-bold text-sm text-[#1b1c1b] dark:text-white truncate max-w-[120px] md:max-w-none" style={{ fontFamily: 'Manrope, sans-serif' }}>{inv.client_name}</span>
+                        {inv.offer_name && <span className="text-[10px] text-[#444748] dark:text-neutral-400 font-medium truncate max-w-[120px] md:max-w-none">{inv.offer_name}</span>}
                       </div>
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="hidden lg:table-cell px-8 py-6">
                       {memberName ? (
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-[#eae8e7] dark:bg-neutral-700 flex items-center justify-center text-[8px] font-bold text-[#1b1c1b] dark:text-white">
@@ -352,8 +355,8 @@ export function OwnerFactures() {
                         <span className="text-xs text-[#444748]/40 dark:text-neutral-600">—</span>
                       )}
                     </td>
-                    <td className="px-8 py-6 text-sm font-extrabold text-[#1b1c1b] dark:text-white">{formatCurrency(inv.amount_ttc || 0)}</td>
-                    <td className="px-8 py-6">
+                    <td className="px-4 md:px-8 py-4 md:py-6 text-sm font-extrabold text-[#1b1c1b] dark:text-white whitespace-nowrap">{formatCurrency(inv.amount_ttc || 0)}</td>
+                    <td className="hidden md:table-cell px-8 py-6">
                       {inv.due_date ? (
                         <span className={cn("text-xs font-semibold", inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'payé' ? "text-[#ba1a1a]" : "text-[#444748] dark:text-neutral-400")}>
                           {new Date(inv.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
@@ -365,13 +368,13 @@ export function OwnerFactures() {
                         <span className="text-xs text-[#444748]/40 dark:text-neutral-600">—</span>
                       )}
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-4 md:px-8 py-4 md:py-6">
                       <div className="flex justify-center">
                         <select
                           value={inv.status || ''}
                           onChange={e => handleStatusChange(inv.id, e.target.value)}
                           className={cn(
-                            'rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-widest border cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-[#006c49]/20',
+                            'rounded-full px-3 md:px-4 py-1.5 text-[10px] font-black uppercase tracking-widest border cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-[#006c49]/20',
                             config.bg, config.text, config.border
                           )}
                         >
@@ -384,7 +387,7 @@ export function OwnerFactures() {
                         </select>
                       </div>
                     </td>
-                    <td className="px-8 py-6 text-right">
+                    <td className="hidden sm:table-cell px-8 py-6 text-right">
                       <div className="flex justify-end gap-2">
                         {inv.stripe_payment_link && (
                           <button
@@ -393,7 +396,7 @@ export function OwnerFactures() {
                             title="Copier le lien de paiement"
                           >
                             <Copy className="h-3 w-3" />
-                            Lien
+                            <span className="hidden lg:inline">Lien</span>
                           </button>
                         )}
                         {inv.stripe_payment_link && (
@@ -403,12 +406,12 @@ export function OwnerFactures() {
                             rel="noopener noreferrer"
                             className="bg-[#635BFF] text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#5349E0] transition-all inline-flex items-center gap-1.5"
                           >
-                            Payer
+                            <span className="hidden lg:inline">Payer</span>
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         )}
                         {inv.pdf_url && (
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                             <a href={inv.pdf_url} target="_blank" rel="noreferrer" className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors" title="Voir">
                               <Eye className="h-4 w-4" />
                             </a>
@@ -446,9 +449,9 @@ export function OwnerFactures() {
 
         {/* Pagination */}
         {filtered.length > 0 && (
-          <div className="px-8 py-6 bg-[#f5f3f2]/30 dark:bg-neutral-900/30 flex justify-between items-center">
+          <div className="px-4 md:px-8 py-4 md:py-6 bg-[#f5f3f2]/30 dark:bg-neutral-900/30 flex flex-col sm:flex-row justify-between items-center gap-3">
             <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">
-              Affichage de {(currentPage - 1) * ITEMS_PER_PAGE + 1} à {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} sur {filtered.length} facture{filtered.length !== 1 ? 's' : ''}
+              {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} sur {filtered.length}
             </p>
             <div className="flex gap-2">
               <button

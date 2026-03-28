@@ -55,7 +55,7 @@ export function BusinessInvitation() {
     validateToken();
   }, [token]);
 
-  const acceptInvitation = async (userId: string, userEmail: string, userFirstName: string, userLastName: string) => {
+  const acceptInvitation = async (userId: string, userEmail: string, userFirstName: string, userLastName: string, avatarUrl?: string) => {
     const res = await fetch('/api/business-invitation', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -65,6 +65,7 @@ export function BusinessInvitation() {
         first_name: userFirstName,
         last_name: userLastName,
         email: userEmail,
+        avatar_url: avatarUrl || null,
       }),
     });
 
@@ -82,11 +83,37 @@ export function BusinessInvitation() {
     setError(null);
 
     try {
+      // Check if email already has a Sales account
+      const { data: salesProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (salesProfile) {
+        setError("Cet email est déjà associé à un compte CloseOS Sales. Veuillez utiliser un autre email.");
+        setSubmitLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       let userId: string;
       let userEmail = email;
 
       if (session?.user) {
+        // Check if existing session belongs to a Sales user
+        const { data: salesCheck } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (salesCheck) {
+          setError("Ce compte est déjà associé à un compte CloseOS Sales. Veuillez vous déconnecter et utiliser un autre email.");
+          setSubmitLoading(false);
+          return;
+        }
+
         userId = session.user.id;
         userEmail = session.user.email || email;
       } else {
@@ -162,6 +189,20 @@ export function BusinessInvitation() {
     setSubmitLoading(true);
 
     try {
+      // Check if this Google account already has a Sales profile
+      const { data: salesProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (salesProfile) {
+        oauthAcceptedRef.current = false;
+        setError("Ce compte Google est déjà associé à un compte CloseOS Sales. Veuillez utiliser un autre compte.");
+        setSubmitLoading(false);
+        return;
+      }
+
       const fullName = user.user_metadata?.full_name || '';
       const parts = fullName.split(' ');
       await acceptInvitation(
@@ -169,6 +210,7 @@ export function BusinessInvitation() {
         user.email || '',
         parts[0] || '',
         parts.slice(1).join(' ') || '',
+        user.user_metadata?.avatar_url || user.user_metadata?.picture || undefined,
       );
       // Show verification before onboarding
       setPendingVerification({ userId: user.id, email: user.email || '', authMethod: 'google' });
@@ -362,7 +404,8 @@ export function BusinessInvitation() {
           {/* Mobile logo */}
           <div className="lg:hidden text-center">
             <Link to="/business" className="inline-block">
-              <img src="/logo.PNG" alt="CloseOS Business" className="h-12 w-auto mx-auto" />
+              <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="h-10 w-auto mx-auto dark:hidden" />
+              <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-10 w-auto mx-auto hidden dark:block" />
             </Link>
           </div>
 

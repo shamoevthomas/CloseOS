@@ -4,7 +4,8 @@ import {
   Plus, Megaphone, Code, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, Link, Users, ChevronDown, Video,
   CalendarCheck, UserPlus, Monitor, Layers, MessageSquare, Clock, Copy, Eye,
-  Paintbrush, Type, Palette, ArrowRightCircle, Shuffle, UserCheck, UsersRound, ExternalLink
+  Paintbrush, Type, Palette, ArrowRightCircle, Shuffle, UserCheck, UsersRound, ExternalLink,
+  ChevronUp, AlertTriangle, ClipboardList
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -13,6 +14,17 @@ interface CustomField {
   type: 'text' | 'email' | 'phone' | 'number' | 'select'
   required: boolean
   options?: string[]
+}
+
+interface QuestionConfig {
+  id?: string
+  question_text: string
+  question_type: 'text' | 'multiple_choice' | 'select' | 'number'
+  is_required: boolean
+  options: string[]
+  expected_answer: any
+  eliminatory_answers: any[]
+  sort_order: number
 }
 
 interface Campaign {
@@ -89,7 +101,7 @@ export function BusinessCampaigns() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [saving, setSaving] = useState(false)
-  const [modalTab, setModalTab] = useState<'general' | 'landing' | 'fields' | 'booking'>('general')
+  const [modalTab, setModalTab] = useState<'general' | 'landing' | 'fields' | 'questionnaire' | 'booking'>('general')
 
   // Team members for booking assignment
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -140,6 +152,13 @@ export function BusinessCampaigns() {
   const [formBookingAssignMode, setFormBookingAssignMode] = useState<'specific' | 'all_role' | 'multiple'>('all_role')
   const [formBookingAssignedMembers, setFormBookingAssignedMembers] = useState<string[]>([])
   const [formBookingDistribution, setFormBookingDistribution] = useState<'round_robin' | 'random'>('round_robin')
+
+  // Questionnaire config
+  const [formQuestionnaireEnabled, setFormQuestionnaireEnabled] = useState(false)
+  const [formQuestionnaireRequired, setFormQuestionnaireRequired] = useState(false)
+  const [formMaxEliminatory, setFormMaxEliminatory] = useState(0)
+  const [formQuestions, setFormQuestions] = useState<QuestionConfig[]>([])
+  const [questionnaireId, setQuestionnaireId] = useState<string | null>(null)
 
   const fetchCampaigns = useCallback(async () => {
     if (!effectiveUserId) return
@@ -240,6 +259,8 @@ export function BusinessCampaigns() {
     setFormBookingWith('closer'); setFormBookingAssignMode('all_role')
     setFormBookingAssignedMembers([]); setFormBookingDistribution('round_robin')
     setFormTeamId(null)
+    setFormQuestionnaireEnabled(false); setFormQuestionnaireRequired(false)
+    setFormMaxEliminatory(0); setFormQuestions([]); setQuestionnaireId(null)
   }
 
   const openCreate = () => { resetForm(); setIsModalOpen(true) }
@@ -266,7 +287,32 @@ export function BusinessCampaigns() {
     setFormBookingAssignMode(campaign.booking_assign_mode || 'all_role')
     setFormBookingAssignedMembers(campaign.booking_assigned_members || [])
     setFormBookingDistribution(campaign.booking_distribution || 'round_robin')
+    // Reset questionnaire before loading
+    setFormQuestionnaireEnabled(false); setFormQuestionnaireRequired(false)
+    setFormMaxEliminatory(0); setFormQuestions([]); setQuestionnaireId(null)
     setModalTab('general'); setIsModalOpen(true)
+    // Fetch questionnaire data async (non-blocking)
+    fetch(`${API_URL}?action=questionnaire-get&campaign_id=${campaign.id}&user_id=${effectiveUserId}`)
+      .then(r => r.json())
+      .then(qData => {
+        if (qData.questionnaire) {
+          setQuestionnaireId(qData.questionnaire.id)
+          setFormQuestionnaireEnabled(qData.questionnaire.enabled ?? false)
+          setFormQuestionnaireRequired(qData.questionnaire.required ?? false)
+          setFormMaxEliminatory(qData.questionnaire.max_eliminatory ?? 0)
+          setFormQuestions((qData.questions || []).map((q: any) => ({
+            id: q.id,
+            question_text: q.question_text || '',
+            question_type: q.question_type || 'text',
+            is_required: q.is_required ?? false,
+            options: q.options || [],
+            expected_answer: q.expected_answer ?? null,
+            eliminatory_answers: q.eliminatory_answers || [],
+            sort_order: q.sort_order ?? 0,
+          })))
+        }
+      })
+      .catch(() => { /* questionnaire fetch failed, continue with defaults */ })
   }
 
   // Filter team members by selected team
@@ -301,22 +347,39 @@ export function BusinessCampaigns() {
     setSaving(true)
     try {
       const payload = getPayload()
+      let campaignId: string | null = null
       if (editingCampaign) {
         const res = await fetch(`${API_URL}?action=campaigns-update`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...payload, id: editingCampaign.id }),
         })
         const data = await res.json()
-        if (data.campaign) toast.success('Campagne modifiée')
-        else toast.error(data.error || 'Erreur')
+        if (data.campaign) { campaignId = data.campaign.id; toast.success('Campagne modifiée') }
+        else { toast.error(data.error || 'Erreur'); setSaving(false); return }
       } else {
         const res = await fetch(`${API_URL}?action=campaigns-create`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
         const data = await res.json()
-        if (data.campaign) toast.success('Campagne créée')
-        else toast.error(data.error || 'Erreur')
+        if (data.campaign) { campaignId = data.campaign.id; toast.success('Campagne créée') }
+        else { toast.error(data.error || 'Erreur'); setSaving(false); return }
+      }
+      // Save questionnaire if any data exists
+      if (campaignId && (formQuestionnaireEnabled || formQuestions.length > 0 || questionnaireId)) {
+        try {
+          await fetch(`${API_URL}?action=questionnaire-save`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: effectiveUserId,
+              campaign_id: campaignId,
+              enabled: formQuestionnaireEnabled,
+              required: formQuestionnaireRequired,
+              max_eliminatory: formMaxEliminatory,
+              questions: formQuestions.map((q, i) => ({ ...q, sort_order: i })),
+            }),
+          })
+        } catch { /* questionnaire save failed silently */ }
       }
       setIsModalOpen(false); resetForm(); fetchCampaigns()
     } catch { toast.error('Erreur réseau') }
@@ -458,6 +521,24 @@ window.addEventListener('message',function(e){
     setFormCustomFields(formCustomFields.filter((_, i) => i !== index))
   }
 
+  // Questionnaire question helpers
+  const addQuestion = () => {
+    setFormQuestions([...formQuestions, { question_text: '', question_type: 'text', is_required: false, options: [], expected_answer: null, eliminatory_answers: [], sort_order: formQuestions.length }])
+  }
+  const updateQuestion = (index: number, updates: Partial<QuestionConfig>) => {
+    const qs = [...formQuestions]; qs[index] = { ...qs[index], ...updates }; setFormQuestions(qs)
+  }
+  const removeQuestion = (index: number) => {
+    setFormQuestions(formQuestions.filter((_, i) => i !== index))
+  }
+  const moveQuestion = (index: number, direction: number) => {
+    const newIdx = index + direction
+    if (newIdx < 0 || newIdx >= formQuestions.length) return
+    const qs = [...formQuestions]
+    ;[qs[index], qs[newIdx]] = [qs[newIdx], qs[index]]
+    setFormQuestions(qs)
+  }
+
   const inputCls = "w-full bg-transparent border-b border-[#c4c7c7]/30 dark:border-neutral-700 py-2.5 text-sm text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/40 dark:placeholder:text-neutral-500 focus:border-[#006c49] focus:ring-0 outline-none transition-all font-['Inter']"
   const selectCls = "w-full appearance-none bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl border-0 px-4 py-2.5 pr-10 text-sm text-[#1b1c1b] dark:text-white font-medium focus:ring-1 focus:ring-[#006c49]/20 focus:outline-none"
   const smallInputCls = "bg-transparent border-b border-[#c4c7c7]/20 dark:border-neutral-700 px-1 py-2 text-xs text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/40 dark:placeholder:text-neutral-500 focus:border-[#006c49] focus:ring-0 outline-none"
@@ -566,6 +647,7 @@ window.addEventListener('message',function(e){
                 { key: 'general' as const, label: 'Général' },
                 { key: 'landing' as const, label: 'Page de capture' },
                 { key: 'fields' as const, label: 'Champs & Options' },
+                { key: 'questionnaire' as const, label: 'Qualification' },
                 { key: 'booking' as const, label: formCaptureType === 'with_rdv' ? 'Booking' : 'Assignation' },
               ]).map(tab => (
                 <button
@@ -1024,6 +1106,309 @@ window.addEventListener('message',function(e){
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Questionnaire tab */}
+              {modalTab === 'questionnaire' && (
+                <div className="space-y-5">
+                  {/* Enable toggle */}
+                  <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Activer le questionnaire</p>
+                      <p className="text-xs text-[#747878] dark:text-neutral-500">Les prospects répondront à des questions après avoir rempli leurs informations</p>
+                    </div>
+                    <button onClick={() => setFormQuestionnaireEnabled(!formQuestionnaireEnabled)}>
+                      {formQuestionnaireEnabled
+                        ? <ToggleRight className="h-7 w-7 text-[#006c49]" />
+                        : <ToggleLeft className="h-7 w-7 text-[#c4c7c7] dark:text-neutral-600" />}
+                    </button>
+                  </div>
+
+                  {formQuestionnaireEnabled && (
+                    <>
+                      {/* Required toggle */}
+                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
+                        <div>
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Questionnaire obligatoire</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">Le prospect doit répondre avant de pouvoir réserver</p>
+                        </div>
+                        <button onClick={() => setFormQuestionnaireRequired(!formQuestionnaireRequired)}>
+                          {formQuestionnaireRequired
+                            ? <ToggleRight className="h-7 w-7 text-[#006c49]" />
+                            : <ToggleLeft className="h-7 w-7 text-[#c4c7c7] dark:text-neutral-600" />}
+                        </button>
+                      </div>
+
+                      {/* Max eliminatory */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-1">Réponses éliminatoires tolérées</label>
+                        <p className="text-[10px] text-[#747878] dark:text-neutral-500 mb-2">Si le prospect dépasse ce nombre de réponses éliminatoires, il est automatiquement classé Non-Qualifié. (0 = aucune tolérance)</p>
+                        <input type="number" min={0} value={formMaxEliminatory} onChange={(e) => setFormMaxEliminatory(Math.max(0, parseInt(e.target.value) || 0))} className={`w-24 ${smallInputCls}`} />
+                      </div>
+
+                      {/* Questions builder */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="text-sm font-bold text-[#1b1c1b] dark:text-white flex items-center gap-2">
+                            <ClipboardList className="h-4 w-4" /> Questions ({formQuestions.length})
+                          </label>
+                          <button onClick={addQuestion} className="flex items-center gap-1 text-xs font-bold text-[#1b1c1b] dark:text-white hover:text-[#006c49]">
+                            <Plus className="h-3.5 w-3.5" /> Ajouter une question
+                          </button>
+                        </div>
+
+                        {formQuestions.length === 0 && (
+                          <p className="text-xs text-[#747878] dark:text-neutral-500 italic">Aucune question configurée. Cliquez sur "Ajouter une question" pour commencer.</p>
+                        )}
+
+                        <div className="space-y-3">
+                          {formQuestions.map((question, idx) => (
+                            <div key={idx} className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-4 space-y-3 bg-white/50 dark:bg-neutral-800/50">
+                              {/* Row 1: Question text + required */}
+                              <div className="flex items-start gap-2">
+                                <span className="text-xs font-bold text-[#747878] dark:text-neutral-500 mt-2.5 flex-shrink-0 w-5">{idx + 1}.</span>
+                                <input
+                                  type="text"
+                                  value={question.question_text}
+                                  onChange={(e) => updateQuestion(idx, { question_text: e.target.value })}
+                                  placeholder="Votre question..."
+                                  className={`flex-1 ${inputCls}`}
+                                />
+                                <button
+                                  onClick={() => updateQuestion(idx, { is_required: !question.is_required })}
+                                  className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap mt-1 ${question.is_required ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
+                                >
+                                  {question.is_required ? 'Obligatoire' : 'Optionnel'}
+                                </button>
+                              </div>
+
+                              {/* Row 2: Type selector */}
+                              <div className="flex items-center gap-2 ml-7">
+                                <label className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide flex-shrink-0">Type</label>
+                                <select
+                                  value={question.question_type}
+                                  onChange={(e) => {
+                                    const newType = e.target.value as QuestionConfig['question_type']
+                                    const updates: Partial<QuestionConfig> = { question_type: newType }
+                                    if (newType === 'text') { updates.options = []; updates.expected_answer = null; updates.eliminatory_answers = [] }
+                                    else if (newType === 'multiple_choice' || newType === 'select') { updates.options = question.options.length > 0 ? question.options : ['']; updates.expected_answer = []; updates.eliminatory_answers = [] }
+                                    else if (newType === 'number') { updates.options = []; updates.expected_answer = null; updates.eliminatory_answers = [] }
+                                    updateQuestion(idx, updates)
+                                  }}
+                                  className={`${smallInputCls} text-[#1b1c1b] dark:text-white`}
+                                >
+                                  <option value="text">Texte libre</option>
+                                  <option value="select">Sélection unique</option>
+                                  <option value="multiple_choice">Choix multiple</option>
+                                  <option value="number">Nombre</option>
+                                </select>
+                              </div>
+
+                              {/* Row 3: Type-specific config */}
+                              <div className="ml-7">
+                                {question.question_type === 'text' && (
+                                  <div className="flex items-center gap-2 text-xs text-[#b87500] bg-[#ffb95f]/10 rounded-lg px-3 py-2">
+                                    <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                                    <span>Les réponses textuelles ne peuvent pas être évaluées automatiquement</span>
+                                  </div>
+                                )}
+
+                                {(question.question_type === 'select' || question.question_type === 'multiple_choice') && (
+                                  <div className="space-y-3">
+                                    {/* Options builder */}
+                                    <div className="border-l-2 border-[#c4c7c7]/30 dark:border-neutral-700 pl-3 space-y-1.5">
+                                      <p className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">Options de réponse</p>
+                                      {(question.options.length > 0 ? question.options : ['']).map((opt, optIdx) => (
+                                        <div key={optIdx} className="flex items-center gap-1.5">
+                                          <input
+                                            type="text"
+                                            value={opt}
+                                            onChange={(e) => {
+                                              const newOpts = [...question.options]; newOpts[optIdx] = e.target.value
+                                              updateQuestion(idx, { options: newOpts })
+                                            }}
+                                            placeholder={`Option ${optIdx + 1}`}
+                                            className={`flex-1 ${smallInputCls}`}
+                                          />
+                                          {question.options.length > 1 && (
+                                            <button onClick={() => updateQuestion(idx, { options: question.options.filter((_, i) => i !== optIdx) })} className="text-red-400 hover:text-red-600">
+                                              <X className="h-3.5 w-3.5" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      ))}
+                                      <button
+                                        onClick={() => updateQuestion(idx, { options: [...question.options, ''] })}
+                                        className="flex items-center gap-1 text-[10px] font-bold text-[#747878] dark:text-neutral-500 hover:text-[#1b1c1b] dark:hover:text-white"
+                                      >
+                                        <Plus className="h-3 w-3" /> Ajouter une option
+                                      </button>
+                                    </div>
+
+                                    {/* Expected answers */}
+                                    {question.options.filter(o => o.trim()).length > 0 && (
+                                      <div className="border-l-2 border-emerald-300/50 pl-3 space-y-1">
+                                        <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Réponse(s) attendue(s)</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {question.options.filter(o => o.trim()).map((opt, optIdx) => {
+                                            const expected = Array.isArray(question.expected_answer) ? question.expected_answer : []
+                                            const isSelected = expected.includes(opt)
+                                            return (
+                                              <button
+                                                key={optIdx}
+                                                onClick={() => {
+                                                  const newExpected = isSelected ? expected.filter((e: string) => e !== opt) : [...expected, opt]
+                                                  updateQuestion(idx, { expected_answer: newExpected })
+                                                }}
+                                                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors ${isSelected ? 'bg-emerald-500 text-white' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
+                                              >
+                                                {opt}
+                                              </button>
+                                            )
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Eliminatory answers */}
+                                    {question.options.filter(o => o.trim()).length > 0 && (
+                                      <div className="border-l-2 border-red-300/50 pl-3 space-y-1">
+                                        <p className="text-[10px] font-bold text-red-500 dark:text-red-400 uppercase tracking-wide">Réponse(s) éliminatoire(s)</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {question.options.filter(o => o.trim()).map((opt, optIdx) => {
+                                            const elim = Array.isArray(question.eliminatory_answers) ? question.eliminatory_answers : []
+                                            const isSelected = elim.includes(opt)
+                                            return (
+                                              <button
+                                                key={optIdx}
+                                                onClick={() => {
+                                                  const newElim = isSelected ? elim.filter((e: string) => e !== opt) : [...elim, opt]
+                                                  updateQuestion(idx, { eliminatory_answers: newElim })
+                                                }}
+                                                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors ${isSelected ? 'bg-red-500 text-white' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
+                                              >
+                                                {opt}
+                                              </button>
+                                            )
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {question.question_type === 'number' && (
+                                  <div className="space-y-3">
+                                    <div className="border-l-2 border-emerald-300/50 pl-3 space-y-1.5">
+                                      <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Valeur attendue (ou range min-max)</p>
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="number"
+                                          value={typeof question.expected_answer === 'object' && question.expected_answer?.min !== undefined ? question.expected_answer.min : (question.expected_answer ?? '')}
+                                          onChange={(e) => {
+                                            const val = e.target.value
+                                            const current = question.expected_answer
+                                            if (typeof current === 'object' && current?.max !== undefined) {
+                                              updateQuestion(idx, { expected_answer: { ...current, min: val ? parseFloat(val) : 0 } })
+                                            } else {
+                                              updateQuestion(idx, { expected_answer: val ? parseFloat(val) : null })
+                                            }
+                                          }}
+                                          placeholder="Valeur ou Min"
+                                          className={`w-28 ${smallInputCls}`}
+                                        />
+                                        <span className="text-xs text-[#747878]">—</span>
+                                        <input
+                                          type="number"
+                                          value={typeof question.expected_answer === 'object' && question.expected_answer?.max !== undefined ? question.expected_answer.max : ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value
+                                            const current = question.expected_answer
+                                            if (val) {
+                                              const min = typeof current === 'object' && current?.min !== undefined ? current.min : (typeof current === 'number' ? current : 0)
+                                              updateQuestion(idx, { expected_answer: { min, max: parseFloat(val) } })
+                                            } else {
+                                              const min = typeof current === 'object' ? current?.min : current
+                                              updateQuestion(idx, { expected_answer: min ?? null })
+                                            }
+                                          }}
+                                          placeholder="Max (optionnel)"
+                                          className={`w-28 ${smallInputCls}`}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="border-l-2 border-red-300/50 pl-3 space-y-1.5">
+                                      <p className="text-[10px] font-bold text-red-500 dark:text-red-400 uppercase tracking-wide">Valeur éliminatoire (ou range)</p>
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="number"
+                                          value={Array.isArray(question.eliminatory_answers) && question.eliminatory_answers[0] !== undefined ? (typeof question.eliminatory_answers[0] === 'object' ? question.eliminatory_answers[0].min : question.eliminatory_answers[0]) : ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value
+                                            if (!val) { updateQuestion(idx, { eliminatory_answers: [] }); return }
+                                            const current = question.eliminatory_answers[0]
+                                            if (typeof current === 'object' && current?.max !== undefined) {
+                                              updateQuestion(idx, { eliminatory_answers: [{ ...current, min: parseFloat(val) }] })
+                                            } else {
+                                              updateQuestion(idx, { eliminatory_answers: [parseFloat(val)] })
+                                            }
+                                          }}
+                                          placeholder="Valeur ou Min"
+                                          className={`w-28 ${smallInputCls}`}
+                                        />
+                                        <span className="text-xs text-[#747878]">—</span>
+                                        <input
+                                          type="number"
+                                          value={Array.isArray(question.eliminatory_answers) && typeof question.eliminatory_answers[0] === 'object' ? question.eliminatory_answers[0]?.max ?? '' : ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value
+                                            const current = question.eliminatory_answers[0]
+                                            if (val) {
+                                              const min = typeof current === 'object' ? current?.min : (typeof current === 'number' ? current : 0)
+                                              updateQuestion(idx, { eliminatory_answers: [{ min: min ?? 0, max: parseFloat(val) }] })
+                                            } else {
+                                              const min = typeof current === 'object' ? current?.min : current
+                                              updateQuestion(idx, { eliminatory_answers: min !== undefined && min !== null ? [min] : [] })
+                                            }
+                                          }}
+                                          placeholder="Max (optionnel)"
+                                          className={`w-28 ${smallInputCls}`}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Row 4: Move + delete */}
+                              <div className="flex items-center justify-between ml-7 pt-2 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => moveQuestion(idx, -1)}
+                                    disabled={idx === 0}
+                                    className="p-1 text-[#747878] hover:text-[#1b1c1b] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
+                                  >
+                                    <ChevronUp className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => moveQuestion(idx, 1)}
+                                    disabled={idx === formQuestions.length - 1}
+                                    className="p-1 text-[#747878] hover:text-[#1b1c1b] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rotate-180"
+                                  >
+                                    <ChevronUp className="h-4 w-4" />
+                                  </button>
+                                </div>
+                                <button onClick={() => removeQuestion(idx)} className="text-red-400 hover:text-red-600 p-1">
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 

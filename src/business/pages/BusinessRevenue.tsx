@@ -304,21 +304,21 @@ export function BusinessRevenue() {
 
       {/* ═══ Stripe not connected — only if subscription formulas exist ═══ */}
       {hasSubscriptionFormula && !stripeConnected && (
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#635BFF]/5 via-white to-[#006c49]/5 dark:from-[#635BFF]/10 dark:via-neutral-900 dark:to-[#006c49]/10 p-8">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#635BFF]/5 via-white to-[#006c49]/5 dark:from-[#635BFF]/10 dark:via-neutral-900 dark:to-[#006c49]/10 p-5 sm:p-8">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#635BFF]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="relative flex items-center justify-between gap-6">
-            <div className="flex items-center gap-5">
-              <div className="h-14 w-14 rounded-2xl bg-[#635BFF]/10 flex items-center justify-center shrink-0">
-                <CreditCard className="h-7 w-7 text-[#635BFF]" />
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-[#635BFF]/10 flex items-center justify-center shrink-0">
+                <CreditCard className="h-6 w-6 sm:h-7 sm:w-7 text-[#635BFF]" />
               </div>
               <div>
-                <h2 className="text-lg font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope'] tracking-tight">Connectez Stripe</h2>
+                <h2 className="text-base sm:text-lg font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope'] tracking-tight">Connectez Stripe</h2>
                 <p className="text-sm text-[#444748] dark:text-neutral-400 mt-0.5">Synchronisez vos paiements pour un suivi CA en temps reel</p>
               </div>
             </div>
             <button
               onClick={() => setStripeModalOpen(true)}
-              className="px-6 py-3 bg-[#635BFF] hover:bg-[#5349E0] text-white font-extrabold rounded-full transition-all shadow-lg shadow-[#635BFF]/20 hover:shadow-xl hover:shadow-[#635BFF]/30 shrink-0"
+              className="px-6 py-3 bg-[#635BFF] hover:bg-[#5349E0] text-white font-extrabold rounded-full transition-all shadow-lg shadow-[#635BFF]/20 hover:shadow-xl hover:shadow-[#635BFF]/30 shrink-0 w-full sm:w-auto text-center"
             >
               Connecter
             </button>
@@ -329,12 +329,12 @@ export function BusinessRevenue() {
       {/* ═══ Header: Period pills + Tab nav ═══ */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         {/* Period pills */}
-        <div className="flex items-center gap-1.5 bg-[#f5f3f2] dark:bg-neutral-800/50 rounded-full p-1">
+        <div className="flex items-center gap-1.5 bg-[#f5f3f2] dark:bg-neutral-800/50 rounded-full p-1 overflow-x-auto w-full sm:w-auto">
           {PERIODS.map(p => (
             <button
               key={p.key}
               onClick={() => setSelectedPeriod(p.key)}
-              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                 selectedPeriod === p.key
                   ? 'bg-white dark:bg-neutral-700 text-[#1b1c1b] dark:text-white shadow-[0_2px_8px_rgba(27,28,27,0.06)]'
                   : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
@@ -346,12 +346,12 @@ export function BusinessRevenue() {
         </div>
 
         {/* Tab navigation */}
-        <div className="flex items-center gap-1.5 bg-[#f5f3f2] dark:bg-neutral-800/50 rounded-full p-1">
+        <div className="flex items-center gap-1.5 bg-[#f5f3f2] dark:bg-neutral-800/50 rounded-full p-1 overflow-x-auto w-full sm:w-auto">
           {(['revenue', 'charges', 'margin'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                 activeTab === tab
                   ? 'bg-white dark:bg-neutral-700 text-[#1b1c1b] dark:text-white shadow-[0_2px_8px_rgba(27,28,27,0.06)]'
                   : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
@@ -445,22 +445,22 @@ export function BusinessRevenue() {
 
           {/* Secondary KPIs — subscription metrics only */}
           {hasSubscriptionFormula && (
-          <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Users className="h-4 w-4 text-blue-500" />
                 <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">Nouveaux clients</span>
               </div>
               <p className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.newClients}</p>
             </div>
-            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-5">
+            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-3">
                 <UserMinus className="h-4 w-4 text-red-400" />
                 <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">Annulations</span>
               </div>
               <p className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.canceledCount}</p>
             </div>
-            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-5">
+            <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Percent className="h-4 w-4 text-amber-500" />
                 <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">Churn</span>
@@ -472,7 +472,7 @@ export function BusinessRevenue() {
 
           {/* Active subscriptions — subscription formulas only */}
           {hasSubscriptionFormula && (
-          <div className="rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
+          <div className="rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400">
                 Abonnements actifs <span className="text-[#006c49] ml-1">{data.activeSubscriptions.length}</span>
@@ -490,13 +490,13 @@ export function BusinessRevenue() {
             ) : (
               <div className="space-y-1">
                 {data.activeSubscriptions.map(sub => (
-                  <div key={sub.id} className="flex items-center justify-between py-4 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors group">
-                    <div className="flex items-center gap-4">
+                  <div key={sub.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors group gap-3 sm:gap-0">
+                    <div className="flex items-center gap-4 min-w-0">
                       <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#006c49]/10 to-[#006c49]/5 flex items-center justify-center shrink-0">
                         <span className="text-sm font-extrabold text-[#006c49]">{sub.contact.charAt(0).toUpperCase()}</span>
                       </div>
-                      <div>
-                        <p className="font-bold text-[#1b1c1b] dark:text-white text-sm">{sub.contact}</p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[#1b1c1b] dark:text-white text-sm truncate">{sub.contact}</p>
                         <p className="text-xs text-[#444748] dark:text-neutral-500">{sub.email}</p>
                       </div>
                     </div>
@@ -610,16 +610,16 @@ export function BusinessRevenue() {
             const margin = data.ca - localTotalCharges - (data.commissions?.total || 0)
             const totalAllCharges = localTotalCharges + (data.commissions?.total || 0)
             return (
-            <div className={`relative overflow-hidden rounded-3xl p-8 ${margin >= 0 ? 'bg-gradient-to-br from-[#006c49] to-[#004d35]' : 'bg-gradient-to-br from-red-600 to-red-700'} text-white`}>
+            <div className={`relative overflow-hidden rounded-3xl p-5 sm:p-8 ${margin >= 0 ? 'bg-gradient-to-br from-[#006c49] to-[#004d35]' : 'bg-gradient-to-br from-red-600 to-red-700'} text-white`}>
               <div className="absolute top-0 right-0 w-56 h-56 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-              <div className="relative flex items-end justify-between">
+              <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-0">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] opacity-60 mb-3">Marge nette {PERIODS.find(p => p.key === selectedPeriod)?.label}</p>
-                  <p className="text-5xl font-extrabold font-['Manrope'] tracking-tight">
-                    {margin >= 0 ? '+' : ''}{fmt(margin)} <span className="text-xl opacity-40">EUR</span>
+                  <p className="text-3xl sm:text-5xl font-extrabold font-['Manrope'] tracking-tight">
+                    {margin >= 0 ? '+' : ''}{fmt(margin)} <span className="text-base sm:text-xl opacity-40">EUR</span>
                   </p>
                 </div>
-                <div className="text-right space-y-2 opacity-80">
+                <div className="text-left sm:text-right space-y-2 opacity-80">
                   <p className="text-sm">CA <span className="font-extrabold">{fmt(data.ca)}</span></p>
                   <p className="text-sm">Charges <span className="font-extrabold">{fmt(totalAllCharges)}</span></p>
                 </div>
