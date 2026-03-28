@@ -134,6 +134,27 @@ export interface Translations {
   crm_feature_csv_title: string
   crm_feature_csv_desc: string
 
+  // Qualification Section
+  qualification_badge: string
+  qualification_title: string
+  qualification_subtitle: string
+  qualification_check_1: string
+  qualification_check_2: string
+  qualification_check_3: string
+  qualification_check_4: string
+  qualification_check_5: string
+  qualification_mock_name: string
+  qualification_mock_role: string
+  qualification_mock_q1: string
+  qualification_mock_a1: string
+  qualification_mock_q2: string
+  qualification_mock_a2: string
+  qualification_mock_q3: string
+  qualification_mock_a3: string
+  qualification_mock_q3_badge: string
+  qualification_mock_score: string
+  qualification_mock_eliminatory: string
+
   // CRM KPIs
   crm_kpi_pipeline_title: string
   crm_kpi_pipeline_value: string
@@ -415,6 +436,27 @@ const fr: Translations = {
   crm_feature_tag_urgent: 'Urgent',
   crm_feature_csv_title: 'Import / Export CSV',
   crm_feature_csv_desc: "Importez vos prospects depuis n'importe quel CRM via CSV, ou exportez votre base en un clic. Un prompt IA intégré reformate automatiquement vos fichiers.",
+
+  // Qualification Section
+  qualification_badge: 'Auto-Qualification',
+  qualification_title: 'Filtrez vos prospects avant m\u00eame de d\u00e9crocher',
+  qualification_subtitle: 'Configurez un questionnaire intelligent sur vos pages de capture. Chaque r\u00e9ponse est scor\u00e9e automatiquement et les mauvais profils sont \u00e9limin\u00e9s avant d\u2019arriver dans votre pipeline.',
+  qualification_check_1: 'Questionnaire configurable : texte, choix multiple, nombre',
+  qualification_check_2: 'Scoring automatique de chaque r\u00e9ponse (0 \u00e0 100%)',
+  qualification_check_3: 'Disqualification auto si trop de r\u00e9ponses \u00e9liminatoires',
+  qualification_check_4: 'Tags syst\u00e8me \u00abIncomplet\u00bb et \u00ab\u00c9limin\u00e9\u00bb automatiques',
+  qualification_check_5: 'Score de qualification visible sur chaque fiche prospect',
+  qualification_mock_name: 'Sophie Martin',
+  qualification_mock_role: 'Fondatrice \u2022 AgenceFlow',
+  qualification_mock_q1: 'Budget mensuel pr\u00e9vu ?',
+  qualification_mock_a1: '5 000\u20AC',
+  qualification_mock_q2: 'Taille de votre \u00e9quipe ?',
+  qualification_mock_a2: '2 personnes',
+  qualification_mock_q3: 'Exp\u00e9rience en closing ?',
+  qualification_mock_a3: 'Aucune',
+  qualification_mock_q3_badge: '\u00c9liminatoire',
+  qualification_mock_score: 'Score global',
+  qualification_mock_eliminatory: 'R\u00e9ponses \u00e9liminatoires',
 
   // CRM KPIs
   crm_kpi_pipeline_title: 'KPI CRM \u2022 Pipeline',
@@ -903,6 +945,27 @@ const en: Translations = {
   crm_feature_tag_urgent: 'Urgent',
   crm_feature_csv_title: 'Import / Export CSV',
   crm_feature_csv_desc: 'Import your prospects from any CRM via CSV, or export your database in one click. A built-in AI prompt automatically reformats your files.',
+
+  // Qualification Section
+  qualification_badge: 'Smart Qualification',
+  qualification_title: 'Filter your prospects before you even pick up the phone',
+  qualification_subtitle: 'Set up a smart questionnaire on your capture pages. Each answer is scored automatically and bad-fit leads are eliminated before reaching your pipeline.',
+  qualification_check_1: 'Configurable questionnaire: text, multiple choice, number',
+  qualification_check_2: 'Automatic scoring for each answer (0 to 100%)',
+  qualification_check_3: 'Auto-disqualification when too many eliminatory answers',
+  qualification_check_4: 'Automatic system tags \u00abIncomplete\u00bb and \u00abEliminated\u00bb',
+  qualification_check_5: 'Qualification score visible on every prospect card',
+  qualification_mock_name: 'Sophie Martin',
+  qualification_mock_role: 'Founder \u2022 AgenceFlow',
+  qualification_mock_q1: 'Planned monthly budget?',
+  qualification_mock_a1: '\u20AC5,000',
+  qualification_mock_q2: 'Team size?',
+  qualification_mock_a2: '2 people',
+  qualification_mock_q3: 'Closing experience?',
+  qualification_mock_a3: 'None',
+  qualification_mock_q3_badge: 'Eliminatory',
+  qualification_mock_score: 'Overall score',
+  qualification_mock_eliminatory: 'Eliminatory answers',
 
   // CRM KPIs
   crm_kpi_pipeline_title: 'CRM KPI \u2022 Pipeline',

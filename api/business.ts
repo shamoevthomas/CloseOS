@@ -3133,7 +3133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Only create if not already exists (avoid duplicates)
       if (!existing) {
-        await supabase
+        const { data: newProspect } = await supabase
           .from('business_prospects')
           .insert({
             user_id: campaign.user_id,
@@ -3146,6 +3146,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             campaign_id: campaign.id,
             notes: custom_data ? JSON.stringify(custom_data) : null,
           })
+          .select('id')
+          .single()
+
+        // Add "Incomplet" system tag
+        if (newProspect) {
+          const { data: incompletTag } = await supabase
+            .from('business_tags')
+            .select('id')
+            .eq('owner_id', campaign.user_id)
+            .eq('name', 'Incomplet')
+            .eq('is_system', true)
+            .maybeSingle()
+          const tagId = incompletTag?.id || (await supabase
+            .from('business_tags')
+            .insert({ owner_id: campaign.user_id, name: 'Incomplet', color: '#f59e0b', is_system: true })
+            .select('id').single().then(r => r.data?.id))
+          if (tagId) {
+            await supabase.from('business_prospect_tags').insert({ prospect_id: newProspect.id, tag_id: tagId }).catch(() => {})
+          }
+        }
       }
 
       return res.status(200).json({ success: true })
@@ -3986,6 +4006,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         prospect = inserted
       }
 
+      // ─── Remove "Incomplet" system tag (prospect completed the capture flow) ───
+      {
+        const { data: incompletTag } = await supabase
+          .from('business_tags')
+          .select('id')
+          .eq('owner_id', campaign.user_id)
+          .eq('name', 'Incomplet')
+          .eq('is_system', true)
+          .maybeSingle()
+        if (incompletTag) {
+          // Use service-level delete to bypass the system tag unlink trigger
+          await supabase.rpc('remove_system_tag_from_prospect', { p_prospect_id: prospect.id, p_tag_id: incompletTag.id }).catch(() => {
+            // Fallback: direct delete (will fail if trigger blocks it)
+          })
+        }
+      }
+
       // ─── Questionnaire scoring & disqualification ───
       let disqualified = false
       const { answers: rawAnswers } = req.body
@@ -4045,32 +4082,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             } else if (q.question_type === 'number') {
               const numVal = parseFloat(answerVal)
               const exp = q.expected_answer
-              if (exp !== null && exp !== undefined && !isNaN(numVal)) {
+              // Check eliminatory FIRST so we can set score=0
+              const elimNum = q.eliminatory_answers
+              if (Array.isArray(elimNum) && elimNum.length > 0) {
+                if (elimNum.includes(numVal) || elimNum.includes(String(numVal))) isEliminatory = true
+                for (const e of elimNum) {
+                  if (typeof e === 'object' && e.min !== undefined && e.max !== undefined) {
+                    if (numVal >= e.min && numVal <= e.max) isEliminatory = true
+                  }
+                }
+              }
+              if (isEliminatory) {
+                score = 0
+              } else if (exp !== null && exp !== undefined && !isNaN(numVal)) {
                 if (typeof exp === 'object' && exp.min !== undefined && exp.max !== undefined) {
-                  // Range
-                  if (numVal >= exp.min && numVal <= exp.max) score = 100
-                  else {
-                    const range = exp.max - exp.min
-                    const dist = numVal < exp.min ? exp.min - numVal : numVal - exp.max
-                    score = Math.max(0, Math.round((1 - dist / (range || 1)) * 100))
+                  // Range: linear gradient 40%-100% within range, 20% outside
+                  if (exp.min === exp.max) {
+                    score = numVal === exp.min ? 100 : 20
+                  } else if (numVal >= exp.min && numVal <= exp.max) {
+                    score = Math.round(40 + ((numVal - exp.min) / (exp.max - exp.min)) * 60)
+                  } else {
+                    score = 20
                   }
                 } else {
                   // Exact value
                   const target = typeof exp === 'number' ? exp : parseFloat(exp)
                   if (!isNaN(target)) {
-                    if (numVal === target) score = 100
-                    else score = Math.max(0, Math.round((1 - Math.abs(numVal - target) / (Math.abs(target) || 1)) * 100))
-                  }
-                }
-              }
-              // Number eliminatory
-              const elimNum = q.eliminatory_answers
-              if (Array.isArray(elimNum) && elimNum.length > 0) {
-                if (elimNum.includes(numVal) || elimNum.includes(String(numVal))) isEliminatory = true
-                // Range eliminatory
-                for (const e of elimNum) {
-                  if (typeof e === 'object' && e.min !== undefined && e.max !== undefined) {
-                    if (numVal >= e.min && numVal <= e.max) isEliminatory = true
+                    score = numVal === target ? 100 : 20
                   }
                 }
               }
@@ -4095,6 +4133,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             prospect.stage = 'unqualified'
             prospect.assigned_to = null
             prospect.assigned_setter = null
+
+            // Add "Éliminé" system tag
+            const { data: elimTag } = await supabase
+              .from('business_tags')
+              .select('id')
+              .eq('owner_id', campaign.user_id)
+              .eq('name', 'Éliminé')
+              .eq('is_system', true)
+              .maybeSingle()
+            const elimTagId = elimTag?.id || (await supabase
+              .from('business_tags')
+              .insert({ owner_id: campaign.user_id, name: 'Éliminé', color: '#ef4444', is_system: true })
+              .select('id').single().then(r => r.data?.id))
+            if (elimTagId) {
+              await supabase.from('business_prospect_tags').insert({ prospect_id: prospect.id, tag_id: elimTagId }).catch(() => {})
+            }
           }
         }
       }

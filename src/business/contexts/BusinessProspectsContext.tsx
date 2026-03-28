@@ -102,6 +102,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   const [airtableConnected, setAirtableConnected] = useState(false)
   const [ghlConnected, setGhlConnected] = useState(false)
   const [nextSyncSeconds, setNextSyncSeconds] = useState(SYNC_INTERVAL_SECONDS)
+  const [currentUserName, setCurrentUserName] = useState('')
 
   const crmProvider = businessSettings?.crm_provider || 'closeos'
 
@@ -157,6 +158,13 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       setGhlConnected(false)
     }
   }, [userId, authLoading, loadProspects, checkCrmStatus])
+
+  // Fetch current user's display name for history logging
+  useEffect(() => {
+    if (!user?.id || isTeamMember) return
+    supabase.from('business_users').select('full_name').eq('id', user.id).maybeSingle()
+      .then(({ data }) => { if (data?.full_name) setCurrentUserName(data.full_name) })
+  }, [user?.id, isTeamMember])
 
   // Check URL params for OAuth callback
   useEffect(() => {
@@ -508,17 +516,47 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       pushToSystemeioIfNeeded(data[0])
       pushToAirtableIfNeeded(data[0])
       pushToGhlIfNeeded(data[0])
+
+      // Log creation history
+      if (userId) {
+        const initialFields: Record<string, string> = {}
+        for (const key of Object.keys(TRACKED_FIELDS)) {
+          const val = (data[0] as any)[key]
+          if (val != null && val !== '') initialFields[key] = String(val)
+        }
+        const cName = isTeamMember
+          ? `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || 'Membre'
+          : currentUserName || 'Système'
+        const cId = isTeamMember ? (teamMember?.id || user.id || '') : (user.id || '')
+        supabase.from('business_prospect_history').insert({
+          prospect_id: data[0].id,
+          business_owner_id: userId,
+          changed_by_id: cId,
+          changed_by_name: cName,
+          change_type: 'created',
+          field_name: null,
+          old_value: null,
+          new_value: null,
+          metadata: initialFields,
+        }).then(({ error }) => {
+          if (error) console.error('[History] Creation log error:', error.message)
+        })
+      }
     }
   }
 
   // ─── History logging ────────────────────────────────────────────────
   const TRACKED_FIELDS: Record<string, string> = {
-    contact: 'Nom', email: 'Email', phone: 'Telephone', company: 'Entreprise',
-    stage: 'Etape', value: 'Montant', formula_id: 'Offre',
+    firstName: 'Prénom', lastName: 'Nom', contact: 'Contact',
+    email: 'Email', phone: 'Téléphone', company: 'Entreprise', title: 'Poste',
+    stage: 'Étape', value: 'Montant',
+    offer: 'Offre', offer_id: 'Offre ID', formula_id: 'Formule',
     assigned_to: 'Closer', assigned_setter: 'Setter',
-    payment_type: 'Mode de paiement', installments: 'Mensualites',
+    payment_type: 'Mode de paiement', installments: 'Mensualités',
+    probability: 'Probabilité', notes: 'Notes',
+    avatar_url: 'Photo de profil', pipeline_visible: 'Visible pipeline',
+    loss_reason: 'Raison de perte', loss_details: 'Détails de perte',
     stripe_subscription_id: 'Abonnement Stripe', subscription_status: 'Statut abonnement',
-    notes: 'Notes',
   }
 
   const logProspectHistory = useCallback(async (
@@ -528,7 +566,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   ) => {
     const changerName = isTeamMember
       ? `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || 'Membre'
-      : 'Owner'
+      : currentUserName || 'Owner'
     const changerId = isTeamMember ? (teamMember?.id || user?.id || '') : (user?.id || '')
 
     const rows = changes
@@ -545,9 +583,10 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       }))
 
     if (rows.length > 0) {
-      await supabase.from('business_prospect_history').insert(rows).throwOnError().catch(() => {})
+      const { error: histErr } = await supabase.from('business_prospect_history').insert(rows)
+      if (histErr) console.error('[History] Insert error:', histErr.message)
     }
-  }, [isTeamMember, teamMember, user?.id])
+  }, [isTeamMember, teamMember, user?.id, currentUserName])
 
   const updateProspect = async (id: number, updates: Partial<BusinessProspect>) => {
     const previousProspects = prospects

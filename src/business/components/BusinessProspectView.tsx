@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { PhoneInput } from './PhoneInput'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -287,20 +287,22 @@ export function BusinessProspectView({
   const [reminderActionLoading, setReminderActionLoading] = useState<number | null>(null)
 
   // Tags
-  const [allTags, setAllTags] = useState<{ id: string; name: string; color: string }[]>([])
+  const [allTags, setAllTags] = useState<{ id: string; name: string; color: string; is_system?: boolean }[]>([])
   const [prospectTagIds, setProspectTagIds] = useState<string[]>([])
   const [showTagPicker, setShowTagPicker] = useState(false)
 
   useEffect(() => {
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId || !prospect.id) return
-    supabase.from('business_tags').select('id, name, color').eq('owner_id', ownerId)
+    supabase.from('business_tags').select('id, name, color, is_system').eq('owner_id', ownerId)
       .then(({ data }) => setAllTags(data || []))
     supabase.from('business_prospect_tags').select('tag_id').eq('prospect_id', prospect.id)
       .then(({ data }) => setProspectTagIds((data || []).map(d => d.tag_id)))
   }, [prospect.id, user?.id, ownerUserId, isTeamMember])
 
   const handleToggleTag = async (tagId: string) => {
+    const tag = allTags.find(t => t.id === tagId)
+    if (tag?.is_system && prospectTagIds.includes(tagId)) return // Cannot remove system tags
     if (prospectTagIds.includes(tagId)) {
       await supabase.from('business_prospect_tags').delete().eq('prospect_id', prospect.id).eq('tag_id', tagId)
       setProspectTagIds(prev => prev.filter(id => id !== tagId))
@@ -502,22 +504,113 @@ export function BusinessProspectView({
   // History
   const [history, setHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
-  const [expandedHistory, setExpandedHistory] = useState<Set<number>>(new Set())
+  const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set())
+  const historyInitRef = useRef(false)
 
   useEffect(() => {
     if (activeTab !== 'historique' || !prospect.id) return
     setHistoryLoading(true)
+    historyInitRef.current = false
     supabase
       .from('business_prospect_history')
       .select('*')
       .eq('prospect_id', prospect.id)
-      .order('created_at', { ascending: false })
-      .limit(100)
+      .order('created_at', { ascending: true })
+      .limit(200)
       .then(({ data }) => {
         setHistory(data || [])
         setHistoryLoading(false)
       })
   }, [activeTab, prospect.id])
+
+  // Group history entries by timestamp (same insert = same created_at)
+  interface HistoryGroup {
+    key: string
+    created_at: string
+    changed_by_name: string
+    type: 'created' | 'stage_change' | 'stripe_linked' | 'stripe_renewal' | 'field_update'
+    entries: any[]
+    metadata?: Record<string, string>
+  }
+
+  const historyGroups = useMemo<HistoryGroup[]>(() => {
+    const groups: HistoryGroup[] = []
+    for (const entry of history) {
+      if (entry.change_type === 'created') {
+        groups.push({
+          key: entry.created_at,
+          created_at: entry.created_at,
+          changed_by_name: entry.changed_by_name || 'Système',
+          type: 'created',
+          entries: [entry],
+          metadata: entry.metadata || {},
+        })
+        continue
+      }
+      const last = groups[groups.length - 1]
+      if (last && last.type !== 'created' && last.created_at === entry.created_at && last.changed_by_name === entry.changed_by_name) {
+        last.entries.push(entry)
+        if (entry.change_type === 'stage_change') last.type = 'stage_change'
+        else if (entry.change_type === 'stripe_linked' && last.type === 'field_update') last.type = 'stripe_linked'
+        else if (entry.change_type === 'stripe_renewal') last.type = 'stripe_renewal'
+      } else {
+        groups.push({
+          key: `${entry.created_at}_${entry.id}`,
+          created_at: entry.created_at,
+          changed_by_name: entry.changed_by_name || 'Système',
+          type: entry.change_type || 'field_update',
+          entries: [entry],
+        })
+      }
+    }
+    return groups
+  }, [history])
+
+  // Auto-expand last group on first load
+  useEffect(() => {
+    if (historyGroups.length > 0 && !historyInitRef.current) {
+      historyInitRef.current = true
+      setExpandedHistory(new Set([historyGroups[historyGroups.length - 1].key]))
+    }
+  }, [historyGroups])
+
+  // Helpers for resolving IDs to display names
+  const resolveMemberName = useCallback((id: string | null | undefined) => {
+    if (!id) return '(aucun)'
+    const member = teamMembers.find(m => m.id === id)
+    if (member) return `${member.first_name} ${member.last_name}`.trim()
+    return id
+  }, [teamMembers])
+
+  const resolveStageLabel = useCallback((stage: string | null | undefined) => {
+    if (!stage) return '(aucun)'
+    const custom = customStages.find(s => s.id === stage)
+    if (custom) return custom.label
+    const s = ALL_STAGES.find(s => s.id === stage)
+    return s?.name || stage
+  }, [customStages])
+
+  const resolveFormulaName = useCallback((formulaId: string | null | undefined) => {
+    if (!formulaId) return '(aucune)'
+    const f = allFormulas.find(f => f.id === formulaId)
+    return f?.name || formulaId
+  }, [allFormulas])
+
+  const formatHistoryValue = useCallback((field: string, value: string | null | undefined): string => {
+    if (value == null || value === '') return '(vide)'
+    if (field === 'assigned_to' || field === 'assigned_setter') return resolveMemberName(value)
+    if (field === 'stage') return resolveStageLabel(value)
+    if (field === 'formula_id') return resolveFormulaName(value)
+    if (field === 'value') return `${Number(value).toLocaleString('fr-FR')}€`
+    if (field === 'probability') return `${value}%`
+    if (field === 'pipeline_visible') return value === 'true' ? 'Oui' : 'Non'
+    if (field === 'payment_type') {
+      const labels: Record<string, string> = { once: 'Comptant', installments: 'Mensualités', cash: 'Comptant', comptant: 'Comptant' }
+      return labels[value] || value
+    }
+    if (field === 'avatar_url') return 'Photo mise à jour'
+    return value
+  }, [resolveMemberName, resolveStageLabel, resolveFormulaName])
 
   // -- Optimistic update helper --
   const handleUpdate = (updates: Partial<BusinessProspect>) => {
@@ -640,13 +733,13 @@ export function BusinessProspectView({
       }>
 
         {/* Header */}
-        <header className="p-4 md:p-8 pb-4">
+        <header className="p-4 md:p-6 pb-3">
           <div className="flex justify-between items-start">
-            <div className="flex items-center gap-5 min-w-0">
-              <div className="flex flex-col items-center shrink-0 gap-1.5">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="flex flex-col items-center shrink-0 gap-1">
                 <button
                   onClick={() => avatarInputRef.current?.click()}
-                  className="relative w-16 h-16 rounded-full bg-[#e4e2e1] dark:bg-neutral-800 flex items-center justify-center overflow-hidden text-2xl font-business-display font-extrabold text-stone-500 dark:text-neutral-400 group cursor-pointer"
+                  className="relative w-11 h-11 rounded-full bg-[#e4e2e1] dark:bg-neutral-800 flex items-center justify-center overflow-hidden text-lg font-business-display font-extrabold text-stone-500 dark:text-neutral-400 group cursor-pointer"
                   title="Changer la photo"
                 >
                   {local.avatar_url ? (
@@ -679,9 +772,9 @@ export function BusinessProspectView({
                   const strokeColor = avg < 40 ? 'stroke-red-500' : avg < 70 ? 'stroke-orange-500' : 'stroke-emerald-500'
                   const textColor = avg < 40 ? 'fill-red-500' : avg < 70 ? 'fill-orange-500' : 'fill-emerald-500'
                   return (
-                    <svg className="w-14 h-14" viewBox="0 0 56 56">
-                      <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4" className="stroke-stone-200 dark:stroke-neutral-700" />
-                      <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4"
+                    <svg className="w-10 h-10" viewBox="0 0 56 56">
+                      <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4.5" className="stroke-stone-200 dark:stroke-neutral-700" />
+                      <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4.5"
                         className={strokeColor}
                         strokeDasharray={`${(avg / 100) * circumference} ${circumference}`}
                         strokeLinecap="round"
@@ -696,7 +789,7 @@ export function BusinessProspectView({
                 })()}
               </div>
               <div className="min-w-0">
-                <h2 className="text-3xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
+                <h2 className="text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
                   {local.contact || 'Sans nom'}
                 </h2>
                 {local.company && (
@@ -706,18 +799,29 @@ export function BusinessProspectView({
             </div>
             <button
               onClick={onClose}
-              className="min-w-[44px] min-h-[44px] w-12 h-12 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center hover:bg-[#efedec] dark:hover:bg-neutral-700 transition-colors shrink-0"
+              className="min-w-[36px] min-h-[36px] w-9 h-9 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center hover:bg-[#efedec] dark:hover:bg-neutral-700 transition-colors shrink-0"
             >
               <X className="h-5 w-5 text-stone-900 dark:text-white" strokeWidth={1.5} />
             </button>
           </div>
 
           {/* Tags - below name */}
-          <div className="mt-4 ml-0 md:ml-[84px] relative">
+          <div className="mt-2 ml-0 md:ml-[60px] relative">
             <div className="flex flex-wrap items-center gap-2">
               {prospectTagIds.map(tagId => {
                 const tag = allTags.find(t => t.id === tagId)
                 if (!tag) return null
+                if (tag.is_system) {
+                  return (
+                    <span
+                      key={tagId}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold pl-2.5 pr-2.5 py-1 rounded-full text-white"
+                      style={{ backgroundColor: tag.color }}
+                    >
+                      {tag.name}
+                    </span>
+                  )
+                }
                 return (
                   <button
                     key={tagId}
@@ -744,7 +848,7 @@ export function BusinessProspectView({
             {showTagPicker && (
               <div className="absolute left-0 top-full mt-1.5 z-20 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-stone-200/60 dark:border-neutral-700 p-2 min-w-[200px] max-w-[300px]">
                 <div className="flex flex-col gap-0.5">
-                  {allTags.map(tag => {
+                  {allTags.filter(t => !t.is_system).map(tag => {
                     const isActive = prospectTagIds.includes(tag.id)
                     return (
                       <button
@@ -771,17 +875,17 @@ export function BusinessProspectView({
         </header>
 
         {/* Quick Actions */}
-        <section className="px-8 py-5 flex flex-wrap gap-3 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+        <section className="px-6 py-3 flex flex-wrap gap-2.5 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
           <button
             onClick={() => navigate(`/business/cockpit?name=${encodeURIComponent(local.contact)}&prospectId=${prospect.id}`)}
-            className="flex items-center gap-2 px-6 py-3 bg-stone-900 text-white rounded-full font-business-display font-bold text-sm tracking-wide transition-transform active:scale-95 shadow-lg shadow-stone-900/20"
+            className="flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-full font-business-display font-bold text-sm tracking-wide transition-transform active:scale-95 shadow-lg shadow-stone-900/20"
           >
             <PhoneCall className="h-4 w-4" strokeWidth={1.5} />
             Ouvrir le Call Room
           </button>
           <button
             onClick={() => setShowReminderForm(true)}
-            className="flex items-center gap-2 px-5 py-3 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 rounded-full font-business-display font-bold text-sm transition-all hover:brightness-105 active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 rounded-full font-business-display font-bold text-sm transition-all hover:brightness-105 active:scale-95"
           >
             <Bell className="h-4 w-4" strokeWidth={1.5} />
             Créer un rappel
@@ -789,21 +893,21 @@ export function BusinessProspectView({
           <div className="flex gap-2">
             <button
               onClick={handleOpenGmail}
-              className="w-12 h-12 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+              className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
             >
-              <Mail className="h-5 w-5" strokeWidth={1.5} />
+              <Mail className="h-4 w-4" strokeWidth={1.5} />
             </button>
             <button
               onClick={handleOpenWhatsApp}
-              className="w-12 h-12 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+              className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
             >
-              <MessageCircle className="h-5 w-5" strokeWidth={1.5} />
+              <MessageCircle className="h-4 w-4" strokeWidth={1.5} />
             </button>
           </div>
         </section>
 
         {/* Tabs */}
-        <nav className="px-4 md:px-8 pt-6 flex gap-4 md:gap-8 overflow-x-auto">
+        <nav className="px-4 md:px-6 pt-4 flex gap-4 md:gap-6 overflow-x-auto">
           {([
             { key: 'info' as const, label: 'Informations' },
             { key: 'notes' as const, label: "Notes d'Appel" },
@@ -1647,113 +1751,128 @@ export function BusinessProspectView({
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-6 w-6 animate-spin text-stone-400" strokeWidth={1.5} />
                 </div>
-              ) : history.length === 0 ? (
+              ) : historyGroups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-3">
                     <Clock className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
                   </div>
-                  <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">Aucun historique</p>
-                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">Les modifications apparaitront ici.</p>
+                  <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">Aucun historique enregistré</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">Les modifications apparaîtront ici.</p>
                 </div>
               ) : (
                 <div className="space-y-0">
-                  {history.map((entry, idx) => {
-                    const isExpanded = expandedHistory.has(entry.id)
-                    const isLast = idx === history.length - 1
-                    const date = new Date(entry.created_at)
-                    const timeStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' a ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                  {historyGroups.map((group, gIdx) => {
+                    const isExpanded = expandedHistory.has(group.key)
+                    const isLast = gIdx === historyGroups.length - 1
+                    const date = new Date(group.created_at)
+                    const timeStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + ' à ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
                     const FIELD_LABELS: Record<string, string> = {
-                      contact: 'Nom', email: 'Email', phone: 'Telephone', company: 'Entreprise',
-                      stage: 'Etape', value: 'Montant', formula_id: 'Offre',
-                      assigned_to: 'Closer', assigned_setter: 'Setter',
-                      payment_type: 'Mode de paiement', installments: 'Mensualites',
-                      stripe_subscription_id: 'Abonnement Stripe', subscription_status: 'Statut abo.',
-                      subscription: 'Paiement', notes: 'Notes',
-                    }
-                    const STAGE_LABELS: Record<string, string> = {
-                      prospect: 'Prospect', qualified: 'Qualifie', unqualified: 'Non-Qualifie',
-                      won: 'Gagne', followup: 'Follow Up', noanswer: 'Pas de Reponse',
-                      noshow: 'No Show', lost: 'Perdu',
-                    }
-                    const CHANGE_ICONS: Record<string, { bg: string; text: string }> = {
-                      stage_change: { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400' },
-                      stripe_renewal: { bg: 'bg-[#635BFF]/10', text: 'text-[#635BFF]' },
-                      stripe_linked: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
-                      field_update: { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
+                      firstName: 'Prénom', lastName: 'Nom', contact: 'Contact',
+                      email: 'Email', phone: 'Téléphone', company: 'Entreprise', title: 'Poste',
+                      stage: 'Étape', value: 'Montant',
+                      offer: 'Offre', offer_id: 'Offre ID', formula_id: 'Formule',
+                      assigned_to: 'Closer assigné', assigned_setter: 'Setter assigné',
+                      payment_type: 'Mode de paiement', installments: 'Mensualités',
+                      probability: 'Probabilité', notes: 'Notes',
+                      avatar_url: 'Photo de profil', pipeline_visible: 'Visible pipeline',
+                      loss_reason: 'Raison de perte', loss_details: 'Détails de perte',
+                      stripe_subscription_id: 'Abonnement Stripe', subscription_status: 'Statut abonnement',
                     }
 
-                    const fieldLabel = FIELD_LABELS[entry.field_name] || entry.field_name
-                    const style = CHANGE_ICONS[entry.change_type] || CHANGE_ICONS.field_update
-                    const displayOld = entry.change_type === 'stage_change' ? (STAGE_LABELS[entry.old_value] || entry.old_value) : entry.old_value
-                    const displayNew = entry.change_type === 'stage_change' ? (STAGE_LABELS[entry.new_value] || entry.new_value) : entry.new_value
+                    const CHANGE_ICONS: Record<string, { icon: typeof Plus; bg: string; text: string }> = {
+                      created: { icon: Plus, bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
+                      stage_change: { icon: Tag, bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400' },
+                      stripe_renewal: { icon: CreditCard, bg: 'bg-[#635BFF]/10', text: 'text-[#635BFF]' },
+                      stripe_linked: { icon: Link2, bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
+                      field_update: { icon: Pencil, bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
+                    }
+
+                    const style = CHANGE_ICONS[group.type] || CHANGE_ICONS.field_update
+                    const IconComponent = style.icon
 
                     let title = ''
-                    if (entry.change_type === 'stage_change') {
-                      title = `Etape → ${displayNew}`
-                    } else if (entry.change_type === 'stripe_renewal') {
-                      title = `Renouvellement ${entry.new_value}`
-                    } else if (entry.change_type === 'stripe_linked') {
-                      title = 'Abonnement Stripe lie'
+                    if (group.type === 'created') {
+                      title = 'Création du prospect'
+                    } else if (group.type === 'stage_change') {
+                      const stageEntry = group.entries.find(e => e.change_type === 'stage_change')
+                      title = stageEntry ? `Étape → ${resolveStageLabel(stageEntry.new_value)}` : 'Changement d\'étape'
+                    } else if (group.type === 'stripe_renewal') {
+                      title = 'Renouvellement Stripe'
+                    } else if (group.type === 'stripe_linked') {
+                      title = 'Abonnement Stripe lié'
                     } else {
-                      title = `${fieldLabel} modifie`
+                      const count = group.entries.length
+                      title = count === 1
+                        ? `${FIELD_LABELS[group.entries[0].field_name] || group.entries[0].field_name} modifié`
+                        : `${count} champs modifiés`
                     }
 
                     return (
-                      <div key={entry.id}>
-                        {/* Card */}
+                      <div key={group.key}>
                         <button
                           onClick={() => setExpandedHistory(prev => {
                             const next = new Set(prev)
-                            next.has(entry.id) ? next.delete(entry.id) : next.add(entry.id)
+                            next.has(group.key) ? next.delete(group.key) : next.add(group.key)
                             return next
                           })}
                           className="w-full text-left rounded-xl border border-stone-200/60 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4 hover:bg-[#f5f3f2]/50 dark:hover:bg-neutral-700/50 transition-all"
                         >
                           <div className="flex items-center gap-3">
                             <div className={cn('p-1.5 rounded-lg shrink-0', style.bg)}>
-                              {entry.change_type === 'stripe_renewal' ? (
-                                <CreditCard className={cn('h-3.5 w-3.5', style.text)} />
-                              ) : entry.change_type === 'stage_change' ? (
-                                <Tag className={cn('h-3.5 w-3.5', style.text)} />
-                              ) : (
-                                <Pencil className={cn('h-3.5 w-3.5', style.text)} />
-                              )}
+                              <IconComponent className={cn('h-3.5 w-3.5', style.text)} strokeWidth={1.5} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-stone-900 dark:text-white truncate">{title}</p>
                               <p className="text-[10px] text-stone-400 dark:text-neutral-500">
-                                {timeStr} — {entry.changed_by_name || 'Systeme'}
+                                Par : {group.changed_by_name} &bull; {timeStr}
                               </p>
                             </div>
                             <ChevronDown className={cn('h-4 w-4 text-stone-400 transition-transform shrink-0', isExpanded && 'rotate-180')} />
                           </div>
 
-                          {/* Expanded detail */}
                           {isExpanded && (
-                            <div className="mt-3 pt-3 border-t border-stone-100 dark:border-neutral-700 space-y-2">
-                              {entry.old_value && (
-                                <div className="flex items-start gap-2">
-                                  <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase w-12 shrink-0 pt-0.5">Avant</span>
-                                  <span className="text-xs text-stone-600 dark:text-neutral-300 bg-red-50 dark:bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-100 dark:border-red-500/20 line-through">
-                                    {displayOld}
-                                  </span>
+                            <div className="mt-3 pt-3 border-t border-stone-100 dark:border-neutral-700">
+                              {group.type === 'created' && group.metadata ? (
+                                <div className="space-y-1.5">
+                                  {Object.entries(group.metadata).map(([field, val]) => (
+                                    <div key={field} className="flex items-start gap-2">
+                                      <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 w-24 shrink-0 pt-0.5 truncate">{FIELD_LABELS[field] || field}</span>
+                                      <span className="text-xs text-stone-900 dark:text-white font-medium">{formatHistoryValue(field, val)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {group.entries.map((entry: any) => {
+                                    const fieldLabel = FIELD_LABELS[entry.field_name] || entry.field_name
+                                    const oldDisplay = formatHistoryValue(entry.field_name, entry.old_value)
+                                    const newDisplay = formatHistoryValue(entry.field_name, entry.new_value)
+                                    return (
+                                      <div key={entry.id} className="flex items-start gap-2">
+                                        <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 w-24 shrink-0 pt-0.5 truncate">{fieldLabel}</span>
+                                        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                          {entry.old_value && (
+                                            <>
+                                              <span className="text-xs text-stone-500 dark:text-neutral-400 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-md border border-red-100 dark:border-red-500/20 line-through truncate max-w-[140px]">
+                                                {oldDisplay}
+                                              </span>
+                                              <span className="text-[10px] text-stone-400 dark:text-neutral-500">→</span>
+                                            </>
+                                          )}
+                                          <span className="text-xs text-stone-900 dark:text-white bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-500/20 font-medium truncate max-w-[140px]">
+                                            {newDisplay}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
                                 </div>
                               )}
-                              <div className="flex items-start gap-2">
-                                <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase w-12 shrink-0 pt-0.5">Apres</span>
-                                <span className="text-xs text-stone-900 dark:text-white bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-100 dark:border-emerald-500/20 font-medium">
-                                  {displayNew || '—'}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">
-                                Champ : {fieldLabel}
-                              </p>
                             </div>
                           )}
                         </button>
 
-                        {/* Arrow connector */}
                         {!isLast && (
                           <div className="flex justify-center py-1">
                             <div className="flex flex-col items-center">

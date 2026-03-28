@@ -36,6 +36,7 @@ interface BusinessTag {
   owner_id: string
   name: string
   color: string
+  is_system?: boolean
 }
 
 const TAG_COLORS = [
@@ -212,6 +213,8 @@ export function BusinessCRM() {
   }
 
   const handleDeleteTag = async (tagId: string) => {
+    const tag = tags.find(t => t.id === tagId)
+    if (tag?.is_system) return
     if (!confirm('Supprimer ce tag ?')) return
     await supabase.from('business_tags').delete().eq('id', tagId)
     setTags(prev => prev.filter(t => t.id !== tagId))
@@ -1164,13 +1167,16 @@ export function BusinessCRM() {
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-3 rounded-full" style={{ backgroundColor: tag.color }} />
                       <span className="text-sm font-semibold text-stone-900 dark:text-white">{tag.name}</span>
+                      {tag.is_system && <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400 dark:text-neutral-500">Système</span>}
                     </div>
-                    <button
-                      onClick={() => handleDeleteTag(tag.id)}
-                      className="p-1 text-stone-300 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    {!tag.is_system && (
+                      <button
+                        onClick={() => handleDeleteTag(tag.id)}
+                        className="p-1 text-stone-300 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 ))
               )}

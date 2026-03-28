@@ -31,7 +31,9 @@ import {
   Megaphone,
   ClipboardList,
   DollarSign,
-  Globe
+  Globe,
+  ShieldCheck,
+  XCircle,
 } from 'lucide-react';
 import { translations, detectLang, LangContext, useLang } from './businessLandingI18n';
 import type { Lang } from './businessLandingI18n';
@@ -564,6 +566,9 @@ export const BusinessLanding: React.FC = () => {
 
             {/* Capture Section */}
             <CaptureSection />
+
+            {/* Qualification Section */}
+            <QualificationSection />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-16 border-t border-stone-200">
               <CRMKPIBox index={0} titleKey="crm_kpi_pipeline_title" valueKey="crm_kpi_pipeline_value" descKey="crm_kpi_pipeline_desc" />
@@ -1274,6 +1279,141 @@ const CaptureSection = () => {
                 </div>
               </div>
             )}
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+const QualificationSection = () => {
+  const { t } = useLang();
+
+  const mockQuestions = [
+    { q: t.qualification_mock_q1, a: t.qualification_mock_a1, score: 92, eliminatory: false },
+    { q: t.qualification_mock_q2, a: t.qualification_mock_a2, score: 55, eliminatory: false },
+    { q: t.qualification_mock_q3, a: t.qualification_mock_a3, score: 0, eliminatory: true },
+  ];
+
+  const getScoreStyle = (score: number) => {
+    if (score >= 70) return { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', bar: 'bg-emerald-500' };
+    if (score >= 40) return { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600', bar: 'bg-amber-500' };
+    return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-600', bar: 'bg-red-500' };
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
+      {/* Left — Text */}
+      <div className="lg:col-span-5 flex flex-col justify-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6 w-fit">
+          <ShieldCheck className="size-3.5 text-stone-600" />
+          <span className="text-xs font-bold text-stone-600 uppercase tracking-widest">{t.qualification_badge}</span>
+        </div>
+        <h3 className="text-3xl md:text-4xl font-bold text-[#111111] tracking-tight mb-4">{t.qualification_title}</h3>
+        <p className="text-stone-500 text-lg font-medium leading-relaxed mb-6">
+          {t.qualification_subtitle}
+        </p>
+        <div className="space-y-3">
+          {([t.qualification_check_1, t.qualification_check_2, t.qualification_check_3, t.qualification_check_4, t.qualification_check_5]).map((item, i) => (
+            <div key={i} className="flex items-start gap-3 text-stone-700 font-medium">
+              <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right — Mockup */}
+      <div className="lg:col-span-7">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
+        >
+          {/* Header — Prospect avatar + score ring */}
+          <div className="p-6 border-b border-stone-100 bg-stone-50 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold text-xl shadow-inner">SM</div>
+              <div>
+                <h4 className="font-bold text-xl text-[#111111] mb-0.5">{t.qualification_mock_name}</h4>
+                <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">{t.qualification_mock_role}</span>
+              </div>
+            </div>
+            {/* Score ring */}
+            <div className="relative w-16 h-16 flex-shrink-0">
+              <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="28" fill="none" stroke="#e7e5e4" strokeWidth="5" />
+                <motion.circle
+                  cx="32" cy="32" r="28" fill="none" stroke="#10b981" strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeDasharray={175.9}
+                  initial={{ strokeDashoffset: 175.9 }}
+                  whileInView={{ strokeDashoffset: 175.9 * (1 - 0.87) }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1.2, delay: 0.4, ease: 'easeOut' }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-sm font-black text-emerald-600">87%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Question cards */}
+          <div className="p-6 space-y-3">
+            {mockQuestions.map((mq, i) => {
+              const style = getScoreStyle(mq.score);
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.3 + i * 0.12 }}
+                  className={`rounded-2xl border p-4 ${style.bg} ${style.border}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">{mq.q}</span>
+                    <div className="flex items-center gap-2">
+                      {mq.eliminatory && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold uppercase tracking-wider">
+                          <XCircle className="size-2.5" />
+                          {t.qualification_mock_q3_badge}
+                        </span>
+                      )}
+                      <span className={`text-sm font-black ${style.text}`}>{mq.score}%</span>
+                    </div>
+                  </div>
+                  <p className="text-sm font-semibold text-stone-800 mb-2">{mq.a}</p>
+                  {/* Progress bar */}
+                  <div className="h-1.5 rounded-full bg-white/60 overflow-hidden">
+                    <motion.div
+                      className={`h-full rounded-full ${style.bar}`}
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${mq.score}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.8, delay: 0.5 + i * 0.12, ease: 'easeOut' }}
+                    />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Footer — Summary */}
+          <div className="px-6 pb-6">
+            <div className="rounded-2xl bg-stone-50 border border-stone-200 p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{t.qualification_mock_score}</p>
+                <p className="text-2xl font-black text-[#111111]">87%</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{t.qualification_mock_eliminatory}</p>
+                <p className="text-2xl font-black text-red-500">1<span className="text-stone-300 text-lg">/2</span></p>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
