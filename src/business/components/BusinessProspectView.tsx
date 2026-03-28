@@ -643,31 +643,58 @@ export function BusinessProspectView({
         <header className="p-4 md:p-8 pb-4">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-5 min-w-0">
-              <button
-                onClick={() => avatarInputRef.current?.click()}
-                className="relative w-16 h-16 rounded-full bg-[#e4e2e1] dark:bg-neutral-800 flex items-center justify-center overflow-hidden shrink-0 text-2xl font-business-display font-extrabold text-stone-500 dark:text-neutral-400 group cursor-pointer"
-                title="Changer la photo"
-              >
-                {local.avatar_url ? (
-                  <img src={local.avatar_url} alt={local.contact} className="w-full h-full object-cover" />
-                ) : (
-                  (local.contact || '?')[0]?.toUpperCase()
-                )}
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                  {avatarUploading ? (
-                    <Loader2 className="h-5 w-5 text-white animate-spin" />
+              <div className="flex flex-col items-center shrink-0 gap-1.5">
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="relative w-16 h-16 rounded-full bg-[#e4e2e1] dark:bg-neutral-800 flex items-center justify-center overflow-hidden text-2xl font-business-display font-extrabold text-stone-500 dark:text-neutral-400 group cursor-pointer"
+                  title="Changer la photo"
+                >
+                  {local.avatar_url ? (
+                    <img src={local.avatar_url} alt={local.contact} className="w-full h-full object-cover" />
                   ) : (
-                    <Camera className="h-5 w-5 text-white" />
+                    (local.contact || '?')[0]?.toUpperCase()
                   )}
-                </div>
-                <input
-                  ref={avatarInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-              </button>
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                    {avatarUploading ? (
+                      <Loader2 className="h-5 w-5 text-white animate-spin" />
+                    ) : (
+                      <Camera className="h-5 w-5 text-white" />
+                    )}
+                  </div>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                </button>
+                {/* Qualification score ring */}
+                {(() => {
+                  if (!qualificationData?.answers) return null
+                  const scored = qualificationData.answers.filter(a => a.score !== null && a.score !== undefined)
+                  if (scored.length === 0) return null
+                  const avg = Math.round(scored.reduce((s, a) => s + (a.score ?? 0), 0) / scored.length)
+                  const circumference = 2 * Math.PI * 24 // r=24
+                  const strokeColor = avg < 40 ? 'stroke-red-500' : avg < 70 ? 'stroke-orange-500' : 'stroke-emerald-500'
+                  const textColor = avg < 40 ? 'fill-red-500' : avg < 70 ? 'fill-orange-500' : 'fill-emerald-500'
+                  return (
+                    <svg className="w-14 h-14" viewBox="0 0 56 56">
+                      <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4" className="stroke-stone-200 dark:stroke-neutral-700" />
+                      <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4"
+                        className={strokeColor}
+                        strokeDasharray={`${(avg / 100) * circumference} ${circumference}`}
+                        strokeLinecap="round"
+                        transform="rotate(-90 28 28)"
+                      />
+                      <text x="28" y="28" textAnchor="middle" dominantBaseline="central"
+                        className={cn('text-xs font-extrabold', textColor)}>
+                        {avg}%
+                      </text>
+                    </svg>
+                  )
+                })()}
+              </div>
               <div className="min-w-0">
                 <h2 className="text-3xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
                   {local.contact || 'Sans nom'}
