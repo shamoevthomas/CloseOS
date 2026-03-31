@@ -644,6 +644,18 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       pushToAirtableIfNeeded(data[0], prevStage)
       pushToGhlIfNeeded(data[0])
 
+      // Notify owner when prospect becomes won
+      if (updates.stage === 'won' && prevStage !== 'won') {
+        const ownerId = isTeamMember ? ownerUserId : user?.id
+        if (ownerId) {
+          fetch(`/api/business?action=prospect-won-notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: ownerId, prospect_id: id }),
+          }).catch(() => {})
+        }
+      }
+
       // Auto-match Stripe on stage=won (Method 2) — only for subscription formulas
       if (updates.stage === 'won' && data[0].email && !data[0].stripe_subscription_id && userId) {
         const formulaId = data[0].formula_id

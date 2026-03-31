@@ -7,19 +7,25 @@ import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, user, loading: authLoading } = useAuth();
-
-  // Si déjà connecté, rediriger vers le dashboard
-  useEffect(() => {
-    if (!authLoading && user) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, authLoading, navigate]);
+  const { login, user, loading: authLoading, isBusinessUser, profile, profileReady } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Si déjà connecté, rediriger vers le dashboard
+  useEffect(() => {
+    if (!authLoading && user && profileReady) {
+      // Business-only users (no Sales profile) → error
+      if (isBusinessUser && !profile) {
+        supabase.auth.signOut();
+        setError("Ce compte est associé à CloseOS Business. Connectez-vous sur closeos.fr/business/login");
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [user, authLoading, isBusinessUser, profile, profileReady, navigate]);
 
   // Forgot Password State
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -62,7 +68,27 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const result = await login({ email, password });
+      // Allow pseudo login: "TEKA" → teka@closeos.local
+      const loginEmail = email.includes('@') ? email : `${email.trim().toLowerCase()}@closeos.local`;
+
+      // Skip business-only check for internal dev accounts
+      if (!loginEmail.endsWith('@closeos.local')) {
+        // Check if this email belongs to a Business-only account (no Sales profile)
+        const emailLower = loginEmail.trim().toLowerCase();
+        const [businessOwner, businessTeam, salesProfile] = await Promise.all([
+          supabase.from('business_users').select('id').eq('email', emailLower).maybeSingle(),
+          supabase.from('business_team_members').select('id').eq('email', emailLower).maybeSingle(),
+          supabase.from('profiles').select('id').eq('email', emailLower).maybeSingle(),
+        ]);
+
+        if ((businessOwner.data || businessTeam.data) && !salesProfile.data) {
+          setError("Ce compte est associé à CloseOS Business. Connectez-vous sur closeos.fr/business/login");
+          setLoading(false);
+          return;
+        }
+      }
+
+      const result = await login({ email: loginEmail, password });
       if (result?.error) {
         setError(result.error.message || "Email ou mot de passe incorrect");
         setLoading(false);
@@ -144,11 +170,11 @@ export default function Login() {
               <div className="relative group">
                 <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                 <input
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-xl border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-4 text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
-                  placeholder="votre@email.com"
+                  placeholder="Pseudo ou email"
                   required
                 />
               </div>

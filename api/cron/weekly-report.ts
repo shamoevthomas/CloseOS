@@ -523,17 +523,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const orgName = settings?.company_name || 'CloseOS Business';
 
-      const [membersRes, prospectsRes, campaignsRes, appointmentsRes] = await Promise.all([
+      const [membersRes, prospectsRes, campaignsRes, appointmentsRes, formulasRes] = await Promise.all([
         supabaseAdmin.from('business_team_members').select('id, first_name, last_name, role, joined_at, user_id').eq('business_owner_id', owner.id),
-        supabaseAdmin.from('business_prospects').select('id, stage, value, created_at, campaign_id, assigned_to, assigned_setter, loss_reason, call_notes').eq('business_owner_id', owner.id),
+        supabaseAdmin.from('business_prospects').select('id, stage, value, created_at, campaign_id, assigned_to, assigned_setter, loss_reason, loss_details, call_notes, contact, stripe_subscription_id, subscription_amount, formula_id').eq('user_id', owner.id),
         supabaseAdmin.from('business_campaigns').select('id, name, views, is_active, created_at').eq('user_id', owner.id),
         supabaseAdmin.from('business_appointments').select('id, status, date, campaign_id, created_at').eq('user_id', owner.id),
+        supabaseAdmin.from('business_formulas').select('id, billing_type').eq('user_id', owner.id),
       ]);
 
       const members = membersRes.data || [];
       const allProspects = prospectsRes.data || [];
       const campaigns = campaignsRes.data || [];
       const allAppointments = appointmentsRes.data || [];
+      const formulaBillingTypes: Record<string, string> = {};
+      (formulasRes.data || []).forEach((f: any) => { formulaBillingTypes[f.id] = f.billing_type || 'one_time'; });
+
+      // Helper: get real CA considering subscriptions
+      const prospectCA = (p: any): number => {
+        const bt = p.formula_id ? formulaBillingTypes[p.formula_id] : null;
+        if (bt === 'subscription' && p.stripe_subscription_id && p.subscription_amount) return Number(p.subscription_amount) || 0;
+        return Number(p.value) || 0;
+      };
 
       const prospects = allProspects.filter(p => p.created_at >= weekAgoISO);
       const appointments = allAppointments.filter(a => a.created_at >= weekAgoISO);
@@ -543,14 +553,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const noshowLeads = prospects.filter(p => p.stage === 'noshow');
       const qualifiedLeads = prospects.filter(p => p.stage === 'qualified');
       const followupLeads = prospects.filter(p => p.stage === 'followup');
-      const totalCA = wonLeads.reduce((s, p) => s + (Number(p.value) || 0), 0);
+      const totalCA = wonLeads.reduce((s, p) => s + prospectCA(p), 0);
       const avgDeal = wonLeads.length > 0 ? totalCA / wonLeads.length : 0;
       const totalDecided = wonLeads.length + lostLeads.length + noshowLeads.length;
       const closingRate = totalDecided > 0 ? (wonLeads.length / totalDecided) * 100 : 0;
       const noshowEligible = prospects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage)).length;
       const noshowRate = noshowEligible > 0 ? (noshowLeads.length / noshowEligible) * 100 : 0;
       const lostRate = totalDecided > 0 ? (lostLeads.length / totalDecided) * 100 : 0;
-      const totalPipeline = prospects.filter(p => p.stage !== 'unqualified').reduce((s, p) => s + (Number(p.value) || 0), 0);
+      const totalPipeline = prospects.filter(p => p.stage !== 'unqualified').reduce((s, p) => s + prospectCA(p), 0);
       const commission = totalCA * (COMMISSION_RATE / 100);
 
       const doneAppts = appointments.filter(a => a.status === 'done').length;
@@ -588,7 +598,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const campStats = campaigns.map(c => {
         const cp = prospects.filter(p => p.campaign_id === c.id);
         const cw = cp.filter(p => p.stage === 'won');
-        const ca = cw.reduce((s, p) => s + (Number(p.value) || 0), 0);
+        const ca = cw.reduce((s, p) => s + prospectCA(p), 0);
         return {
           name: c.name, active: c.is_active, date: c.created_at, views: c.views,
           leads: cp.length, won: cw.length, ca, conv: c.views > 0 ? (cp.length / c.views) * 100 : 0,
@@ -606,7 +616,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const sb = sp.filter(p => ['qualified', 'won', 'lost', 'noshow', 'followup'].includes(p.stage));
         return {
           name: `${mb.first_name} ${mb.last_name}`.trim(), role: mb.role,
-          wins: mw.length, leads: mp.length, ca: mw.reduce((s, p) => s + (Number(p.value) || 0), 0),
+          wins: mw.length, leads: mp.length, ca: mw.reduce((s, p) => s + prospectCA(p), 0),
           setterLeads: sp.length, setterBooked: sb.length,
         };
       });

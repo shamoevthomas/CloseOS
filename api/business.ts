@@ -1844,7 +1844,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'questionnaire-save' && req.method === 'POST') {
-      const { user_id, campaign_id, enabled, required, max_eliminatory, questions } = req.body
+      const { user_id, campaign_id, enabled, required, qualifying, max_eliminatory, questions } = req.body
       if (!user_id || !campaign_id) return res.status(400).json({ error: 'user_id and campaign_id required' })
 
       // Upsert questionnaire
@@ -1854,6 +1854,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           campaign_id,
           enabled: enabled ?? false,
           required: required ?? false,
+          qualifying: qualifying ?? true,
           max_eliminatory: max_eliminatory ?? 0,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'campaign_id' })
@@ -1930,7 +1931,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Fetch questionnaire
       const { data: questionnaire } = await supabase
         .from('campaign_questionnaires')
-        .select('id, max_eliminatory')
+        .select('id, max_eliminatory, qualifying')
         .eq('campaign_id', prospect.campaign_id)
         .maybeSingle()
 
@@ -1955,6 +1956,150 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .sort((a: any, b: any) => a.sort_order - b.sort_order)
 
       return res.status(200).json({ answers: formatted, questionnaire })
+    }
+
+    // ─── Prospect won notification (email + in-app) ───
+    if (action === 'prospect-won-notify' && req.method === 'POST') {
+      const { user_id, prospect_id } = req.body
+      if (!user_id || !prospect_id) return res.status(400).json({ error: 'user_id and prospect_id required' })
+
+      // Fetch prospect
+      const { data: prospect } = await supabase
+        .from('business_prospects')
+        .select('id, contact, value, assigned_to, assigned_setter, formula_id, stripe_subscription_id, subscription_amount')
+        .eq('id', prospect_id)
+        .single()
+      if (!prospect) return res.status(404).json({ error: 'Prospect not found' })
+
+      // Fetch owner info
+      const { data: owner } = await supabase
+        .from('business_users')
+        .select('id, email, full_name')
+        .eq('id', user_id)
+        .single()
+      if (!owner?.email) return res.status(200).json({ ok: true, skipped: 'no_email' })
+
+      // Fetch team members for closer/setter names
+      const memberIds = [prospect.assigned_to, prospect.assigned_setter].filter(Boolean)
+      let closerName = '—'
+      let setterName = '—'
+      if (memberIds.length > 0) {
+        const { data: members } = await supabase
+          .from('business_team_members')
+          .select('id, first_name, last_name')
+          .in('id', memberIds)
+        if (members) {
+          const closer = members.find((m: any) => m.id === prospect.assigned_to)
+          const setter = members.find((m: any) => m.id === prospect.assigned_setter)
+          if (closer) closerName = `${closer.first_name} ${closer.last_name}`.trim()
+          if (setter) setterName = `${setter.first_name} ${setter.last_name}`.trim()
+        }
+        // Check if owner is the closer/setter
+        if (prospect.assigned_to === user_id) closerName = owner.full_name || 'Owner'
+        if (prospect.assigned_setter === user_id) setterName = owner.full_name || 'Owner'
+      }
+
+      // Compute real CA
+      let ca = Number(prospect.value) || 0
+      if (prospect.formula_id) {
+        const { data: formula } = await supabase.from('business_formulas').select('billing_type').eq('id', prospect.formula_id).maybeSingle()
+        if (formula?.billing_type === 'subscription' && prospect.stripe_subscription_id && prospect.subscription_amount) {
+          ca = Number(prospect.subscription_amount) || 0
+        }
+      }
+      const fmtCA = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(ca)
+      const prospectName = prospect.contact || `Prospect #${prospect.id}`
+
+      // 1. Insert in-app notification
+      await supabase.from('notifications').insert({
+        user_id,
+        title: 'Nouveau deal gagné !',
+        description: `${prospectName} — ${fmtCA}${closerName !== '—' ? ` • Closer : ${closerName}` : ''}${setterName !== '—' ? ` • Setter : ${setterName}` : ''}`,
+        type: 'booking',
+        time: new Date().toISOString(),
+        read: false,
+      }).catch(() => {})
+
+      // 2. Send email to owner
+      const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (BREVO_API_KEY) {
+        const htmlContent = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+      <tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;">
+        <img src="https://closeos.fr/closeos-business-logo-ecrit.png" alt="CloseOS Business" width="160" style="display:block;">
+      </td></tr>
+      <tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
+        <div style="text-align:center;margin-bottom:32px;">
+          <div style="display:inline-block;background-color:#ecfdf5;border-radius:50%;width:64px;height:64px;line-height:64px;font-size:28px;">&#127881;</div>
+        </div>
+        <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;color:#111111;text-align:center;margin:0 0 8px;letter-spacing:-0.04em;">Deal gagn&#233; !</h1>
+        <p style="font-family:'Inter',Helvetica,sans-serif;font-size:14px;color:#747878;text-align:center;margin:0 0 32px;">Un nouveau prospect vient de passer en Gagn&#233;</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="padding:12px 0;border-bottom:1px solid #f0eef0;">
+              <span style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#747878;">Prospect</span>
+            </td>
+            <td style="padding:12px 0;border-bottom:1px solid #f0eef0;text-align:right;">
+              <span style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;color:#111111;">${prospectName}</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:12px 0;border-bottom:1px solid #f0eef0;">
+              <span style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#747878;">Montant</span>
+            </td>
+            <td style="padding:12px 0;border-bottom:1px solid #f0eef0;text-align:right;">
+              <span style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;color:#006c49;">${fmtCA}</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:12px 0;border-bottom:1px solid #f0eef0;">
+              <span style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#747878;">Closer</span>
+            </td>
+            <td style="padding:12px 0;border-bottom:1px solid #f0eef0;text-align:right;">
+              <span style="font-family:'Inter',Helvetica,sans-serif;font-weight:500;font-size:14px;color:#111111;">${closerName}</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:12px 0;">
+              <span style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#747878;">Setter</span>
+            </td>
+            <td style="padding:12px 0;text-align:right;">
+              <span style="font-family:'Inter',Helvetica,sans-serif;font-weight:500;font-size:14px;color:#111111;">${setterName}</span>
+            </td>
+          </tr>
+        </table>
+        <div style="text-align:center;margin-top:40px;">
+          <a href="https://www.closeos.fr/business/pipeline" style="display:inline-block;background-color:#111111;color:#ffffff;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:14px;padding:16px 40px;border-radius:48px;text-decoration:none;letter-spacing:-0.02em;">Voir le pipeline</a>
+        </div>
+      </td></tr>
+      <tr><td style="padding-top:48px;text-align:left;padding-left:24px;">
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits r&#233;serv&#233;s</p>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a &#233;t&#233; envoy&#233; automatiquement.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`
+
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+            to: [{ email: owner.email, name: owner.full_name || 'Owner' }],
+            subject: `🎉 Deal gagné — ${prospectName} — ${fmtCA}`,
+            htmlContent,
+          }),
+        }).catch(() => {})
+      }
+
+      return res.status(200).json({ ok: true })
     }
 
     // ─── Appointment actions ───
@@ -2454,7 +2599,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let campaignQuestions: any[] = []
       const { data: qData } = await supabase
         .from('campaign_questionnaires')
-        .select('id, enabled, required, max_eliminatory')
+        .select('id, enabled, required, qualifying, max_eliminatory')
         .eq('campaign_id', campaign.id)
         .eq('enabled', true)
         .maybeSingle()
@@ -4030,12 +4175,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Fetch questionnaire config
         const { data: qConfig } = await supabase
           .from('campaign_questionnaires')
-          .select('id, enabled, max_eliminatory')
+          .select('id, enabled, qualifying, max_eliminatory')
           .eq('campaign_id', campaign.id)
           .eq('enabled', true)
           .maybeSingle()
 
         if (qConfig) {
+          const isQualifying = qConfig.qualifying !== false
+
+          if (!isQualifying) {
+            // Non-qualifying: save answers with score=null and is_eliminatory=false
+            const neutralAnswers = rawAnswers.map((a: any) => ({
+              prospect_id: prospect.id, question_id: a.question_id, answer_value: a.answer_value, score: null, is_eliminatory: false
+            }))
+            if (neutralAnswers.length > 0) {
+              await supabase.from('prospect_answers').insert(neutralAnswers)
+            }
+          } else {
           // Fetch all questions with expected/eliminatory answers
           const questionIds = rawAnswers.map((a: any) => a.question_id)
           const { data: questionsData } = await supabase
@@ -4150,6 +4306,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               await supabase.from('business_prospect_tags').insert({ prospect_id: prospect.id, tag_id: elimTagId }).catch(() => {})
             }
           }
+          } // end qualifying branch
         }
       }
 

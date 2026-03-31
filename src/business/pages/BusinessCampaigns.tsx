@@ -156,6 +156,7 @@ export function BusinessCampaigns() {
   // Questionnaire config
   const [formQuestionnaireEnabled, setFormQuestionnaireEnabled] = useState(false)
   const [formQuestionnaireRequired, setFormQuestionnaireRequired] = useState(false)
+  const [formQuestionnaireQualifying, setFormQuestionnaireQualifying] = useState(true)
   const [formMaxEliminatory, setFormMaxEliminatory] = useState(0)
   const [formQuestions, setFormQuestions] = useState<QuestionConfig[]>([])
   const [questionnaireId, setQuestionnaireId] = useState<string | null>(null)
@@ -260,7 +261,7 @@ export function BusinessCampaigns() {
     setFormBookingAssignedMembers([]); setFormBookingDistribution('round_robin')
     setFormTeamId(null)
     setFormQuestionnaireEnabled(false); setFormQuestionnaireRequired(false)
-    setFormMaxEliminatory(0); setFormQuestions([]); setQuestionnaireId(null)
+    setFormQuestionnaireQualifying(true); setFormMaxEliminatory(0); setFormQuestions([]); setQuestionnaireId(null)
   }
 
   const openCreate = () => { resetForm(); setIsModalOpen(true) }
@@ -289,7 +290,7 @@ export function BusinessCampaigns() {
     setFormBookingDistribution(campaign.booking_distribution || 'round_robin')
     // Reset questionnaire before loading
     setFormQuestionnaireEnabled(false); setFormQuestionnaireRequired(false)
-    setFormMaxEliminatory(0); setFormQuestions([]); setQuestionnaireId(null)
+    setFormQuestionnaireQualifying(true); setFormMaxEliminatory(0); setFormQuestions([]); setQuestionnaireId(null)
     setModalTab('general'); setIsModalOpen(true)
     // Fetch questionnaire data async (non-blocking)
     fetch(`${API_URL}?action=questionnaire-get&campaign_id=${campaign.id}&user_id=${effectiveUserId}`)
@@ -299,6 +300,7 @@ export function BusinessCampaigns() {
           setQuestionnaireId(qData.questionnaire.id)
           setFormQuestionnaireEnabled(qData.questionnaire.enabled ?? false)
           setFormQuestionnaireRequired(qData.questionnaire.required ?? false)
+          setFormQuestionnaireQualifying(qData.questionnaire.qualifying ?? true)
           setFormMaxEliminatory(qData.questionnaire.max_eliminatory ?? 0)
           setFormQuestions((qData.questions || []).map((q: any) => ({
             id: q.id,
@@ -375,6 +377,7 @@ export function BusinessCampaigns() {
               campaign_id: campaignId,
               enabled: formQuestionnaireEnabled,
               required: formQuestionnaireRequired,
+              qualifying: formQuestionnaireQualifying,
               max_eliminatory: formMaxEliminatory,
               questions: formQuestions.map((q, i) => ({ ...q, sort_order: i })),
             }),
@@ -1140,12 +1143,27 @@ window.addEventListener('message',function(e){
                         </button>
                       </div>
 
+                      {/* Qualifying toggle */}
+                      <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
+                        <div>
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Qualification automatique</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">Les réponses sont scorées et les prospects disqualifiés automatiquement</p>
+                        </div>
+                        <button onClick={() => setFormQuestionnaireQualifying(!formQuestionnaireQualifying)}>
+                          {formQuestionnaireQualifying
+                            ? <ToggleRight className="h-7 w-7 text-[#006c49]" />
+                            : <ToggleLeft className="h-7 w-7 text-[#c4c7c7] dark:text-neutral-600" />}
+                        </button>
+                      </div>
+
                       {/* Max eliminatory */}
+                      {formQuestionnaireQualifying && (
                       <div>
                         <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-1">Réponses éliminatoires tolérées</label>
                         <p className="text-[10px] text-[#747878] dark:text-neutral-500 mb-2">Si le prospect dépasse ce nombre de réponses éliminatoires, il est automatiquement classé Non-Qualifié. (0 = aucune tolérance)</p>
                         <input type="number" min={0} value={formMaxEliminatory} onChange={(e) => setFormMaxEliminatory(Math.max(0, parseInt(e.target.value) || 0))} className={`w-24 ${smallInputCls}`} />
                       </div>
+                      )}
 
                       {/* Questions builder */}
                       <div>
@@ -1247,7 +1265,7 @@ window.addEventListener('message',function(e){
                                     </div>
 
                                     {/* Expected answers */}
-                                    {question.options.filter(o => o.trim()).length > 0 && (
+                                    {formQuestionnaireQualifying && question.options.filter(o => o.trim()).length > 0 && (
                                       <div className="border-l-2 border-emerald-300/50 pl-3 space-y-1">
                                         <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Réponse(s) attendue(s)</p>
                                         <div className="flex flex-wrap gap-1.5">
@@ -1272,7 +1290,7 @@ window.addEventListener('message',function(e){
                                     )}
 
                                     {/* Eliminatory answers */}
-                                    {question.options.filter(o => o.trim()).length > 0 && (
+                                    {formQuestionnaireQualifying && question.options.filter(o => o.trim()).length > 0 && (
                                       <div className="border-l-2 border-red-300/50 pl-3 space-y-1">
                                         <p className="text-[10px] font-bold text-red-500 dark:text-red-400 uppercase tracking-wide">Réponse(s) éliminatoire(s)</p>
                                         <div className="flex flex-wrap gap-1.5">
@@ -1298,7 +1316,7 @@ window.addEventListener('message',function(e){
                                   </div>
                                 )}
 
-                                {question.question_type === 'number' && (
+                                {formQuestionnaireQualifying && question.question_type === 'number' && (
                                   <div className="space-y-3">
                                     <div className="border-l-2 border-emerald-300/50 pl-3 space-y-1.5">
                                       <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Valeur attendue (ou range min-max)</p>

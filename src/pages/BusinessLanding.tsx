@@ -372,17 +372,17 @@ export const BusinessLanding: React.FC = () => {
         <section className="px-6 md:px-20 py-10 md:py-14 max-w-6xl mx-auto text-center relative">
 
           {/* Abstract Background Blobs */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[500px] opacity-30 pointer-events-none -z-10">
-            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#ff2f2f] rounded-full mix-blend-multiply filter blur-[100px] animate-blob"></div>
-            <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-[#ef7b16] rounded-full mix-blend-multiply filter blur-[100px] animate-blob animation-delay-2000"></div>
-            <div className="absolute -bottom-8 left-1/3 w-64 h-64 bg-[#8a43e1] rounded-full mix-blend-multiply filter blur-[100px] animate-blob animation-delay-4000"></div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[500px] opacity-30 pointer-events-none z-0">
+            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#ff2f2f] rounded-full filter blur-[100px] animate-blob"></div>
+            <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-[#ef7b16] rounded-full filter blur-[100px] animate-blob animation-delay-2000"></div>
+            <div className="absolute -bottom-8 left-1/3 w-64 h-64 bg-[#8a43e1] rounded-full filter blur-[100px] animate-blob animation-delay-4000"></div>
           </div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col items-center gap-8 max-w-4xl mx-auto"
+            className="flex flex-col items-center gap-8 max-w-4xl mx-auto relative z-10"
           >
             <div className="flex items-center gap-3 flex-wrap justify-center">
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
@@ -1290,8 +1290,8 @@ const QualificationSection = () => {
   const { t } = useLang();
 
   const mockQuestions = [
-    { q: t.qualification_mock_q1, a: t.qualification_mock_a1, score: 92, eliminatory: false },
-    { q: t.qualification_mock_q2, a: t.qualification_mock_a2, score: 55, eliminatory: false },
+    { q: t.qualification_mock_q1, a: t.qualification_mock_a1, score: 95, eliminatory: false },
+    { q: t.qualification_mock_q2, a: t.qualification_mock_a2, score: 72, eliminatory: false },
     { q: t.qualification_mock_q3, a: t.qualification_mock_a3, score: 0, eliminatory: true },
   ];
 
@@ -1346,17 +1346,17 @@ const QualificationSection = () => {
               <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
                 <circle cx="32" cy="32" r="28" fill="none" stroke="#e7e5e4" strokeWidth="5" />
                 <motion.circle
-                  cx="32" cy="32" r="28" fill="none" stroke="#10b981" strokeWidth="5"
+                  cx="32" cy="32" r="28" fill="none" stroke="#f59e0b" strokeWidth="5"
                   strokeLinecap="round"
                   strokeDasharray={175.9}
                   initial={{ strokeDashoffset: 175.9 }}
-                  whileInView={{ strokeDashoffset: 175.9 * (1 - 0.87) }}
+                  whileInView={{ strokeDashoffset: 175.9 * (1 - 0.56) }}
                   viewport={{ once: true }}
                   transition={{ duration: 1.2, delay: 0.4, ease: 'easeOut' }}
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm font-black text-emerald-600">87%</span>
+                <span className="text-sm font-black text-amber-600">56%</span>
               </div>
             </div>
           </div>
@@ -1407,7 +1407,7 @@ const QualificationSection = () => {
             <div className="rounded-2xl bg-stone-50 border border-stone-200 p-4 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{t.qualification_mock_score}</p>
-                <p className="text-2xl font-black text-[#111111]">87%</p>
+                <p className="text-2xl font-black text-[#111111]">56%</p>
               </div>
               <div className="text-right">
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{t.qualification_mock_eliminatory}</p>

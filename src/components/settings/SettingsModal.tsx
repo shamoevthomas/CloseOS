@@ -23,7 +23,10 @@ import {
   Heart,
   Gift,
   Copy,
-  Users
+  Users,
+  Building2,
+  LogOut,
+  Link
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useUpgrade } from '../../contexts/UpgradeContext'
@@ -37,14 +40,15 @@ import { CancellationRetentionModal } from './CancellationRetentionModal'
 interface SettingsModalProps {
   isOpen: boolean
   onClose: () => void
-  initialTab?: 'profile' | 'security' | 'subscription' | 'referral' | 'support' | 'delete_account' | 'data'
+  initialTab?: 'profile' | 'security' | 'subscription' | 'referral' | 'support' | 'delete_account' | 'data' | 'organization'
 }
+
+type TabType = 'profile' | 'security' | 'subscription' | 'referral' | 'support' | 'delete_account' | 'data' | 'organization'
 
 export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: SettingsModalProps) {
   const { user, profile, updateProfile, updatePassword, isFounder, isPaying, refreshProfile } = useAuth()
 
-  // Retrait de 'timezone' des onglets possibles
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'subscription' | 'referral' | 'support' | 'delete_account' | 'data'>(initialTab)
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
@@ -60,6 +64,13 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
   const [referralStats, setReferralStats] = useState({ total: 0, active: 0 })
   const [codeCopied, setCodeCopied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
+
+  // States pour l'organisation
+  const [orgData, setOrgData] = useState<any>(null)
+  const [orgLoading, setOrgLoading] = useState(false)
+  const [inviteLink, setInviteLink] = useState('')
+  const [joinError, setJoinError] = useState('')
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
   // States pour le crop
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -135,6 +146,77 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
       })
       .catch(() => {})
   }, [user, isOpen, activeTab, isPaying])
+
+  // Fetch organization data
+  useEffect(() => {
+    if (!user || !isOpen || activeTab !== 'organization') return
+    setOrgLoading(true)
+    fetch('/api/organization?action=get', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id })
+    })
+      .then(r => r.json())
+      .then(data => setOrgData(data.organization || null))
+      .catch(() => setOrgData(null))
+      .finally(() => setOrgLoading(false))
+  }, [user, isOpen, activeTab])
+
+  const handleJoinOrganization = async () => {
+    if (!user || !inviteLink.trim()) return
+    setJoinError('')
+    setOrgLoading(true)
+
+    // Extract token from link
+    const match = inviteLink.trim().match(/invitation\/([a-f0-9]+)/)
+    const token = match?.[1]
+    if (!token) {
+      setJoinError('Lien d\'invitation invalide. Le format attendu est : .../business/invitation/{token}')
+      setOrgLoading(false)
+      return
+    }
+
+    try {
+      const res = await fetch('/api/organization?action=join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, user_id: user.id })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setJoinError(data.error || 'Erreur lors de la tentative de rejoindre l\'organisation.')
+        return
+      }
+      setOrgData(data.organization)
+      setInviteLink('')
+      refreshProfile()
+    } catch {
+      setJoinError('Erreur réseau. Veuillez réessayer.')
+    } finally {
+      setOrgLoading(false)
+    }
+  }
+
+  const handleLeaveOrganization = async () => {
+    if (!user) return
+    setOrgLoading(true)
+    try {
+      const res = await fetch('/api/organization?action=leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id })
+      })
+      if (res.ok) {
+        setOrgData(null)
+        setShowLeaveConfirm(false)
+        refreshProfile()
+      }
+    } catch {
+      // silent
+    } finally {
+      setOrgLoading(false)
+    }
+  }
 
   const handleReactivate = async () => {
     if (!user) return
@@ -235,6 +317,11 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
       // Update auth metadata separately (non-blocking)
       supabase.auth.updateUser({ data: { avatar_url: publicUrl } }).catch(() => {})
+
+      // Sync avatar to business_team_members if in an org (non-blocking)
+      if (profile?.business_member_id) {
+        supabase.from('business_team_members').update({ avatar_url: publicUrl }).eq('id', profile.business_member_id).then(() => {})
+      }
 
       setFormData(prev => ({ ...prev, avatar_url: publicUrl }))
       setMessage({ type: 'success', text: 'Photo de profil mise à jour !' })
@@ -457,6 +544,10 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
               <Trash2 className="w-4 h-4 text-red-400" /> Suppression
             </button>
 
+            <button onClick={() => setActiveTab('organization')} className={tabButtonClass('organization')}>
+              <Building2 className="w-4 h-4" /> Organisation
+            </button>
+
             <div className="my-6 h-px bg-white/5 mx-4" />
 
             <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Abonnement</p>
@@ -501,6 +592,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 {activeTab === 'support' && 'Centre d\'Aide'}
                 {activeTab === 'delete_account' && 'Suppression du compte'}
                 {activeTab === 'data' && 'Mes Données'}
+                {activeTab === 'organization' && 'Organisation'}
               </h2>
               <p className="text-slate-400 text-sm mt-1 text-left">
                 {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
@@ -512,6 +604,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 {activeTab === 'support' && 'Une question ? Notre équipe est là pour vous.'}
                 {activeTab === 'delete_account' && 'Zone de danger : Supprimer votre compte et vos données.'}
                 {activeTab === 'data' && 'Exportez vos données au format PDF.'}
+                {activeTab === 'organization' && 'Rejoignez ou gérez votre organisation.'}
               </p>
             </div>
           </div>
@@ -907,6 +1000,134 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   Le filleul peut utiliser votre code lors du paiement, ou simplement s'inscrire via votre lien.
                 </p>
                 </div>
+              </div>
+            )}
+
+            {/* --- ONGLET ORGANISATION --- */}
+            {activeTab === 'organization' && (
+              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+                {orgLoading && !orgData ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
+                  </div>
+                ) : orgData ? (
+                  /* ÉTAT 2 — Déjà dans une organisation */
+                  <>
+                    <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-3 opacity-10">
+                        <Building2 className="w-24 h-24 text-white" />
+                      </div>
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-4 mb-4">
+                          {orgData.logo_url ? (
+                            <img src={orgData.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover border border-white/10" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-blue-600/30 flex items-center justify-center">
+                              <Building2 className="h-6 w-6 text-blue-300" />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="text-xl font-bold text-white">{orgData.org_name}</h3>
+                            <p className="text-sm text-slate-400">Dirigée par {orgData.owner_name}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 border border-blue-500/30 text-blue-300">
+                            {orgData.role}
+                          </span>
+                          {orgData.joined_at && (
+                            <span className="text-xs text-slate-500">
+                              Membre depuis le {new Date(orgData.joined_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {showLeaveConfirm ? (
+                      <div className="p-5 rounded-2xl border border-red-500/20 bg-red-500/5 space-y-4">
+                        <p className="text-white font-bold text-sm">Êtes-vous sûr de vouloir quitter cette organisation ?</p>
+                        <p className="text-slate-400 text-xs">Vos prospects assignés resteront dans l'organisation mais vous ne pourrez plus y accéder.</p>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={handleLeaveOrganization}
+                            disabled={orgLoading}
+                            className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                          >
+                            {orgLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                            Confirmer
+                          </button>
+                          <button
+                            onClick={() => setShowLeaveConfirm(false)}
+                            className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-all border border-slate-700"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowLeaveConfirm(true)}
+                        className="w-full px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20 flex items-center justify-center gap-2"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Quitter l'organisation
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  /* ÉTAT 1 — Pas dans une organisation */
+                  <>
+                    <div className="p-6 rounded-2xl border border-white/10 bg-slate-900/50">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2.5 rounded-xl bg-slate-800">
+                          <Building2 className="h-5 w-5 text-slate-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-white">Aucune organisation</h3>
+                          <p className="text-xs text-slate-500">Vous n'appartenez à aucune organisation</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Lien d'invitation</label>
+                        <div className="flex gap-3">
+                          <div className="relative flex-1">
+                            <Link className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                            <input
+                              type="text"
+                              value={inviteLink}
+                              onChange={(e) => { setInviteLink(e.target.value); setJoinError('') }}
+                              className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm"
+                              placeholder="Coller le lien d'invitation ici"
+                            />
+                          </div>
+                          <button
+                            onClick={handleJoinOrganization}
+                            disabled={orgLoading || !inviteLink.trim()}
+                            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center gap-2 shrink-0"
+                          >
+                            {orgLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                            Rejoindre
+                          </button>
+                        </div>
+                        {joinError && (
+                          <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                            <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                            <p className="text-xs text-red-300">{joinError}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-5 rounded-2xl border border-white/5 bg-slate-900/30">
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        Demandez un lien d'invitation à votre manager ou responsable d'équipe.
+                        Une fois membre, vous aurez accès au pipeline partagé, aux formules et aux KPIs de l'organisation directement depuis votre interface Sales.
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

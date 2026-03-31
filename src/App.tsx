@@ -13,6 +13,7 @@ import { MessagesProvider } from './contexts/MessagesContext'
 import { Toaster } from 'react-hot-toast'
 import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
 import { UpgradeProvider } from './contexts/UpgradeContext'
+import { OrganizationProvider } from './contexts/OrganizationContext'
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
@@ -65,6 +66,12 @@ const SubscriptionRetention = lazy(() => import('./pages/SubscriptionRetention')
 const SpectatorPage = lazy(() => import('./pages/SpectatorPage').then(m => ({ default: m.SpectatorPage })))
 const RemindersPage = lazy(() => import('./pages/RemindersPage').then(m => ({ default: m.RemindersPage })))
 const TrialExpiredModal = lazy(() => import('./pages/TrialExpired').then(m => ({ default: m.TrialExpiredModal })))
+
+// Organization pages (Sales users in a Business org)
+const OrgPipeline = lazy(() => import('./pages/organization/OrgPipeline').then(m => ({ default: m.OrgPipeline })))
+const OrgFormulas = lazy(() => import('./pages/organization/OrgFormulas').then(m => ({ default: m.OrgFormulas })))
+const OrgAgenda = lazy(() => import('./pages/organization/OrgAgenda').then(m => ({ default: m.OrgAgenda })))
+const OrgKPI = lazy(() => import('./pages/organization/OrgKPI').then(m => ({ default: m.OrgKPI })))
 
 // SEO Pages (lazy)
 const Tarifs = lazy(() => import('./pages/Tarifs'))
@@ -167,7 +174,7 @@ function FacturesRouter() {
 
 // Page d'accueil intelligente : landing immédiate si non connecté, loading si session détectée
 function SmartHome() {
-  const { user, loading, isBusinessUser } = useAuth()
+  const { user, loading, isBusinessUser, profile, profileReady } = useAuth()
   const navigate = useNavigate()
   const [product, setProduct] = useState<'sales' | 'business' | 'choice' | 'loading'>('loading')
 
@@ -186,14 +193,14 @@ function SmartHome() {
       return
     }
 
-    // 2. Wait for auth to finish before checking localStorage
-    //    This prevents redirecting logged-in users to /business landing
-    if (loading) return
+    // 2. Wait for auth AND profile to finish before deciding
+    if (loading || !profileReady) return
 
     // 3. If user is logged in, route to correct product
     if (user) {
       if (isBusinessUser) {
         navigate('/business/dashboard', { replace: true })
+        return
       }
       return // Sales users handled by the render below
     }
@@ -205,13 +212,13 @@ function SmartHome() {
 
     // 5. No preference → show choice
     setProduct('choice')
-  }, [navigate, loading, user, isBusinessUser])
+  }, [navigate, loading, user, isBusinessUser, profileReady])
 
   // Logged-in Business users → Business dashboard
   if (!loading && user && isBusinessUser) return <Navigate to="/business/dashboard" replace />
 
-  // Logged-in Sales users → Sales dashboard
-  if (!loading && user) return <Navigate to="/dashboard" replace />
+  // Logged-in Sales-only users → Sales dashboard
+  if (!loading && user && !isBusinessUser) return <Navigate to="/dashboard" replace />
 
   // While auth loads, check for cached session
   if (loading) {
@@ -250,16 +257,16 @@ function SmartHome() {
 
 // Composant de protection des routes
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isBusinessUser } = useAuth()
+  const { user, loading, isBusinessUser, profile, profileReady } = useAuth()
 
-  if (loading) return <LoadingScreen />
+  if (loading || !profileReady) return <LoadingScreen />
 
   if (!user) {
     return <Navigate to="/" replace />
   }
 
-  // Block Business users from accessing Sales
-  if (isBusinessUser) {
+  // Block Business-only users from accessing Sales (allow dual-access users who also have a Sales profile)
+  if (isBusinessUser && !profile) {
     return <Navigate to="/business/login" replace />
   }
 
@@ -481,6 +488,12 @@ function AuthenticatedApp() {
           <Route path="reminders" element={<RemindersPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
 
+          {/* Organisation routes (Sales user in Business org) */}
+          <Route path="organization/pipeline" element={<OrgPipeline />} />
+          <Route path="organization/formulas" element={<OrgFormulas />} />
+          <Route path="organization/agenda" element={<OrgAgenda />} />
+          <Route path="organization/kpi" element={<OrgKPI />} />
+
           {/* Si page inconnue dans le layout, on renvoie vers le dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
@@ -529,6 +542,7 @@ function App() {
       <AuthProvider>
         <GoogleCalendarProvider>
           <PrivacyProvider>
+            <OrganizationProvider>
             <ProspectsProvider>
               <InternalContactsProvider>
                 <OffersProvider>
@@ -563,6 +577,7 @@ function App() {
                 </OffersProvider>
               </InternalContactsProvider>
             </ProspectsProvider>
+            </OrganizationProvider>
           </PrivacyProvider>
         </GoogleCalendarProvider>
       </AuthProvider>

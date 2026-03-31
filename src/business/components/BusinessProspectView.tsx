@@ -93,7 +93,7 @@ export function BusinessProspectView({
   // Qualification data (questionnaire answers)
   const [qualificationData, setQualificationData] = useState<{
     answers: { question_text: string; question_type: string; answer_value: any; expected_answer: any; score: number | null; is_eliminatory: boolean; sort_order: number }[]
-    questionnaire: { max_eliminatory: number } | null
+    questionnaire: { max_eliminatory: number; qualifying?: boolean } | null
   } | null>(null)
 
   useEffect(() => {
@@ -765,6 +765,7 @@ export function BusinessProspectView({
                 {/* Qualification score ring */}
                 {(() => {
                   if (!qualificationData?.answers) return null
+                  if (qualificationData.questionnaire?.qualifying === false) return null
                   const scored = qualificationData.answers.filter(a => a.score !== null && a.score !== undefined)
                   if (scored.length === 0) return null
                   const avg = Math.round(scored.reduce((s, a) => s + (a.score ?? 0), 0) / scored.length)
@@ -1420,17 +1421,19 @@ export function BusinessProspectView({
 
               {/* Qualification (questionnaire answers) */}
               {qualificationData && qualificationData.answers.length > 0 && (() => {
+                const isQualifying = qualificationData.questionnaire?.qualifying !== false
                 const scoredAnswers = qualificationData.answers.filter(a => a.score !== null && a.score !== undefined)
-                const avgScore = scoredAnswers.length > 0 ? Math.round(scoredAnswers.reduce((sum, a) => sum + (a.score ?? 0), 0) / scoredAnswers.length) : null
+                const avgScore = isQualifying && scoredAnswers.length > 0 ? Math.round(scoredAnswers.reduce((sum, a) => sum + (a.score ?? 0), 0) / scoredAnswers.length) : null
                 const eliminatoryCount = qualificationData.answers.filter(a => a.is_eliminatory).length
                 const maxElim = qualificationData.questionnaire?.max_eliminatory ?? 0
                 return (
                   <div>
                     <label className={cn(LABEL_STYLE, 'block mb-2 ml-1 flex items-center gap-2')}>
-                      <ClipboardList className="h-3.5 w-3.5" strokeWidth={1.5} /> Qualification
+                      <ClipboardList className="h-3.5 w-3.5" strokeWidth={1.5} /> {isQualifying ? 'Qualification' : 'Réponses'}
                     </label>
                     <div className="rounded-xl bg-white dark:bg-neutral-800 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm space-y-4">
-                      {/* Global summary */}
+                      {/* Global summary — only in qualifying mode */}
+                      {isQualifying && (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           {avgScore !== null && (
@@ -1453,10 +1456,22 @@ export function BusinessProspectView({
                           {eliminatoryCount > maxElim && ' — Disqualifié'}
                         </div>
                       </div>
+                      )}
 
                       {/* Per-question cards */}
                       <div className="space-y-2">
                         {qualificationData.answers.map((a, i) => {
+                          if (!isQualifying) {
+                            // Neutral mode: grey cards, just question + answer
+                            return (
+                              <div key={i} className="p-3 rounded-lg border border-stone-100 bg-stone-50 dark:border-neutral-700 dark:bg-neutral-800/50">
+                                <p className="text-xs font-bold text-stone-700 dark:text-neutral-300">{a.question_text}</p>
+                                <p className="text-sm text-stone-900 dark:text-white mt-1">
+                                  {Array.isArray(a.answer_value) ? a.answer_value.join(', ') : String(a.answer_value ?? '')}
+                                </p>
+                              </div>
+                            )
+                          }
                           const isText = a.question_type === 'text' || a.score === null
                           const scoreColor = a.is_eliminatory ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/10'
                             : isText ? 'border-stone-100 bg-stone-50 dark:border-neutral-700 dark:bg-neutral-800/50'

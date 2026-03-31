@@ -18,12 +18,15 @@ import {
   FileText,
   Sparkles,
   Loader2,
-  Bell
+  Bell,
+  Building2,
+  Package,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
-import { useState, useEffect } from 'react' // Modification ici : ajout de useEffect
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabase' // Ajout de l'import supabase
+import { useOrganization } from '../contexts/OrganizationContext'
+import { supabase } from '../lib/supabase'
 
 // Mise à jour de la navigation
 const navigation = [
@@ -50,6 +53,7 @@ interface SidebarProps {
 export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
+  const { isInOrganization, organization } = useOrganization()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   // État pour stocker l'avatar récupéré en base de données
@@ -145,6 +149,40 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
               <span className="flex-1">{item.name}</span>
             </NavLink>
           ))}
+
+          {/* Organisation — conditionnel */}
+          {isInOrganization && organization && (
+            <>
+              <div className="my-3 mx-2 border-t border-slate-700/50" />
+              <div className="px-3 py-1.5 flex items-center gap-2">
+                <Building2 className="h-3.5 w-3.5 text-blue-400" />
+                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider truncate">{organization.org_name}</span>
+              </div>
+              {[
+                { name: 'Pipeline Équipe', href: '/organization/pipeline', icon: GitBranch },
+                { name: 'Agenda Équipe', href: '/organization/agenda', icon: Calendar },
+                { name: 'KPI Équipe', href: '/organization/kpi', icon: BarChart3 },
+                { name: 'Formules', href: '/organization/formulas', icon: Package },
+              ].map((item) => (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  onClick={() => { if (window.innerWidth < 1024) onClose?.() }}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    )
+                  }
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="flex-1">{item.name}</span>
+                </NavLink>
+              ))}
+            </>
+          )}
         </nav>
 
 

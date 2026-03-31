@@ -9,6 +9,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isBusinessUser, setIsBusinessUser] = useState(false);
+  const [profileReady, setProfileReady] = useState(false);
   const isMountedRef = useRef(true);
 
   // Role admin simple : base uniquement sur l'email
@@ -35,25 +36,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         supabase.from('business_team_members').select('id').eq('user_id', userId).maybeSingle(),
       ]);
 
-      if (businessOwner.data || businessTeam.data) {
-        if (isMountedRef.current) setIsBusinessUser(true);
-        localStorage.setItem('closeos_product', 'business');
-        return;
+      const isBusiness = !!(businessOwner.data || businessTeam.data);
+      if (isBusiness && isMountedRef.current) {
+        setIsBusinessUser(true);
       }
 
+      // Always try to load Sales profile (supports dual-access users)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else if (isMountedRef.current) {
+      if (!error && data && isMountedRef.current) {
         setProfile(data);
       }
+
+      // Only set localStorage to business if user is Business-only (no Sales profile)
+      if (isBusiness && !data) {
+        localStorage.setItem('closeos_product', 'business');
+      }
+
+      if (isMountedRef.current) setProfileReady(true);
     } catch (err) {
       console.error('Exception fetching profile:', err);
+      if (isMountedRef.current) setProfileReady(true);
     }
   }, []);
 
@@ -75,9 +82,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(currentUser);
 
         if (currentUser) {
+          setProfileReady(false);
           fetchProfile(currentUser.id);
         } else {
           setProfile(null);
+          setProfileReady(true);
         }
 
         // FirstPromoter tracking
@@ -117,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {
       if (isMountedRef.current) {
         clearTimeout(safetyTimeout);
+        setProfileReady(true);
         setLoading(false);
       }
     });
@@ -249,6 +259,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscriptionStatus,
       loading,
       isBusinessUser,
+      profileReady,
       login,
       register,
       loginWithGoogle,

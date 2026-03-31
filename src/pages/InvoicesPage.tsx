@@ -28,8 +28,9 @@ export function InvoicesPage() {
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
 
-  const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0])
-  const [endDate, setEndDate] = useState(lastDayOfMonth.toISOString().split('T')[0])
+  const formatLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const [startDate, setStartDate] = useState(formatLocalDate(firstDayOfMonth))
+  const [endDate, setEndDate] = useState(formatLocalDate(lastDayOfMonth))
   const [selectedOfferId, setSelectedOfferId] = useState<number | null>(null)
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false)
   const [isPaymentMethodsOpen, setIsPaymentMethodsOpen] = useState(false)
@@ -131,7 +132,9 @@ export function InvoicesPage() {
 
       if (!isCorrectOffer) return false
 
-      const dealDate = new Date(prospect.lastContact || prospect.dateAdded || "")
+      const dealDate = new Date(prospect.lastContact || prospect.last_contact || prospect.dateAdded || prospect.created_at || "")
+
+      if (isNaN(dealDate.getTime())) return false
 
       if (prospect.payment_type !== 'installments' && (!prospect.installments || prospect.installments <= 1)) {
         return dealDate >= start && dealDate <= end
@@ -155,7 +158,7 @@ export function InvoicesPage() {
       } else {
         const monthlyValue = fullValue / (prospect.installments || 1)
         let installmentsInPeriod = 0
-        const dealDate = new Date(prospect.lastContact || prospect.dateAdded || "")
+        const dealDate = new Date(prospect.lastContact || prospect.last_contact || prospect.dateAdded || prospect.created_at || "")
 
         for (let i = 0; i < (prospect.installments || 1); i++) {
           const installmentDate = new Date(dealDate)
@@ -176,7 +179,7 @@ export function InvoicesPage() {
         amountInPeriod = fullValue
       } else {
         const monthlyValue = fullValue / (deal.installments || 1)
-        const dealDate = new Date(deal.lastContact || deal.dateAdded || "")
+        const dealDate = new Date(deal.lastContact || deal.last_contact || deal.dateAdded || deal.created_at || "")
         for (let i = 0; i < (deal.installments || 1); i++) {
           const installmentDate = new Date(dealDate)
           installmentDate.setMonth(installmentDate.getMonth() + i)
@@ -429,7 +432,7 @@ export function InvoicesPage() {
                                     <p className="text-sm font-bold text-white">{deal.contact}</p>
                                     <p className="text-xs text-emerald-400 font-medium">{formatCurrency(deal.value || 0)}</p>
                                     <p className="text-[10px] text-slate-500">
-                                      Acheté le : {new Date(deal.lastContact || deal.dateAdded || "").toLocaleDateString('fr-FR')}
+                                      Acheté le : {new Date(deal.lastContact || deal.last_contact || deal.dateAdded || deal.created_at || "").toLocaleDateString('fr-FR')}
                                     </p>
                                   </div>
                                 ))}
@@ -484,10 +487,10 @@ export function InvoicesPage() {
                                     <p className="text-xs text-blue-400 font-medium">Contrat total: {formatCurrency(deal.value || 0)}</p>
                                     <div className="flex justify-between mt-1">
                                       <p className="text-[10px] text-slate-500">
-                                        Début : {new Date(deal.lastContact || deal.dateAdded || "").toLocaleDateString('fr-FR')}
+                                        Début : {new Date(deal.lastContact || deal.last_contact || deal.dateAdded || deal.created_at || "").toLocaleDateString('fr-FR')}
                                       </p>
                                       <p className="text-[10px] text-slate-400">
-                                        Fin : {getInstallmentEndDate(deal.lastContact || deal.dateAdded || "", deal.installments || 1)}
+                                        Fin : {getInstallmentEndDate(deal.lastContact || deal.last_contact || deal.dateAdded || deal.created_at || "", deal.installments || 1)}
                                       </p>
                                     </div>
                                   </div>

@@ -279,7 +279,7 @@ export function CaptureForm() {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
 
   // Questionnaire state
-  const [questionnaire, setQuestionnaire] = useState<{ id: string; enabled: boolean; required: boolean; max_eliminatory: number } | null>(null)
+  const [questionnaire, setQuestionnaire] = useState<{ id: string; enabled: boolean; required: boolean; qualifying?: boolean; max_eliminatory: number } | null>(null)
   const [captureQuestions, setCaptureQuestions] = useState<{ id: string; question_text: string; question_type: string; is_required: boolean; options: string[]; sort_order: number }[]>([])
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [disqualifiedMsg, setDisqualifiedMsg] = useState(false)
@@ -502,7 +502,7 @@ export function CaptureForm() {
       })
       const data = await res.json()
       if (data.prospect) {
-        if (data.disqualified) {
+        if (data.disqualified && questionnaire?.qualifying !== false) {
           setDisqualifiedMsg(true)
           if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
         } else {
