@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useOrganization } from '../../contexts/OrganizationContext'
 import { supabase } from '../../lib/supabase'
 import {
@@ -41,7 +41,7 @@ export function OrgAgenda() {
   const [loading, setLoading] = useState(true)
   const [weekOffset, setWeekOffset] = useState(0)
 
-  const getWeekDates = useCallback(() => {
+  const weekDates = useMemo(() => {
     const now = new Date()
     const dayOfWeek = now.getDay()
     const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
@@ -56,7 +56,8 @@ export function OrgAgenda() {
     return dates
   }, [weekOffset])
 
-  const weekDates = getWeekDates()
+  const weekStart = weekDates[0]
+  const weekEnd = weekDates[6]
 
   const fetchAppointments = useCallback(async () => {
     if (!organization?.owner_id || !organization?.member_id) return
@@ -66,8 +67,8 @@ export function OrgAgenda() {
         .from('business_appointments')
         .select('id, date, time, duration, status, notes, assigned_to, type, prospect:business_prospects!prospect_id(id, contact, email, phone, company)')
         .eq('user_id', organization.owner_id)
-        .gte('date', weekDates[0])
-        .lte('date', weekDates[6])
+        .gte('date', weekStart)
+        .lte('date', weekEnd)
         .order('date', { ascending: true })
         .order('time', { ascending: true })
 
@@ -79,7 +80,7 @@ export function OrgAgenda() {
     } finally {
       setLoading(false)
     }
-  }, [organization?.owner_id, organization?.member_id, weekDates])
+  }, [organization?.owner_id, organization?.member_id, weekStart, weekEnd])
 
   useEffect(() => { fetchAppointments() }, [fetchAppointments])
 
