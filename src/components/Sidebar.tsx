@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
   ChevronUp,
+  ChevronDown,
   BarChart3,
   Video,
   Smartphone,
@@ -20,7 +21,7 @@ import {
   Loader2,
   Bell,
   Building2,
-  Package,
+  User,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState, useEffect } from 'react'
@@ -55,6 +56,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const { logout, user } = useAuth()
   const { isInOrganization, organization } = useOrganization()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isLogoDropdownOpen, setIsLogoDropdownOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   // État pour stocker l'avatar récupéré en base de données
   const [dbAvatarUrl, setDbAvatarUrl] = useState<string | null>(null)
@@ -113,14 +115,50 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
         "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-800 bg-slate-900 transition-transform duration-300 lg:static lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        {/* Logo & Bouton Fermer */}
+        {/* Logo & Switch Personnel/Organisation */}
         <div className="flex h-16 items-center justify-between px-6 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo-sales.png"
-              alt="CloserOS"
-              className="h-12 w-auto object-contain rounded-md"
-            />
+          <div className="relative">
+            <button
+              onClick={() => isInOrganization && setIsLogoDropdownOpen(!isLogoDropdownOpen)}
+              className={cn(
+                "flex items-center gap-2",
+                isInOrganization ? "cursor-pointer hover:opacity-80 transition-opacity" : ""
+              )}
+            >
+              <img src="/logo-sales.png" alt="CloserOS" className="h-12 w-auto object-contain rounded-md" />
+              {isInOrganization && (
+                <ChevronDown className={cn("h-3 w-3 text-slate-500 transition-transform", isLogoDropdownOpen && "rotate-180")} />
+              )}
+            </button>
+
+            {isLogoDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsLogoDropdownOpen(false)} />
+                <div className="absolute top-full left-0 mt-2 z-20 w-56 rounded-xl border border-slate-700 bg-slate-800 shadow-xl overflow-hidden">
+                  <button
+                    onClick={() => setIsLogoDropdownOpen(false)}
+                    className="flex w-full items-center gap-3 px-4 py-3 bg-blue-600/10 border-l-2 border-blue-500"
+                  >
+                    <User className="h-4 w-4 text-blue-400" />
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-white">Personnel</p>
+                      <p className="text-[10px] text-slate-400">Votre espace Sales</p>
+                    </div>
+                  </button>
+                  <div className="h-px bg-slate-700" />
+                  <button
+                    onClick={() => { navigate('/business/dashboard'); setIsLogoDropdownOpen(false) }}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                  >
+                    <Building2 className="h-4 w-4 text-slate-400" />
+                    <div className="text-left">
+                      <p className="text-sm font-bold">Organisation</p>
+                      <p className="text-[10px] text-slate-500 truncate">{organization?.org_name}</p>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
           <button onClick={onClose} className="lg:hidden p-2 text-slate-400 hover:text-white">
             <X className="h-5 w-5" />
@@ -150,39 +188,6 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
             </NavLink>
           ))}
 
-          {/* Organisation — conditionnel */}
-          {isInOrganization && organization && (
-            <>
-              <div className="my-3 mx-2 border-t border-slate-700/50" />
-              <div className="px-3 py-1.5 flex items-center gap-2">
-                <Building2 className="h-3.5 w-3.5 text-blue-400" />
-                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider truncate">{organization.org_name}</span>
-              </div>
-              {[
-                { name: 'Pipeline Équipe', href: '/organization/pipeline', icon: GitBranch },
-                { name: 'Agenda Équipe', href: '/organization/agenda', icon: Calendar },
-                { name: 'KPI Équipe', href: '/organization/kpi', icon: BarChart3 },
-                { name: 'Formules', href: '/organization/formulas', icon: Package },
-              ].map((item) => (
-                <NavLink
-                  key={item.href}
-                  to={item.href}
-                  onClick={() => { if (window.innerWidth < 1024) onClose?.() }}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-blue-600 text-white'
-                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                    )
-                  }
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span className="flex-1">{item.name}</span>
-                </NavLink>
-              ))}
-            </>
-          )}
         </nav>
 
 

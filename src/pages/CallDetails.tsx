@@ -7,6 +7,8 @@ import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
+import { useCustomStages } from '../hooks/useCustomStages'
+import { useTags } from '../hooks/useTags'
 import { supabase } from '../lib/supabase'
 
 // Helper to parse price from offer string (e.g., "4 997€" -> 4997)
@@ -90,6 +92,8 @@ export function CallDetails() {
   // AJOUT: récupération de addProspect pour mettre à jour la liste globale
   const { prospects, updateProspect, addProspect } = useProspects()
   const { offers } = useOffers()
+  const { getStageInfo } = useCustomStages()
+  const { getProspectTagObjects } = useTags()
 
   const { addMeeting } = useMeetings()
   const { isConnected: isGoogleConnected, createEvent: createGoogleEvent } = useGoogleCalendar()
@@ -542,6 +546,28 @@ export function CallDetails() {
             <h1 className="text-3xl font-bold text-white">Résumé de Vente</h1>
             <p className="mt-2 text-gray-400">
               Qualifiez votre appel avec <span className="font-semibold text-white">{createdProspect ? createdProspect.contact : call.contactName}</span>
+              {prospect && (() => {
+                const si = getStageInfo(prospect.stage)
+                return si ? (
+                  <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-slate-800/50 border border-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+                    <span
+                      className={cn("h-1.5 w-1.5 rounded-full", si.isDefault ? si.color : '')}
+                      style={!si.isDefault ? { backgroundColor: si.color } : undefined}
+                    />
+                    {si.name}
+                  </span>
+                ) : null
+              })()}
+              {/* Tag pills */}
+              {prospect && getProspectTagObjects(prospect.id).map(tag => (
+                <span
+                  key={tag.id}
+                  className="ml-1 inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                  style={{ backgroundColor: tag.color }}
+                >
+                  {tag.name}
+                </span>
+              ))}
             </p>
             {prospect && prospectOffer && (
               <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-blue-500/10 border border-blue-500/30 px-4 py-2">

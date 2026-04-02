@@ -153,8 +153,36 @@ export function BusinessOnboardingModal() {
   // Shared crop callback — must be declared before any early return that uses it
   const onCropComplete = (_: any, pixels: any) => setCroppedAreaPixels(pixels);
 
+  // Auto-onboard team members who already have Sales profile data (joined via Sales org link)
+  const [autoOnboarding, setAutoOnboarding] = useState(false)
+  useEffect(() => {
+    if (!user || hasOnboarded || authLoading || autoOnboarding) return
+    if (!isTeamMember || !teamMember) return
+    // If first_name and last_name are already set (copied from Sales profile during join), auto-complete
+    if (teamMember.first_name && teamMember.last_name) {
+      setAutoOnboarding(true)
+      const autoComplete = async () => {
+        try {
+          await supabase
+            .from('business_team_members')
+            .update({ has_onboarded: true, onboarding_acknowledged: true })
+            .eq('id', teamMember.id)
+          if (user.id) {
+            await registerDeviceAfterOnboarding(user.id)
+            setNeedsVerification(false)
+          }
+          await refreshProfile()
+        } catch (err) {
+          console.error('Auto-onboard error:', err)
+          setAutoOnboarding(false)
+        }
+      }
+      autoComplete()
+    }
+  }, [user, hasOnboarded, authLoading, isTeamMember, teamMember?.id, teamMember?.first_name, teamMember?.last_name])
+
   // Don't show if already onboarded, no user, or still loading
-  if (!user || hasOnboarded || authLoading) return null;
+  if (!user || hasOnboarded || authLoading || autoOnboarding) return null;
 
   // ─── Team Member Profile Onboarding ───
   if (isTeamMember && teamMember) {

@@ -3,6 +3,8 @@ import { ChevronDown, Plus, User, Phone, Mail, Pencil, Trash2, UserPlus, X, Sear
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
 import { useOffers } from '../contexts/OffersContext'
+import { useCustomStages } from '../hooks/useCustomStages'
+import { useTags } from '../hooks/useTags'
 import { ProspectView } from '../components/ProspectView'
 import { InternalContactModal } from '../components/InternalContactModal'
 import { CreateProspectModal } from '../components/CreateProspectModal'
@@ -16,6 +18,10 @@ interface LocalProspect extends Prospect {
 }
 
 export function Contacts() {
+  const { allStages, getStageInfo } = useCustomStages()
+  const { tags, prospectTags, getProspectTagObjects } = useTags()
+  const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
+
   // 🔄 SAFE CONTEXT CONNECTION - Try to connect to global context with fallback
   let context
   try {
@@ -134,7 +140,13 @@ export function Contacts() {
       }
     }
 
-    return matchesSearch && matchesOffer
+    // Tag filter
+    const matchesTags = selectedTagFilters.length === 0 || (() => {
+      const pTags = prospectTags[prospect.id] || []
+      return selectedTagFilters.some(t => pTags.includes(t))
+    })()
+
+    return matchesSearch && matchesOffer && matchesTags
   })
 
   // --- LOGIQUE DE FILTRAGE DES CONTACTS INTERNES (AJOUTÉE) ---
@@ -150,25 +162,23 @@ export function Contacts() {
   // Helper to get status color (Design Premium)
   const getStatusColor = (status: string) => {
     const s = (status || '').toLowerCase()
+    // Check default stages
     if (['gagné', 'won'].includes(s)) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
     if (['perdu', 'lost'].includes(s)) return 'bg-rose-500/10 text-rose-400 border-rose-500/20'
     if (['qualifié', 'qualified'].includes(s)) return 'bg-purple-500/10 text-purple-400 border-purple-500/20'
     if (['prospect'].includes(s)) return 'bg-blue-500/10 text-blue-400 border-blue-500/20'
     if (['followup', 'follow up'].includes(s)) return 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+    // Check custom stages
+    const si = getStageInfo(status)
+    if (si && !si.isDefault) return 'bg-slate-500/10 text-slate-300 border-slate-500/20'
     return 'bg-slate-500/10 text-slate-400 border-slate-500/20'
   }
 
   // Helper to get status display name
   const getStatusName = (status: string) => {
-    const names: Record<string, string> = {
-      'prospect': 'Prospect',
-      'qualified': 'Qualifié',
-      'won': 'Gagné',
-      'lost': 'Perdu',
-      'followup': 'Follow Up',
-      'noshow': 'No Show',
-    }
-    return names[status] || status
+    const si = getStageInfo(status)
+    if (si) return si.name
+    return status
   }
 
   // Handlers
@@ -333,6 +343,33 @@ export function Contacts() {
                 </select>
               </div>
 
+              {/* Tag filters */}
+              {tags.length > 0 && (
+                <div className="hidden md:flex items-center gap-1">
+                  {tags.map(tag => {
+                    const isSelected = selectedTagFilters.includes(tag.id)
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => setSelectedTagFilters(prev =>
+                          isSelected ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
+                        )}
+                        className={cn(
+                          'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold transition-all border',
+                          isSelected
+                            ? 'text-white border-transparent'
+                            : 'text-slate-400 border-slate-700 hover:border-slate-600'
+                        )}
+                        style={isSelected ? { backgroundColor: tag.color } : undefined}
+                      >
+                        {!isSelected && <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color }} />}
+                        {tag.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
               <button
                 onClick={() => setIsNewProspectModalOpen(true)}
                 className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 active:scale-95"
@@ -354,6 +391,9 @@ export function Contacts() {
                   <tr className="border-b border-white/5 bg-slate-900/40">
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
                       Nom & Entreprise
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                      Tags
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
                       Offre
@@ -407,6 +447,16 @@ export function Contacts() {
                                   </p>
                                 )}
                               </div>
+                            </div>
+                          </td>
+                          {/* Tags */}
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-1">
+                              {getProspectTagObjects(prospect.id).map(tag => (
+                                <span key={tag.id} className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: tag.color }}>
+                                  {tag.name}
+                                </span>
+                              ))}
                             </div>
                           </td>
                           {/* NOUVELLE COLONNE OFFRE */}
@@ -475,7 +525,7 @@ export function Contacts() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-slate-500 italic">
+                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">
                         Aucun prospect ne correspond à ces critères.
                       </td>
                     </tr>

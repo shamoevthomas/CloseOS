@@ -34,6 +34,7 @@ import { useOffers } from '../contexts/OffersContext';
 import { useProspects } from '../contexts/ProspectsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpgrade } from '../contexts/UpgradeContext';
+import { useOrganization } from '../contexts/OrganizationContext';
 import { supabase } from '../lib/supabase';
 import { SharePerformanceButton } from '../components/SharePerformanceButton';
 import { Lock } from 'lucide-react';
@@ -151,10 +152,40 @@ const getDealOffer = (deal: any): string => {
 
 export function KPIPage() {
   const { offers: allOffers } = useOffers();
-  const { prospects: allProspects } = useProspects();
+  const { prospects: salesProspects } = useProspects();
   const { user, isFounder, isAdmin, isInTrial } = useAuth();
   const { showUpgrade } = useUpgrade();
+  const { isInOrganization, organization } = useOrganization();
   const hasFullAccess = isFounder || isAdmin || isInTrial;
+
+  // Business hybrid data
+  const [bizProspects, setBizProspects] = useState<any[]>([]);
+  useEffect(() => {
+    if (!isInOrganization || !organization) { setBizProspects([]); return; }
+    const fetchBiz = async () => {
+      const { data } = await supabase
+        .from('business_prospects')
+        .select('id, stage, value, contact, company, created_at, assigned_to, assigned_setter')
+        .eq('user_id', organization.owner_id)
+        .or(`assigned_to.eq.${organization.member_id},assigned_setter.eq.${organization.member_id}`);
+      setBizProspects(data || []);
+    };
+    fetchBiz();
+  }, [isInOrganization, organization?.owner_id, organization?.member_id]);
+
+  // Merge Sales + Business prospects
+  const allProspects = useMemo(() => {
+    if (bizProspects.length === 0) return salesProspects;
+    const bizMapped = bizProspects.map(bp => ({
+      ...bp,
+      stage: bp.stage || 'prospect',
+      value: bp.value || 0,
+      offer: '',
+      offerId: null,
+      dateAdded: bp.created_at,
+    }));
+    return [...salesProspects, ...bizMapped];
+  }, [salesProspects, bizProspects]);
 
   // --- Logique Offres ---
   const isExpired = (offer: any) => {

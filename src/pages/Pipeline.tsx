@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
@@ -12,7 +12,8 @@ import {
   LayoutDashboard,
   List,
   Briefcase,
-  RefreshCw
+  RefreshCw,
+  Settings
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { MaskedText } from '../components/MaskedText'
@@ -22,24 +23,12 @@ import { NoAnswerModal } from '../components/NoAnswerModal'
 import { CreateEventModal } from '../components/CreateEventModal'
 import { ProspectView } from '../components/ProspectView'
 import { CreateProspectModal } from '../components/CreateProspectModal'
+import { CustomStagesConfig } from '../components/CustomStagesConfig'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
+import { useCustomStages } from '../hooks/useCustomStages'
+import { useTags } from '../hooks/useTags'
 import { SharePerformanceButton } from '../components/SharePerformanceButton'
-
-// Nouvelles étapes avec sections
-const ACTIVE_STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' },
-]
-
-const INACTIVE_STAGES = [
-  { id: 'noshow', name: 'No Show', color: 'bg-slate-600' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500' },
-]
-
-const ALL_STAGES = [...ACTIVE_STAGES, ...INACTIVE_STAGES]
 
 // Helper pour nettoyer le prix
 const parsePrice = (priceString: string): number => {
@@ -80,6 +69,14 @@ export function Pipeline() {
     nextSyncSeconds
   } = useProspects()
   const { offers } = useOffers()
+  const {
+    allStages, activeStages, inactiveStages, defaultStages,
+    customStages, addCustomStage, updateCustomStage, deleteCustomStage, reorderCustomStages,
+  } = useCustomStages()
+  const {
+    tags, prospectTags, createTag, updateTag, deleteTag,
+    addTagToProspect, removeTagFromProspect, getProspectTagObjects, getTagProspectCount,
+  } = useTags()
 
   const pipelineDeals = pipelineDealsFromContext || []
 
@@ -91,6 +88,7 @@ export function Pipeline() {
   const [stageFilter, setStageFilter] = useState<string>('all')
   const [filterDate, setFilterDate] = useState<string>('all')
   const [formulaFilter, setFormulaFilter] = useState<string>('all')
+  const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
 
   // Modals state
   const [isNewProspectModalOpen, setIsNewProspectModalOpen] = useState(false)
@@ -100,6 +98,62 @@ export function Pipeline() {
   const [showAiToast, setShowAiToast] = useState(false)
   const [callModeWithAi, setCallModeWithAi] = useState(false)
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
+  const [isCustomStagesOpen, setIsCustomStagesOpen] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const activeScrollRef = useRef<HTMLDivElement>(null)
+  const inactiveScrollRef = useRef<HTMLDivElement>(null)
+  const scrollAnimRef = useRef<number | null>(null)
+
+  // Auto-scroll edges during drag
+  const EDGE_ZONE = 120 // px from edge to start scrolling
+  const MAX_SPEED = 25  // px per frame
+
+  const handleAutoScroll = useCallback((e: MouseEvent) => {
+    if (!isDragging) return
+
+    const containers = [activeScrollRef.current, inactiveScrollRef.current].filter(Boolean) as HTMLDivElement[]
+
+    for (const container of containers) {
+      const rect = container.getBoundingClientRect()
+      const x = e.clientX
+
+      // Only scroll if mouse is within this container's vertical bounds
+      if (e.clientY < rect.top || e.clientY > rect.bottom) continue
+
+      if (x < rect.left + EDGE_ZONE) {
+        // Scroll left — speed proportional to closeness to edge
+        const ratio = 1 - Math.max(0, x - rect.left) / EDGE_ZONE
+        container.scrollLeft -= MAX_SPEED * ratio
+      } else if (x > rect.right - EDGE_ZONE) {
+        // Scroll right
+        const ratio = 1 - Math.max(0, rect.right - x) / EDGE_ZONE
+        container.scrollLeft += MAX_SPEED * ratio
+      }
+    }
+
+    scrollAnimRef.current = requestAnimationFrame(() => {
+      // Keep polling via mousemove, no extra RAF loop needed
+    })
+  }, [isDragging])
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleAutoScroll)
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleAutoScroll)
+      if (scrollAnimRef.current) cancelAnimationFrame(scrollAnimRef.current)
+    }
+  }, [isDragging, handleAutoScroll])
+
+  // Count prospects per stage for the config modal
+  const prospectsCountByStage = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const deal of pipelineDeals) {
+      counts[deal.stage] = (counts[deal.stage] || 0) + 1
+    }
+    return counts
+  }, [pipelineDeals])
 
   // --- LOGIQUE DE FILTRAGE DES OFFRES (Modifié) ---
   // On ne garde que les offres actives et non expirées pour les onglets
@@ -191,7 +245,13 @@ export function Pipeline() {
         return deal.formula_id === formulaFilter
       })()
 
-      return matchesOfferTab && matchesSearch && matchesStage && matchesDate && matchesFormula
+      // Tag filter
+      const matchesTags = selectedTagFilters.length === 0 || (() => {
+        const pTags = prospectTags[deal.id] || []
+        return selectedTagFilters.some(t => pTags.includes(t))
+      })()
+
+      return matchesOfferTab && matchesSearch && matchesStage && matchesDate && matchesFormula && matchesTags
     })
   }
 
@@ -236,7 +296,7 @@ export function Pipeline() {
     })
   }
 
-  const getStageInfo = (stageId: string) => ALL_STAGES.find(s => s.id === stageId)
+  const getStageInfo = (stageId: string) => allStages.find(s => s.id === stageId)
   const handleOpenDeal = (deal: Prospect) => setSelectedDeal(deal)
 
   const handleStartCall = (withAi: boolean) => {
@@ -370,6 +430,15 @@ export function Pipeline() {
               </button>
             </div>
 
+            <button
+              onClick={() => setIsCustomStagesOpen(true)}
+              title="Personnaliser le pipeline"
+              className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Personnaliser</span>
+            </button>
+
             {/* HubSpot Sync Button */}
             {hubspotConnected && hasHubspotOffer && (
               <button
@@ -430,7 +499,7 @@ export function Pipeline() {
               className="appearance-none rounded-lg border border-slate-800 bg-slate-900 py-1.5 pl-3 pr-8 text-xs text-slate-300 focus:border-blue-500 focus:outline-none"
             >
               <option value="all">Toutes les étapes</option>
-              {ALL_STAGES.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
+              {allStages.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
             </select>
             <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500 pointer-events-none" />
           </div>
@@ -462,25 +531,58 @@ export function Pipeline() {
               <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500 pointer-events-none" />
             </div>
           )}
+
+          {/* Filtre par tags */}
+          {tags.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mr-1">Tags</span>
+              {tags.map(tag => {
+                const isSelected = selectedTagFilters.includes(tag.id)
+                const count = pipelineDeals.filter(d => (prospectTags[d.id] || []).includes(tag.id)).length
+                return (
+                  <button
+                    key={tag.id}
+                    onClick={() => setSelectedTagFilters(prev =>
+                      isSelected ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
+                    )}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold transition-all border',
+                      isSelected
+                        ? 'text-white border-transparent shadow-sm'
+                        : 'text-slate-400 border-slate-800 bg-slate-900 hover:border-slate-700'
+                    )}
+                    style={isSelected ? { backgroundColor: tag.color, borderColor: tag.color } : undefined}
+                  >
+                    {!isSelected && <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color }} />}
+                    {tag.name}
+                    <span className={cn('text-[9px]', isSelected ? 'text-white/70' : 'text-slate-600')}>({count})</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 
       {/* --- CONTENT AREA --- */}
       <div className="flex-1 overflow-hidden">
         {viewMode === 'pipeline' ? (
-          <DragDropContext onDragEnd={onDragEnd}>
+          <DragDropContext
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={(result) => { setIsDragging(false); onDragEnd(result) }}
+          >
             <div className="h-full flex flex-col space-y-8 overflow-y-auto pr-2 custom-scrollbar">
               {/* FLUX ACTIF */}
               <div>
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">Flux Actif</h2>
                   <span className="text-xs text-slate-500">
-                    {ACTIVE_STAGES.reduce((sum, stage) => sum + getDealsForStage(stage.id).length, 0)} prospects
+                    {activeStages.reduce((sum, stage) => sum + getDealsForStage(stage.id).length, 0)} prospects
                   </span>
                 </div>
 
-                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-                  {ACTIVE_STAGES.map((stage) => {
+                <div ref={activeScrollRef} className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                  {activeStages.map((stage) => {
                     const stageDeals = getDealsForStage(stage.id)
                     const stageTotal = getTotalForStage(stage.id)
                     const isCollapsed = collapsedColumns.has(stage.id)
@@ -499,7 +601,10 @@ export function Pipeline() {
                           className="cursor-pointer border-b border-slate-800 p-3 hover:bg-slate-800/50 transition-colors"
                         >
                           <div className="flex items-center justify-between">
-                            <div className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.color)} />
+                            <div
+                              className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.isDefault ? stage.color : '')}
+                              style={!stage.isDefault ? { backgroundColor: stage.color } : undefined}
+                            />
                             {!isCollapsed && (
                               <span className="text-xs font-semibold text-slate-500">
                                 {stageDeals.length}
@@ -553,7 +658,10 @@ export function Pipeline() {
                                           )}
                                           style={provided.draggableProps.style}
                                         >
-                                          <div className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-50", stage.color)}></div>
+                                          <div
+                                            className={cn("absolute left-0 top-3 bottom-3 w-1 rounded-r-full opacity-50", stage.isDefault ? stage.color : '')}
+                                            style={!stage.isDefault ? { backgroundColor: stage.color } : undefined}
+                                          />
 
                                           <div className="pl-3">
                                             <h4 className="font-medium text-slate-200 group-hover:text-white truncate">
@@ -566,6 +674,21 @@ export function Pipeline() {
                                                 <MaskedText value={subTitle || ''} type="name" />
                                               </span>
                                             </div>
+
+                                            {/* Tag pills */}
+                                            {(prospectTags[deal.id] || []).length > 0 && (
+                                              <div className="mt-1.5 flex flex-wrap gap-1">
+                                                {getProspectTagObjects(deal.id).map(tag => (
+                                                  <span
+                                                    key={tag.id}
+                                                    className="inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
+                                                    style={{ backgroundColor: tag.color }}
+                                                  >
+                                                    {tag.name}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            )}
 
                                             <div className="mt-3 flex items-center justify-between border-t border-slate-700/50 pt-2">
                                               <span className="text-xs font-semibold text-blue-400">
@@ -605,8 +728,8 @@ export function Pipeline() {
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-600">Flux Inactif</h2>
                 </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-                  {INACTIVE_STAGES.map((stage) => {
+                <div ref={inactiveScrollRef} className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                  {inactiveStages.map((stage) => {
                     const stageDeals = getDealsForStage(stage.id)
                     const isCollapsed = collapsedColumns.has(stage.id)
                     return (
@@ -629,13 +752,36 @@ export function Pipeline() {
                         </div>
 
                         {!isCollapsed && (
-                          <div className="space-y-2 p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                            {stageDeals.map((deal) => (
-                              <div key={deal.id} onClick={() => handleOpenDeal(deal)} className="cursor-pointer rounded border border-slate-800/30 bg-slate-900/40 p-2 opacity-60 hover:opacity-100">
-                                <p className="text-sm text-slate-400"><MaskedText value={getDisplayName(deal)} type="name" /></p>
+                          <Droppable droppableId={stage.id}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={cn(
+                                  "space-y-2 p-2 max-h-[300px] overflow-y-auto custom-scrollbar transition-colors",
+                                  snapshot.isDraggingOver ? "bg-slate-800/20" : ""
+                                )}
+                              >
+                                {stageDeals.map((deal, index) => (
+                                  <Draggable key={deal.id} draggableId={deal.id.toString()} index={index}>
+                                    {(provided) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        onClick={() => handleOpenDeal(deal)}
+                                        className="cursor-pointer rounded border border-slate-800/30 bg-slate-900/40 p-2 opacity-60 hover:opacity-100"
+                                        style={provided.draggableProps.style}
+                                      >
+                                        <p className="text-sm text-slate-400"><MaskedText value={getDisplayName(deal)} type="name" /></p>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
                               </div>
-                            ))}
-                          </div>
+                            )}
+                          </Droppable>
                         )}
                       </div>
                     )
@@ -652,6 +798,7 @@ export function Pipeline() {
                 <thead className="bg-slate-950 text-slate-400 sticky top-0 z-10">
                   <tr>
                     <th className="px-6 py-4 font-semibold">Prospect</th>
+                    <th className="px-6 py-4 font-semibold">Tags</th>
                     <th className="px-6 py-4 font-semibold">Offre</th>
                     <th className="px-6 py-4 font-semibold">Montant</th>
                     <th className="px-6 py-4 font-semibold">Étape</th>
@@ -677,6 +824,15 @@ export function Pipeline() {
                             </div>
                           </div>
                         </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-1">
+                            {getProspectTagObjects(deal.id).map(tag => (
+                              <span key={tag.id} className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: tag.color }}>
+                                {tag.name}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
                         <td className="px-6 py-4 text-slate-400">{displayOfferName || '-'}</td>
                         <td className="px-6 py-4 font-mono font-medium text-blue-400">
                           <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
@@ -687,7 +843,10 @@ export function Pipeline() {
                               stageInfo.id === 'won' ? 'text-emerald-400 border-emerald-500/20' :
                                 stageInfo.id === 'lost' ? 'text-red-400 border-red-500/20' : 'text-slate-300'
                             )}>
-                              <span className={cn("h-1.5 w-1.5 rounded-full", stageInfo.color)}></span>
+                              <span
+                                className={cn("h-1.5 w-1.5 rounded-full", stageInfo.isDefault ? stageInfo.color : '')}
+                                style={!stageInfo.isDefault ? { backgroundColor: stageInfo.color } : undefined}
+                              />
                               {stageInfo.name}
                             </span>
                           )}
@@ -775,6 +934,31 @@ export function Pipeline() {
         onClose={() => setIsCreateEventModalOpen(false)}
         prospectId={selectedDeal?.id}
         prospectName={selectedDeal ? getDisplayName(selectedDeal) : ''}
+      />
+
+      <CustomStagesConfig
+        isOpen={isCustomStagesOpen}
+        onClose={() => setIsCustomStagesOpen(false)}
+        defaultStages={defaultStages}
+        customStages={customStages}
+        onAdd={addCustomStage}
+        onUpdate={updateCustomStage}
+        onDelete={async (id) => {
+          // Move prospects on this stage back to 'prospect'
+          const stageId = `custom_${id}`
+          const prospectsOnStage = pipelineDeals.filter(d => d.stage === stageId)
+          for (const p of prospectsOnStage) {
+            if (updateProspect) updateProspect(p.id, { stage: 'prospect' })
+          }
+          await deleteCustomStage(id)
+        }}
+        onReorder={reorderCustomStages}
+        prospectsCountByStage={prospectsCountByStage}
+        tags={tags}
+        onCreateTag={createTag}
+        onUpdateTag={updateTag}
+        onDeleteTag={deleteTag}
+        getTagProspectCount={getTagProspectCount}
       />
 
       {showAiToast && (

@@ -9,10 +9,24 @@ import { NoAnswerModal } from '../components/NoAnswerModal'
 import { CreateEventModal } from '../components/CreateEventModal'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
+import { useOrganization } from '../contexts/OrganizationContext'
+import { supabase } from '../lib/supabase'
 
 
 // --- HELPER DE STYLE CENTRALISÉ (NOUVEAU) ---
 const getEventStyle = (event: any) => {
+  // 0. STYLE BUSINESS (Amber)
+  if (event.isBusinessEvent) {
+    return {
+      backgroundColor: 'rgba(245, 158, 11, 0.15)',
+      color: '#ffffff',
+      border: '1px solid #f59e0b',
+      borderLeft: '4px solid #f59e0b',
+      borderRadius: '4px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+    }
+  }
+
   // 1. STYLE GOOGLE AGENDA (Blanc & Noir)
   if (event.isGoogleEvent) {
     return {
@@ -185,6 +199,7 @@ export function Agenda() {
   const location = useLocation()
   const { meetings, deleteMeeting } = useMeetings()
   const { googleEvents, isConnected, login, isLoading } = useGoogleCalendar()
+  const { isInOrganization, organization } = useOrganization()
   const dateInputRef = useRef<HTMLInputElement>(null)
   const dayViewScrollRef = useRef<HTMLDivElement>(null)
   const weekViewScrollRef = useRef<HTMLDivElement>(null)
@@ -202,6 +217,22 @@ export function Agenda() {
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false)
   const [editingEventId, setEditingEventId] = useState<number | null>(null)
   const [copiedLink, setCopiedLink] = useState(false)
+
+  // Business hybrid appointments
+  const [bizAppointments, setBizAppointments] = useState<any[]>([])
+  useEffect(() => {
+    if (!isInOrganization || !organization) { setBizAppointments([]); return }
+    const fetchBiz = async () => {
+      const { data } = await supabase
+        .from('business_appointments')
+        .select('id, date, time, duration, status, type, notes, prospect:business_prospects!prospect_id(contact, company)')
+        .eq('user_id', organization.owner_id)
+        .eq('assigned_to', organization.member_id)
+        .neq('status', 'cancelled')
+      setBizAppointments((data || []).map((a: any) => ({ ...a, prospect: a.prospect?.[0] || a.prospect || null })))
+    }
+    fetchBiz()
+  }, [isInOrganization, organization?.owner_id, organization?.member_id])
 
   useEffect(() => {
     const eventIdFromState = (location.state as any)?.eventId;
@@ -424,7 +455,35 @@ export function Agenda() {
       })
       .filter((event): event is NonNullable<typeof event> => event !== null)
 
-    return [...localMeetings, ...googleMeetingsForDate]
+    // Business appointments for this date
+    const bizForDate = bizAppointments
+      .filter(a => {
+        if (!a || !a.date) return false
+        const parts = a.date.split('-')
+        if (parts.length !== 3) return false
+        const [year, month, day] = parts.map(Number)
+        return isSameDay(new Date(year, month - 1, day), date)
+      })
+      .map(a => {
+        const startTime = a.time?.slice(0, 5) || '09:00'
+        const dur = a.duration || 30
+        const [h, m] = startTime.split(':').map(Number)
+        const endMin = h * 60 + m + dur
+        const endTime = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`
+        return {
+          id: `biz-${a.id}` as any,
+          title: a.prospect?.contact || a.prospect?.company || 'RDV Business',
+          date: a.date,
+          time: `${startTime} - ${endTime}`,
+          type: (a.type === 'visio' ? 'video' : 'meeting') as 'video' | 'meeting',
+          contact: a.prospect?.contact || 'Prospect',
+          prospectId: 0,
+          status: a.status === 'confirmed' ? 'scheduled' : 'scheduled',
+          isBusinessEvent: true,
+        }
+      })
+
+    return [...localMeetings, ...googleMeetingsForDate, ...bizForDate]
   }
 
   const getTodayMeetings = () => {

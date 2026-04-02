@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   X,
   Phone,
+  PhoneCall,
   Mail,
   Calendar,
+  Camera,
   Pencil,
   Trash2,
   ExternalLink,
@@ -32,6 +35,8 @@ import { type Prospect } from '../contexts/ProspectsContext'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useOffers, type Offer } from '../contexts/OffersContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useCustomStages } from '../hooks/useCustomStages'
+import { useTags } from '../hooks/useTags'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -61,17 +66,14 @@ interface ExtendedProspect extends Prospect {
   }[]
   payment_type?: 'cash' | 'installments' | 'comptant'
   installments?: number
-  formula_id?: string // ✅ AJOUT : Support de la formule
+  formula_id?: string
+  loss_reason?: string
+  loss_details?: string
+  avatar_url?: string
 }
 
-const ALL_STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' },
-  { id: 'noshow', name: 'No Show', color: 'bg-slate-600' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500' },
-]
+const LOSS_REASONS = ['Je dois y réfléchir', 'Argent/budget', 'Doit en parler', "C'est pas le moment", 'Peur', 'Ecran de fumée', 'Autre']
+
 
 interface ProspectViewProps {
   prospect: Prospect
@@ -92,7 +94,23 @@ export function ProspectView({
   onStartCall,
   onPhoneCall,
 }: ProspectViewProps) {
+  const navigate = useNavigate()
   const { offers } = useOffers()
+  const { allStages, getStageInfo } = useCustomStages()
+  const { tags, addTagToProspect, removeTagFromProspect, getProspectTagObjects } = useTags()
+  const [showTagPicker, setShowTagPicker] = useState(false)
+
+  // Avatar
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+
+  // History
+  const [history, setHistory] = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set())
+
+  // Next appointment
+  const [nextAppointment, setNextAppointment] = useState<{ date: string; time: string } | null>(null)
 
   const isExpired = (offer: Offer) => {
     if (!offer.endDate) return false
@@ -107,7 +125,7 @@ export function ProspectView({
   const [localProspect, setLocalProspect] = useState<ExtendedProspect>(prospect)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels' | 'historique'>('info')
 
   const [editingOffer, setEditingOffer] = useState(false)
   const [editedOfferId, setEditedOfferId] = useState('')
@@ -283,6 +301,132 @@ export function ProspectView({
 
   const activeRemindersCount = prospectReminders.filter(r => !r.is_done).length
 
+  // --- Avatar upload ---
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Fichier image requis'); return }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image trop lourde (max 5 Mo)'); return }
+    setAvatarUploading(true)
+    try {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const fileName = `prospect-${prospect.id}-${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file)
+      if (uploadError) throw uploadError
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      await supabase.from('prospects').update({ avatar_url: data.publicUrl }).eq('id', prospect.id)
+      setLocalProspect(prev => ({ ...prev, avatar_url: data.publicUrl }))
+      if (onUpdate) onUpdate(prospect.id, { avatar_url: data.publicUrl } as any)
+      toast.success('Photo mise à jour')
+    } catch (err) {
+      console.error(err)
+      toast.error("Erreur lors de l'upload")
+    } finally {
+      setAvatarUploading(false)
+      if (avatarInputRef.current) avatarInputRef.current.value = ''
+    }
+  }
+
+  // --- Next appointment ---
+  useEffect(() => {
+    if (!user?.id || !prospect.id) return
+    const nowIso = new Date().toISOString().split('T')[0]
+    supabase
+      .from('meetings')
+      .select('date, time')
+      .eq('user_id', user.id)
+      .eq('prospectId', prospect.id)
+      .in('status', ['upcoming', 'scheduled'])
+      .gte('date', nowIso)
+      .order('date', { ascending: true })
+      .order('time', { ascending: true })
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setNextAppointment({ date: data[0].date, time: data[0].time?.slice(0, 5) })
+        } else {
+          setNextAppointment(null)
+        }
+      })
+  }, [user?.id, prospect.id])
+
+  // --- History ---
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true)
+    const { data } = await supabase
+      .from('prospect_history')
+      .select('*')
+      .eq('prospect_id', prospect.id)
+      .order('created_at', { ascending: true })
+      .limit(200)
+    setHistory(data || [])
+    setHistoryLoading(false)
+  }, [prospect.id])
+
+  useEffect(() => {
+    if (activeTab === 'historique') fetchHistory()
+  }, [activeTab, fetchHistory])
+
+  const historyGroups = useMemo(() => {
+    const groups: { key: string; created_at: string; type: string; entries: any[]; metadata?: any }[] = []
+    for (const entry of history) {
+      const key = `${entry.created_at}_${entry.change_type}`
+      const existing = groups.find(g => g.key === key)
+      if (existing) {
+        existing.entries.push(entry)
+      } else {
+        groups.push({
+          key,
+          created_at: entry.created_at,
+          type: entry.change_type,
+          entries: [entry],
+          metadata: entry.metadata,
+        })
+      }
+    }
+    return groups.reverse()
+  }, [history])
+
+  const FIELD_LABELS: Record<string, string> = {
+    firstName: 'Prénom', lastName: 'Nom', contact: 'Contact',
+    email: 'Email', phone: 'Téléphone', company: 'Entreprise',
+    stage: 'Étape', value: 'Montant', offer: 'Offre',
+    payment_type: 'Mode de paiement', installments: 'Mensualités',
+    notes: 'Notes', loss_reason: 'Raison de perte', loss_details: 'Détails de perte',
+    avatar_url: 'Photo de profil',
+  }
+
+  const formatHistoryValue = useCallback((field: string, value: string | null | undefined): string => {
+    if (value == null || value === '') return '(vide)'
+    if (field === 'stage') {
+      const si = getStageInfo(value)
+      return si?.name || value
+    }
+    if (field === 'value') return `${Number(value).toLocaleString('fr-FR')}€`
+    if (field === 'payment_type') {
+      const labels: Record<string, string> = { once: 'Comptant', installments: 'Mensualités', cash: 'Comptant', comptant: 'Comptant' }
+      return labels[value] || value
+    }
+    if (field === 'avatar_url') return 'Photo mise à jour'
+    return value
+  }, [getStageInfo])
+
+  // --- Log history entry helper ---
+  const logHistory = useCallback(async (change_type: string, field_name: string, old_value: string | null, new_value: string | null) => {
+    if (!user?.id) return
+    const { error } = await supabase.from('prospect_history').insert([{
+      prospect_id: prospect.id,
+      user_id: user.id,
+      change_type,
+      field_name,
+      old_value,
+      new_value,
+    }])
+    if (!error && activeTab === 'historique') {
+      fetchHistory()
+    }
+  }, [user?.id, prospect.id, activeTab, fetchHistory])
+
   const selectedOfferObj = editedOfferId
     ? availableOffers.find(o => String(o.id) === editedOfferId)
     : availableOffers.find(o => o.name === (localProspect.offer?.split(' - ')[0] || localProspect.offer))
@@ -306,6 +450,10 @@ export function ProspectView({
   }
 
   const handleOptimisticUpdate = (updates: Partial<ExtendedProspect>) => {
+    // Log stage changes to history
+    if (updates.stage && updates.stage !== localProspect.stage) {
+      logHistory('stage_change', 'stage', localProspect.stage, updates.stage)
+    }
     setLocalProspect(prev => ({ ...prev, ...updates }))
     const dbUpdates: any = { ...updates }
     if (updates.callNotes) {
@@ -485,18 +633,112 @@ export function ProspectView({
             {/* Header Fixe */}
             <div className="border-b border-slate-800 bg-slate-950 px-6 pt-6 pb-0">
               <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h2 className="text-xl font-bold text-white">
-                    <MaskedText value={localProspect.contact} type="name" />
-                  </h2>
-                  {localProspect.company && localProspect.company !== 'N/A' && (
-                    <p className="mt-1 text-sm text-slate-400">{localProspect.company}</p>
-                  )}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  {/* Avatar */}
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="relative w-11 h-11 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden text-lg font-extrabold text-slate-400 group cursor-pointer shrink-0"
+                    title="Changer la photo"
+                  >
+                    {localProspect.avatar_url ? (
+                      <img src={localProspect.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      (localProspect.contact || '?')[0]?.toUpperCase()
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                      {avatarUploading ? (
+                        <Loader2 className="h-4 w-4 text-white animate-spin" />
+                      ) : (
+                        <Camera className="h-4 w-4 text-white" />
+                      )}
+                    </div>
+                    <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                  </button>
+                  <div className="min-w-0">
+                    <h2 className="text-xl font-bold text-white truncate">
+                      <MaskedText value={localProspect.contact} type="name" />
+                    </h2>
+                    {localProspect.company && localProspect.company !== 'N/A' && (
+                      <p className="mt-0.5 text-sm text-slate-400 truncate">{localProspect.company}</p>
+                    )}
+                  </div>
                 </div>
-                <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
+                <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white shrink-0">
                   <X className="h-5 w-5" />
                 </button>
               </div>
+
+              {/* Tags */}
+              <div className="relative flex flex-wrap items-center gap-1.5 mb-3">
+                {getProspectTagObjects(localProspect.id).map(tag => (
+                  <span
+                    key={tag.id}
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white group/tag cursor-default"
+                    style={{ backgroundColor: tag.color }}
+                  >
+                    {tag.name}
+                    <button
+                      onClick={() => removeTagFromProspect(localProspect.id, tag.id)}
+                      className="ml-0.5 rounded-full p-0.5 hover:bg-white/20 opacity-0 group-hover/tag:opacity-100 transition-opacity"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </span>
+                ))}
+                <button
+                  onClick={() => setShowTagPicker(!showTagPicker)}
+                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-700 px-2 py-0.5 text-[11px] text-slate-500 hover:border-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  <Plus className="h-3 w-3" /> tag
+                </button>
+                {showTagPicker && (
+                  <div className="absolute left-0 top-full mt-1.5 z-10 min-w-[200px] max-w-[300px] rounded-lg border border-slate-700 bg-slate-900 shadow-xl">
+                    <div className="max-h-48 overflow-y-auto p-1.5">
+                      {tags.length === 0 ? (
+                        <p className="px-3 py-2 text-xs text-slate-500">Aucun tag. Créez-en dans Personnaliser.</p>
+                      ) : (
+                        tags.map(tag => {
+                          const isAssigned = (getProspectTagObjects(localProspect.id)).some(t => t.id === tag.id)
+                          return (
+                            <button
+                              key={tag.id}
+                              onClick={() => {
+                                if (isAssigned) removeTagFromProspect(localProspect.id, tag.id)
+                                else addTagToProspect(localProspect.id, tag.id)
+                              }}
+                              className={cn(
+                                'flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs transition-colors',
+                                isAssigned ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800'
+                              )}
+                            >
+                              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                              <span className="flex-1 text-left">{tag.name}</span>
+                              {isAssigned && <Check className="h-3.5 w-3.5 text-emerald-400" />}
+                            </button>
+                          )
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Next appointment */}
+              {nextAppointment && (
+                <div className="flex items-center gap-3 mb-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-2.5">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
+                    <Calendar className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Prochain rendez-vous</p>
+                    <p className="text-sm font-semibold text-white">
+                      {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString('fr-FR', {
+                        weekday: 'short', day: 'numeric', month: 'long'
+                      })} à {nextAppointment.time}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2 mb-3">
                 <button onClick={handleOpenGmail} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-300 transition-all hover:bg-slate-800 hover:text-white">
@@ -509,12 +751,20 @@ export function ProspectView({
                   <Calendar className="h-4 w-4" /> RDV
                 </button>
               </div>
-              <button
-                onClick={() => setShowReminderForm(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-orange-600 shadow-lg shadow-orange-500/20 mb-6"
-              >
-                <Bell className="h-4 w-4" /> Créer un rappel
-              </button>
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={() => setShowReminderForm(true)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-orange-600 shadow-lg shadow-orange-500/20"
+                >
+                  <Bell className="h-4 w-4" /> Rappel
+                </button>
+                <button
+                  onClick={() => navigate(`/live-call?name=${encodeURIComponent(localProspect.contact)}&prospectId=${localProspect.id}&from=/pipeline`)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-slate-700"
+                >
+                  <PhoneCall className="h-4 w-4" /> Call
+                </button>
+              </div>
 
               {/* TABS */}
               <div className="flex border-b border-slate-800">
@@ -559,6 +809,18 @@ export function ProspectView({
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
                   )}
                 </button>
+                <button
+                  onClick={() => setActiveTab('historique')}
+                  className={cn(
+                    "flex-1 pb-3 text-sm font-medium transition-all relative",
+                    activeTab === 'historique' ? "text-white" : "text-slate-500 hover:text-slate-300"
+                  )}
+                >
+                  Historique
+                  {activeTab === 'historique' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-500" />
+                  )}
+                </button>
               </div>
             </div>
 
@@ -577,8 +839,10 @@ export function ProspectView({
                       onChange={(e) => handleOptimisticUpdate({ stage: e.target.value })}
                       className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                     >
-                      {ALL_STAGES.map((stage) => (
-                        <option key={stage.id} value={stage.id}>{stage.name}</option>
+                      {allStages.map((stage) => (
+                        <option key={stage.id} value={stage.id}>
+                          {stage.isDefault ? stage.name : `● ${stage.name}`}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -662,6 +926,45 @@ export function ProspectView({
                           </div>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Loss Reason */}
+                  {localProspect.stage === 'lost' && (
+                    <div className="animate-in slide-in-from-top-4 fade-in duration-300">
+                      <h3 className="flex items-center gap-2 text-sm font-bold text-red-400 mb-3">
+                        <X className="h-4 w-4" /> Raison de la perte
+                      </h3>
+                      <div className="space-y-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+                        <div>
+                          <label className="text-xs font-medium text-slate-400 mb-1.5 block">Motif</label>
+                          <div className="relative">
+                            <select
+                              value={localProspect.loss_reason || ''}
+                              onChange={(e) => {
+                                const prev = localProspect.loss_reason || ''
+                                handleOptimisticUpdate({ loss_reason: e.target.value } as any)
+                                logHistory('field_update', 'loss_reason', prev, e.target.value)
+                              }}
+                              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none appearance-none"
+                            >
+                              <option value="">Sélectionnez un motif</option>
+                              {LOSS_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-slate-500" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-400 mb-1.5 block">Détails</label>
+                          <input
+                            type="text"
+                            value={localProspect.loss_details || ''}
+                            onChange={(e) => handleOptimisticUpdate({ loss_details: e.target.value } as any)}
+                            placeholder="Précisez les détails..."
+                            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-red-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -1051,6 +1354,119 @@ export function ProspectView({
                                 )} />
                               </div>
                             </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* --- ONGLET 4: HISTORIQUE --- */}
+              {activeTab === 'historique' && (
+                <div className="space-y-1 animate-in fade-in slide-in-from-right-4 duration-300">
+                  {historyLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+                    </div>
+                  ) : historyGroups.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 mb-3">
+                        <Clock className="h-6 w-6 text-slate-500" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-400">Aucun historique</p>
+                      <p className="text-xs text-slate-500 mt-1">Les modifications apparaîtront ici.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-0">
+                      {historyGroups.map((group, gIdx) => {
+                        const isExpanded = expandedHistory.has(group.key)
+                        const isLast = gIdx === historyGroups.length - 1
+                        const date = new Date(group.created_at)
+                        const timeStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + ' à ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+
+                        const CHANGE_STYLES: Record<string, { icon: typeof Plus; bg: string; text: string }> = {
+                          created: { icon: Plus, bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+                          stage_change: { icon: Tag, bg: 'bg-purple-500/10', text: 'text-purple-400' },
+                          field_update: { icon: Pencil, bg: 'bg-blue-500/10', text: 'text-blue-400' },
+                        }
+                        const style = CHANGE_STYLES[group.type] || CHANGE_STYLES.field_update
+                        const IconComponent = style.icon
+
+                        let title = ''
+                        if (group.type === 'created') {
+                          title = 'Création du prospect'
+                        } else if (group.type === 'stage_change') {
+                          const stageEntry = group.entries.find((e: any) => e.change_type === 'stage_change')
+                          title = stageEntry ? `Étape → ${formatHistoryValue('stage', stageEntry.new_value)}` : "Changement d'étape"
+                        } else {
+                          const count = group.entries.length
+                          title = count === 1
+                            ? `${FIELD_LABELS[group.entries[0].field_name] || group.entries[0].field_name} modifié`
+                            : `${count} champs modifiés`
+                        }
+
+                        return (
+                          <div key={group.key}>
+                            <button
+                              onClick={() => setExpandedHistory(prev => {
+                                const next = new Set(prev)
+                                next.has(group.key) ? next.delete(group.key) : next.add(group.key)
+                                return next
+                              })}
+                              className="w-full text-left rounded-xl border border-slate-800 bg-slate-900/50 p-4 hover:bg-slate-800/50 transition-all"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={cn('p-1.5 rounded-lg shrink-0', style.bg)}>
+                                  <IconComponent className={cn('h-3.5 w-3.5', style.text)} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-white truncate">{title}</p>
+                                  <p className="text-[10px] text-slate-500">{timeStr}</p>
+                                </div>
+                                <ChevronDown className={cn('h-4 w-4 text-slate-500 transition-transform shrink-0', isExpanded && 'rotate-180')} />
+                              </div>
+
+                              {isExpanded && (
+                                <div className="mt-3 pt-3 border-t border-slate-800">
+                                  <div className="space-y-2">
+                                    {group.entries.map((entry: any) => {
+                                      const fieldLabel = FIELD_LABELS[entry.field_name] || entry.field_name
+                                      const oldDisplay = formatHistoryValue(entry.field_name, entry.old_value)
+                                      const newDisplay = formatHistoryValue(entry.field_name, entry.new_value)
+                                      return (
+                                        <div key={entry.id} className="flex items-start gap-2">
+                                          <span className="text-[10px] font-bold text-slate-500 w-24 shrink-0 pt-0.5 truncate">{fieldLabel}</span>
+                                          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                            {entry.old_value && (
+                                              <>
+                                                <span className="text-xs text-slate-400 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20 line-through truncate max-w-[140px]">
+                                                  {oldDisplay}
+                                                </span>
+                                                <span className="text-[10px] text-slate-500">→</span>
+                                              </>
+                                            )}
+                                            <span className="text-xs text-white bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 font-medium truncate max-w-[140px]">
+                                              {newDisplay}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </button>
+
+                            {!isLast && (
+                              <div className="flex justify-center py-1">
+                                <div className="flex flex-col items-center">
+                                  <div className="w-px h-2 bg-slate-800" />
+                                  <ChevronDown className="h-3 w-3 text-slate-700 -my-0.5" />
+                                  <div className="w-px h-2 bg-slate-800" />
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )
                       })}

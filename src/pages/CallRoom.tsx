@@ -3,10 +3,12 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
     Monitor, PhoneOff, ChevronDown, ExternalLink, FileText,
     Briefcase, BookOpen, ScrollText, Tag, Mic, Video, Settings,
-    MessageSquare // Ajout pour le chat/notes si besoin
+    MessageSquare, User
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useProspects } from '../contexts/ProspectsContext';
+import { ProspectView } from '../components/ProspectView';
 import { cn } from '../lib/utils';
 
 // Interfaces pour les données
@@ -28,14 +30,24 @@ interface Offer {
 
 export default function CallRoom() {
     const { user } = useAuth();
+    const { prospects, updateProspect, deleteProspect } = useProspects();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const callIdFromParams = searchParams.get('id');
     const contactName = searchParams.get('name') || 'Appel';
+    const prospectIdFromParams = searchParams.get('prospectId');
     const fromPage = searchParams.get('from') || '/';
 
     // Ref pour stocker le callId (soit depuis les params, soit auto-créé)
     const callIdRef = useRef<string | null>(callIdFromParams);
+
+    // Prospect view
+    const [showProspectView, setShowProspectView] = useState(false);
+    const prospect = prospectIdFromParams ? prospects.find(p => String(p.id) === prospectIdFromParams) : null;
+
+    // Previous call notes
+    const [selectedPreviousNote, setSelectedPreviousNote] = useState<string>('');
+    const previousNotes = (prospect?.call_notes || []).filter((n: any) => n.content?.trim());
 
     // --- STATE PRINCIPAL ---
     const [isPanelOpen, setIsPanelOpen] = useState(true);
@@ -262,6 +274,16 @@ export default function CallRoom() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {prospect && (
+                        <button
+                            onClick={() => setShowProspectView(true)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-sm font-medium transition-colors"
+                        >
+                            <User className="h-4 w-4" />
+                            Fiche Prospect
+                        </button>
+                    )}
+
                     <button
                         onClick={() => window.open('https://meet.google.com', '_blank')}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-sm font-medium transition-colors"
@@ -454,26 +476,74 @@ export default function CallRoom() {
 
                 {/* === VOLET DROIT : NOTES (Reste le même mais plus large si panneau fermé) === */}
                 <div className="flex-1 flex flex-col bg-slate-950 relative border-l border-slate-800">
-                    <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/30">
+                    <div className="p-4 border-b border-slate-800 flex items-center gap-4 bg-slate-900/30">
                         <h3 className="font-bold text-slate-400 text-sm tracking-wider flex items-center gap-2">
                             <FileText className="h-4 w-4" /> PRISE DE NOTES
                         </h3>
-                        <div className="flex items-center gap-2">
+
+                        {/* Previous notes tabs */}
+                        {previousNotes.length > 0 && (
+                            <div className="flex items-center gap-1.5 ml-2">
+                                <button
+                                    onClick={() => setSelectedPreviousNote('')}
+                                    className={cn(
+                                        "px-3 py-1 rounded-full text-xs font-semibold transition-all",
+                                        !selectedPreviousNote
+                                            ? "bg-blue-600 text-white"
+                                            : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+                                    )}
+                                >
+                                    Actuelles
+                                </button>
+                                {previousNotes.map((n: any) => (
+                                    <button
+                                        key={n.id}
+                                        onClick={() => setSelectedPreviousNote(n.id)}
+                                        className={cn(
+                                            "px-3 py-1 rounded-full text-xs font-semibold transition-all",
+                                            selectedPreviousNote === n.id
+                                                ? "bg-blue-600 text-white"
+                                                : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+                                        )}
+                                    >
+                                        {new Date(n.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-2 ml-auto">
                             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
                             <span className="text-xs text-slate-500">Sauvegarde auto</span>
                         </div>
                     </div>
 
-                    <textarea
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)"
-                        className="flex-1 w-full bg-transparent p-8 text-white placeholder-slate-600 resize-none focus:outline-none text-lg leading-relaxed font-light"
-                        autoFocus
-                    />
+                    {selectedPreviousNote ? (
+                        <div className="flex-1 w-full p-8 text-slate-300 text-lg leading-relaxed font-light whitespace-pre-wrap overflow-y-auto">
+                            {previousNotes.find((n: any) => n.id === selectedPreviousNote)?.content || 'Aucune note'}
+                        </div>
+                    ) : (
+                        <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)"
+                            className="flex-1 w-full bg-transparent p-8 text-white placeholder-slate-600 resize-none focus:outline-none text-lg leading-relaxed font-light"
+                            autoFocus
+                        />
+                    )}
                 </div>
 
             </div>
+
+            {/* Prospect View Modal */}
+            {showProspectView && prospect && (
+                <ProspectView
+                    prospect={prospect}
+                    onClose={() => setShowProspectView(false)}
+                    onUpdate={(id, updates) => updateProspect(id, updates)}
+                    onDelete={(id) => { deleteProspect(id); setShowProspectView(false); }}
+                />
+            )}
         </div>
     );
 }

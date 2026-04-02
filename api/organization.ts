@@ -81,6 +81,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             last_name: lastName,
             email,
             avatar_url: userProfile?.avatar_url || null,
+            has_onboarded: true,
+            onboarding_acknowledged: true,
           })
           .eq('id', existing.id)
         if (updateErr) return res.status(500).json({ error: updateErr.message })
@@ -100,6 +102,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             last_name: lastName,
             email,
             avatar_url: userProfile?.avatar_url || null,
+            has_onboarded: true,
+            onboarding_acknowledged: true,
           })
           .select('id')
           .single()
@@ -160,17 +164,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Vous n\'appartenez à aucune organisation.' })
       }
 
-      // Nullify user_id in team_member (keep the row for owner to reassign)
+      // Clear profiles link first (FK references team_member)
       await supabase
-        .from('business_team_members')
-        .update({ user_id: null })
-        .eq('id', profile.business_member_id)
-
-      // Clear profiles link
-      const { error } = await supabase
         .from('profiles')
         .update({ business_member_id: null, business_owner_id: null })
         .eq('id', user_id)
+
+      // Delete the team member row entirely
+      const { error } = await supabase
+        .from('business_team_members')
+        .delete()
+        .eq('id', profile.business_member_id)
 
       if (error) return res.status(500).json({ error: error.message })
 

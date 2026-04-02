@@ -5,6 +5,8 @@ import html2pdf from 'html2pdf.js'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useCustomStages } from '../hooks/useCustomStages'
+import { useTags } from '../hooks/useTags'
 import { supabase } from '../lib/supabase'
 
 type ExportSection = 'kpi' | 'pipeline' | 'contacts' | 'factures' | 'rappels'
@@ -52,6 +54,8 @@ export function DataExportContent() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { user, profile } = useAuth()
+  const { allStages } = useCustomStages()
+  const { getProspectTagObjects } = useTags()
   const pdfRef = useRef<HTMLDivElement>(null)
 
   const [selected, setSelected] = useState<Set<ExportSection>>(new Set(SECTIONS.map(s => s.id)))
@@ -98,7 +102,7 @@ export function DataExportContent() {
 
   const userName = profile?.full_name || 'Utilisateur'
   const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
-  const stages = ['prospect', 'qualified', 'won', 'followup', 'noshow', 'lost']
+  const stages = allStages.map(s => s.id)
   const now = new Date()
 
   // When readyToExport is set, wait for render then capture PDF
@@ -260,7 +264,7 @@ export function DataExportContent() {
                             <tr key={i}>
                               <td style={tdStyle}>{p.contact || p.name || '-'}</td>
                               <td style={tdStyle}>{p.company || '-'}</td>
-                              <td style={tdStyle}>{STAGE_LABELS[p.stage] || p.stage}</td>
+                              <td style={tdStyle}>{allStages.find(s => s.id === p.stage)?.name || STAGE_LABELS[p.stage] || p.stage}</td>
                               <td style={tdStyle}>{p.value ? p.value.toLocaleString('fr-FR') + ' €' : '-'}</td>
                               <td style={tdStyle}>{p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '-'}</td>
                             </tr>
@@ -283,6 +287,7 @@ export function DataExportContent() {
                       <th style={thStyle}>Entreprise</th>
                       <th style={thStyle}>Email</th>
                       <th style={thStyle}>Téléphone</th>
+                      <th style={thStyle}>Tags</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -293,9 +298,10 @@ export function DataExportContent() {
                             <td style={tdStyle}>{p.company || '-'}</td>
                             <td style={tdStyle}>{p.email || '-'}</td>
                             <td style={tdStyle}>{p.phone || '-'}</td>
+                            <td style={tdStyle}>{getProspectTagObjects(p.id).map(t => t.name).join(', ') || '-'}</td>
                           </tr>
                         ))
-                      : <tr><td style={tdStyle} colSpan={4}>Aucun contact</td></tr>
+                      : <tr><td style={tdStyle} colSpan={5}>Aucun contact</td></tr>
                     }
                   </tbody>
                 </table>

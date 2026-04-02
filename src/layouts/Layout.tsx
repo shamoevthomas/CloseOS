@@ -24,10 +24,6 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/factures': { title: 'Factures', subtitle: 'Suivez vos paiements' },
   '/rendez-vous': { title: 'Rendez-vous', subtitle: 'Gérez vos créneaux' },
   '/reminders': { title: 'Rappels', subtitle: 'Gérez vos rappels' },
-  '/organization/pipeline': { title: 'Pipeline Équipe', subtitle: 'Prospects de votre organisation' },
-  '/organization/agenda': { title: 'Agenda Équipe', subtitle: 'Rendez-vous de l\'organisation' },
-  '/organization/kpi': { title: 'KPI Équipe', subtitle: 'Vos performances dans l\'organisation' },
-  '/organization/formulas': { title: 'Formules', subtitle: 'Offres de l\'organisation' },
 }
 
 export function Layout({ onOpenSettings }: LayoutProps) {

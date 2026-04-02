@@ -35,6 +35,7 @@ import { supabase } from '../lib/supabase'
 import { ContactSelector } from './ContactSelector'
 import { useInternalContacts } from '../contexts/InternalContactsContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useCustomStages } from '../hooks/useCustomStages'
 export { type Offer, type OfferContact, type OfferResource, type OfferFormula } from '../contexts/OffersContext'
 import { type Offer, type OfferContact, type OfferResource, type OfferFormula } from '../contexts/OffersContext'
 
@@ -66,6 +67,7 @@ const calculateCommission = (price: string, commission: string): number => {
 export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDetailModalProps) {
   const { contacts: globalContacts, addContact } = useInternalContacts()
   const { user } = useAuth()
+  const { allStages } = useCustomStages()
 
   const [isEditing, setIsEditing] = useState(false)
 
@@ -1599,14 +1601,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
                       <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Mapping des étapes Pipedrive</h5>
                       <div className="space-y-4">
-                        {[
-                          { id: 'prospect', name: 'Prospect' },
-                          { id: 'qualified', name: 'Qualifié' },
-                          { id: 'won', name: 'Gagné' },
-                          { id: 'followup', name: 'Follow Up' },
-                          { id: 'noshow', name: 'No Show' },
-                          { id: 'lost', name: 'Perdu' }
-                        ].map(stage => (
+                        {allStages.map(stage => (
                           <div key={stage.id}>
                             <label className="mb-1.5 block text-[10px] font-bold uppercase text-slate-500">{stage.name}</label>
                             <select
@@ -1699,14 +1694,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         {editedOffer.crmMapping?.ghlPipelineId && (
                           <div className="space-y-4">
                             <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400">Mapping des étapes</h5>
-                            {[
-                              { id: 'prospect', name: 'Prospect' },
-                              { id: 'qualified', name: 'Qualifié' },
-                              { id: 'won', name: 'Gagné' },
-                              { id: 'followup', name: 'Follow Up' },
-                              { id: 'noshow', name: 'No Show' },
-                              { id: 'lost', name: 'Perdu' }
-                            ].map(stage => (
+                            {allStages.map(stage => (
                               <div key={stage.id}>
                                 <label className="mb-1.5 block text-[10px] font-bold uppercase text-slate-500">{stage.name}</label>
                                 <select

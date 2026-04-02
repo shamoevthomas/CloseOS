@@ -359,6 +359,23 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
           "border-t border-neutral-900/5 dark:border-neutral-800",
           collapsed ? "pt-4 mt-2 flex flex-col items-center gap-3 w-full" : "pt-4 pb-4 px-4 space-y-1"
         )}>
+          {/* Retour Personnel (Sales) — for team members */}
+          {isTeamMember && (
+            <button
+              onClick={() => navigate('/dashboard')}
+              className={cn(
+                'flex items-center text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-500/5 transition-all',
+                collapsed ? 'w-12 h-12 justify-center rounded-xl' : 'gap-3 py-3 pl-4 rounded-r-lg w-full'
+              )}
+              title={collapsed ? 'Retour Personnel' : undefined}
+            >
+              <ChevronUp className="h-5 w-5 shrink-0 -rotate-90" />
+              {!collapsed && (
+                <span className="text-sm font-extrabold tracking-tight uppercase" style={{ fontFamily: 'Manrope, sans-serif' }}>Personnel</span>
+              )}
+            </button>
+          )}
+
           {/* Settings */}
           <button
             onClick={() => { onOpenSettings?.(); setIsMenuOpen(false) }}

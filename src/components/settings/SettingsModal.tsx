@@ -209,7 +209,9 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
       if (res.ok) {
         setOrgData(null)
         setShowLeaveConfirm(false)
-        refreshProfile()
+        await refreshProfile()
+        // Force page reload to clear all org state (OrganizationContext, isBusinessUser, etc.)
+        window.location.reload()
       }
     } catch {
       // silent

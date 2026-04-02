@@ -21,6 +21,8 @@ import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
+import { useOrganization } from '../contexts/OrganizationContext'
+import { supabase } from '../lib/supabase'
 
 // Helper to parse commission percentage (Ex: "10%" -> 10)
 const parseCommission = (commissionString: string): number => {
@@ -107,6 +109,38 @@ export function Dashboard() {
   const { offers } = useOffers()
   const { meetings } = useMeetings()
   const { googleEvents } = useGoogleCalendar()
+  const { isInOrganization, organization } = useOrganization()
+
+  // Business hybrid data
+  const [bizProspects, setBizProspects] = useState<any[]>([])
+  const [bizAppointments, setBizAppointments] = useState<any[]>([])
+
+  useEffect(() => {
+    if (!isInOrganization || !organization) { setBizProspects([]); setBizAppointments([]); return }
+    const fetchBiz = async () => {
+      const { data: bp } = await supabase
+        .from('business_prospects')
+        .select('id, stage, value, contact, company, created_at, assigned_to, assigned_setter')
+        .eq('user_id', organization.owner_id)
+        .or(`assigned_to.eq.${organization.member_id},assigned_setter.eq.${organization.member_id}`)
+      setBizProspects(bp || [])
+
+      const today = new Date().toISOString().split('T')[0]
+      const limit = new Date(); limit.setDate(limit.getDate() + 3)
+      const { data: ba } = await supabase
+        .from('business_appointments')
+        .select('id, date, time, duration, status, type, prospect:business_prospects!prospect_id(contact, company)')
+        .eq('user_id', organization.owner_id)
+        .eq('assigned_to', organization.member_id)
+        .gte('date', today)
+        .lte('date', limit.toISOString().split('T')[0])
+        .neq('status', 'cancelled')
+        .order('date', { ascending: true })
+        .order('time', { ascending: true })
+      setBizAppointments((ba || []).map((a: any) => ({ ...a, prospect: a.prospect?.[0] || a.prospect || null })))
+    }
+    fetchBiz()
+  }, [isInOrganization, organization?.owner_id, organization?.member_id])
 
   const [isCallOpen, setIsCallOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState({ name: '', avatar: '' })
@@ -126,16 +160,20 @@ export function Dashboard() {
     isGoogleEvent?: boolean
   }>>([])
 
-  // --- CALCUL DES MÉTRIQUES ---
+  // --- CALCUL DES MÉTRIQUES (Sales + Business hybride) ---
   const metrics = useMemo(() => {
     const wonProspects = prospects.filter(p => p.stage === 'won')
     const closedProspects = prospects.filter(p => p.stage === 'won' || p.stage === 'lost')
 
-    // 1. Cash Généré
-    const cashGenere = wonProspects.reduce((sum, p) => sum + (p.value || 0), 0)
+    const bizWon = bizProspects.filter(p => p.stage === 'won')
+    const bizClosed = bizProspects.filter(p => p.stage === 'won' || p.stage === 'lost')
 
-    // 2. Commissions
-    const totalCommissions = wonProspects.reduce((sum, prospect) => {
+    // 1. Cash Généré (Sales + Business)
+    const cashGenere = wonProspects.reduce((sum, p) => sum + (p.value || 0), 0)
+      + bizWon.reduce((sum, p) => sum + (p.value || 0), 0)
+
+    // 2. Commissions (Sales with offer rates + Business with default 10%)
+    const salesCommissions = wonProspects.reduce((sum, prospect) => {
       const offer = offers.find(o =>
         (prospect.offerId && String(o.id) === String(prospect.offerId)) ||
         (prospect.offer && o.name.toLowerCase().trim() === prospect.offer.toLowerCase().trim())
@@ -146,16 +184,21 @@ export function Dashboard() {
       }
       return sum + ((prospect.value || 0) * rate)
     }, 0)
+    const bizCommissions = bizWon.reduce((sum, p) => sum + ((p.value || 0) * 0.10), 0)
+    const totalCommissions = salesCommissions + bizCommissions
 
     // 3. Taux de Conversion
-    const tauxConversion = closedProspects.length > 0
-      ? (wonProspects.length / closedProspects.length) * 100
-      : 0
+    const allWon = wonProspects.length + bizWon.length
+    const allClosed = closedProspects.length + bizClosed.length
+    const tauxConversion = allClosed > 0 ? (allWon / allClosed) * 100 : 0
 
     // 4. Pipeline Value
     const pipelineValue = prospects
       .filter(p => !['won', 'lost'].includes(p.stage))
       .reduce((sum, p) => sum + (p.value || 0), 0)
+      + bizProspects
+        .filter(p => !['won', 'lost'].includes(p.stage))
+        .reduce((sum, p) => sum + (p.value || 0), 0)
 
     return {
       cashGenere,
@@ -163,9 +206,9 @@ export function Dashboard() {
       tauxConversion,
       pipelineValue
     }
-  }, [prospects, offers])
+  }, [prospects, offers, bizProspects])
 
-  // Calculate pipeline stages distribution
+  // Calculate pipeline stages distribution (Sales + Business)
   const pipelineStages = useMemo(() => {
     const stages = [
       { name: 'Prospect', key: 'prospect', color: 'from-blue-600 to-blue-400' },
@@ -174,8 +217,10 @@ export function Dashboard() {
       { name: 'Gagné', key: 'won', color: 'from-emerald-600 to-emerald-400' },
     ]
 
+    const allProspects = [...prospects, ...bizProspects]
+
     return stages.map(stage => {
-      const stageProspects = prospects.filter(p => {
+      const stageProspects = allProspects.filter(p => {
         const pStage = (p.stage || '').toLowerCase();
         if (stage.key === 'followup') {
           return pStage.includes('follow') || pStage.includes('relance') || pStage === 'proposal';
@@ -189,9 +234,9 @@ export function Dashboard() {
         value: stageProspects.reduce((sum, p) => sum + (p.value || 0), 0)
       }
     })
-  }, [prospects])
+  }, [prospects, bizProspects])
 
-  // Fusion des rendez-vous CRM et Google Agenda
+  // Fusion des rendez-vous CRM, Google Agenda et Business
   useEffect(() => {
     try {
       const now = new Date()
@@ -212,7 +257,19 @@ export function Dashboard() {
           isGoogleEvent: true
         }))
 
-      const allEvents = [...meetings, ...transformedGoogle]
+      // Transform business appointments
+      const transformedBiz = bizAppointments.map((a: any) => ({
+        id: `biz-${a.id}`,
+        title: a.prospect?.contact || a.prospect?.company || 'RDV Business',
+        contact: a.prospect?.contact || a.prospect?.company || 'Prospect',
+        time: a.time ? `${a.time.slice(0, 5)}` : '00:00',
+        type: (a.type === 'visio' ? 'video' : 'meeting') as 'video' | 'meeting',
+        status: a.status === 'confirmed' ? 'Confirmé' : 'Planifié',
+        date: a.date,
+        isBusinessEvent: true,
+      }))
+
+      const allEvents = [...meetings, ...transformedGoogle, ...transformedBiz]
 
       const filtered = allEvents.filter((event: any) => {
         try {
@@ -251,7 +308,7 @@ export function Dashboard() {
       console.error('❌ Error filtering events for Dashboard:', error)
       setUpcomingEvents([])
     }
-  }, [meetings, googleEvents])
+  }, [meetings, googleEvents, bizAppointments])
 
   const kpis = [
     {
@@ -453,15 +510,18 @@ export function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {upcomingEvents.map((event) => {
-                  const EventIcon = event.isGoogleEvent ? CalendarIcon : (event.type === 'video' ? Video : Phone)
+                  const isBiz = !!(event as any).isBusinessEvent
+                  const EventIcon = event.isGoogleEvent ? CalendarIcon : isBiz ? CalendarIcon : (event.type === 'video' ? Video : Phone)
                   const iconStyles = event.isGoogleEvent
                     ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                    : (event.type === 'video' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20')
+                    : isBiz
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      : (event.type === 'video' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20')
 
                   return (
                     <div
                       key={event.id}
-                      onClick={() => navigate('/agenda', { state: { eventId: event.id } })}
+                      onClick={() => !isBiz && navigate('/agenda', { state: { eventId: event.id } })}
                       className="group flex items-center justify-between rounded-2xl bg-slate-800/40 border border-white/5 p-4 transition-all hover:bg-slate-800/80 hover:border-white/10 cursor-pointer hover:shadow-lg"
                     >
                       <div className="flex items-center gap-5">
@@ -476,6 +536,9 @@ export function Dashboard() {
                             <p className="font-bold text-white text-lg">{event.title}</p>
                             {event.isGoogleEvent && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase">Google</span>
+                            )}
+                            {isBiz && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold uppercase">Business</span>
                             )}
                           </div>
                           <p className="text-sm text-slate-400 font-medium">

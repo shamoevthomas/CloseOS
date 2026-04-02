@@ -19,6 +19,7 @@ import { OrganizationProvider } from './contexts/OrganizationContext'
 import { SettingsModal } from './components/settings/SettingsModal'
 import { OnboardingModal } from './components/OnboardingModal'
 import { VideoOnboardingModal } from './components/VideoOnboardingModal'
+import { OnboardingTutorial } from './components/OnboardingTutorial'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 import { LoadingScreen } from './components/LoadingScreen'
@@ -66,12 +67,6 @@ const SubscriptionRetention = lazy(() => import('./pages/SubscriptionRetention')
 const SpectatorPage = lazy(() => import('./pages/SpectatorPage').then(m => ({ default: m.SpectatorPage })))
 const RemindersPage = lazy(() => import('./pages/RemindersPage').then(m => ({ default: m.RemindersPage })))
 const TrialExpiredModal = lazy(() => import('./pages/TrialExpired').then(m => ({ default: m.TrialExpiredModal })))
-
-// Organization pages (Sales users in a Business org)
-const OrgPipeline = lazy(() => import('./pages/organization/OrgPipeline').then(m => ({ default: m.OrgPipeline })))
-const OrgFormulas = lazy(() => import('./pages/organization/OrgFormulas').then(m => ({ default: m.OrgFormulas })))
-const OrgAgenda = lazy(() => import('./pages/organization/OrgAgenda').then(m => ({ default: m.OrgAgenda })))
-const OrgKPI = lazy(() => import('./pages/organization/OrgKPI').then(m => ({ default: m.OrgKPI })))
 
 // SEO Pages (lazy)
 const Tarifs = lazy(() => import('./pages/Tarifs'))
@@ -287,11 +282,12 @@ function OnboardingWrapper({ onComplete }: { onComplete?: () => void }) {
 }
 
 function AuthenticatedApp() {
-  const { user, loading, isBusinessUser } = useAuth()
+  const { user, loading, isBusinessUser, profile, updateProfile } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
   const [isVideoOnboardingOpen, setIsVideoOnboardingOpen] = useState(false);
   const [hasBeenDismissed, setHasBeenDismissed] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const location = useLocation()
 
   // Gestion de la visibilité de la bulle CookieYes
@@ -324,6 +320,13 @@ function AuthenticatedApp() {
       }
     }
   }, [user, loading, location.search, isVideoOnboardingOpen]);
+
+  // Show tutorial for any user who hasn't completed it yet
+  useEffect(() => {
+    if (user && !loading && user.user_metadata?.role && user.user_metadata?.tutorial_completed !== true && !isTutorialOpen) {
+      setIsTutorialOpen(true);
+    }
+  }, [user, loading]);
 
   // Plus de blocage global : la landing et les routes publiques s'affichent immédiatement.
   // Le spinner ne s'affiche que dans ProtectedRoute pour les pages nécessitant une connexion.
@@ -488,12 +491,6 @@ function AuthenticatedApp() {
           <Route path="reminders" element={<RemindersPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
 
-          {/* Organisation routes (Sales user in Business org) */}
-          <Route path="organization/pipeline" element={<OrgPipeline />} />
-          <Route path="organization/formulas" element={<OrgFormulas />} />
-          <Route path="organization/agenda" element={<OrgAgenda />} />
-          <Route path="organization/kpi" element={<OrgKPI />} />
-
           {/* Si page inconnue dans le layout, on renvoie vers le dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
@@ -503,19 +500,38 @@ function AuthenticatedApp() {
       </Routes>
       </Suspense>
 
-      {user && !isBusinessUser && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && !location.pathname.startsWith('/book') && (
+      {user && (!isBusinessUser || profile) && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && !location.pathname.startsWith('/book') && (
         <>
           <TrialExpiredModal />
           <OnboardingWrapper onComplete={() => {
-            setIsVideoOnboardingOpen(true);
+            // If video already watched, go straight to tutorial
+            if (user?.user_metadata?.video_onboarding_watched === true) {
+              if (user?.user_metadata?.tutorial_completed !== true) {
+                setIsTutorialOpen(true);
+              }
+            } else {
+              setIsVideoOnboardingOpen(true);
+            }
           }} />
           <VideoOnboardingModal
             isOpen={isVideoOnboardingOpen}
             onClose={() => {
               setIsVideoOnboardingOpen(false);
               setHasBeenDismissed(true);
+              // Show tutorial after video onboarding if not already completed
+              if (user?.user_metadata?.tutorial_completed !== true) {
+                setIsTutorialOpen(true);
+              }
             }}
           />
+          {isTutorialOpen && (
+            <OnboardingTutorial
+              onComplete={async () => {
+                setIsTutorialOpen(false);
+                await updateProfile({ tutorial_completed: true });
+              }}
+            />
+          )}
           <SettingsModal
             isOpen={isSettingsOpen}
             onClose={() => { setIsSettingsOpen(false); setSettingsInitialTab('profile'); }}
