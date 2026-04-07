@@ -164,12 +164,12 @@ export function BusinessObjectives() {
   useEffect(() => { fetchObjectives(); fetchAppointments(); fetchMembers() }, [fetchObjectives, fetchAppointments, fetchMembers])
 
   // Track which objectives we've already notified to avoid duplicates
-  const notifiedIdsRef = useRef<Set<string>>(() => {
+  const notifiedIdsRef = useRef<Set<string>>((() => {
     try {
       const stored = localStorage.getItem('closeos_notified_objectives')
       return stored ? new Set(JSON.parse(stored) as string[]) : new Set()
     } catch { return new Set() }
-  })
+  })())
 
   // Create a notification when an objective reaches 100%
   useEffect(() => {
