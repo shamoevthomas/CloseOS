@@ -25,6 +25,7 @@ interface QuestionConfig {
   expected_answer: any
   eliminatory_answers: any[]
   sort_order: number
+  counts_in_scoring: boolean
 }
 
 interface Campaign {
@@ -162,7 +163,7 @@ export function BusinessCampaigns() {
   const [questionnaireId, setQuestionnaireId] = useState<string | null>(null)
 
   const fetchCampaigns = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     try {
       const res = await fetch(`${API_URL}?action=campaigns-list&user_id=${effectiveUserId}`)
       const data = await res.json()
@@ -311,6 +312,7 @@ export function BusinessCampaigns() {
             expected_answer: q.expected_answer ?? null,
             eliminatory_answers: q.eliminatory_answers || [],
             sort_order: q.sort_order ?? 0,
+            counts_in_scoring: q.counts_in_scoring ?? true,
           })))
         }
       })
@@ -526,7 +528,7 @@ window.addEventListener('message',function(e){
 
   // Questionnaire question helpers
   const addQuestion = () => {
-    setFormQuestions([...formQuestions, { question_text: '', question_type: 'text', is_required: false, options: [], expected_answer: null, eliminatory_answers: [], sort_order: formQuestions.length }])
+    setFormQuestions([...formQuestions, { question_text: '', question_type: 'text', is_required: false, options: [], expected_answer: null, eliminatory_answers: [], sort_order: formQuestions.length, counts_in_scoring: true }])
   }
   const updateQuestion = (index: number, updates: Partial<QuestionConfig>) => {
     const qs = [...formQuestions]; qs[index] = { ...qs[index], ...updates }; setFormQuestions(qs)
@@ -1200,6 +1202,20 @@ window.addEventListener('message',function(e){
                                   {question.is_required ? 'Obligatoire' : 'Optionnel'}
                                 </button>
                               </div>
+
+                              {/* Scoring toggle */}
+                              {formQuestionnaireQualifying && (
+                                <div className="flex items-center gap-2 ml-7">
+                                  <button onClick={() => updateQuestion(idx, { counts_in_scoring: !question.counts_in_scoring })}>
+                                    {question.counts_in_scoring
+                                      ? <ToggleRight className="h-5 w-5 text-[#006c49]" />
+                                      : <ToggleLeft className="h-5 w-5 text-[#c4c7c7] dark:text-neutral-600" />}
+                                  </button>
+                                  <span className={`text-[10px] font-bold ${question.counts_in_scoring ? 'text-[#006c49]' : 'text-[#747878] dark:text-neutral-500'}`}>
+                                    {question.counts_in_scoring ? 'Compte dans le scoring' : 'Hors scoring'}
+                                  </span>
+                                </div>
+                              )}
 
                               {/* Row 2: Type selector */}
                               <div className="flex items-center gap-2 ml-7">

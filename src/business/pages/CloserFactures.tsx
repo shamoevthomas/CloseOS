@@ -65,7 +65,7 @@ export function CloserFactures() {
 
   // Fetch invoices
   const fetchInvoices = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     setLoading(true)
     const { data } = await supabase
       .from('invoices')

@@ -55,7 +55,7 @@ export function CloserRendezVous() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
 
   const fetchAppointments = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     try {
       const res = await fetch(`${API_URL}?action=appointments-list&user_id=${effectiveUserId}`)
       const data = await res.json()

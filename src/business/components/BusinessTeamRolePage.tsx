@@ -166,7 +166,7 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
   const [activeTab, setActiveTab] = useState<string>('global')
 
   const loadData = useCallback(async () => {
-    if (!user) return
+    if (!user) { setLoading(false); return }
     setLoading(true)
     try {
       // Fetch connection logs from the last 7 days

@@ -76,7 +76,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const loadTeams = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     const { data } = await supabase
       .from('business_teams')
       .select('*')

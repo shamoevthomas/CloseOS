@@ -103,7 +103,7 @@ export function CloserObjectifs() {
   const [formVisibleToOwner, setFormVisibleToOwner] = useState(false)
 
   const fetchAll = useCallback(async () => {
-    if (!ownerUserId || !teamMember?.id) return
+    if (!ownerUserId || !teamMember?.id) { setLoading(false); return }
     setLoading(true)
     try {
       // Fetch org objectives

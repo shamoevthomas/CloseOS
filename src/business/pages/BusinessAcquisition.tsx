@@ -44,7 +44,7 @@ export function BusinessAcquisition() {
   const [countAsUneducated, setCountAsUneducated] = useState(false)
 
   const fetchStats = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     try {
       const res = await fetch(`${API_URL}?action=acquisition-stats&user_id=${effectiveUserId}`)
       const data = await res.json()

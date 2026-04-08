@@ -90,7 +90,7 @@ export function BusinessFormules() {
   }, [effectiveUserId])
 
   const fetchFormulas = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     try {
       const res = await fetch(`${API_URL}?action=formulas-list&user_id=${effectiveUserId}`)
       const data = await res.json()

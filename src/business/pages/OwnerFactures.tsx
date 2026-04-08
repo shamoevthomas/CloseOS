@@ -83,7 +83,7 @@ export function OwnerFactures() {
 
   // Fetch data
   useEffect(() => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     setLoading(true)
     Promise.all([
       supabase.from('invoices').select('*').eq('user_id', effectiveUserId).order('created_at', { ascending: false }),

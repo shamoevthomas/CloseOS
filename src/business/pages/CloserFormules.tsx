@@ -32,7 +32,7 @@ export function CloserFormules() {
   const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null)
 
   const fetchFormulas = useCallback(async () => {
-    if (!ownerUserId) return
+    if (!ownerUserId) { setLoading(false); return }
     try {
       const res = await fetch(`${API_URL}?action=formulas-list&user_id=${ownerUserId}`)
       const data = await res.json()

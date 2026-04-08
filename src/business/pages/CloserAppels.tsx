@@ -68,7 +68,7 @@ export function CloserAppels() {
 
   // Load call history
   useEffect(() => {
-    if (!effectiveOwnerId && !teamMember?.id) return
+    if (!effectiveOwnerId && !teamMember?.id) { setLoading(false); return }
     setLoading(true)
     const query = supabase.from('business_call_history').select('*').order('date', { ascending: false })
     if (isOwnerView) {

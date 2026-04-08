@@ -339,7 +339,7 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
       }
     };
     load();
-  }, [airtableBaseId, airtableConnected, user]);
+  }, [airtableBaseId, airtableConnected, user, isOpen]);
 
   // Load Airtable fields when table selected
   useEffect(() => {
@@ -363,7 +363,7 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
       }
     };
     load();
-  }, [airtableBaseId, airtableTableId, airtableConnected, user]);
+  }, [airtableBaseId, airtableTableId, airtableConnected, user, isOpen]);
 
   // Load GHL pipelines when selected and connected
   useEffect(() => {

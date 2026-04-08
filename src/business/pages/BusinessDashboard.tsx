@@ -172,7 +172,7 @@ export function BusinessDashboard() {
 
 
   const fetchAll = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     setLoading(true)
     try {
       const [prospectsRes, campaignsRes, appointmentsRes, membersRes, remindersRes, absencesRes, teamsRes] = await Promise.all([

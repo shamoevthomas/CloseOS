@@ -109,7 +109,7 @@ export function BusinessObjectives() {
   const [formAssignedMembers, setFormAssignedMembers] = useState<string[]>([])
 
   const fetchObjectives = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     try {
       const res = await fetch(`${API_URL}?action=objectives-list&user_id=${effectiveUserId}`)
       const data = await res.json()

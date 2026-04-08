@@ -78,7 +78,7 @@ export function CloserDashboard() {
   const [formulaBillingTypes, setFormulaBillingTypes] = useState<Record<string, string>>({})
 
   const fetchData = useCallback(async () => {
-    if (!teamMember?.id || !ownerUserId || !user?.id) return
+    if (!teamMember?.id || !ownerUserId || !user?.id) { setLoading(false); return }
     setLoading(true)
     try {
       const [dashboardRes, remindersRes] = await Promise.all([

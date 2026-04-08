@@ -62,7 +62,7 @@ export function CloserDisponibilite() {
   const [savingConstraints, setSavingConstraints] = useState(false)
 
   const fetchData = useCallback(async () => {
-    if (!effectiveOwnerId && !effectiveTeamMemberId) return
+    if (!effectiveOwnerId && !effectiveTeamMemberId) { setLoading(false); return }
     setLoading(true)
     try {
       let slotsQuery = supabase.from('business_availability_slots').select('*')

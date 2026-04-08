@@ -312,7 +312,7 @@ export function CloserAgenda() {
 
   // Fetch data
   const fetchAppointments = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     try {
       const res = await fetch(`${API_URL}?action=appointments-list&user_id=${effectiveUserId}`)
       const data = await res.json()
@@ -382,12 +382,20 @@ export function CloserAgenda() {
     return () => clearInterval(t)
   }, [])
 
-  // Auto-scroll the time grid to current hour via callback ref
+  // Auto-scroll the time grid to current hour via callback ref (day view)
   const scrollTimeGridToNow = (node: HTMLDivElement | null) => {
     if (!node) return
     const h = Math.max(0, new Date().getHours() - 2)
     node.scrollTop = h * ROW_H
   }
+
+  // Auto-scroll week view container to current hour
+  useEffect(() => {
+    if (view !== 'week' || !weekScrollRef.current) return
+    const h = Math.max(0, new Date().getHours() - 2)
+    // Account for sticky header (~80px) + all-day row (~40px)
+    weekScrollRef.current.scrollTop = h * ROW_H
+  }, [view, currentDate])
 
   // Fetch prospect when selecting an event linked to one
   useEffect(() => {
@@ -859,7 +867,7 @@ export function CloserAgenda() {
           )}
 
           {/* Time grid */}
-          <div ref={scrollTimeGridToNow} className="relative overflow-y-auto" style={{ maxHeight: '800px' }}>
+          <div className="relative">
             <div className="grid grid-cols-[80px_1fr]">
               {/* Time column */}
               <div className="bg-stone-50/30 dark:bg-white/5">

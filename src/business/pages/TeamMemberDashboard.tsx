@@ -84,7 +84,7 @@ export function TeamMemberDashboard() {
   const [reminders, setReminders] = useState<Reminder[]>([])
 
   const fetchAll = useCallback(async () => {
-    if (!teamMember?.id || !ownerUserId) return
+    if (!teamMember?.id || !ownerUserId) { setLoading(false); return }
     setLoading(true)
     try {
       const [dashboardRes, remindersRes] = await Promise.all([

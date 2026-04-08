@@ -184,7 +184,7 @@ export function BusinessRevenue() {
   }, [user?.id])
 
   const fetchRevenue = useCallback(async (silent = false) => {
-    if (!user?.id) return
+    if (!user?.id) { setLoading(false); return }
     if (!silent) setLoading(true)
     try {
       const res = await fetch(`/api/business-revenue-summary?user_id=${user.id}&period=${selectedPeriod}`)

@@ -80,7 +80,7 @@ export function CloserKPI() {
   // Load KPI config
   useEffect(() => {
     if (!teamMember?.id) {
-      if (isOwnerView) setLoading(false)
+      setLoading(false)
       return
     }
     setLoading(true)

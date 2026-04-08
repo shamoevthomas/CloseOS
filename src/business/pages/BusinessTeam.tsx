@@ -269,7 +269,7 @@ export function BusinessTeam() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     setLoading(true)
     try {
       const oneWeekAgo = new Date()

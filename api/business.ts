@@ -1890,6 +1890,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         expected_answer: q.expected_answer ?? null,
         eliminatory_answers: q.eliminatory_answers || [],
         sort_order: i,
+        counts_in_scoring: q.counts_in_scoring ?? true,
       }))
 
       let savedQuestions: any[] = []
@@ -4196,7 +4197,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const questionIds = rawAnswers.map((a: any) => a.question_id)
           const { data: questionsData } = await supabase
             .from('campaign_questions')
-            .select('id, question_type, expected_answer, eliminatory_answers')
+            .select('id, question_type, expected_answer, eliminatory_answers, counts_in_scoring')
             .in('id', questionIds)
 
           const questionsMap = new Map((questionsData || []).map((q: any) => [q.id, q]))
@@ -4205,6 +4206,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const scoredAnswers = rawAnswers.map((a: any) => {
             const q = questionsMap.get(a.question_id)
             if (!q) return { prospect_id: prospect.id, question_id: a.question_id, answer_value: a.answer_value, score: null, is_eliminatory: false }
+
+            // Question excluded from scoring: save answer but don't score
+            if (q.counts_in_scoring === false) {
+              return { prospect_id: prospect.id, question_id: a.question_id, answer_value: a.answer_value, score: null, is_eliminatory: false }
+            }
 
             let score: number | null = null
             let isEliminatory = false

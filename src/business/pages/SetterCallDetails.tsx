@@ -9,6 +9,7 @@ import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
+import { useCustomStages } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
 import { toUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
@@ -55,6 +56,8 @@ export function SetterCallDetails() {
   const { user, teamMember, ownerUserId, isTeamMember, userTimezone } = useBusinessAuth()
   const { prospects, updateProspect } = useBusinessProspects()
   const { createEvent: createGoogleEvent, isConnected: isGoogleConnected } = useBusinessGoogleCalendar()
+  const { getStagesForRole } = useCustomStages()
+  const setterCustomStages = getStagesForRole('Setter')
 
   const [call, setCall] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -135,6 +138,7 @@ export function SetterCallDetails() {
       qualified: 'qualified', unqualified: 'unqualified', noanswer: 'noanswer',
     }
     if (stage && reverseMap[stage]) setSelectedOutcome(reverseMap[stage])
+    else if (stage?.startsWith('custom_')) setSelectedOutcome(stage)
     if (stage === 'qualified' && call?.notes?.includes('booker plus tard')) setSelectedOutcome('booklater')
   }, [isReadonly, prospect, call])
 
@@ -300,6 +304,10 @@ export function SetterCallDetails() {
     try {
       const stageMap: Record<string, string> = {
         qualified: 'qualified', booklater: 'qualified', unqualified: 'unqualified', noanswer: 'noanswer'
+      }
+      // Custom stages: outcome is "custom_123" → stage is "custom_123"
+      if (selectedOutcome?.startsWith('custom_')) {
+        stageMap[selectedOutcome] = selectedOutcome
       }
 
       let technicalSummary = `[${new Date().toLocaleDateString('fr-FR')}] Qualification: ${selectedOutcome}`
@@ -566,6 +574,40 @@ export function SetterCallDetails() {
                         isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400'
                       )}>
                         {outcome.label}
+                      </p>
+                    </button>
+                  )
+                })}
+                {setterCustomStages.map(cs => {
+                  const stageId = `custom_${cs.id}`
+                  const isSelected = selectedOutcome === stageId
+                  return (
+                    <button
+                      key={stageId}
+                      disabled={isReadonly}
+                      onClick={() => {
+                        if (isReadonly) return
+                        setSelectedOutcome(stageId)
+                        setSelectedCloser(null)
+                        setSelectedSlot(null)
+                        setAssignmentMode(null)
+                        setAvailableSlots([])
+                      }}
+                      className={cn(
+                        'p-5 rounded-xl border-2 text-left transition-all cursor-pointer',
+                        isSelected
+                          ? 'bg-white dark:bg-white/5 border-emerald-600 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'
+                          : 'bg-stone-50/50 dark:bg-white/5 border-stone-200/40 dark:border-white/10 hover:bg-white dark:hover:bg-white/10 hover:border-stone-300 dark:hover:border-white/20'
+                      )}
+                    >
+                      <div className="mb-3">
+                        <span className="inline-block h-5 w-5 rounded-full" style={{ backgroundColor: cs.color }} />
+                      </div>
+                      <p className={cn(
+                        "font-['Manrope'] font-bold text-sm",
+                        isSelected ? 'text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400'
+                      )}>
+                        {cs.name}
                       </p>
                     </button>
                   )

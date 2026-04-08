@@ -34,22 +34,27 @@ export function BusinessStripeConnectModal({
   useEffect(() => {
     if (isOpen && user) {
       loadSettings();
+    } else {
+      setLoading(false);
     }
   }, [isOpen, user]);
 
   async function loadSettings() {
     setLoading(true);
-    const { data } = await supabase
-      .from('profiles')
-      .select('stripe_account_id, stripe_connected')
-      .eq('id', user?.id)
-      .maybeSingle();
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('stripe_account_id, stripe_connected')
+        .eq('id', user?.id)
+        .maybeSingle();
 
-    if (data) {
-      setStripeAccountId(data.stripe_account_id);
-      setStripeConnected(data.stripe_connected || false);
+      if (data) {
+        setStripeAccountId(data.stripe_account_id);
+        setStripeConnected(data.stripe_connected || false);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const handleConnectStripe = async () => {

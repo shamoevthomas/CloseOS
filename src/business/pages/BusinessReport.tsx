@@ -140,7 +140,7 @@ export function BusinessReport() {
   const [formulaBillingTypes, setFormulaBillingTypes] = useState<Record<string, string>>({})
 
   const fetchAll = useCallback(async () => {
-    if (!effectiveUserId) return
+    if (!effectiveUserId) { setLoading(false); return }
     setLoading(true)
     try {
       const [membersRes, ownerRes, prospectsRes, campaignsRes, appointmentsRes, remindersRes] = await Promise.all([
