@@ -4,8 +4,6 @@ import {
   Target,
   Phone,
   Video,
-  FileText,
-  Clock,
   Sparkles,
   Calendar as CalendarIcon,
   ArrowUpRight
@@ -316,24 +314,18 @@ export function Dashboard() {
       value: `${metrics.cashGenere.toLocaleString('fr-FR')}€`,
       icon: DollarSign,
       color: 'text-emerald-400',
-      bgColor: 'bg-emerald-500/10',
-      borderColor: 'border-emerald-500/20'
     },
     {
       name: 'Commissions',
       value: `${metrics.totalCommissions.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}€`,
       icon: TrendingUp,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10',
-      borderColor: 'border-blue-500/20'
+      color: 'text-amber-400',
     },
     {
       name: 'Taux de Conversion',
       value: `${metrics.tauxConversion.toFixed(1)}%`,
       icon: Target,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
-      borderColor: 'border-purple-500/20'
+      color: 'text-emerald-400',
     },
   ]
 
@@ -368,217 +360,163 @@ export function Dashboard() {
     setIsNoAnswerModalOpen(false)
   }
 
+  const barStyles = [
+    'bg-white/60',
+    'bg-gradient-to-r from-amber-400 to-amber-300 shadow-[0_0_15px_rgba(255,185,95,0.3)]',
+    'bg-emerald-500/40',
+    'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]',
+  ]
+
   return (
-    <div className="relative min-h-screen bg-[#020617] p-8 overflow-hidden font-sans text-slate-100">
+    <div className="relative min-h-screen bg-[#111111] p-6 md:px-12 md:pb-20 overflow-hidden text-white">
+      {/* Ambient Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
 
-      {/* Background Blobs */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
-
-      <div className="relative mx-auto max-w-7xl space-y-8 z-10">
+      <div className="relative mx-auto max-w-7xl z-10">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <header className="flex items-center justify-between pt-4 md:pt-12 pb-12 md:pb-16">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Dashboard</h1>
-            <p className="text-slate-400 mt-1">Vue d'ensemble de vos performances</p>
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter">Tableau de bord</h1>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-white/40 text-sm font-medium tracking-wide">Système opérationnel</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/50 border border-slate-800 backdrop-blur-sm">
-            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-xs font-medium text-slate-300">Système opérationnel</span>
-          </div>
-        </div>
+        </header>
 
-        {/* KPIs Grid */}
-        <div className="grid gap-6 md:grid-cols-3">
-          {kpis.map((kpi, index) => (
+        {/* KPI Cards */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-16">
+          {kpis.map((kpi) => (
             <div
               key={kpi.name}
-              className={cn(
-                "group relative overflow-hidden rounded-3xl bg-slate-900/50 p-8 transition-all duration-300 hover:scale-[1.02]",
-                "border border-white/5 hover:border-white/10 backdrop-blur-xl shadow-2xl"
-              )}
-              style={{ animationDelay: `${index * 100}ms` }}
+              className="group relative overflow-hidden rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-300 hover:bg-white/[0.05]"
             >
-              <div className={cn(
-                "absolute top-0 right-0 p-8 opacity-5 transition-transform duration-500 group-hover:scale-110 group-hover:opacity-10",
-                kpi.color
-              )}>
-                <kpi.icon className="w-32 h-32" />
+              <div className="absolute -right-4 -top-4 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all" />
+              <div className="flex justify-between items-start mb-6 relative z-10">
+                <span className="p-3 rounded-xl bg-white/5">
+                  <kpi.icon className={cn("h-7 w-7", kpi.color)} />
+                </span>
               </div>
-
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", kpi.bgColor)}>
-                    <kpi.icon className={cn("h-6 w-6", kpi.color)} />
-                  </div>
-                  <ArrowUpRight className={cn("h-5 w-5 opacity-50", kpi.color)} />
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">{kpi.name}</p>
-                  <p className="mt-2 text-4xl font-black text-white tracking-tight">
-                    <MaskedText value={kpi.value} type="number" />
-                  </p>
-                </div>
-              </div>
+              <p className="text-white/40 font-medium mb-2 relative z-10">{kpi.name}</p>
+              <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight relative z-10">
+                <MaskedText value={kpi.value} type="number" />
+              </h3>
             </div>
           ))}
-        </div>
+        </section>
 
-        {/* Pipeline Progress Section */}
-        <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-md shadow-xl">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-400" />
-                Pipeline Commercial
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">Répartition de vos opportunités</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Pipeline</p>
-              <p className="text-2xl font-bold text-white">
-                <MaskedText value={`${totalPipelineValue.toLocaleString()}€`} type="number" />
-              </p>
-            </div>
-          </div>
+        {/* Main Body Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-          {/* Barre de progression avec dégradés */}
-          <div className="mb-8 flex h-3 overflow-hidden rounded-full bg-slate-800/50 p-0.5">
-            {pipelineStages.map((stage, index) => {
-              const percentage = (stage.count / (totalPipelineCount || 1)) * 100
-              return (
-                <div
-                  key={stage.name}
-                  className={cn(
-                    "bg-gradient-to-r h-full relative transition-all duration-500 hover:brightness-110",
-                    stage.color,
-                    index === 0 && 'rounded-l-full',
-                    index === pipelineStages.length - 1 && 'rounded-r-full',
-                    index !== pipelineStages.length - 1 && 'mr-[1px]' // Séparateur fin
-                  )}
-                  style={{ width: `${percentage}%` }}
-                  title={`${stage.name}: ${stage.count} leads`}
-                />
-              )
-            })}
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {pipelineStages.map((stage) => (
-              <div key={stage.name} className="rounded-2xl bg-slate-800/30 border border-white/5 p-4 hover:bg-slate-800/50 transition-colors">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className={cn('h-2 w-2 rounded-full bg-gradient-to-r', stage.color)} />
-                  <h3 className="text-xs font-bold uppercase tracking-wide text-slate-400">{stage.name}</h3>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-bold text-white">{stage.count}</span>
-                  <span className="text-xs text-slate-500 font-medium">
-                    <MaskedText value={`${stage.value.toLocaleString()}€`} type="number" />
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-6">
-
-          {/* Événements à venir */}
-          <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-md shadow-xl">
-            <div className="mb-8 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5 text-purple-400" />
-                Événements à venir
-              </h2>
-              <div className="rounded-full bg-purple-500/10 border border-purple-500/20 px-3 py-1">
-                <span className="text-xs font-bold text-purple-400 uppercase tracking-wide">{upcomingEvents.length} Prévus</span>
-              </div>
+          {/* Left: Pipeline Distribution */}
+          <div className="lg:col-span-7 rounded-2xl p-8 md:p-10 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+            <div className="flex justify-between items-center mb-10">
+              <h2 className="text-xl md:text-2xl font-bold">Répartition de vos opportunités</h2>
             </div>
 
-            {upcomingEvents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/50">
-                  <Sparkles className="h-8 w-8 text-slate-600" />
-                </div>
-                <p className="text-lg font-semibold text-slate-300">Agenda vide (3j)</p>
-                <p className="mt-2 text-sm text-slate-500">
-                  C'est le moment idéal pour faire de la prospection !
+            <div className="space-y-8">
+              {pipelineStages.map((stage, i) => {
+                const maxCount = Math.max(...pipelineStages.map(s => s.count), 1)
+                const pct = (stage.count / maxCount) * 100
+                return (
+                  <div key={stage.name} className="space-y-3">
+                    <div className="flex justify-between text-sm font-semibold tracking-wide">
+                      <span className="text-white/60">{stage.name}</span>
+                      <span>{stage.count}</span>
+                    </div>
+                    <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div
+                        className={cn("h-full rounded-full transition-all duration-700", barStyles[i])}
+                        style={{ width: `${Math.max(pct, 3)}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-white/5 flex gap-x-10">
+              <div>
+                <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">Valeur Totale</p>
+                <p className="text-xl font-bold">
+                  <MaskedText value={`${totalPipelineValue.toLocaleString('fr-FR')}€`} type="number" />
                 </p>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {upcomingEvents.map((event) => {
-                  const isBiz = !!(event as any).isBusinessEvent
-                  const EventIcon = event.isGoogleEvent ? CalendarIcon : isBiz ? CalendarIcon : (event.type === 'video' ? Video : Phone)
-                  const iconStyles = event.isGoogleEvent
-                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                    : isBiz
-                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                      : (event.type === 'video' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20')
-
-                  return (
-                    <div
-                      key={event.id}
-                      onClick={() => !isBiz && navigate('/agenda', { state: { eventId: event.id } })}
-                      className="group flex items-center justify-between rounded-2xl bg-slate-800/40 border border-white/5 p-4 transition-all hover:bg-slate-800/80 hover:border-white/10 cursor-pointer hover:shadow-lg"
-                    >
-                      <div className="flex items-center gap-5">
-                        <div className={cn(
-                          'flex h-12 w-12 items-center justify-center rounded-xl border',
-                          iconStyles
-                        )}>
-                          <EventIcon className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <p className="font-bold text-white text-lg">{event.title}</p>
-                            {event.isGoogleEvent && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase">Google</span>
-                            )}
-                            {isBiz && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold uppercase">Business</span>
-                            )}
-                          </div>
-                          <p className="text-sm text-slate-400 font-medium">
-                            <MaskedText value={event.contact} type="name" />
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-white">
-                            {formatRelativeTime(event.date, event.time)}
-                          </p>
-                          <p className="text-xs text-slate-500 font-medium">
-                            {getEventStatus(event.date, event.time)}
-                          </p>
-                        </div>
-
-                        <div className="opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate('/agenda', { state: { eventId: event.id } });
-                            }}
-                            className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10 transition-colors border border-white/10"
-                          >
-                            <FileText className="h-4 w-4" />
-                            Détails
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
+              <div>
+                <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">Total Leads</p>
+                <p className="text-xl font-bold">{totalPipelineCount}</p>
               </div>
-            )}
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="lg:col-span-5 space-y-8">
+
+            {/* Events Section */}
+            <div className="rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+              <h4 className="text-lg font-bold mb-6">Événements à venir</h4>
+
+              {upcomingEvents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/5">
+                    <Sparkles className="h-7 w-7 text-white/20" />
+                  </div>
+                  <p className="text-sm font-semibold text-white/60">Aucun événement prévu</p>
+                  <p className="mt-1 text-xs text-white/30">C'est le moment idéal pour prospecter !</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingEvents.slice(0, 4).map((event) => {
+                    const isBiz = !!(event as any).isBusinessEvent
+                    const EventIcon = event.isGoogleEvent ? CalendarIcon : isBiz ? CalendarIcon : (event.type === 'video' ? Video : Phone)
+                    const iconBg = event.isGoogleEvent
+                      ? 'bg-blue-500/10 text-blue-400'
+                      : isBiz
+                        ? 'bg-amber-500/10 text-amber-400'
+                        : event.type === 'video'
+                          ? 'bg-purple-500/10 text-purple-400'
+                          : 'bg-emerald-500/10 text-emerald-400'
+
+                    return (
+                      <div
+                        key={event.id}
+                        onClick={() => navigate('/agenda', { state: { eventId: event.id } })}
+                        className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 hover:bg-white/[0.04] transition-all group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", iconBg)}>
+                            <EventIcon className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold truncate">
+                              <MaskedText value={event.title} type="name" />
+                            </p>
+                            <p className="text-xs text-white/40">{formatRelativeTime(event.date, event.time)}</p>
+                          </div>
+                        </div>
+                        <ArrowUpRight className="h-4 w-4 text-white/20 group-hover:text-emerald-400 transition-colors shrink-0 ml-3" />
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {upcomingEvents.length > 4 && (
+                <button
+                  onClick={() => navigate('/agenda')}
+                  className="w-full mt-6 py-2 text-xs font-bold tracking-widest uppercase text-white/40 hover:text-white transition-colors"
+                >
+                  Voir tout l'agenda
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Modals */}
       <VideoCallOverlay
         isOpen={isCallOpen}
         onClose={() => setIsCallOpen(false)}
@@ -605,13 +543,13 @@ export function Dashboard() {
 
       {showAiToast && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[70]">
-          <div className="flex items-center gap-3 px-6 py-4 bg-slate-900/90 border border-purple-500/30 rounded-2xl shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-5 duration-300">
-            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-purple-500/20">
-              <Sparkles className="h-5 w-5 text-purple-400" />
+          <div className="flex items-center gap-3 px-6 py-4 bg-[#1a1a1a]/90 border border-emerald-500/30 rounded-2xl shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-5 duration-300">
+            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-emerald-500/20">
+              <Sparkles className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
               <p className="text-sm font-bold text-white">Analyse IA en cours...</p>
-              <p className="text-xs text-slate-400 mt-0.5">Le CRM sera mis à jour automatiquement.</p>
+              <p className="text-xs text-white/40 mt-0.5">Le CRM sera mis à jour automatiquement.</p>
             </div>
           </div>
         </div>

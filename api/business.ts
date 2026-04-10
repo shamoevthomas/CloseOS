@@ -1073,12 +1073,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // ─── Invitation actions (method-based routing for backward compat) ───
+    const PLAN_SEAT_LIMITS: Record<string, number> = { solo: 0, business: 3, business_acquisition: 5, enterprise: 999999 }
+
     if (action === 'invitation') {
       if (req.method === 'POST') {
         const { inviter_id, role, can_manage_campaigns, setter_scope, custom_permissions } = req.body
         if (!inviter_id || !role) {
           return res.status(400).json({ error: 'inviter_id and role are required' })
         }
+
+        // Seat limit check
+        const { data: ownerSettings } = await supabase
+          .from('business_settings')
+          .select('subscription_plan, purchased_seats')
+          .eq('user_id', inviter_id)
+          .single()
+        const plan = ownerSettings?.subscription_plan || 'solo'
+        if (plan !== 'enterprise') {
+          const purchasedSeats = (ownerSettings?.purchased_seats || {}) as Record<string, number>
+          const baseLimit = PLAN_SEAT_LIMITS[plan] ?? 0
+          const extraSeats = Object.values(purchasedSeats).reduce((a, b) => a + b, 0)
+          const effectiveLimit = baseLimit + extraSeats
+          const { count } = await supabase
+            .from('business_team_members')
+            .select('id', { count: 'exact', head: true })
+            .eq('business_owner_id', inviter_id)
+          if ((count || 0) >= effectiveLimit) {
+            return res.status(403).json({ error: 'seat_limit_reached', current: count, limit: effectiveLimit, plan })
+          }
+        }
+
         const token = crypto.randomBytes(32).toString('hex')
         const { data, error } = await supabase
           .from('business_invitations')
@@ -1145,6 +1169,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .eq('user_id', user_id)
           .eq('business_owner_id', invitation.inviter_id)
           .single()
+
+        // Seat limit check on acceptance (skip if updating existing member)
+        if (!existing) {
+          const { data: ownerSettings2 } = await supabase
+            .from('business_settings')
+            .select('subscription_plan, purchased_seats')
+            .eq('user_id', invitation.inviter_id)
+            .single()
+          const acceptPlan = ownerSettings2?.subscription_plan || 'solo'
+          if (acceptPlan !== 'enterprise') {
+            const ps2 = (ownerSettings2?.purchased_seats || {}) as Record<string, number>
+            const baseLimit2 = PLAN_SEAT_LIMITS[acceptPlan] ?? 0
+            const extraSeats2 = Object.values(ps2).reduce((a, b) => a + b, 0)
+            const { count: memberCount2 } = await supabase
+              .from('business_team_members')
+              .select('id', { count: 'exact', head: true })
+              .eq('business_owner_id', invitation.inviter_id)
+            if ((memberCount2 || 0) >= baseLimit2 + extraSeats2) {
+              return res.status(403).json({ error: 'seat_limit_reached' })
+            }
+          }
+        }
 
         if (existing) {
           // Update existing member's role instead of creating duplicate

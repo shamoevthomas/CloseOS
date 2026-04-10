@@ -101,14 +101,14 @@ export function VideoCallOverlay({
   // Mode Réduit (Mini-player)
   if (isMinimized) {
     return (
-      <div className="fixed bottom-4 right-4 z-[100] flex items-center gap-4 rounded-full bg-slate-900 px-4 py-3 shadow-2xl ring-1 ring-slate-700 animate-in fade-in slide-in-from-bottom-4">
+      <div className="fixed bottom-4 right-4 z-[100] flex items-center gap-4 rounded-full bg-white/[0.03] backdrop-blur-2xl px-4 py-3 shadow-2xl ring-1 ring-white/[0.08] animate-in fade-in slide-in-from-bottom-4">
         <div className="flex items-center gap-2">
           <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
           <span className="font-mono font-medium text-white">{formatTime(duration)}</span>
         </div>
-        <div className="h-4 w-px bg-slate-700" />
+        <div className="h-4 w-px bg-white/[0.08]" />
         <span className="text-sm font-bold text-white">{prospectName}</span>
-        <button onClick={() => setIsMinimized(false)} className="rounded-full bg-slate-800 p-1.5 hover:bg-slate-700 text-white">
+        <button onClick={() => setIsMinimized(false)} className="rounded-full bg-white/5 p-1.5 hover:bg-white/10 text-white">
           <Maximize2 className="h-4 w-4" />
         </button>
       </div>
@@ -116,9 +116,9 @@ export function VideoCallOverlay({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-slate-950">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-[#111111]">
       {/* --- TOP BAR (COMMANDES) --- */}
-      <div className="flex h-16 items-center justify-between border-b border-slate-800 bg-slate-900 px-6 shadow-md">
+      <div className="flex h-16 items-center justify-between border-b border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl px-6 shadow-md">
         
         {/* Info Prospect */}
         <div className="flex items-center gap-4 w-1/3">
@@ -139,7 +139,7 @@ export function VideoCallOverlay({
            {/* Ouvrir Meet (au cas où on le perd) */}
            <button 
             onClick={() => window.open(meetLink, '_blank')}
-            className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-300 transition-all hover:bg-slate-700 hover:text-white"
+            className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-semibold text-white/60 transition-all hover:bg-white/10 hover:text-white"
             title="Rouvrir l'onglet Google Meet"
           >
             <ExternalLink className="h-3.5 w-3.5" />
@@ -153,7 +153,7 @@ export function VideoCallOverlay({
               "flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all shadow-lg",
               isRecording 
                 ? "bg-red-500/10 text-red-400 border border-red-500/50 animate-pulse" 
-                : "bg-slate-100 text-slate-900 hover:bg-white border border-transparent"
+                : "bg-white/10 text-white/80 hover:bg-white/5 border border-transparent"
             )}
           >
             <div className={cn("h-2.5 w-2.5 rounded-full", isRecording ? "bg-red-500" : "bg-red-500")} />
@@ -165,16 +165,16 @@ export function VideoCallOverlay({
         <div className="flex items-center justify-end gap-3 w-1/3">
           <button 
             onClick={() => setShowScript(!showScript)} 
-            className={cn("flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors", showScript ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white")}
+            className={cn("flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors", showScript ? "bg-emerald-500 text-black" : "bg-white/[0.03] border border-white/[0.08] text-white/40 hover:text-white")}
           >
             <FileText className="h-4 w-4" /> Script
           </button>
-          <button onClick={() => setIsMinimized(true)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
+          <button onClick={() => setIsMinimized(true)} className="rounded-full p-2 text-white/40 hover:bg-white/10 hover:text-white">
             <Minimize2 className="h-5 w-5" />
           </button>
           <button 
             onClick={handleHangup}
-            className="flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-600 shadow-lg shadow-red-900/20 ml-2"
+            className="flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-600 shadow-lg shadow-red-900/20 ml-2"
           >
             <PhoneOff className="h-4 w-4" />
             Fin
@@ -183,12 +183,12 @@ export function VideoCallOverlay({
       </div>
 
       {/* --- MAIN CONTENT (COCKPIT) --- */}
-      <div className="flex flex-1 overflow-hidden bg-slate-950">
+      <div className="flex flex-1 overflow-hidden bg-[#111111]">
         
         {/* COLONNE GAUCHE : SCRIPT DE VENTE */}
-        <div className={cn("flex flex-col border-r border-slate-800 transition-all duration-300", showScript ? "w-[60%]" : "w-0 opacity-0 overflow-hidden")}>
-          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/50 px-6 py-3">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-blue-400 flex items-center gap-2">
+        <div className={cn("flex flex-col border-r border-white/[0.08] transition-all duration-300", showScript ? "w-[60%]" : "w-0 opacity-0 overflow-hidden")}>
+          <div className="flex items-center justify-between border-b border-white/[0.08] bg-white/[0.03] px-6 py-3">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-400 flex items-center gap-2">
               <FileText className="h-4 w-4" /> Script de Vente
             </h3>
           </div>
@@ -196,12 +196,12 @@ export function VideoCallOverlay({
           <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
             <div className="mx-auto max-w-3xl space-y-8">
               {/* Introduction */}
-              <div className="relative rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
-                <div className="absolute -left-3 top-6 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white shadow-lg ring-4 ring-slate-950">1</div>
-                <h4 className="mb-4 ml-4 text-sm font-bold text-slate-400 uppercase">Introduction & Cadre</h4>
-                <div className="ml-4 space-y-4 text-lg text-slate-200 leading-relaxed">
+              <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-6 shadow-lg">
+                <div className="absolute -left-3 top-6 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-black shadow-lg ring-4 ring-[#111111]">1</div>
+                <h4 className="mb-4 ml-4 text-sm font-bold text-white/40 uppercase">Introduction & Cadre</h4>
+                <div className="ml-4 space-y-4 text-lg text-white/60 leading-relaxed">
                   <p>
-                    "Bonjour <span className="font-bold text-blue-400">{prospectName}</span>, enchanté. Merci de prendre ce temps."
+                    "Bonjour <span className="font-bold text-emerald-400">{prospectName}</span>, enchanté. Merci de prendre ce temps."
                   </p>
                   <p>
                     "L'objectif est simple : voir si on peut vous aider à atteindre [OBJECTIF]. Si oui, on verra comment avancer. Si non, je vous redirigerai vers la meilleure solution. Ça vous va ?"
@@ -210,25 +210,25 @@ export function VideoCallOverlay({
               </div>
 
               {/* Découverte */}
-              <div className="relative rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
-                <div className="absolute -left-3 top-6 flex h-6 w-6 items-center justify-center rounded-full bg-purple-500 text-xs font-bold text-white shadow-lg ring-4 ring-slate-950">2</div>
-                <h4 className="mb-4 ml-4 text-sm font-bold text-slate-400 uppercase">Phase de Découverte</h4>
+              <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-6 shadow-lg">
+                <div className="absolute -left-3 top-6 flex h-6 w-6 items-center justify-center rounded-full bg-purple-500 text-xs font-bold text-white shadow-lg ring-4 ring-[#111111]">2</div>
+                <h4 className="mb-4 ml-4 text-sm font-bold text-white/40 uppercase">Phase de Découverte</h4>
                 <ul className="ml-4 space-y-6">
-                  <li className="p-3 rounded-lg bg-slate-800/50 border border-slate-800 hover:border-purple-500/50 transition-colors cursor-default">
-                    <p className="text-slate-300 font-medium">"Racontez-moi un peu votre situation actuelle..."</p>
+                  <li className="p-3 rounded-xl bg-white/5 border border-white/[0.08] hover:border-purple-500/50 transition-colors cursor-default">
+                    <p className="text-white/60 font-medium">"Racontez-moi un peu votre situation actuelle..."</p>
                   </li>
-                  <li className="p-3 rounded-lg bg-slate-800/50 border border-slate-800 hover:border-purple-500/50 transition-colors cursor-default">
-                    <p className="text-slate-300 font-medium">"Qu'est-ce qui vous a motivé à réserver cet appel *maintenant* ?"</p>
+                  <li className="p-3 rounded-xl bg-white/5 border border-white/[0.08] hover:border-purple-500/50 transition-colors cursor-default">
+                    <p className="text-white/60 font-medium">"Qu'est-ce qui vous a motivé à réserver cet appel *maintenant* ?"</p>
                   </li>
-                  <li className="p-3 rounded-lg bg-slate-800/50 border border-slate-800 hover:border-purple-500/50 transition-colors cursor-default">
-                    <p className="text-slate-300 font-medium">"Si vous aviez une baguette magique, à quoi ressemblerait votre situation idéale dans 6 mois ?"</p>
+                  <li className="p-3 rounded-xl bg-white/5 border border-white/[0.08] hover:border-purple-500/50 transition-colors cursor-default">
+                    <p className="text-white/60 font-medium">"Si vous aviez une baguette magique, à quoi ressemblerait votre situation idéale dans 6 mois ?"</p>
                   </li>
                 </ul>
               </div>
 
               {/* Closing */}
-              <div className="relative rounded-xl border border-emerald-500/30 bg-emerald-950/10 p-6 shadow-lg">
-                <div className="absolute -left-3 top-6 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-white shadow-lg ring-4 ring-slate-950">3</div>
+              <div className="relative rounded-2xl border border-emerald-500/30 bg-emerald-950/10 p-6 shadow-lg">
+                <div className="absolute -left-3 top-6 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-black shadow-lg ring-4 ring-[#111111]">3</div>
                 <h4 className="mb-4 ml-4 text-sm font-bold text-emerald-400 uppercase">Transition & Offre</h4>
                 <div className="ml-4 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                   <p className="text-emerald-200 font-medium italic">
@@ -241,12 +241,12 @@ export function VideoCallOverlay({
         </div>
 
         {/* COLONNE DROITE : NOTES (Toujours visible) */}
-        <div className="flex-1 flex flex-col bg-slate-950">
-          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/50 px-6 py-3">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+        <div className="flex-1 flex flex-col bg-[#111111]">
+          <div className="flex items-center justify-between border-b border-white/[0.08] bg-white/[0.03] px-6 py-3">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
               <FileText className="h-4 w-4" /> Prise de Notes
             </h3>
-            <span className="text-[10px] text-slate-500">Sauvegarde auto</span>
+            <span className="text-[10px] text-white/40">Sauvegarde auto</span>
           </div>
           
           <div className="flex-1 p-6">
@@ -254,7 +254,7 @@ export function VideoCallOverlay({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)"
-              className="h-full w-full resize-none rounded-xl border border-slate-800 bg-slate-900 p-6 text-base text-slate-200 placeholder-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-inner leading-relaxed"
+              className="h-full w-full resize-none rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-6 text-base text-white/60 placeholder:text-white/30 focus:border-emerald-500 focus:outline-none shadow-inner leading-relaxed"
               spellCheck={false}
             />
           </div>

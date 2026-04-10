@@ -69,7 +69,7 @@ export function LoadingScreen() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #0a0e1a;
+          background: #111111;
           overflow: hidden;
         }
 
@@ -89,7 +89,7 @@ export function LoadingScreen() {
         .loading-screen__orb--1 {
           width: 400px;
           height: 400px;
-          background: #3b82f6;
+          background: #10b981;
           top: -100px;
           right: -100px;
           animation: loading-orbit1 8s ease-in-out infinite;
@@ -98,7 +98,7 @@ export function LoadingScreen() {
         .loading-screen__orb--2 {
           width: 300px;
           height: 300px;
-          background: #8b5cf6;
+          background: #059669;
           bottom: -80px;
           left: -80px;
           animation: loading-orbit2 10s ease-in-out infinite;
@@ -107,7 +107,7 @@ export function LoadingScreen() {
         .loading-screen__orb--3 {
           width: 200px;
           height: 200px;
-          background: #06b6d4;
+          background: #34d399;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
@@ -151,7 +151,7 @@ export function LoadingScreen() {
         }
 
         .loading-screen__logo-accent {
-          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+          background: linear-gradient(135deg, #10b981, #059669);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -167,8 +167,8 @@ export function LoadingScreen() {
           width: 100%;
           height: 100%;
           border-radius: 50%;
-          border: 3px solid rgba(59, 130, 246, 0.15);
-          border-top-color: #3b82f6;
+          border: 3px solid rgba(16, 185, 129, 0.15);
+          border-top-color: #10b981;
           animation: loading-spin 0.9s linear infinite;
         }
 

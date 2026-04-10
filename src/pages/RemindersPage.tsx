@@ -176,34 +176,34 @@ export function RemindersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="relative min-h-screen bg-[#111111] overflow-hidden">
+      {/* Ambient Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="relative z-10 p-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/20">
-            <Bell className="h-5 w-5 text-orange-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">Rappels</h1>
-            <p className="text-sm text-slate-500">
-              {reminders.length} rappel{reminders.length !== 1 ? 's' : ''}
-              {overdueCount > 0 && (
-                <span className="ml-2 text-red-400 font-semibold">
-                  ({overdueCount} en retard)
-                </span>
-              )}
-            </p>
-          </div>
+        <div>
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white">Rappels</h1>
+          <p className="text-white/40 text-sm font-medium mt-1">
+            {reminders.length} rappel{reminders.length !== 1 ? 's' : ''}
+            {overdueCount > 0 && (
+              <span className="ml-2 text-red-400 font-semibold">
+                ({overdueCount} en retard)
+              </span>
+            )}
+          </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
+          className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-black hover:bg-emerald-400 transition-all duration-300"
         >
           <Plus className="h-4 w-4" />
           Nouveau rappel
@@ -212,37 +212,34 @@ export function RemindersPage() {
 
       {/* Alerte rappels en retard */}
       {overdueCount > 0 && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-red-400 shrink-0" />
+        <div className="rounded-2xl border-[0.5px] border-red-500/20 bg-red-500/5 p-5 flex items-center gap-4 backdrop-blur-[16px]">
+          <div className="p-3 rounded-xl bg-red-500/10">
+            <AlertTriangle className="h-5 w-5 text-red-400" />
+          </div>
           <p className="text-sm text-red-400">
-            <span className="font-bold">{overdueCount} rappel{overdueCount > 1 ? 's' : ''}</span> non traité{overdueCount > 1 ? 's' : ''} — pensez à les marquer comme faits ou à les supprimer.
+            <span className="font-bold">{overdueCount} rappel{overdueCount > 1 ? 's' : ''}</span> non traite{overdueCount > 1 ? 's' : ''} — pensez a les marquer comme faits ou a les supprimer.
           </p>
         </div>
       )}
 
       {/* Table */}
       {sorted.length === 0 ? (
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-12 text-center">
-          <Bell className="h-12 w-12 text-slate-700 mx-auto mb-4" />
-          <p className="text-slate-400 font-medium">Aucun rappel programmé</p>
-          <p className="text-sm text-slate-600 mt-1">
-            Cliquez sur "+ Nouveau rappel" pour en créer un.
+        <div className="rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] p-12 text-center shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+          <Bell className="h-12 w-12 text-white/10 mx-auto mb-4" />
+          <p className="text-white/40 font-medium">Aucun rappel programme</p>
+          <p className="text-sm text-white/20 mt-1">
+            Cliquez sur "+ Nouveau rappel" pour en creer un.
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-          {/* Desktop Header */}
-          <div className="hidden md:grid grid-cols-12 gap-4 border-b border-slate-800 bg-slate-800/50 px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">
-            <div className="col-span-3">Titre</div>
-            <div className="col-span-2">Description</div>
-            <div className="col-span-2">Date & heure</div>
-            <div className="col-span-2">Lié à</div>
-            <div className="col-span-1">Statut</div>
-            <div className="col-span-2 text-right">Actions</div>
+        <div className="rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+          {/* Header bar */}
+          <div className="bg-white/5 px-8 py-4 border-b border-white/5">
+            <h4 className="text-sm font-bold uppercase tracking-wider text-white/60">Tous les rappels</h4>
           </div>
 
-          {/* Rows */}
-          <div className="divide-y divide-slate-800">
+          {/* Rows as mini glass cards */}
+          <div className="p-6 space-y-3">
             {sorted.map((reminder) => {
               const status = getStatus(reminder)
               const config = statusConfig[status]
@@ -257,8 +254,8 @@ export function RemindersPage() {
                   key={reminder.id}
                   onClick={() => setSelectedReminderId(reminder.id)}
                   className={cn(
-                    'px-6 py-4 transition-colors hover:bg-slate-800/50 cursor-pointer',
-                    status === 'overdue' && 'bg-red-500/5'
+                    'rounded-xl border-[0.5px] border-white/[0.08] bg-white/[0.02] p-5 transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.12] cursor-pointer',
+                    status === 'overdue' && 'border-red-500/20 bg-red-500/5'
                   )}
                 >
                   {/* Desktop */}
@@ -266,25 +263,25 @@ export function RemindersPage() {
                     <div className="col-span-3">
                       <p className={cn(
                         'text-sm font-semibold',
-                        status === 'done' ? 'text-slate-500 line-through' : 'text-white'
+                        status === 'done' ? 'text-white/40 line-through' : 'text-white'
                       )}>
                         {reminder.title}
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-slate-400 truncate">
-                        {reminder.description || '—'}
+                      <p className="text-sm text-white/40 truncate">
+                        {reminder.description || '\u2014'}
                       </p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-sm text-slate-300">
+                      <p className="text-sm text-white/60">
                         {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
                         })}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-white/40 mt-0.5">
                         {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
                           hour: '2-digit',
                           minute: '2-digit',
@@ -293,12 +290,12 @@ export function RemindersPage() {
                     </div>
                     <div className="col-span-2">
                       {linkedName ? (
-                        <span className="text-sm text-blue-400 flex items-center gap-1">
+                        <span className="text-sm text-emerald-400 flex items-center gap-1">
                           <User className="h-3 w-3" />
                           {linkedName}
                         </span>
                       ) : (
-                        <span className="text-sm text-slate-600">—</span>
+                        <span className="text-sm text-white/20">{'\u2014'}</span>
                       )}
                     </div>
                     <div className="col-span-1">
@@ -315,7 +312,7 @@ export function RemindersPage() {
                         <button
                           onClick={() => handleMarkDone(reminder.id)}
                           disabled={isLoading}
-                          className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                          className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-all duration-300 disabled:opacity-50"
                         >
                           <Check className="h-3.5 w-3.5" />
                           Fait
@@ -324,7 +321,7 @@ export function RemindersPage() {
                       <button
                         onClick={() => handleDelete(reminder.id)}
                         disabled={isLoading}
-                        className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-500/20 transition-all duration-300 disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -337,12 +334,12 @@ export function RemindersPage() {
                       <div className="min-w-0">
                         <p className={cn(
                           'text-sm font-semibold',
-                          status === 'done' ? 'text-slate-500 line-through' : 'text-white'
+                          status === 'done' ? 'text-white/40 line-through' : 'text-white'
                         )}>
                           {reminder.title}
                         </p>
                         {reminder.description && (
-                          <p className="text-xs text-slate-400 mt-1 truncate">{reminder.description}</p>
+                          <p className="text-xs text-white/40 mt-1 truncate">{reminder.description}</p>
                         )}
                       </div>
                       <span className={cn(
@@ -354,24 +351,24 @@ export function RemindersPage() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-white/40">
                         {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
                           day: 'numeric',
                           month: 'short',
                         })}{' '}
-                        à{' '}
+                        a{' '}
                         {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
-                        {linkedName && <span className="ml-2 text-blue-400">| {linkedName}</span>}
+                        {linkedName && <span className="ml-2 text-emerald-400">| {linkedName}</span>}
                       </div>
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         {status !== 'done' && (
                           <button
                             onClick={() => handleMarkDone(reminder.id)}
                             disabled={isLoading}
-                            className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-1.5 text-emerald-400 hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                            className="rounded-full border border-emerald-500/30 bg-emerald-500/10 p-1.5 text-emerald-400 hover:bg-emerald-500/20 transition-all duration-300 disabled:opacity-50"
                           >
                             <Check className="h-3.5 w-3.5" />
                           </button>
@@ -379,7 +376,7 @@ export function RemindersPage() {
                         <button
                           onClick={() => handleDelete(reminder.id)}
                           disabled={isLoading}
-                          className="rounded-lg border border-red-500/30 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                          className="rounded-full border border-red-500/30 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition-all duration-300 disabled:opacity-50"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -412,6 +409,7 @@ export function RemindersPage() {
           onDelete={handleDelete}
         />
       )}
+      </div>
     </div>
   )
 }
@@ -437,7 +435,7 @@ function ReminderDetailAndProspectModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 transition-opacity" onClick={onClose} />
 
       {prospect && (
         <ProspectView
@@ -452,37 +450,39 @@ function ReminderDetailAndProspectModal({
         prospect ? "left-0 md:left-[10%] lg:left-[15%] hidden md:block" : "left-1/2 -translate-x-1/2"
       )}>
         
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4">
-          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-950 px-6 py-4">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Bell className="h-5 w-5 text-orange-400" />
-              Détails du rappel
+        <div className="rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-white/5 px-8 py-4 border-b border-white/5 flex items-center justify-between">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-white/60 flex items-center gap-2">
+              <Bell className="h-4 w-4 text-orange-400" />
+              Details du rappel
             </h2>
-            <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white">
+            <button onClick={onClose} className="rounded-full p-1.5 text-white/40 hover:bg-white/[0.04] hover:text-white transition-all duration-300">
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-8 space-y-6">
             <div>
-              <h3 className="text-xl font-bold text-white mb-2">{reminder.title}</h3>
+              <h3 className="text-xl font-extrabold text-white mb-2 tracking-tight">{reminder.title}</h3>
               {reminder.description && (
-                 <p className="text-slate-400 text-sm whitespace-pre-wrap">{reminder.description}</p>
+                 <p className="text-white/40 text-sm whitespace-pre-wrap">{reminder.description}</p>
               )}
             </div>
 
-            <div className="rounded-xl bg-slate-800/50 p-4 border border-slate-700/50 space-y-3">
+            <div className="rounded-xl bg-white/[0.02] p-5 border-[0.5px] border-white/[0.08] space-y-4">
               <div className="flex items-center gap-3">
-                <Clock className="h-4 w-4 text-slate-400" />
+                <div className="p-2 rounded-lg bg-white/5">
+                  <Clock className="h-4 w-4 text-white/40" />
+                </div>
                 <div>
-                  <p className="text-xs text-slate-500">Date et heure</p>
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-xs text-white/40 font-medium uppercase tracking-widest">Date et heure</p>
+                  <p className="text-sm font-semibold text-white mt-0.5">
                     {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
                       weekday: 'long',
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',
-                    })} à {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                    })} a {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
@@ -491,11 +491,13 @@ function ReminderDetailAndProspectModal({
               </div>
 
               {prospect && (
-                <div className="flex items-center gap-3 pt-3 border-t border-slate-700/50">
-                  <User className="h-4 w-4 text-blue-400" />
+                <div className="flex items-center gap-3 pt-4 border-t border-white/5">
+                  <div className="p-2 rounded-lg bg-emerald-500/10">
+                    <User className="h-4 w-4 text-emerald-400" />
+                  </div>
                   <div>
-                    <p className="text-xs text-slate-500">Prospect lié</p>
-                    <p className="text-sm font-medium text-white">
+                    <p className="text-xs text-white/40 font-medium uppercase tracking-widest">Prospect lie</p>
+                    <p className="text-sm font-semibold text-white mt-0.5">
                       {prospect.contact || prospect.company || 'Prospect'}
                     </p>
                   </div>
@@ -507,7 +509,7 @@ function ReminderDetailAndProspectModal({
               {status !== 'done' && (
                 <button
                   onClick={() => { onMarkDone(reminder.id); onClose(); }}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-4 py-2.5 text-sm font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-4 py-3 text-sm font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all duration-300"
                 >
                   <Check className="h-4 w-4" />
                   Marquer comme fait
@@ -515,7 +517,7 @@ function ReminderDetailAndProspectModal({
               )}
               <button
                 onClick={() => { onDelete(reminder.id); onClose(); }}
-                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-sm font-bold text-red-400 hover:bg-red-500/20 transition-all"
+                className="flex-1 flex items-center justify-center gap-2 rounded-full bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm font-bold text-red-400 hover:bg-red-500/20 transition-all duration-300"
               >
                 <Trash2 className="h-4 w-4" />
                 Supprimer
@@ -528,13 +530,13 @@ function ReminderDetailAndProspectModal({
       {/* Fallback for mobile if prospect is present (prospect view takes full screen, so hide detail modal or show at bottom) */}
       {prospect && (
         <div className="md:hidden fixed bottom-4 left-4 right-4 z-[60] animate-in fade-in slide-in-from-bottom-8">
-           <div className="rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl p-4 flex flex-col gap-3">
+           <div className="rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-2xl p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-white text-sm flex items-center gap-2">
                  <Bell className="h-4 w-4 text-orange-400" />
                  {reminder.title}
               </h3>
-              <button onClick={onClose} className="text-slate-400"><X className="h-4 w-4" /></button>
+              <button onClick={onClose} className="text-white/40"><X className="h-4 w-4" /></button>
             </div>
             <div className="flex gap-2">
               {status !== 'done' && (
@@ -611,25 +613,25 @@ function CreateReminderModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
-          <h2 className="text-lg font-bold text-white">Nouveau rappel</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+        <div className="bg-white/5 px-8 py-4 border-b border-white/5 flex items-center justify-between">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-white/60">Nouveau rappel</h2>
+          <button onClick={onClose} className="rounded-full p-1.5 text-white/40 hover:bg-white/[0.04] hover:text-white transition-all duration-300">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-8 space-y-5">
           {/* Titre */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">Titre *</label>
+            <label className="mb-1.5 block text-xs font-medium text-white/40">Titre *</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ex: Rappeler le prospect"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
               autoFocus
               required
             />
@@ -637,35 +639,35 @@ function CreateReminderModal({
 
           {/* Description */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">Description</label>
+            <label className="mb-1.5 block text-xs font-medium text-white/40">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Détails optionnels..."
               rows={2}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none resize-none"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none resize-none"
             />
           </div>
 
           {/* Date & Heure */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">Date *</label>
+              <label className="mb-1.5 block text-xs font-medium text-white/40">Date *</label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">Heure *</label>
+              <label className="mb-1.5 block text-xs font-medium text-white/40">Heure *</label>
               <input
                 type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none"
                 required
               />
             </div>
@@ -673,14 +675,14 @@ function CreateReminderModal({
 
           {/* Link Type */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">Lier à</label>
-            <div className="flex rounded-lg bg-slate-800 p-1 border border-slate-700">
+            <label className="mb-1.5 block text-xs font-medium text-white/40">Lier à</label>
+            <div className="flex bg-white/[0.03] border border-white/[0.08] rounded-full p-1">
               <button
                 type="button"
                 onClick={() => { setLinkType('none'); setSelectedProspectId(null) }}
                 className={cn(
-                  'flex-1 rounded-md py-1.5 text-xs font-medium transition-all',
-                  linkType === 'none' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-white'
+                  'flex-1 rounded-full py-1.5 text-xs font-medium transition-all',
+                  linkType === 'none' ? 'bg-emerald-500 text-black' : 'text-white/80 hover:bg-white/10'
                 )}
               >
                 Aucun
@@ -689,8 +691,8 @@ function CreateReminderModal({
                 type="button"
                 onClick={() => setLinkType('prospect')}
                 className={cn(
-                  'flex-1 rounded-md py-1.5 text-xs font-medium transition-all',
-                  linkType === 'prospect' ? 'bg-orange-500 text-white shadow' : 'text-slate-400 hover:text-white'
+                  'flex-1 rounded-full py-1.5 text-xs font-medium transition-all',
+                  linkType === 'prospect' ? 'bg-emerald-500 text-black' : 'text-white/80 hover:bg-white/10'
                 )}
               >
                 Un prospect
@@ -702,18 +704,18 @@ function CreateReminderModal({
           {linkType === 'prospect' && (
             <div className="animate-in fade-in slide-in-from-top-2 space-y-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                 <input
                   type="text"
                   value={prospectSearch}
                   onChange={(e) => setProspectSearch(e.target.value)}
                   placeholder="Rechercher un prospect..."
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 pl-9 pr-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
                 />
               </div>
-              <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800/50 divide-y divide-slate-700/50">
+              <div className="max-h-36 overflow-y-auto rounded-xl border border-white/10 bg-white/[0.02] divide-y divide-white/5">
                 {filteredProspects.length === 0 ? (
-                  <p className="px-3 py-2 text-xs text-slate-500">Aucun prospect trouvé</p>
+                  <p className="px-3 py-2 text-xs text-white/40">Aucun prospect trouvé</p>
                 ) : (
                   filteredProspects.map(p => (
                     <button
@@ -723,21 +725,21 @@ function CreateReminderModal({
                       className={cn(
                         'w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
                         selectedProspectId === p.id
-                          ? 'bg-orange-500/10 text-orange-400'
-                          : 'text-slate-300 hover:bg-slate-700/50'
+                          ? 'bg-emerald-500/10 text-emerald-400'
+                          : 'text-white/60 hover:bg-white/[0.04]'
                       )}
                     >
                       <User className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{p.contact || p.company || 'Prospect'}</span>
                       {p.company && p.contact && (
-                        <span className="text-xs text-slate-500 truncate ml-auto">{p.company}</span>
+                        <span className="text-xs text-white/40 truncate ml-auto">{p.company}</span>
                       )}
                     </button>
                   ))
                 )}
               </div>
               {selectedProspectId && (
-                <p className="text-xs text-orange-400">
+                <p className="text-xs text-emerald-400">
                   Lié à : {prospects.find(p => p.id === selectedProspectId)?.contact || 'Prospect'}
                 </p>
               )}
@@ -748,7 +750,7 @@ function CreateReminderModal({
           <button
             type="submit"
             disabled={!title.trim() || !date || !time || submitting || (linkType === 'prospect' && !selectedProspectId)}
-            className="w-full rounded-lg bg-orange-500 py-3 text-sm font-bold text-white hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/20"
+            className="w-full rounded-full bg-emerald-500 py-3 text-sm font-bold text-black hover:bg-emerald-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin mx-auto" />

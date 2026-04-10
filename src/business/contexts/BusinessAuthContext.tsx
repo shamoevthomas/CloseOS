@@ -24,6 +24,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [isSalesUser, setIsSalesUser] = useState(false);
+  const [hasSalesAccount, setHasSalesAccount] = useState(false);
   const [authError, setAuthError] = useState(false);
   const isMountedRef = useRef(true);
   // Guard: tracks the latest initUser call to discard stale results
@@ -57,12 +58,18 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
     try {
       console.log('[BusinessAuth] initUser called for:', userId);
-      // Fetch business_users, team_members AND Sales profile in parallel
-      const [profileRes, teamRes, salesRes] = await Promise.all([
+      // Fetch business_users AND Sales profile (with active org) in parallel
+      const [profileRes, salesRes] = await Promise.all([
         supabase.from('business_users').select('*').eq('id', userId).maybeSingle(),
-        supabase.from('business_team_members').select('*').eq('user_id', userId).maybeSingle(),
-        supabase.from('profiles').select('id').eq('id', userId).maybeSingle(),
+        supabase.from('profiles').select('id, business_owner_id').eq('id', userId).maybeSingle(),
       ]);
+
+      // Fetch team member scoped to active org (supports multi-org)
+      let teamQuery = supabase.from('business_team_members').select('*').eq('user_id', userId);
+      if (salesRes.data?.business_owner_id) {
+        teamQuery = teamQuery.eq('business_owner_id', salesRes.data.business_owner_id);
+      }
+      const teamRes = await teamQuery.maybeSingle();
 
       console.log('[BusinessAuth] profileRes:', profileRes.data, profileRes.error);
       console.log('[BusinessAuth] teamRes:', teamRes.data, teamRes.error);
@@ -95,6 +102,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
           .eq('user_id', teamRes.data.business_owner_id)
           .single();
 
+        setHasSalesAccount(!!salesRes.data);
         applyUserData(version, {
           teamMember: teamRes.data,
           isTeamMember: true,
@@ -118,33 +126,23 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
         }
       }
 
-      // Auto-create business_users row if missing (Google OAuth, race condition, etc.)
+      // No business_users row: user hasn't gone through checkout/registration
       if (!profile) {
-        // Double-check: don't auto-create if user is a Sales user
+        // Sales user trying to access Business
         if (salesRes.data) {
           setIsSalesUser(true);
           if (isMountedRef.current) setLoading(false);
           return;
         }
 
-        const { data: authData } = await supabase.auth.getUser();
-        if (authData?.user) {
-          const fullName = authData.user.user_metadata?.full_name || authData.user.user_metadata?.name || '';
-          const email = authData.user.email || '';
-          const googleAvatar = authData.user.user_metadata?.avatar_url || authData.user.user_metadata?.picture || null;
-          const { data: inserted } = await supabase
-            .from('business_users')
-            .upsert({
-              id: authData.user.id,
-              full_name: fullName,
-              email,
-              avatar_url: googleAvatar,
-            }, { onConflict: 'id' })
-            .select()
-            .single();
-          // Use inserted row, or create a minimal fallback so UI never shows "Utilisateur"
-          profile = inserted || { id: authData.user.id, full_name: fullName, email, avatar_url: googleAvatar };
-        }
+        // No profile at all → sign out and let the UI redirect to login/checkout
+        // Do NOT auto-create accounts (prevents Google OAuth from bypassing payment)
+        console.log('[BusinessAuth] No business_users row found — user needs checkout');
+        await supabase.auth.signOut();
+        setUser(null);
+        clearUserData();
+        if (isMountedRef.current) setLoading(false);
+        return;
       }
 
       const { data: settings } = await supabase
@@ -178,6 +176,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     setOwnerUserId(null);
     setNeedsVerification(false);
     setIsSalesUser(false);
+    setHasSalesAccount(false);
     setAuthError(false);
     businessProfileRef.current = null;
     teamMemberRef.current = null;
@@ -474,6 +473,29 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     return getBrowserTimezone()
   }, [isTeamMember, teamMember?.timezone, businessProfile?.timezone])
 
+  const isSolo = useMemo(() => {
+    const plan = businessSettings?.subscription_plan
+    return !plan || plan === 'solo'
+  }, [businessSettings?.subscription_plan])
+
+  const hasAcquisition = useMemo(() => {
+    const plan = businessSettings?.subscription_plan
+    return plan === 'business_acquisition' || plan === 'enterprise'
+  }, [businessSettings?.subscription_plan])
+
+  const isLifetimeFree = useMemo(() => {
+    return !!businessProfile?.is_lifetime_free
+  }, [businessProfile?.is_lifetime_free])
+
+  const isTrialActive = useMemo(() => {
+    if (!businessProfile?.trial_ends_at) return false
+    return new Date(businessProfile.trial_ends_at) > new Date()
+  }, [businessProfile?.trial_ends_at])
+
+  const isSubscribed = useMemo(() => {
+    return !!businessProfile?.stripe_customer_id
+  }, [businessProfile?.stripe_customer_id])
+
   return (
     <BusinessAuthContext.Provider value={{
       isAuthenticated: !!user,
@@ -490,11 +512,17 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       logout,
       teamMember,
       isTeamMember,
+      isSolo,
+      hasAcquisition,
+      isLifetimeFree,
+      isTrialActive,
+      isSubscribed,
       ownerUserId,
       userTimezone,
       needsVerification,
       setNeedsVerification,
       isSalesUser,
+      hasSalesAccount,
       authError,
       refreshProfile: async () => {
         if (user) {

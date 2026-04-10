@@ -30,7 +30,7 @@ export function NotificationBell() {
   const getIcon = (type: string) => {
     switch (type) {
       case 'agenda':
-        return <Calendar className="h-5 w-5 text-blue-400" />
+        return <Calendar className="h-5 w-5 text-emerald-400" />
       case 'ai':
         return <Sparkles className="h-5 w-5 text-purple-400" />
       case 'message':
@@ -38,7 +38,7 @@ export function NotificationBell() {
       case 'booking':
         return <Video className="h-5 w-5 text-purple-400" />
       default:
-        return <Bell className="h-5 w-5 text-slate-400" />
+        return <Bell className="h-5 w-5 text-white/40" />
     }
   }
 
@@ -70,26 +70,26 @@ export function NotificationBell() {
         className={cn(
           'relative flex items-center justify-center rounded-lg p-2 transition-all',
           isDropdownOpen
-            ? 'bg-slate-800 text-blue-400'
-            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+            ? 'bg-white/5 text-emerald-400'
+            : 'text-white/40 hover:bg-white/5 hover:text-white'
         )}
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-slate-950"></span>
+          <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-[#1a1a1a]"></span>
         )}
       </button>
 
       {/* Dropdown */}
       {isDropdownOpen && (
-        <div className="absolute right-0 top-full mt-2 w-96 z-50 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl">
+        <div className="absolute right-0 top-full mt-2 w-96 z-50 overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a1a1a] shadow-2xl">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-800 p-4">
+          <div className="flex items-center justify-between border-b border-white/[0.08] p-4">
             <h3 className="text-lg font-bold text-white">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-xs font-medium text-blue-400 transition-colors hover:text-blue-300"
+                className="text-xs font-medium text-emerald-400 transition-colors hover:text-emerald-300"
               >
                 Tout marquer comme lu
               </button>
@@ -103,15 +103,15 @@ export function NotificationBell() {
                 <div
                   key={notification.id}
                   className={cn(
-                    'border-b border-slate-800 p-4 transition-all',
+                    'border-b border-white/[0.08] p-4 transition-all',
                     notification.read
-                      ? 'bg-slate-900/50'
-                      : 'bg-blue-500/5 hover:bg-blue-500/10'
+                      ? 'bg-white/[0.03]'
+                      : 'bg-emerald-500/5 hover:bg-emerald-500/10'
                   )}
                 >
                   <div className="flex items-start gap-3">
                     {/* Icon */}
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-slate-800">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white/5">
                       {getIcon(notification.type)}
                     </div>
 
@@ -121,19 +121,19 @@ export function NotificationBell() {
                         <h4
                           className={cn(
                             'text-sm font-semibold',
-                            notification.read ? 'text-slate-400' : 'text-white'
+                            notification.read ? 'text-white/40' : 'text-white'
                           )}
                         >
                           {notification.title}
                         </h4>
                         {!notification.read && (
-                          <div className="h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
+                          <div className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500"></div>
                         )}
                       </div>
-                      <p className="mt-1 text-sm text-slate-400 line-clamp-2">
+                      <p className="mt-1 text-sm text-white/40 line-clamp-2">
                         {notification.description}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-white/40">
                         {formatTime(notification.time)}
                       </p>
                     </div>
@@ -142,16 +142,16 @@ export function NotificationBell() {
               ))
             ) : (
               <div className="py-12 text-center">
-                <Bell className="mx-auto h-12 w-12 text-slate-700" />
-                <p className="mt-4 text-sm font-medium text-slate-400">Aucune notification</p>
+                <Bell className="mx-auto h-12 w-12 text-white/10" />
+                <p className="mt-4 text-sm font-medium text-white/40">Aucune notification</p>
               </div>
             )}
           </div>
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="border-t border-slate-800 p-3 text-center">
-              <button className="text-sm font-medium text-blue-400 transition-colors hover:text-blue-300">
+            <div className="border-t border-white/[0.08] p-3 text-center">
+              <button className="text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">
                 Voir toutes les notifications
               </button>
             </div>

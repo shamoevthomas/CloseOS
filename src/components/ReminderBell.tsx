@@ -92,7 +92,7 @@ export function ReminderBell() {
           'relative flex items-center justify-center rounded-lg p-2 transition-all',
           count > 0
             ? 'text-orange-400 hover:bg-orange-500/10'
-            : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300'
+            : 'text-white/40 hover:bg-white/5 hover:text-white/60'
         )}
       >
         <Bell className={cn('h-5 w-5', count > 0 && 'animate-[wiggle_1s_ease-in-out_infinite]')} />
@@ -105,9 +105,9 @@ export function ReminderBell() {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl border border-slate-800 bg-slate-900 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl border border-white/[0.08] bg-[#1a1a1a] shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-3">
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4 text-orange-400" />
               <h3 className="text-sm font-bold text-white">Rappels du jour</h3>
@@ -119,7 +119,7 @@ export function ReminderBell() {
             </div>
             <button
               onClick={() => { setIsOpen(false); navigate('/reminders') }}
-              className="text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
+              className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
             >
               Tout voir
             </button>
@@ -129,18 +129,18 @@ export function ReminderBell() {
           <div className="max-h-80 overflow-y-auto custom-scrollbar">
             {visibleReminders.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <Bell className="h-8 w-8 text-slate-700 mx-auto mb-2" />
-                <p className="text-sm text-slate-500">Aucun rappel pour aujourd'hui</p>
+                <Bell className="h-8 w-8 text-white/10 mx-auto mb-2" />
+                <p className="text-sm text-white/40">Aucun rappel pour aujourd'hui</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-800/50">
+              <div className="divide-y divide-white/[0.08]">
                 {visibleReminders.map((reminder) => {
                   const overdue = isOverdue(reminder.reminder_date)
                   return (
                     <div
                       key={reminder.id}
                       className={cn(
-                        'px-4 py-3 transition-colors hover:bg-slate-800/50',
+                        'px-4 py-3 transition-colors hover:bg-white/[0.03]',
                         overdue && 'bg-red-500/5'
                       )}
                     >
@@ -154,11 +154,11 @@ export function ReminderBell() {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-white truncate">{reminder.title}</p>
                           {reminder.description && (
-                            <p className="text-xs text-slate-400 mt-0.5 truncate">{reminder.description}</p>
+                            <p className="text-xs text-white/40 mt-0.5 truncate">{reminder.description}</p>
                           )}
                           <p className={cn(
                             'text-[10px] font-medium mt-1',
-                            overdue ? 'text-red-400' : 'text-slate-500'
+                            overdue ? 'text-red-400' : 'text-white/40'
                           )}>
                             {overdue ? 'En retard — ' : ''}
                             {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
@@ -177,7 +177,7 @@ export function ReminderBell() {
                           </button>
                           <button
                             onClick={() => handleDismiss(reminder.id)}
-                            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-700 hover:text-slate-300 transition-all"
+                            className="rounded-md p-1.5 text-white/40 hover:bg-white/10 hover:text-white/60 transition-all"
                             title="Masquer"
                           >
                             <X className="h-3.5 w-3.5" />

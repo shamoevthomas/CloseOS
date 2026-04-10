@@ -83,6 +83,7 @@ interface ProspectViewProps {
   onCreateEvent?: () => void
   onStartCall?: (withAi: boolean) => void
   onPhoneCall?: () => void
+  onDismissFromPipeline?: (prospectId: number, dismissed: boolean) => void
 }
 
 export function ProspectView({
@@ -93,6 +94,7 @@ export function ProspectView({
   onCreateEvent,
   onStartCall,
   onPhoneCall,
+  onDismissFromPipeline,
 }: ProspectViewProps) {
   const navigate = useNavigate()
   const { offers } = useOffers()
@@ -198,6 +200,20 @@ export function ProspectView({
 
   // --- Rappels state ---
   const { user } = useAuth()
+
+  // Pipeline dismissal state
+  const [isDismissed, setIsDismissed] = useState(false)
+  useEffect(() => {
+    if (!user?.id || !prospect.id) return
+    let cancelled = false
+    supabase.from('pipeline_dismissals').select('id').eq('user_id', user.id).eq('prospect_id', prospect.id).maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setIsDismissed(!!data)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [user?.id, prospect.id])
+
   const [showReminderForm, setShowReminderForm] = useState(false)
   const [reminderTitle, setReminderTitle] = useState('')
   const [reminderDesc, setReminderDesc] = useState('')
@@ -621,7 +637,7 @@ export function ProspectView({
 
       <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
         <div className="w-screen max-w-md">
-          <div className="flex h-full flex-col bg-slate-900 shadow-xl ring-1 ring-slate-800">
+          <div className="flex h-full flex-col bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] border-l border-white/[0.08]">
 
             {errorMessage && (
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-xl animate-in fade-in slide-in-from-top-2">
@@ -631,13 +647,13 @@ export function ProspectView({
             )}
 
             {/* Header Fixe */}
-            <div className="border-b border-slate-800 bg-slate-950 px-6 pt-6 pb-0">
+            <div className="border-b border-white/[0.08] bg-[#111111] px-6 pt-6 pb-0">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {/* Avatar */}
                   <button
                     onClick={() => avatarInputRef.current?.click()}
-                    className="relative w-11 h-11 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden text-lg font-extrabold text-slate-400 group cursor-pointer shrink-0"
+                    className="relative w-11 h-11 rounded-full bg-white/5 flex items-center justify-center overflow-hidden text-lg font-extrabold text-white/40 group cursor-pointer shrink-0"
                     title="Changer la photo"
                   >
                     {localProspect.avatar_url ? (
@@ -659,11 +675,11 @@ export function ProspectView({
                       <MaskedText value={localProspect.contact} type="name" />
                     </h2>
                     {localProspect.company && localProspect.company !== 'N/A' && (
-                      <p className="mt-0.5 text-sm text-slate-400 truncate">{localProspect.company}</p>
+                      <p className="mt-0.5 text-sm text-white/40 truncate">{localProspect.company}</p>
                     )}
                   </div>
                 </div>
-                <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white shrink-0">
+                <button onClick={onClose} className="rounded-lg p-2 text-white/40 hover:bg-white/5 hover:text-white shrink-0">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -687,15 +703,15 @@ export function ProspectView({
                 ))}
                 <button
                   onClick={() => setShowTagPicker(!showTagPicker)}
-                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-700 px-2 py-0.5 text-[11px] text-slate-500 hover:border-slate-500 hover:text-slate-300 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/[0.08] px-2 py-0.5 text-[11px] text-white/40 hover:border-white/20 hover:text-white/60 transition-colors"
                 >
                   <Plus className="h-3 w-3" /> tag
                 </button>
                 {showTagPicker && (
-                  <div className="absolute left-0 top-full mt-1.5 z-10 min-w-[200px] max-w-[300px] rounded-lg border border-slate-700 bg-slate-900 shadow-xl">
+                  <div className="absolute left-0 top-full mt-1.5 z-10 min-w-[200px] max-w-[300px] rounded-lg border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                     <div className="max-h-48 overflow-y-auto p-1.5">
                       {tags.length === 0 ? (
-                        <p className="px-3 py-2 text-xs text-slate-500">Aucun tag. Créez-en dans Personnaliser.</p>
+                        <p className="px-3 py-2 text-xs text-white/40">Aucun tag. Créez-en dans Personnaliser.</p>
                       ) : (
                         tags.map(tag => {
                           const isAssigned = (getProspectTagObjects(localProspect.id)).some(t => t.id === tag.id)
@@ -708,7 +724,7 @@ export function ProspectView({
                               }}
                               className={cn(
                                 'flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs transition-colors',
-                                isAssigned ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800'
+                                isAssigned ? 'bg-white/5 text-white' : 'text-white/60 hover:bg-white/5'
                               )}
                             >
                               <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
@@ -741,13 +757,13 @@ export function ProspectView({
               )}
 
               <div className="flex gap-2 mb-3">
-                <button onClick={handleOpenGmail} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-300 transition-all hover:bg-slate-800 hover:text-white">
+                <button onClick={handleOpenGmail} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm font-medium text-white/60 transition-all hover:bg-white/5 hover:text-white">
                   <Mail className="h-4 w-4" /> Email
                 </button>
                 <button onClick={handleOpenWhatsApp} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-500/20 hover:text-emerald-300">
                   <MessageCircle className="h-4 w-4" /> WhatsApp
                 </button>
-                <button onClick={() => { if (onCreateEvent) onCreateEvent() }} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-500/20">
+                <button onClick={() => { if (onCreateEvent) onCreateEvent() }} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-bold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20">
                   <Calendar className="h-4 w-4" /> RDV
                 </button>
               </div>
@@ -760,31 +776,31 @@ export function ProspectView({
                 </button>
                 <button
                   onClick={() => navigate(`/live-call?name=${encodeURIComponent(localProspect.contact)}&prospectId=${localProspect.id}&from=/pipeline`)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-slate-700"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white/5 border border-white/[0.08] px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10"
                 >
                   <PhoneCall className="h-4 w-4" /> Call
                 </button>
               </div>
 
               {/* TABS */}
-              <div className="flex border-b border-slate-800">
+              <div className="flex border-b border-white/[0.08]">
                 <button
                   onClick={() => setActiveTab('info')}
                   className={cn(
                     "flex-1 pb-3 text-sm font-medium transition-all relative",
-                    activeTab === 'info' ? "text-white" : "text-slate-500 hover:text-slate-300"
+                    activeTab === 'info' ? "text-white" : "text-white/40 hover:text-white"
                   )}
                 >
                   Informations
                   {activeTab === 'info' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
                   )}
                 </button>
                 <button
                   onClick={() => setActiveTab('notes')}
                   className={cn(
                     "flex-1 pb-3 text-sm font-medium transition-all relative",
-                    activeTab === 'notes' ? "text-white" : "text-slate-500 hover:text-slate-300"
+                    activeTab === 'notes' ? "text-white" : "text-white/40 hover:text-white"
                   )}
                 >
                   Notes d'Appel
@@ -796,7 +812,7 @@ export function ProspectView({
                   onClick={() => setActiveTab('rappels')}
                   className={cn(
                     "flex-1 pb-3 text-sm font-medium transition-all relative flex items-center justify-center gap-1.5",
-                    activeTab === 'rappels' ? "text-white" : "text-slate-500 hover:text-slate-300"
+                    activeTab === 'rappels' ? "text-white" : "text-white/40 hover:text-white"
                   )}
                 >
                   Rappels
@@ -813,7 +829,7 @@ export function ProspectView({
                   onClick={() => setActiveTab('historique')}
                   className={cn(
                     "flex-1 pb-3 text-sm font-medium transition-all relative",
-                    activeTab === 'historique' ? "text-white" : "text-slate-500 hover:text-slate-300"
+                    activeTab === 'historique' ? "text-white" : "text-white/40 hover:text-white"
                   )}
                 >
                   Historique
@@ -833,11 +849,11 @@ export function ProspectView({
 
                   {/* Étape Pipeline */}
                   <div>
-                    <label className="mb-2 block text-xs font-medium text-slate-400">Étape actuelle</label>
+                    <label className="mb-2 block text-xs font-medium text-white/40">Étape actuelle</label>
                     <select
                       value={localProspect.stage}
                       onChange={(e) => handleOptimisticUpdate({ stage: e.target.value })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     >
                       {allStages.map((stage) => (
                         <option key={stage.id} value={stage.id}>
@@ -854,7 +870,7 @@ export function ProspectView({
                         <h3 className="flex items-center gap-2 text-sm font-bold text-emerald-400">
                           <CreditCard className="h-4 w-4" /> Détails du Paiement
                         </h3>
-                        <button onClick={() => setEditingPayment(!editingPayment)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                        <button onClick={() => setEditingPayment(!editingPayment)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -862,22 +878,22 @@ export function ProspectView({
                       {editingPayment ? (
                         <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
                           <div>
-                            <label className="text-xs text-slate-400">Montant final (€)</label>
+                            <label className="text-xs text-white/40">Montant final (€)</label>
                             <input
                               type="number"
                               value={editedValue}
                               onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
-                              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
+                              className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
                             />
                           </div>
-                          <div className="flex rounded-lg bg-slate-900 p-1">
-                            <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white")}>Comptant</button>
-                            <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white")}>Plusieurs fois</button>
+                          <div className="flex rounded-lg bg-white/[0.03] p-1">
+                            <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>Comptant</button>
+                            <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>Plusieurs fois</button>
                           </div>
                           {paymentMode === 'installments' && (
                             <div className="animate-in fade-in slide-in-from-top-1">
-                              <label className="text-xs text-slate-400">Nombre de mensualités</label>
-                              <select value={installments} onChange={(e) => setInstallments(parseInt(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+                              <label className="text-xs text-white/40">Nombre de mensualités</label>
+                              <select value={installments} onChange={(e) => setInstallments(parseInt(e.target.value))} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
                                 {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{n} fois ({(editedValue / n).toFixed(2)}€/mois)</option>)}
                               </select>
                             </div>
@@ -898,18 +914,18 @@ export function ProspectView({
                       ) : (
                         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-slate-400">Montant Vente</span>
+                            <span className="text-xs text-white/40">Montant Vente</span>
                             <span className="text-sm font-bold text-white">{(localProspect.value || 0).toLocaleString()}€</span>
                           </div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-slate-400">Commission Totale ({commissionRate}%)</span>
+                            <span className="text-xs text-white/40">Commission Totale ({commissionRate}%)</span>
                             <span className="text-sm font-bold text-emerald-400">+{savedCommission.toFixed(2)}€</span>
                           </div>
 
                           {isPayingInInstallments && (
                             <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
                               <div className="flex justify-between items-center">
-                                <span className="text-xs text-slate-300">Client paie (x{savedInstallments}) :</span>
+                                <span className="text-xs text-white/60">Client paie (x{savedInstallments}) :</span>
                                 <span className="text-sm font-semibold text-white">{savedMonthlyPayment.toFixed(2)}€ / mois</span>
                               </div>
                               <div className="flex justify-between items-center">
@@ -937,7 +953,7 @@ export function ProspectView({
                       </h3>
                       <div className="space-y-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
                         <div>
-                          <label className="text-xs font-medium text-slate-400 mb-1.5 block">Motif</label>
+                          <label className="text-xs font-medium text-white/40 mb-1.5 block">Motif</label>
                           <div className="relative">
                             <select
                               value={localProspect.loss_reason || ''}
@@ -946,22 +962,22 @@ export function ProspectView({
                                 handleOptimisticUpdate({ loss_reason: e.target.value } as any)
                                 logHistory('field_update', 'loss_reason', prev, e.target.value)
                               }}
-                              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none appearance-none"
+                              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none appearance-none"
                             >
                               <option value="">Sélectionnez un motif</option>
                               {LOSS_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
                             </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-slate-500" />
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-white/40" />
                           </div>
                         </div>
                         <div>
-                          <label className="text-xs font-medium text-slate-400 mb-1.5 block">Détails</label>
+                          <label className="text-xs font-medium text-white/40 mb-1.5 block">Détails</label>
                           <input
                             type="text"
                             value={localProspect.loss_details || ''}
                             onChange={(e) => handleOptimisticUpdate({ loss_details: e.target.value } as any)}
                             placeholder="Précisez les détails..."
-                            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-red-500 focus:outline-none"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-red-500 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -972,18 +988,18 @@ export function ProspectView({
                   <div>
                     <div className="mb-3 flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-white">Infos Offre</h3>
-                      <button onClick={() => setEditingOffer(!editingOffer)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                      <button onClick={() => setEditingOffer(!editingOffer)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {editingOffer ? (
                       <div className="space-y-3">
                         <div>
-                          <label className="mb-2 block text-xs text-slate-400">Sélectionner une offre</label>
+                          <label className="mb-2 block text-xs text-white/40">Sélectionner une offre</label>
                           <select
                             value={editedOfferId}
                             onChange={(e) => handleOfferChange(e.target.value)}
-                            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                           >
                             <option value="">-- Sélectionner --</option>
                             {availableOffers.map((offer) => (
@@ -995,13 +1011,13 @@ export function ProspectView({
                         </div>
                         {hasFormulas && (
                           <div className="animate-in fade-in slide-in-from-top-2">
-                            <label className="mb-2 flex items-center gap-2 text-xs text-blue-400">
+                            <label className="mb-2 flex items-center gap-2 text-xs text-emerald-400">
                               <Tag className="h-3 w-3" /> Choix de la formule
                             </label>
                             <select
                               value={editedFormulaId}
                               onChange={(e) => handleFormulaChange(e.target.value)}
-                              className="w-full rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                              className="w-full rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                             >
                               <option value="">-- Sélectionner la formule --</option>
                               {selectedOfferObj?.formulas?.map((formula) => (
@@ -1012,20 +1028,20 @@ export function ProspectView({
                         )}
                         {editedValue > 0 && <p className="text-xs font-medium text-emerald-400 text-right">Nouveau montant : {editedValue.toLocaleString()}€</p>}
                         <div className="flex gap-2">
-                          <button onClick={handleSaveOffer} className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-600">Sauvegarder</button>
-                          <button onClick={handleCancelOffer} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-700">Annuler</button>
+                          <button onClick={handleSaveOffer} className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-400">Sauvegarder</button>
+                          <button onClick={handleCancelOffer} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm font-semibold text-white/60 hover:bg-white/10">Annuler</button>
                         </div>
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-slate-800 bg-slate-800/50 p-4">
+                      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-slate-400">Offre concernée</p>
+                            <p className="text-sm text-white/40">Offre concernée</p>
                             <p className="mt-1 font-medium text-white">{localProspect.offer || 'N/A'}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm text-slate-400">Montant</p>
-                            <p className="mt-1 text-lg font-bold text-blue-400"><MaskedText value={`${(localProspect.value || 0).toLocaleString()}€`} type="number" /></p>
+                            <p className="text-sm text-white/40">Montant</p>
+                            <p className="mt-1 text-lg font-bold text-emerald-400"><MaskedText value={`${(localProspect.value || 0).toLocaleString()}€`} type="number" /></p>
                           </div>
                         </div>
                       </div>
@@ -1036,51 +1052,51 @@ export function ProspectView({
                   <div>
                     <div className="mb-3 flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-white">Fiche Client</h3>
-                      <button onClick={() => setEditingClient(!editingClient)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                      <button onClick={() => setEditingClient(!editingClient)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {editingClient ? (
                       <div className="space-y-3">
-                        <input type="text" value={editedContact} onChange={(e) => setEditedContact(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Nom" />
-                        <input type="text" value={editedCompany} onChange={(e) => setEditedCompany(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Entreprise" />
-                        <input type="email" value={editedEmail} onChange={(e) => setEditedEmail(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Email" />
-                        <input type="tel" value={editedPhone} onChange={(e) => setEditedPhone(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white" placeholder="Téléphone" />
+                        <input type="text" value={editedContact} onChange={(e) => setEditedContact(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder="Nom" />
+                        <input type="text" value={editedCompany} onChange={(e) => setEditedCompany(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder="Entreprise" />
+                        <input type="email" value={editedEmail} onChange={(e) => setEditedEmail(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder="Email" />
+                        <input type="tel" value={editedPhone} onChange={(e) => setEditedPhone(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder="Téléphone" />
                         <div className="flex gap-2">
-                          <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white">Sauvegarder</button>
-                          <button onClick={handleCancelClient} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-300">Annuler</button>
+                          <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black">Sauvegarder</button>
+                          <button onClick={handleCancelClient} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm font-semibold text-white/60">Annuler</button>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
-                          <Mail className="h-4 w-4 text-blue-400" />
+                        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
+                          <Mail className="h-4 w-4 text-emerald-400" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-slate-500">Email</p>
-                            <button onClick={handleOpenGmail} className="truncate text-sm text-slate-300 hover:text-white hover:underline text-left"><MaskedText value={localProspect.email} type="name" /></button>
+                            <p className="text-xs text-white/40">Email</p>
+                            <button onClick={handleOpenGmail} className="truncate text-sm text-white/60 hover:text-white hover:underline text-left"><MaskedText value={localProspect.email} type="name" /></button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
+                        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
                           <Phone className="h-4 w-4 text-emerald-400" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-slate-500">Téléphone</p>
-                            <button onClick={handleOpenWhatsApp} className="text-sm text-slate-300 hover:text-white hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
+                            <p className="text-xs text-white/40">Téléphone</p>
+                            <button onClick={handleOpenWhatsApp} className="text-sm text-white/60 hover:text-white hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
                           </div>
                         </div>
                         {localProspect.company && localProspect.company !== 'N/A' && (
-                          <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
+                          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
                             <Building2 className="h-4 w-4 text-orange-400" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs text-slate-500">Entreprise</p>
-                              <p className="text-sm text-slate-300">{localProspect.company}</p>
+                              <p className="text-xs text-white/40">Entreprise</p>
+                              <p className="text-sm text-white/60">{localProspect.company}</p>
                             </div>
                           </div>
                         )}
-                        <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 p-3">
+                        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
                           <Clock className="h-4 w-4 text-purple-400" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-slate-500">Date de création</p>
-                            <p className="text-sm text-slate-300">
+                            <p className="text-xs text-white/40">Date de création</p>
+                            <p className="text-sm text-white/60">
                               {new Date(localProspect.created_at || localProspect.dateAdded || '').toLocaleDateString('fr-FR', {
                                 day: 'numeric',
                                 month: 'long',
@@ -1099,21 +1115,21 @@ export function ProspectView({
                   <div>
                     <div className="mb-3 flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-white">Notes Internes</h3>
-                      <button onClick={() => setEditingNotes(!editingNotes)} className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                      <button onClick={() => setEditingNotes(!editingNotes)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {editingNotes ? (
                       <div>
-                        <textarea value={tempNotes} onChange={(e) => setTempNotes(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none" rows={4} />
+                        <textarea value={tempNotes} onChange={(e) => setTempNotes(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" rows={4} />
                         <div className="mt-2 flex gap-2">
-                          <button onClick={handleSaveNotes} className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white">Enregistrer</button>
-                          <button onClick={() => setEditingNotes(false)} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-300">Annuler</button>
+                          <button onClick={handleSaveNotes} className="rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-black">Enregistrer</button>
+                          <button onClick={() => setEditingNotes(false)} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-1.5 text-sm font-medium text-white/60">Annuler</button>
                         </div>
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-slate-800 bg-slate-800/50 p-4">
-                        <p className="whitespace-pre-wrap text-sm text-slate-300">{localProspect.notes || 'Aucune note'}</p>
+                      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+                        <p className="whitespace-pre-wrap text-sm text-white/60">{localProspect.notes || 'Aucune note'}</p>
                       </div>
                     )}
                   </div>
@@ -1128,24 +1144,24 @@ export function ProspectView({
                   {!isAddingNote ? (
                     <button
                       onClick={() => setIsAddingNote(true)}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 bg-slate-800/30 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all"
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-white/[0.08] bg-white/[0.03] py-3 text-sm font-medium text-white/40 hover:bg-white/5 hover:text-white hover:border-white/20 transition-all"
                     >
                       <Plus className="h-4 w-4" /> Ajouter une note manuelle
                     </button>
                   ) : (
-                    <div className="rounded-xl border border-slate-700 bg-slate-800 p-4 shadow-lg animate-in fade-in zoom-in-95">
-                      <h4 className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Nouvelle Note</h4>
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 shadow-[0_20px_40px_rgba(0,0,0,0.2)] animate-in fade-in zoom-in-95">
+                      <h4 className="text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">Nouvelle Note</h4>
                       <textarea
                         value={newNoteContent}
                         onChange={(e) => setNewNoteContent(e.target.value)}
                         placeholder="Écrivez votre note d'appel ici..."
-                        className="w-full rounded-lg bg-slate-900 border border-slate-700 p-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 min-h-[100px] mb-3"
+                        className="w-full rounded-xl bg-white/5 border border-white/10 p-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500 min-h-[100px] mb-3"
                         autoFocus
                       />
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => { setIsAddingNote(false); setNewNoteContent(''); }}
-                          className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                          className="px-4 py-2 text-sm font-medium text-white/40 hover:text-white transition-colors"
                         >
                           Annuler
                         </button>
@@ -1160,23 +1176,23 @@ export function ProspectView({
                     </div>
                   )}
 
-                  <div className="h-px bg-slate-800 my-4" />
+                  <div className="h-px bg-white/[0.08] my-4" />
 
                   {/* LISTE DES NOTES */}
                   <div className="space-y-3">
                     {localProspect.callNotes && localProspect.callNotes.length > 0 ? (
                       localProspect.callNotes.map((note) => (
-                        <details key={note.id} className="group rounded-xl border border-slate-800 bg-slate-900/50 open:bg-slate-900 transition-all overflow-hidden">
-                          <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-slate-800/50 transition-colors select-none list-none [&::-webkit-details-marker]:hidden">
+                        <details key={note.id} className="group rounded-2xl border border-white/[0.08] bg-white/[0.03] open:bg-white/[0.05] transition-all overflow-hidden">
+                          <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/[0.03] transition-colors select-none list-none [&::-webkit-details-marker]:hidden">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-400 group-open:bg-purple-500/20 group-open:text-purple-400 transition-colors">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white/40 group-open:bg-purple-500/20 group-open:text-purple-400 transition-colors">
                                 <Calendar className="h-4 w-4" />
                               </div>
                               <div>
                                 <h4 className="text-sm font-semibold text-white">
                                   {new Date(note.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                 </h4>
-                                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                <div className="flex items-center gap-2 text-xs text-white/40 mt-0.5">
                                   <Clock className="h-3 w-3" />
                                   <span>{new Date(note.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                                   {note.author && (
@@ -1194,18 +1210,18 @@ export function ProspectView({
                                   e.preventDefault()
                                   handleDeleteNote(note.id)
                                 }}
-                                className="rounded p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                                className="rounded p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
                                 title="Supprimer la note"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
-                              <ChevronDown className="h-5 w-5 text-slate-500 transition-transform duration-300 group-open:rotate-180" />
+                              <ChevronDown className="h-5 w-5 text-white/40 transition-transform duration-300 group-open:rotate-180" />
                             </div>
                           </summary>
 
-                          <div className="border-t border-slate-800 p-4 pt-2">
+                          <div className="border-t border-white/[0.08] p-4 pt-2">
                             <div className="prose prose-invert prose-sm max-w-none">
-                              <p className="text-slate-300 whitespace-pre-wrap leading-relaxed">
+                              <p className="text-white/60 whitespace-pre-wrap leading-relaxed">
                                 {note.content}
                               </p>
                             </div>
@@ -1213,12 +1229,12 @@ export function ProspectView({
                         </details>
                       ))
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 mb-3">
-                          <ClipboardList className="h-6 w-6 text-slate-500" />
+                      <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.03]">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-3">
+                          <ClipboardList className="h-6 w-6 text-white/40" />
                         </div>
-                        <p className="text-sm font-medium text-slate-400">Aucune note d'appel</p>
-                        <p className="text-xs text-slate-500 mt-1 max-w-[200px]">
+                        <p className="text-sm font-medium text-white/40">Aucune note d'appel</p>
+                        <p className="text-xs text-white/40 mt-1 max-w-[200px]">
                           L'historique de vos appels et vos notes manuelles apparaîtront ici.
                         </p>
                       </div>
@@ -1243,12 +1259,12 @@ export function ProspectView({
                       <Loader2 className="h-6 w-6 animate-spin text-orange-400" />
                     </div>
                   ) : prospectReminders.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 mb-3">
-                        <Bell className="h-6 w-6 text-slate-500" />
+                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.03]">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-3">
+                        <Bell className="h-6 w-6 text-white/40" />
                       </div>
-                      <p className="text-sm font-medium text-slate-400">Aucun rappel</p>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-sm font-medium text-white/40">Aucun rappel</p>
+                      <p className="text-xs text-white/40 mt-1">
                         Créez un rappel pour ce prospect.
                       </p>
                     </div>
@@ -1267,10 +1283,10 @@ export function ProspectView({
                             className={cn(
                               'rounded-lg border p-3 transition-all cursor-pointer',
                               isDone
-                                ? 'border-slate-800 bg-slate-800/30'
+                                ? 'border-white/[0.08] bg-white/[0.03]'
                                 : isOverdue
                                   ? 'border-red-500/30 bg-red-500/5'
-                                  : 'border-slate-800 bg-slate-800/50',
+                                  : 'border-white/[0.08] bg-white/[0.03]',
                               isExpanded && 'ring-1 ring-orange-500/30'
                             )}
                           >
@@ -1278,7 +1294,7 @@ export function ProspectView({
                               <div className="min-w-0 flex-1">
                                 <p className={cn(
                                   'text-sm font-semibold',
-                                  isDone ? 'text-slate-500 line-through' : 'text-white'
+                                  isDone ? 'text-white/40 line-through' : 'text-white'
                                 )}>
                                   {reminder.title}
                                 </p>
@@ -1289,15 +1305,15 @@ export function ProspectView({
                                 )}>
                                   <div className="overflow-hidden">
                                      {reminder.description && (
-                                      <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed mb-2">
+                                      <p className="text-xs text-white/60 whitespace-pre-wrap leading-relaxed mb-2">
                                         {reminder.description}
                                       </p>
                                     )}
-                                    <div className="flex items-center gap-2 py-1 px-2 rounded bg-slate-900/50 w-fit">
-                                      <Clock className="h-3 w-3 text-slate-500" />
+                                    <div className="flex items-center gap-2 py-1 px-2 rounded bg-white/[0.03] w-fit">
+                                      <Clock className="h-3 w-3 text-white/40" />
                                       <span className={cn(
                                         'text-xs',
-                                        isOverdue ? 'text-red-400 font-medium' : 'text-slate-400'
+                                        isOverdue ? 'text-red-400 font-medium' : 'text-white/40'
                                       )}>
                                         {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
                                           weekday: 'long',
@@ -1316,8 +1332,8 @@ export function ProspectView({
 
                                 {!isExpanded && (
                                   <div className="flex items-center gap-2 mt-1.5 opacity-60">
-                                    <Clock className="h-3 w-3 text-slate-500" />
-                                    <span className="text-[10px] text-slate-500">
+                                    <Clock className="h-3 w-3 text-white/40" />
+                                    <span className="text-[10px] text-white/40">
                                       {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
                                         day: 'numeric',
                                         month: 'short',
@@ -1343,13 +1359,13 @@ export function ProspectView({
                                 <button
                                   onClick={() => handleDeleteReminder(reminder.id)}
                                   disabled={isLoading}
-                                  className="rounded-md p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                                  className="rounded-md p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                                   title="Supprimer"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                                 <ChevronDown className={cn(
-                                  "h-4 w-4 text-slate-600 transition-transform duration-300",
+                                  "h-4 w-4 text-white/40 transition-transform duration-300",
                                   isExpanded && "rotate-180 text-orange-500"
                                 )} />
                               </div>
@@ -1370,12 +1386,12 @@ export function ProspectView({
                       <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
                     </div>
                   ) : historyGroups.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 mb-3">
-                        <Clock className="h-6 w-6 text-slate-500" />
+                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.03]">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-3">
+                        <Clock className="h-6 w-6 text-white/40" />
                       </div>
-                      <p className="text-sm font-medium text-slate-400">Aucun historique</p>
-                      <p className="text-xs text-slate-500 mt-1">Les modifications apparaîtront ici.</p>
+                      <p className="text-sm font-medium text-white/40">Aucun historique</p>
+                      <p className="text-xs text-white/40 mt-1">Les modifications apparaîtront ici.</p>
                     </div>
                   ) : (
                     <div className="space-y-0">
@@ -1388,7 +1404,7 @@ export function ProspectView({
                         const CHANGE_STYLES: Record<string, { icon: typeof Plus; bg: string; text: string }> = {
                           created: { icon: Plus, bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
                           stage_change: { icon: Tag, bg: 'bg-purple-500/10', text: 'text-purple-400' },
-                          field_update: { icon: Pencil, bg: 'bg-blue-500/10', text: 'text-blue-400' },
+                          field_update: { icon: Pencil, bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
                         }
                         const style = CHANGE_STYLES[group.type] || CHANGE_STYLES.field_update
                         const IconComponent = style.icon
@@ -1414,7 +1430,7 @@ export function ProspectView({
                                 next.has(group.key) ? next.delete(group.key) : next.add(group.key)
                                 return next
                               })}
-                              className="w-full text-left rounded-xl border border-slate-800 bg-slate-900/50 p-4 hover:bg-slate-800/50 transition-all"
+                              className="w-full text-left rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 hover:bg-white/[0.05] transition-all"
                             >
                               <div className="flex items-center gap-3">
                                 <div className={cn('p-1.5 rounded-lg shrink-0', style.bg)}>
@@ -1422,13 +1438,13 @@ export function ProspectView({
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-bold text-white truncate">{title}</p>
-                                  <p className="text-[10px] text-slate-500">{timeStr}</p>
+                                  <p className="text-[10px] text-white/40">{timeStr}</p>
                                 </div>
-                                <ChevronDown className={cn('h-4 w-4 text-slate-500 transition-transform shrink-0', isExpanded && 'rotate-180')} />
+                                <ChevronDown className={cn('h-4 w-4 text-white/40 transition-transform shrink-0', isExpanded && 'rotate-180')} />
                               </div>
 
                               {isExpanded && (
-                                <div className="mt-3 pt-3 border-t border-slate-800">
+                                <div className="mt-3 pt-3 border-t border-white/[0.08]">
                                   <div className="space-y-2">
                                     {group.entries.map((entry: any) => {
                                       const fieldLabel = FIELD_LABELS[entry.field_name] || entry.field_name
@@ -1436,14 +1452,14 @@ export function ProspectView({
                                       const newDisplay = formatHistoryValue(entry.field_name, entry.new_value)
                                       return (
                                         <div key={entry.id} className="flex items-start gap-2">
-                                          <span className="text-[10px] font-bold text-slate-500 w-24 shrink-0 pt-0.5 truncate">{fieldLabel}</span>
+                                          <span className="text-[10px] font-bold text-white/40 w-24 shrink-0 pt-0.5 truncate">{fieldLabel}</span>
                                           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                                             {entry.old_value && (
                                               <>
-                                                <span className="text-xs text-slate-400 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20 line-through truncate max-w-[140px]">
+                                                <span className="text-xs text-white/40 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20 line-through truncate max-w-[140px]">
                                                   {oldDisplay}
                                                 </span>
-                                                <span className="text-[10px] text-slate-500">→</span>
+                                                <span className="text-[10px] text-white/40">→</span>
                                               </>
                                             )}
                                             <span className="text-xs text-white bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 font-medium truncate max-w-[140px]">
@@ -1461,9 +1477,9 @@ export function ProspectView({
                             {!isLast && (
                               <div className="flex justify-center py-1">
                                 <div className="flex flex-col items-center">
-                                  <div className="w-px h-2 bg-slate-800" />
-                                  <ChevronDown className="h-3 w-3 text-slate-700 -my-0.5" />
-                                  <div className="w-px h-2 bg-slate-800" />
+                                  <div className="w-px h-2 bg-white/[0.08]" />
+                                  <ChevronDown className="h-3 w-3 text-white/20 -my-0.5" />
+                                  <div className="w-px h-2 bg-white/[0.08]" />
                                 </div>
                               </div>
                             )}
@@ -1481,52 +1497,52 @@ export function ProspectView({
             {showReminderForm && (
               <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowReminderForm(false)} />
-                <div className="relative w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
-                  <div className="flex items-center justify-between border-b border-slate-800 px-5 py-3">
+                <div className="relative w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+                  <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-3">
                     <h3 className="text-sm font-bold text-white">Nouveau rappel</h3>
-                    <button onClick={() => setShowReminderForm(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <button onClick={() => setShowReminderForm(false)} className="rounded-lg p-1 text-white/40 hover:bg-white/5 hover:text-white">
                       <X className="h-4 w-4" />
                     </button>
                   </div>
                   <div className="p-5 space-y-3">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-400">Titre *</label>
+                      <label className="mb-1 block text-xs font-medium text-white/40">Titre *</label>
                       <input
                         type="text"
                         value={reminderTitle}
                         onChange={(e) => setReminderTitle(e.target.value)}
                         placeholder="Ex: Rappeler le prospect"
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none"
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none"
                         autoFocus
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-400">Description</label>
+                      <label className="mb-1 block text-xs font-medium text-white/40">Description</label>
                       <textarea
                         value={reminderDesc}
                         onChange={(e) => setReminderDesc(e.target.value)}
                         placeholder="Détails optionnels..."
                         rows={2}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none resize-none"
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none resize-none"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-slate-400">Date *</label>
+                        <label className="mb-1 block text-xs font-medium text-white/40">Date *</label>
                         <input
                           type="date"
                           value={reminderDate}
                           onChange={(e) => setReminderDate(e.target.value)}
-                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-slate-400">Heure *</label>
+                        <label className="mb-1 block text-xs font-medium text-white/40">Heure *</label>
                         <input
                           type="time"
                           value={reminderTime}
                           onChange={(e) => setReminderTime(e.target.value)}
-                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -1553,7 +1569,38 @@ export function ProspectView({
             )}
 
             {/* Footer */}
-            <div className="border-t border-slate-800 bg-slate-950 p-6">
+            <div className="border-t border-white/[0.08] bg-[#111111] p-6 space-y-3">
+              <button
+                onClick={async () => {
+                  if (!user) return
+                  try {
+                    if (isDismissed) {
+                      await supabase.from('pipeline_dismissals').delete().eq('user_id', user.id).eq('prospect_id', prospect.id)
+                      toast.success('Prospect rajouté au pipeline')
+                      setIsDismissed(false)
+                      onDismissFromPipeline?.(prospect.id, false)
+                    } else {
+                      await supabase.from('pipeline_dismissals').upsert({ user_id: user.id, prospect_id: prospect.id }, { onConflict: 'user_id,prospect_id' })
+                      toast.success('Prospect retiré du pipeline — il reste dans vos contacts')
+                      setIsDismissed(true)
+                      onDismissFromPipeline?.(prospect.id, true)
+                      onClose()
+                    }
+                  } catch { toast.error('Erreur') }
+                }}
+                className={cn(
+                  "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all",
+                  isDismissed
+                    ? "border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                    : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
+                )}
+              >
+                {isDismissed ? (
+                  <><Plus className="h-4 w-4" /> Rajouter au pipeline</>
+                ) : (
+                  <><X className="h-4 w-4" /> Retirer du pipeline</>
+                )}
+              </button>
               <button onClick={handleDeleteProspect} className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20">
                 <Trash2 className="h-4 w-4" /> Supprimer le prospect
               </button>

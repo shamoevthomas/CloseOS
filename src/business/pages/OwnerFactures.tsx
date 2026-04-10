@@ -97,8 +97,9 @@ export function OwnerFactures() {
       }
       setInvoices(invRes.data || [])
       setTeamMembers(list)
-      setLoading(false)
     })
+    .catch(err => console.error('[OwnerFactures] Error:', err))
+    .finally(() => setLoading(false))
   }, [effectiveUserId])
 
   // Filter invoices

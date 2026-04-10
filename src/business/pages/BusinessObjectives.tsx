@@ -81,7 +81,7 @@ const ROLE_COLORS: Record<string, string> = {
 const API_URL = '/api/business'
 
 export function BusinessObjectives() {
-  const { user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
+  const { user, isTeamMember, ownerUserId, teamMember, isSolo } = useBusinessAuth()
   const { prospects } = useBusinessProspects()
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const [objectives, setObjectives] = useState<Objective[]>([])
@@ -227,7 +227,7 @@ export function BusinessObjectives() {
   const resetForm = () => {
     setFormLabel(''); setFormMetric('revenue'); setFormTargetValue(''); setFormPeriod('monthly')
     setFormAssignedTo(''); setFormDeadline(''); setFormDescription('')
-    setFormScope('individual'); setFormGlobalType('org'); setFormAssignedRole(''); setFormAssignedMembers([])
+    setFormScope(isSolo ? 'global' : 'individual'); setFormGlobalType('org'); setFormAssignedRole(''); setFormAssignedMembers([])
     setEditingObjective(null)
   }
 
@@ -894,6 +894,7 @@ export function BusinessObjectives() {
                 {/* Assignment */}
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-300">Assigner à</label>
+                  {!isSolo && (
                   <div className="flex rounded-full bg-[#f5f3f2] dark:bg-neutral-900 p-1">
                     <button
                       type="button"
@@ -914,6 +915,7 @@ export function BusinessObjectives() {
                       <Building2 className="h-4 w-4" /> Global
                     </button>
                   </div>
+                  )}
 
                   {formScope === 'individual' ? (
                     <div>

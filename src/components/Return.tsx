@@ -194,15 +194,15 @@ export function Return() {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          <p className="text-slate-400 text-sm">Vérification du paiement...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+          <p className="text-white/40 text-sm">Vérification du paiement...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4 font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4 font-sans selection:bg-emerald-500/30">
       <div className="w-full max-w-lg bg-[#0B1121] border border-emerald-500/20 rounded-3xl p-8 shadow-2xl shadow-emerald-900/10 animate-in fade-in zoom-in duration-500">
 
         <div className="text-center mb-8">
@@ -210,18 +210,18 @@ export function Return() {
             <CheckCircle2 className="w-10 h-10 text-emerald-500" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Paiement réussi !</h1>
-          <p className="text-slate-400">
+          <p className="text-white/40">
             {/* Texte dynamique selon le plan */}
 Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl mb-6">
+        <div className="grid grid-cols-2 gap-2 p-1 bg-[#1a1a1a] rounded-xl mb-6">
           <button
             onClick={() => setActiveTab('password')}
             className={`py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${activeTab === 'password'
-              ? 'bg-slate-800 text-white shadow-lg border border-slate-700'
-              : 'text-slate-500 hover:text-slate-300'
+              ? 'bg-white/5 text-white shadow-lg border border-white/[0.08]'
+              : 'text-white/40 hover:text-white/60'
               }`}
           >
             Mot de passe
@@ -229,8 +229,8 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
           <button
             onClick={() => setActiveTab('google')}
             className={`py-2.5 px-4 rounded-lg text-sm font-bold transition-all ${activeTab === 'google'
-              ? 'bg-slate-800 text-white shadow-lg border border-slate-700'
-              : 'text-slate-500 hover:text-slate-300'
+              ? 'bg-white/5 text-white shadow-lg border border-white/[0.08]'
+              : 'text-white/40 hover:text-white/60'
               }`}
           >
             Google
@@ -246,15 +246,15 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
         {activeTab === 'password' && (
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Email (lié au paiement)</label>
+              <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 ml-1">Email (lié au paiement)</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
                 <input
                   type="email"
                   value={customerEmail}
                   disabled={customerEmail !== 'admin@closeos.fr'}
                   onChange={(e) => setCustomerEmail(e.target.value)}
-                  className={`w-full bg-slate-900/50 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-slate-300 focus:outline-none ${customerEmail === 'admin@closeos.fr' ? 'cursor-text text-white border-blue-500' : 'cursor-not-allowed opacity-70'}`}
+                  className={`w-full bg-[#1a1a1a]/50 border border-white/[0.08] rounded-xl py-3 pl-10 pr-4 text-white/60 focus:outline-none ${customerEmail === 'admin@closeos.fr' ? 'cursor-text text-white border-emerald-500' : 'cursor-not-allowed opacity-70'}`}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <Lock className="h-4 w-4 text-emerald-500" />
@@ -263,24 +263,24 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Votre Nom</label>
+              <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 ml-1">Votre Nom</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
                   placeholder="Ex: Thomas Shelby"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
+                  className="w-full bg-[#1a1a1a] border border-white/[0.08] rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-white/10 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Choisir un mot de passe</label>
+              <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 ml-1">Choisir un mot de passe</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
                 <input
                   type="password"
                   value={password}
@@ -288,7 +288,7 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
                   required
                   minLength={8}
                   placeholder="••••••••"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
+                  className="w-full bg-[#1a1a1a] border border-white/[0.08] rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-white/10 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-all"
                 />
               </div>
             </div>
@@ -296,7 +296,7 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Activer mon compte"}
               {!authLoading && <LayoutDashboard className="h-4 w-4" />}
@@ -306,19 +306,19 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
 
         {activeTab === 'google' && (
           <div className="text-center py-4">
-            <p className="text-slate-400 mb-6 text-sm">
+            <p className="text-white/40 mb-6 text-sm">
               Utilisez votre compte Google pour accéder directement à l'espace membre.
               <br />
-              <span className="text-xs text-slate-500">(L'email doit correspondre à celui utilisé pour le paiement)</span>
+              <span className="text-xs text-white/40">(L'email doit correspondre à celui utilisé pour le paiement)</span>
             </p>
 
             <button
               onClick={handleGoogleLogin}
               disabled={authLoading}
-              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+              className="w-full bg-white hover:bg-white/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50"
             >
               {authLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin text-slate-900" />
+                <Loader2 className="h-5 w-5 animate-spin text-black" />
               ) : (
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="Google" />
               )}

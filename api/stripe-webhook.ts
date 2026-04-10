@@ -67,6 +67,42 @@ function emailWrap(badge: string, badgeColor: string, borderColor: string, title
 </body></html>`;
 }
 
+// ─── Business email wrapper (light theme DA) ────────────────────────────────
+
+function businessEmailWrap(badge: string, heading: string, bodyHtml: string, ctaText: string, ctaUrl: string) {
+    return `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+<tr><td align="center" style="padding-bottom:32px;">
+<span style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;color:#111;letter-spacing:-0.04em;">Close</span><span style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;background:linear-gradient(135deg,#ff4b72,#a03cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">OS</span>
+</td></tr>
+<tr><td>
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fff;border-radius:48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
+<tr><td style="padding:64px 48px;">
+<span style="display:inline-block;background-color:#fff0f0;color:#dc2626;padding:6px 16px;border-radius:50px;font-size:12px;font-weight:800;text-transform:uppercase;font-family:'Manrope',Arial,sans-serif;letter-spacing:0.05em;">${badge}</span>
+<h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:26px;color:#111;letter-spacing:-0.04em;line-height:1.1;margin:24px 0 16px;">${heading}</h1>
+<div style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;font-size:15px;line-height:1.6;">${bodyHtml}</div>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;">
+<tr><td align="center">
+<a href="${ctaUrl}" style="display:inline-block;background-color:#111;color:#fff;text-decoration:none;padding:16px 32px;border-radius:48px;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;">${ctaText}</a>
+</td></tr></table>
+</td></tr></table>
+</td></tr>
+<tr><td align="center" style="padding-top:32px;">
+<p style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;opacity:0.5;font-size:12px;margin:0 0 4px;">&copy; 2026 CloseOS.fr</p>
+<p style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;opacity:0.5;font-size:12px;margin:0;">
+<a href="https://closeos.fr/cgu" style="color:#1b1c1b;text-decoration:none;">CGU</a> &middot; <a href="https://closeos.fr/cgv" style="color:#1b1c1b;text-decoration:none;">CGV</a> &middot; <a href="https://closeos.fr/confidentialite" style="color:#1b1c1b;text-decoration:none;">Confidentialit&eacute;</a>
+</p>
+</td></tr></table>
+</td></tr></table>
+</body></html>`;
+}
+
 async function sendBrevoEmail(to: string, subject: string, html: string) {
     try {
         const res = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -170,6 +206,64 @@ export default async function handler(req: Request) {
         case 'checkout.session.completed': {
             const session = event.data.object as Stripe.Checkout.Session;
             console.log(`💰 Checkout completed for session ${session.id}`);
+
+            // ─── Extra org join payment ───
+            if (session.metadata?.action === 'join-extra-org') {
+                const { token, user_id } = session.metadata;
+                if (!token || !user_id) {
+                    console.error('❌ Missing token or user_id in org join metadata');
+                    break;
+                }
+                console.log(`🏢 Processing extra org join for user ${user_id}`);
+                try {
+                    // Validate invitation
+                    const { data: invitation, error: invErr } = await supabaseAdmin
+                        .from('business_invitations')
+                        .select('*')
+                        .eq('token', token)
+                        .single();
+                    if (invErr || !invitation || invitation.used) {
+                        console.error('❌ Invalid or used invitation:', token);
+                        break;
+                    }
+                    // Mark invitation as used
+                    await supabaseAdmin.from('business_invitations').update({ used: true, used_by: user_id }).eq('id', invitation.id);
+                    // Get user info
+                    const { data: userProfile } = await supabaseAdmin.from('profiles').select('full_name, avatar_url').eq('id', user_id).single();
+                    const firstName = userProfile?.full_name?.split(' ')[0] || '';
+                    const lastName = userProfile?.full_name?.split(' ').slice(1).join(' ') || '';
+                    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(user_id);
+                    const email = authUser?.user?.email || '';
+                    // Check existing membership for this specific org
+                    const { data: existing } = await supabaseAdmin.from('business_team_members').select('id').eq('user_id', user_id).eq('business_owner_id', invitation.inviter_id).maybeSingle();
+                    let memberId: string;
+                    if (existing) {
+                        await supabaseAdmin.from('business_team_members').update({
+                            role: invitation.role, can_manage_campaigns: !!invitation.can_manage_campaigns,
+                            setter_scope: invitation.setter_scope || null, custom_permissions: invitation.custom_permissions || null,
+                            first_name: firstName, last_name: lastName, email,
+                            avatar_url: userProfile?.avatar_url || null, has_onboarded: true, onboarding_acknowledged: true,
+                        }).eq('id', existing.id);
+                        memberId = existing.id;
+                    } else {
+                        const { data: member, error: memberError } = await supabaseAdmin.from('business_team_members').insert({
+                            business_owner_id: invitation.inviter_id, user_id,
+                            role: invitation.role, can_manage_campaigns: !!invitation.can_manage_campaigns,
+                            setter_scope: invitation.setter_scope || null, custom_permissions: invitation.custom_permissions || null,
+                            first_name: firstName, last_name: lastName, email,
+                            avatar_url: userProfile?.avatar_url || null, has_onboarded: true, onboarding_acknowledged: true,
+                        }).select('id').single();
+                        if (memberError) { console.error('❌ Error creating team member:', memberError); break; }
+                        memberId = member.id;
+                    }
+                    // Update profiles to point to new org
+                    await supabaseAdmin.from('profiles').update({ business_member_id: memberId, business_owner_id: invitation.inviter_id }).eq('id', user_id);
+                    console.log(`✅ Extra org join completed: user ${user_id} → org ${invitation.inviter_id}`);
+                } catch (err: any) {
+                    console.error('❌ Error processing extra org join:', err.message);
+                }
+                break;
+            }
 
             const customerId = session.customer as string;
             const customerEmail = session.customer_details?.email;
@@ -374,6 +468,20 @@ export default async function handler(req: Request) {
                     current_period_end: new Date((invoice.lines.data[0].period.end * 1000)).toISOString()
                 })
                 .eq('stripe_customer_id', customerId);
+
+            // Clear seat grace period if payment succeeded (Business side)
+            const { data: bizUser } = await supabaseAdmin
+                .from('business_users')
+                .select('id')
+                .eq('stripe_customer_id', customerId)
+                .maybeSingle();
+            if (bizUser) {
+                await supabaseAdmin
+                    .from('business_settings')
+                    .update({ seat_grace_deadline: null })
+                    .eq('user_id', bizUser.id)
+                    .not('seat_grace_deadline', 'is', null);
+            }
             break;
         }
 
@@ -436,6 +544,60 @@ export default async function handler(req: Request) {
                     'https://closeos.fr/dashboard'
                 ));
             }
+
+            // ─── Business seat payment failed → Start grace period ───
+            const ALL_SEAT_PRICE_IDS = [
+                'price_1TKhn633xpuYLywq4DdHTZbL', 'price_1TKhn733xpuYLywqpQE2jpBR', 'price_1TKhn733xpuYLywq2e7YpB2O',
+                'price_1TKhn833xpuYLywqSChhELST', 'price_1TKhnA33xpuYLywqDSCaLXSm', 'price_1TKhnB33xpuYLywqzvpFxImH',
+                'price_1TKhnC33xpuYLywqM09DxTtd', 'price_1TKhnD33xpuYLywqIVBStxhu', 'price_1TKhnD33xpuYLywq6lwoiAOV',
+            ];
+            const hasSeatItems = invoice.lines?.data?.some((line: any) => ALL_SEAT_PRICE_IDS.includes(line.price?.id));
+
+            if (hasSeatItems) {
+                const { data: bizOwner } = await supabaseAdmin
+                    .from('business_users')
+                    .select('id, full_name')
+                    .eq('stripe_customer_id', customerId)
+                    .maybeSingle();
+
+                if (bizOwner) {
+                    const { data: bizSettings } = await supabaseAdmin
+                        .from('business_settings')
+                        .select('seat_grace_deadline')
+                        .eq('user_id', bizOwner.id)
+                        .single();
+
+                    if (!bizSettings?.seat_grace_deadline) {
+                        const deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+                        await supabaseAdmin
+                            .from('business_settings')
+                            .update({ seat_grace_deadline: deadline })
+                            .eq('user_id', bizOwner.id);
+
+                        console.log(`⏳ Seat grace period set for ${bizOwner.id} until ${deadline}`);
+
+                        const { data: { user: bizAuthUser } } = await supabaseAdmin.auth.admin.getUserById(bizOwner.id);
+                        if (bizAuthUser?.email) {
+                            const ownerName = bizOwner.full_name?.split(' ')[0] || 'Bonjour';
+                            await sendBrevoEmail(bizAuthUser.email, '\u00c9chec de paiement \u2014 Action requise', businessEmailWrap(
+                                'Action requise',
+                                `${ownerName}, le paiement de vos si\u00e8ges a \u00e9chou\u00e9.`,
+                                `<p>Le renouvellement du paiement de vos si\u00e8ges suppl\u00e9mentaires n'a pas pu \u00eatre effectu\u00e9.</p>
+                                <p>Vous avez <strong>5 jours</strong> pour mettre \u00e0 jour votre moyen de paiement. Pass\u00e9 ce d\u00e9lai, les membres ajout\u00e9s en suppl\u00e9ment seront automatiquement supprim\u00e9s de votre organisation, ainsi que toutes leurs donn\u00e9es.</p>
+                                <div style="background-color:#f5f3f2;border-radius:24px;padding:24px 20px;margin-top:20px;">
+                                    <p style="margin:0 0 8px;font-weight:600;color:#111;">\u26a0\ufe0f Ce qu'il se passe :</p>
+                                    <p style="margin:0 0 4px;">\u2022 Vos membres suppl\u00e9mentaires restent actifs pendant 5 jours</p>
+                                    <p style="margin:0 0 4px;">\u2022 Sans paiement, ils seront supprim\u00e9s automatiquement</p>
+                                    <p style="margin:0;">\u2022 Mettez \u00e0 jour votre paiement pour \u00e9viter toute interruption</p>
+                                </div>`,
+                                'Mettre \u00e0 jour le paiement',
+                                'https://closeos.app/business/organisation'
+                            ));
+                        }
+                    }
+                }
+            }
+
             break;
         }
 

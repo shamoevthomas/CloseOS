@@ -153,15 +153,15 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg rounded-2xl bg-slate-900 p-6 shadow-xl ring-1 ring-slate-800">
+      <div className="relative w-full max-w-lg rounded-2xl bg-[#1a1a1a] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.2)] border border-white/[0.08]">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-xl font-bold text-white">Nouveau Prospect</h2>
-            <p className="mt-1 text-sm text-slate-400">Ajouter un nouveau prospect au pipeline</p>
+            <p className="mt-1 text-sm text-white/40">Ajouter un nouveau prospect au pipeline</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
+          <button onClick={onClose} className="rounded-lg p-2 text-white/40 hover:bg-white/5 hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -171,71 +171,71 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
           {/* NOUVEAU : Prénom et Nom séparés */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">Prénom</label>
+              <label className="mb-2 block text-sm font-medium text-white/60">Prénom</label>
               <input
                 type="text"
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 placeholder="Ex: Jean"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">Nom *</label>
+              <label className="mb-2 block text-sm font-medium text-white/60">Nom *</label>
               <input
                 type="text"
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 placeholder="Ex: Dupont"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Email</label>
+            <label className="mb-2 block text-sm font-medium text-white/60">Email</label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="Ex: jean.dupont@entreprise.com"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Téléphone</label>
+            <label className="mb-2 block text-sm font-medium text-white/60">Téléphone</label>
             <input
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="Ex: +33 6 12 34 56 78"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-300">
-              <Building2 className="h-4 w-4 text-blue-400" />
-              Entreprise <span className="text-slate-500 font-normal">(facultatif)</span>
+            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white/60">
+              <Building2 className="h-4 w-4 text-emerald-400" />
+              Entreprise <span className="text-white/40 font-normal">(facultatif)</span>
             </label>
             <input
               type="text"
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
               placeholder="Ex: Tech Corp"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
             />
           </div>
 
           {/* SÉLECTEUR D'OFFRE */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-300">Offre</label>
+            <label className="mb-2 block text-sm font-medium text-white/60">Offre</label>
             <select
               value={formData.offerId}
               onChange={(e) => handleOfferChange(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
             >
               <option value="">-- Sélectionner une offre --</option>
               {activeOffers.map((offer) => (
@@ -249,14 +249,14 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
           {/* SÉLECTEUR DE FORMULE */}
           {hasFormulas && (
             <div className="animate-in fade-in slide-in-from-top-2">
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-400">
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-400">
                 <Tag className="h-4 w-4" />
                 Choix de la formule *
               </label>
               <select
                 value={selectedFormulaId}
                 onChange={(e) => handleFormulaChange(e.target.value)}
-                className="w-full rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                 required
               >
                 <option value="">-- Sélectionner la formule --</option>
@@ -283,14 +283,14 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
           <div className="mt-6 flex gap-3">
             <button
               type="submit"
-              className="flex-1 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-600"
+              className="flex-1 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
             >
               Créer le prospect
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-700"
+              className="rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10"
             >
               Annuler
             </button>

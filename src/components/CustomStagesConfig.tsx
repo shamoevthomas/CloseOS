@@ -135,16 +135,16 @@ export function CustomStagesConfig({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
+      <div className="relative w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
         {/* Header */}
-        <div className="border-b border-slate-800 p-6 pb-0">
+        <div className="border-b border-white/[0.08] p-6 pb-0">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-bold text-white">Personnaliser le pipeline</h2>
-              <p className="mt-1 text-sm text-slate-400">Gérez vos étapes et tags personnalisés</p>
+              <p className="mt-1 text-sm text-white/40">Gérez vos étapes et tags personnalisés</p>
             </div>
-            <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+            <button onClick={onClose} className="rounded-lg p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -156,8 +156,8 @@ export function CustomStagesConfig({
               className={cn(
                 'rounded-t-lg px-4 py-2 text-sm font-medium transition-colors',
                 activeTab === 'stages'
-                  ? 'bg-slate-800 text-white'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  ? 'bg-white/5 text-white'
+                  : 'text-white/40 hover:text-white/60 hover:bg-white/[0.03]'
               )}
             >
               Étapes
@@ -167,13 +167,13 @@ export function CustomStagesConfig({
               className={cn(
                 'rounded-t-lg px-4 py-2 text-sm font-medium transition-colors',
                 activeTab === 'tags'
-                  ? 'bg-slate-800 text-white'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  ? 'bg-white/5 text-white'
+                  : 'text-white/40 hover:text-white/60 hover:bg-white/[0.03]'
               )}
             >
               Tags
               {tags.length > 0 && (
-                <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-700 px-1.5 text-[10px] font-bold text-slate-300">
+                <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white/10 px-1.5 text-[10px] font-bold text-white/60">
                   {tags.length}
                 </span>
               )}
@@ -187,13 +187,13 @@ export function CustomStagesConfig({
             <>
               {/* Default stages */}
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Étapes par défaut</h3>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-white/40">Étapes par défaut</h3>
                 <div className="space-y-2">
                   {defaultStages.map(stage => (
-                    <div key={stage.id} className="flex items-center gap-3 rounded-lg bg-slate-800/30 px-4 py-3 opacity-60">
+                    <div key={stage.id} className="flex items-center gap-3 rounded-xl bg-white/[0.02] border border-white/5 px-4 py-3 opacity-60">
                       <span className={cn('h-3 w-3 rounded-full shrink-0', stage.color)} />
-                      <span className="text-sm text-slate-400">{stage.name}</span>
-                      <span className="ml-auto text-xs text-slate-600">Par défaut</span>
+                      <span className="text-sm text-white/40">{stage.name}</span>
+                      <span className="ml-auto text-xs text-white/20">Par défaut</span>
                     </div>
                   ))}
                 </div>
@@ -201,18 +201,18 @@ export function CustomStagesConfig({
 
               {/* Custom stages */}
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-white/40">
                   Étapes personnalisées ({customStages.length})
                 </h3>
                 {customStages.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-slate-700 py-6 text-center">
-                    <p className="text-sm text-slate-500">Aucune étape personnalisée</p>
-                    <p className="mt-1 text-xs text-slate-600">Ajoutez des étapes ci-dessous</p>
+                  <div className="rounded-xl border border-dashed border-white/[0.08] py-6 text-center">
+                    <p className="text-sm text-white/40">Aucune étape personnalisée</p>
+                    <p className="mt-1 text-xs text-white/30">Ajoutez des étapes ci-dessous</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {customStages.map((stage, index) => (
-                      <div key={stage.id} className="group flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 px-4 py-3">
+                      <div key={stage.id} className="group flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] hover:border-emerald-500/30 hover:bg-white/[0.04] px-4 py-3">
                         {editingId === stage.id ? (
                           <>
                             <div className="flex gap-2 flex-1">
@@ -220,7 +220,7 @@ export function CustomStagesConfig({
                                 type="text"
                                 value={editName}
                                 onChange={e => setEditName(e.target.value)}
-                                className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+                                className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white focus:border-emerald-500 focus:outline-none"
                                 autoFocus
                                 onKeyDown={e => e.key === 'Enter' && handleSaveEdit()}
                               />
@@ -231,7 +231,7 @@ export function CustomStagesConfig({
                                     onClick={() => setEditColor(c)}
                                     className={cn(
                                       'h-6 w-6 rounded-full border-2 transition-all',
-                                      editColor === c ? 'border-white scale-110' : 'border-transparent hover:border-slate-500'
+                                      editColor === c ? 'border-white scale-110' : 'border-transparent hover:border-white/30'
                                     )}
                                     style={{ backgroundColor: c }}
                                   />
@@ -241,7 +241,7 @@ export function CustomStagesConfig({
                             <button onClick={handleSaveEdit} className="rounded p-1.5 text-emerald-400 hover:bg-emerald-500/10">
                               <Check className="h-4 w-4" />
                             </button>
-                            <button onClick={() => setEditingId(null)} className="rounded p-1.5 text-slate-400 hover:bg-slate-700">
+                            <button onClick={() => setEditingId(null)} className="rounded p-1.5 text-white/40 hover:bg-white/5">
                               <X className="h-4 w-4" />
                             </button>
                           </>
@@ -253,7 +253,7 @@ export function CustomStagesConfig({
                                 Supprimer "{stage.name}" ?
                               </p>
                               {(prospectsCountByStage[`custom_${stage.id}`] || 0) > 0 && (
-                                <p className="text-xs text-slate-400 mt-0.5">
+                                <p className="text-xs text-white/40 mt-0.5">
                                   {prospectsCountByStage[`custom_${stage.id}`]} prospect(s) seront déplacés vers "Prospect"
                                 </p>
                               )}
@@ -266,7 +266,7 @@ export function CustomStagesConfig({
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(null)}
-                              className="rounded-lg px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-700"
+                              className="rounded-lg px-3 py-1.5 text-xs text-white/40 hover:bg-white/5"
                             >
                               Annuler
                             </button>
@@ -274,25 +274,25 @@ export function CustomStagesConfig({
                         ) : (
                           <>
                             <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
-                            <span className="flex-1 text-sm text-slate-200">{stage.name}</span>
-                            <span className="text-xs text-slate-500">
+                            <span className="flex-1 text-sm text-white/60">{stage.name}</span>
+                            <span className="text-xs text-white/40">
                               {prospectsCountByStage[`custom_${stage.id}`] || 0}
                             </span>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button onClick={() => handleMoveUp(index)} disabled={index === 0}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30">
+                                className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white disabled:opacity-30">
                                 <ChevronUp className="h-3.5 w-3.5" />
                               </button>
                               <button onClick={() => handleMoveDown(index)} disabled={index === customStages.length - 1}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-white disabled:opacity-30">
+                                className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white disabled:opacity-30">
                                 <ChevronDown className="h-3.5 w-3.5" />
                               </button>
                               <button onClick={() => handleStartEdit(stage)}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-blue-400">
+                                className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-emerald-400">
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
                               <button onClick={() => setDeleteConfirm(stage.id)}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-red-400">
+                                className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-red-400">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </div>
@@ -305,19 +305,19 @@ export function CustomStagesConfig({
               </div>
 
               {/* Add new stage */}
-              <div className="rounded-xl border border-slate-700 bg-slate-800/30 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-slate-300">Ajouter une étape</h3>
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-4">
+                <h3 className="mb-3 text-sm font-semibold text-white/60">Ajouter une étape</h3>
                 <div className="space-y-3">
                   <input
                     type="text"
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
                     placeholder="Nom de l'étape (ex: Négociation, Démo planifiée...)"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
                     onKeyDown={e => e.key === 'Enter' && handleAdd()}
                   />
                   <div>
-                    <p className="mb-2 text-xs text-slate-500">Couleur</p>
+                    <p className="mb-2 text-xs text-white/40">Couleur</p>
                     <div className="flex flex-wrap gap-2">
                       {COLOR_PALETTE.map(c => (
                         <button
@@ -325,7 +325,7 @@ export function CustomStagesConfig({
                           onClick={() => setNewColor(c)}
                           className={cn(
                             'h-8 w-8 rounded-full border-2 transition-all',
-                            newColor === c ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:border-slate-500'
+                            newColor === c ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:border-white/30'
                           )}
                           style={{ backgroundColor: c }}
                         />
@@ -335,7 +335,7 @@ export function CustomStagesConfig({
                   <button
                     onClick={handleAdd}
                     disabled={!newName.trim() || isAdding}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Plus className="h-4 w-4" />
                     Ajouter l'étape
@@ -348,20 +348,20 @@ export function CustomStagesConfig({
             <>
               {/* Tag list */}
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-white/40">
                   Vos tags ({tags.length})
                 </h3>
                 {tags.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-slate-700 py-6 text-center">
-                    <p className="text-sm text-slate-500">Aucun tag</p>
-                    <p className="mt-1 text-xs text-slate-600">Créez votre premier tag ci-dessous</p>
+                  <div className="rounded-xl border border-dashed border-white/[0.08] py-6 text-center">
+                    <p className="text-sm text-white/40">Aucun tag</p>
+                    <p className="mt-1 text-xs text-white/30">Créez votre premier tag ci-dessous</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {tags.map(tag => {
                       const count = getTagProspectCount(tag.id)
                       return (
-                        <div key={tag.id} className="group flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-800/50 px-4 py-3">
+                        <div key={tag.id} className="group flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] hover:border-emerald-500/30 hover:bg-white/[0.04] px-4 py-3">
                           {editingTagId === tag.id ? (
                             <>
                               <div className="flex gap-2 flex-1">
@@ -369,7 +369,7 @@ export function CustomStagesConfig({
                                   type="text"
                                   value={editTagName}
                                   onChange={e => setEditTagName(e.target.value)}
-                                  className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
+                                  className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white focus:border-emerald-500 focus:outline-none"
                                   autoFocus
                                   onKeyDown={e => e.key === 'Enter' && handleSaveEditTag()}
                                 />
@@ -380,7 +380,7 @@ export function CustomStagesConfig({
                                       onClick={() => setEditTagColor(c)}
                                       className={cn(
                                         'h-6 w-6 rounded-full border-2 transition-all',
-                                        editTagColor === c ? 'border-white scale-110' : 'border-transparent hover:border-slate-500'
+                                        editTagColor === c ? 'border-white scale-110' : 'border-transparent hover:border-white/30'
                                       )}
                                       style={{ backgroundColor: c }}
                                     />
@@ -390,7 +390,7 @@ export function CustomStagesConfig({
                               <button onClick={handleSaveEditTag} className="rounded p-1.5 text-emerald-400 hover:bg-emerald-500/10">
                                 <Check className="h-4 w-4" />
                               </button>
-                              <button onClick={() => setEditingTagId(null)} className="rounded p-1.5 text-slate-400 hover:bg-slate-700">
+                              <button onClick={() => setEditingTagId(null)} className="rounded p-1.5 text-white/40 hover:bg-white/5">
                                 <X className="h-4 w-4" />
                               </button>
                             </>
@@ -400,7 +400,7 @@ export function CustomStagesConfig({
                               <div className="flex-1">
                                 <p className="text-sm text-amber-300">Supprimer "{tag.name}" ?</p>
                                 {count > 0 && (
-                                  <p className="text-xs text-slate-400 mt-0.5">
+                                  <p className="text-xs text-white/40 mt-0.5">
                                     {count} prospect(s) ont ce tag, il sera retiré
                                   </p>
                                 )}
@@ -413,7 +413,7 @@ export function CustomStagesConfig({
                               </button>
                               <button
                                 onClick={() => setDeleteTagConfirm(null)}
-                                className="rounded-lg px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-700"
+                                className="rounded-lg px-3 py-1.5 text-xs text-white/40 hover:bg-white/5"
                               >
                                 Annuler
                               </button>
@@ -421,15 +421,15 @@ export function CustomStagesConfig({
                           ) : (
                             <>
                               <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
-                              <span className="flex-1 text-sm text-slate-200">{tag.name}</span>
-                              <span className="text-xs text-slate-500">({count})</span>
+                              <span className="flex-1 text-sm text-white/60">{tag.name}</span>
+                              <span className="text-xs text-white/40">({count})</span>
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => handleStartEditTag(tag)}
-                                  className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-blue-400">
+                                  className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-emerald-400">
                                   <Pencil className="h-3.5 w-3.5" />
                                 </button>
                                 <button onClick={() => setDeleteTagConfirm(tag.id)}
-                                  className="rounded p-1 text-slate-400 hover:bg-slate-700 hover:text-red-400">
+                                  className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-red-400">
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
@@ -443,19 +443,19 @@ export function CustomStagesConfig({
               </div>
 
               {/* Add new tag */}
-              <div className="rounded-xl border border-slate-700 bg-slate-800/30 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-slate-300">Ajouter un tag</h3>
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-4">
+                <h3 className="mb-3 text-sm font-semibold text-white/60">Ajouter un tag</h3>
                 <div className="space-y-3">
                   <input
                     type="text"
                     value={newTagName}
                     onChange={e => setNewTagName(e.target.value)}
                     placeholder="Nom du tag (ex: VIP, Chaud, Prioritaire...)"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
                     onKeyDown={e => e.key === 'Enter' && handleAddTag()}
                   />
                   <div>
-                    <p className="mb-2 text-xs text-slate-500">Couleur</p>
+                    <p className="mb-2 text-xs text-white/40">Couleur</p>
                     <div className="flex flex-wrap gap-2">
                       {COLOR_PALETTE.map(c => (
                         <button
@@ -463,7 +463,7 @@ export function CustomStagesConfig({
                           onClick={() => setNewTagColor(c)}
                           className={cn(
                             'h-8 w-8 rounded-full border-2 transition-all',
-                            newTagColor === c ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:border-slate-500'
+                            newTagColor === c ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:border-white/30'
                           )}
                           style={{ backgroundColor: c }}
                         />
@@ -473,7 +473,7 @@ export function CustomStagesConfig({
                   <button
                     onClick={handleAddTag}
                     disabled={!newTagName.trim() || isAddingTag}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Plus className="h-4 w-4" />
                     Ajouter le tag

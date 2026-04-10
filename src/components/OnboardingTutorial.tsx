@@ -29,8 +29,8 @@ interface Step {
 const STEPS: Step[] = [
   {
     icon: Sparkles,
-    iconColor: 'text-blue-400',
-    iconBg: 'bg-blue-500/10',
+    iconColor: 'text-emerald-400',
+    iconBg: 'bg-emerald-500/10',
     title: 'Bienvenue sur CloseOS Sales !',
     description: 'Votre cockpit de closer indépendant. Ce guide vous accompagne pour configurer votre espace en quelques minutes.',
     subSteps: [],
@@ -56,8 +56,8 @@ const STEPS: Step[] = [
   },
   {
     icon: Calendar,
-    iconColor: 'text-blue-400',
-    iconBg: 'bg-blue-500/10',
+    iconColor: 'text-emerald-400',
+    iconBg: 'bg-emerald-500/10',
     title: 'Connectez Google Calendar',
     description: 'Synchronisez votre agenda pour voir vos événements et créer des RDV avec lien Google Meet automatique.',
     subSteps: [
@@ -183,21 +183,21 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
       <div className="fixed bottom-6 right-6 z-[200] animate-in slide-in-from-bottom-4 duration-300">
         <button
           onClick={() => setMinimized(false)}
-          className="group flex items-center gap-3 rounded-2xl border border-blue-500/30 bg-slate-900/95 px-5 py-3.5 shadow-2xl backdrop-blur-xl hover:border-blue-500/50 transition-all"
+          className="group flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-white/[0.03] px-5 py-3.5 shadow-[0_20px_40px_rgba(0,0,0,0.2)] backdrop-blur-2xl hover:border-emerald-500/50 transition-all"
         >
           <div className="relative">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/20">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20">
               <current.icon className={cn('h-4.5 w-4.5', current.iconColor)} />
             </div>
-            <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[9px] font-bold text-white">
+            <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-black">
               {step + 1}
             </div>
           </div>
           <div className="text-left">
             <p className="text-xs font-bold text-white">{current.title}</p>
-            <p className="text-[10px] text-slate-400">Cliquez pour reprendre le guide</p>
+            <p className="text-[10px] text-white/40">Cliquez pour reprendre le guide</p>
           </div>
-          <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-white transition-colors" />
+          <ChevronRight className="h-4 w-4 text-white/40 group-hover:text-white transition-colors" />
         </button>
       </div>
     )
@@ -205,12 +205,12 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
 
   // Full modal
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="relative w-full max-w-lg mx-4 mb-4 sm:mb-0 rounded-3xl border border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur-xl overflow-hidden">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="relative w-full max-w-lg mx-4 mb-4 sm:mb-0 rounded-3xl border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] backdrop-blur-2xl overflow-hidden">
         {/* Progress bar */}
-        <div className="h-1 bg-slate-800">
+        <div className="h-1 bg-white/5">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-500 ease-out"
+            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500 ease-out"
             style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
           />
         </div>
@@ -220,14 +220,14 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
           {current.targetPage && (
             <button
               onClick={() => setMinimized(true)}
-              className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-500 hover:text-white hover:bg-slate-800 transition-colors uppercase tracking-wider"
+              className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-white/40 hover:text-white hover:bg-white/5 transition-colors uppercase tracking-wider"
             >
               Minimiser
             </button>
           )}
           <button
             onClick={onComplete}
-            className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
             title="Fermer le guide"
           >
             <X className="h-5 w-5" />
@@ -238,7 +238,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
         <div className="p-8 pt-6">
           {/* Step counter */}
           <div className="flex items-center gap-2 mb-6">
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
+            <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">
               Étape {step + 1} sur {STEPS.length}
             </p>
             {current.targetPage && location.pathname === current.targetPage && (
@@ -258,22 +258,22 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
           <h2 className="text-2xl font-extrabold text-white mb-3 tracking-tight">{current.title}</h2>
 
           {/* Description */}
-          <p className="text-sm text-slate-400 leading-relaxed mb-4">{current.description}</p>
+          <p className="text-sm text-white/40 leading-relaxed mb-4">{current.description}</p>
 
           {/* Sub-steps (concrete actions) */}
           {current.subSteps.length > 0 && (
-            <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 p-4 mb-5">
+            <div className="rounded-xl bg-white/5 border border-white/[0.08] p-4 mb-5">
               <div className="flex items-center gap-2 mb-3">
-                <MousePointerClick className="h-3.5 w-3.5 text-blue-400" />
-                <p className="text-[11px] font-bold text-blue-400 uppercase tracking-wider">À faire sur cette page</p>
+                <MousePointerClick className="h-3.5 w-3.5 text-emerald-400" />
+                <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">À faire sur cette page</p>
               </div>
               <div className="space-y-2.5">
                 {current.subSteps.map((sub, i) => (
                   <div key={i} className="flex items-start gap-3">
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-slate-300 mt-0.5">
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-bold text-white/60 mt-0.5">
                       {i + 1}
                     </div>
-                    <p className="text-sm text-slate-300 leading-relaxed">{sub.text}</p>
+                    <p className="text-sm text-white/60 leading-relaxed">{sub.text}</p>
                   </div>
                 ))}
               </div>
@@ -286,7 +286,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
               {current.routine.map((item, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
-                  <p className="text-xs text-slate-300 leading-relaxed">{item}</p>
+                  <p className="text-xs text-white/60 leading-relaxed">{item}</p>
                 </div>
               ))}
             </div>
@@ -294,23 +294,23 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
 
           {/* Support & Guide */}
           {current.support && (
-            <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 p-4 mb-5 space-y-2.5">
+            <div className="rounded-xl bg-white/5 border border-white/[0.08] p-4 mb-5 space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <Info className="h-4 w-4 text-slate-400 shrink-0" />
-                <p className="text-xs text-slate-300">Besoin d'aide ? Contactez-nous : <a href={`mailto:${current.support.email}`} className="text-blue-400 hover:text-blue-300 font-bold">{current.support.email}</a></p>
+                <Info className="h-4 w-4 text-white/40 shrink-0" />
+                <p className="text-xs text-white/60">Besoin d'aide ? Contactez-nous : <a href={`mailto:${current.support.email}`} className="text-emerald-400 hover:text-emerald-300 font-bold">{current.support.email}</a></p>
               </div>
               <div className="flex items-center gap-2.5">
-                <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
-                <a href={current.support.guideUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 font-bold">Consultez le guide d'onboarding complet</a>
+                <ArrowRight className="h-4 w-4 text-white/40 shrink-0" />
+                <a href={current.support.guideUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:text-emerald-300 font-bold">Consultez le guide d'onboarding complet</a>
               </div>
             </div>
           )}
 
           {/* Tip */}
           {current.tip && (
-            <div className="flex items-start gap-3 rounded-xl bg-blue-500/5 border border-blue-500/10 px-4 py-3 mb-6">
-              <Info className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-blue-300/80 leading-relaxed">{current.tip}</p>
+            <div className="flex items-start gap-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10 px-4 py-3 mb-6">
+              <Info className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-emerald-300/80 leading-relaxed">{current.tip}</p>
             </div>
           )}
 
@@ -320,7 +320,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
             {!isFirst && (
               <button
                 onClick={handlePrev}
-                className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -330,7 +330,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
             {current.targetPage && (
               <button
                 onClick={handleAction}
-                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold transition-colors"
               >
                 <Target className="h-4 w-4" />
                 {current.actionLabel}
@@ -341,10 +341,10 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
             <button
               onClick={handleNext}
               className={cn(
-                'flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-colors',
+                'flex items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-bold transition-colors',
                 current.targetPage
-                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                  : 'flex-1 bg-blue-600 hover:bg-blue-500 text-white'
+                  ? 'bg-white/[0.03] border border-white/[0.08] text-white/80 hover:bg-white/10'
+                  : 'flex-1 bg-emerald-500 hover:bg-emerald-400 text-black'
               )}
             >
               {isLast ? 'Terminer' : current.targetPage ? 'Passer' : 'Suivant'}
@@ -356,7 +356,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
           {!isLast && (
             <button
               onClick={onComplete}
-              className="w-full mt-4 text-center text-[11px] text-slate-600 hover:text-slate-400 transition-colors"
+              className="w-full mt-4 text-center text-[11px] text-white/30 hover:text-white/60 transition-colors"
             >
               Passer tout le guide
             </button>
@@ -371,7 +371,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
               onClick={() => { setStep(i); setMinimized(false) }}
               className={cn(
                 'h-1.5 rounded-full transition-all duration-300',
-                i === step ? 'w-6 bg-blue-500' : i < step ? 'w-1.5 bg-blue-500/50' : 'w-1.5 bg-slate-700'
+                i === step ? 'w-6 bg-emerald-500' : i < step ? 'w-1.5 bg-emerald-500/50' : 'w-1.5 bg-white/10'
               )}
             />
           ))}

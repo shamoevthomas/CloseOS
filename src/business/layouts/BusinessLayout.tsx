@@ -2,7 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BusinessSidebar } from '../components/BusinessSidebar'
 import { BusinessSettingsModal } from '../components/BusinessSettingsModal'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
-import { Menu, Globe, X } from 'lucide-react'
+import { Menu, Globe, X, AlertTriangle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -10,6 +10,7 @@ import { BusinessThemeProvider, useTheme } from '../contexts/BusinessThemeContex
 import { supabase } from '../../lib/supabase'
 import { getBrowserTimezone, getTimezoneLabel } from '../../lib/timezone'
 import BusinessVerification from '../pages/BusinessVerification'
+import { BusinessPaywallModal } from '../components/BusinessPaywallModal'
 
 const OWNER_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/dashboard': { title: 'Dashboard', subtitle: "Vue d'ensemble de votre business" },
@@ -52,7 +53,7 @@ const TEAM_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 export function BusinessLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isTeamMember, teamMember, businessProfile, user, loading, refreshProfile, needsVerification, setNeedsVerification, logout, hasOnboarded, isSalesUser, authError } = useBusinessAuth()
+  const { isTeamMember, teamMember, businessProfile, businessSettings, user, loading, refreshProfile, needsVerification, setNeedsVerification, logout, hasOnboarded, isSalesUser, authError, isLifetimeFree, isTrialActive, isSubscribed } = useBusinessAuth()
   const pageTitles = isTeamMember ? TEAM_PAGE_TITLES : OWNER_PAGE_TITLES
 
   // Handle dynamic routes like /business/appels/:id
@@ -169,8 +170,12 @@ export function BusinessLayout() {
     );
   }
 
+  // Paywall: block access if trial expired and no active subscription (owners only)
+  const showPaywall = !isTeamMember && !isLifetimeFree && !isTrialActive && !isSubscribed && !!businessProfile
+
   return (
     <BusinessThemeProvider>
+    {showPaywall && <BusinessPaywallModal />}
     <BusinessLayoutInner
       isSidebarOpen={isSidebarOpen}
       setIsSidebarOpen={setIsSidebarOpen}
@@ -184,6 +189,7 @@ export function BusinessLayout() {
       browserTz={browserTz}
       handleAcceptTzChange={handleAcceptTzChange}
       handleDismissTzBanner={handleDismissTzBanner}
+      seatGraceDeadline={!isTeamMember ? businessSettings?.seat_grace_deadline : null}
     />
     </BusinessThemeProvider>
   )
@@ -192,7 +198,7 @@ export function BusinessLayout() {
 function BusinessLayoutInner({
   isSidebarOpen, setIsSidebarOpen, isSidebarCollapsed, setIsSidebarCollapsed,
   isSettingsOpen, setIsSettingsOpen, pageInfo, tzBannerVisible, storedTz,
-  browserTz, handleAcceptTzChange, handleDismissTzBanner,
+  browserTz, handleAcceptTzChange, handleDismissTzBanner, seatGraceDeadline,
 }: any) {
   const { dark } = useTheme()
 
@@ -248,6 +254,27 @@ function BusinessLayoutInner({
             </div>
           </div>
         )}
+
+        {/* Seat grace period warning banner */}
+        {seatGraceDeadline && new Date(seatGraceDeadline) > new Date() && (() => {
+          const daysLeft = Math.ceil((new Date(seatGraceDeadline).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+          return (
+            <div className="border-b border-red-200 bg-red-50 dark:bg-red-950/40 dark:border-red-900/40 px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
+                <p className="text-sm text-red-800 dark:text-red-300">
+                  <span className="font-bold">Paiement en échec</span> — Il vous reste <span className="font-bold">{daysLeft} jour{daysLeft > 1 ? 's' : ''}</span> pour régulariser votre paiement avant la suppression des membres supplémentaires.
+                </p>
+              </div>
+              <a
+                href="/business/organisation"
+                className="shrink-0 rounded-full bg-red-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-red-700 transition-colors"
+              >
+                Mettre à jour
+              </a>
+            </div>
+          )
+        })()}
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#f4f2f1] dark:bg-[#141211] px-6 sm:px-12 py-8 sm:py-10 min-h-0 relative transition-colors duration-300">
           {/* Background decorative gradient */}

@@ -118,10 +118,13 @@ interface BusinessSidebarProps {
 export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, onCollapseChange }: BusinessSidebarProps) {
   const navigate = useNavigate()
   const { dark } = useTheme()
-  const { logout, user, businessProfile, businessSettings, isTeamMember, teamMember } = useBusinessAuth()
+  const { logout, user, businessProfile, businessSettings, isTeamMember, teamMember, hasSalesAccount, isSolo, hasAcquisition } = useBusinessAuth()
   const hasAcknowledgedOnboarding = !isTeamMember || !!teamMember?.onboarding_acknowledged
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
+
+  const SOLO_HIDDEN_ROUTES = ['/business/team', '/business/factures', '/business/report']
+  const ACQUISITION_ROUTES = ['/business/campagnes', '/business/acquisition']
 
   const navigation = useMemo(() => {
     let baseNav: NavItem[]
@@ -129,6 +132,16 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
     else if (isAdmin) baseNav = ownerNavigation
     else if (isHeadOfSales) baseNav = getHeadOfSalesNavigation(!!teamMember?.can_manage_campaigns)
     else baseNav = getTeamMemberNavigation(teamMember?.role)
+
+    // Solo plan: hide team, factures, rapport
+    if (isSolo && !isTeamMember) {
+      baseNav = baseNav.filter(item => !SOLO_HIDDEN_ROUTES.includes(item.href))
+    }
+
+    // No acquisition: hide campagnes, acquisition
+    if (!hasAcquisition && !isTeamMember) {
+      baseNav = baseNav.filter(item => !ACQUISITION_ROUTES.includes(item.href))
+    }
 
     // Apply saved sidebar order if available (per-user: team member or owner)
     const savedOrder = (isTeamMember ? teamMember?.sidebar_order : businessProfile?.sidebar_order) as string[] | null
@@ -145,7 +158,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
       return ordered
     }
     return baseNav
-  }, [isTeamMember, isAdmin, isHeadOfSales, teamMember?.role, teamMember?.can_manage_campaigns, teamMember?.sidebar_order, businessProfile?.sidebar_order])
+  }, [isTeamMember, isAdmin, isHeadOfSales, teamMember?.role, teamMember?.can_manage_campaigns, teamMember?.sidebar_order, businessProfile?.sidebar_order, isSolo, hasAcquisition])
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -360,7 +373,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
           collapsed ? "pt-4 mt-2 flex flex-col items-center gap-3 w-full" : "pt-4 pb-4 px-4 space-y-1"
         )}>
           {/* Retour Personnel (Sales) — for team members */}
-          {isTeamMember && (
+          {isTeamMember && hasSalesAccount && (
             <button
               onClick={() => navigate('/dashboard')}
               className={cn(

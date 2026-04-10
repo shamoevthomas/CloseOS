@@ -13,9 +13,17 @@ import {
   List,
   Briefcase,
   RefreshCw,
-  Settings
+  Settings,
+  Tag,
+  Check,
+  X,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
+import toast from 'react-hot-toast'
 import { MaskedText } from '../components/MaskedText'
 import { VideoCallOverlay } from '../components/VideoCallOverlay'
 import { CallSummaryModal, type CallSummaryData } from '../components/CallSummaryModal'
@@ -78,7 +86,82 @@ export function Pipeline() {
     addTagToProspect, removeTagFromProspect, getProspectTagObjects, getTagProspectCount,
   } = useTags()
 
+  const { user } = useAuth()
   const pipelineDeals = pipelineDealsFromContext || []
+
+  // Pipeline dismissals (per-user)
+  const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set())
+  useEffect(() => {
+    if (!user?.id) return
+    supabase.from('pipeline_dismissals').select('prospect_id').eq('user_id', user.id)
+      .then(({ data }) => {
+        if (data) setDismissedIds(new Set(data.map(d => d.prospect_id)))
+      })
+  }, [user?.id])
+
+  // Pipeline auto-reset config
+  const [showResetConfig, setShowResetConfig] = useState(false)
+  const [resetConfig, setResetConfig] = useState<{
+    id?: number
+    is_active: boolean
+    frequency: 'weekly' | 'biweekly' | 'monthly'
+    stages_to_clear: string[]
+    last_reset_at?: string
+  }>({ is_active: false, frequency: 'weekly', stages_to_clear: ['won'] })
+  const [savingResetConfig, setSavingResetConfig] = useState(false)
+
+  useEffect(() => {
+    if (!user?.id) return
+    supabase.from('pipeline_reset_config').select('*').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setResetConfig({
+            id: data.id,
+            is_active: data.is_active,
+            frequency: data.frequency,
+            stages_to_clear: data.stages_to_clear || ['won'],
+            last_reset_at: data.last_reset_at,
+          })
+        }
+      })
+  }, [user?.id])
+
+  const handleSaveResetConfig = async () => {
+    if (!user?.id) return
+    setSavingResetConfig(true)
+    try {
+      const payload = {
+        user_id: user.id,
+        is_active: resetConfig.is_active,
+        frequency: resetConfig.frequency,
+        stages_to_clear: resetConfig.stages_to_clear,
+        updated_at: new Date().toISOString(),
+      }
+      if (resetConfig.id) {
+        await supabase.from('pipeline_reset_config').update(payload).eq('id', resetConfig.id)
+      } else {
+        const { data } = await supabase.from('pipeline_reset_config').insert(payload).select().single()
+        if (data) setResetConfig(prev => ({ ...prev, id: data.id }))
+      }
+      toast.success('Configuration sauvegardée')
+      setShowResetConfig(false)
+    } catch {
+      toast.error('Erreur lors de la sauvegarde')
+    } finally {
+      setSavingResetConfig(false)
+    }
+  }
+
+  const FREQUENCY_OPTIONS = [
+    { value: 'weekly' as const, label: 'Toutes les semaines' },
+    { value: 'biweekly' as const, label: 'Toutes les 2 semaines' },
+    { value: 'monthly' as const, label: 'Tous les mois' },
+  ]
+
+  const ALL_STAGES_WITH_CUSTOM = useMemo(() => {
+    const builtIn = allStages.map(s => ({ ...s, isCustom: false as const }))
+    return builtIn
+  }, [allStages])
 
   const [currentOfferTab, setCurrentOfferTab] = useState<string>('global')
   const [viewMode, setViewMode] = useState<ViewMode>('pipeline')
@@ -89,6 +172,18 @@ export function Pipeline() {
   const [filterDate, setFilterDate] = useState<string>('all')
   const [formulaFilter, setFormulaFilter] = useState<string>('all')
   const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false)
+  const tagDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target as Node)) {
+        setIsTagDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   // Modals state
   const [isNewProspectModalOpen, setIsNewProspectModalOpen] = useState(false)
@@ -251,7 +346,8 @@ export function Pipeline() {
         return selectedTagFilters.some(t => pTags.includes(t))
       })()
 
-      return matchesOfferTab && matchesSearch && matchesStage && matchesDate && matchesFormula && matchesTags
+      const notDismissed = !dismissedIds.has(deal.id)
+      return notDismissed && matchesOfferTab && matchesSearch && matchesStage && matchesDate && matchesFormula && matchesTags
     })
   }
 
@@ -353,19 +449,23 @@ export function Pipeline() {
   }
 
   return (
-    <div className="flex h-full flex-col p-8 overflow-hidden">
+    <div className="relative flex h-full flex-col p-8 md:p-10 overflow-hidden bg-[#111111]">
+      {/* Ambient Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+
       {/* HEADER */}
-      <div className="mb-8 shrink-0">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+      <div className="relative z-10 mb-12 shrink-0">
+        <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           {/* Onglets des Offres (Filtrés) */}
-          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+          <div className="flex gap-1 overflow-x-auto pb-2 md:pb-0 no-scrollbar bg-white/[0.03] backdrop-blur-[16px] border-[0.5px] border-white/[0.08] rounded-full p-1.5">
             <button
               onClick={() => { setCurrentOfferTab('global'); setFormulaFilter('all') }}
               className={cn(
                 'flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all whitespace-nowrap',
                 currentOfferTab === 'global'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                  ? 'bg-emerald-500 text-black'
+                  : 'text-white/40 hover:bg-white/5 hover:text-white'
               )}
             >
               <Briefcase className="h-4 w-4" />
@@ -379,12 +479,12 @@ export function Pipeline() {
                 className={cn(
                   'flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all whitespace-nowrap',
                   currentOfferTab === offer.name
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                    ? 'bg-emerald-500 text-black'
+                    : 'text-white/40 hover:bg-white/5 hover:text-white'
                 )}
               >
                 <span>{offer.name}</span>
-                <span className="ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-950/30 px-1.5 text-xs">
+                <span className="ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-black/20 px-1.5 text-xs">
                   {(pipelineDeals || []).filter(d => getBaseOfferName(d.offer) === offer.name).length}
                 </span>
               </button>
@@ -396,34 +496,34 @@ export function Pipeline() {
             <SharePerformanceButton />
 
             <div className="relative hidden md:block w-64">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
               <input
                 type="text"
                 placeholder="Rechercher..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl bg-white/5 border border-white/10 py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
               />
             </div>
 
-            <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800 p-1">
+            <div className="flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] p-1">
               <button
                 onClick={() => setViewMode('pipeline')}
                 title="Vue Pipeline"
                 className={cn(
-                  'rounded p-1.5 transition-colors',
-                  viewMode === 'pipeline' ? 'bg-slate-700 text-blue-400' : 'text-slate-400 hover:text-slate-200'
+                  'rounded-full p-1.5 transition-colors',
+                  viewMode === 'pipeline' ? 'bg-emerald-500 text-black' : 'text-white/40 hover:text-white'
                 )}
               >
                 <LayoutDashboard className="h-4 w-4" />
               </button>
-              <div className="mx-1 h-4 w-[1px] bg-slate-700" />
+              <div className="mx-1 h-4 w-[1px] bg-white/[0.08]" />
               <button
                 onClick={() => setViewMode('list')}
                 title="Vue Liste"
                 className={cn(
-                  'rounded p-1.5 transition-colors',
-                  viewMode === 'list' ? 'bg-slate-700 text-blue-400' : 'text-slate-400 hover:text-slate-200'
+                  'rounded-full p-1.5 transition-colors',
+                  viewMode === 'list' ? 'bg-emerald-500 text-black' : 'text-white/40 hover:text-white'
                 )}
               >
                 <List className="h-4 w-4" />
@@ -433,10 +533,23 @@ export function Pipeline() {
             <button
               onClick={() => setIsCustomStagesOpen(true)}
               title="Personnaliser le pipeline"
-              className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+              className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-white/40 hover:bg-white/10 hover:text-white transition-colors"
             >
               <Settings className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Personnaliser</span>
+            </button>
+            <button
+              onClick={() => setShowResetConfig(true)}
+              title="Réinitialisation automatique"
+              className={cn(
+                "relative flex items-center gap-2 rounded-full border px-3 py-2 text-xs transition-colors",
+                resetConfig.is_active
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                  : "border-white/[0.08] bg-white/[0.03] text-white/40 hover:bg-white/10 hover:text-white"
+              )}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Réinitialisation</span>
             </button>
 
             {/* HubSpot Sync Button */}
@@ -445,10 +558,10 @@ export function Pipeline() {
                 onClick={() => syncHubspot()}
                 disabled={isSyncingHubspot}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all",
+                  "flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-all",
                   isSyncingHubspot
                     ? "bg-orange-500/10 border-orange-500/30 text-orange-400 opacity-70"
-                    : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-orange-500/30 hover:text-orange-400"
+                    : "bg-white/[0.03] border-white/[0.08] text-white/60 hover:bg-white/10 hover:border-orange-500/30 hover:text-orange-400"
                 )}
                 title={`Prochaine synchro : ${Math.floor(nextSyncSeconds / 60)}:${(nextSyncSeconds % 60).toString().padStart(2, '0')}`}
               >
@@ -466,10 +579,10 @@ export function Pipeline() {
                 onClick={() => syncGhl()}
                 disabled={isSyncingGhl}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all",
+                  "flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-all",
                   isSyncingGhl
                     ? "bg-teal-500/10 border-teal-500/30 text-teal-400 opacity-70"
-                    : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-teal-500/30 hover:text-teal-400"
+                    : "bg-white/[0.03] border-white/[0.08] text-white/60 hover:bg-white/10 hover:border-teal-500/30 hover:text-teal-400"
                 )}
                 title={`Prochaine synchro : ${Math.floor(nextSyncSeconds / 60)}:${(nextSyncSeconds % 60).toString().padStart(2, '0')}`}
               >
@@ -483,7 +596,7 @@ export function Pipeline() {
 
             <button
               onClick={() => setIsNewProspectModalOpen(true)}
-              className="flex items-center justify-center rounded-lg bg-blue-600 p-2 text-white hover:bg-blue-700 transition-colors"
+              className="flex items-center justify-center rounded-full bg-emerald-500 p-2 text-black hover:bg-emerald-400 transition-colors"
             >
               <Plus className="h-5 w-5" />
             </button>
@@ -491,29 +604,29 @@ export function Pipeline() {
         </div>
 
         {/* Filtres secondaires */}
-        <div className="mt-6 flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
+        <div className="mt-8 flex items-center gap-4 pb-3 no-scrollbar flex-wrap">
           <div className="relative">
             <select
               value={stageFilter}
               onChange={(e) => setStageFilter(e.target.value)}
-              className="appearance-none rounded-lg border border-slate-800 bg-slate-900 py-1.5 pl-3 pr-8 text-xs text-slate-300 focus:border-blue-500 focus:outline-none"
+              className="appearance-none rounded-xl border border-white/10 bg-white/5 py-2.5 pl-4 pr-9 text-xs text-white/60 focus:border-emerald-500 focus:outline-none transition-all"
             >
               <option value="all">Toutes les étapes</option>
               {allStages.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-white/30 pointer-events-none" />
           </div>
 
           <div className="relative">
             <select
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="appearance-none rounded-lg border border-slate-800 bg-slate-900 py-1.5 pl-3 pr-8 text-xs text-slate-300 focus:border-blue-500 focus:outline-none"
+              className="appearance-none rounded-xl border border-white/10 bg-white/5 py-2.5 pl-4 pr-9 text-xs text-white/60 focus:border-emerald-500 focus:outline-none transition-all"
             >
               <option value="all">Toutes les dates</option>
               {getAvailableMonths().map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
-            <Calendar className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <Calendar className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-white/30 pointer-events-none" />
           </div>
 
           {/* Filtre par formule (affiché uniquement dans les onglets par offre) */}
@@ -522,50 +635,80 @@ export function Pipeline() {
               <select
                 value={formulaFilter}
                 onChange={(e) => setFormulaFilter(e.target.value)}
-                className="appearance-none rounded-lg border border-slate-800 bg-slate-900 py-1.5 pl-3 pr-8 text-xs text-slate-300 focus:border-blue-500 focus:outline-none"
+                className="appearance-none rounded-xl border border-white/10 bg-white/5 py-2.5 pl-4 pr-9 text-xs text-white/60 focus:border-emerald-500 focus:outline-none transition-all"
               >
                 <option value="all">Toutes les formules</option>
                 <option value="none">Sans formule</option>
                 {getAvailableFormulas().map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-white/30 pointer-events-none" />
             </div>
           )}
 
           {/* Filtre par tags */}
           {tags.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 mr-1">Tags</span>
-              {tags.map(tag => {
-                const isSelected = selectedTagFilters.includes(tag.id)
-                const count = pipelineDeals.filter(d => (prospectTags[d.id] || []).includes(tag.id)).length
-                return (
-                  <button
-                    key={tag.id}
-                    onClick={() => setSelectedTagFilters(prev =>
-                      isSelected ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
-                    )}
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold transition-all border',
-                      isSelected
-                        ? 'text-white border-transparent shadow-sm'
-                        : 'text-slate-400 border-slate-800 bg-slate-900 hover:border-slate-700'
-                    )}
-                    style={isSelected ? { backgroundColor: tag.color, borderColor: tag.color } : undefined}
-                  >
-                    {!isSelected && <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color }} />}
-                    {tag.name}
-                    <span className={cn('text-[9px]', isSelected ? 'text-white/70' : 'text-slate-600')}>({count})</span>
-                  </button>
-                )
-              })}
+            <div className="relative" ref={tagDropdownRef}>
+              <button
+                onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-xl border py-1.5 pl-3 pr-2 text-xs font-medium transition-all',
+                  selectedTagFilters.length > 0
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                    : 'border-white/[0.08] bg-white/[0.03] text-white/40 hover:border-white/10'
+                )}
+              >
+                <Tag className="h-3 w-3" />
+                <span>Tags</span>
+                {selectedTagFilters.length > 0 && (
+                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-black">
+                    {selectedTagFilters.length}
+                  </span>
+                )}
+                <ChevronDown className={cn('h-3 w-3 transition-transform', isTagDropdownOpen && 'rotate-180')} />
+              </button>
+              {isTagDropdownOpen && (
+                <div className="absolute top-full mt-1 right-0 z-50 min-w-[200px] max-h-[180px] overflow-y-auto rounded-xl border border-white/[0.08] bg-[#1a1a1a] p-1.5 shadow-xl">
+                  {tags.map(tag => {
+                    const isSelected = selectedTagFilters.includes(tag.id)
+                    const count = pipelineDeals.filter(d => (prospectTags[d.id] || []).includes(tag.id)).length
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => setSelectedTagFilters(prev =>
+                          isSelected ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
+                        )}
+                        className={cn(
+                          'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                          isSelected ? 'bg-emerald-500/10 text-white' : 'text-white/40 hover:bg-white/5 hover:text-white/60'
+                        )}
+                      >
+                        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                        <span className="flex-1 text-left">{tag.name}</span>
+                        <span className={cn('text-[10px]', isSelected ? 'text-emerald-400/70' : 'text-white/20')}>({count})</span>
+                        {isSelected && <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
+                      </button>
+                    )
+                  })}
+                  {selectedTagFilters.length > 0 && (
+                    <>
+                      <div className="my-1 border-t border-white/[0.08]" />
+                      <button
+                        onClick={() => { setSelectedTagFilters([]); setIsTagDropdownOpen(false) }}
+                        className="w-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40 hover:text-white/60 transition-colors rounded-lg"
+                      >
+                        Réinitialiser
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
       {/* --- CONTENT AREA --- */}
-      <div className="flex-1 overflow-hidden">
+      <div className="relative z-10 flex-1 overflow-hidden">
         {viewMode === 'pipeline' ? (
           <DragDropContext
             onDragStart={() => setIsDragging(true)}
@@ -574,14 +717,14 @@ export function Pipeline() {
             <div className="h-full flex flex-col space-y-8 overflow-y-auto pr-2 custom-scrollbar">
               {/* FLUX ACTIF */}
               <div>
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">Flux Actif</h2>
-                  <span className="text-xs text-slate-500">
+                <div className="mb-6 flex items-center justify-between">
+                  <h2 className="text-xs uppercase tracking-widest font-bold text-white/40">Flux Actif</h2>
+                  <span className="text-xs text-white/40">
                     {activeStages.reduce((sum, stage) => sum + getDealsForStage(stage.id).length, 0)} prospects
                   </span>
                 </div>
 
-                <div ref={activeScrollRef} className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                <div ref={activeScrollRef} className="flex gap-6 overflow-x-auto pb-4 no-scrollbar">
                   {activeStages.map((stage) => {
                     const stageDeals = getDealsForStage(stage.id)
                     const stageTotal = getTotalForStage(stage.id)
@@ -591,22 +734,22 @@ export function Pipeline() {
                       <div
                         key={stage.id}
                         className={cn(
-                          'flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 transition-all duration-300',
+                          'flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-300',
                           isCollapsed ? 'w-16' : 'w-80 shrink-0'
                         )}
                       >
                         {/* Header Colonne */}
                         <div
                           onClick={() => toggleColumn(stage.id)}
-                          className="cursor-pointer border-b border-slate-800 p-3 hover:bg-slate-800/50 transition-colors"
+                          className="cursor-pointer p-5 hover:bg-white/[0.04] transition-colors duration-300"
                         >
                           <div className="flex items-center justify-between">
                             <div
-                              className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-slate-900', stage.isDefault ? stage.color : '')}
+                              className={cn('h-2.5 w-2.5 rounded-full ring-2 ring-[#111111]', stage.isDefault ? stage.color : '')}
                               style={!stage.isDefault ? { backgroundColor: stage.color } : undefined}
                             />
                             {!isCollapsed && (
-                              <span className="text-xs font-semibold text-slate-500">
+                              <span className="text-xs font-semibold text-white/40">
                                 {stageDeals.length}
                               </span>
                             )}
@@ -614,8 +757,8 @@ export function Pipeline() {
 
                           {!isCollapsed && (
                             <div className="mt-2">
-                              <h3 className="font-semibold text-slate-200">{stage.name}</h3>
-                              <p className="text-xs font-medium text-blue-400 mt-0.5">
+                              <h3 className="font-semibold text-white">{stage.name}</h3>
+                              <p className="text-xs font-medium text-emerald-400 mt-0.5">
                                 <MaskedText value={`${stageTotal.toLocaleString()}€`} type="number" />
                               </p>
                             </div>
@@ -630,8 +773,8 @@ export function Pipeline() {
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                                 className={cn(
-                                  "space-y-3 p-3 max-h-[295px] overflow-y-auto custom-scrollbar transition-colors",
-                                  snapshot.isDraggingOver ? "bg-slate-800/30" : ""
+                                  "space-y-3 p-4 max-h-[295px] overflow-y-auto custom-scrollbar transition-colors",
+                                  snapshot.isDraggingOver ? "bg-white/[0.04]" : ""
                                 )}
                               >
                                 {stageDeals.map((deal, index) => {
@@ -653,7 +796,7 @@ export function Pipeline() {
                                           {...provided.dragHandleProps}
                                           onClick={() => handleOpenDeal(deal)}
                                           className={cn(
-                                            "group relative cursor-pointer rounded-lg border border-slate-800 bg-slate-800/40 p-3 shadow-sm transition-all hover:border-blue-500/50 hover:bg-slate-800 hover:shadow-md hover:-translate-y-1",
+                                            "group relative cursor-pointer rounded-xl border-[0.5px] border-white/[0.08] bg-white/[0.03] p-5 shadow-sm transition-all duration-300 hover:border-emerald-500/50 hover:bg-white/[0.04] hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)] hover:-translate-y-1",
                                             snapshot.isDragging ? "opacity-90 rotate-2 scale-105 z-50 shadow-2xl" : ""
                                           )}
                                           style={provided.draggableProps.style}
@@ -664,11 +807,11 @@ export function Pipeline() {
                                           />
 
                                           <div className="pl-3">
-                                            <h4 className="font-medium text-slate-200 group-hover:text-white truncate">
+                                            <h4 className="font-semibold text-white group-hover:text-white truncate">
                                               <MaskedText value={mainTitle || 'Sans nom'} type="name" />
                                             </h4>
 
-                                            <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                            <div className="mt-2 flex items-center gap-2 text-xs text-white/40">
                                               {isB2B ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
                                               <span className="truncate">
                                                 <MaskedText value={subTitle || ''} type="name" />
@@ -677,7 +820,7 @@ export function Pipeline() {
 
                                             {/* Tag pills */}
                                             {(prospectTags[deal.id] || []).length > 0 && (
-                                              <div className="mt-1.5 flex flex-wrap gap-1">
+                                              <div className="mt-2.5 flex flex-wrap gap-1">
                                                 {getProspectTagObjects(deal.id).map(tag => (
                                                   <span
                                                     key={tag.id}
@@ -690,13 +833,13 @@ export function Pipeline() {
                                               </div>
                                             )}
 
-                                            <div className="mt-3 flex items-center justify-between border-t border-slate-700/50 pt-2">
-                                              <span className="text-xs font-semibold text-blue-400">
+                                            <div className="mt-4 flex items-center justify-between pt-3" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
+                                              <span className="text-xs font-semibold text-emerald-400">
                                                 <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
                                               </span>
 
                                               {currentOfferTab === 'global' && displayOfferName && (
-                                                <span className="max-w-[80px] truncate rounded bg-slate-950 px-1.5 py-0.5 text-[10px] text-slate-500">
+                                                <span className="max-w-[80px] truncate rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-white/40">
                                                   {displayOfferName}
                                                 </span>
                                               )}
@@ -709,8 +852,8 @@ export function Pipeline() {
                                 })}
                                 {provided.placeholder}
                                 {stageDeals.length === 0 && (
-                                  <div className="flex h-20 items-center justify-center rounded border border-dashed border-slate-800/50 bg-slate-900/20">
-                                    <span className="text-xs text-slate-600">Vide</span>
+                                  <div className="flex h-20 items-center justify-center rounded border border-dashed border-white/[0.08] bg-white/[0.02]">
+                                    <span className="text-xs text-white/20">Vide</span>
                                   </div>
                                 )}
                               </div>
@@ -724,11 +867,11 @@ export function Pipeline() {
               </div>
 
               {/* FLUX INACTIF */}
-              <div className="pt-4 border-t border-slate-800/50">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-600">Flux Inactif</h2>
+              <div className="pt-8">
+                <div className="mb-6 flex items-center justify-between">
+                  <h2 className="text-xs uppercase tracking-widest font-bold text-white/20">Flux Inactif</h2>
                 </div>
-                <div ref={inactiveScrollRef} className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                <div ref={inactiveScrollRef} className="flex gap-6 overflow-x-auto pb-4 no-scrollbar">
                   {inactiveStages.map((stage) => {
                     const stageDeals = getDealsForStage(stage.id)
                     const isCollapsed = collapsedColumns.has(stage.id)
@@ -736,19 +879,19 @@ export function Pipeline() {
                       <div
                         key={stage.id}
                         className={cn(
-                          'flex flex-col rounded-xl border border-slate-800/30 bg-slate-900/20 transition-all',
+                          'flex flex-col rounded-2xl border-[0.5px] border-white/[0.05] bg-white/[0.02] backdrop-blur-[16px] transition-all duration-300',
                           isCollapsed ? 'w-16' : 'w-72 shrink-0'
                         )}
                       >
                         <div
                           onClick={() => toggleColumn(stage.id)}
-                          className="cursor-pointer border-b border-slate-800/30 p-3 hover:bg-slate-800/30"
+                          className="cursor-pointer p-4 hover:bg-white/[0.04] transition-colors duration-300"
                         >
                           <div className="flex items-center justify-between">
                             <div className={cn('h-2 w-2 rounded-full opacity-50', stage.color)} />
-                            {!isCollapsed && <span className="text-xs text-slate-600">{stageDeals.length}</span>}
+                            {!isCollapsed && <span className="text-xs text-white/20">{stageDeals.length}</span>}
                           </div>
-                          {!isCollapsed && <h3 className="mt-1 font-semibold text-slate-500">{stage.name}</h3>}
+                          {!isCollapsed && <h3 className="mt-1 font-semibold text-white/40">{stage.name}</h3>}
                         </div>
 
                         {!isCollapsed && (
@@ -759,7 +902,7 @@ export function Pipeline() {
                                 {...provided.droppableProps}
                                 className={cn(
                                   "space-y-2 p-2 max-h-[300px] overflow-y-auto custom-scrollbar transition-colors",
-                                  snapshot.isDraggingOver ? "bg-slate-800/20" : ""
+                                  snapshot.isDraggingOver ? "bg-white/5" : ""
                                 )}
                               >
                                 {stageDeals.map((deal, index) => (
@@ -770,10 +913,10 @@ export function Pipeline() {
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
                                         onClick={() => handleOpenDeal(deal)}
-                                        className="cursor-pointer rounded border border-slate-800/30 bg-slate-900/40 p-2 opacity-60 hover:opacity-100"
+                                        className="cursor-pointer rounded-lg border-[0.5px] border-white/[0.05] bg-white/[0.02] p-3.5 opacity-60 hover:opacity-100 hover:bg-white/[0.04] transition-all duration-300"
                                         style={provided.draggableProps.style}
                                       >
-                                        <p className="text-sm text-slate-400"><MaskedText value={getDisplayName(deal)} type="name" /></p>
+                                        <p className="text-sm text-white/40"><MaskedText value={getDisplayName(deal)} type="name" /></p>
                                       </div>
                                     )}
                                   </Draggable>
@@ -792,39 +935,39 @@ export function Pipeline() {
           </DragDropContext>
         ) : (
           /* --- VUE LISTE (TABLEAU) --- */
-          <div className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+          <div className="flex h-full flex-col overflow-hidden rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
             <div className="overflow-auto custom-scrollbar">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-950 text-slate-400 sticky top-0 z-10">
+                <thead className="bg-white/[0.02] sticky top-0 z-10">
                   <tr>
-                    <th className="px-6 py-4 font-semibold">Prospect</th>
-                    <th className="px-6 py-4 font-semibold">Tags</th>
-                    <th className="px-6 py-4 font-semibold">Offre</th>
-                    <th className="px-6 py-4 font-semibold">Montant</th>
-                    <th className="px-6 py-4 font-semibold">Étape</th>
-                    <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">Prospect</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">Tags</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">Offre</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">Montant</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">Étape</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 text-slate-300">
+                <tbody className="divide-y divide-white/[0.04] text-white/60">
                   {filteredDeals.map((deal) => {
                     const stageInfo = getStageInfo(deal.stage)
                     let displayValue = getSmartValue(deal)
                     let displayOfferName = deal.offer
 
                     return (
-                      <tr key={deal.id} onClick={() => handleOpenDeal(deal)} className="group cursor-pointer hover:bg-slate-800/50 transition-colors">
-                        <td className="px-6 py-4">
+                      <tr key={deal.id} onClick={() => handleOpenDeal(deal)} className="group cursor-pointer hover:bg-white/[0.04] transition-colors duration-300">
+                        <td className="px-8 py-5">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800 text-slate-400">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/40">
                               {deal.company ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
                             </div>
                             <div>
                               <p className="font-medium text-white"><MaskedText value={getDisplayName(deal)} type="name" /></p>
-                              {deal.company && <p className="text-xs text-slate-500">{deal.company}</p>}
+                              {deal.company && <p className="text-xs text-white/40">{deal.company}</p>}
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-8 py-5">
                           <div className="flex flex-wrap gap-1">
                             {getProspectTagObjects(deal.id).map(tag => (
                               <span key={tag.id} className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: tag.color }}>
@@ -833,15 +976,15 @@ export function Pipeline() {
                             ))}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-slate-400">{displayOfferName || '-'}</td>
-                        <td className="px-6 py-4 font-mono font-medium text-blue-400">
+                        <td className="px-8 py-5 text-white/40">{displayOfferName || '-'}</td>
+                        <td className="px-8 py-5 font-mono font-medium text-emerald-400">
                           <MaskedText value={`${displayValue.toLocaleString()}€`} type="number" />
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-8 py-5">
                           {stageInfo && (
-                            <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-800/50 border border-slate-800",
+                            <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-white/5 border border-white/[0.08]",
                               stageInfo.id === 'won' ? 'text-emerald-400 border-emerald-500/20' :
-                                stageInfo.id === 'lost' ? 'text-red-400 border-red-500/20' : 'text-slate-300'
+                                stageInfo.id === 'lost' ? 'text-red-400 border-red-500/20' : 'text-white/60'
                             )}>
                               <span
                                 className={cn("h-1.5 w-1.5 rounded-full", stageInfo.isDefault ? stageInfo.color : '')}
@@ -851,9 +994,9 @@ export function Pipeline() {
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-8 py-5 text-right">
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal) }} className="p-2 hover:text-blue-400 transition-colors"><Pencil className="h-4 w-4" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal) }} className="p-2 hover:text-emerald-400 transition-colors"><Pencil className="h-4 w-4" /></button>
                             <button onClick={(e) => { e.stopPropagation(); if (confirm('Supprimer ?')) handleDelete(deal.id) }} className="p-2 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
                           </div>
                         </td>
@@ -863,7 +1006,7 @@ export function Pipeline() {
                 </tbody>
               </table>
               {filteredDeals.length === 0 && (
-                <div className="py-20 text-center text-slate-500">
+                <div className="py-20 text-center text-white/40">
                   <p className="text-lg font-medium">Aucun prospect</p>
                   <p className="mt-1 text-sm">Essayez de modifier vos filtres ou effectuez une recherche.</p>
                 </div>
@@ -883,6 +1026,14 @@ export function Pipeline() {
           onCreateEvent={() => setIsCreateEventModalOpen(true)}
           onStartCall={handleStartCall}
           onPhoneCall={handlePhoneCall}
+          onDismissFromPipeline={(id, dismissed) => {
+            setDismissedIds(prev => {
+              const next = new Set(prev)
+              dismissed ? next.add(id) : next.delete(id)
+              return next
+            })
+            if (dismissed) setSelectedDeal(null)
+          }}
         />
       )}
 
@@ -961,13 +1112,131 @@ export function Pipeline() {
         getTagProspectCount={getTagProspectCount}
       />
 
+      {/* Pipeline Auto-Reset Config Modal */}
+      {showResetConfig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowResetConfig(false)}>
+          <div className="bg-[#1a1a1a] border border-white/[0.08] rounded-3xl shadow-2xl w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.06]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center">
+                  <RefreshCw className="h-5 w-5 text-white/60" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-white">Réinitialisation automatique</h3>
+                  <p className="text-xs text-white/40">Vider le pipeline périodiquement</p>
+                </div>
+              </div>
+              <button onClick={() => setShowResetConfig(false)} className="p-1.5 rounded-full hover:bg-white/5 transition-colors">
+                <X className="w-4 h-4 text-white/40" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-white">Activer la réinitialisation</p>
+                  <p className="text-xs text-white/40 mt-0.5">Les prospects seront retirés du pipeline mais resteront dans vos contacts</p>
+                </div>
+                <button onClick={() => setResetConfig(prev => ({ ...prev, is_active: !prev.is_active }))} className="text-white">
+                  {resetConfig.is_active
+                    ? <ToggleRight className="h-8 w-8 text-emerald-500" />
+                    : <ToggleLeft className="h-8 w-8 text-white/20" />
+                  }
+                </button>
+              </div>
+              {resetConfig.is_active && (
+                <>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2 block">Fréquence</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {FREQUENCY_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setResetConfig(prev => ({ ...prev, frequency: opt.value }))}
+                          className={cn(
+                            'rounded-xl px-3 py-2.5 text-xs font-bold transition-all border',
+                            resetConfig.frequency === opt.value
+                              ? 'bg-white text-[#111] border-white'
+                              : 'bg-white/5 text-white/60 border-white/[0.08] hover:border-white/20'
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2 block">Colonnes à vider</label>
+                    <p className="text-xs text-white/40 mb-3">Sélectionnez les statuts dont les prospects seront retirés du pipeline</p>
+                    <div className="space-y-1.5 max-h-[250px] overflow-y-auto">
+                      {ALL_STAGES_WITH_CUSTOM.map(stage => {
+                        const isSelected = resetConfig.stages_to_clear.includes(stage.id)
+                        const isWon = stage.id === 'won'
+                        return (
+                          <button
+                            key={stage.id}
+                            onClick={() => {
+                              setResetConfig(prev => ({
+                                ...prev,
+                                stages_to_clear: isSelected
+                                  ? prev.stages_to_clear.filter(s => s !== stage.id)
+                                  : [...prev.stages_to_clear, stage.id],
+                              }))
+                            }}
+                            className={cn(
+                              'w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all text-left',
+                              isSelected
+                                ? 'bg-white/10 text-white'
+                                : 'text-white/40 hover:bg-white/5'
+                            )}
+                          >
+                            <div className={cn(
+                              'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0',
+                              isSelected ? 'bg-white border-white' : 'border-white/20'
+                            )}>
+                              {isSelected && (
+                                <svg className="w-3 h-3 text-[#111]" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              )}
+                            </div>
+                            <span className={cn('w-3 h-3 rounded-full shrink-0', stage.color)} />
+                            <span className="flex-1">{stage.name}</span>
+                            {isWon && <span className="text-[10px] text-white/30 uppercase tracking-widest">par défaut</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  {resetConfig.last_reset_at && (
+                    <div className="flex items-center gap-2 text-xs text-white/40">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Dernière réinitialisation : {new Date(resetConfig.last_reset_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/[0.06]">
+              <button onClick={() => setShowResetConfig(false)} className="px-5 py-2.5 rounded-full text-sm font-bold text-white/60 hover:bg-white/5 transition-all">
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveResetConfig}
+                disabled={savingResetConfig || (resetConfig.is_active && resetConfig.stages_to_clear.length === 0)}
+                className="px-6 py-2.5 rounded-full text-sm font-bold bg-white text-[#111] hover:opacity-90 disabled:opacity-50 transition-all"
+              >
+                {savingResetConfig ? 'Sauvegarde...' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAiToast && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[70]">
-          <div className="flex items-center gap-3 px-6 py-4 bg-slate-900 border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
+          <div className="flex items-center gap-3 px-6 py-4 bg-[#1a1a1a] border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-purple-500/20"><span className="text-2xl">✨</span></div>
             <div>
               <p className="text-sm font-semibold text-white">Analyse IA en cours...</p>
-              <p className="text-xs text-slate-400 mt-0.5">Le CRM sera mis à jour automatiquement.</p>
+              <p className="text-xs text-white/40 mt-0.5">Le CRM sera mis à jour automatiquement.</p>
             </div>
           </div>
         </div>

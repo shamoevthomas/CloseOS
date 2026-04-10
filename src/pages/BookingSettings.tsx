@@ -195,23 +195,23 @@ export function BookingSettings() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-950 p-8 text-slate-100">
+    <div className="h-full overflow-y-auto bg-[#111111] p-8 md:p-12 text-white/80">
       <div className="mx-auto max-w-5xl">
-        <h1 className="mb-2 text-3xl font-bold text-white">Réglages de Réservation</h1>
-        <p className="mb-8 text-slate-400">Gérez vos différents types de rendez-vous et vos horaires globaux.</p>
+        <h1 className="mb-2 text-3xl md:text-5xl font-extrabold tracking-tighter text-white">Réglages de Réservation</h1>
+        <p className="mb-10 text-white/40 text-sm font-medium">Gérez vos différents types de rendez-vous et vos horaires globaux.</p>
 
         {/* TABS */}
-        <div className="mb-8 flex border-b border-slate-800">
+        <div className="mb-10 inline-flex bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] rounded-full p-1.5 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
           <button
             onClick={() => setActiveTab('types')}
-            className={`px-6 py-3 font-medium transition-colors border-b-2 ${activeTab === 'types' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white'
+            className={`px-8 py-3 text-sm font-bold transition-all rounded-full ${activeTab === 'types' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
               }`}
           >
             Types d'événements
           </button>
           <button
             onClick={() => setActiveTab('availability')}
-            className={`px-6 py-3 font-medium transition-colors border-b-2 ${activeTab === 'availability' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white'
+            className={`px-8 py-3 text-sm font-bold transition-all rounded-full ${activeTab === 'availability' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
               }`}
           >
             Disponibilités & Horaires
@@ -222,44 +222,46 @@ export function BookingSettings() {
         {activeTab === 'types' && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             {!isEditingType ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {/* CARTE 1 : BOUTON CRÉER (LE PLUS) */}
                 <button
                   onClick={() => {
                     setCurrentType({ title: '', slug: '', duration: 30, description: '' })
                     setIsEditingType(true)
                   }}
-                  className="flex h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-700 bg-slate-900/30 transition-all hover:border-blue-500 hover:bg-slate-900 group"
+                  className="flex h-72 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] transition-all hover:border-emerald-500/50 hover:bg-white/[0.05] hover:shadow-[0_20px_40px_rgba(0,0,0,0.2)] group"
                 >
-                  <div className="mb-4 rounded-full bg-blue-500/10 p-4 transition-transform group-hover:scale-110">
-                    <Plus className="h-8 w-8 text-blue-500" />
+                  <div className="mb-4 rounded-full bg-emerald-500/10 p-5 transition-transform group-hover:scale-110 group-hover:bg-emerald-500/20">
+                    <Plus className="h-8 w-8 text-emerald-500" />
                   </div>
-                  <span className="font-bold text-white">Nouveau Type de RDV</span>
-                  <span className="text-sm text-slate-500 mt-1">Créer un lien de booking</span>
+                  <span className="font-bold text-white text-lg">Nouveau Type de RDV</span>
+                  <span className="text-sm text-white/40 mt-1">Créer un lien de booking</span>
                 </button>
 
                 {/* LISTE DES TYPES */}
                 {bookingTypes.map((type) => (
-                  <div key={type.id} className="relative flex h-64 flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900 p-6 transition-all hover:border-slate-600 hover:shadow-lg">
+                  <div key={type.id} className="group relative flex h-72 flex-col justify-between rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] p-8 transition-all hover:border-emerald-500/30 hover:bg-white/[0.05] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                     <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-xl text-white line-clamp-1" title={type.title}>{type.title}</h3>
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-extrabold text-xl text-white line-clamp-1" title={type.title}>{type.title}</h3>
                       </div>
-                      <div className="flex items-center gap-2 text-slate-400 text-sm mb-4">
-                        <Clock className="h-4 w-4" />
-                        <span>{type.duration} min</span>
-                        <span className="text-slate-600">•</span>
-                        <span>Tel / Visio</span>
+                      <div className="flex items-center gap-2 text-white/40 text-sm mb-4">
+                        <div className="flex items-center justify-center h-7 w-7 rounded-full bg-emerald-500/10">
+                          <Clock className="h-3.5 w-3.5 text-emerald-400" />
+                        </div>
+                        <span className="font-medium">{type.duration} min</span>
+                        <span className="text-white/20">|</span>
+                        <span className="font-medium">Tel / Visio</span>
                       </div>
-                      <p className="text-sm text-slate-500 line-clamp-3">
+                      <p className="text-sm text-white/40 line-clamp-3 leading-relaxed">
                         {type.description || "Pas de description."}
                       </p>
                     </div>
 
-                    <div className="pt-4 mt-auto border-t border-slate-800 flex items-center justify-between">
+                    <div className="pt-4 mt-auto flex items-center justify-between">
                       <button
                         onClick={() => copyToClipboard(type.slug)}
-                        className={`flex items-center gap-2 text-xs font-bold transition-colors ${copiedSlug === type.slug ? 'text-emerald-400' : 'text-blue-400 hover:text-blue-300'}`}
+                        className={`flex items-center gap-2 text-xs font-bold transition-colors ${copiedSlug === type.slug ? 'text-emerald-400' : 'text-emerald-400 hover:text-emerald-300'}`}
                       >
                         {copiedSlug === type.slug ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                         {copiedSlug === type.slug ? 'Lien copié !' : 'Copier le lien'}
@@ -267,14 +269,14 @@ export function BookingSettings() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => { setCurrentType(type); setIsEditingType(true); }}
-                          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                          className="p-2.5 text-white/40 hover:text-white hover:bg-white/[0.06] rounded-xl transition-all"
                           title="Modifier"
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteType(type.id)}
-                          className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          className="p-2.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
                           title="Supprimer"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -286,70 +288,75 @@ export function BookingSettings() {
               </div>
             ) : (
               // FORMULAIRE D'ÉDITION
-              <div className="max-w-2xl mx-auto rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
+              <div className="max-w-2xl mx-auto rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] p-10 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                 <button
                   onClick={() => setIsEditingType(false)}
-                  className="mb-6 flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                  className="mb-8 flex items-center gap-2 text-sm font-bold text-white/40 hover:text-white transition-colors"
                 >
                   <ArrowLeft className="h-4 w-4" /> Retour à la liste
                 </button>
 
-                <h3 className="mb-8 text-2xl font-bold text-white">
-                  {currentType.id ? 'Modifier le type de RDV' : 'Créer un nouveau type'}
-                </h3>
-
-                <div className="space-y-6">
+                <div className="flex items-start justify-between mb-10">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-400">Titre (ex: Appel Découverte)</label>
+                    <h3 className="text-2xl font-extrabold text-white">
+                      {currentType.id ? 'Modifier le type de RDV' : 'Créer un nouveau type'}
+                    </h3>
+                    <p className="text-white/40 text-sm mt-1">Remplissez les détails de ce type de rendez-vous.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Titre (ex: Appel Découverte)</label>
                     <input
                       type="text"
                       value={currentType.title}
                       onChange={(e) => setCurrentType({ ...currentType, title: e.target.value })}
                       placeholder="Session Stratégique"
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-3 text-white font-medium focus:ring-0 focus:outline-none placeholder:text-white/20"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-400">URL du lien (Slug)</label>
-                      <div className="flex items-center rounded-xl border border-slate-700 bg-slate-950 px-3 overflow-hidden">
-                        <span className="text-slate-500 text-xs whitespace-nowrap">/book/</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">URL du lien (Slug)</label>
+                      <div className="flex items-center border-b border-white/10 focus-within:border-emerald-500 transition-colors">
+                        <span className="text-white/40 text-xs whitespace-nowrap">/book/</span>
                         <input
                           type="text"
                           value={currentType.slug}
                           onChange={(e) => setCurrentType({ ...currentType, slug: e.target.value })}
                           placeholder="session-strategique"
-                          className="w-full bg-transparent py-3 pl-1 text-white focus:outline-none placeholder:text-slate-700"
+                          className="w-full bg-transparent py-3 pl-1 text-white font-medium focus:outline-none focus:ring-0 placeholder:text-white/20"
                         />
                       </div>
                     </div>
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-400">Durée (minutes)</label>
+                    <div className="space-y-1">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Durée (minutes)</label>
                       <input
                         type="number"
                         value={currentType.duration}
                         onChange={(e) => setCurrentType({ ...currentType, duration: parseInt(e.target.value) })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white focus:border-blue-500 focus:outline-none"
+                        className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-3 text-white font-medium focus:ring-0 focus:outline-none placeholder:text-white/20"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-400">Description (Optionnel)</label>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Description (Optionnel)</label>
                     <textarea
                       value={currentType.description || ''}
                       onChange={(e) => setCurrentType({ ...currentType, description: e.target.value })}
                       rows={4}
                       placeholder="Ce que nous allons voir durant cet appel..."
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white focus:border-blue-500 focus:outline-none resize-none"
+                      className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-3 text-white font-medium focus:ring-0 focus:outline-none resize-none placeholder:text-white/20"
                     />
                   </div>
 
-                  <div className="flex gap-4 pt-4 border-t border-slate-800">
+                  <div className="pt-6">
                     <button
                       onClick={handleSaveType}
-                      className="flex-1 rounded-xl bg-blue-600 px-6 py-3 font-bold text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20"
+                      className="w-full rounded-full bg-emerald-500 px-8 py-3.5 font-bold text-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30"
                     >
                       Enregistrer le type
                     </button>
@@ -362,27 +369,29 @@ export function BookingSettings() {
 
         {/* TAB 2: DISPONIBILITÉS */}
         {activeTab === 'availability' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8">
-              <div className="mb-8 flex items-center justify-between">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] p-10 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+              <div className="flex items-start justify-between mb-10">
                 <div>
-                  <h3 className="text-xl font-bold text-white">Semaine type</h3>
-                  <p className="text-sm text-slate-400">Ces horaires s'appliquent à tous vos types de rendez-vous.</p>
+                  <h3 className="text-2xl font-extrabold text-white">Semaine type</h3>
+                  <p className="text-white/40 text-sm mt-1">Ces horaires s'appliquent à tous vos types de rendez-vous.</p>
                 </div>
                 <button
                   onClick={handleSaveAvailability}
-                  className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-900/20"
+                  className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-full font-bold text-sm hover:bg-white/90 transition-colors shadow-lg"
                 >
                   <Save className="h-4 w-4" /> Sauvegarder
                 </button>
               </div>
 
               {/* DÉLAI DE RÉSERVATION */}
-              <div className="mb-8 p-4 bg-slate-950/50 border border-slate-800 rounded-xl flex items-center gap-4">
-                <Clock className="h-5 w-5 text-blue-400" />
-                <div className="flex-1">
-                  <label className="text-sm font-bold text-white">Délai minimum avant réservation</label>
-                  <p className="text-xs text-slate-500">Empêche les réservations de dernière minute</p>
+              <div className="mb-10 flex items-center justify-between p-6 rounded-2xl bg-white/5 border border-white/5">
+                <div className="flex items-center gap-4">
+                  <Clock className="h-5 w-5 text-emerald-400" />
+                  <div>
+                    <p className="text-white font-bold text-sm">Délai minimum avant réservation</p>
+                    <p className="text-white/40 text-xs mt-0.5">Empêche les réservations de dernière minute</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -390,23 +399,26 @@ export function BookingSettings() {
                     min="0"
                     value={minLeadTime}
                     onChange={(e) => setMinLeadTime(parseInt(e.target.value))}
-                    className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center text-white font-bold focus:border-blue-500 outline-none"
+                    className="w-16 bg-transparent border-b border-white/10 focus:border-emerald-500 px-2 py-1 text-center text-white font-bold outline-none transition-colors"
                   />
-                  <span className="text-sm text-slate-400">heures</span>
+                  <span className="text-sm text-white/40">heures</span>
                 </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {DAYS.map((day) => {
                   const config = availability[day.id] || { enabled: false, slots: [{ start: '09:00', end: '18:00' }] }
                   return (
-                    <div key={day.id} className="flex items-center justify-between border-b border-slate-800/50 py-4 last:border-0 hover:bg-slate-800/30 px-4 rounded-lg transition-colors">
+                    <div key={day.id} className={cn(
+                      "flex items-center justify-between py-4 px-5 rounded-2xl transition-all",
+                      config.enabled ? "bg-white/[0.03] hover:bg-white/[0.05]" : "hover:bg-white/[0.02]"
+                    )}>
                       <div className="flex items-center gap-4 w-40">
                         <button
                           onClick={() => toggleDay(day.id)}
                           className={cn(
                             "h-6 w-11 rounded-full transition-colors relative flex-shrink-0",
-                            config.enabled ? "bg-blue-500" : "bg-slate-700"
+                            config.enabled ? "bg-emerald-500 shadow-lg shadow-emerald-500/20" : "bg-white/10"
                           )}
                         >
                           <div className={cn(
@@ -414,7 +426,7 @@ export function BookingSettings() {
                             config.enabled ? "left-6" : "left-1"
                           )} />
                         </button>
-                        <span className={cn("font-bold", config.enabled ? "text-white" : "text-slate-500")}>{day.label}</span>
+                        <span className={cn("font-bold text-sm", config.enabled ? "text-white" : "text-white/40")}>{day.label}</span>
                       </div>
 
                       {config.enabled ? (
@@ -423,18 +435,18 @@ export function BookingSettings() {
                             type="time"
                             value={config.slots[0]?.start || '09:00'}
                             onChange={(e) => updateTime(day.id, 'start', e.target.value)}
-                            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-white outline-none focus:border-blue-500 transition-colors"
+                            className="rounded-xl bg-white/5 border border-white/[0.08] px-4 py-2 text-sm text-white font-medium outline-none focus:border-emerald-500 transition-colors"
                           />
-                          <span className="text-slate-600 font-bold">-</span>
+                          <span className="text-white/20 font-bold">-</span>
                           <input
                             type="time"
                             value={config.slots[0]?.end || '18:00'}
                             onChange={(e) => updateTime(day.id, 'end', e.target.value)}
-                            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-white outline-none focus:border-blue-500 transition-colors"
+                            className="rounded-xl bg-white/5 border border-white/[0.08] px-4 py-2 text-sm text-white font-medium outline-none focus:border-emerald-500 transition-colors"
                           />
                         </div>
                       ) : (
-                        <span className="text-sm font-medium text-slate-600 italic px-3">Indisponible</span>
+                        <span className="text-sm font-medium text-white/20 italic px-3">Indisponible</span>
                       )}
                     </div>
                   )

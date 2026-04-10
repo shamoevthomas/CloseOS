@@ -41,7 +41,7 @@ const formatCurrency = (n: number) => n.toLocaleString('fr-FR')
 const formatPercent = (n: number) => n.toFixed(1)
 
 export function SetterKPI() {
-  const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
+  const { user, teamMember, ownerUserId, isTeamMember, isSolo } = useBusinessAuth()
   const [searchParams] = useSearchParams()
   const effectiveOwnerId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
@@ -610,7 +610,7 @@ export function SetterKPI() {
         <KpiCard title="CA Généré" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title="Ventes Totales" value={v.sales} icon={ShoppingCart} color="blue" />
         <KpiCard title="Taux de Closing" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" subtitle={showSetterCards ? `${setterDisplay.won.length} gagnés / ${setterDisplay.qualifiedAll.length} qualifiés` : undefined} />
-        {!hideSetterCommission && <KpiCard title={isOwnerView ? 'Commissions' : 'Mes Commissions'} value={`${formatCurrency(v.commission)} €`} icon={Award} color="stone" highlight />}
+        {!hideSetterCommission && !isSolo && <KpiCard title={isOwnerView ? 'Commissions' : 'Mes Commissions'} value={`${formatCurrency(v.commission)} €`} icon={Award} color="stone" highlight />}
         <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" subtitle={showSetterCards ? `${setterDisplay.noShow.length} no shows / ${setterDisplay.qualifiedAll.length} qualifiés` : undefined} />
         <KpiCard title="Deals Perdus" value={v.lost} icon={Ban} color="stone" />
       </div>

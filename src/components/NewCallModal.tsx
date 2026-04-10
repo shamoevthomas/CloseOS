@@ -76,14 +76,14 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative w-full max-w-md rounded-xl bg-slate-900 p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
+      <div className="relative w-full max-w-md rounded-2xl bg-[#1a1a1a] border border-white/[0.08] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">📞 Nouveau Call</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="rounded-full p-1 text-white/40 hover:bg-white/10 hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
@@ -94,13 +94,13 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
           <div className="space-y-4">
             {/* Prospect Selector */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">
+              <label className="mb-2 block text-sm font-medium text-white/60">
                 Prospect
               </label>
               <select
                 value={selectedProspectId || ''}
                 onChange={(e) => setSelectedProspectId(Number(e.target.value))}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
               >
                 <option value="">Sélectionner un prospect</option>
                 {prospects.map((prospect) => (
@@ -115,7 +115,7 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
             <button
               onClick={handleGenerateLink}
               disabled={!selectedProspectId || isCreating}
-              className="w-full rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-full bg-emerald-500 px-6 py-3 font-semibold text-black transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isCreating ? (
                 <span className="flex items-center justify-center gap-2">
@@ -133,8 +133,8 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
         {generatedLink && (
           <div className="space-y-4">
             {/* Selected Prospect Info */}
-            <div className="rounded-lg bg-slate-800/50 p-3">
-              <p className="text-sm text-slate-400">Prospect</p>
+            <div className="rounded-xl bg-white/[0.03] border border-white/[0.08] p-3">
+              <p className="text-sm text-white/40">Prospect</p>
               <p className="font-semibold text-white">
                 {prospects.find((p) => p.id === selectedProspectId)?.company} -{' '}
                 {prospects.find((p) => p.id === selectedProspectId)?.contact}
@@ -143,7 +143,7 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
 
             {/* Generated Link */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">
+              <label className="mb-2 block text-sm font-medium text-white/60">
                 Lien de visioconférence
               </label>
               <div className="flex gap-2">
@@ -151,11 +151,11 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
                   type="text"
                   value={generatedLink}
                   readOnly
-                  className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-slate-300 focus:outline-none"
+                  className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/60 focus:outline-none"
                 />
                 <button
                   onClick={handleCopyLink}
-                  className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white transition-colors hover:bg-slate-700"
+                  className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-white transition-colors hover:bg-white/10"
                   title="Copier le lien"
                 >
                   {isCopied ? (
@@ -170,7 +170,7 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
             {/* Join Button */}
             <button
               onClick={handleJoinCall}
-              className="w-full rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-purple-700"
+              className="w-full rounded-full bg-emerald-500 px-6 py-3 font-semibold text-black transition-colors hover:bg-emerald-400"
             >
               <span className="flex items-center justify-center gap-2">
                 <Phone className="h-5 w-5" />

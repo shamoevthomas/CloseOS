@@ -34,6 +34,9 @@ import {
   Globe,
   ShieldCheck,
   XCircle,
+  Check,
+  Gift,
+  Copy,
 } from 'lucide-react';
 import { translations, detectLang, LangContext, useLang } from './businessLandingI18n';
 import type { Lang } from './businessLandingI18n';
@@ -43,7 +46,7 @@ export const BusinessLanding: React.FC = () => {
   const pageRef = useRef<HTMLDivElement>(null);
   const demoIframeRef = useRef<HTMLIFrameElement>(null);
   const [isExiting, setIsExiting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // WaitingListModal removed — replaced with direct checkout links
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lang, setLang] = useState<Lang>('fr');
@@ -294,8 +297,8 @@ export const BusinessLanding: React.FC = () => {
     <div ref={pageRef} className={`bg-[#f4f2f1] font-sans text-[#111111] min-h-screen selection:bg-[#8a43e1]/20 transition-all duration-500 ${isExiting ? 'translate-y-full opacity-0' : 'animate-[pageEnterFromTop_0.5s_ease-out]'}`}>
 
       {/* Navigation */}
-      <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-5xl">
-        <div className="bg-white/80 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-2 flex items-center justify-between shadow-sm">
+      <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-7xl">
+        <div className="bg-white/80 backdrop-blur-md border border-stone-200/50 rounded-2xl px-8 py-3.5 flex items-center justify-between shadow-sm">
           <div className="relative group flex items-center gap-1 cursor-pointer">
             <img
               alt="CloseOS Business"
@@ -319,6 +322,7 @@ export const BusinessLanding: React.FC = () => {
             <a href="#crm" className="hover:text-[#111111] transition-colors">{t.nav_crm}</a>
             <a href="#roles" className="hover:text-[#111111] transition-colors">{t.nav_roles}</a>
             <a href="#demo" className="hover:text-[#111111] transition-colors">{t.nav_demo}</a>
+            <a href="#pricing" className="hover:text-[#111111] transition-colors">{t.nav_pricing}</a>
             <a href="#faq" className="hover:text-[#111111] transition-colors">{t.nav_faq}</a>
           </div>
 
@@ -331,12 +335,18 @@ export const BusinessLanding: React.FC = () => {
               <Globe className="size-4" />
               <span className="text-xs font-bold uppercase">{lang === 'fr' ? 'EN' : 'FR'}</span>
             </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
+            <Link
+              to="/business/login"
+              className="hidden sm:flex items-center justify-center rounded-lg h-10 px-5 text-stone-700 text-sm font-semibold tracking-wide hover:text-stone-900 transition-all"
+            >
+              {lang === 'fr' ? 'Se connecter' : 'Log in'}
+            </Link>
+            <a
+              href="#pricing"
               className="hidden sm:flex items-center justify-center rounded-lg h-10 px-5 text-white text-sm font-semibold tracking-wide hover:opacity-90 transition-all bg-[#111111]"
             >
-              {t.nav_waitlist}
-            </button>
+              {lang === 'fr' ? 'Commencer' : 'Get started'}
+            </a>
             <button
               onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
               className="md:hidden p-2 text-stone-600"
@@ -356,13 +366,22 @@ export const BusinessLanding: React.FC = () => {
             <a href="#crm" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_crm}</a>
             <a href="#roles" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_roles}</a>
             <a href="#demo" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_demo}</a>
+            <a href="#pricing" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_pricing}</a>
             <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_faq}</a>
-            <button
-              onClick={() => { setIsMobileMenuOpen(false); setIsModalOpen(true); }}
+            <Link
+              to="/business/login"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-stone-700 font-semibold text-sm py-1 sm:hidden"
+            >
+              {lang === 'fr' ? 'Se connecter' : 'Log in'}
+            </Link>
+            <a
+              href="#pricing"
+              onClick={() => setIsMobileMenuOpen(false)}
               className="flex items-center justify-center rounded-lg h-10 px-5 text-white text-sm font-semibold tracking-wide hover:opacity-90 transition-all bg-[#111111] sm:hidden"
             >
-              {t.nav_waitlist}
-            </button>
+              {lang === 'fr' ? 'Commencer' : 'Get started'}
+            </a>
           </div>
         )}
       </nav>
@@ -411,15 +430,18 @@ export const BusinessLanding: React.FC = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-4">
-              <button
-                onClick={() => setIsModalOpen(true)}
+              <a
+                href="#pricing"
                 className="flex min-w-[200px] items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-semibold shadow-lg hover:-translate-y-1 transition-all bg-[#111111]"
               >
-                {t.hero_cta}
-              </button>
+                {lang === 'fr' ? 'Commencer maintenant' : 'Get started now'}
+              </a>
             </div>
-
-            <p className="text-sm text-stone-500 font-medium mt-6">
+            <a href="https://www.whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 text-sm text-stone-500 hover:text-[#111111] transition-colors group mt-2">
+              <span className="text-green-500">📲</span>
+              <span className="underline underline-offset-4 decoration-stone-300 group-hover:decoration-[#111111] transition-all">{lang === 'fr' ? 'Rejoindre le canal WhatsApp' : 'Join the WhatsApp channel'}</span>
+            </a>
+            <p className="text-sm text-stone-500 font-medium mt-1">
               {t.hero_social_proof.split('{count}')[0]}<span className="font-bold text-[#111111]">{t.hero_social_proof_count}</span>{t.hero_social_proof.split('{count}')[1]}
             </p>
 
@@ -591,12 +613,12 @@ export const BusinessLanding: React.FC = () => {
         <FeaturesByRole />
 
         <div className="flex justify-center -mt-8 mb-16">
-          <button
-            onClick={() => setIsModalOpen(true)}
+          <a
+            href="#pricing"
             className="flex items-center justify-center rounded-xl h-14 px-8 text-white text-lg font-semibold shadow-lg hover:-translate-y-1 transition-all bg-[#111111]"
           >
-            {t.roles_cta}
-          </button>
+            {lang === 'fr' ? 'Commencer' : 'Get started'}
+          </a>
         </div>
 
         {/* Demo Section */}
@@ -638,6 +660,9 @@ export const BusinessLanding: React.FC = () => {
           </div>
         </motion.section>
 
+        {/* Pricing Section */}
+        <PricingSection />
+
         {/* FAQ Section */}
         <FAQSection />
 
@@ -653,12 +678,12 @@ export const BusinessLanding: React.FC = () => {
             <h2 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight text-[#111111]">{t.final_cta_title}</h2>
             <p className="text-stone-500 text-xl">{t.final_cta_subtitle}</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <button
-                onClick={() => setIsModalOpen(true)}
+              <a
+                href="#pricing"
                 className="w-full sm:w-auto flex min-w-[240px] items-center justify-center rounded-xl h-16 px-10 text-white text-lg font-semibold shadow-xl hover:-translate-y-1 transition-all bg-[#111111]"
               >
-                {t.final_cta_button}
-              </button>
+                {lang === 'fr' ? 'Commencer maintenant' : 'Get started now'}
+              </a>
             </div>
           </div>
         </motion.section>
@@ -688,8 +713,6 @@ export const BusinessLanding: React.FC = () => {
 
       {/* Fixed bottom blur cue */}
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#f4f2f1] via-[#f4f2f1]/80 to-transparent backdrop-blur-[1px] pointer-events-none z-[80]" />
-
-      <WaitingListModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       {/* Floating Scroll to Top Button */}
       <button
@@ -1523,6 +1546,364 @@ const FAQItem = ({ question, answer }: { question: string; answer: React.ReactNo
         </div>
       )}
     </div>
+  );
+};
+
+const pricingPlans = [
+  {
+    name: 'Solo',
+    planKey: 'solo',
+    emoji: '🔵',
+    price: '39',
+    priceQuarterly: '32',
+    quarterlyTotal: '96',
+    priceAnnual: '28',
+    annualTotal: '336',
+    popular: false,
+    description: '1 seul utilisateur — l\'infopreneur qui close seul',
+    features: [
+      'CRM & Pipeline visuel',
+      'Système d\'acquisition complet (campagnes, embed/iframe, tracking UTM, KPIs par source)',
+      'Cockpit d\'appel plein écran (script, notes, offre, ressources)',
+      'Enregistrement vidéo/audio des calls',
+      'Agenda + sync Google Calendar',
+      'Rendez-vous + booking links',
+      'Rappels',
+      'KPIs personnels',
+      'Facturation',
+      'Objectifs personnels',
+      'Rapports',
+    ],
+  },
+  {
+    name: 'Business',
+    planKey: 'business',
+    emoji: '🟤',
+    price: '59',
+    priceQuarterly: '48',
+    quarterlyTotal: '144',
+    priceAnnual: '42',
+    annualTotal: '504',
+    popular: false,
+    description: '3 équipiers inclus — tout pour gérer une équipe',
+    features: [
+      'Tout ce que le Solo a, SAUF le système d\'acquisition',
+      'Gestion d\'équipe complète (6 rôles : Owner, Admin, HOS, Closer, Setter, Setter-Closer)',
+      'Vue macro Owner en temps réel sur toute l\'équipe',
+      'Invitation des membres par lien magique (expiration 7j)',
+      'Kanban partagé avec filtres avancés',
+      'Objectifs assignables par membre',
+      'Monday Morning Reporting automatique',
+      'Factures de toute l\'organisation',
+      'KPIs par membre / par offre / global',
+      'Rapport avec export PDF',
+      'Gestion des disponibilités et absences par membre',
+    ],
+  },
+  {
+    name: 'Business + Acquisition',
+    planKey: 'business_acquisition',
+    emoji: '🟢',
+    price: '99',
+    priceQuarterly: '81',
+    quarterlyTotal: '243',
+    priceAnnual: '71',
+    annualTotal: '852',
+    popular: true,
+    description: '3 équipiers inclus — l\'arsenal complet',
+    features: [
+      'Tout ce que Business a',
+      'Système d\'acquisition complet en plus :',
+    ],
+    subFeatures: [
+      'Création/gestion de campagnes (mode avec RDV ou inscription seule)',
+      'Page de capture configurable (titre, vidéo, champs custom, redirection)',
+      'Génération de code embed (iframe ou popup bloquant)',
+      'Tracking UTM + formule par défaut',
+      'KPIs acquisition : vues, leads, taux de conversion par campagne',
+      'Graphiques : camembert (campagnes les plus converties), barres (CA par campagne)',
+    ],
+  },
+  {
+    name: 'Enterprise / Challenge',
+    planKey: 'enterprise',
+    emoji: '⚪',
+    price: null,
+    priceAnnual: null,
+    annualTotal: null,
+    popular: false,
+    description: 'Sur devis — idéal pour les challenges & grandes organisations',
+    features: [
+      'Membres illimités',
+      'Tout le système d\'acquisition inclus',
+      'Setup + Intégration inclus',
+      'Support prioritaire dédié',
+      'Accès one-shot limité à la durée du challenge',
+      'Aussi disponible en abonnement mensuel classique',
+    ],
+  },
+];
+
+const pricingExtras = [
+  {
+    name: 'Setup',
+    price: '60€',
+    type: 'one-shot',
+    description: 'Configuration complète de l\'outil : campagnes, formules, pipeline, équipe, onboarding des membres. L\'infopreneur n\'a rien à toucher, tout est livré prêt à l\'emploi.',
+  },
+  {
+    name: 'Intégration',
+    price: '80€',
+    type: 'one-shot',
+    description: 'Intégration technique sur le site du client : rajout/remplacement iframe, embed, pop up. Utile pour ceux qui avaient un iframe iClosed et veulent passer sur CloseOS.',
+  },
+  {
+    name: 'Setup + Intégration',
+    price: '120€',
+    type: 'one-shot',
+    description: 'Les deux combinés.',
+  },
+];
+
+type BillingCycle = 'annual' | 'quarterly' | 'monthly';
+
+const PricingSection = () => {
+  const [billing, setBilling] = useState<BillingCycle>('annual');
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
+  const { t, lang } = useLang();
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="px-6 md:px-20 py-32 bg-white border-y border-stone-200"
+      id="pricing"
+    >
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16 space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-4">
+            <span className="text-sm font-semibold text-stone-800">{lang === 'fr' ? 'Tarifs' : 'Pricing'}</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight text-balance">
+            {lang === 'fr' ? 'Un plan pour chaque ambition' : 'A plan for every ambition'}
+          </h2>
+          <p className="text-stone-500 text-lg max-w-2xl mx-auto">
+            {lang === 'fr'
+              ? 'Du solopreneur à l\'entreprise — choisissez la formule qui correspond à votre stade de croissance.'
+              : 'From solopreneur to enterprise — choose the plan that matches your growth stage.'}
+            <br />
+            <span className="font-semibold text-emerald-600">🎁 {lang === 'fr' ? '20 jours offerts sur toutes les formules.' : '20 free days on all plans.'}</span>
+          </p>
+
+          <div className="flex items-center justify-center pt-6">
+            <div className="relative grid grid-cols-3 rounded-full bg-stone-100 border border-stone-200 p-1" style={{ minWidth: 340 }}>
+              {/* Sliding bubble */}
+              <div
+                className="absolute top-1 bottom-1 rounded-full bg-[#111111] shadow-md transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                style={{
+                  width: 'calc(33.333% - 3px)',
+                  left: billing === 'annual' ? '4px' : billing === 'quarterly' ? 'calc(33.333% + 0.5px)' : 'calc(66.666% - 1px)',
+                }}
+              />
+              {([
+                { key: 'annual' as BillingCycle, label: lang === 'fr' ? 'Annuel' : 'Annual', discount: '-28%' },
+                { key: 'quarterly' as BillingCycle, label: lang === 'fr' ? 'Trimestriel' : 'Quarterly', discount: '-18%' },
+                { key: 'monthly' as BillingCycle, label: lang === 'fr' ? 'Mensuel' : 'Monthly', discount: null },
+              ]).map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setBilling(opt.key)}
+                  className={`relative z-10 text-center px-4 py-2.5 rounded-full text-sm font-bold transition-colors duration-300 ${
+                    billing === opt.key
+                      ? 'text-white'
+                      : 'text-stone-500 hover:text-[#111111]'
+                  }`}
+                >
+                  {opt.discount && (
+                    <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-lg shadow-emerald-500/30 whitespace-nowrap ring-2 ring-white">
+                      {opt.discount}
+                    </span>
+                  )}
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+          {pricingPlans.map((plan, idx) => (
+            <motion.div
+              key={plan.name}
+              initial={{ opacity: 0, y: 24, filter: 'blur(4px)' }}
+              whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.6, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className={`relative rounded-3xl p-7 flex flex-col border transition-shadow duration-300 hover:shadow-lg ${
+                plan.popular
+                  ? 'bg-[#111111] text-white border-[#111111] shadow-xl shadow-stone-900/20'
+                  : 'bg-white border-stone-200 shadow-sm'
+              }`}
+            >
+              {plan.popular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-[#ff2f2f] via-[#ef7b16] to-[#d511fd] text-white text-[10px] font-bold uppercase tracking-widest">
+                  {lang === 'fr' ? 'Populaire' : 'Popular'}
+                </div>
+              )}
+
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">{plan.emoji}</span>
+                  <h3 className={`text-lg font-bold ${plan.popular ? 'text-white' : 'text-[#111111]'}`}>{plan.name}</h3>
+                </div>
+
+                {plan.price ? (
+                  <div className="flex items-baseline gap-1 mb-2">
+                    <span className={`text-4xl font-black tracking-tight ${plan.popular ? 'text-white' : 'text-[#111111]'}`}>
+                      {billing === 'annual' ? plan.priceAnnual : billing === 'quarterly' ? (plan.priceQuarterly || plan.price) : plan.price}€
+                    </span>
+                    <span className={`text-sm font-medium ${plan.popular ? 'text-stone-400' : 'text-stone-500'}`}>/{lang === 'fr' ? 'mois' : 'mo'}</span>
+                  </div>
+                ) : (
+                  <div className="mb-2">
+                    <span className={`text-3xl font-black tracking-tight ${plan.popular ? 'text-white' : 'text-[#111111]'}`}>{lang === 'fr' ? 'Sur devis' : 'Custom'}</span>
+                  </div>
+                )}
+
+                {billing === 'annual' && plan.annualTotal && (
+                  <p className="text-xs font-semibold text-stone-400">
+                    {plan.annualTotal}€/{lang === 'fr' ? 'an facturé annuellement' : 'year billed annually'}
+                  </p>
+                )}
+                {billing === 'quarterly' && plan.quarterlyTotal && (
+                  <p className="text-xs font-semibold text-stone-400">
+                    {plan.quarterlyTotal}€/{lang === 'fr' ? 'trimestre' : 'quarter'}
+                  </p>
+                )}
+
+                <p className={`text-sm font-medium mt-3 ${plan.popular ? 'text-stone-300' : 'text-stone-500'}`}>
+                  {plan.description}
+                </p>
+              </div>
+
+              {plan.price ? (
+                <a
+                  href={`/business/checkout?plan=${plan.planKey}&billing=${billing}`}
+                  className={`w-full flex items-center justify-center rounded-xl h-12 font-bold text-sm transition-all hover:-translate-y-0.5 active:scale-[0.98] mb-6 ${
+                    plan.popular
+                      ? 'bg-white text-[#111111] hover:bg-stone-100'
+                      : 'bg-[#111111] text-white hover:bg-stone-800'
+                  }`}
+                >
+                  {lang === 'fr' ? 'Commencer' : 'Get started'}
+                </a>
+              ) : (
+                <button
+                  onClick={() => setContactModalOpen(true)}
+                  className="w-full flex items-center justify-center rounded-xl h-12 font-bold text-sm transition-all hover:-translate-y-0.5 active:scale-[0.98] mb-6 bg-stone-100 text-[#111111] hover:bg-stone-200 border border-stone-200"
+                >
+                  {lang === 'fr' ? 'Nous contacter' : 'Contact us'}
+                </button>
+              )}
+
+              <ul className="space-y-3 flex-1">
+                {plan.features.map((feature, i) => (
+                  <li key={i} className="flex items-start gap-2.5">
+                    <Check className={`size-4 mt-0.5 flex-shrink-0 ${plan.popular ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                    <span className={`text-sm font-medium leading-relaxed ${plan.popular ? 'text-stone-300' : 'text-stone-600'}`}>{feature}</span>
+                  </li>
+                ))}
+                {plan.subFeatures && (
+                  <li className="pl-7">
+                    <ul className="space-y-2 mt-1">
+                      {plan.subFeatures.map((sub, j) => (
+                        <li key={j} className="flex items-start gap-2">
+                          <ArrowRight className={`size-3 mt-1 flex-shrink-0 ${plan.popular ? 'text-stone-500' : 'text-stone-400'}`} />
+                          <span className={`text-xs font-medium leading-relaxed ${plan.popular ? 'text-stone-400' : 'text-stone-500'}`}>{sub}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                )}
+              </ul>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="bg-[#111111] rounded-3xl p-8 md:p-12 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-amber-500/20 to-orange-600/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-8">
+                <Gift className="size-6 text-amber-400" />
+                <h3 className="text-2xl font-bold text-white tracking-tight">Extras</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {pricingExtras.map((extra, i) => (
+                  <motion.div
+                    key={extra.name}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                    className="bg-white/5 border border-white/10 rounded-2xl p-6"
+                  >
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <h4 className="text-white font-bold text-lg">{extra.name}</h4>
+                      <span className="text-stone-400 text-sm font-medium">— {extra.price} {extra.type}</span>
+                    </div>
+                    <p className="text-stone-400 text-sm font-medium leading-relaxed mt-3">{extra.description}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Contact modal */}
+      {contactModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setContactModalOpen(false)}>
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mx-auto mb-4">
+              <Mail className="h-5 w-5 text-stone-600" />
+            </div>
+            <h3 className="text-lg font-extrabold text-[#111111] tracking-tight mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              {lang === 'fr' ? 'Contactez-nous' : 'Contact us'}
+            </h3>
+            <div className="flex items-center justify-center gap-2 mb-5">
+              <p className="text-sm text-stone-500">thomasshamoev@gmail.com</p>
+              <button
+                onClick={() => { navigator.clipboard.writeText('thomasshamoev@gmail.com'); setEmailCopied(true); setTimeout(() => setEmailCopied(false), 2000); }}
+                className="text-stone-400 hover:text-stone-600 transition-colors"
+                title={lang === 'fr' ? 'Copier' : 'Copy'}
+              >
+                {emailCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+              </button>
+            </div>
+            <a
+              href="https://mail.google.com/mail/?view=cm&to=thomasshamoev@gmail.com&su=CloseOS%20Enterprise%20%2F%20Challenge"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-[#111111] text-white h-11 font-bold text-sm hover:bg-stone-800 transition-all active:scale-[0.98]"
+            >
+              {lang === 'fr' ? 'Ouvrir dans Gmail' : 'Open in Gmail'}
+            </a>
+            <button onClick={() => setContactModalOpen(false)} className="mt-3 text-sm text-stone-400 hover:text-stone-600 transition-colors font-medium">
+              {lang === 'fr' ? 'Fermer' : 'Close'}
+            </button>
+          </div>
+        </div>
+      )}
+    </motion.section>
   );
 };
 

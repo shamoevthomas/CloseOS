@@ -246,27 +246,27 @@ export default function CallRoom() {
     };
 
     return (
-        <div className="flex h-screen w-screen bg-[#020617] text-slate-100 flex-col font-sans overflow-hidden relative selection:bg-blue-500/30">
+        <div className="flex h-screen w-screen bg-[#020617] text-white/80 flex-col font-sans overflow-hidden relative selection:bg-emerald-500/30">
 
             {/* Background Ambience Bloom */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen z-0" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-emerald-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen z-0" />
             <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen z-0" />
 
             {/* --- HEADER --- */}
             <div className="h-16 shrink-0 border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 flex items-center justify-between shadow-lg z-50 relative">
                 <div className="flex items-center gap-4">
-                    <div className="bg-blue-600/20 text-blue-400 p-2 rounded-lg">
+                    <div className="bg-emerald-500/20 text-emerald-400 p-2 rounded-lg">
                         <Monitor className="h-5 w-5" />
                     </div>
                     <div>
                         <h1 className="font-bold text-lg">{contactName}</h1>
-                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                        <div className="flex items-center gap-2 text-xs text-white/40 mt-0.5">
                             <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 <span className="font-medium text-emerald-400">En ligne</span>
                             </div>
-                            <span className="text-slate-600">•</span>
-                            <span className="font-mono text-slate-300 font-medium tracking-wide">
+                            <span className="text-white/10">•</span>
+                            <span className="font-mono text-white/60 font-medium tracking-wide">
                                 {formatDuration(callDuration)}
                             </span>
                         </div>
@@ -277,7 +277,7 @@ export default function CallRoom() {
                     {prospect && (
                         <button
                             onClick={() => setShowProspectView(true)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-sm font-medium transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-sm font-medium transition-colors"
                         >
                             <User className="h-4 w-4" />
                             Fiche Prospect
@@ -286,7 +286,7 @@ export default function CallRoom() {
 
                     <button
                         onClick={() => window.open('https://meet.google.com', '_blank')}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-800 text-sm font-medium transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/[0.08] hover:bg-white/5 text-sm font-medium transition-colors"
                     >
                         <ExternalLink className="h-4 w-4" />
                         Meet
@@ -296,7 +296,7 @@ export default function CallRoom() {
                         onClick={isRecording ? stopRecording : startRecording}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${isRecording
                             ? 'bg-red-500/10 text-red-500 border border-red-500/50 animate-pulse'
-                            : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
+                            : 'bg-white/5 hover:bg-white/10 text-white border border-white/[0.08]'
                             }`}
                     >
                         {isRecording ? (
@@ -306,7 +306,7 @@ export default function CallRoom() {
                             </>
                         ) : (
                             <>
-                                <div className="h-3 w-3 rounded-full bg-slate-400"></div>
+                                <div className="h-3 w-3 rounded-full bg-white/40"></div>
                                 Enregistrer
                             </>
                         )}
@@ -314,13 +314,13 @@ export default function CallRoom() {
 
                     <button
                         onClick={() => setIsPanelOpen(!isPanelOpen)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${isPanelOpen ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-700 hover:bg-slate-800'}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${isPanelOpen ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-white/[0.08] hover:bg-white/5'}`}
                     >
                         <FileText className="h-4 w-4" />
                         PANNEAU GAUCHE
                     </button>
 
-                    <div className="h-8 w-px bg-slate-800 mx-2"></div>
+                    <div className="h-8 w-px bg-white/[0.08] mx-2"></div>
 
                     <button
                         onClick={handleLeave}
@@ -336,41 +336,41 @@ export default function CallRoom() {
             <div className="flex-1 flex overflow-hidden">
 
                 {/* === VOLET GAUCHE (SCRIPT + OFFRE) === */}
-                <div className={`transition-all duration-300 border-r border-slate-800 bg-slate-900 flex flex-col ${isPanelOpen ? 'w-5/12' : 'w-0 overflow-hidden opacity-0'}`}>
+                <div className={`transition-all duration-300 border-r border-white/[0.08] bg-[#1a1a1a] flex flex-col ${isPanelOpen ? 'w-5/12' : 'w-0 overflow-hidden opacity-0'}`}>
 
                     {/* 1. PARTIE HAUTE : SCRIPT DE VENTE (50%) */}
-                    <div className="h-1/2 flex flex-col border-b border-slate-800">
-                        <div className="p-3 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+                    <div className="h-1/2 flex flex-col border-b border-white/[0.08]">
+                        <div className="p-3 border-b border-white/[0.08] bg-[#1a1a1a]/50 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-blue-400" />
-                                <span className="text-xs font-bold text-blue-400 tracking-wider">SCRIPT</span>
+                                <FileText className="h-4 w-4 text-emerald-400" />
+                                <span className="text-xs font-bold text-emerald-400 tracking-wider">SCRIPT</span>
                             </div>
                             {/* Sélecteur de Script */}
                             <div className="relative group">
                                 <select
                                     value={selectedScriptId}
                                     onChange={(e) => setSelectedScriptId(e.target.value)}
-                                    className="appearance-none bg-slate-800 border border-slate-700 hover:border-slate-600 text-white text-xs rounded-md px-3 py-1.5 pr-8 focus:outline-none focus:border-blue-500 cursor-pointer min-w-[150px]"
+                                    className="appearance-none bg-white/5 border border-white/[0.08] hover:border-white/20 text-white text-xs rounded-md px-3 py-1.5 pr-8 focus:outline-none focus:border-emerald-500 cursor-pointer min-w-[150px]"
                                 >
                                     {scripts.map(s => (
                                         <option key={s.id} value={s.id}>{s.title || 'Sans titre'}</option>
                                     ))}
                                 </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40 pointer-events-none" />
                             </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
-                            <div className="prose prose-invert prose-sm max-w-none text-slate-300 whitespace-pre-wrap leading-relaxed font-normal">
+                        <div className="flex-1 overflow-y-auto p-6 bg-[#1a1a1a]">
+                            <div className="prose prose-invert prose-sm max-w-none text-white/60 whitespace-pre-wrap leading-relaxed font-normal">
                                 {currentScriptContent}
                             </div>
                         </div>
                     </div>
 
                     {/* 2. PARTIE BASSE : DÉTAILS OFFRE (50%) */}
-                    <div className="h-1/2 flex flex-col bg-slate-800/20">
+                    <div className="h-1/2 flex flex-col bg-white/[0.03]">
 
                         {/* Header Offre */}
-                        <div className="p-3 border-b border-slate-800 bg-slate-900/50 flex flex-col gap-3">
+                        <div className="p-3 border-b border-white/[0.08] bg-[#1a1a1a]/50 flex flex-col gap-3">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Briefcase className="h-4 w-4 text-purple-400" />
@@ -381,33 +381,33 @@ export default function CallRoom() {
                                     <select
                                         value={selectedOfferId}
                                         onChange={(e) => setSelectedOfferId(e.target.value)}
-                                        className="appearance-none bg-slate-800 border border-slate-700 hover:border-slate-600 text-white text-xs rounded-md px-3 py-1.5 pr-8 focus:outline-none focus:border-purple-500 cursor-pointer min-w-[150px]"
+                                        className="appearance-none bg-white/5 border border-white/[0.08] hover:border-white/20 text-white text-xs rounded-md px-3 py-1.5 pr-8 focus:outline-none focus:border-purple-500 cursor-pointer min-w-[150px]"
                                     >
                                         {offers.map(o => (
                                             <option key={o.id} value={o.id}>{o.name}</option>
                                         ))}
                                     </select>
-                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40 pointer-events-none" />
                                 </div>
                             </div>
 
                             {/* Onglets Offre */}
-                            <div className="flex gap-1 bg-slate-950/50 p-1 rounded-lg">
+                            <div className="flex gap-1 bg-[#1a1a1a]/50 p-1 rounded-lg">
                                 <button
                                     onClick={() => setActiveOfferTab('notes')}
-                                    className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5", activeOfferTab === 'notes' ? "bg-purple-600 text-white shadow" : "text-slate-400 hover:text-white hover:bg-slate-800")}
+                                    className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5", activeOfferTab === 'notes' ? "bg-purple-600 text-white shadow" : "text-white/40 hover:text-white hover:bg-white/5")}
                                 >
                                     <ScrollText className="h-3 w-3" /> Notes Closing
                                 </button>
                                 <button
                                     onClick={() => setActiveOfferTab('formulas')}
-                                    className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5", activeOfferTab === 'formulas' ? "bg-purple-600 text-white shadow" : "text-slate-400 hover:text-white hover:bg-slate-800")}
+                                    className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5", activeOfferTab === 'formulas' ? "bg-purple-600 text-white shadow" : "text-white/40 hover:text-white hover:bg-white/5")}
                                 >
                                     <Tag className="h-3 w-3" /> Formules
                                 </button>
                                 <button
                                     onClick={() => setActiveOfferTab('resources')}
-                                    className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5", activeOfferTab === 'resources' ? "bg-purple-600 text-white shadow" : "text-slate-400 hover:text-white hover:bg-slate-800")}
+                                    className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5", activeOfferTab === 'resources' ? "bg-purple-600 text-white shadow" : "text-white/40 hover:text-white hover:bg-white/5")}
                                 >
                                     <BookOpen className="h-3 w-3" /> Ressources
                                 </button>
@@ -415,15 +415,15 @@ export default function CallRoom() {
                         </div>
 
                         {/* Contenu Offre */}
-                        <div className="flex-1 overflow-y-auto p-4 bg-slate-900">
+                        <div className="flex-1 overflow-y-auto p-4 bg-[#1a1a1a]">
                             {!currentOffer ? (
-                                <p className="text-sm text-slate-500 text-center mt-10">Sélectionnez une offre pour voir les détails.</p>
+                                <p className="text-sm text-white/40 text-center mt-10">Sélectionnez une offre pour voir les détails.</p>
                             ) : (
                                 <>
                                     {/* Onglet: Notes de Closing */}
                                     {activeOfferTab === 'notes' && (
                                         <div className="prose prose-invert prose-sm max-w-none">
-                                            <p className="text-slate-300 whitespace-pre-wrap">{currentOffer.notes || "Aucune note de closing."}</p>
+                                            <p className="text-white/60 whitespace-pre-wrap">{currentOffer.notes || "Aucune note de closing."}</p>
                                         </div>
                                     )}
 
@@ -432,16 +432,16 @@ export default function CallRoom() {
                                         <div className="space-y-3">
                                             {currentOffer.formulas && Array.isArray(currentOffer.formulas) && currentOffer.formulas.length > 0 ? (
                                                 currentOffer.formulas.map((formula, idx) => (
-                                                    <div key={idx} className="p-3 rounded-lg border border-slate-800 bg-slate-800/30 flex justify-between items-center">
+                                                    <div key={idx} className="p-3 rounded-lg border border-white/[0.08] bg-white/[0.03] flex justify-between items-center">
                                                         <div>
                                                             <p className="font-semibold text-white text-sm">{formula.name}</p>
-                                                            {formula.description && <p className="text-xs text-slate-500 mt-0.5">{formula.description}</p>}
+                                                            {formula.description && <p className="text-xs text-white/40 mt-0.5">{formula.description}</p>}
                                                         </div>
                                                         <span className="text-emerald-400 font-bold text-sm">{formula.price}€</span>
                                                     </div>
                                                 ))
                                             ) : (
-                                                <p className="text-sm text-slate-500">Aucune formule configurée.</p>
+                                                <p className="text-sm text-white/40">Aucune formule configurée.</p>
                                             )}
                                         </div>
                                     )}
@@ -456,15 +456,15 @@ export default function CallRoom() {
                                                             href={res.url}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="flex items-center gap-2 p-2 rounded-lg border border-slate-800 bg-slate-800/30 hover:bg-slate-800 hover:border-purple-500/50 transition-all group"
+                                                            className="flex items-center gap-2 p-2 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:bg-white/5 hover:border-purple-500/50 transition-all group"
                                                         >
                                                             <ExternalLink className="h-3.5 w-3.5 text-purple-400 group-hover:text-white" />
-                                                            <span className="text-sm text-slate-300 group-hover:text-white group-hover:underline decoration-purple-500 underline-offset-4">{res.title || res.url}</span>
+                                                            <span className="text-sm text-white/60 group-hover:text-white group-hover:underline decoration-purple-500 underline-offset-4">{res.title || res.url}</span>
                                                         </a>
                                                     </li>
                                                 ))
                                             ) : (
-                                                <p className="text-sm text-slate-500">Aucune ressource disponible.</p>
+                                                <p className="text-sm text-white/40">Aucune ressource disponible.</p>
                                             )}
                                         </ul>
                                     )}
@@ -475,9 +475,9 @@ export default function CallRoom() {
                 </div>
 
                 {/* === VOLET DROIT : NOTES (Reste le même mais plus large si panneau fermé) === */}
-                <div className="flex-1 flex flex-col bg-slate-950 relative border-l border-slate-800">
-                    <div className="p-4 border-b border-slate-800 flex items-center gap-4 bg-slate-900/30">
-                        <h3 className="font-bold text-slate-400 text-sm tracking-wider flex items-center gap-2">
+                <div className="flex-1 flex flex-col bg-[#1a1a1a] relative border-l border-white/[0.08]">
+                    <div className="p-4 border-b border-white/[0.08] flex items-center gap-4 bg-[#1a1a1a]/30">
+                        <h3 className="font-bold text-white/40 text-sm tracking-wider flex items-center gap-2">
                             <FileText className="h-4 w-4" /> PRISE DE NOTES
                         </h3>
 
@@ -489,8 +489,8 @@ export default function CallRoom() {
                                     className={cn(
                                         "px-3 py-1 rounded-full text-xs font-semibold transition-all",
                                         !selectedPreviousNote
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+                                            ? "bg-emerald-500 text-black"
+                                            : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"
                                     )}
                                 >
                                     Actuelles
@@ -502,8 +502,8 @@ export default function CallRoom() {
                                         className={cn(
                                             "px-3 py-1 rounded-full text-xs font-semibold transition-all",
                                             selectedPreviousNote === n.id
-                                                ? "bg-blue-600 text-white"
-                                                : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+                                                ? "bg-emerald-500 text-black"
+                                                : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"
                                         )}
                                     >
                                         {new Date(n.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
@@ -514,12 +514,12 @@ export default function CallRoom() {
 
                         <div className="flex items-center gap-2 ml-auto">
                             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                            <span className="text-xs text-slate-500">Sauvegarde auto</span>
+                            <span className="text-xs text-white/40">Sauvegarde auto</span>
                         </div>
                     </div>
 
                     {selectedPreviousNote ? (
-                        <div className="flex-1 w-full p-8 text-slate-300 text-lg leading-relaxed font-light whitespace-pre-wrap overflow-y-auto">
+                        <div className="flex-1 w-full p-8 text-white/60 text-lg leading-relaxed font-light whitespace-pre-wrap overflow-y-auto">
                             {previousNotes.find((n: any) => n.id === selectedPreviousNote)?.content || 'Aucune note'}
                         </div>
                     ) : (
@@ -527,7 +527,7 @@ export default function CallRoom() {
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             placeholder="Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)"
-                            className="flex-1 w-full bg-transparent p-8 text-white placeholder-slate-600 resize-none focus:outline-none text-lg leading-relaxed font-light"
+                            className="flex-1 w-full bg-transparent p-8 text-white placeholder-white/10 resize-none focus:outline-none text-lg leading-relaxed font-light"
                             autoFocus
                         />
                     )}

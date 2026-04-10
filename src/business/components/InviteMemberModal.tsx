@@ -7,9 +7,10 @@ const DEFAULT_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Admin', 'Head of Sa
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onSeatLimitReached?: () => void;
 }
 
-export function InviteMemberModal({ isOpen, onClose }: Props) {
+export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props) {
   const { user, businessProfile, businessSettings } = useBusinessAuth();
   const [selectedRole, setSelectedRole] = useState('Closer');
   const [loading, setLoading] = useState(false);
@@ -43,6 +44,10 @@ export function InviteMemberModal({ isOpen, onClose }: Props) {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.error === 'seat_limit_reached' && onSeatLimitReached) {
+          onSeatLimitReached();
+          return;
+        }
         console.error('Error creating invitation:', data.error);
         return;
       }

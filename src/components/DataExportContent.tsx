@@ -166,10 +166,10 @@ export function DataExportContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-400">Sélectionnez les données à exporter :</p>
+        <p className="text-sm text-white/40">Sélectionnez les données à exporter :</p>
         <button
           onClick={toggleAll}
-          className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors"
+          className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
         >
           {selected.size === SECTIONS.length ? 'Tout désélectionner' : 'Tout sélectionner'}
         </button>
@@ -183,8 +183,8 @@ export function DataExportContent() {
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 transition-all text-left"
           >
             {selected.has(s.id)
-              ? <CheckSquare className="h-5 w-5 text-blue-400 shrink-0" />
-              : <Square className="h-5 w-5 text-slate-500 shrink-0" />
+              ? <CheckSquare className="h-5 w-5 text-emerald-400 shrink-0" />
+              : <Square className="h-5 w-5 text-white/40 shrink-0" />
             }
             <span className="text-sm font-medium text-white">{s.label}</span>
           </button>
@@ -194,7 +194,7 @@ export function DataExportContent() {
       <button
         onClick={generatePDF}
         disabled={selected.size === 0 || generating}
-        className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-colors shadow-lg shadow-blue-500/25"
+        className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold transition-colors shadow-lg shadow-emerald-500/25"
       >
         {generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
         {generating ? 'Génération en cours…' : 'Exporter en PDF'}

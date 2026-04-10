@@ -332,24 +332,24 @@ export function CallsPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#020617] p-8 overflow-hidden font-sans text-slate-100">
+    <div className="relative min-h-screen bg-[#111111] p-8 overflow-hidden font-sans text-white">
 
-      {/* Background Blobs (Style Landing Page) */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
+      {/* Background Blobs */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
 
       <div className="relative mx-auto max-w-7xl space-y-8 z-10">
 
         {/* Header Section */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div className="relative w-96">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-white/30" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher un appel..."
-              className="w-full rounded-xl border border-white/10 bg-slate-800/50 py-3 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all hover:bg-slate-800/70"
+              className="w-full rounded-xl bg-white/[0.03] border border-white/[0.08] py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all duration-300 hover:bg-white/[0.04]"
             />
           </div>
 
@@ -381,11 +381,11 @@ export function CallsPage() {
         </div>
 
         {/* Call History (GLASS DESIGN) */}
-        <div className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-md">
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8 shadow-[0_20px_40px_rgba(0,0,0,0.2)] backdrop-blur-[16px]">
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-white">Appels Récents</h2>
-              <p className="text-slate-400 text-sm mt-1">Retrouvez l'historique de vos communications</p>
+              <p className="text-white/40 text-sm mt-1">Retrouvez l'historique de vos communications</p>
             </div>
 
             {callHistory.length > 0 && (
@@ -400,10 +400,10 @@ export function CallsPage() {
 
           <div className="grid gap-4">
             {callHistory.map((call) => (
-              <div key={call.id} className="group flex items-center justify-between rounded-2xl border border-white/5 bg-slate-800/40 p-5 hover:border-white/10 hover:bg-slate-800/60 transition-all hover:shadow-lg hover:shadow-blue-900/10">
+              <div key={call.id} className="group flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] p-5 hover:border-white/[0.12] hover:bg-white/[0.04] transition-all duration-300 hover:shadow-lg hover:shadow-black/10">
                 <div className="flex items-center gap-5">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 transition-colors">
-                    <Video className="h-6 w-6 text-blue-400" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                    <Video className="h-6 w-6 text-emerald-400" />
                   </div>
                   <div>
                     {editingCallId === call.id ? (
@@ -412,7 +412,7 @@ export function CallsPage() {
                           type="text"
                           value={editingName}
                           onChange={(e) => setEditingName(e.target.value)}
-                          className="bg-slate-900 border border-blue-500 rounded px-2 py-1 text-white text-lg font-bold outline-none"
+                          className="bg-white/5 border border-emerald-500 rounded-xl px-2 py-1 text-white text-lg font-bold outline-none"
                           autoFocus
                         />
                         <button onClick={saveCallName} className="p-1 hover:bg-emerald-500/20 rounded text-emerald-400"><Check className="h-4 w-4" /></button>
@@ -423,13 +423,13 @@ export function CallsPage() {
                         <p className="font-bold text-white text-lg"><MaskedText value={call.contactName} type="name" /></p>
                         <button
                           onClick={(e) => { e.stopPropagation(); startEditing(call); }}
-                          className="opacity-0 group-hover/title:opacity-100 p-1 hover:bg-white/10 rounded text-slate-500 hover:text-white transition-all"
+                          className="opacity-0 group-hover/title:opacity-100 p-1 hover:bg-white/10 rounded text-white/40 hover:text-white transition-all"
                         >
                           <Pencil className="h-3 w-3" />
                         </button>
                       </div>
                     )}
-                    <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-1">
+                    <p className="text-xs text-white/40 font-medium flex items-center gap-1.5 mt-1">
                       <Clock className="h-3 w-3" />
                       {formatTimeAgo(call.date)}
                     </p>
@@ -437,14 +437,14 @@ export function CallsPage() {
                 </div>
                 <button
                   onClick={() => navigate(`/appels/${call.id}`)}
-                  className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800/50 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white hover:border-white/20 transition-all"
+                  className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-white/80 hover:bg-white/[0.04] hover:text-white hover:border-white/[0.12] transition-all duration-300"
                 >
                   <Eye className="h-4 w-4" /> Détails
                 </button>
               </div>
             ))}
             {callHistory.length === 0 && (
-              <div className="py-16 text-center text-slate-500 border border-dashed border-white/10 rounded-3xl bg-slate-900/20">
+              <div className="py-16 text-center text-white/40 border border-dashed border-white/[0.08] rounded-2xl bg-white/[0.02]">
                 <Video className="h-10 w-10 mx-auto mb-3 opacity-20" />
                 <p>Aucun appel récent.</p>
               </div>
@@ -457,48 +457,48 @@ export function CallsPage() {
       {isMeetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsMeetModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-3xl bg-slate-900 shadow-2xl border border-white/10 p-8 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
-              <h3 className="text-xl font-bold text-white">🎥 Préparer l'appel</h3>
-              <button onClick={() => setIsMeetModalOpen(false)} className="rounded-xl p-2 text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] border border-white/[0.08] p-8 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-2 mb-6">
+              <h3 className="text-xl font-bold text-white">Preparer l'appel</h3>
+              <button onClick={() => setIsMeetModalOpen(false)} className="rounded-xl p-2 text-white/40 hover:text-white hover:bg-white/5 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-2xl bg-blue-500/10 border border-blue-500/20 p-5">
+              <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-6">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-500/30">1</div>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-black font-bold text-sm shadow-lg shadow-emerald-500/30">1</div>
                   <div className="flex-1">
                     <p className="font-bold text-white">Ouvrir Google Meet</p>
-                    <p className="text-sm text-slate-400 mt-1">Ouvrez votre salle de réunion dans un nouvel onglet.</p>
-                    <button onClick={openMeetTab} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20">
+                    <p className="text-sm text-white/40 mt-1">Ouvrez votre salle de réunion dans un nouvel onglet.</p>
+                    <button onClick={openMeetTab} className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-3 text-sm font-semibold text-black hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20">
                       <ExternalLink className="h-4 w-4" /> Ouvrir Meet
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-purple-500/10 border border-purple-500/20 p-5">
+              <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-6">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-500 text-white font-bold text-sm shadow-lg shadow-purple-500/30">2</div>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white font-bold text-sm">2</div>
                   <div className="flex-1">
                     <p className="font-bold text-white">Lancer le Cockpit</p>
-                    <p className="text-sm text-slate-400 mt-1">Accédez à votre script, prenez des notes et enregistrez l'écran.</p>
+                    <p className="text-sm text-white/40 mt-1">Accedez a votre script, prenez des notes et enregistrez l'ecran.</p>
 
                     <div className="mt-4 relative">
-                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                       <input
                         type="text"
                         value={meetLinkInput}
                         onChange={(e) => setMeetLinkInput(e.target.value)}
                         placeholder="Lien Meet (optionnel)"
-                        className="w-full rounded-xl border border-white/10 bg-slate-800 py-3 pl-10 pr-4 text-sm text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all placeholder-slate-600"
+                        className="w-full rounded-xl bg-white/5 border border-white/10 py-3 pl-10 pr-4 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all placeholder:text-white/30"
                       />
                     </div>
 
-                    <button onClick={startCockpit} className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-base font-bold text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]">
-                      <Video className="h-5 w-5" /> 🚀 Lancer le Cockpit
+                    <button onClick={startCockpit} className="mt-4 w-full flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-3 text-base font-semibold text-black hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02]">
+                      <Video className="h-5 w-5" /> Lancer le Cockpit
                     </button>
                   </div>
                 </div>
@@ -512,34 +512,34 @@ export function CallsPage() {
       {isScriptModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsScriptModalOpen(false)} />
-          <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-slate-900 p-8 shadow-2xl flex flex-col h-[80vh] animate-in fade-in zoom-in-95">
+          <div className="relative w-full max-w-3xl rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] p-8 shadow-[0_20px_40px_rgba(0,0,0,0.2)] flex flex-col h-[80vh] animate-in fade-in zoom-in-95">
 
             {/* Header avec Selecteur */}
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
               <div className="flex items-center gap-3 flex-1">
                 <div className="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
                   <FileText className="h-6 w-6 text-red-500" />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-slate-500 block mb-1 font-bold uppercase tracking-wider">Script sélectionné</label>
+                  <label className="text-xs text-white/40 block mb-1 font-bold uppercase tracking-wider">Script selectionne</label>
                   <div className="flex gap-2">
                     <div className="relative flex-1 max-w-xs">
                       <select
                         value={selectedScriptId}
                         onChange={(e) => handleScriptChange(e.target.value)}
-                        className="w-full appearance-none bg-slate-950 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 pr-8 focus:outline-none focus:border-red-500 transition-colors cursor-pointer hover:border-slate-600 font-medium"
+                        className="w-full appearance-none bg-white/5 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 pr-8 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer hover:border-white/20 font-medium"
                       >
                         <option value="new">+ Nouveau Script</option>
                         {scripts.map(s => (
                           <option key={s.id} value={s.id}>{s.title}</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 pointer-events-none" />
                     </div>
                     {selectedScriptId !== 'new' && (
                       <button
                         onClick={handleDeleteScript}
-                        className="p-2.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20"
+                        className="p-2.5 text-white/40 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20"
                         title="Supprimer ce script"
                       >
                         <Trash2 className="h-5 w-5" />
@@ -548,7 +548,7 @@ export function CallsPage() {
                   </div>
                 </div>
               </div>
-              <button onClick={() => setIsScriptModalOpen(false)} className="text-slate-400 hover:text-white self-start sm:self-center bg-slate-800 p-2 rounded-xl hover:bg-slate-700 transition-colors">
+              <button onClick={() => setIsScriptModalOpen(false)} className="text-white/40 hover:text-white self-start sm:self-center bg-white/5 p-2 rounded-xl hover:bg-white/10 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -561,21 +561,21 @@ export function CallsPage() {
                   value={scriptTitle}
                   onChange={(e) => setScriptTitle(e.target.value)}
                   placeholder="Titre du script (ex: Cold Call, Closing...)"
-                  className="w-full bg-transparent border-none text-2xl font-bold text-white placeholder-slate-600 focus:outline-none focus:ring-0 px-0"
+                  className="w-full bg-transparent border-none text-2xl font-bold text-white placeholder:text-white/30 focus:outline-none focus:ring-0 px-0"
                 />
               </div>
               <textarea
                 value={scriptContent}
                 onChange={(e) => setScriptContent(e.target.value)}
-                className="flex-1 w-full rounded-2xl border border-white/5 bg-slate-950/50 p-6 text-slate-300 focus:border-red-500/50 focus:outline-none resize-none leading-relaxed custom-scrollbar"
+                className="flex-1 w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 text-white/60 focus:border-emerald-500/50 focus:outline-none resize-none leading-relaxed custom-scrollbar"
                 placeholder="Rédigez votre script ici..."
               />
             </div>
 
             {/* Footer Actions */}
-            <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-white/5">
-              <button onClick={() => setIsScriptModalOpen(false)} className="px-6 py-3 text-slate-400 hover:text-white transition-colors text-sm font-bold rounded-xl hover:bg-white/5">Fermer</button>
-              <button onClick={handleSaveScript} disabled={isSavingScript} className="flex items-center gap-2 rounded-xl bg-red-500 px-6 py-3 text-white font-bold hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 text-sm">
+            <div className="mt-6 flex justify-end gap-3 pt-4">
+              <button onClick={() => setIsScriptModalOpen(false)} className="px-6 py-3 text-white/40 hover:text-white transition-colors text-sm font-bold rounded-full hover:bg-white/5">Fermer</button>
+              <button onClick={handleSaveScript} disabled={isSavingScript} className="flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-black font-semibold hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 text-sm">
                 <Save className="h-4 w-4" />
                 {isSavingScript ? 'Sauvegarde...' : 'Sauvegarder'}
               </button>
@@ -588,28 +588,28 @@ export function CallsPage() {
       {isNewCallModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={handleCloseNewCallModal} />
-          <div className="relative w-full max-w-lg rounded-3xl bg-slate-900 shadow-2xl border border-white/10 p-8 animate-in fade-in zoom-in-95">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] border border-white/[0.08] p-8 animate-in fade-in zoom-in-95">
             <h2 className="text-2xl font-bold text-white mb-6">Qui appeler ?</h2>
 
-            <div className="flex gap-2 mb-4 p-1 bg-slate-950 rounded-xl border border-slate-800">
-              <button onClick={() => setCallType('prospect')} className={cn("flex-1 py-2.5 rounded-lg text-sm font-bold transition-all", callType === 'prospect' ? "bg-slate-800 text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Prospect</button>
-              <button onClick={() => setCallType('internal')} className={cn("flex-1 py-2.5 rounded-lg text-sm font-bold transition-all", callType === 'internal' ? "bg-slate-800 text-white shadow-lg" : "text-slate-400 hover:text-slate-200")}>Interne</button>
+            <div className="flex gap-2 mb-4 p-1 bg-white/[0.03] rounded-full border border-white/[0.08]">
+              <button onClick={() => setCallType('prospect')} className={cn("flex-1 py-2.5 rounded-full text-sm font-bold transition-all", callType === 'prospect' ? "bg-emerald-500 text-black shadow-lg" : "text-white/40 hover:text-white")}>Prospect</button>
+              <button onClick={() => setCallType('internal')} className={cn("flex-1 py-2.5 rounded-full text-sm font-bold transition-all", callType === 'internal' ? "bg-emerald-500 text-black shadow-lg" : "text-white/40 hover:text-white")}>Interne</button>
             </div>
 
-            <input type="text" placeholder="Rechercher..." value={selectedContactSearch} onChange={e => setSelectedContactSearch(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3.5 text-white mb-4 focus:border-emerald-500 focus:outline-none transition-colors placeholder-slate-600" />
+            <input type="text" placeholder="Rechercher..." value={selectedContactSearch} onChange={e => setSelectedContactSearch(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-white mb-4 focus:border-emerald-500 focus:outline-none transition-colors placeholder:text-white/30" />
 
             <div className="max-h-48 overflow-y-auto space-y-1 mb-6 pr-2 custom-scrollbar">
               {getContactList().map(c => (
-                <button key={(c as any).id} onClick={() => setSelectedContactId((c as any).id)} className={cn("w-full text-left p-3 rounded-xl transition-colors border border-transparent font-medium", selectedContactId === (c as any).id ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "hover:bg-slate-800 text-slate-300")}>
+                <button key={(c as any).id} onClick={() => setSelectedContactId((c as any).id)} className={cn("w-full text-left p-3 rounded-xl transition-colors border border-transparent font-medium", selectedContactId === (c as any).id ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "hover:bg-white/5 text-white/60")}>
                   {(c as any).contact || (c as any).name}
                 </button>
               ))}
               {getContactList().length === 0 && (
-                <p className="text-center text-slate-500 text-sm py-4 italic">Aucun contact trouvé</p>
+                <p className="text-center text-white/40 text-sm py-4 italic">Aucun contact trouvé</p>
               )}
             </div>
 
-            <button onClick={() => prepareCall(selectedContactId, callType)} disabled={!selectedContactId} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-600/20">
+            <button onClick={() => prepareCall(selectedContactId, callType)} disabled={!selectedContactId} className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3.5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/20">
               Préparer l'appel
             </button>
           </div>

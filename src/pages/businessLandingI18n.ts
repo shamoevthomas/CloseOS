@@ -35,6 +35,7 @@ export interface Translations {
   nav_crm: string
   nav_roles: string
   nav_demo: string
+  nav_pricing: string
   nav_faq: string
   nav_waitlist: string
 
@@ -338,6 +339,7 @@ const fr: Translations = {
   nav_crm: 'CRM',
   nav_roles: 'Rôles',
   nav_demo: 'Démo',
+  nav_pricing: 'Tarifs',
   nav_faq: 'FAQ',
   nav_waitlist: "Liste d'attente",
 
@@ -847,6 +849,7 @@ const en: Translations = {
   nav_crm: 'CRM',
   nav_roles: 'Roles',
   nav_demo: 'Demo',
+  nav_pricing: 'Pricing',
   nav_faq: 'FAQ',
   nav_waitlist: 'Waitlist',
 

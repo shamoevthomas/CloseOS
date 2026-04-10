@@ -156,7 +156,7 @@ export function CloserCallDetails() {
   const effectiveOwnerId = ownerUserId || user?.id
 
   useEffect(() => {
-    if (!id) return
+    if (!id) { setLoading(false); return }
     setLoading(true)
     supabase.from('business_call_history').select('*').eq('id', id)
       .single().then(({ data, error }) => {
@@ -164,8 +164,9 @@ export function CloserCallDetails() {
         setCall(data)
         setNotes(data?.notes || liveNotes || '')
         if (liveNotes) setActiveTab('notes')
-        setLoading(false)
       })
+      .catch(err => console.error('Erreur chargement appel:', err))
+      .finally(() => setLoading(false))
   }, [id])
 
   // Fetch formulas for commission

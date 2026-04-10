@@ -18,7 +18,6 @@ import { OrganizationProvider } from './contexts/OrganizationContext'
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
 import { OnboardingModal } from './components/OnboardingModal'
-import { VideoOnboardingModal } from './components/VideoOnboardingModal'
 import { OnboardingTutorial } from './components/OnboardingTutorial'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
@@ -115,6 +114,8 @@ const CloserAgenda = lazy(() => import('./business/pages/CloserAgenda').then(m =
 const CloserFactures = lazy(() => import('./business/pages/CloserFactures').then(m => ({ default: m.CloserFactures })))
 const OwnerFactures = lazy(() => import('./business/pages/OwnerFactures').then(m => ({ default: m.OwnerFactures })))
 const BusinessRevenue = lazy(() => import('./business/pages/BusinessRevenue').then(m => ({ default: m.BusinessRevenue })))
+const BusinessCheckout = lazy(() => import('./business/pages/BusinessCheckout'))
+const BusinessReturn = lazy(() => import('./business/pages/BusinessReturn'))
 
 // Owner-only route guard for business pages (Head of Sales also allowed)
 function OwnerOnlyRoute({ children }: { children: React.ReactNode }) {
@@ -146,6 +147,20 @@ function CampaignGuard({ children }: { children: React.ReactNode }) {
   if (teamMember?.role === 'Admin') return <>{children}</>
   if (teamMember?.role === 'Head of Sales' && teamMember?.can_manage_campaigns) return <>{children}</>
   return <Navigate to="/business/dashboard" replace />
+}
+
+// Guard: Solo plan users cannot access team/factures/report
+function SoloRedirect({ children }: { children: React.ReactNode }) {
+  const { isSolo, isTeamMember } = useBusinessAuth()
+  if (isSolo && !isTeamMember) return <Navigate to="/business/dashboard" replace />
+  return <>{children}</>
+}
+
+// Guard: plans without acquisition cannot access campagnes/acquisition
+function AcquisitionRedirect({ children }: { children: React.ReactNode }) {
+  const { hasAcquisition, isTeamMember } = useBusinessAuth()
+  if (!hasAcquisition && !isTeamMember) return <Navigate to="/business/dashboard" replace />
+  return <>{children}</>
 }
 
 // CRM route wrapper: everyone sees the same CRM view
@@ -284,9 +299,7 @@ function OnboardingWrapper({ onComplete }: { onComplete?: () => void }) {
 function AuthenticatedApp() {
   const { user, loading, isBusinessUser, profile, updateProfile } = useAuth()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security'>('profile')
-  const [isVideoOnboardingOpen, setIsVideoOnboardingOpen] = useState(false);
-  const [hasBeenDismissed, setHasBeenDismissed] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'security' | 'organization'>('profile')
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const location = useLocation()
 
@@ -302,7 +315,7 @@ function AuthenticatedApp() {
     }
   }, [location.pathname]);
 
-  // Check for password reset or initial onboarding video
+  // Check for password reset
   useEffect(() => {
     if (user && !loading) {
       const params = new URLSearchParams(location.search);
@@ -310,16 +323,13 @@ function AuthenticatedApp() {
         window.history.replaceState({}, '', window.location.pathname);
         setSettingsInitialTab('security');
         setIsSettingsOpen(true);
-      } else if (
-        user.user_metadata?.onboarding_completed === true &&
-        user.user_metadata?.video_onboarding_watched !== true &&
-        !isVideoOnboardingOpen &&
-        !hasBeenDismissed
-      ) {
-        setIsVideoOnboardingOpen(true);
+      } else if (params.get('org_joined') === 'true') {
+        window.history.replaceState({}, '', window.location.pathname);
+        setSettingsInitialTab('organization');
+        setIsSettingsOpen(true);
       }
     }
-  }, [user, loading, location.search, isVideoOnboardingOpen]);
+  }, [user, loading, location.search]);
 
   // Show tutorial for any user who hasn't completed it yet
   useEffect(() => {
@@ -348,9 +358,15 @@ function AuthenticatedApp() {
             <BusinessLogin />
           </BusinessAuthProvider>
         } />
-        <Route path="/business/register" element={
+        <Route path="/business/register" element={<Navigate to="/business/checkout" replace />} />
+        <Route path="/business/checkout" element={
           <BusinessAuthProvider>
-            <BusinessRegister />
+            <BusinessCheckout />
+          </BusinessAuthProvider>
+        } />
+        <Route path="/business/return" element={
+          <BusinessAuthProvider>
+            <BusinessReturn />
           </BusinessAuthProvider>
         } />
         <Route path="/business/invitation/:token" element={<BusinessInvitation />} />
@@ -370,15 +386,15 @@ function AuthenticatedApp() {
           <Route path="crm" element={<TeamOnboardingGuard><BusinessCRMRouter /></TeamOnboardingGuard>} />
           <Route path="pipeline-owner" element={<OwnerOnlyWrapper><BusinessPipeline /></OwnerOnlyWrapper>} />
           {/* KPI classique retiré — utiliser setter-kpi et closer-kpi */}
-          <Route path="campagnes" element={<CampaignGuard><BusinessCampaigns /></CampaignGuard>} />
-          <Route path="acquisition" element={<OwnerOnlyWrapper><BusinessAcquisition /></OwnerOnlyWrapper>} />
+          <Route path="campagnes" element={<AcquisitionRedirect><CampaignGuard><BusinessCampaigns /></CampaignGuard></AcquisitionRedirect>} />
+          <Route path="acquisition" element={<AcquisitionRedirect><OwnerOnlyWrapper><BusinessAcquisition /></OwnerOnlyWrapper></AcquisitionRedirect>} />
           <Route path="objectifs" element={<TeamOnboardingGuard><BusinessObjectives /></TeamOnboardingGuard>} />
           <Route path="formules" element={<TeamOnboardingGuard><BusinessFormules /></TeamOnboardingGuard>} />
           <Route path="rendez-vous" element={<TeamOnboardingGuard><BusinessAppointments /></TeamOnboardingGuard>} />
           <Route path="rappels" element={<TeamOnboardingGuard><BusinessReminders /></TeamOnboardingGuard>} />
-          <Route path="report" element={<OwnerOnlyWrapper><BusinessReport /></OwnerOnlyWrapper>} />
+          <Route path="report" element={<SoloRedirect><OwnerOnlyWrapper><BusinessReport /></OwnerOnlyWrapper></SoloRedirect>} />
           <Route path="revenue" element={<OwnerOnlyWrapper><BusinessRevenue /></OwnerOnlyWrapper>} />
-          <Route path="team" element={<TeamOnboardingGuard><BusinessTeam /></TeamOnboardingGuard>} />
+          <Route path="team" element={<SoloRedirect><TeamOnboardingGuard><BusinessTeam /></TeamOnboardingGuard></SoloRedirect>} />
           <Route path="closers" element={<Navigate to="/business/team" replace />} />
           <Route path="setters" element={<Navigate to="/business/team" replace />} />
           <Route path="pipeline" element={<TeamOnboardingGuard><CloserPipeline /></TeamOnboardingGuard>} />
@@ -389,7 +405,7 @@ function AuthenticatedApp() {
           <Route path="appels" element={<TeamOnboardingGuard><CloserAppels /></TeamOnboardingGuard>} />
           <Route path="appels/:id" element={<TeamOnboardingGuard><CallDetailsRouter /></TeamOnboardingGuard>} />
           <Route path="agenda" element={<TeamOnboardingGuard><CloserAgenda /></TeamOnboardingGuard>} />
-          <Route path="factures" element={<TeamOnboardingGuard><FacturesRouter /></TeamOnboardingGuard>} />
+          <Route path="factures" element={<SoloRedirect><TeamOnboardingGuard><FacturesRouter /></TeamOnboardingGuard></SoloRedirect>} />
           <Route path="organisation" element={<BusinessOrganization />} />
           <Route path="test" element={<BusinessTest />} />
         </Route>
@@ -504,26 +520,10 @@ function AuthenticatedApp() {
         <>
           <TrialExpiredModal />
           <OnboardingWrapper onComplete={() => {
-            // If video already watched, go straight to tutorial
-            if (user?.user_metadata?.video_onboarding_watched === true) {
-              if (user?.user_metadata?.tutorial_completed !== true) {
-                setIsTutorialOpen(true);
-              }
-            } else {
-              setIsVideoOnboardingOpen(true);
+            if (user?.user_metadata?.tutorial_completed !== true) {
+              setIsTutorialOpen(true);
             }
           }} />
-          <VideoOnboardingModal
-            isOpen={isVideoOnboardingOpen}
-            onClose={() => {
-              setIsVideoOnboardingOpen(false);
-              setHasBeenDismissed(true);
-              // Show tutorial after video onboarding if not already completed
-              if (user?.user_metadata?.tutorial_completed !== true) {
-                setIsTutorialOpen(true);
-              }
-            }}
-          />
           {isTutorialOpen && (
             <OnboardingTutorial
               onComplete={async () => {

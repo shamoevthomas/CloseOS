@@ -646,17 +646,17 @@ export function InvoiceGeneratorModal({
 
   // ---------- INPUT CLASSES ----------
 
-  const inputCls = 'w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-colors'
-  const labelCls = 'text-sm font-medium text-slate-400 mb-2 block'
+  const inputCls = 'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-colors placeholder:text-white/30'
+  const labelCls = 'text-sm font-medium text-white/40 mb-2 block'
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"
       onClick={handleClose}
     >
       <div
         className={cn(
-          "relative bg-slate-900 rounded-2xl shadow-2xl ring-1 ring-slate-800 w-full",
+          "relative bg-[#1a1a1a] rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.08] w-full",
           step === 2 ? 'max-h-[90vh] overflow-hidden w-full max-w-5xl' : 'max-w-4xl max-h-[90vh] overflow-y-auto'
         )}
         onClick={(e) => e.stopPropagation()}
@@ -664,7 +664,7 @@ export function InvoiceGeneratorModal({
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute right-4 top-4 z-10 rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+          className="absolute right-4 top-4 z-10 rounded-full p-2 text-white/40 hover:bg-white/10 hover:text-white transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
@@ -751,7 +751,7 @@ export function InvoiceGeneratorModal({
               )}
 
               {/* Payment Method Section */}
-              <div className="space-y-4 rounded-xl border border-slate-700 bg-slate-800/30 p-5">
+              <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Download className="h-4 w-4 text-purple-400" />
                   Moyen de paiement principal
@@ -797,7 +797,7 @@ export function InvoiceGeneratorModal({
                         onChange={(e) => setUseStripePayment(e.target.checked)}
                         className="peer sr-only"
                       />
-                      <div className="h-5 w-9 rounded-full bg-slate-700 peer-checked:bg-indigo-500 transition-colors"></div>
+                      <div className="h-5 w-9 rounded-full bg-white/10 peer-checked:bg-indigo-500 transition-colors"></div>
                       <div className="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-4"></div>
                     </div>
                     <div className="flex-1">
@@ -814,7 +814,7 @@ export function InvoiceGeneratorModal({
               )}
 
               {/* TVA Toggle */}
-              <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
                 <label className="flex cursor-pointer items-start gap-3">
                   <div className="relative">
                     <input
@@ -823,12 +823,12 @@ export function InvoiceGeneratorModal({
                       onChange={(e) => setTvaApplicable(e.target.checked)}
                       className="peer sr-only"
                     />
-                    <div className="h-6 w-11 rounded-full bg-slate-700 peer-checked:bg-purple-500 transition-colors"></div>
+                    <div className="h-6 w-11 rounded-full bg-white/10 peer-checked:bg-emerald-500 transition-colors"></div>
                     <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-semibold text-white">TVA Applicable ?</div>
-                    <div className="mt-1 text-xs text-slate-400">
+                    <div className="mt-1 text-xs text-white/40">
                       Ajouter 20% de TVA au montant de la commission
                     </div>
                   </div>
@@ -836,8 +836,8 @@ export function InvoiceGeneratorModal({
               </div>
 
               {/* Late Payment Penalties */}
-              <div className="rounded-xl border border-slate-700 bg-slate-800/30 p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">
                   Penalites de retard
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -871,7 +871,7 @@ export function InvoiceGeneratorModal({
                 type="button"
                 onClick={handlePreview}
                 disabled={isGeneratingLink}
-                className="w-full rounded-xl bg-purple-500 px-6 py-3.5 font-bold text-white transition-all hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full rounded-full bg-emerald-500 px-6 py-3.5 font-bold text-black transition-all hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isGeneratingLink ? (
                   <>
@@ -890,10 +890,10 @@ export function InvoiceGeneratorModal({
         {step === 2 && (
           <div className="flex flex-col h-[90vh]">
             {/* Actions bar */}
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <div className="px-6 py-4 border-b border-white/[0.08] flex items-center justify-between shrink-0">
               <button
                 onClick={() => setStep(1)}
-                className="flex items-center gap-2 rounded-full border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+                className="flex items-center gap-2 rounded-full border border-white/[0.08] px-4 py-2 text-sm font-semibold text-white/60 hover:bg-white/10 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Retour
@@ -907,7 +907,7 @@ export function InvoiceGeneratorModal({
                   className={cn(
                     "flex items-center gap-2 rounded-full px-6 py-2.5 font-semibold text-white transition-all border",
                     !offer.billingEmail
-                      ? 'bg-slate-800/50 border-slate-800 text-slate-500 cursor-not-allowed'
+                      ? 'bg-white/[0.03] border-white/[0.08] text-white/40 cursor-not-allowed'
                       : 'bg-indigo-500 border-indigo-500 hover:bg-indigo-600'
                   )}
                   title={!offer.billingEmail ? "Aucun email client renseigne" : "Envoyer la facture par mail"}
@@ -920,7 +920,7 @@ export function InvoiceGeneratorModal({
                 <button
                   onClick={handleValidate}
                   disabled={isValidating}
-                  className="flex items-center gap-2 bg-purple-500 text-white rounded-full px-8 py-2.5 font-bold hover:bg-purple-600 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 bg-emerald-500 text-black rounded-full px-8 py-2.5 font-bold hover:bg-emerald-400 transition-colors disabled:opacity-50"
                 >
                   {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                   {isValidating ? 'Validation...' : 'Valider la facture'}
@@ -931,8 +931,8 @@ export function InvoiceGeneratorModal({
             {/* Split: Edit Left | Preview Right */}
             <div className="flex flex-col md:flex-row flex-1 min-h-0">
               {/* ─── LEFT: EDIT PANEL ─── */}
-              <div className="w-full md:w-[340px] shrink-0 md:border-r border-b md:border-b-0 border-slate-800 overflow-y-auto p-4 space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+              <div className="w-full md:w-[340px] shrink-0 md:border-r border-b md:border-b-0 border-white/[0.08] overflow-y-auto p-4 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
                   <Pencil className="h-3.5 w-3.5" />
                   Modifier la facture
                 </h3>
@@ -960,7 +960,7 @@ export function InvoiceGeneratorModal({
                       Lignes Commission
                     </p>
                     {editableCommissionItems.map(item => (
-                      <div key={item.id} className="rounded-lg border border-slate-700 bg-slate-800/50 p-3 space-y-2">
+                      <div key={item.id} className="rounded-lg border border-white/[0.08] bg-white/[0.03] p-3 space-y-2">
                         <div className="flex items-center gap-2">
                           <input
                             type="text"
@@ -982,7 +982,7 @@ export function InvoiceGeneratorModal({
                         />
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] text-slate-500">Qte</label>
+                            <label className="text-[10px] text-white/40">Qte</label>
                             <input
                               type="number"
                               min={1}
@@ -992,7 +992,7 @@ export function InvoiceGeneratorModal({
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-slate-500">Prix unitaire (EUR)</label>
+                            <label className="text-[10px] text-white/40">Prix unitaire (EUR)</label>
                             <input
                               type="number"
                               step="0.01"
@@ -1003,7 +1003,7 @@ export function InvoiceGeneratorModal({
                             />
                           </div>
                         </div>
-                        <p className="text-[10px] text-right text-slate-500 font-medium">
+                        <p className="text-[10px] text-right text-white/40 font-medium">
                           Total: {formatCurrency(item.count * item.unitPrice)}
                         </p>
                       </div>
@@ -1024,12 +1024,12 @@ export function InvoiceGeneratorModal({
                       type="text"
                       value={editableCustomSectionTitle}
                       onChange={e => setEditableCustomSectionTitle(e.target.value)}
-                      className="text-xs font-bold uppercase tracking-widest text-slate-500 bg-transparent border-b border-dashed border-slate-600 focus:border-purple-500 outline-none pb-1 w-full"
+                      className="text-xs font-bold uppercase tracking-widest text-white/40 bg-transparent border-b border-dashed border-white/[0.08] focus:border-emerald-500 outline-none pb-1 w-full"
                       placeholder="Titre de la section"
                     />
                   )}
                   {editableCustomItems.map(item => (
-                    <div key={item.id} className="rounded-lg border border-slate-700 bg-slate-800/50 p-3 space-y-2">
+                    <div key={item.id} className="rounded-lg border border-white/[0.08] bg-white/[0.03] p-3 space-y-2">
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
@@ -1051,7 +1051,7 @@ export function InvoiceGeneratorModal({
                       />
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[10px] text-slate-500">Qte</label>
+                          <label className="text-[10px] text-white/40">Qte</label>
                           <input
                             type="number"
                             min={1}
@@ -1061,7 +1061,7 @@ export function InvoiceGeneratorModal({
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-slate-500">Prix unitaire (EUR)</label>
+                          <label className="text-[10px] text-white/40">Prix unitaire (EUR)</label>
                           <input
                             type="number"
                             step="0.01"
@@ -1072,14 +1072,14 @@ export function InvoiceGeneratorModal({
                           />
                         </div>
                       </div>
-                      <p className="text-[10px] text-right text-slate-500 font-medium">
+                      <p className="text-[10px] text-right text-white/40 font-medium">
                         Total: {formatCurrency(item.count * item.unitPrice)}
                       </p>
                     </div>
                   ))}
                   <button
                     onClick={() => addItem('custom')}
-                    className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-600 text-slate-400 text-xs font-medium py-2 hover:bg-slate-800 transition-colors"
+                    className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/[0.08] text-white/40 text-xs font-medium py-2 hover:bg-white/10 transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" /> Ajouter un produit
                   </button>
@@ -1096,7 +1096,7 @@ export function InvoiceGeneratorModal({
                           onChange={(e) => setShowStripeOnInvoice(e.target.checked)}
                           className="peer sr-only"
                         />
-                        <div className="h-5 w-9 rounded-full bg-slate-700 peer-checked:bg-indigo-500 transition-colors"></div>
+                        <div className="h-5 w-9 rounded-full bg-white/10 peer-checked:bg-indigo-500 transition-colors"></div>
                         <div className="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-4"></div>
                       </div>
                       <span className="text-xs font-medium text-white">
@@ -1133,12 +1133,12 @@ export function InvoiceGeneratorModal({
                 {/* Totals summary */}
                 <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4 space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Total HT</span>
+                    <span className="text-white/40">Total HT</span>
                     <span className="font-bold text-white">{formatCurrency(editableTotalHT)}</span>
                   </div>
                   {tvaApplicable && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">TVA (20%)</span>
+                      <span className="text-white/40">TVA (20%)</span>
                       <span className="font-bold text-white">{formatCurrency(editableTvaAmount)}</span>
                     </div>
                   )}

@@ -130,13 +130,13 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
        qui utilisent souvent des z-index élevés (z-50 ou z-100).
        SCROLLABLE : overflow-y-auto permet le scroll vertical
     */
-    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md p-4">
       <div className="min-h-full flex items-center justify-center py-8">
 
         {/* INTERFACE DE CROP (SUPERPOSÉE) */}
         {imageSrc && (
           <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
-            <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900 mb-6">
+            <div className="w-full max-w-lg h-[400px] relative rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl mb-6">
               <Cropper
                 image={imageSrc}
                 crop={crop}
@@ -150,7 +150,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
 
             <div className="w-full max-w-lg space-y-6">
               <div className="flex items-center gap-4 px-4">
-                <ZoomOut className="h-5 w-5 text-slate-400" />
+                <ZoomOut className="h-5 w-5 text-white/40" />
                 <input
                   type="range"
                   value={zoom}
@@ -159,16 +159,16 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
                   step={0.1}
                   aria-labelledby="Zoom"
                   onChange={(e) => setZoom(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                 />
-                <ZoomIn className="h-5 w-5 text-slate-400" />
+                <ZoomIn className="h-5 w-5 text-white/40" />
               </div>
 
               <div className="flex gap-4 justify-center">
                 <button
                   onClick={handleCancelCrop}
                   disabled={uploading}
-                  className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
+                  className="px-6 py-3 rounded-full border border-white/[0.08] text-white/80 font-bold hover:bg-white/10 transition-colors flex items-center gap-2"
                 >
                   <X className="h-4 w-4" />
                   Annuler
@@ -176,7 +176,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
                 <button
                   onClick={showCroppedImage}
                   disabled={uploading}
-                  className="px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/25 flex items-center gap-2"
+                  className="px-6 py-3 rounded-full bg-emerald-500 text-black font-bold hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/25 flex items-center gap-2"
                 >
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                   Valider la photo
@@ -187,17 +187,17 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
         )}
 
 
-        <div className="w-full max-w-md rounded-2xl border border-blue-500/20 bg-[#0B1121] p-8 shadow-2xl relative overflow-hidden">
+        <div className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#1a1a1a] p-8 shadow-2xl relative overflow-hidden">
 
           {/* Halo décoratif */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[80px] rounded-full pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px] rounded-full pointer-events-none" />
 
           <div className="mb-6 text-center relative z-10">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-black shadow-lg shadow-emerald-500/20">
               <User className="h-8 w-8" />
             </div>
             <h2 className="text-2xl font-bold text-white">Bienvenue sur CloserOS</h2>
-            <p className="mt-2 text-slate-400">Configurons votre profil pour commencer</p>
+            <p className="mt-2 text-white/40">Configurons votre profil pour commencer</p>
           </div>
 
           {/* MESSAGE BETA */}
@@ -216,15 +216,15 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
             {/* PHOTO DE PROFIL */}
             <div className="flex justify-center mb-6">
               <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
-                <div className="w-24 h-24 rounded-full border-2 border-slate-700 overflow-hidden bg-slate-800 flex items-center justify-center transition-all group-hover:border-blue-500">
+                <div className="w-24 h-24 rounded-full border-2 border-white/[0.08] overflow-hidden bg-white/5 flex items-center justify-center transition-all group-hover:border-emerald-500">
                   {formData.avatar_url ? (
                     <img src={formData.avatar_url} alt="Profil" className="w-full h-full object-cover" />
                   ) : (
-                    <User className="w-10 h-10 text-slate-500" />
+                    <User className="w-10 h-10 text-white/40" />
                   )}
                   {/* On cache le loader ici car l'upload se fait dans l'écran de crop */}
                 </div>
-                <div className="absolute bottom-0 right-0 bg-blue-600 p-1.5 rounded-full border-2 border-[#0B1121] text-white shadow-sm group-hover:scale-110 transition-transform">
+                <div className="absolute bottom-0 right-0 bg-emerald-500 p-1.5 rounded-full border-2 border-[#1a1a1a] text-black shadow-sm group-hover:scale-110 transition-transform">
                   <Camera className="w-4 h-4" />
                 </div>
                 <input
@@ -245,14 +245,14 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
 
             {/* ÉTAPE 1 : IDENTITÉ */}
             <div>
-              <label className="mb-1.5 block text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Nom complet</label>
+              <label className="mb-1.5 block text-xs uppercase tracking-widest font-bold text-white/40 text-left">Nom complet</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                 <input
                   type="text"
                   value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all text-sm"
                   placeholder="Prénom Nom"
                 />
               </div>
@@ -260,11 +260,11 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
 
             {/* ÉTAPE 2 : TÉLÉPHONE */}
             <div>
-              <label className="mb-1.5 block text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Téléphone</label>
+              <label className="mb-1.5 block text-xs uppercase tracking-widest font-bold text-white/40 text-left">Téléphone</label>
               <div className="flex gap-2">
                 <div className="relative w-28">
                   <select
-                    className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-3 pr-8 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer text-sm"
+                    className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pl-3 pr-8 text-white focus:border-emerald-500 focus:outline-none cursor-pointer text-sm"
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value)}
                   >
@@ -276,12 +276,12 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
                   </select>
                 </div>
                 <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all text-sm"
                     placeholder="6 12 34 56 78"
                   />
                 </div>
@@ -290,15 +290,15 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
 
             {/* ÉTAPE 3 : RÔLE */}
             <div>
-              <label className="mb-1.5 block text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Votre spécialité</label>
+              <label className="mb-1.5 block text-xs uppercase tracking-widest font-bold text-white/40 text-left">Votre spécialité</label>
               <div className="relative">
-                <Briefcase className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Briefcase className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-10 pr-4 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer text-sm"
+                  className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-white focus:border-emerald-500 focus:outline-none cursor-pointer text-sm"
                 >
-                  <option value="" className="text-slate-500">Sélectionnez votre rôle</option>
+                  <option value="" className="text-white/40">Sélectionnez votre rôle</option>
                   <option value="Closer">Closer</option>
                   <option value="Setter">Setter</option>
                   <option value="Setter-Closer">Setter-Closer</option>
@@ -308,8 +308,8 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
 
             <button
               onClick={handleSubmit}
-              disabled={loading || !formData.role || !formData.full_name}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
+              disabled={loading || !formData.role || !formData.full_name || !formData.phone.trim()}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 py-3.5 font-bold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
             >
               {loading ? (
                 <>

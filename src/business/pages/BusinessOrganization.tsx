@@ -638,7 +638,7 @@ function TeamMemberOrganizationView() {
 // ─── Main Page ───
 
 export function BusinessOrganization() {
-  const { user, businessSettings, businessProfile, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile } = useBusinessAuth()
+  const { user, businessSettings, businessProfile, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile, isSolo } = useBusinessAuth()
 
   const isHoS = isTeamMember && (teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin')
 
@@ -887,7 +887,7 @@ export function BusinessOrganization() {
         {/* Fixed tabs */}
         {[
           { key: 'organisation', label: 'ORGANISATION' },
-          { key: 'onboarding', label: 'ONBOARDING' },
+          ...(!isSolo ? [{ key: 'onboarding', label: 'ONBOARDING' }] : []),
         ].map(tab => (
           <button
             key={tab.key}
@@ -1120,8 +1120,8 @@ export function BusinessOrganization() {
               </div>
             </div>
 
-            {/* Facturation */}
-            <div className="lg:col-span-12">
+            {/* Facturation — hidden for Solo */}
+            {!isSolo && <div className="lg:col-span-12">
               <div className="bg-white dark:bg-neutral-800 rounded-xl p-4 md:p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-lg bg-[#ffddb8]/30 flex items-center justify-center text-[#b87500]">
@@ -1169,7 +1169,7 @@ export function BusinessOrganization() {
                   </div>
                 </div>
               </div>
-            </div>
+            </div>}
           </div>
         </div>
       )}

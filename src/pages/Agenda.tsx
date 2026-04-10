@@ -115,7 +115,7 @@ const renderTextWithLinks = (text: string) => {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+          className="text-emerald-400 hover:text-emerald-300 hover:underline transition-colors"
           onClick={(e) => e.stopPropagation()}
         >
           {part}
@@ -551,15 +551,15 @@ export function Agenda() {
     const currentTimePos = getCurrentTimePosition()
 
     return (
-      <div className="flex flex-col flex-1 rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md overflow-hidden" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+      <div className="flex flex-col flex-1 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         {allDayEvents.length > 0 && (
-          <div className="border-b border-white/5 bg-slate-900/60 p-3">
-            <div className="text-xs font-semibold text-slate-400 mb-2">Toute la journée</div>
+          <div className="bg-white/[0.02] p-4">
+            <div className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">Toute la journee</div>
             <div className="space-y-1.5">
               {allDayEvents.map(event => (
                 <div
                   key={event.id}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all hover:bg-slate-800/50"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all hover:bg-white/5"
                   style={{
                     backgroundColor: 'rgba(59, 130, 246, 0.15)',
                     borderLeft: '3px solid #3b82f6'
@@ -575,10 +575,10 @@ export function Agenda() {
 
         <div ref={dayViewScrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="relative min-h-[1920px]">
-            <div className="absolute left-0 top-0 w-16 border-r border-white/5">
+            <div className="absolute left-0 top-0 w-16 border-r border-white/[0.08]">
               {HOURS.map((hour) => (
-                <div key={hour} className="h-20 border-b border-white/5 px-2 py-1">
-                  <span className="text-xs font-medium text-slate-500">
+                <div key={hour} className="h-20 border-b border-white/[0.08] px-2 py-1">
+                  <span className="text-xs font-medium text-white/40">
                     {hour.toString().padStart(2, '0')}:00
                   </span>
                 </div>
@@ -587,7 +587,7 @@ export function Agenda() {
 
             <div className="absolute inset-0 left-16">
               {HOURS.map((hour) => (
-                <div key={hour} className="h-20 border-b border-white/5" />
+                <div key={hour} className="h-20 border-b border-white/[0.08]" />
               ))}
 
               {showCurrentTimeLine && currentTimePos >= 0 && currentTimePos <= 100 && (
@@ -664,26 +664,26 @@ export function Agenda() {
     return (
       <div
         ref={weekViewScrollRef}
-        className="flex-1 overflow-x-auto overflow-y-auto rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md custom-scrollbar"
+        className="flex-1 overflow-x-auto overflow-y-auto rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] custom-scrollbar"
         style={{ maxHeight: 'calc(100vh - 280px)' }}
       >
         <div className="min-w-[1000px]">
-          <div className="sticky top-0 z-20 flex border-b border-white/5 bg-slate-900/90 backdrop-blur-md">
-            <div className="w-16 border-r border-white/5 flex-shrink-0" />
+          <div className="sticky top-0 z-20 flex border-b border-white/[0.08] bg-[#111111]/90 backdrop-blur-[16px]">
+            <div className="w-16 border-r border-white/[0.08] flex-shrink-0" />
             {weekDates.map((date, index) => (
               <div
                 key={index}
                 className={cn(
-                  'flex-1 border-r border-white/5 p-3 text-center min-w-[120px]',
-                  isToday(date) && 'bg-blue-500/10'
+                  'flex-1 border-r border-white/[0.08] p-3 text-center min-w-[120px]',
+                  isToday(date) && 'bg-emerald-500/[0.08] shadow-[inset_0_-2px_20px_rgba(16,185,129,0.1)]'
                 )}
               >
-                <div className="text-xs font-medium text-slate-400">
+                <div className="text-xs font-bold uppercase tracking-widest text-white/40">
                   {formatShortDayName(date)}
                 </div>
                 <div className={cn(
                   'mt-1 text-lg font-bold',
-                  isToday(date) ? 'text-blue-400' : 'text-white'
+                  isToday(date) ? 'text-emerald-400' : 'text-white'
                 )}>
                   {date.getDate()}
                 </div>
@@ -691,18 +691,18 @@ export function Agenda() {
             ))}
           </div>
 
-          <div className="sticky top-[73px] z-10 flex border-b border-white/5 bg-slate-950/80 backdrop-blur-sm">
-            <div className="w-16 border-r border-white/5 p-2 flex-shrink-0">
-              <span className="text-[10px] font-semibold text-slate-400">Toute la journée</span>
+          <div className="sticky top-[73px] z-10 flex border-b border-white/[0.08] bg-[#111111]/80 backdrop-blur-[16px]">
+            <div className="w-16 border-r border-white/[0.08] p-2 flex-shrink-0">
+              <span className="text-[10px] font-semibold text-white/40">Toute la journée</span>
             </div>
             {weekDates.map((date, dayIndex) => {
               const allDayEvents = getAllDayEventsForDate(date)
               return (
-                <div key={dayIndex} className="relative flex-1 border-r border-white/5 p-1.5 min-h-[40px] min-w-[120px]">
+                <div key={dayIndex} className="relative flex-1 border-r border-white/[0.08] p-1.5 min-h-[40px] min-w-[120px]">
                   {allDayEvents.map(event => (
                     <div
                       key={event.id}
-                      className="mb-1 px-2 py-1 rounded text-[10px] font-medium truncate cursor-pointer transition-all hover:bg-slate-800/50"
+                      className="mb-1 px-2 py-1 rounded text-[10px] font-medium truncate cursor-pointer transition-all hover:bg-white/5"
                       style={{
                         backgroundColor: 'rgba(59, 130, 246, 0.15)',
                         borderLeft: '3px solid #3b82f6',
@@ -718,10 +718,10 @@ export function Agenda() {
           </div>
 
           <div className="relative min-h-[1920px]">
-            <div className="absolute left-0 top-0 w-16 border-r border-white/5 flex-shrink-0 bg-slate-900/40 backdrop-blur-sm z-10">
+            <div className="absolute left-0 top-0 w-16 border-r border-white/[0.08] flex-shrink-0 bg-white/[0.03] backdrop-blur-[16px] z-10">
               {HOURS.map((hour) => (
-                <div key={hour} className="h-20 border-b border-white/5 px-2 py-1">
-                  <span className="text-xs font-medium text-slate-500">
+                <div key={hour} className="h-20 border-b border-white/[0.08] px-2 py-1">
+                  <span className="text-xs font-medium text-white/40">
                     {hour.toString().padStart(2, '0')}:00
                   </span>
                 </div>
@@ -736,9 +736,9 @@ export function Agenda() {
                 const overnightContinuations = previousDayMeetings.filter(event => isOvernightEvent(event.time))
 
                 return (
-                  <div key={dayIndex} className="relative flex-1 border-r border-white/5 min-w-[120px]">
+                  <div key={dayIndex} className="relative flex-1 border-r border-white/[0.08] min-w-[120px]">
                     {HOURS.map((hour) => (
-                      <div key={hour} className="h-20 border-b border-white/5" />
+                      <div key={hour} className="h-20 border-b border-white/[0.08]" />
                     ))}
 
                     {dayIndex === todayIndex && currentTimePos >= 0 && currentTimePos <= 100 && (
@@ -855,10 +855,10 @@ export function Agenda() {
     const currentMonth = currentDate.getMonth()
 
     return (
-      <div className="flex-1 overflow-auto rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md">
-        <div className="grid grid-cols-7 border-b border-white/5 bg-slate-900/60">
+      <div className="flex-1 overflow-auto rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+        <div className="grid grid-cols-7 bg-white/[0.02]">
           {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
-            <div key={day} className="border-r border-white/5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <div key={day} className="border-r border-white/[0.08] py-3 text-center text-xs font-semibold uppercase tracking-wider text-white/40">
               {day}
             </div>
           ))}
@@ -876,17 +876,17 @@ export function Agenda() {
               <div
                 key={index}
                 className={cn(
-                  'min-h-[120px] border-b border-r border-white/5 p-2 transition-colors',
-                  !isCurrentMonth && 'bg-slate-900/30',
-                  today && 'bg-blue-500/5',
+                  'min-h-[120px] border-b border-r border-white/[0.08] p-2 transition-colors',
+                  !isCurrentMonth && 'bg-white/[0.01]',
+                  today && 'bg-emerald-500/5',
                   isCurrentMonth && !today && 'hover:bg-white/5'
                 )}
               >
                 <div className={cn(
                   'mb-2 flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold',
-                  today && 'bg-blue-500 text-white shadow-lg shadow-blue-500/30',
+                  today && 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/30',
                   !today && isCurrentMonth && 'text-white',
-                  !today && !isCurrentMonth && 'text-slate-600'
+                  !today && !isCurrentMonth && 'text-white/20'
                 )}>
                   {date.getDate()}
                 </div>
@@ -909,7 +909,7 @@ export function Agenda() {
                   })}
 
                   {hiddenCount > 0 && (
-                    <div className="px-1.5 text-[10px] font-medium text-slate-500">
+                    <div className="px-1.5 text-[10px] font-medium text-white/40">
                       + {hiddenCount} autre{hiddenCount > 1 ? 's' : ''}
                     </div>
                   )}
@@ -923,29 +923,28 @@ export function Agenda() {
   }
 
   return (
-    <div className="relative flex h-full gap-6 p-8 overflow-auto bg-[#020617] text-slate-100 font-sans">
+    <div className="relative flex h-full gap-8 p-8 overflow-auto bg-[#111111] text-white font-sans">
 
       {/* Background Blobs (Premium Design) */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
 
       <div className="relative z-10 flex flex-col h-full min-w-[1000px] w-full gap-8">
         <div className="flex flex-1 flex-col">
 
-
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={goToToday}
-                className="rounded-xl border border-white/10 bg-slate-800/50 px-4 py-2 text-sm font-bold text-slate-300 transition-all hover:bg-slate-700 hover:text-white"
+                className="rounded-full border border-white/[0.08] bg-white/[0.03] px-6 py-2.5 text-sm font-bold text-white/80 transition-all duration-300 hover:bg-white/[0.04] hover:text-white"
               >
                 Aujourd'hui
               </button>
 
-              <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-slate-900/50 px-4 py-2 backdrop-blur-sm">
+              <div className="flex items-center gap-4 rounded-full border border-white/[0.08] bg-white/[0.03] px-5 py-2.5 backdrop-blur-[16px]">
                 <button
                   onClick={view === 'week' ? handlePrevRange : goToPrev}
-                  className="rounded-full p-1 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+                  className="rounded-full p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
@@ -956,7 +955,7 @@ export function Agenda() {
 
                 <button
                   onClick={view === 'week' ? handleNextRange : goToNext}
-                  className="rounded-full p-1 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+                  className="rounded-full p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -965,7 +964,7 @@ export function Agenda() {
               <div className="relative">
                 <button
                   onClick={() => dateInputRef.current?.showPicker()}
-                  className="rounded-xl p-2 text-slate-400 transition-all hover:bg-slate-800 hover:text-white border border-transparent hover:border-white/10"
+                  className="rounded-full p-2 text-white/40 transition-all hover:bg-white/10 hover:text-white border border-transparent hover:border-white/[0.08]"
                   title="Choisir une date"
                 >
                   <CalendarIcon className="h-5 w-5" />
@@ -981,12 +980,12 @@ export function Agenda() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex items-center rounded-xl border border-white/10 bg-slate-900/50 p-1 backdrop-blur-sm">
+              <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/[0.08] rounded-full w-fit backdrop-blur-[16px]">
                 <button
                   onClick={() => setView('day')}
                   className={cn(
-                    'rounded-lg px-4 py-1.5 text-sm font-bold transition-all',
-                    view === 'day' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
+                    'rounded-full px-6 py-2 text-sm font-bold transition-all duration-300',
+                    view === 'day' ? 'bg-emerald-500 text-black shadow-lg' : 'text-white/40 hover:text-white font-medium'
                   )}
                 >
                   Jour
@@ -994,8 +993,8 @@ export function Agenda() {
                 <button
                   onClick={() => setView('week')}
                   className={cn(
-                    'rounded-lg px-4 py-1.5 text-sm font-bold transition-all',
-                    view === 'week' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
+                    'rounded-full px-6 py-2 text-sm font-bold transition-all duration-300',
+                    view === 'week' ? 'bg-emerald-500 text-black shadow-lg' : 'text-white/40 hover:text-white font-medium'
                   )}
                 >
                   Semaine
@@ -1003,8 +1002,8 @@ export function Agenda() {
                 <button
                   onClick={() => setView('month')}
                   className={cn(
-                    'rounded-lg px-4 py-1.5 text-sm font-bold transition-all',
-                    view === 'month' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
+                    'rounded-full px-6 py-2 text-sm font-bold transition-all duration-300',
+                    view === 'month' ? 'bg-emerald-500 text-black shadow-lg' : 'text-white/40 hover:text-white font-medium'
                   )}
                 >
                   Mois
@@ -1015,10 +1014,10 @@ export function Agenda() {
                 onClick={login}
                 disabled={isLoading}
                 className={cn(
-                  'flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all',
+                  'flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-300',
                   isConnected
                     ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                    : 'border border-white/10 bg-slate-800/50 text-slate-300 hover:bg-slate-700'
+                    : 'border border-white/[0.08] bg-white/[0.03] text-white/80 hover:bg-white/[0.04]'
                 )}
               >
                 <CalendarIcon className="h-4 w-4" />
@@ -1027,7 +1026,7 @@ export function Agenda() {
 
               <button
                 onClick={handleCreateEvent}
-                className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 active:scale-95"
+                className="flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 active:scale-95"
               >
                 <Plus className="h-4 w-4" />
                 Nouveau RDV
@@ -1040,12 +1039,12 @@ export function Agenda() {
           {view === 'month' && renderMonthView()}
         </div>
 
-        <div className="w-full mt-8">
-          <h3 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+        <div className="w-full mt-12">
+          <h3 className="mb-6 text-xl font-bold text-white flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             Aujourd'hui
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {getTodayMeetings().map((event) => {
               const style = getEventStyle(event)
               const isGoogleEvent = (event as any).isGoogleEvent
@@ -1062,14 +1061,14 @@ export function Agenda() {
                 <div
                   key={event.id}
                   onClick={() => setSelectedEvent(event)}
-                  className="cursor-pointer rounded-2xl border p-4 transition-all hover:bg-white/5 hover:scale-[1.02] backdrop-blur-sm"
+                  className="cursor-pointer rounded-2xl border p-5 transition-all duration-300 hover:bg-white/[0.04] hover:scale-[1.02] backdrop-blur-[16px]"
                   style={cardStyle}
                 >
                   <div className="flex items-start gap-3">
                     <div
                       className={cn(
                         'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-inner',
-                        isGoogleEvent ? 'bg-blue-50' : 'bg-slate-800'
+                        isGoogleEvent ? 'bg-blue-50' : 'bg-white/5'
                       )}
                     >
                       {isGoogleEvent && <CalendarIcon className="h-5 w-5 text-blue-500" />}
@@ -1079,15 +1078,15 @@ export function Agenda() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className={cn("font-bold truncate", isGoogleEvent ? "text-slate-900" : "text-white")}>
+                      <p className={cn("font-bold truncate", isGoogleEvent ? "text-black/90" : "text-white")}>
                         {event.title?.split(' - ')[0] || 'Sans titre'}
                       </p>
                       {event.contact && (
-                        <p className={cn("mt-0.5 text-xs font-medium truncate", isGoogleEvent ? "text-slate-500" : "text-slate-400")}>
+                        <p className={cn("mt-0.5 text-xs font-medium truncate", isGoogleEvent ? "text-black/50" : "text-white/40")}>
                           <MaskedText value={event.contact} type="name" />
                         </p>
                       )}
-                      <div className={cn("mt-2 flex items-center gap-1 text-xs font-mono", isGoogleEvent ? "text-slate-400" : "text-slate-500")}>
+                      <div className={cn("mt-2 flex items-center gap-1 text-xs font-mono", isGoogleEvent ? "text-black/40" : "text-white/40")}>
                         <Clock className="h-3 w-3" />
                         <span>{event.time}</span>
                       </div>
@@ -1099,7 +1098,7 @@ export function Agenda() {
                       e.stopPropagation()
                       setSelectedEvent(event)
                     }}
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600/10 border border-blue-600/20 px-3 py-2 text-sm font-bold text-blue-400 transition-all hover:bg-blue-600 hover:text-white"
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-sm font-bold text-emerald-400 transition-all hover:bg-emerald-500 hover:text-black"
                   >
                     <FileText className="h-4 w-4" />
                     Détails
@@ -1124,9 +1123,9 @@ export function Agenda() {
                 onClick={() => setSelectedEvent(null)}
               />
 
-              <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-white/10 animate-in fade-in zoom-in-95">
+              <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] border border-white/[0.08] animate-in fade-in zoom-in-95">
                 <div className={cn(
-                  "flex items-start justify-between border-b p-6 flex-shrink-0 rounded-t-2xl",
+                  "flex items-start justify-between p-6 flex-shrink-0 rounded-t-2xl",
                   isGoogleEvent ? 'border-blue-500/20 bg-blue-500/5' : 'border-orange-500/20 bg-orange-500/5'
                 )}>
                   <div className="flex-1">
@@ -1166,32 +1165,32 @@ export function Agenda() {
                           <MaskedText value={selectedEvent.contact || 'Inconnu'} type="name" />
                           {!isGoogleEvent && <ExternalLink className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100" />}
                         </button>
-                        <p className="mt-1 text-sm font-medium text-slate-400">{selectedEvent.title}</p>
+                        <p className="mt-1 text-sm font-medium text-white/40">{selectedEvent.title}</p>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => setSelectedEvent(null)}
-                    className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+                    className="rounded-lg p-2 text-white/40 hover:bg-white/10 hover:text-white transition-colors"
                   >
                     <X className="h-6 w-6" />
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 p-6">
-                  <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 px-6 py-4">
+                  <div className="flex items-start gap-4 rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
                     <Clock className="mt-0.5 h-5 w-5 text-blue-400" />
                     <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date & Heure</p>
+                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Date & Heure</p>
                       <p className="mt-1 text-base font-bold text-white">
                         {formatDate(currentDate)}
                       </p>
-                      <p className="mt-0.5 text-sm font-medium text-slate-300 font-mono">{selectedEvent.time}</p>
+                      <p className="mt-0.5 text-sm font-medium text-white/60 font-mono">{selectedEvent.time}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type de rendez-vous</p>
+                  <div className="rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
+                    <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Type de rendez-vous</p>
                     <p className="mt-1 text-base font-semibold capitalize text-white">
                       {selectedEvent.type === 'video' && 'Visioconférence'}
                       {selectedEvent.type === 'call' && 'Appel téléphonique'}
@@ -1222,7 +1221,7 @@ export function Agenda() {
                               'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all flex-shrink-0',
                               copiedLink
                                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white border border-white/10'
+                                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/[0.08]'
                             )}
                           >
                             {copiedLink ? <><Check className="h-3.5 w-3.5" /> Copié</> : <><Copy className="h-3.5 w-3.5" /> Copier</>}
@@ -1234,10 +1233,10 @@ export function Agenda() {
                   })()}
 
                   {selectedEvent.location && !selectedEvent.location.startsWith('http') && (
-                    <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
+                    <div className="flex items-start gap-4 rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
                       <MapPin className="mt-0.5 h-5 w-5 text-emerald-400" />
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Lieu</p>
+                        <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Lieu</p>
                         <p className="mt-1 text-base font-medium text-white break-all">
                           {selectedEvent.location}
                         </p>
@@ -1246,11 +1245,11 @@ export function Agenda() {
                   )}
 
                   {(selectedEvent.description || (selectedEvent as any).description) && (
-                    <div className="flex items-start gap-4 rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
+                    <div className="flex items-start gap-4 rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
                       <FileText className="mt-0.5 h-5 w-5 text-purple-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Description</p>
-                        <p className="text-sm text-slate-300 whitespace-pre-wrap break-words leading-relaxed">
+                        <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2">Description</p>
+                        <p className="text-sm text-white/60 whitespace-pre-wrap break-words leading-relaxed">
                           {renderTextWithLinks(selectedEvent.description || (selectedEvent as any).description)}
                         </p>
                       </div>
@@ -1258,16 +1257,16 @@ export function Agenda() {
                   )}
 
                   {!isGoogleEvent && (
-                    <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4 backdrop-blur-sm">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Statut</p>
-                      <div className="mt-2 inline-flex rounded-full bg-blue-500/10 border border-blue-500/20 px-3 py-1 text-sm font-bold text-blue-400">
+                    <div className="rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
+                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Statut</p>
+                      <div className="mt-2 inline-flex rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-sm font-bold text-emerald-400">
                         À venir
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="flex-shrink-0 border-t border-white/10 p-6 bg-slate-900/50">
+                <div className="flex-shrink-0 p-6 bg-white/[0.02] rounded-b-2xl">
                   {(() => {
                     const explicitLink = (selectedEvent as any).hangoutLink || (selectedEvent as any).meetingUrl || (selectedEvent as any).link;
                     let meetingUrl = explicitLink;
@@ -1286,7 +1285,7 @@ export function Agenda() {
                           const contactName = selectedEvent.contact || 'Appel'
                           navigate(`/live-call?name=${encodeURIComponent(contactName)}&from=/agenda`)
                         }}
-                        className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20"
+                        className="mb-3 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-3 font-semibold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20"
                       >
                         <Video className="h-5 w-5" /> Rejoindre la réunion
                       </button>
@@ -1297,7 +1296,7 @@ export function Agenda() {
                     <div className="flex gap-3">
                       <button
                         onClick={handleEditEvent}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-slate-800/50 px-4 py-2.5 text-sm font-bold text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white"
                       >
                         <Pencil className="h-4 w-4" />
                         Modifier

@@ -183,6 +183,23 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
         body: JSON.stringify({ token, user_id: user.id })
       })
       const data = await res.json()
+
+      // Payment required for extra org — redirect to Stripe
+      if (res.status === 402 && data.payment_required) {
+        const checkoutRes = await fetch('/api/organization?action=org-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, user_id: user.id })
+        })
+        const checkoutData = await checkoutRes.json()
+        if (checkoutData.url) {
+          window.location.href = checkoutData.url
+          return
+        }
+        setJoinError(checkoutData.error || 'Erreur lors de la création du paiement.')
+        return
+      }
+
       if (!res.ok) {
         setJoinError(data.error || 'Erreur lors de la tentative de rejoindre l\'organisation.')
         return
@@ -454,19 +471,19 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
   const isGoogleUser = user?.app_metadata?.provider === 'google'
 
   const tabButtonClass = (tabName: string) => `
-    w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all
+    w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all
     ${activeTab === tabName
-      ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20'
-      : 'text-slate-400 hover:bg-white/5 hover:text-white'}
+      ? 'bg-white/5 text-emerald-400 border border-white/5'
+      : 'text-white/40 hover:text-white hover:bg-white/5 border border-transparent'}
   `
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
 
       {/* CROPPER OVERLAY */}
       {imageSrc && (
         <div className="absolute inset-0 z-[200] bg-black flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-lg h-[400px] relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900 mb-6">
+          <div className="w-full max-w-lg h-[400px] relative rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl mb-6">
             <Cropper
               image={imageSrc}
               crop={crop}
@@ -480,7 +497,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
           <div className="w-full max-w-lg space-y-6">
             <div className="flex items-center gap-4 px-4">
-              <ZoomOut className="h-5 w-5 text-slate-400" />
+              <ZoomOut className="h-5 w-5 text-white/40" />
               <input
                 type="range"
                 value={zoom}
@@ -489,16 +506,16 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 step={0.1}
                 aria-labelledby="Zoom"
                 onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-emerald-500"
               />
-              <ZoomIn className="h-5 w-5 text-slate-400" />
+              <ZoomIn className="h-5 w-5 text-white/40" />
             </div>
 
             <div className="flex gap-4 justify-center">
               <button
                 onClick={handleCancelCrop}
                 disabled={uploading}
-                className="px-6 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
+                className="px-6 py-3 rounded-full border border-white/[0.08] text-white/80 font-bold hover:bg-white/10 transition-colors flex items-center gap-2"
               >
                 <X className="h-4 w-4" />
                 Annuler
@@ -506,7 +523,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
               <button
                 onClick={showCroppedImage}
                 disabled={uploading}
-                className="px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/25 flex items-center gap-2"
+                className="px-6 py-3 rounded-full bg-emerald-500 text-black font-bold hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/25 flex items-center gap-2"
               >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Valider la photo
@@ -515,25 +532,25 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
           </div>
         </div>
       )}
-      <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-[#020617] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[700px] relative">
+      <div className="w-full max-w-5xl rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col md:flex-row h-[700px] relative">
 
         {/* Background Gradients */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-600/5 blur-[100px] rounded-full" />
+          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-emerald-500/5 blur-[100px] rounded-full" />
           <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/5 blur-[100px] rounded-full" />
         </div>
 
         {/* SIDEBAR GAUCHE */}
-        <div className="w-full md:w-72 border-r border-white/5 bg-slate-900/30 p-6 flex flex-col backdrop-blur-sm z-10">
-          <div className="flex items-center gap-3 mb-8 px-2">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
+        <div className="w-full md:w-72 bg-white/[0.03] p-6 flex flex-col backdrop-blur-[16px] z-10">
+          <div className="flex items-center gap-3 mb-10 px-2">
+            <div className="h-9 w-9 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
               <User className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-white">Paramètres</h2>
+            <h2 className="text-xl font-extrabold text-white">Paramètres</h2>
           </div>
 
-          <nav className="space-y-2 flex-1">
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Compte</p>
+          <nav className="space-y-1 flex-1">
+            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Compte</p>
             <button onClick={() => setActiveTab('profile')} className={tabButtonClass('profile')}>
               <User className="w-4 h-4" /> Profil
             </button>
@@ -550,9 +567,9 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
               <Building2 className="w-4 h-4" /> Organisation
             </button>
 
-            <div className="my-6 h-px bg-white/5 mx-4" />
+            <div className="my-5 mx-4" />
 
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Abonnement</p>
+            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Abonnement</p>
             <button onClick={() => setActiveTab('subscription')} className={tabButtonClass('subscription')}>
               <CreditCard className="w-4 h-4" /> Abonnement
             </button>
@@ -560,31 +577,31 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
               <Gift className="w-4 h-4" /> Parrainage
             </button>
 
-            <div className="my-6 h-px bg-white/5 mx-4" />
+            <div className="my-5 mx-4" />
 
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Données</p>
+            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Données</p>
             <button onClick={() => setActiveTab('data')} className={tabButtonClass('data')}>
               <Database className="w-4 h-4" /> Données
             </button>
 
-            <div className="my-6 h-px bg-white/5 mx-4" />
+            <div className="my-5 mx-4" />
 
-            <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Aide</p>
+            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Aide</p>
             <button onClick={() => setActiveTab('support')} className={tabButtonClass('support')}>
               <Headphones className="w-4 h-4" /> Support
             </button>
           </nav>
 
-          <button onClick={onClose} className="mt-auto flex items-center gap-2 px-4 py-3 text-slate-400 hover:text-white font-bold transition-colors rounded-xl hover:bg-white/5">
+          <button onClick={onClose} className="mt-auto flex items-center gap-3 px-4 py-3.5 text-white/40 hover:text-white font-bold transition-all rounded-2xl hover:bg-white/5 border border-transparent hover:border-white/5">
             <X className="w-4 h-4" /> Fermer
           </button>
         </div>
 
         {/* ZONE DE CONTENU DROITE */}
-        <div className="flex-1 flex flex-col bg-[#020617]/50 backdrop-blur-sm overflow-hidden text-left z-10 relative">
-          <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center">
+        <div className="flex-1 flex flex-col bg-[#111111]/50 backdrop-blur-sm overflow-hidden text-left z-10 relative">
+          <div className="px-10 py-8 flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold text-white text-left">
+              <h2 className="text-2xl font-extrabold text-white text-left">
                 {activeTab === 'profile' && 'Mon Profil'}
 
                 {/* Retrait du titre Fuseau Horaire */}
@@ -596,7 +613,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 {activeTab === 'data' && 'Mes Données'}
                 {activeTab === 'organization' && 'Organisation'}
               </h2>
-              <p className="text-slate-400 text-sm mt-1 text-left">
+              <p className="text-white/40 text-sm mt-1 text-left">
                 {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
 
                 {/* Retrait de la description Fuseau Horaire */}
@@ -622,10 +639,10 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
             {/* --- ONGLET PROFIL --- */}
             {activeTab === 'profile' && (
-              <form onSubmit={handleUpdateProfile} className="space-y-8 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-
+              <form onSubmit={handleUpdateProfile} className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+                <section className="rounded-2xl bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-10">
                 {/* SECTION AVATAR MODIFIABLE */}
-                <div className="flex items-center gap-6 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+                <div className="flex items-center gap-6 p-6 rounded-2xl bg-white/5 border border-white/5 mb-10">
                   <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
                     <input
                       type="file"
@@ -636,11 +653,11 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       disabled={uploading}
                     />
 
-                    <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 shadow-xl shadow-blue-500/20 group-hover:border-blue-500 transition-all">
+                    <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-emerald-500/30 shadow-xl shadow-emerald-500/20 group-hover:border-emerald-500 transition-all">
                       {formData.avatar_url ? (
                         <img src={formData.avatar_url} alt="Profil" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white">
+                        <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-3xl font-bold text-white">
                           {formData.full_name?.[0] || 'U'}
                         </div>
                       )}
@@ -656,67 +673,64 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   </div>
 
                   <div className="text-left">
-                    <h3 className="font-bold text-white text-lg">Photo de profil</h3>
-                    <p className="text-sm text-slate-400 mt-1">
+                    <h3 className="font-bold text-white text-sm">Photo de profil</h3>
+                    <p className="text-xs text-white/40 mt-0.5">
                       {uploading ? 'Téléchargement en cours...' : 'Cliquez sur l\'image pour la modifier (JPG, PNG).'}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">Nom complet</label>
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Nom complet</label>
                     <input
                       type="text"
                       disabled
                       value={formData.full_name}
-                      className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-slate-500 cursor-not-allowed outline-none transition-all font-medium text-left"
+                      className="w-full bg-transparent border-b border-white/10 py-2 text-white/40 cursor-not-allowed outline-none transition-all font-medium text-left"
                     />
                     <div className="flex items-start gap-2 mt-2 px-1">
-                      <AlertCircle className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
-                      <p className="text-xs text-blue-300/80 leading-relaxed text-left">Le nom est verrouillé pour garantir la stabilité de vos liens.</p>
+                      <AlertCircle className="h-3.5 w-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                      <p className="text-[11px] text-emerald-300/80 leading-relaxed text-left">Le nom est verrouillé pour garantir la stabilité de vos liens.</p>
                     </div>
                   </div>
 
-                  <div className="space-y-2 text-left">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">Numéro de téléphone</label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-left"
-                        placeholder="+33 6 00 00 00 00"
-                      />
-                    </div>
+                  <div className="space-y-1 text-left">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Numéro de téléphone</label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none text-left"
+                      placeholder="+33 6 00 00 00 00"
+                    />
                   </div>
 
-                  <div className="space-y-2 text-left">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">Spécialité / Rôle</label>
-                    <div className="relative">
-                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                      <select
-                        value={formData.role}
-                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer appearance-none text-left"
-                      >
-                        <option value="Closer">Closer</option>
-                        <option value="Setter">Setter</option>
-                        <option value="Setter-Closer">Setter-Closer</option>
-                      </select>
-                    </div>
+                  <div className="space-y-1 text-left">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Spécialité / Rôle</label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none cursor-pointer appearance-none text-left"
+                    >
+                      <option value="Closer">Closer</option>
+                      <option value="Setter">Setter</option>
+                      <option value="Setter-Closer">Setter-Closer</option>
+                    </select>
                   </div>
                 </div>
 
+                <div className="mt-10">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 hover:scale-[1.02]"
+                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-black px-8 py-3.5 rounded-full font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                 >
                   {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Save className="h-5 w-5" />}
                   Enregistrer les modifications
                 </button>
+                </div>
+                </section>
               </form>
             )}
 
@@ -726,85 +740,80 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
             {/* --- ONGLET SÉCURITÉ --- */}
             {activeTab === 'security' && (
-              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+              <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+                <section className="rounded-2xl bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-10">
                 {isGoogleUser ? (
-                  <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-4 text-left">
-                    <div className="p-3 bg-blue-500/20 rounded-xl h-fit">
-                      <Shield className="h-6 w-6 text-blue-400 shrink-0" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-white mb-1 text-lg text-left">Authentification Google active</h4>
-                      <p className="text-sm text-blue-200/70 leading-relaxed text-left">Votre compte est sécurisé par Google. La gestion du mot de passe se fait via Google.</p>
+                  <div className="flex items-center justify-between p-6 rounded-2xl bg-white/5 border border-white/5 text-left">
+                    <div className="flex items-center gap-4">
+                      <Shield className="h-5 w-5 text-emerald-400 shrink-0" />
+                      <div>
+                        <p className="font-bold text-white text-sm text-left">Authentification Google active</p>
+                        <p className="text-white/40 text-xs mt-0.5 text-left">Votre compte est sécurisé par Google. La gestion du mot de passe se fait via Google.</p>
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleUpdatePassword} className="space-y-6 text-left">
-                    <div className="space-y-2 text-left">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Mot de passe actuel (Requis)</label>
-                      <div className="relative text-left">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                        <input
-                          type="password"
-                          value={formData.currentPassword}
-                          onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-                          className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-left"
-                          placeholder="Votre mot de passe actuel"
-                          required
-                        />
-                      </div>
+                  <form onSubmit={handleUpdatePassword} className="space-y-8 text-left">
+                    <div className="space-y-1 text-left">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold text-left block">Mot de passe actuel (Requis)</label>
+                      <input
+                        type="password"
+                        value={formData.currentPassword}
+                        onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                        className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none text-left"
+                        placeholder="Votre mot de passe actuel"
+                        required
+                      />
                     </div>
 
-                    <div className="space-y-2 text-left">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Nouveau mot de passe</label>
-                      <div className="relative text-left">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                        <input
-                          type="password"
-                          value={formData.newPassword}
-                          onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-                          className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-left"
-                          placeholder="8 caractères minimum"
-                          minLength={8}
-                        />
-                      </div>
+                    <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-1 text-left">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold text-left block">Nouveau mot de passe</label>
+                      <input
+                        type="password"
+                        value={formData.newPassword}
+                        onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                        className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none text-left"
+                        placeholder="8 caractères minimum"
+                        minLength={8}
+                      />
                     </div>
-                    <div className="space-y-2 text-left">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left block">Confirmer le mot de passe</label>
-                      <div className="relative text-left">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                        <input
-                          type="password"
-                          value={formData.confirmPassword}
-                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                          className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-left"
-                          placeholder="Répétez le mot de passe"
-                          minLength={8}
-                        />
-                      </div>
+                    <div className="space-y-1 text-left">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold text-left block">Confirmer le mot de passe</label>
+                      <input
+                        type="password"
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none text-left"
+                        placeholder="Répétez le mot de passe"
+                        minLength={8}
+                      />
+                    </div>
                     </div>
                     <button
                       type="submit"
                       disabled={loading || !formData.newPassword || !formData.confirmPassword || !formData.currentPassword}
-                      className="w-full bg-white/5 hover:bg-white/10 text-white px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-white/10 hover:border-white/20 text-left"
+                      className="w-full bg-white text-black px-8 py-3.5 rounded-full font-bold flex items-center justify-center gap-2 transition-colors hover:bg-white/90 disabled:opacity-50 text-left"
                     >
                       {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Shield className="h-5 w-5" />}
                       Mettre à jour le mot de passe
                     </button>
                   </form>
                 )}
+                </section>
               </div>
             )}
 
             {/* --- ONGLET SUPPRESSION --- */}
             {activeTab === 'delete_account' && (
-              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                <div className="p-8 border border-red-500/20 bg-red-500/5 rounded-3xl space-y-6 text-left">
+              <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+                <section className="p-10 border border-red-500/20 bg-red-500/5 rounded-2xl space-y-8 text-left shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                   <div className="flex items-center gap-4 text-red-400 text-left">
-                    <AlertCircle className="h-8 w-8 text-left" />
-                    <h3 className="text-xl font-bold text-left">Zone de danger</h3>
+                    <AlertCircle className="h-6 w-6 text-left" />
+                    <h3 className="text-2xl font-extrabold text-left">Zone de danger</h3>
                   </div>
                   <div className="space-y-4">
-                    <p className="text-slate-400 leading-relaxed text-left">
+                    <p className="text-white/40 leading-relaxed text-left">
                       La suppression est irréversible. Vous pourrez sélectionner si vous souhaitez supprimer vos données de facturation, contacts internes ou externes avant de valider.
                     </p>
 
@@ -822,20 +831,20 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                     <button
                       onClick={handleCancelDeletion}
                       disabled={loading}
-                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition-all border border-slate-600"
+                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-white/[0.03] hover:bg-white/10 text-white rounded-full font-bold transition-all border border-white/[0.08]"
                     >
                       {loading ? <Loader2 className="animate-spin h-5 w-5" /> : "Annuler la demande de suppression"}
                     </button>
                   ) : (
                     <button
                       onClick={handleDeleteAccount}
-                      className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20 text-left"
+                      className="flex items-center justify-center w-full gap-3 px-8 py-3.5 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-full font-bold transition-all border border-red-600/20 text-left"
                     >
                       <Trash2 className="h-5 w-5 text-left" />
                       Supprimer mon compte et mes données
                     </button>
                   )}
-                </div>
+                </section>
               </div>
             )}
 
@@ -848,27 +857,27 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
             {/* --- ONGLET ABONNEMENT --- */}
             {activeTab === 'subscription' && (
-              <div className="max-w-2xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+              <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                 {/* Plan actuel */}
-                <div className="p-8 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden text-left">
+                <div className="p-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-purple-600/20 border border-emerald-500/30 relative overflow-hidden text-left shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                   <div className="absolute top-0 right-0 p-3 opacity-10">
                     <CreditCard className="w-32 h-32 text-white" />
                   </div>
                   <div className="relative z-10 text-left">
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4 ${cancelAtPeriodEnd ? 'bg-orange-500/20 border border-orange-500/30 text-orange-300' : isPaying ? 'bg-blue-500/20 border border-blue-500/30 text-blue-300' : 'bg-slate-500/20 border border-slate-500/30 text-slate-300'}`}>
-                      <span className={`w-2 h-2 rounded-full ${cancelAtPeriodEnd ? 'bg-orange-400 animate-pulse' : isPaying ? 'bg-blue-400 animate-pulse' : 'bg-slate-400'}`}></span>
+                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4 ${cancelAtPeriodEnd ? 'bg-orange-500/20 border border-orange-500/30 text-orange-300' : isPaying ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300' : 'bg-white/5 border border-white/[0.08] text-white/60'}`}>
+                      <span className={`w-2 h-2 rounded-full ${cancelAtPeriodEnd ? 'bg-orange-400 animate-pulse' : isPaying ? 'bg-emerald-400 animate-pulse' : 'bg-white/40'}`}></span>
                       {cancelAtPeriodEnd ? 'Annulation programmée' : isPaying ? 'Plan Actif' : 'Aucun abonnement'}
                     </span>
                     <h3 className="text-3xl font-bold text-white mb-1">
                       {isFounder ? 'Pack Pro' : 'Aucun plan'}
                     </h3>
                     {profile?.billing_cycle && (
-                      <p className="text-slate-400 text-sm mb-1">
+                      <p className="text-white/40 text-sm mb-1">
                         Facturation {profile.billing_cycle === 'yearly' ? 'annuelle' : 'mensuelle'}
                       </p>
                     )}
                     {profile?.current_period_end && (
-                      <p className="text-slate-500 text-xs">
+                      <p className="text-white/40 text-xs">
                         Prochaine échéance : {new Date(profile.current_period_end).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </p>
                     )}
@@ -878,7 +887,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
                 {/* Annulation programmée — info + réactivation */}
                 {isPaying && cancelAtPeriodEnd && (
-                  <div className="p-5 rounded-2xl bg-orange-500/10 border border-orange-500/20 space-y-4">
+                  <div className="p-6 rounded-2xl bg-orange-500/10 border border-orange-500/20 space-y-4">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="h-5 w-5 text-orange-400 shrink-0 mt-0.5" />
                       <div>
@@ -887,12 +896,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                             ? `Votre abonnement prend fin le ${new Date(currentPeriodEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
                             : 'Votre abonnement est en cours d\'annulation'}
                         </p>
-                        <p className="text-slate-400 text-xs mt-1">Après cette date, vous perdrez l'accès à toutes les fonctionnalités.</p>
+                        <p className="text-white/40 text-xs mt-1">Après cette date, vous perdrez l'accès à toutes les fonctionnalités.</p>
                       </div>
                     </div>
                     <button
                       onClick={() => setIsReactivateModalOpen(true)}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
+                      className="w-full px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-bold transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
                     >
                       <Heart className="h-4 w-4" />
                       J'ai changé d'avis
@@ -904,14 +913,14 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 {isPaying && !cancelAtPeriodEnd && (
                   <button
                     onClick={() => setIsCancellationModalOpen(true)}
-                    className="w-full px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20 flex items-center justify-center gap-2"
+                    className="w-full px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-full font-bold transition-all border border-red-600/20 flex items-center justify-center gap-2"
                   >
                     <Trash2 className="h-4 w-4" />
                     Annuler mon abonnement
                   </button>
                 )}
 
-                <p className="text-center text-[11px] text-slate-500">
+                <p className="text-center text-[11px] text-white/40">
                   Paiement sécurisé par Stripe. Annulation possible à tout moment.
                 </p>
               </div>
@@ -919,23 +928,23 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
             {/* --- ONGLET PARRAINAGE --- */}
             {activeTab === 'referral' && (
-              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left relative">
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left relative">
                 {!isPaying && (
-                  <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-900/60 backdrop-blur-md border border-white/5">
+                  <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-[#111111]/60 backdrop-blur-md border border-white/[0.08]">
                     <p className="text-white font-bold text-lg text-center px-6">
                       Accessible à la fin de votre période d'essai
                     </p>
                   </div>
                 )}
                 
-                <div className={!isPaying ? "space-y-6 blur-[8px] select-none pointer-events-none" : "space-y-6"}>
+                <div className={!isPaying ? "space-y-8 blur-[8px] select-none pointer-events-none" : "space-y-8"}>
                   {/* Avantages */}
-                <div className="p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5">
+                <div className="p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                   <h3 className="text-white font-bold text-base mb-3 flex items-center gap-2">
-                    <Gift className="h-5 w-5 text-blue-400" />
+                    <Gift className="h-5 w-5 text-emerald-400" />
                     Comment ça marche ?
                   </h3>
-                  <div className="space-y-2 text-sm text-slate-300">
+                  <div className="space-y-2 text-sm text-white/60">
                     <p><strong className="text-white">Pour vous :</strong> -7€/mois pendant 2 mois par filleul (mensuel) ou 1 mois offert (annuel). Cumulable, plancher 18€/mois.</p>
                     <p><strong className="text-white">Pour votre filleul (mensuel) :</strong> -10€/mois pendant 2 mois (24€/mois au lieu de 34€).</p>
                     <p><strong className="text-white">Pour votre filleul (annuel) :</strong> -30% sur l'abonnement annuel (285€ au lieu de 408€, soit 23,75€/mois toute l'année).</p>
@@ -943,10 +952,10 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 </div>
 
                 {/* Code de parrainage */}
-                <div className="p-5 rounded-2xl border border-white/10 bg-slate-900/50">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Votre code de parrainage</p>
+                <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Votre code de parrainage</p>
                   <div className="flex items-center gap-3">
-                    <div className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-white font-mono text-lg font-bold tracking-widest">
+                    <div className="flex-1 bg-[#111111] border border-white/[0.08] rounded-lg px-4 py-3 text-white font-mono text-lg font-bold tracking-widest">
                       {profile?.own_referral_code || '...'}
                     </div>
                     <button
@@ -955,7 +964,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                         setCodeCopied(true)
                         setTimeout(() => setCodeCopied(false), 2000)
                       }}
-                      className="px-4 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-all flex items-center gap-2 text-sm font-bold"
+                      className="px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all flex items-center gap-2 text-sm font-bold"
                     >
                       {codeCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                       {codeCopied ? 'Copié' : 'Copier'}
@@ -964,10 +973,10 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 </div>
 
                 {/* Lien de parrainage */}
-                <div className="p-5 rounded-2xl border border-white/10 bg-slate-900/50">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Votre lien de parrainage</p>
+                <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Votre lien de parrainage</p>
                   <div className="flex items-center gap-3">
-                    <div className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-slate-300 text-sm truncate">
+                    <div className="flex-1 bg-[#111111] border border-white/[0.08] rounded-lg px-4 py-3 text-white/60 text-sm truncate">
                       {`https://closeos.fr?ref=${profile?.own_referral_code || ''}`}
                     </div>
                     <button
@@ -976,7 +985,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                         setLinkCopied(true)
                         setTimeout(() => setLinkCopied(false), 2000)
                       }}
-                      className="px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-all flex items-center gap-2 text-sm font-bold shrink-0"
+                      className="px-4 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black transition-all flex items-center gap-2 text-sm font-bold shrink-0"
                     >
                       {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                       {linkCopied ? 'Copié' : 'Copier'}
@@ -985,20 +994,20 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-5 rounded-2xl border border-white/10 bg-slate-900/50 text-center">
-                    <Users className="h-6 w-6 text-blue-400 mx-auto mb-2" />
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] text-center shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+                    <Users className="h-6 w-6 text-emerald-400 mx-auto mb-3" />
                     <p className="text-3xl font-black text-white">{referralStats.total}</p>
-                    <p className="text-xs text-slate-500 mt-1">Filleuls total</p>
+                    <p className="text-xs text-white/40 mt-1">Filleuls total</p>
                   </div>
-                  <div className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 text-center">
-                    <Gift className="h-6 w-6 text-emerald-400 mx-auto mb-2" />
+                  <div className="p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 text-center shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+                    <Gift className="h-6 w-6 text-emerald-400 mx-auto mb-3" />
                     <p className="text-3xl font-black text-white">{referralStats.active}</p>
-                    <p className="text-xs text-slate-500 mt-1">Réductions actives</p>
+                    <p className="text-xs text-white/40 mt-1">Réductions actives</p>
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-500 text-center">
+                <p className="text-xs text-white/40 text-center">
                   Le filleul peut utiliser votre code lors du paiement, ou simplement s'inscrire via votre lien.
                 </p>
                 </div>
@@ -1007,15 +1016,15 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
             {/* --- ONGLET ORGANISATION --- */}
             {activeTab === 'organization' && (
-              <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+              <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
                 {orgLoading && !orgData ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
+                    <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
                   </div>
                 ) : orgData ? (
                   /* ÉTAT 2 — Déjà dans une organisation */
                   <>
-                    <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/30 relative overflow-hidden">
+                    <div className="p-8 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-purple-600/20 border border-emerald-500/30 relative overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                       <div className="absolute top-0 right-0 p-3 opacity-10">
                         <Building2 className="w-24 h-24 text-white" />
                       </div>
@@ -1024,21 +1033,21 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                           {orgData.logo_url ? (
                             <img src={orgData.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover border border-white/10" />
                           ) : (
-                            <div className="w-12 h-12 rounded-xl bg-blue-600/30 flex items-center justify-center">
-                              <Building2 className="h-6 w-6 text-blue-300" />
+                            <div className="w-12 h-12 rounded-xl bg-emerald-500/30 flex items-center justify-center">
+                              <Building2 className="h-6 w-6 text-emerald-300" />
                             </div>
                           )}
                           <div>
                             <h3 className="text-xl font-bold text-white">{orgData.org_name}</h3>
-                            <p className="text-sm text-slate-400">Dirigée par {orgData.owner_name}</p>
+                            <p className="text-sm text-white/40">Dirigée par {orgData.owner_name}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 flex-wrap">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 border border-blue-500/30 text-blue-300">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 border border-emerald-500/30 text-emerald-300">
                             {orgData.role}
                           </span>
                           {orgData.joined_at && (
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-white/40">
                               Membre depuis le {new Date(orgData.joined_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </span>
                           )}
@@ -1049,19 +1058,19 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                     {showLeaveConfirm ? (
                       <div className="p-5 rounded-2xl border border-red-500/20 bg-red-500/5 space-y-4">
                         <p className="text-white font-bold text-sm">Êtes-vous sûr de vouloir quitter cette organisation ?</p>
-                        <p className="text-slate-400 text-xs">Vos prospects assignés resteront dans l'organisation mais vous ne pourrez plus y accéder.</p>
+                        <p className="text-white/40 text-xs">Vos prospects assignés resteront dans l'organisation mais vous ne pourrez plus y accéder.</p>
                         <div className="flex gap-3">
                           <button
                             onClick={handleLeaveOrganization}
                             disabled={orgLoading}
-                            className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                            className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 text-white rounded-full font-bold transition-all flex items-center justify-center gap-2"
                           >
                             {orgLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
                             Confirmer
                           </button>
                           <button
                             onClick={() => setShowLeaveConfirm(false)}
-                            className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-all border border-slate-700"
+                            className="flex-1 px-4 py-3 bg-white/[0.03] hover:bg-white/10 text-white/80 rounded-full font-bold transition-all border border-white/[0.08]"
                           >
                             Annuler
                           </button>
@@ -1070,44 +1079,76 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                     ) : (
                       <button
                         onClick={() => setShowLeaveConfirm(true)}
-                        className="w-full px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-bold transition-all border border-red-600/20 flex items-center justify-center gap-2"
+                        className="w-full px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-full font-bold transition-all border border-red-600/20 flex items-center justify-center gap-2"
                       >
                         <LogOut className="h-4 w-4" />
                         Quitter l'organisation
                       </button>
                     )}
+
+                    {/* Rejoindre une organisation supplémentaire */}
+                    <div className="mt-8 p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+                      <h4 className="text-sm font-bold text-white mb-1">Rejoindre une autre organisation</h4>
+                      <p className="text-xs text-white/40 mb-4">Un paiement unique de 10€ est requis par organisation supplémentaire.</p>
+                      <div className="flex gap-3">
+                        <div className="relative flex-1">
+                          <Link className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                          <input
+                            type="text"
+                            value={inviteLink}
+                            onChange={(e) => { setInviteLink(e.target.value); setJoinError('') }}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-sm"
+                            placeholder="Coller le lien d'invitation ici"
+                          />
+                        </div>
+                        <button
+                          onClick={handleJoinOrganization}
+                          disabled={orgLoading || !inviteLink.trim()}
+                          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center gap-2 shrink-0"
+                        >
+                          {orgLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                          Rejoindre
+                        </button>
+                      </div>
+                      {joinError && (
+                        <div className="mt-3 flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                          <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                          <p className="text-xs text-red-300">{joinError}</p>
+                        </div>
+                      )}
+                    </div>
                   </>
                 ) : (
                   /* ÉTAT 1 — Pas dans une organisation */
                   <>
-                    <div className="p-6 rounded-2xl border border-white/10 bg-slate-900/50">
+                    <div className="p-8 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2.5 rounded-xl bg-slate-800">
-                          <Building2 className="h-5 w-5 text-slate-400" />
+                        <div className="p-2.5 rounded-xl bg-white/5">
+                          <Building2 className="h-5 w-5 text-white/40" />
                         </div>
                         <div>
                           <h3 className="font-bold text-white">Aucune organisation</h3>
-                          <p className="text-xs text-slate-500">Vous n'appartenez à aucune organisation</p>
+                          <p className="text-xs text-white/40">Vous n'appartenez à aucune organisation</p>
                         </div>
                       </div>
 
                       <div className="space-y-3">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Lien d'invitation</label>
+                        <label className="text-xs font-bold text-white/40 uppercase tracking-wider">Lien d'invitation</label>
                         <div className="flex gap-3">
                           <div className="relative flex-1">
-                            <Link className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                            <Link className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                             <input
                               type="text"
                               value={inviteLink}
                               onChange={(e) => { setInviteLink(e.target.value); setJoinError('') }}
-                              className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm"
+                              className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-sm"
                               placeholder="Coller le lien d'invitation ici"
                             />
                           </div>
                           <button
                             onClick={handleJoinOrganization}
                             disabled={orgLoading || !inviteLink.trim()}
-                            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center gap-2 shrink-0"
+                            className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center gap-2 shrink-0"
                           >
                             {orgLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                             Rejoindre
@@ -1122,8 +1163,8 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       </div>
                     </div>
 
-                    <div className="p-5 rounded-2xl border border-white/5 bg-slate-900/30">
-                      <p className="text-xs text-slate-500 leading-relaxed">
+                    <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px]">
+                      <p className="text-xs text-white/40 leading-relaxed">
                         Demandez un lien d'invitation à votre manager ou responsable d'équipe.
                         Une fois membre, vous aurez accès au pipeline partagé, aux formules et aux KPIs de l'organisation directement depuis votre interface Sales.
                       </p>
@@ -1136,34 +1177,30 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
             {/* --- ONGLET SUPPORT --- */}
             {activeTab === 'support' && (
               <div className="max-w-xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
-                <a href="mailto:support@closeos.fr" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02] text-left">
-                  <div className="flex items-center justify-between text-left">
+                <a href="mailto:support@closeos.fr" className="group flex items-center justify-between p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all text-left">
                     <div className="flex items-center gap-4 text-left">
-                      <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 group-hover:text-blue-300 transition-colors text-left">
+                      <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 group-hover:text-emerald-300 transition-colors text-left">
                         <Mail className="h-6 w-6 text-left" />
                       </div>
                       <div className="text-left">
-                        <h4 className="font-bold text-white text-lg text-left">Email Support</h4>
-                        <p className="text-sm text-slate-400 text-left">Réponse sous 24h ouvrées</p>
+                        <p className="font-bold text-white text-sm text-left">Email Support</p>
+                        <p className="text-white/40 text-xs mt-0.5 text-left">Réponse sous 24h ouvrées</p>
                       </div>
                     </div>
-                    <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white text-left" />
-                  </div>
+                    <ExternalLink className="h-5 w-5 text-white/40 group-hover:text-white text-left" />
                 </a>
 
-                <a href="#" className="group block p-6 rounded-2xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 transition-all hover:scale-[1.02] text-left">
-                  <div className="flex items-center justify-between text-left">
+                <a href="#" className="group flex items-center justify-between p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all text-left">
                     <div className="flex items-center gap-4 text-left">
                       <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors text-left">
                         <AlertCircle className="h-6 w-6 text-left" />
                       </div>
                       <div className="text-left">
-                        <h4 className="font-bold text-white text-lg text-left">Centre d'aide & FAQ</h4>
-                        <p className="text-sm text-slate-400 text-left">Guides et tutoriels (Bientôt disponible)</p>
+                        <p className="font-bold text-white text-sm text-left">Centre d'aide & FAQ</p>
+                        <p className="text-white/40 text-xs mt-0.5 text-left">Guides et tutoriels (Bientôt disponible)</p>
                       </div>
                     </div>
-                    <ExternalLink className="h-5 w-5 text-slate-500 group-hover:text-white text-left" />
-                  </div>
+                    <ExternalLink className="h-5 w-5 text-white/40 group-hover:text-white text-left" />
                 </a>
               </div>
             )}
@@ -1172,31 +1209,31 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
       </div>
       {/* Reactivation Confirmation Modal */}
       {isReactivateModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0B1121] shadow-2xl p-8 text-center relative">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8 text-center relative">
             <button
               onClick={() => setIsReactivateModalOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/[0.03] hover:bg-white/10 text-white/40 hover:text-white transition-colors border border-white/[0.08]"
             >
               <X className="h-4 w-4" />
             </button>
-            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-emerald-500 text-white shadow-lg shadow-blue-500/20">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 text-black shadow-lg shadow-emerald-500/20">
               <Heart className="h-8 w-8" />
             </div>
             <h3 className="text-2xl font-bold text-white mb-2">Vous restez parmi nous alors ?!</h3>
-            <p className="text-slate-400 text-sm mb-6">Votre abonnement sera réactivé et continuera normalement.</p>
+            <p className="text-white/40 text-sm mb-6">Votre abonnement sera réactivé et continuera normalement.</p>
             <div className="space-y-3">
               <button
                 onClick={handleReactivate}
                 disabled={reactivating}
-                className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-500 hover:to-emerald-400 text-white rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {reactivating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
                 {reactivating ? 'Réactivation...' : 'Oui, je reste !'}
               </button>
               <button
                 onClick={() => setIsReactivateModalOpen(false)}
-                className="w-full px-6 py-3 bg-slate-800/50 hover:bg-slate-700 text-slate-300 rounded-xl font-medium transition-all border border-slate-700"
+                className="w-full px-6 py-3 bg-white/[0.03] hover:bg-white/10 text-white/80 rounded-full font-medium transition-all border border-white/[0.08]"
               >
                 Annuler
               </button>

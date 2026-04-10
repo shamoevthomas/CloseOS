@@ -51,12 +51,12 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0B1121] shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+            <div className="w-full max-w-2xl rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-2xl relative overflow-hidden">
                 {/* Close button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors z-10"
+                    className="absolute top-4 right-4 p-2 rounded-full bg-white/[0.03] border border-white/[0.08] hover:bg-white/10 text-white/40 hover:text-white transition-colors z-10"
                 >
                     <X className="h-5 w-5" />
                 </button>
@@ -68,18 +68,18 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
                             <LogOut className="h-8 w-8" />
                         </div>
                         <h2 className="text-3xl font-bold text-white mb-3">Avant de partir...</h2>
-                        <p className="text-slate-400 text-lg">
+                        <p className="text-white/40 text-lg">
                             Nous aimerions comprendre ce qui ne vous convient pas.
                         </p>
                     </div>
 
                     {/* Content */}
                     <div className="space-y-6 mb-8">
-                        <div className="p-6 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                        <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
                             <p className="text-white font-medium mb-2">
                                 💬 Discutons-en ensemble
                             </p>
-                            <p className="text-slate-400 text-sm">
+                            <p className="text-white/40 text-sm">
                                 Prenez 15 minutes avec notre équipe pour nous expliquer vos besoins.
                                 Nous trouverons peut-être une solution ensemble !
                             </p>
@@ -91,7 +91,7 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
                                 data-cal-link="thomas-sh-ipdmni/demande-d-annulation-closeos"
                                 data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true"}'
                                 disabled={loading}
-                                className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center justify-center gap-3 disabled:opacity-50"
+                                className="w-full px-6 py-4 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-bold transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-3 disabled:opacity-50"
                             >
                                 <Calendar className="h-5 w-5" />
                                 Je prends rendez-vous avant de partir
@@ -100,7 +100,7 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
                             <button
                                 onClick={handleConfirmCancellation}
                                 disabled={loading}
-                                className="w-full px-6 py-4 bg-slate-800/50 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl font-medium transition-all border border-slate-700 flex items-center justify-center gap-3 disabled:opacity-50"
+                                className="w-full px-6 py-4 bg-white/[0.03] hover:bg-white/10 text-white/60 hover:text-white rounded-full font-medium transition-all border border-white/[0.08] flex items-center justify-center gap-3 disabled:opacity-50"
                             >
                                 {loading ? (
                                     <>
@@ -118,7 +118,7 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
                     </div>
 
                     {/* Footer note */}
-                    <p className="text-center text-sm text-slate-500">
+                    <p className="text-center text-sm text-white/40">
                         Votre abonnement restera actif jusqu'à la fin de votre période de facturation
                     </p>
                 </div>

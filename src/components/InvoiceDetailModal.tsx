@@ -131,18 +131,18 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
 
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-6xl h-[85vh] bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl flex overflow-hidden">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-6xl h-[85vh] bg-[#1a1a1a] rounded-2xl border border-white/[0.08] shadow-2xl flex overflow-hidden">
 
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 bg-slate-800/50 hover:bg-slate-700 text-white rounded-full transition-colors"
+          className="absolute top-4 right-4 z-10 p-2 bg-white/[0.03] border border-white/[0.08] hover:bg-white/10 text-white rounded-full transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* GAUCHE: PDF */}
-        <div className="w-1/2 h-full bg-slate-950 border-r border-slate-800 p-6 flex flex-col">
+        <div className="w-1/2 h-full bg-[#111111] border-r border-white/[0.08] p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <FileText className="w-5 h-5 text-indigo-400" />
@@ -152,33 +152,33 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
               <Download className="w-3 h-3" /> Ouvrir / Télécharger
             </a>
           </div>
-          <div className="flex-1 bg-slate-900 rounded-lg border border-slate-800 overflow-hidden relative">
+          <div className="flex-1 bg-white/[0.03] rounded-2xl border border-white/[0.08] overflow-hidden relative">
             {invoice.pdf_url ? (
               <iframe src={`${invoice.pdf_url}#toolbar=0&navpanes=0&scrollbar=0`} className="w-full h-full object-contain" title="PDF Preview" />
             ) : (
-              <div className="flex items-center justify-center h-full text-slate-500">Aperçu non disponible</div>
+              <div className="flex items-center justify-center h-full text-white/40">Aperçu non disponible</div>
             )}
           </div>
         </div>
 
         {/* DROITE: DÉTAILS */}
-        <div className="w-1/2 h-full p-8 overflow-y-auto bg-slate-900">
+        <div className="w-1/2 h-full p-8 overflow-y-auto bg-[#1a1a1a]">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-white mb-1">{invoice.invoice_number}</h2>
-            <p className="text-slate-400 text-sm">Générée le {new Date(invoice.created_at).toLocaleDateString('fr-FR')}</p>
+            <p className="text-white/40 text-sm">Générée le {new Date(invoice.created_at).toLocaleDateString('fr-FR')}</p>
           </div>
 
           <div className="space-y-8">
-            <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
+            <div className="bg-white/[0.03] backdrop-blur-2xl p-5 rounded-2xl border border-white/[0.08]">
               <div className="flex justify-between items-start mb-4">
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Informations Client</h4>
+                <h4 className="text-xs uppercase tracking-widest font-bold text-white/40">Informations Client</h4>
 
                 {/* 🚀 BOUTON EMAIL */}
                 <button
                   onClick={handleSendEmail}
                   disabled={!invoice.client_email || isSendingEmail}
                   className={`text-xs flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${!invoice.client_email
-                    ? 'border-slate-700 text-slate-600 cursor-not-allowed bg-slate-800/50'
+                    ? 'border-white/[0.08] text-white/40 cursor-not-allowed bg-white/[0.03]'
                     : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20'
                     }`}
                   title={!invoice.client_email ? "Aucun email enregistré pour cette facture" : "Envoyer la facture par mail"}
@@ -192,30 +192,30 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
                 <div className="p-3 bg-indigo-500/10 rounded-lg"><User className="w-6 h-6 text-indigo-400" /></div>
                 <div>
                   <p className="text-lg font-semibold text-white">{invoice.client_name}</p>
-                  <p className="text-slate-400 text-sm mt-1">{invoice.offer_name}</p>
-                  {invoice.client_email && <p className="text-slate-500 text-xs mt-0.5">{invoice.client_email}</p>}
+                  <p className="text-white/40 text-sm mt-1">{invoice.offer_name}</p>
+                  {invoice.client_email && <p className="text-white/40 text-xs mt-0.5">{invoice.client_email}</p>}
                   <p className="text-xl font-bold text-white mt-2">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(invoice.amount_ttc)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Statut du paiement</h4>
+            <div className="bg-white/[0.03] backdrop-blur-2xl p-5 rounded-2xl border border-white/[0.08]">
+              <h4 className="text-xs uppercase tracking-widest font-bold text-white/40 mb-4">Statut du paiement</h4>
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <button onClick={() => setStatus('en_attente')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'en_attente' ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}><Clock className="w-4 h-4" /> En attente</button>
-                <button onClick={() => setStatus('payé')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'payé' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}><CheckCircle className="w-4 h-4" /> Payé</button>
-                <button onClick={() => setStatus('retard')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'retard' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}><AlertTriangle className="w-4 h-4" /> Retard</button>
-                <button onClick={() => setStatus('autre')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'autre' ? 'bg-slate-200/10 border-slate-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}><HelpCircle className="w-4 h-4" /> Autre</button>
+                <button onClick={() => setStatus('en_attente')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'en_attente' ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-white/5 border-white/[0.08] text-white/40 hover:bg-white/10'}`}><Clock className="w-4 h-4" /> En attente</button>
+                <button onClick={() => setStatus('payé')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'payé' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-white/5 border-white/[0.08] text-white/40 hover:bg-white/10'}`}><CheckCircle className="w-4 h-4" /> Payé</button>
+                <button onClick={() => setStatus('retard')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'retard' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'bg-white/5 border-white/[0.08] text-white/40 hover:bg-white/10'}`}><AlertTriangle className="w-4 h-4" /> Retard</button>
+                <button onClick={() => setStatus('autre')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'autre' ? 'bg-white/10 border-white/40 text-white' : 'bg-white/5 border-white/[0.08] text-white/40 hover:bg-white/10'}`}><HelpCircle className="w-4 h-4" /> Autre</button>
               </div>
               {status === 'autre' && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                  <label className="block text-sm text-slate-400 mb-2">Précisez la situation :</label>
-                  <textarea value={note} onChange={(e) => setNote(e.target.value)} className="w-full h-24 bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:border-indigo-500 focus:outline-none resize-none" placeholder="Ex: Paiement échelonné accepté..." />
+                  <label className="block text-sm text-white/40 mb-2">Précisez la situation :</label>
+                  <textarea value={note} onChange={(e) => setNote(e.target.value)} className="w-full h-24 bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-emerald-500 focus:outline-none resize-none" placeholder="Ex: Paiement échelonné accepté..." />
                 </div>
               )}
             </div>
 
-            <button onClick={handleSave} disabled={isSaving} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={handleSave} disabled={isSaving} className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-full flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
               {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} Enregistrer les modifications
             </button>
           </div>

@@ -301,17 +301,17 @@ export function CallDetails() {
 
   if (!call) {
     return (
-      <div className="min-h-screen bg-gray-950 p-8">
+      <div className="min-h-screen bg-[#111111] p-8">
         <div className="mx-auto max-w-3xl">
           <button
             onClick={() => navigate('/')}
-            className="mb-6 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            className="mb-6 flex items-center gap-2 text-white/40 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
             Retour
           </button>
-          <div className="rounded-xl border border-gray-800 bg-gray-900 p-12 text-center">
-            <p className="text-gray-400">Appel non trouvé</p>
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-12 text-center">
+            <p className="text-white/40">Appel non trouvé</p>
           </div>
         </div>
       </div>
@@ -531,25 +531,25 @@ export function CallDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 p-8">
+    <div className="min-h-screen bg-[#111111] p-8">
       <div className="mx-auto max-w-3xl">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-12">
           <button
             onClick={() => navigate('/')}
-            className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            className="mb-6 flex items-center gap-2 text-white/40 hover:text-white transition-all duration-300"
           >
             <ArrowLeft className="h-5 w-5" />
             Retour
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-white">Résumé de Vente</h1>
-            <p className="mt-2 text-gray-400">
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white">Resume de Vente</h1>
+            <p className="mt-2 text-white/40">
               Qualifiez votre appel avec <span className="font-semibold text-white">{createdProspect ? createdProspect.contact : call.contactName}</span>
               {prospect && (() => {
                 const si = getStageInfo(prospect.stage)
                 return si ? (
-                  <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-slate-800/50 border border-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+                  <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/[0.08] px-2.5 py-0.5 text-xs font-medium text-white/60">
                     <span
                       className={cn("h-1.5 w-1.5 rounded-full", si.isDefault ? si.color : '')}
                       style={!si.isDefault ? { backgroundColor: si.color } : undefined}
@@ -570,12 +570,12 @@ export function CallDetails() {
               ))}
             </p>
             {prospect && prospectOffer && (
-              <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-blue-500/10 border border-blue-500/30 px-4 py-2">
+              <div className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 px-5 py-3">
                 <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-blue-400" />
+                  <Award className="h-4 w-4 text-emerald-400" />
                   <div>
-                    <p className="text-xs text-gray-400">Offre liée</p>
-                    <p className="text-sm font-semibold text-blue-400">
+                    <p className="text-xs text-white/40">Offre liee</p>
+                    <p className="text-sm font-semibold text-emerald-400">
                       {prospectOffer.name} - {prospectOffer.price}
                     </p>
                   </div>
@@ -583,7 +583,7 @@ export function CallDetails() {
               </div>
             )}
             {prospect && !prospectOffer && (
-              <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 px-4 py-2">
+              <div className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 px-5 py-3">
                 <p className="text-sm text-yellow-400">
                   ⚠️ Aucune offre liée à ce prospect
                 </p>
@@ -593,84 +593,81 @@ export function CallDetails() {
         </div>
 
         {/* DEBUG PANEL - Shows data linking status */}
-        <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4 mb-10">
-          <h3 className="text-sm font-semibold text-purple-400 mb-3">🔍 Debug: Data Linking</h3>
+        <div className="rounded-2xl border border-purple-500/30 bg-purple-500/5 p-6 mb-12">
+          <h3 className="text-sm font-semibold text-purple-400 mb-3">Debug: Data Linking</h3>
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="rounded-lg bg-gray-800 p-3">
-              <p className="text-gray-500 mb-1">Prospect trouvé</p>
+            <div className="rounded-xl bg-white/5 p-3">
+              <p className="text-white/40 mb-1">Prospect trouvé</p>
               <p className={prospect ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
                 {prospect ? `✓ ${prospect.contact}` : '✗ Non trouvé'}
               </p>
               {prospect && (
-                <p className="text-gray-400 mt-1">ID: {prospect.id} | offerId: {prospect.offerId || 'N/A'}</p>
+                <p className="text-white/40 mt-1">ID: {prospect.id} | offerId: {prospect.offerId || 'N/A'}</p>
               )}
             </div>
-            <div className="rounded-lg bg-gray-800 p-3">
-              <p className="text-gray-500 mb-1">Offre liée</p>
+            <div className="rounded-xl bg-white/5 p-3">
+              <p className="text-white/40 mb-1">Offre liée</p>
               <p className={prospectOffer ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'}>
                 {prospectOffer ? `✓ ${prospectOffer.name}` : '✗ Non trouvée'}
               </p>
               {prospectOffer && (
-                <p className="text-gray-400 mt-1">Prix: {prospectOffer.price} | Commission: {prospectOffer.commission}</p>
+                <p className="text-white/40 mt-1">Prix: {prospectOffer.price} | Commission: {prospectOffer.commission}</p>
               )}
             </div>
           </div>
           {!prospect && (
-            <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/30 p-3">
+            <div className="mt-3 rounded-xl bg-red-500/10 border border-red-500/30 p-3">
               <p className="text-sm text-red-400">
-                ⚠️ Prospect non trouvé avec le nom: <span className="font-semibold">{call.contactName}</span>
+                Prospect non trouve avec le nom: <span className="font-semibold">{call.contactName}</span>
               </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Vérifiez que le prospect existe dans ProspectsContext
+              <p className="text-xs text-white/40 mt-1">
+                Verifiez que le prospect existe dans ProspectsContext
               </p>
             </div>
           )}
           {prospect && !prospectOffer && (
-            <div className="mt-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3">
+            <div className="mt-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 p-3">
               <p className="text-sm text-yellow-400">
-                ⚠️ Prospect trouvé mais aucune offre liée
+                Prospect trouve mais aucune offre liee
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-white/40 mt-1">
                 offerId: {prospect.offerId || 'null'} | offer: {prospect.offer || 'null'}
               </p>
             </div>
           )}
         </div>
 
-        {/* --- TABS --- */}
-        <div className="flex gap-4 mb-6 border-b border-gray-800">
-            <button 
+        {/* --- TABS (Glass Pill) --- */}
+        <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/[0.08] rounded-full w-fit mb-8">
+            <button
                 onClick={() => setActiveTab('qualification')}
                 className={cn(
-                    "pb-3 px-2 text-sm font-medium flex items-center gap-2 transition-all relative",
-                    activeTab === 'qualification' ? "text-blue-400" : "text-gray-400 hover:text-gray-200"
+                    "px-6 py-2 rounded-full text-sm flex items-center gap-2 transition-all duration-300",
+                    activeTab === 'qualification' ? "bg-emerald-500 text-black font-bold" : "text-white/40 hover:text-white font-medium"
                 )}
             >
                 <LayoutList className="h-4 w-4" />
                 Qualification
-                {activeTab === 'qualification' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 rounded-t-full" />}
             </button>
             <button
                 onClick={() => setActiveTab('notes')}
                 className={cn(
-                    "pb-3 px-2 text-sm font-medium flex items-center gap-2 transition-all relative",
-                    activeTab === 'notes' ? "text-blue-400" : "text-gray-400 hover:text-gray-200"
+                    "px-6 py-2 rounded-full text-sm flex items-center gap-2 transition-all duration-300",
+                    activeTab === 'notes' ? "bg-emerald-500 text-black font-bold" : "text-white/40 hover:text-white font-medium"
                 )}
             >
                 <PenTool className="h-4 w-4" />
                 Notes d'appel
-                {activeTab === 'notes' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 rounded-t-full" />}
             </button>
             <button
                 onClick={() => setActiveTab('reminder')}
                 className={cn(
-                    "pb-3 px-2 text-sm font-medium flex items-center gap-2 transition-all relative",
-                    activeTab === 'reminder' ? "text-blue-400" : "text-gray-400 hover:text-gray-200"
+                    "px-6 py-2 rounded-full text-sm flex items-center gap-2 transition-all duration-300",
+                    activeTab === 'reminder' ? "bg-emerald-500 text-black font-bold" : "text-white/40 hover:text-white font-medium"
                 )}
             >
                 <Bell className="h-4 w-4" />
                 Programmer un rappel
-                {activeTab === 'reminder' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 rounded-t-full" />}
             </button>
         </div>
 
@@ -679,19 +676,19 @@ export function CallDetails() {
           
           {/* --- NOUVEAU BANDEAU DE CREATION --- */}
           {!prospect && (
-            <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-6 flex items-center justify-between animate-in fade-in">
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-8 flex items-center justify-between animate-in fade-in">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-blue-500/20">
-                    <UserPlus className="h-6 w-6 text-blue-400" />
+                <div className="p-3 rounded-full bg-emerald-500/20">
+                    <UserPlus className="h-6 w-6 text-emerald-400" />
                 </div>
                 <div>
                     <h3 className="font-bold text-white">Prospect inconnu</h3>
-                    <p className="text-sm text-blue-200">Pour qualifier l'appel, vous devez lier ou créer un prospect.</p>
+                    <p className="text-sm text-emerald-200">Pour qualifier l'appel, vous devez lier ou creer un prospect.</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all"
+                className="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-2 px-4 rounded-full shadow-lg transition-all"
               >
                 Créer un prospect ?
               </button>
@@ -704,9 +701,9 @@ export function CallDetails() {
             {activeTab === 'qualification' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
             {/* Outcome Selection */}
-            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
-                <label className="mb-4 block text-sm font-semibold text-white">
-                Résultat de l'appel <span className="text-red-400">*</span>
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8">
+                <label className="mb-6 block text-xs font-bold uppercase tracking-widest text-white/40">
+                Resultat de l'appel <span className="text-red-400">*</span>
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {outcomes.map((outcome) => {
@@ -718,33 +715,33 @@ export function CallDetails() {
                         key={outcome.id}
                         onClick={() => setSelectedOutcome(outcome.id)}
                         className={cn(
-                        'group relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all',
+                        'group relative flex flex-col items-center gap-3 rounded-2xl border-2 p-6 transition-all duration-300',
                         isSelected
                             ? `${outcome.bgColor} ${outcome.borderColor} shadow-lg`
-                            : 'border-gray-800 bg-gray-800/30 hover:border-gray-700 hover:bg-gray-800/50'
+                            : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.12] hover:bg-white/[0.04]'
                         )}
                     >
                         <div className={cn(
                         'flex h-12 w-12 items-center justify-center rounded-full transition-all',
                         isSelected
                             ? outcome.bgColor
-                            : 'bg-gray-700/50 group-hover:bg-gray-700'
+                            : 'bg-white/5 group-hover:bg-white/10'
                         )}>
                         <Icon className={cn(
                             'h-6 w-6 transition-colors',
                             isSelected
                             ? outcome.textColor
-                            : 'text-gray-400 group-hover:text-gray-300'
+                            : 'text-white/40 group-hover:text-white/60'
                         )} />
                         </div>
                         <div className="text-center">
                         <p className={cn(
                             'text-sm font-semibold transition-colors',
-                            isSelected ? outcome.textColor : 'text-gray-300 group-hover:text-white'
+                            isSelected ? outcome.textColor : 'text-white/60 group-hover:text-white'
                         )}>
                             {outcome.label}
                         </p>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-white/40">
                             {outcome.description}
                         </p>
                         </div>
@@ -765,10 +762,10 @@ export function CallDetails() {
 
             {/* Won: Payment Terms & Commission */}
             {selectedOutcome === 'won' && (
-                <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 animate-in slide-in-from-top-2">
+                <div className="space-y-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-8 animate-in slide-in-from-top-2">
                 <h3 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Détails de la vente
+                    Details de la vente
                 </h3>
 
                 {/* Amount Input */}
@@ -784,9 +781,9 @@ export function CallDetails() {
                         value={amount || ''}
                         onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
                         placeholder="Ex: 5000"
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 pr-12 text-lg text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 pr-12 text-lg text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">
                         €
                     </div>
                     </div>
@@ -801,10 +798,10 @@ export function CallDetails() {
                     <button
                         onClick={() => setPaymentType('comptant')}
                         className={cn(
-                        'flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
+                        'flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all duration-300',
                         paymentType === 'comptant'
                             ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                            : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                            : 'border-white/[0.08] bg-white/[0.03] text-white/40 hover:border-white/[0.12] hover:bg-white/[0.04]'
                         )}
                     >
                         Comptant
@@ -812,10 +809,10 @@ export function CallDetails() {
                     <button
                         onClick={() => setPaymentType('installments')}
                         className={cn(
-                        'flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-semibold transition-all',
+                        'flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all duration-300',
                         paymentType === 'installments'
                             ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                            : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                            : 'border-white/[0.08] bg-white/[0.03] text-white/40 hover:border-white/[0.12] hover:bg-white/[0.04]'
                         )}
                     >
                         Plusieurs fois
@@ -832,13 +829,13 @@ export function CallDetails() {
                     <select
                         value={installmentsCount}
                         onChange={(e) => setInstallmentsCount(parseInt(e.target.value))}
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
                     >
                         {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
                         <option key={num} value={num}>{num} mois</option>
                         ))}
                     </select>
-                    <p className="mt-2 text-sm text-gray-400">
+                    <p className="mt-2 text-sm text-white/40">
                         Montant par mois: <span className="text-emerald-400 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
                     </p>
                     </div>
@@ -846,7 +843,7 @@ export function CallDetails() {
 
                 {/* Commission Display */}
                 {amount > 0 && (
-                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6">
                     <div className="flex items-center gap-2 mb-2">
                         <Award className="h-4 w-4 text-emerald-400" />
                         <h4 className="text-sm font-semibold text-emerald-400">Ta Commission</h4>
@@ -855,11 +852,11 @@ export function CallDetails() {
                         {totalCommission.toFixed(2)} €
                     </p>
                     {paymentType === 'installments' && (
-                        <p className="mt-1 text-sm text-gray-300">
+                        <p className="mt-1 text-sm text-white/60">
                         Tu recevras: <span className="font-semibold text-emerald-400">{monthlyCommission.toFixed(2)}€/mois</span>
                         </p>
                     )}
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className="mt-2 text-xs text-white/40">
                         Taux de commission: {commissionRate}%
                     </p>
                     </div>
@@ -869,7 +866,7 @@ export function CallDetails() {
 
             {/* Follow up: Reschedule & Objection Tracking */}
             {selectedOutcome === 'followup' && (
-                <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-6 animate-in slide-in-from-top-2">
+                <div className="space-y-6 rounded-2xl border border-orange-500/30 bg-orange-500/5 p-8 animate-in slide-in-from-top-2">
                 <h3 className="text-sm font-semibold text-orange-400 flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     Informations de suivi
@@ -885,7 +882,7 @@ export function CallDetails() {
                     type="datetime-local"
                     value={followupDate}
                     onChange={(e) => setFollowupDate(e.target.value)}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
                     />
                 </div>
 
@@ -902,7 +899,7 @@ export function CallDetails() {
                         setFollowupReasonOther('')
                         }
                     }}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
                     >
                     <option value="">Sélectionnez un motif</option>
                     {objectionReasons.map((reason) => (
@@ -923,7 +920,7 @@ export function CallDetails() {
                         value={followupReasonOther}
                         onChange={(e) => setFollowupReasonOther(e.target.value)}
                         placeholder="Ex: Indisponibilité exceptionnelle..."
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
                         />
                     </div>
                     )}
@@ -933,7 +930,7 @@ export function CallDetails() {
 
             {/* Lost: Objection Tracking */}
             {selectedOutcome === 'lost' && (
-                <div className="space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-6 animate-in slide-in-from-top-2">
+                <div className="space-y-6 rounded-2xl border border-red-500/30 bg-red-500/5 p-8 animate-in slide-in-from-top-2">
                 <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2">
                     <XCircle className="h-4 w-4" />
                     Raison de la perte
@@ -952,7 +949,7 @@ export function CallDetails() {
                         setLostReasonOther('')
                         }
                     }}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none transition-all"
                     >
                     <option value="">Sélectionnez un motif</option>
                     {objectionReasons.map((reason) => (
@@ -973,7 +970,7 @@ export function CallDetails() {
                         value={lostReasonOther}
                         onChange={(e) => setLostReasonOther(e.target.value)}
                         placeholder="Ex: Prix trop élevé..."
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-red-500 focus:outline-none transition-all"
                         />
                     </div>
                     )}
@@ -985,18 +982,18 @@ export function CallDetails() {
 
             {/* ONGLET 2: NOTES D'APPEL */}
             {activeTab === 'notes' && (
-                <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 h-[500px] flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
-                    <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8 h-[500px] flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
+                    <label className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/40">
                         <FileText className="h-4 w-4" />
                         Historique et Notes de l'appel
                     </label>
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
-                        className="flex-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-base text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none leading-relaxed"
+                        placeholder="Prenez vos notes ici. Elles seront enregistrees dans l'historique des appels..."
+                        className="flex-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all resize-none leading-relaxed"
                     />
-                    <p className="mt-3 text-xs text-gray-500 flex items-center gap-1">
+                    <p className="mt-3 text-xs text-white/40 flex items-center gap-1">
                         <CheckCircle2 className="h-3 w-3" />
                         Ces notes s'ajouteront à l'historique des appels du prospect.
                     </p>
@@ -1005,7 +1002,7 @@ export function CallDetails() {
 
             {/* ONGLET 3: PROGRAMMER UN RAPPEL */}
             {activeTab === 'reminder' && (
-                <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div className="flex items-center gap-2 mb-2">
                         <Bell className="h-5 w-5 text-orange-400" />
                         <h3 className="text-sm font-semibold text-white">Programmer un rappel</h3>
@@ -1021,21 +1018,21 @@ export function CallDetails() {
                             value={reminderTitle}
                             onChange={(e) => setReminderTitle(e.target.value)}
                             placeholder="Ex: Rappeler Jean pour le contrat"
-                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
                         />
                     </div>
 
                     {/* Description */}
                     <div>
                         <label className="mb-2 block text-sm font-medium text-white">
-                            Description <span className="text-gray-500">(optionnel)</span>
+                            Description <span className="text-white/40">(optionnel)</span>
                         </label>
                         <textarea
                             value={reminderDescription}
                             onChange={(e) => setReminderDescription(e.target.value)}
                             placeholder="Détails supplémentaires..."
                             rows={3}
-                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all resize-none"
+                            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all resize-none"
                         />
                     </div>
 
@@ -1050,7 +1047,7 @@ export function CallDetails() {
                                 type="date"
                                 value={reminderDate}
                                 onChange={(e) => setReminderDate(e.target.value)}
-                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
                             />
                         </div>
                         <div>
@@ -1062,7 +1059,7 @@ export function CallDetails() {
                                 type="time"
                                 value={reminderTime}
                                 onChange={(e) => setReminderTime(e.target.value)}
-                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
                             />
                         </div>
                     </div>
@@ -1079,10 +1076,10 @@ export function CallDetails() {
                         onClick={handleSaveReminder}
                         disabled={!reminderTitle || !reminderDate || !reminderTime || isSavingReminder}
                         className={cn(
-                            'w-full rounded-lg px-6 py-3 text-sm font-semibold text-white transition-all mt-2',
+                            'w-full rounded-full px-6 py-3 text-sm font-bold text-white transition-all duration-300 mt-2',
                             reminderTitle && reminderDate && reminderTime && !isSavingReminder
                                 ? 'bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/20'
-                                : 'bg-gray-700 cursor-not-allowed opacity-50'
+                                : 'bg-white/5 cursor-not-allowed opacity-50'
                         )}
                     >
                         {isSavingReminder ? (
@@ -1098,10 +1095,10 @@ export function CallDetails() {
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-800 mt-6">
+            <div className="flex items-center justify-between gap-4 pt-6 mt-8">
                 <button
                 onClick={() => navigate('/')}
-                className="rounded-lg border border-gray-700 bg-gray-800 px-6 py-3 text-sm font-semibold text-gray-300 transition-all hover:bg-gray-700"
+                className="rounded-full border border-white/[0.08] bg-white/[0.03] px-8 py-3 text-sm font-semibold text-white/80 transition-all duration-300 hover:bg-white/[0.04]"
                 >
                 Annuler
                 </button>
@@ -1109,10 +1106,10 @@ export function CallDetails() {
                 onClick={handleSave}
                 disabled={!isFormValid() || !prospect || isSaving}
                 className={cn(
-                    'rounded-lg px-8 py-3 text-sm font-semibold text-white transition-all',
+                    'rounded-full px-10 py-3 text-sm font-bold transition-all duration-300',
                     isFormValid() && prospect && !isSaving
-                    ? 'bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30'
-                    : 'bg-gray-700 cursor-not-allowed opacity-50'
+                    ? 'bg-emerald-500 text-black hover:bg-emerald-400 shadow-lg shadow-emerald-500/20'
+                    : 'bg-white/5 text-white/40 cursor-not-allowed opacity-50'
                 )}
                 >
                 {isSaving ? 'Enregistrement...' : 'Tout Enregistrer'}
@@ -1126,32 +1123,32 @@ export function CallDetails() {
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl p-6 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between mb-6">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between mb-8">
               <h2 className="text-xl font-bold text-white">Nouveau Prospect</h2>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-white"><X className="h-6 w-6" /></button>
+              <button onClick={() => setIsCreateModalOpen(false)} className="text-white/40 hover:text-white"><X className="h-6 w-6" /></button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Nom & Prénom *</label>
-                <input type="text" value={newProspectForm.name} onChange={e => setNewProspectForm({...newProspectForm, name: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-blue-500 focus:outline-none" placeholder="Ex: Jean Dupont" />
+                <label className="block text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Nom & Prenom *</label>
+                <input type="text" value={newProspectForm.name} onChange={e => setNewProspectForm({...newProspectForm, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder="Ex: Jean Dupont" />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
-                <input type="email" value={newProspectForm.email} onChange={e => setNewProspectForm({...newProspectForm, email: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-blue-500 focus:outline-none" placeholder="jean@entreprise.com" />
+                <label className="block text-sm font-medium text-white/60 mb-1.5">Email</label>
+                <input type="email" value={newProspectForm.email} onChange={e => setNewProspectForm({...newProspectForm, email: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder="jean@entreprise.com" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Téléphone</label>
-                <input type="text" value={newProspectForm.phone} onChange={e => setNewProspectForm({...newProspectForm, phone: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-blue-500 focus:outline-none" placeholder="+33 6 ..." />
+                <label className="block text-sm font-medium text-white/60 mb-1.5">Téléphone</label>
+                <input type="text" value={newProspectForm.phone} onChange={e => setNewProspectForm({...newProspectForm, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder="+33 6 ..." />
               </div>
 
               {/* Offre */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Offre</label>
-                <select value={newProspectForm.offerId} onChange={e => setNewProspectForm({...newProspectForm, offerId: e.target.value, formulaId: ''})} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-blue-500 focus:outline-none">
+                <label className="block text-sm font-medium text-white/60 mb-1.5">Offre</label>
+                <select value={newProspectForm.offerId} onChange={e => setNewProspectForm({...newProspectForm, offerId: e.target.value, formulaId: ''})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none">
                   <option value="">Sélectionner une offre...</option>
                   {offers.filter(o => o.status === 'active').map(offer => (
                     <option key={offer.id} value={offer.id}>{offer.name}</option>
@@ -1162,8 +1159,8 @@ export function CallDetails() {
               {/* Formules */}
               {newProspectForm.offerId && (
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-blue-400 mb-1.5"><Tag className="h-3 w-3"/> Choix de la formule *</label>
-                  <select value={newProspectForm.formulaId} onChange={e => setNewProspectForm({...newProspectForm, formulaId: e.target.value})} className="w-full bg-blue-900/20 border border-blue-500/30 rounded-lg p-2.5 text-white focus:border-blue-500 focus:outline-none">
+                  <label className="flex items-center gap-2 text-sm font-medium text-emerald-400 mb-1.5"><Tag className="h-3 w-3"/> Choix de la formule *</label>
+                  <select value={newProspectForm.formulaId} onChange={e => setNewProspectForm({...newProspectForm, formulaId: e.target.value})} className="w-full bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none">
                     <option value="">-- Sélectionner --</option>
                     {offers.find(o => String(o.id) === newProspectForm.offerId)?.formulas?.map(f => (
                       <option key={f.id} value={f.id}>{f.name} - {f.price}€</option>
@@ -1173,15 +1170,15 @@ export function CallDetails() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Source</label>
-                <select value={newProspectForm.source} onChange={e => setNewProspectForm({...newProspectForm, source: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:border-blue-500 focus:outline-none">
+                <label className="block text-sm font-medium text-white/60 mb-1.5">Source</label>
+                <select value={newProspectForm.source} onChange={e => setNewProspectForm({...newProspectForm, source: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none">
                   {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-lg transition-colors">Annuler</button>
-                <button onClick={handleCreateProspect} disabled={!newProspectForm.name || isCreating} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50">
+                <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 bg-white/[0.03] border border-white/[0.08] hover:bg-white/10 text-white/80 font-medium py-2.5 rounded-full transition-colors">Annuler</button>
+                <button onClick={handleCreateProspect} disabled={!newProspectForm.name || isCreating} className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-2.5 rounded-full transition-colors disabled:opacity-50">
                   {isCreating ? 'Création...' : 'Créer le prospect'}
                 </button>
               </div>

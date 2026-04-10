@@ -108,36 +108,40 @@ export function MessagesPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-120px)] bg-slate-950">
+    <div className="relative flex h-[calc(100vh-120px)] bg-[#111111] overflow-hidden">
+      {/* Ambient Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+
       {/* LEFT PANE: Thread List (30%) */}
-      <div className="flex w-[30%] flex-col border-r border-slate-800 bg-slate-900">
+      <div className="relative z-10 flex w-[30%] flex-col bg-white/[0.02]">
         {/* Header */}
-        <div className="border-b border-slate-800 p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Messages</h2>
+        <div className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-extrabold tracking-tight text-white">Messages</h2>
             <button
               onClick={() => setIsNewChatModalOpen(true)}
-              className="rounded-lg bg-blue-500 p-2 transition-all hover:bg-blue-600"
+              className="rounded-full bg-emerald-500 p-2 text-black transition-all duration-300 hover:bg-emerald-400"
             >
-              <Plus className="h-5 w-5 text-white" />
+              <Plus className="h-4 w-4" />
             </button>
           </div>
 
           {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher..."
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-xl border-[0.5px] border-white/[0.08] bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all duration-300"
             />
           </div>
         </div>
 
         {/* Thread List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-3 space-y-1">
           {filteredThreads.length > 0 ? (
             filteredThreads.map((thread) => {
               const contact = contacts.find((c) => c.id === thread.contactId)
@@ -150,16 +154,16 @@ export function MessagesPage() {
                   key={thread.id}
                   onClick={() => setSelectedThreadId(thread.id)}
                   className={cn(
-                    'w-full border-b border-slate-800 p-4 text-left transition-all',
+                    'w-full p-4 rounded-xl text-left transition-all duration-300',
                     isActive
-                      ? 'bg-blue-500/10 border-l-4 border-l-blue-500'
-                      : 'hover:bg-slate-800/50'
+                      ? 'bg-emerald-500/10 border-[0.5px] border-emerald-500/20'
+                      : 'hover:bg-white/[0.04] border-[0.5px] border-transparent'
                   )}
                 >
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/20">
-                      <span className="text-lg font-bold text-blue-400">
+                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+                      <span className="text-base font-bold text-emerald-400">
                         {contact.name.charAt(0)}
                       </span>
                     </div>
@@ -167,21 +171,21 @@ export function MessagesPage() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-white truncate">
+                        <h3 className="font-semibold text-white text-sm truncate">
                           {contact.name}
                         </h3>
                         {thread.messages.length > 0 && (
-                          <span className="text-xs text-slate-500">
+                          <span className="text-[11px] text-white/30 font-medium">
                             {formatTime(thread.messages[thread.messages.length - 1].timestamp)}
                           </span>
                         )}
                       </div>
                       <div className="mt-1 flex items-center justify-between gap-2">
-                        <p className="text-sm text-slate-400 truncate">
+                        <p className="text-xs text-white/40 truncate">
                           {thread.lastMessage || 'Nouvelle conversation'}
                         </p>
                         {thread.unreadCount > 0 && (
-                          <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">
+                          <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-black">
                             {thread.unreadCount}
                           </span>
                         )}
@@ -193,40 +197,43 @@ export function MessagesPage() {
             })
           ) : (
             <div className="py-12 text-center">
-              <MessageSquare className="mx-auto h-12 w-12 text-slate-700" />
-              <p className="mt-4 text-sm font-medium text-slate-400">Aucune conversation</p>
+              <MessageSquare className="mx-auto h-12 w-12 text-white/10" />
+              <p className="mt-4 text-sm font-medium text-white/40">Aucune conversation</p>
             </div>
           )}
         </div>
       </div>
 
+      {/* Divider */}
+      <div className="w-[1px] bg-white/[0.06]" />
+
       {/* RIGHT PANE: Chat Window (70%) */}
-      <div className="flex w-[70%] flex-col bg-slate-950">
+      <div className="relative z-10 flex w-[70%] flex-col">
         {selectedThread && selectedContact ? (
           <>
             {/* Chat Header */}
-            <div className="border-b border-slate-800 bg-slate-900 p-4">
-              <div className="flex items-center gap-3">
+            <div className="bg-white/[0.03] backdrop-blur-[16px] border-b border-white/5 px-8 py-4">
+              <div className="flex items-center gap-4">
                 {/* Avatar */}
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
-                  <span className="text-sm font-bold text-blue-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
+                  <span className="text-sm font-bold text-emerald-400">
                     {selectedContact.name.charAt(0)}
                   </span>
                 </div>
 
                 {/* Info */}
                 <div className="flex-1">
-                  <h3 className="font-semibold text-white">{selectedContact.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-                    <span className="text-xs text-slate-400">{selectedContact.role}</span>
+                  <h3 className="font-semibold text-white text-sm">{selectedContact.name}</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"></div>
+                    <span className="text-xs text-white/40">{selectedContact.role}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-8 space-y-4">
               {selectedThread.messages.length > 0 ? (
                 selectedThread.messages.map((message) => (
                   <div
@@ -238,17 +245,17 @@ export function MessagesPage() {
                   >
                     <div
                       className={cn(
-                        'max-w-[70%] rounded-2xl px-4 py-3',
+                        'max-w-[70%] px-5 py-3',
                         message.sender === 'me'
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                          : 'bg-slate-800 text-slate-100'
+                          ? 'bg-emerald-500 text-black rounded-2xl rounded-br-sm'
+                          : 'bg-white/[0.03] backdrop-blur-[16px] border-[0.5px] border-white/[0.08] text-white rounded-2xl rounded-bl-sm'
                       )}
                     >
                       <p className="text-sm leading-relaxed">{message.text}</p>
                       <p
                         className={cn(
-                          'mt-1 text-xs',
-                          message.sender === 'me' ? 'text-blue-100' : 'text-slate-500'
+                          'mt-1.5 text-[11px]',
+                          message.sender === 'me' ? 'text-black/50' : 'text-white/30'
                         )}
                       >
                         {formatMessageTime(message.timestamp)}
@@ -259,8 +266,8 @@ export function MessagesPage() {
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center">
-                    <MessageSquare className="mx-auto h-12 w-12 text-slate-700" />
-                    <p className="mt-4 text-sm font-medium text-slate-400">
+                    <MessageSquare className="mx-auto h-12 w-12 text-white/10" />
+                    <p className="mt-4 text-sm font-medium text-white/40">
                       Commencez une conversation
                     </p>
                   </div>
@@ -269,11 +276,11 @@ export function MessagesPage() {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Message Input */}
-            <div className="border-t border-slate-800 bg-slate-900 p-4">
+            {/* Message Input — Glass Card */}
+            <div className="m-4 rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] p-4 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
               <div className="flex items-center gap-3">
-                {/* Attachment Button (Visual only) */}
-                <button className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-800 hover:text-white">
+                {/* Attachment Button */}
+                <button className="rounded-full p-2.5 text-white/40 transition-all duration-300 hover:bg-white/[0.04] hover:text-white">
                   <Paperclip className="h-5 w-5" />
                 </button>
 
@@ -284,17 +291,17 @@ export function MessagesPage() {
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Écrivez votre message..."
-                  className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                  placeholder="Ecrivez votre message..."
+                  className="flex-1 bg-transparent px-2 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none"
                 />
 
                 {/* Send Button */}
                 <button
                   onClick={handleSendMessage}
                   disabled={!messageInput.trim()}
-                  className="rounded-lg bg-blue-500 p-3 text-white transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-full bg-emerald-500 p-2.5 text-black transition-all duration-300 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -303,12 +310,14 @@ export function MessagesPage() {
           /* Empty State */
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <MessageSquare className="mx-auto h-16 w-16 text-slate-700" />
-              <h3 className="mt-4 text-lg font-semibold text-white">
-                Sélectionnez une conversation
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-white/[0.03] border-[0.5px] border-white/[0.08]">
+                <MessageSquare className="h-10 w-10 text-white/10" />
+              </div>
+              <h3 className="text-lg font-extrabold tracking-tight text-white">
+                Selectionnez une conversation
               </h3>
-              <p className="mt-2 text-sm text-slate-400">
-                Choisissez un contact pour commencer à discuter
+              <p className="mt-2 text-sm text-white/40">
+                Choisissez un contact pour commencer a discuter
               </p>
             </div>
           </div>
@@ -320,68 +329,68 @@ export function MessagesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-md"
             onClick={() => setIsNewChatModalOpen(false)}
           />
 
           {/* Modal */}
-          <div className="relative w-full max-w-md rounded-xl bg-slate-900 shadow-2xl ring-1 ring-slate-800">
+          <div className="relative w-full max-w-md rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
             {/* Header */}
-            <div className="flex items-start justify-between border-b border-slate-800 p-6">
+            <div className="bg-white/5 px-8 py-4 border-b border-white/5 flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Nouvelle conversation</h2>
-                <p className="mt-1 text-sm text-slate-400">Sélectionnez un contact</p>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-white/60">Nouvelle conversation</h2>
+                <p className="mt-1 text-xs text-white/30">Selectionnez un contact</p>
               </div>
               <button
                 onClick={() => setIsNewChatModalOpen(false)}
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="rounded-full p-2 text-white/40 hover:bg-white/[0.04] hover:text-white transition-all duration-300"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Search */}
-            <div className="p-6 pb-4">
+            <div className="px-8 pt-6 pb-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                 <input
                   type="text"
                   value={newChatSearch}
                   onChange={(e) => setNewChatSearch(e.target.value)}
                   placeholder="Rechercher un contact..."
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 py-2 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border-[0.5px] border-white/[0.08] bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all duration-300"
                 />
               </div>
             </div>
 
             {/* Contact List */}
-            <div className="max-h-96 overflow-y-auto px-6 pb-6">
+            <div className="max-h-96 overflow-y-auto px-8 pb-8">
               <div className="space-y-2">
                 {availableContacts.length > 0 ? (
                   availableContacts.map((contact) => (
                     <button
                       key={contact.id}
                       onClick={() => handleNewChat(contact.id)}
-                      className="w-full rounded-lg bg-slate-800/50 p-3 text-left transition-all hover:bg-slate-800"
+                      className="w-full rounded-xl bg-white/[0.02] border-[0.5px] border-white/[0.08] p-4 text-left transition-all duration-300 hover:border-emerald-500/30 hover:bg-white/[0.04]"
                     >
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
-                          <span className="text-sm font-bold text-blue-400">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
+                          <span className="text-sm font-bold text-emerald-400">
                             {contact.name.charAt(0)}
                           </span>
                         </div>
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-white">{contact.name}</h3>
-                          <p className="text-sm text-slate-400 truncate">{contact.role}</p>
+                          <h3 className="font-semibold text-white text-sm">{contact.name}</h3>
+                          <p className="text-xs text-white/40 truncate">{contact.role}</p>
                         </div>
                       </div>
                     </button>
                   ))
                 ) : (
-                  <p className="py-8 text-center text-sm text-slate-500">Aucun contact trouvé</p>
+                  <p className="py-8 text-center text-sm text-white/40">Aucun contact trouve</p>
                 )}
               </div>
             </div>

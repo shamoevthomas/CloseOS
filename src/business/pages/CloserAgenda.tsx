@@ -392,9 +392,11 @@ export function CloserAgenda() {
   // Auto-scroll week view container to current hour
   useEffect(() => {
     if (view !== 'week' || !weekScrollRef.current) return
-    const h = Math.max(0, new Date().getHours() - 2)
-    // Account for sticky header (~80px) + all-day row (~40px)
-    weekScrollRef.current.scrollTop = h * ROW_H
+    const el = weekScrollRef.current
+    requestAnimationFrame(() => {
+      const h = Math.max(0, new Date().getHours() - 2)
+      el.scrollTop = h * ROW_H
+    })
   }, [view, currentDate])
 
   // Fetch prospect when selecting an event linked to one

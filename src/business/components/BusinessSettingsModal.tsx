@@ -97,7 +97,7 @@ interface BusinessSettingsModalProps {
 }
 
 export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' }: BusinessSettingsModalProps) {
-  const { user, businessProfile, updateBusinessProfile, businessSettings, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile } = useBusinessAuth()
+  const { user, businessProfile, updateBusinessProfile, businessSettings, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile, isSolo } = useBusinessAuth()
   const { dark, toggle: toggleDark } = useTheme()
 
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'interface' | 'devices' | 'organisation' | 'support' | 'delete_account'>(initialTab)
@@ -1689,8 +1689,8 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                   G&eacute;rez votre organisation et ses donn&eacute;es.
                 </p>
 
-                {/* Weekly Report Toggle */}
-                <div
+                {/* Weekly Report Toggle — hidden for Solo */}
+                {!isSolo && <div
                   onClick={async () => {
                     if (!user) return
                     const newVal = !(businessSettings?.weekly_report_enabled ?? true)
@@ -1720,7 +1720,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     ? <ToggleRight className="h-7 w-7 text-[#006c49] shrink-0" />
                     : <ToggleLeft className="h-7 w-7 text-stone-300 shrink-0" />
                   }
-                </div>
+                </div>}
 
                 {resetStep === 'idle' && (
                   <div className="mt-8 p-6 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/30 dark:bg-red-500/5">

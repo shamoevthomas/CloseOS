@@ -14,6 +14,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { fromUTC, getTimezoneLabel } from '../../lib/timezone'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { InviteMemberModal } from '../components/InviteMemberModal'
+import { SeatUpgradeModal } from '../components/SeatUpgradeModal'
 import { TeamKanban } from '../components/TeamKanban'
 import toast from 'react-hot-toast'
 
@@ -252,7 +253,7 @@ function ContactInfo({ member }: { member: TeamMember }) {
 }
 
 export function BusinessTeam() {
-  const { user, ownerUserId, isTeamMember, teamMember, businessProfile, userTimezone } = useBusinessAuth()
+  const { user, ownerUserId, isTeamMember, teamMember, businessProfile, userTimezone, businessSettings, refreshProfile } = useBusinessAuth()
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const { prospects } = useBusinessProspects()
@@ -266,6 +267,19 @@ export function BusinessTeam() {
   const [connectionLogs, setConnectionLogs] = useState<ConnectionLog[]>([])
   const [loading, setLoading] = useState(true)
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
+  const [isSeatUpgradeOpen, setIsSeatUpgradeOpen] = useState(false)
+
+  const handleInviteClick = () => {
+    const plan = businessSettings?.subscription_plan || 'solo'
+    const ps = (businessSettings?.purchased_seats || {}) as Record<string, number>
+    const limits: Record<string, number> = { solo: 0, business: 3, business_acquisition: 5, enterprise: 99999 }
+    const limit = (limits[plan] ?? 0) + Object.values(ps).reduce((a, b) => a + b, 0)
+    if (plan !== 'enterprise' && members.length >= limit) {
+      setIsSeatUpgradeOpen(true)
+    } else {
+      setIsInviteModalOpen(true)
+    }
+  }
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
@@ -443,7 +457,7 @@ export function BusinessTeam() {
         </div>
         {isOwnerView && (
           <button
-            onClick={() => setIsInviteModalOpen(true)}
+            onClick={handleInviteClick}
             className="flex items-center gap-2.5 rounded-full bg-stone-900 px-6 py-3 text-sm font-bold text-white font-business-display hover:opacity-90 transition-all"
           >
             <Plus className="h-4 w-4" strokeWidth={1.5} />
@@ -601,10 +615,23 @@ export function BusinessTeam() {
       />
 
       {isOwnerView && (
-        <InviteMemberModal
-          isOpen={isInviteModalOpen}
-          onClose={() => { setIsInviteModalOpen(false); loadData() }}
-        />
+        <>
+          <InviteMemberModal
+            isOpen={isInviteModalOpen}
+            onClose={() => { setIsInviteModalOpen(false); loadData() }}
+            onSeatLimitReached={() => { setIsInviteModalOpen(false); setIsSeatUpgradeOpen(true) }}
+          />
+          <SeatUpgradeModal
+            isOpen={isSeatUpgradeOpen}
+            onClose={() => setIsSeatUpgradeOpen(false)}
+            onPurchaseComplete={() => {
+              setIsSeatUpgradeOpen(false)
+              refreshProfile?.()
+              loadData()
+              setIsInviteModalOpen(true)
+            }}
+          />
+        </>
       )}
     </div>
   )
@@ -625,8 +652,9 @@ function BookingLinksSection({ memberId }: { memberId: string }) {
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         setLinks(data || [])
-        setLoading(false)
       })
+      .catch(err => console.error('[BookingLinks] Error:', err))
+      .finally(() => setLoading(false))
   }, [memberId])
 
   const handleCopy = (url: string) => {
@@ -766,7 +794,7 @@ function IndividualView({
   const effectiveOwnerId = ownerUserId || user?.id
 
   useEffect(() => {
-    if (!member.id) return
+    if (!member.id) { setLoadingBonuses(false); return }
     const loadBonuses = async () => {
       setLoadingBonuses(true)
       const { data } = await supabase

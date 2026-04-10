@@ -86,7 +86,7 @@ const SYNC_INTERVAL_SECONDS = 120
 export function BusinessProspectsProvider({ children }: { children: ReactNode }) {
   const [prospects, setProspects] = useState<BusinessProspect[]>([])
   const [loading, setLoading] = useState(true)
-  const { user, loading: authLoading, businessSettings, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
+  const { user, loading: authLoading, businessSettings, isTeamMember, ownerUserId, teamMember, isSolo } = useBusinessAuth()
   // Wait for auth to fully resolve before computing userId
   // When authLoading is false and user exists, isTeamMember/ownerUserId are finalized
   const userId = authLoading ? null : (isTeamMember ? ownerUserId : user?.id)
@@ -107,7 +107,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   const crmProvider = businessSettings?.crm_provider || 'closeos'
 
   const loadProspects = useCallback(async (showLoading = true) => {
-    if (!userId) return
+    if (!userId) { if (showLoading) setLoading(false); return }
     try {
       if (showLoading) setLoading(true)
       const { data, error } = await withRetry(
@@ -498,8 +498,13 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   const addProspect = async (prospect: Omit<BusinessProspect, 'id' | 'user_id'>) => {
     if (!user) return
 
+    // Solo plan: auto-assign the user as both setter and closer
+    const prospectData = isSolo
+      ? { ...prospect, user_id: user.id, assigned_to: user.id, assigned_setter: user.id }
+      : { ...prospect, user_id: user.id }
+
     const { data, error } = await withRetry(
-      () => supabase.from('business_prospects').insert([{ ...prospect, user_id: user.id }]).select(),
+      () => supabase.from('business_prospects').insert([prospectData]).select(),
       { context: 'AddBusinessProspect' }
     )
 

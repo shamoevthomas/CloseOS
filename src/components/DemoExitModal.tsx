@@ -26,20 +26,20 @@ export function DemoExitModal({ isOpen, onClose, onConfirmExit }: DemoExitModalP
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl h-[85vh] bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-4xl h-[85vh] bg-[#1a1a1a] rounded-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] flex flex-col overflow-hidden">
         
         {/* En-tête du Modal */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900/50">
+        <div className="flex items-center justify-between p-6 border-b border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl">
           <div>
             <h2 className="text-xl font-bold text-white">Pas encore convaincu ? 🤔</h2>
-            <p className="text-slate-400 text-sm">
+            <p className="text-white/40 text-sm">
               Prenez 15 min de démo pour voir comment CloseOS peut exploser vos commissions.
             </p>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors"
+            className="p-2 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -59,10 +59,10 @@ export function DemoExitModal({ isOpen, onClose, onConfirmExit }: DemoExitModalP
         </div>
 
         {/* Pied de page : Sortie définitive */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900 flex justify-center">
+        <div className="p-4 border-t border-white/[0.08] bg-[#1a1a1a] flex justify-center">
           <button
             onClick={onConfirmExit}
-            className="flex items-center gap-2 text-sm text-slate-500 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-sm text-white/40 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Non merci, je veux vraiment retourner à l'accueil

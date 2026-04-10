@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ChevronDown, Plus, User, Phone, Mail, Pencil, Trash2, UserPlus, X, Search, Filter, Building2, Calendar, Sparkles } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { ChevronDown, Plus, User, Phone, Mail, Pencil, Trash2, UserPlus, X, Search, Filter, Building2, Calendar, Sparkles, Tag, Check } from 'lucide-react'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
 import { useOffers } from '../contexts/OffersContext'
@@ -21,6 +21,18 @@ export function Contacts() {
   const { allStages, getStageInfo } = useCustomStages()
   const { tags, prospectTags, getProspectTagObjects } = useTags()
   const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false)
+  const tagDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target as Node)) {
+        setIsTagDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   // 🔄 SAFE CONTEXT CONNECTION - Try to connect to global context with fallback
   let context
@@ -166,12 +178,12 @@ export function Contacts() {
     if (['gagné', 'won'].includes(s)) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
     if (['perdu', 'lost'].includes(s)) return 'bg-rose-500/10 text-rose-400 border-rose-500/20'
     if (['qualifié', 'qualified'].includes(s)) return 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-    if (['prospect'].includes(s)) return 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+    if (['prospect'].includes(s)) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
     if (['followup', 'follow up'].includes(s)) return 'bg-orange-500/10 text-orange-400 border-orange-500/20'
     // Check custom stages
     const si = getStageInfo(status)
-    if (si && !si.isDefault) return 'bg-slate-500/10 text-slate-300 border-slate-500/20'
-    return 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+    if (si && !si.isDefault) return 'bg-white/5 text-white/60 border-white/10'
+    return 'bg-white/5 text-white/40 border-white/10'
   }
 
   // Helper to get status display name
@@ -280,105 +292,136 @@ export function Contacts() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#020617] p-8 overflow-hidden font-sans text-slate-100">
+    <div className="relative min-h-screen bg-[#111111] p-8 md:p-10 overflow-hidden font-sans text-white">
 
-      {/* Background Blobs (Premium Design) */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 opacity-30 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none" />
+      {/* Ambient Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-      <div className="relative mx-auto max-w-7xl space-y-8 z-10">
+      <div className="relative mx-auto max-w-7xl space-y-10 z-10">
 
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Contacts</h1>
-            <p className="text-slate-400 mt-1">Gérez vos prospects et votre équipe.</p>
+            <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tighter">Contacts</h1>
+            <p className="text-white/40 text-sm font-medium mt-2">Gérez vos prospects et votre équipe.</p>
           </div>
         </div>
 
         {/* SECTION A: Mes Prospects */}
-        <div className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md shadow-xl">
+        <div className="rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
           {/* Header Section */}
           <div
             onClick={() => setProspectsExpanded(!prospectsExpanded)}
-            className="flex w-full items-center justify-between cursor-pointer border-b border-white/5 bg-slate-900/60 px-6 py-5 transition-colors hover:bg-slate-900/80"
+            className="flex w-full items-center justify-between cursor-pointer bg-white/[0.02] px-8 py-6 transition-colors duration-300 hover:bg-white/[0.04] rounded-t-2xl"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 border border-blue-500/20">
-                <User className="h-5 w-5 text-blue-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/20">
+                <User className="h-5 w-5 text-emerald-400" />
               </div>
               <div className="text-left">
                 <h2 className="text-lg font-bold text-white">Mes Prospects</h2>
-                <p className="text-sm text-slate-400">{filteredProspects.length} contact(s)</p>
+                <p className="text-sm text-white/40">{filteredProspects.length} contact(s)</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
               {/* BARRE DE RECHERCHE PROSPECTS */}
               <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                 <input
                   type="text"
                   placeholder="Rechercher..."
                   value={prospectSearch}
                   onChange={(e) => setProspectSearch(e.target.value)}
-                  className="h-10 w-64 rounded-xl border border-white/10 bg-slate-800/50 pl-10 pr-4 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none placeholder-slate-500 transition-all hover:bg-slate-800/70"
+                  className="h-11 w-64 rounded-xl border border-white/10 bg-white/5 pl-11 pr-4 text-sm text-white focus:border-emerald-500 focus:outline-none placeholder:text-white/30 transition-all hover:bg-white/[0.08]"
                 />
               </div>
 
               {/* FILTRE PAR OFFRE */}
               <div className="relative hidden md:block">
-                <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                <Filter className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30 pointer-events-none" />
                 <select
                   value={selectedOfferFilter}
                   onChange={(e) => setSelectedOfferFilter(e.target.value)}
-                  className="h-10 rounded-xl border border-white/10 bg-slate-800/50 pl-10 pr-8 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none appearance-none cursor-pointer hover:bg-slate-800/70 transition-all"
+                  className="h-11 rounded-xl border border-white/10 bg-white/5 pl-11 pr-9 text-sm text-white focus:border-emerald-500 focus:outline-none appearance-none cursor-pointer hover:bg-white/[0.08] transition-all"
                 >
-                  <option value="all" className="bg-slate-900">Toutes les offres</option>
+                  <option value="all" className="bg-[#1a1a1a]">Toutes les offres</option>
                   {offers.filter(o => o.status === 'active').map(offer => (
-                    <option key={offer.id} value={offer.id.toString()} className="bg-slate-900">
+                    <option key={offer.id} value={offer.id.toString()} className="bg-[#1a1a1a]">
                       {offer.name}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Tag filters */}
+              {/* Tag filters dropdown */}
               {tags.length > 0 && (
-                <div className="hidden md:flex items-center gap-1">
-                  {tags.map(tag => {
-                    const isSelected = selectedTagFilters.includes(tag.id)
-                    return (
-                      <button
-                        key={tag.id}
-                        onClick={() => setSelectedTagFilters(prev =>
-                          isSelected ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
-                        )}
-                        className={cn(
-                          'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold transition-all border',
-                          isSelected
-                            ? 'text-white border-transparent'
-                            : 'text-slate-400 border-slate-700 hover:border-slate-600'
-                        )}
-                        style={isSelected ? { backgroundColor: tag.color } : undefined}
-                      >
-                        {!isSelected && <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color }} />}
-                        {tag.name}
-                      </button>
-                    )
-                  })}
+                <div className="relative hidden md:block" ref={tagDropdownRef}>
+                  <button
+                    onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
+                    className={cn(
+                      'flex items-center gap-2 h-11 rounded-xl border px-4 text-sm font-medium transition-all duration-300',
+                      selectedTagFilters.length > 0
+                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                        : 'border-white/10 bg-white/5 text-white/40 hover:bg-white/[0.08]'
+                    )}
+                  >
+                    <Tag className="h-3.5 w-3.5" />
+                    <span>Tags</span>
+                    {selectedTagFilters.length > 0 && (
+                      <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-black">
+                        {selectedTagFilters.length}
+                      </span>
+                    )}
+                    <ChevronDown className={cn('h-3 w-3 transition-transform', isTagDropdownOpen && 'rotate-180')} />
+                  </button>
+                  {isTagDropdownOpen && (
+                    <div className="absolute top-full mt-1 right-0 z-50 min-w-[200px] max-h-[180px] overflow-y-auto rounded-xl border border-white/[0.08] bg-[#1a1a1a] p-1.5 shadow-xl">
+                      {tags.map(tag => {
+                        const isSelected = selectedTagFilters.includes(tag.id)
+                        return (
+                          <button
+                            key={tag.id}
+                            onClick={() => setSelectedTagFilters(prev =>
+                              isSelected ? prev.filter(id => id !== tag.id) : [...prev, tag.id]
+                            )}
+                            className={cn(
+                              'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                              isSelected ? 'bg-emerald-500/10 text-white' : 'text-white/40 hover:bg-white/5 hover:text-white/60'
+                            )}
+                          >
+                            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                            <span className="flex-1 text-left">{tag.name}</span>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
+                          </button>
+                        )
+                      })}
+                      {selectedTagFilters.length > 0 && (
+                        <>
+                          <div className="my-1 border-t border-white/[0.08]" />
+                          <button
+                            onClick={() => { setSelectedTagFilters([]); setIsTagDropdownOpen(false) }}
+                            className="w-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40 hover:text-white/60 transition-colors rounded-lg"
+                          >
+                            Réinitialiser
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
               <button
                 onClick={() => setIsNewProspectModalOpen(true)}
-                className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 active:scale-95"
+                className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-600/20 active:scale-95"
               >
                 <Plus className="h-4 w-4" />
                 Nouveau
               </button>
               <ChevronDown
-                className={`h-5 w-5 text-slate-400 transition-transform ${prospectsExpanded ? 'rotate-180' : ''}`}
+                className={`h-5 w-5 text-white/40 transition-transform ${prospectsExpanded ? 'rotate-180' : ''}`}
               />
             </div>
           </div>
@@ -388,31 +431,31 @@ export function Contacts() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-white/5 bg-slate-900/40">
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                  <tr className="bg-white/[0.02]">
+                    <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Nom & Entreprise
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Tags
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Offre
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Statut
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Dernier Contact
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Date d'ajout
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <th className="px-8 py-5 text-center text-xs font-bold uppercase tracking-widest text-white/40">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-white/[0.04]">
                   {filteredProspects.length > 0 ? (
                     filteredProspects.map((prospect) => {
                       // Safe field extraction with fallbacks
@@ -432,17 +475,17 @@ export function Contacts() {
                         <tr
                           key={prospect.id}
                           onClick={() => setSelectedProspect(prospect)}
-                          className="cursor-pointer transition-colors hover:bg-white/5 group"
+                          className="cursor-pointer transition-colors duration-300 hover:bg-white/[0.04] group"
                         >
-                          <td className="px-6 py-4">
+                          <td className="px-8 py-5">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold">
                                 <User className="h-5 w-5" />
                               </div>
                               <div>
                                 <p className="font-bold text-white text-base">{fullName}</p>
                                 {company && (
-                                  <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+                                  <p className="text-xs text-white/40 mt-0.5 flex items-center gap-1">
                                     <Building2 className="h-3 w-3" /> {company}
                                   </p>
                                 )}
@@ -450,7 +493,7 @@ export function Contacts() {
                             </div>
                           </td>
                           {/* Tags */}
-                          <td className="px-6 py-4">
+                          <td className="px-8 py-5">
                             <div className="flex flex-wrap gap-1">
                               {getProspectTagObjects(prospect.id).map(tag => (
                                 <span key={tag.id} className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: tag.color }}>
@@ -460,12 +503,12 @@ export function Contacts() {
                             </div>
                           </td>
                           {/* NOUVELLE COLONNE OFFRE */}
-                          <td className="px-6 py-4">
-                            <span className="text-sm text-slate-300 font-medium">
+                          <td className="px-8 py-5">
+                            <span className="text-sm text-white/60 font-medium">
                               {prospect.offer || '-'}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-8 py-5">
                             <span className={cn(
                               "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
                               getStatusColor(status)
@@ -474,13 +517,13 @@ export function Contacts() {
                               {getStatusName(status)}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-slate-400">{formatRelativeTime(lastContact)}</p>
+                          <td className="px-8 py-5">
+                            <p className="text-sm text-white/40">{formatRelativeTime(lastContact)}</p>
                           </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-slate-400">{formatDate(prospect.created_at || prospect.dateAdded)}</p>
+                          <td className="px-8 py-5">
+                            <p className="text-sm text-white/40">{formatDate(prospect.created_at || prospect.dateAdded)}</p>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-8 py-5">
                             <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
                               {/* BOUTON CALENDAR AJOUTÉ */}
                               <button
@@ -489,7 +532,7 @@ export function Contacts() {
                                   setSelectedProspect(prospect)
                                   setIsAddMeetingModalOpen(true)
                                 }}
-                                className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
+                                className="rounded-lg border border-white/[0.08] bg-white/5 p-2 text-white/40 transition-all hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-400"
                                 title="Planifier RDV"
                               >
                                 <Calendar className="h-4 w-4" />
@@ -505,7 +548,7 @@ export function Contacts() {
                                     alert('Pas d\'email renseigné')
                                   }
                                 }}
-                                className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
+                                className="rounded-lg border border-white/[0.08] bg-white/5 p-2 text-white/40 transition-all hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-400"
                                 title="Envoyer un email"
                               >
                                 <Mail className="h-4 w-4" />
@@ -513,7 +556,7 @@ export function Contacts() {
 
                               <button
                                 onClick={(e) => handleDeleteProspect(e, prospect.id)}
-                                className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
+                                className="rounded-lg border border-white/[0.08] bg-white/5 p-2 text-white/40 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
                                 title="Supprimer"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -525,7 +568,7 @@ export function Contacts() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500 italic">
+                      <td colSpan={7} className="px-8 py-16 text-center text-white/40 italic">
                         Aucun prospect ne correspond à ces critères.
                       </td>
                     </tr>
@@ -537,11 +580,11 @@ export function Contacts() {
         </div>
 
         {/* SECTION B: Contacts Internes */}
-        <div className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-md shadow-xl">
+        <div className="overflow-hidden rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
           {/* Header */}
           <div
             onClick={() => setInternalsExpanded(!internalsExpanded)}
-            className="flex w-full items-center justify-between cursor-pointer border-b border-white/5 bg-slate-900/60 px-6 py-5 transition-colors hover:bg-slate-900/80"
+            className="flex w-full items-center justify-between cursor-pointer bg-white/[0.02] px-8 py-6 transition-colors duration-300 hover:bg-white/[0.04]"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/20 border border-purple-500/20">
@@ -549,19 +592,19 @@ export function Contacts() {
               </div>
               <div className="text-left">
                 <h2 className="text-lg font-bold text-white">Contacts Internes</h2>
-                <p className="text-sm text-slate-400">{filteredInternalContacts.length} contact(s)</p>
+                <p className="text-sm text-white/40">{filteredInternalContacts.length} contact(s)</p>
               </div>
             </div>
-            <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
               {/* BARRE DE RECHERCHE CONTACTS INTERNES */}
               <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                 <input
                   type="text"
                   placeholder="Rechercher..."
                   value={internalSearch}
                   onChange={(e) => setInternalSearch(e.target.value)}
-                  className="h-10 w-64 rounded-xl border border-white/10 bg-slate-800/50 pl-10 pr-4 text-sm text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none placeholder-slate-500 transition-all hover:bg-slate-800/70"
+                  className="h-11 w-64 rounded-xl border border-white/10 bg-white/5 pl-11 pr-4 text-sm text-white focus:border-emerald-500 focus:outline-none placeholder:text-white/30 transition-all hover:bg-white/[0.08]"
                 />
               </div>
 
@@ -573,7 +616,7 @@ export function Contacts() {
                 Nouveau
               </button>
               <ChevronDown
-                className={`h-5 w-5 text-slate-400 transition-transform ${internalsExpanded ? 'rotate-180' : ''}`}
+                className={`h-5 w-5 text-white/40 transition-transform ${internalsExpanded ? 'rotate-180' : ''}`}
               />
             </div>
           </div>
@@ -583,54 +626,54 @@ export function Contacts() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-white/5 bg-slate-900/40">
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                  <tr className="bg-white/[0.02]">
+                    <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Nom
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Rôle/Poste
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Email
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Téléphone
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <th className="px-8 py-5 text-center text-xs font-bold uppercase tracking-widest text-white/40">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-white/[0.04]">
                   {filteredInternalContacts.length > 0 ? (
                     filteredInternalContacts.map((contact) => (
                       <tr
                         key={contact.id}
                         onClick={() => setSelectedContact(contact)}
-                        className="cursor-pointer transition-colors hover:bg-white/5 group"
+                        className="cursor-pointer transition-colors duration-300 hover:bg-white/[0.04] group"
                       >
-                        <td className="px-6 py-4">
+                        <td className="px-8 py-5">
                           <p className="font-bold text-white">{contact.name}</p>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-8 py-5">
                           <span className="inline-flex items-center rounded-lg bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 text-xs font-bold text-purple-400 uppercase tracking-wide">
                             {contact.role}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm text-slate-300">{contact.email}</p>
+                        <td className="px-8 py-5">
+                          <p className="text-sm text-white/60">{contact.email}</p>
                         </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm text-slate-300">{contact.phone}</p>
+                        <td className="px-8 py-5">
+                          <p className="text-sm text-white/60">{contact.phone}</p>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-8 py-5">
                           <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
                                 setSelectedContact(contact)
                               }}
-                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400"
+                              className="rounded-lg border border-white/[0.08] bg-white/5 p-2 text-white/40 transition-all hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-400"
                               title="Voir détails"
                             >
                               <Pencil className="h-4 w-4" />
@@ -642,7 +685,7 @@ export function Contacts() {
                                   handleDeleteContact(contact.id)
                                 }
                               }}
-                              className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
+                              className="rounded-lg border border-white/[0.08] bg-white/5 p-2 text-white/40 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
                               title="Supprimer"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -653,7 +696,7 @@ export function Contacts() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-slate-500 italic">
+                      <td colSpan={5} className="px-8 py-16 text-center text-white/40 italic">
                         Aucun contact interne trouvé pour cette recherche.
                       </td>
                     </tr>
@@ -669,68 +712,68 @@ export function Contacts() {
       {isAddContactModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-md"
             onClick={() => setIsAddContactModalOpen(false)}
           />
 
-          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-800 p-6">
+          <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1a1a1a] shadow-2xl ring-1 ring-white/[0.08] animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-white/[0.08] p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/20 border border-purple-500/20">
                   <UserPlus className="h-5 w-5 text-purple-400" />
                 </div>
                 <h3 className="text-lg font-bold text-white">Nouveau Contact Interne</h3>
               </div>
-              <button onClick={() => setIsAddContactModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+              <button onClick={() => setIsAddContactModalOpen(false)} className="text-white/40 hover:text-white transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <form onSubmit={handleAddContact} className="space-y-4 p-6">
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Nom complet</label>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-white/40">Nom complet</label>
                 <input
                   type="text"
                   value={newContact.name}
                   onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
                   placeholder="Ex: Jean Dupont"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Rôle/Poste</label>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-white/40">Rôle/Poste</label>
                 <input
                   type="text"
                   value={newContact.role}
                   onChange={(e) => setNewContact({ ...newContact, role: e.target.value })}
                   placeholder="Ex: Directeur Commercial"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Email</label>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-white/40">Email</label>
                 <input
                   type="email"
                   value={newContact.email}
                   onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
                   placeholder="Ex: jean.dupont@closeros.com"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Téléphone</label>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-white/40">Téléphone</label>
                 <input
                   type="tel"
                   value={newContact.phone}
                   onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
                   placeholder="Ex: +33 6 12 34 56 78"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                   required
                 />
               </div>
@@ -739,13 +782,13 @@ export function Contacts() {
                 <button
                   type="button"
                   onClick={() => setIsAddContactModalOpen(false)}
-                  className="flex-1 rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-sm font-bold text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
+                  className="flex-1 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-purple-600 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-purple-500 shadow-lg shadow-purple-600/20"
+                  className="flex-1 rounded-full bg-emerald-500 px-4 py-3 text-sm font-semibold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-600/20"
                 >
                   Ajouter
                 </button>

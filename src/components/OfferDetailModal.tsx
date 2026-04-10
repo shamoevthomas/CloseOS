@@ -903,13 +903,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const getResourceIcon = (type: string) => {
     switch (type) {
       case 'script':
-        return <FileText className="h-4 w-4 text-blue-400" />
+        return <FileText className="h-4 w-4 text-emerald-400" />
       case 'payment':
         return <Euro className="h-4 w-4 text-emerald-400" />
       case 'drive':
         return <ExternalLink className="h-4 w-4 text-purple-400" />
       default:
-        return <ExternalLink className="h-4 w-4 text-slate-400" />
+        return <ExternalLink className="h-4 w-4 text-white/40" />
     }
   }
 
@@ -930,18 +930,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-md"
         onClick={onClose}
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[32px] bg-[#020617] shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-white/10 custom-scrollbar animate-in fade-in zoom-in duration-300">
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.08] custom-scrollbar animate-in fade-in zoom-in duration-300">
 
         {/* Decorative background blobs */}
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-blue-600/10 opacity-20 blur-[80px] rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-emerald-500/10 opacity-20 blur-[80px] rounded-full pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-600/10 opacity-10 blur-[80px] rounded-full pointer-events-none" />
         {/* Header Section */}
-        <div className="sticky top-0 z-10 border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-8 py-8">
+        <div className="sticky top-0 z-10 border-b border-white/[0.08] bg-[#1a1a1a]/80 backdrop-blur-md px-8 py-8">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-4">
@@ -952,7 +952,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     onChange={(e) =>
                       setEditedOffer({ ...editedOffer, name: e.target.value })
                     }
-                    className="flex-1 rounded-xl border border-white/10 bg-slate-900/50 px-4 py-2 text-xl font-black text-white focus:border-blue-500/50 focus:outline-none transition-all"
+                    className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xl font-black text-white focus:border-emerald-500 focus:outline-none transition-all"
                   />
                 ) : (
                   <h2 className="text-3xl font-black text-white tracking-tight">{offer.name}</h2>
@@ -960,7 +960,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${offer.status === 'active'
                     ? 'bg-emerald-500/10 text-emerald-400'
-                    : 'bg-slate-500/10 text-slate-400'
+                    : 'bg-white/5 text-white/40'
                     }`}
                 >
                   {offer.status === 'active' ? 'Active' : 'Archivée'}
@@ -973,11 +973,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   onChange={(e) =>
                     setEditedOffer({ ...editedOffer, company: e.target.value })
                   }
-                  className="mt-3 w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-1.5 text-sm text-slate-400 focus:border-blue-500/50 focus:outline-none transition-all"
+                  className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/40 focus:border-emerald-500 focus:outline-none transition-all"
                 />
               ) : (
-                <p className="mt-2 text-sm font-medium text-slate-400 flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-slate-500" />
+                <p className="mt-2 text-sm font-medium text-white/40 flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-white/40" />
                   {offer.company}
                 </p>
               )}
@@ -987,14 +987,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <>
                   <button
                     onClick={handleSave}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 active:scale-95"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 active:scale-95"
                     title="Sauvegarder"
                   >
                     <Save className="h-4 w-4" />
                   </button>
                   <button
                     onClick={handleCancel}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition-all hover:bg-white/10 active:scale-95"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/60 transition-all hover:bg-white/10 active:scale-95"
                     title="Annuler"
                   >
                     <X className="h-4 w-4" />
@@ -1004,7 +1004,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <>
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 transition-all hover:bg-white/10 hover:text-white"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/40 transition-all hover:bg-white/10 hover:text-white"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -1021,7 +1021,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               <div className="h-6 w-px bg-white/10 mx-1" />
               <button
                 onClick={onClose}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 transition-all hover:bg-white/10 hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/40 transition-all hover:bg-white/10 hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1033,7 +1033,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
         <div className="p-6">
           {/* Target Type Toggle */}
           <div className="mb-10 relative z-10">
-            <p className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
               Cible Marketing
             </p>
             {isEditing ? (
@@ -1041,8 +1041,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <button
                   onClick={() => setEditedOffer({ ...editedOffer, target: 'B2C' })}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${editedOffer.target === 'B2C'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-white/10 text-white/40 hover:bg-white/20'
                     }`}
                 >
                   <User className="h-5 w-5" />
@@ -1051,8 +1051,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <button
                   onClick={() => setEditedOffer({ ...editedOffer, target: 'B2B' })}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${editedOffer.target === 'B2B'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-white/10 text-white/40 hover:bg-white/20'
                     }`}
                 >
                   <Building2 className="h-5 w-5" />
@@ -1060,15 +1060,15 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-3 rounded-[20px] border border-white/5 bg-slate-900/30 px-6 py-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <div className="flex items-center gap-3 rounded-[20px] border border-white/5 bg-white/[0.03]/30 px-6 py-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   {offer.target === 'B2C' ? <User className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
                 </div>
                 <div>
                   <span className="text-base font-bold text-white">
                     {offer.target === 'B2C' ? 'B2C (Particuliers)' : 'B2B (Entreprises)'}
                   </span>
-                  <p className="text-xs text-slate-500 font-medium tracking-wide">Configuration du pipeline adaptée</p>
+                  <p className="text-xs text-white/40 font-medium tracking-wide">Configuration du pipeline adaptée</p>
                 </div>
               </div>
             )}
@@ -1076,15 +1076,15 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
           <div className="grid gap-8 md:grid-cols-2 relative z-10">
             {/* Zone A - Formules (Multi-Tarification) */}
-            <div className="rounded-3xl border border-white/5 bg-slate-900/30 p-6 backdrop-blur-md">
+            <div className="rounded-3xl border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md">
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <h3 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
                   <Tag className="h-3.5 w-3.5" /> Formules & Tarifs
                 </h3>
                 {isEditing && (
                   <button
                     onClick={handleAddFormula}
-                    className="flex items-center gap-1.5 rounded-full bg-blue-600/10 px-3 py-1.5 text-[10px] font-black text-blue-400 hover:bg-blue-600/20 border border-blue-500/20 transition-all active:scale-95 uppercase tracking-widest"
+                    className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all active:scale-95 uppercase tracking-widest"
                   >
                     <Plus className="h-3 w-3" /> Ajouter
                   </button>
@@ -1104,7 +1104,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                               value={formula.name}
                               onChange={(e) => handleUpdateFormula(formula.id, 'name', e.target.value)}
                               placeholder="Nom (ex: Pack Gold)"
-                              className="flex-1 rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2 text-sm font-bold text-white focus:border-blue-500/50 focus:outline-none"
+                              className="flex-1 rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
                             />
                             <button
                               onClick={() => handleRemoveFormula(formula.id)}
@@ -1115,26 +1115,26 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Prix (€)</p>
+                              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5 ml-1">Prix (€)</p>
                               <input
                                 type="number"
                                 value={formula.price}
                                 onChange={(e) => handleUpdateFormula(formula.id, 'price', e.target.value)}
-                                className="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2 text-sm text-white font-black focus:border-emerald-500/50 focus:outline-none"
+                                className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2 text-sm text-white font-black focus:border-emerald-500/50 focus:outline-none"
                               />
                             </div>
                             <div>
-                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Com. (%)</p>
+                              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5 ml-1">Com. (%)</p>
                               <input
                                 type="number"
                                 value={formula.commission}
                                 onChange={(e) => handleUpdateFormula(formula.id, 'commission', e.target.value)}
-                                className="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2 text-sm text-blue-400 font-black focus:border-blue-500/50 focus:outline-none"
+                                className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2 text-sm text-emerald-400 font-black focus:border-emerald-500 focus:outline-none"
                               />
                             </div>
                           </div>
                           <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Gain estimé</span>
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Gain estimé</span>
                             <span className="text-xs font-black text-emerald-400">{comm.toLocaleString()} €</span>
                           </div>
                         </div>
@@ -1143,9 +1143,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           <div className="flex-1">
                             <h4 className="font-black text-white text-sm tracking-tight">{formula.name}</h4>
                             <div className="flex items-center gap-3 mt-1.5 font-medium">
-                              <span className="text-[10px] text-slate-500 uppercase tracking-widest">Commission {formula.commission}%</span>
-                              <div className="h-1 w-1 rounded-full bg-slate-700" />
-                              <span className="text-xs text-blue-400 font-bold">{comm.toLocaleString()} € / vente</span>
+                              <span className="text-[10px] text-white/40 uppercase tracking-widest">Commission {formula.commission}%</span>
+                              <div className="h-1 w-1 rounded-full bg-white/10" />
+                              <span className="text-xs text-emerald-400 font-bold">{comm.toLocaleString()} € / vente</span>
                             </div>
                           </div>
                           <div className="text-right">
@@ -1159,7 +1159,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   )
                 })}
                 {(!editedOffer.formulas || editedOffer.formulas.length === 0) && (
-                  <div className="flex flex-col items-center justify-center py-6 gap-2 text-slate-600">
+                  <div className="flex flex-col items-center justify-center py-6 gap-2 text-white/30">
                     <Tag className="h-8 w-8 opacity-20" />
                     <p className="text-[11px] font-bold uppercase tracking-widest italic">Aucune formule définie</p>
                   </div>
@@ -1168,14 +1168,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             </div>
 
             {/* Zone B - Context (Dates) */}
-            <div className="rounded-3xl border border-white/5 bg-slate-900/30 p-6 backdrop-blur-md">
-              <h3 className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            <div className="rounded-3xl border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md">
+              <h3 className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
                 <Calendar className="h-3.5 w-3.5" />
                 Validité Commerciale
               </h3>
               <div className="space-y-6">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Lancement de l'offre</p>
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2 ml-1">Lancement de l'offre</p>
                   {isEditing ? (
                     <input
                       type="date"
@@ -1183,11 +1183,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       onChange={(e) =>
                         setEditedOffer({ ...editedOffer, startDate: e.target.value })
                       }
-                      className="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white focus:border-blue-500/50 focus:outline-none transition-all"
+                      className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
                     />
                   ) : (
                     <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/5 px-4 py-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
                         <Calendar className="h-4 w-4" />
                       </div>
                       <span className="text-sm font-bold text-white tracking-tight">{formatDate(offer.startDate)}</span>
@@ -1195,7 +1195,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   )}
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Expiration prévue</p>
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2 ml-1">Expiration prévue</p>
                   {isEditing ? (
                     <input
                       type="date"
@@ -1203,7 +1203,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       onChange={(e) =>
                         setEditedOffer({ ...editedOffer, endDate: e.target.value || undefined })
                       }
-                      className="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white focus:border-blue-500/50 focus:outline-none transition-all"
+                      className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
                     />
                   ) : (
                     <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/5 px-4 py-3">
@@ -1221,8 +1221,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
 
           {/* Description */}
-          <div className="mt-8 rounded-3xl border border-white/5 bg-slate-900/30 p-6 backdrop-blur-md relative z-10">
-            <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">
+          <div className="mt-8 rounded-3xl border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md relative z-10">
+            <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">
               Description de la mission
             </h3>
             {isEditing ? (
@@ -1232,18 +1232,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   setEditedOffer({ ...editedOffer, description: e.target.value })
                 }
                 rows={4}
-                className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white font-medium focus:border-blue-500/50 focus:outline-none resize-none transition-all"
+                className="w-full rounded-2xl border border-white/10 bg-[#111111]/50 px-4 py-3 text-sm text-white font-medium focus:border-emerald-500 focus:outline-none resize-none transition-all"
                 placeholder="Détails de l'offre, avatar client, etc."
               />
             ) : (
-              <p className="text-sm leading-relaxed text-slate-300 font-medium px-1">{offer.description}</p>
+              <p className="text-sm leading-relaxed text-white/60 font-medium px-1">{offer.description}</p>
             )}
           </div>
 
           {/* Zone C - Contacts Rattachés - MODIFIÉ AVEC CRÉATION */}
-          <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
+          <div className="mt-6 rounded-lg border border-white/[0.08] bg-[#111111] p-4">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/40">
                 <Users className="h-4 w-4" />
                 Contacts Rattachés
               </h3>
@@ -1263,13 +1263,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               <div className="mb-4 rounded-lg border border-purple-500/30 bg-purple-500/5 p-4 animate-in fade-in slide-in-from-top-2">
                 <div className="mb-3 flex items-center justify-between">
                   <p className="text-xs font-bold uppercase text-purple-300">Ajout Rapide</p>
-                  <button onClick={() => setIsCreatingContact(false)} className="text-slate-400 hover:text-white"><X className="h-3 w-3" /></button>
+                  <button onClick={() => setIsCreatingContact(false)} className="text-white/40 hover:text-white"><X className="h-3 w-3" /></button>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input type="text" placeholder="Nom complet *" value={newContactData.name} onChange={(e) => setNewContactData({ ...newContactData, name: e.target.value })} className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
-                  <input type="text" placeholder="Rôle (ex: Closer) *" value={newContactData.role} onChange={(e) => setNewContactData({ ...newContactData, role: e.target.value })} className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
-                  <input type="email" placeholder="Email *" value={newContactData.email} onChange={(e) => setNewContactData({ ...newContactData, email: e.target.value })} className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
-                  <input type="tel" placeholder="Téléphone" value={newContactData.phone} onChange={(e) => setNewContactData({ ...newContactData, phone: e.target.value })} className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+                  <input type="text" placeholder="Nom complet *" value={newContactData.name} onChange={(e) => setNewContactData({ ...newContactData, name: e.target.value })} className="rounded border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+                  <input type="text" placeholder="Rôle (ex: Closer) *" value={newContactData.role} onChange={(e) => setNewContactData({ ...newContactData, role: e.target.value })} className="rounded border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+                  <input type="email" placeholder="Email *" value={newContactData.email} onChange={(e) => setNewContactData({ ...newContactData, email: e.target.value })} className="rounded border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+                  <input type="tel" placeholder="Téléphone" value={newContactData.phone} onChange={(e) => setNewContactData({ ...newContactData, phone: e.target.value })} className="rounded border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
                 </div>
                 <button onClick={handleCreateAndAttachContact} className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-purple-600 py-2 text-sm font-bold text-white hover:bg-purple-500">
                   <Check className="h-4 w-4" /> Créer et Attacher
@@ -1305,40 +1305,40 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   offer.contacts.map((contact) => (
                     <div
                       key={contact.id}
-                      className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/50 p-3"
+                      className="flex items-center justify-between rounded-lg border border-white/[0.08] bg-white/5 p-3"
                     >
                       <div>
                         <p className="text-sm font-medium text-white">{contact.name}</p>
-                        <p className="text-xs text-slate-500">{contact.role}</p>
+                        <p className="text-xs text-white/40">{contact.role}</p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-slate-500">Aucun contact rattaché</p>
+                  <p className="text-sm text-white/40">Aucun contact rattaché</p>
                 )}
               </div>
             )}
           </div>
 
           {/* Configuration Facturation */}
-          <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+          <div className="mt-6 rounded-lg border border-white/[0.08] bg-[#111111] p-4">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/40">
               <Receipt className="h-4 w-4" /> Configuration Facturation
             </h3>
 
             {/* Toggle Commission + Fixe */}
-            <div className="mb-4 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+            <div className="mb-4 rounded-lg border border-white/[0.08] bg-white/5 p-3">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-white">Type de rémunération</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-white/40 mt-0.5">
                     {editedOffer.hasFixedFee ? 'Commission + Fixe' : 'Commission uniquement'}
                   </p>
                 </div>
                 {isEditing ? (
                   <button
                     onClick={() => setEditedOffer({ ...editedOffer, hasFixedFee: !editedOffer.hasFixedFee, fixedFeeAmount: editedOffer.hasFixedFee ? '' : (editedOffer.fixedFeeAmount || '') })}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editedOffer.hasFixedFee ? 'bg-blue-500' : 'bg-slate-700'
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editedOffer.hasFixedFee ? 'bg-emerald-500' : 'bg-white/10'
                       }`}
                   >
                     <span
@@ -1348,8 +1348,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   </button>
                 ) : (
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${offer.hasFixedFee
-                    ? 'bg-blue-500/10 text-blue-400'
-                    : 'bg-slate-500/10 text-slate-400'
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : 'bg-white/5 text-white/40'
                     }`}>
                     {offer.hasFixedFee ? 'Commission + Fixe' : 'Commission'}
                   </span>
@@ -1359,14 +1359,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               {/* Champ Montant Fixe (visible uniquement si activé) */}
               {editedOffer.hasFixedFee && (
                 <div className="mt-3">
-                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Montant Fixe (€)</label>
+                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">Montant Fixe (€)</label>
                   {isEditing ? (
                     <input
                       type="number"
                       value={editedOffer.fixedFeeAmount || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, fixedFeeAmount: e.target.value })}
                       placeholder="Ex: 500"
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-emerald-400 font-bold placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-emerald-400 font-bold placeholder-white/30 focus:border-emerald-500 focus:outline-none"
                     />
                   ) : (
                     <p className="text-sm font-bold text-emerald-400">{parseFloat(offer.fixedFeeAmount || '0').toLocaleString()}€</p>
@@ -1378,121 +1378,121 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             <div className="space-y-4">
               {/* Raison Sociale */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Raison Sociale</label>
+                <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">Raison Sociale</label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={editedOffer.billingName || ''}
                     onChange={(e) => setEditedOffer({ ...editedOffer, billingName: e.target.value })}
                     placeholder="Ex: ACME SAS"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-emerald-500 focus:outline-none"
                   />
                 ) : (
-                  <p className="text-sm text-slate-300">{offer.billingName || 'Non définie'}</p>
+                  <p className="text-sm text-white/60">{offer.billingName || 'Non définie'}</p>
                 )}
               </div>
 
               {/* Adresse */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Adresse</label>
+                <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">Adresse</label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={editedOffer.billingAddress || ''}
                     onChange={(e) => setEditedOffer({ ...editedOffer, billingAddress: e.target.value })}
                     placeholder="Ex: 123 Rue de la Paix"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-emerald-500 focus:outline-none"
                   />
                 ) : (
-                  <p className="text-sm text-slate-300">{offer.billingAddress || 'Non définie'}</p>
+                  <p className="text-sm text-white/60">{offer.billingAddress || 'Non définie'}</p>
                 )}
               </div>
 
               {/* Ville / CP / Pays */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Ville</label>
+                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">Ville</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={editedOffer.billingCity || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, billingCity: e.target.value })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm text-slate-300">{offer.billingCity || '-'}</p>
+                    <p className="text-sm text-white/60">{offer.billingCity || '-'}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Code Postal</label>
+                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">Code Postal</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={editedOffer.billingZip || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, billingZip: e.target.value })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm text-slate-300">{offer.billingZip || '-'}</p>
+                    <p className="text-sm text-white/60">{offer.billingZip || '-'}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Pays</label>
+                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">Pays</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={editedOffer.billingCountry || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, billingCountry: e.target.value })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm text-slate-300">{offer.billingCountry || '-'}</p>
+                    <p className="text-sm text-white/60">{offer.billingCountry || '-'}</p>
                   )}
                 </div>
               </div>
 
               {/* SIRET */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">SIRET / TVA</label>
+                <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">SIRET / TVA</label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={editedOffer.siret || ''}
                     onChange={(e) => setEditedOffer({ ...editedOffer, siret: e.target.value })}
                     placeholder="123 456 789 00012"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                    className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-emerald-500 focus:outline-none"
                   />
                 ) : (
-                  <p className="text-sm text-slate-300 font-mono">{offer.siret || 'Non défini'}</p>
+                  <p className="text-sm text-white/60 font-mono">{offer.siret || 'Non défini'}</p>
                 )}
               </div>
 
               {/* Email / Tel */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Email Facturation</label>
+                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">Email Facturation</label>
                   {isEditing ? (
                     <input
                       type="email"
                       value={editedOffer.billingEmail || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, billingEmail: e.target.value })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm text-slate-300">{offer.billingEmail || '-'}</p>
+                    <p className="text-sm text-white/60">{offer.billingEmail || '-'}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-500 uppercase">Téléphone</label>
+                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">Téléphone</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={editedOffer.billingPhone || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, billingPhone: e.target.value })}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm text-slate-300">{offer.billingPhone || '-'}</p>
+                    <p className="text-sm text-white/60">{offer.billingPhone || '-'}</p>
                   )}
                 </div>
               </div>
@@ -1500,8 +1500,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
 
           {/* --- CONFIGURATION CRM (SIMPLIFIÉE AVEC FORMULE PAR DÉFAUT) --- */}
-          <div className="mt-6 rounded-lg border border-slate-800 bg-slate-950 p-4">
-            <h3 className="mb-4 flex items-center flex-wrap gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400">
+          <div className="mt-6 rounded-lg border border-white/[0.08] bg-[#111111] p-4">
+            <h3 className="mb-4 flex items-center flex-wrap gap-2 text-sm font-semibold uppercase tracking-wider text-white/40">
               <span className="flex items-center gap-2">
                 <Link className="h-4 w-4" /> Synchronisation CRM
               </span>
@@ -1511,8 +1511,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             </h3>
 
             {/* 1. CRM Settings */}
-            <div className="mb-10 rounded-[20px] border border-white/5 bg-slate-900/30 p-6 backdrop-blur-md">
-              <label className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            <div className="mb-10 rounded-[20px] border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md">
+              <label className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
                 <Database className="h-3 w-3" /> Source de données (CRM)
               </label>
               {isEditing ? (
@@ -1520,7 +1520,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <select
                     value={editedOffer.crmProvider || 'iclosed'}
                     onChange={(e) => setEditedOffer({ ...editedOffer, crmProvider: e.target.value as any })}
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white focus:border-blue-500/50 focus:outline-none transition-all"
+                    className="w-full appearance-none rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
                   >
                     <option value="iclosed">iClosed</option>
                     <option value="hubspot">HubSpot</option>
@@ -1532,7 +1532,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <option value="make">Make</option>
                     <option value="n8n">n8n</option>
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-white/40">
                     <ChevronDown className="h-4 w-4" />
                   </div>
                 </div>
@@ -1542,12 +1542,12 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     offer.crmProvider === 'hubspot' ? 'bg-orange-500' :
                       offer.crmProvider === 'pipedrive' ? 'bg-green-500' :
                         offer.crmProvider === 'gohighlevel' ? 'bg-teal-500' :
-                          offer.crmProvider === 'systemeio' ? 'bg-blue-500' :
+                          offer.crmProvider === 'systemeio' ? 'bg-emerald-500' :
                             offer.crmProvider === 'airtable' ? 'bg-[#18BFFF]' :
                               offer.crmProvider === 'zapier' ? 'bg-[#FF4A00]' :
                                 offer.crmProvider === 'make' ? 'bg-[#6D00CC]' :
                                   offer.crmProvider === 'n8n' ? 'bg-[#EA4B71]' :
-                                'bg-slate-500'
+                                'bg-white/40'
                     }`} />
                   <p className="text-sm font-medium text-white capitalize">
                     {offer.crmProvider === 'hubspot' ? 'HubSpot' :
@@ -1581,7 +1581,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         <Check className="h-4 w-4 text-green-400" />
                         <span className="text-sm font-semibold text-green-400">Pipedrive Connecté</span>
                       </div>
-                      <button onClick={handleDisconnectPipedrive} className="text-xs text-slate-500 hover:text-white underline">Déconnecter</button>
+                      <button onClick={handleDisconnectPipedrive} className="text-xs text-white/40 hover:text-white underline">Déconnecter</button>
                     </div>
 
                     {/* Sync button */}
@@ -1598,16 +1598,16 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     </button>
 
                     {/* Mapping UI */}
-                    <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-                      <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Mapping des étapes Pipedrive</h5>
+                    <div className="rounded-lg border border-white/[0.08] bg-white/5 p-4">
+                      <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-white/40">Mapping des étapes Pipedrive</h5>
                       <div className="space-y-4">
                         {allStages.map(stage => (
                           <div key={stage.id}>
-                            <label className="mb-1.5 block text-[10px] font-bold uppercase text-slate-500">{stage.name}</label>
+                            <label className="mb-1.5 block text-[10px] font-bold uppercase text-white/40">{stage.name}</label>
                             <select
                               value={pipedriveMappings[stage.id] || ''}
                               onChange={(e) => handleUpdatePipedriveMapping(stage.id, Number(e.target.value))}
-                              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-green-500 focus:outline-none"
+                              className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-green-500 focus:outline-none"
                             >
                               <option value="">Sélectionner une étape Pipedrive</option>
                               {pipedrivePipelines.map(pipe => (
@@ -1651,7 +1651,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         <Check className="h-4 w-4 text-teal-400" />
                         <span className="text-sm font-semibold text-teal-400">GoHighLevel Connecté</span>
                       </div>
-                      <button onClick={handleDisconnectGhl} className="text-xs text-slate-500 hover:text-white underline">Déconnecter</button>
+                      <button onClick={handleDisconnectGhl} className="text-xs text-white/40 hover:text-white underline">Déconnecter</button>
                     </div>
 
                     {/* Sync button */}
@@ -1669,19 +1669,19 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                     {/* Pipeline selection */}
                     {isEditing && (
-                      <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-                        <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Pipeline GoHighLevel</h5>
+                      <div className="rounded-lg border border-white/[0.08] bg-white/5 p-4">
+                        <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-white/40">Pipeline GoHighLevel</h5>
 
                         {/* Select Pipeline */}
                         <div className="mb-4">
-                          <label className="mb-1.5 block text-[10px] font-bold uppercase text-slate-500">Pipeline</label>
+                          <label className="mb-1.5 block text-[10px] font-bold uppercase text-white/40">Pipeline</label>
                           <select
                             value={editedOffer.crmMapping?.ghlPipelineId || ''}
                             onChange={(e) => setEditedOffer({
                               ...editedOffer,
                               crmMapping: { ...editedOffer.crmMapping, ghlPipelineId: e.target.value }
                             })}
-                            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-teal-500 focus:outline-none"
+                            className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-teal-500 focus:outline-none"
                           >
                             <option value="">Sélectionner un pipeline</option>
                             {ghlPipelines.map(p => (
@@ -1693,14 +1693,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         {/* Stage Mapping */}
                         {editedOffer.crmMapping?.ghlPipelineId && (
                           <div className="space-y-4">
-                            <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400">Mapping des étapes</h5>
+                            <h5 className="text-xs font-bold uppercase tracking-wider text-white/40">Mapping des étapes</h5>
                             {allStages.map(stage => (
                               <div key={stage.id}>
-                                <label className="mb-1.5 block text-[10px] font-bold uppercase text-slate-500">{stage.name}</label>
+                                <label className="mb-1.5 block text-[10px] font-bold uppercase text-white/40">{stage.name}</label>
                                 <select
                                   value={editedOffer.crmMapping?.[stage.id] || ''}
                                   onChange={(e) => handleUpdateGhlMapping(stage.id, e.target.value)}
-                                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-teal-500 focus:outline-none"
+                                  className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-teal-500 focus:outline-none"
                                 >
                                   <option value="">Sélectionner une étape GHL</option>
                                   {ghlStages
@@ -1734,8 +1734,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             )}
 
             {/* 2. SÉLECTION DE LA FORMULE PAR DÉFAUT (NOUVEAU) */}
-            <div className="mb-10 rounded-[20px] border border-white/5 bg-slate-900/30 p-6 backdrop-blur-md">
-              <label className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            <div className="mb-10 rounded-[20px] border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md">
+              <label className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
                 <BoxSelect className="h-3 w-3" /> Formule par défaut (Prospects Entrants)
               </label>
               {isEditing ? (
@@ -1743,7 +1743,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <select
                     value={editedOffer.defaultFormulaId || ''}
                     onChange={(e) => setEditedOffer({ ...editedOffer, defaultFormulaId: e.target.value })}
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white focus:border-blue-500/50 focus:outline-none transition-all"
+                    className="w-full appearance-none rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
                   >
                     <option value="">-- Aucune formule (ou 1ère par défaut) --</option>
                     {(editedOffer.formulas || []).map((f) => (
@@ -1752,19 +1752,19 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       </option>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-white/40">
                     <ChevronDown className="h-4 w-4" />
                   </div>
                 </div>
               ) : (
-                <div className="rounded-xl border border-white/5 bg-slate-950/50 px-4 py-3 text-sm text-slate-300 font-medium">
+                <div className="rounded-xl border border-white/5 bg-[#111111]/50 px-4 py-3 text-sm text-white/60 font-medium">
                   {editedOffer.defaultFormulaId
                     ? (editedOffer.formulas?.find(f => f.id === editedOffer.defaultFormulaId)?.name || 'Formule introuvable')
-                    : <span className="text-slate-500 italic">Aucune sélectionnée (par défaut)</span>
+                    : <span className="text-white/40 italic">Aucune sélectionnée (par défaut)</span>
                   }
                 </div>
               )}
-              <p className="mt-3 text-[10px] text-slate-500 font-medium leading-relaxed">
+              <p className="mt-3 text-[10px] text-white/40 font-medium leading-relaxed">
                 Cette formule sera automatiquement assignée aux prospects arrivant via le Webhook ci-dessous.
               </p>
             </div>
@@ -1800,7 +1800,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                             <Check className="h-4 w-4 text-emerald-400" />
                             <span className="text-sm font-semibold text-emerald-400">HubSpot Connecté</span>
                           </div>
-                          <button onClick={handleDisconnectHubspot} className="text-xs text-slate-500 hover:text-white underline">Déconnecter</button>
+                          <button onClick={handleDisconnectHubspot} className="text-xs text-white/40 hover:text-white underline">Déconnecter</button>
                         </div>
 
                         {/* Sync button */}
@@ -1884,13 +1884,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
             {(editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
               /* --- ICLOSED CONFIG (webhook) --- */
-              <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
                 <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-blue-400 mt-0.5" />
+                  <Info className="h-5 w-5 text-emerald-400 mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-blue-100">Configuration Webhook iClosed</h4>
+                    <h4 className="text-sm font-semibold text-emerald-100">Configuration Webhook iClosed</h4>
 
-                    <p className="mt-1 text-xs text-blue-300/80 leading-relaxed">
+                    <p className="mt-1 text-xs text-emerald-300/80 leading-relaxed">
                       Allez dans <strong>iClosed &gt; Paramètres &gt; Développeur &gt; Webhooks</strong> et collez l'URL ci-dessous.
                     </p>
 
@@ -1903,12 +1903,12 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     </div>
 
                     <div className="mt-3 flex items-center gap-2">
-                      <div className="flex-1 rounded border border-blue-500/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
+                      <div className="flex-1 rounded border border-emerald-500/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
                         {webhookUrl}
                       </div>
                       <button
                         onClick={handleCopyWebhook}
-                        className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                        className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
                         title="Copier l'URL"
                       >
                         {hasCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
@@ -1921,7 +1921,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     )}
 
                     {isEditing && (editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
-                      <div className="mt-4 rounded-lg border border-blue-500/20 overflow-hidden bg-slate-900/50">
+                      <div className="mt-4 rounded-lg border border-emerald-500/20 overflow-hidden bg-white/5">
                         <div style={{ position: 'relative', boxSizing: 'content-box', width: '100%', aspectRatio: '1.86' }}>
                           <iframe
                             src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1"
@@ -1945,20 +1945,20 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
             {/* --- SYSTEME.IO CONFIG --- */}
             {editedOffer.crmProvider === 'systemeio' && (
-              <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
                 <div className="flex items-start gap-3">
-                  <ExternalLink className="h-5 w-5 text-blue-400 mt-0.5" />
+                  <ExternalLink className="h-5 w-5 text-emerald-400 mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-blue-100">Configuration Systeme.io</h4>
+                    <h4 className="text-sm font-semibold text-emerald-100">Configuration Systeme.io</h4>
 
                     {/* API Key */}
                     <div className="mt-3 space-y-3">
                       <div>
-                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">
                           Clé API Systeme.io
                         </label>
-                        <p className="text-[11px] text-slate-400 mb-2">
-                          Trouvez votre clé dans <strong className="text-slate-300">Systeme.io → Paramètres → Clés API publiques</strong>
+                        <p className="text-[11px] text-white/40 mb-2">
+                          Trouvez votre clé dans <strong className="text-white/60">Systeme.io → Paramètres → Clés API publiques</strong>
                         </p>
                         <div className="flex items-center gap-2">
                           <div className="relative flex-1">
@@ -1967,11 +1967,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                               value={systemeioApiKey}
                               onChange={(e) => setSystemeioApiKey(e.target.value)}
                               placeholder="Collez votre clé API ici"
-                              className="w-full rounded border border-blue-500/10 bg-slate-950 p-2 pr-8 font-mono text-xs text-slate-400 placeholder:text-slate-600"
+                              className="w-full rounded border border-emerald-500/10 bg-[#111111] p-2 pr-8 font-mono text-xs text-white/40 placeholder:text-white/30"
                             />
                             <button
                               onClick={() => setSystemeioShowKey(!systemeioShowKey)}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
                             >
                               {systemeioShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                             </button>
@@ -1979,7 +1979,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           <button
                             onClick={handleSaveSystemeioKey}
                             disabled={systemeioSaving}
-                            className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-500 transition-all disabled:opacity-50"
+                            className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-400 transition-all disabled:opacity-50"
                           >
                             {systemeioSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                           </button>
@@ -1988,12 +1988,12 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                       {/* Webhook URL */}
                       <div>
-                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">URL du Webhook</label>
-                        <p className="text-[11px] text-slate-400 mb-2">
-                          Collez cette URL dans <strong className="text-slate-300">Systeme.io → Paramètres → Webhooks</strong>
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">URL du Webhook</label>
+                        <p className="text-[11px] text-white/40 mb-2">
+                          Collez cette URL dans <strong className="text-white/60">Systeme.io → Paramètres → Webhooks</strong>
                         </p>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 rounded border border-blue-500/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
+                          <div className="flex-1 rounded border border-emerald-500/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
                             {systemeioWebhookUrl}
                           </div>
                           <button
@@ -2002,7 +2002,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                               setSystemeioCopiedUrl(true)
                               setTimeout(() => setSystemeioCopiedUrl(false), 2000)
                             }}
-                            className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                            className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
                           >
                             {systemeioCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                           </button>
@@ -2015,20 +2015,20 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       </div>
 
                       {/* Instructions */}
-                      <div className="rounded-lg border border-white/5 bg-slate-950/50 p-3">
-                        <h5 className="mb-2 text-xs font-bold text-slate-300">Comment configurer :</h5>
-                        <ol className="text-[11px] text-slate-500 space-y-1.5 list-decimal list-inside">
-                          <li>Allez dans <strong className="text-slate-400">Systeme.io → Paramètres → Clés API publiques</strong> et copiez votre clé</li>
+                      <div className="rounded-lg border border-white/5 bg-[#111111]/50 p-3">
+                        <h5 className="mb-2 text-xs font-bold text-white/60">Comment configurer :</h5>
+                        <ol className="text-[11px] text-white/40 space-y-1.5 list-decimal list-inside">
+                          <li>Allez dans <strong className="text-white/40">Systeme.io → Paramètres → Clés API publiques</strong> et copiez votre clé</li>
                           <li>Collez la clé API ci-dessus et cliquez sur Sauvegarder</li>
-                          <li>Allez dans <strong className="text-slate-400">Systeme.io → Paramètres → Webhooks</strong></li>
+                          <li>Allez dans <strong className="text-white/40">Systeme.io → Paramètres → Webhooks</strong></li>
                           <li>Ajoutez un webhook avec l'URL ci-dessus</li>
-                          <li>Sélectionnez les événements : <strong className="text-slate-400">Opt-in</strong> et/ou <strong className="text-slate-400">Nouvelle vente</strong></li>
+                          <li>Sélectionnez les événements : <strong className="text-white/40">Opt-in</strong> et/ou <strong className="text-white/40">Nouvelle vente</strong></li>
                         </ol>
                       </div>
 
                       {/* Sync info */}
-                      <div className="rounded-lg border border-blue-500/10 bg-blue-500/5 p-2">
-                        <p className="text-[10px] text-blue-400/80">
+                      <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/5 p-2">
+                        <p className="text-[10px] text-emerald-400/80">
                           <strong>Webhook :</strong> Chaque opt-in ou vente dans Systeme.io crée automatiquement un prospect.
                           <br />
                           <strong>Sync retour :</strong> Les changements de stage dans CloseOS mettent à jour les tags du contact dans Systeme.io (ex: CloseOS-Qualifié, CloseOS-Gagné...).
@@ -2067,11 +2067,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       {/* Base selector */}
                       {airtableConnected && (
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">
                             Base Airtable
                           </label>
                           {airtableLoadingBases ? (
-                            <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Chargement des bases...</div>
+                            <div className="flex items-center gap-2 text-xs text-white/40"><Loader2 className="h-3 w-3 animate-spin" /> Chargement des bases...</div>
                           ) : (
                             <select
                               value={editedOffer.crmMapping?.airtableBaseId || ''}
@@ -2079,7 +2079,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 ...prev,
                                 crmMapping: { ...prev.crmMapping, airtableBaseId: e.target.value, airtableTableId: '', airtableFieldMapping: {} },
                               }))}
-                              className="w-full appearance-none rounded border border-[#18BFFF]/10 bg-slate-950 p-2 text-xs text-white focus:border-[#18BFFF]/50 focus:outline-none"
+                              className="w-full appearance-none rounded border border-[#18BFFF]/10 bg-[#111111] p-2 text-xs text-white focus:border-[#18BFFF]/50 focus:outline-none"
                             >
                               <option value="">Sélectionner une base...</option>
                               {airtableBases.map((base: any) => (
@@ -2093,11 +2093,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       {/* Table selector */}
                       {editedOffer.crmMapping?.airtableBaseId && (
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">
                             Table
                           </label>
                           {airtableLoadingTables ? (
-                            <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Chargement des tables...</div>
+                            <div className="flex items-center gap-2 text-xs text-white/40"><Loader2 className="h-3 w-3 animate-spin" /> Chargement des tables...</div>
                           ) : (
                             <select
                               value={editedOffer.crmMapping?.airtableTableId || ''}
@@ -2105,7 +2105,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 ...prev,
                                 crmMapping: { ...prev.crmMapping, airtableTableId: e.target.value, airtableFieldMapping: {} },
                               }))}
-                              className="w-full appearance-none rounded border border-[#18BFFF]/10 bg-slate-950 p-2 text-xs text-white focus:border-[#18BFFF]/50 focus:outline-none"
+                              className="w-full appearance-none rounded border border-[#18BFFF]/10 bg-[#111111] p-2 text-xs text-white focus:border-[#18BFFF]/50 focus:outline-none"
                             >
                               <option value="">Sélectionner une table...</option>
                               {airtableTables.map((table: any) => (
@@ -2119,10 +2119,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       {/* Field mapping */}
                       {editedOffer.crmMapping?.airtableTableId && airtableFields.length > 0 && (
                         <div>
-                          <label className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                          <label className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-white/40">
                             Mapping des colonnes
                           </label>
-                          <p className="text-[11px] text-slate-400 mb-2">
+                          <p className="text-[11px] text-white/40 mb-2">
                             Associez vos colonnes Airtable aux champs CloseOS
                           </p>
                           <div className="space-y-2">
@@ -2136,11 +2136,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                               { key: 'value', label: 'Valeur (€)' },
                             ].map(({ key, label }) => (
                               <div key={key} className="flex items-center gap-2">
-                                <span className="w-24 text-[11px] text-slate-400 shrink-0">{label}</span>
+                                <span className="w-24 text-[11px] text-white/40 shrink-0">{label}</span>
                                 <select
                                   value={(editedOffer.crmMapping?.airtableFieldMapping as any)?.[key] || ''}
                                   onChange={(e) => updateAirtableMapping(key, e.target.value)}
-                                  className="flex-1 appearance-none rounded border border-[#18BFFF]/10 bg-slate-950 p-1.5 text-xs text-white focus:border-[#18BFFF]/50 focus:outline-none"
+                                  className="flex-1 appearance-none rounded border border-[#18BFFF]/10 bg-[#111111] p-1.5 text-xs text-white focus:border-[#18BFFF]/50 focus:outline-none"
                                 >
                                   <option value="">— Non mappé —</option>
                                   {airtableFields.map((field: any) => (
@@ -2154,7 +2154,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       )}
 
                       {airtableLoadingFields && (
-                        <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="h-3 w-3 animate-spin" /> Chargement des colonnes...</div>
+                        <div className="flex items-center gap-2 text-xs text-white/40"><Loader2 className="h-3 w-3 animate-spin" /> Chargement des colonnes...</div>
                       )}
 
                       {/* Sync button */}
@@ -2231,7 +2231,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           <button
                             onClick={handleDeleteZapierKey}
                             disabled={zapierLoading}
-                            className="text-xs text-slate-500 hover:text-red-400 underline flex items-center gap-1"
+                            className="text-xs text-white/40 hover:text-red-400 underline flex items-center gap-1"
                           >
                             <Trash2 className="h-3 w-3" /> Supprimer
                           </button>
@@ -2239,9 +2239,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                         {/* Webhook URL */}
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">URL du Webhook</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">URL du Webhook</label>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 rounded border border-[#FF4A00]/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
+                            <div className="flex-1 rounded border border-[#FF4A00]/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
                               {zapierWebhookUrl}
                             </div>
                             <button
@@ -2250,7 +2250,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setZapierCopiedUrl(true)
                                 setTimeout(() => setZapierCopiedUrl(false), 2000)
                               }}
-                              className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
                             >
                               {zapierCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                             </button>
@@ -2264,18 +2264,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                         {/* API Key */}
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Clé API (Bearer Token)</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">Clé API (Bearer Token)</label>
                           <div className="flex items-center gap-2">
                             <div className="relative flex-1">
                               <input
                                 type={zapierShowKey ? 'text' : 'password'}
                                 value={zapierApiKey}
                                 readOnly
-                                className="w-full rounded border border-[#FF4A00]/10 bg-slate-950 p-2 pr-8 font-mono text-xs text-slate-400"
+                                className="w-full rounded border border-[#FF4A00]/10 bg-[#111111] p-2 pr-8 font-mono text-xs text-white/40"
                               />
                               <button
                                 onClick={() => setZapierShowKey(!zapierShowKey)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
                               >
                                 {zapierShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                               </button>
@@ -2286,7 +2286,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setZapierCopiedKey(true)
                                 setTimeout(() => setZapierCopiedKey(false), 2000)
                               }}
-                              className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
                             >
                               {zapierCopiedKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                             </button>
@@ -2294,14 +2294,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         </div>
 
                         {/* Instructions */}
-                        <div className="rounded-lg border border-white/5 bg-slate-950/50 p-3">
-                          <h5 className="mb-2 text-xs font-bold text-slate-300">Configuration dans Zapier :</h5>
-                          <ol className="text-[11px] text-slate-500 space-y-1.5 list-decimal list-inside">
+                        <div className="rounded-lg border border-white/5 bg-[#111111]/50 p-3">
+                          <h5 className="mb-2 text-xs font-bold text-white/60">Configuration dans Zapier :</h5>
+                          <ol className="text-[11px] text-white/40 space-y-1.5 list-decimal list-inside">
                             <li>Créez un Zap avec votre source (Facebook Ads, Typeform...)</li>
-                            <li>Action : <strong className="text-slate-400">Webhooks by Zapier</strong> → <strong className="text-slate-400">POST</strong></li>
+                            <li>Action : <strong className="text-white/40">Webhooks by Zapier</strong> → <strong className="text-white/40">POST</strong></li>
                             <li>URL : collez l'URL ci-dessus</li>
-                            <li>Headers : <code className="bg-slate-800 px-1 rounded text-[10px] text-slate-400">Authorization: Bearer votre_clé</code></li>
-                            <li>Body (JSON) : <code className="bg-slate-800 px-1 rounded text-[10px] text-slate-400">firstName, lastName, email, phone, company, source</code></li>
+                            <li>Headers : <code className="bg-white/5 px-1 rounded text-[10px] text-white/40">Authorization: Bearer votre_clé</code></li>
+                            <li>Body (JSON) : <code className="bg-white/5 px-1 rounded text-[10px] text-white/40">firstName, lastName, email, phone, company, source</code></li>
                           </ol>
                         </div>
                       </div>
@@ -2346,16 +2346,16 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           <button
                             onClick={handleDeleteMakeKey}
                             disabled={makeLoading}
-                            className="text-xs text-slate-500 hover:text-red-400 underline flex items-center gap-1"
+                            className="text-xs text-white/40 hover:text-red-400 underline flex items-center gap-1"
                           >
                             <Trash2 className="h-3 w-3" /> Supprimer
                           </button>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">URL du Webhook</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">URL du Webhook</label>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 rounded border border-[#6D00CC]/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
+                            <div className="flex-1 rounded border border-[#6D00CC]/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
                               {makeWebhookUrl}
                             </div>
                             <button
@@ -2364,7 +2364,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setMakeCopiedUrl(true)
                                 setTimeout(() => setMakeCopiedUrl(false), 2000)
                               }}
-                              className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
                             >
                               {makeCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                             </button>
@@ -2372,18 +2372,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Clé API (Bearer Token)</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">Clé API (Bearer Token)</label>
                           <div className="flex items-center gap-2">
                             <div className="relative flex-1">
                               <input
                                 type={makeShowKey ? 'text' : 'password'}
                                 value={makeApiKey}
                                 readOnly
-                                className="w-full rounded border border-[#6D00CC]/10 bg-slate-950 p-2 pr-8 font-mono text-xs text-slate-400"
+                                className="w-full rounded border border-[#6D00CC]/10 bg-[#111111] p-2 pr-8 font-mono text-xs text-white/40"
                               />
                               <button
                                 onClick={() => setMakeShowKey(!makeShowKey)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
                               >
                                 {makeShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                               </button>
@@ -2394,21 +2394,21 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setMakeCopiedKey(true)
                                 setTimeout(() => setMakeCopiedKey(false), 2000)
                               }}
-                              className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
                             >
                               {makeCopiedKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                             </button>
                           </div>
                         </div>
 
-                        <div className="rounded-lg border border-white/5 bg-slate-950/50 p-3">
-                          <h5 className="mb-2 text-xs font-bold text-slate-300">Configuration dans Make :</h5>
-                          <ol className="text-[11px] text-slate-500 space-y-1.5 list-decimal list-inside">
+                        <div className="rounded-lg border border-white/5 bg-[#111111]/50 p-3">
+                          <h5 className="mb-2 text-xs font-bold text-white/60">Configuration dans Make :</h5>
+                          <ol className="text-[11px] text-white/40 space-y-1.5 list-decimal list-inside">
                             <li>Créez un scénario avec votre source (Facebook Ads, Typeform...)</li>
-                            <li>Ajoutez un module <strong className="text-slate-400">HTTP</strong> → <strong className="text-slate-400">Make a request</strong></li>
-                            <li>Méthode : <strong className="text-slate-400">POST</strong>, URL : collez l'URL ci-dessus</li>
-                            <li>Headers : <code className="bg-slate-800 px-1 rounded text-[10px] text-slate-400">Authorization: Bearer votre_clé</code></li>
-                            <li>Body (JSON) : <code className="bg-slate-800 px-1 rounded text-[10px] text-slate-400">firstName, lastName, email, phone, company, source</code></li>
+                            <li>Ajoutez un module <strong className="text-white/40">HTTP</strong> → <strong className="text-white/40">Make a request</strong></li>
+                            <li>Méthode : <strong className="text-white/40">POST</strong>, URL : collez l'URL ci-dessus</li>
+                            <li>Headers : <code className="bg-white/5 px-1 rounded text-[10px] text-white/40">Authorization: Bearer votre_clé</code></li>
+                            <li>Body (JSON) : <code className="bg-white/5 px-1 rounded text-[10px] text-white/40">firstName, lastName, email, phone, company, source</code></li>
                           </ol>
                         </div>
                       </div>
@@ -2453,16 +2453,16 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           <button
                             onClick={handleDeleteN8nKey}
                             disabled={n8nLoading}
-                            className="text-xs text-slate-500 hover:text-red-400 underline flex items-center gap-1"
+                            className="text-xs text-white/40 hover:text-red-400 underline flex items-center gap-1"
                           >
                             <Trash2 className="h-3 w-3" /> Supprimer
                           </button>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">URL du Webhook</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">URL du Webhook</label>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 rounded border border-[#EA4B71]/10 bg-slate-950 p-2 font-mono text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
+                            <div className="flex-1 rounded border border-[#EA4B71]/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
                               {n8nWebhookUrl}
                             </div>
                             <button
@@ -2471,7 +2471,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setN8nCopiedUrl(true)
                                 setTimeout(() => setN8nCopiedUrl(false), 2000)
                               }}
-                              className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
                             >
                               {n8nCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                             </button>
@@ -2479,18 +2479,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Clé API (Bearer Token)</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">Clé API (Bearer Token)</label>
                           <div className="flex items-center gap-2">
                             <div className="relative flex-1">
                               <input
                                 type={n8nShowKey ? 'text' : 'password'}
                                 value={n8nApiKey}
                                 readOnly
-                                className="w-full rounded border border-[#EA4B71]/10 bg-slate-950 p-2 pr-8 font-mono text-xs text-slate-400"
+                                className="w-full rounded border border-[#EA4B71]/10 bg-[#111111] p-2 pr-8 font-mono text-xs text-white/40"
                               />
                               <button
                                 onClick={() => setN8nShowKey(!n8nShowKey)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
                               >
                                 {n8nShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                               </button>
@@ -2501,20 +2501,20 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setN8nCopiedKey(true)
                                 setTimeout(() => setN8nCopiedKey(false), 2000)
                               }}
-                              className="rounded p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
                             >
                               {n8nCopiedKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                             </button>
                           </div>
                         </div>
 
-                        <div className="rounded-lg border border-white/5 bg-slate-950/50 p-3">
-                          <h5 className="mb-2 text-xs font-bold text-slate-300">Configuration dans n8n :</h5>
-                          <ol className="text-[11px] text-slate-500 space-y-1.5 list-decimal list-inside">
-                            <li>Créez un workflow avec un nœud <strong className="text-slate-400">HTTP Request</strong></li>
-                            <li>Méthode : <strong className="text-slate-400">POST</strong>, URL : collez l'URL ci-dessus</li>
-                            <li>Authentication : <strong className="text-slate-400">Header Auth</strong> → Name: Authorization, Value: Bearer votre_clé</li>
-                            <li>Body (JSON) : <code className="bg-slate-800 px-1 rounded text-[10px] text-slate-400">firstName, lastName, email, phone, company, source</code></li>
+                        <div className="rounded-lg border border-white/5 bg-[#111111]/50 p-3">
+                          <h5 className="mb-2 text-xs font-bold text-white/60">Configuration dans n8n :</h5>
+                          <ol className="text-[11px] text-white/40 space-y-1.5 list-decimal list-inside">
+                            <li>Créez un workflow avec un nœud <strong className="text-white/40">HTTP Request</strong></li>
+                            <li>Méthode : <strong className="text-white/40">POST</strong>, URL : collez l'URL ci-dessus</li>
+                            <li>Authentication : <strong className="text-white/40">Header Auth</strong> → Name: Authorization, Value: Bearer votre_clé</li>
+                            <li>Body (JSON) : <code className="bg-white/5 px-1 rounded text-[10px] text-white/40">firstName, lastName, email, phone, company, source</code></li>
                           </ol>
                         </div>
                       </div>
@@ -2526,8 +2526,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
 
           {/* Zone D - Resources */}
-          <div className="mt-8 rounded-3xl border border-white/5 bg-slate-900/30 p-6 backdrop-blur-md relative z-10">
-            <h3 className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">
+          <div className="mt-8 rounded-3xl border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md relative z-10">
+            <h3 className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">
               <ExternalLink className="h-3.5 w-3.5" /> Ressources Commerciales
             </h3>
 
@@ -2538,14 +2538,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     editedOffer.resources.map((resource) => (
                       <div
                         key={resource.id}
-                        className="flex items-center gap-4 rounded-2xl border border-white/5 bg-slate-950/50 p-4 transition-all hover:bg-slate-950"
+                        className="flex items-center gap-4 rounded-2xl border border-white/5 bg-[#111111]/50 p-4 transition-all hover:bg-[#111111]"
                       >
-                        <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                        <div className="h-10 w-10 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
                           {getResourceIcon(resource.type)}
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-black text-white tracking-tight">{resource.name}</p>
-                          <p className="text-[10px] text-slate-500 font-medium truncate max-w-[200px] mt-0.5">{resource.url}</p>
+                          <p className="text-[10px] text-white/40 font-medium truncate max-w-[200px] mt-0.5">{resource.url}</p>
                         </div>
                         <button
                           onClick={() => handleRemoveResource(resource.id)}
@@ -2556,7 +2556,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       </div>
                     ))
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-6 gap-2 text-slate-600">
+                    <div className="flex flex-col items-center justify-center py-6 gap-2 text-white/30">
                       <ExternalLink className="h-8 w-8 opacity-20" />
                       <p className="text-[11px] font-bold uppercase tracking-widest italic">Aucune ressource disponible</p>
                     </div>
@@ -2564,7 +2564,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 </div>
 
                 <div className="space-y-4 rounded-2xl border border-white/5 bg-white/5 p-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 text-center">
                     Ajouter une ressource
                   </p>
                   <div className="space-y-3">
@@ -2573,18 +2573,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       placeholder="Nom (ex: Script de vente)"
                       value={tempResName}
                       onChange={(e) => setTempResName(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:border-blue-500/50 focus:outline-none transition-all"
+                      className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2.5 text-sm text-white placeholder-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                     />
                     <input
                       type="url"
                       placeholder="URL (ex: https://...)"
                       value={tempResLink}
                       onChange={(e) => setTempResLink(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:border-blue-500/50 focus:outline-none transition-all"
+                      className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2.5 text-sm text-white placeholder-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                     />
                     <button
                       onClick={handleAddResource}
-                      className="flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 px-4 py-3 text-xs font-black text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-500/20 active:scale-95 uppercase tracking-widest"
+                      className="flex w-full items-center justify-center gap-3 rounded-xl bg-emerald-500 px-4 py-3 text-xs font-black text-white transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 active:scale-95 uppercase tracking-widest"
                     >
                       <Plus className="h-4 w-4" />
                       Ajouter au catalogue
@@ -2601,23 +2601,23 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       href={resource.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-slate-950/50 p-4 transition-all hover:border-blue-500/30 hover:bg-slate-900 hover:shadow-lg hover:shadow-blue-500/5"
+                      className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-[#111111]/50 p-4 transition-all hover:border-emerald-500/30 hover:bg-white/[0.03] hover:shadow-lg hover:shadow-emerald-500/5"
                     >
-                      <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20 group-hover:bg-blue-500/20 transition-all">
+                      <div className="h-10 w-10 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20 group-hover:bg-emerald-400/20 transition-all">
                         {getResourceIcon(resource.type)}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-black text-white tracking-tight group-hover:text-blue-400 transition-colors">
+                        <p className="text-sm font-black text-white tracking-tight group-hover:text-emerald-400 transition-colors">
                           {resource.name}
                         </p>
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5">
+                        <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5">
                           Ouvrir <ExternalLink className="h-2 w-2" />
                         </span>
                       </div>
                     </a>
                   ))
                 ) : (
-                  <div className="col-span-2 flex flex-col items-center justify-center py-6 gap-2 text-slate-600">
+                  <div className="col-span-2 flex flex-col items-center justify-center py-6 gap-2 text-white/30">
                     <ExternalLink className="h-8 w-8 opacity-20" />
                     <p className="text-[11px] font-bold uppercase tracking-widest italic text-center">Aucune ressource disponible</p>
                   </div>
@@ -2627,8 +2627,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
 
           {/* Zone E - Notes */}
-          <div className="mt-8 rounded-3xl border border-white/5 bg-slate-900/30 p-6 backdrop-blur-md relative z-10">
-            <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">
+          <div className="mt-8 rounded-3xl border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md relative z-10">
+            <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">
               Notes de Closing
             </h3>
             {isEditing ? (
@@ -2639,10 +2639,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 }
                 rows={4}
                 placeholder="Instructions spécifiques pour closer cette offre..."
-                className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white font-medium focus:border-blue-500/50 focus:outline-none resize-none transition-all"
+                className="w-full rounded-2xl border border-white/10 bg-[#111111]/50 px-4 py-3 text-sm text-white font-medium focus:border-emerald-500 focus:outline-none resize-none transition-all"
               />
             ) : (
-              <p className="text-sm leading-relaxed text-slate-300 font-medium px-1">
+              <p className="text-sm leading-relaxed text-white/60 font-medium px-1">
                 {offer.notes || 'Aucune note'}
               </p>
             )}

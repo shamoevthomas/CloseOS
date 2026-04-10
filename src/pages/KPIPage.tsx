@@ -575,76 +575,73 @@ export function KPIPage() {
   }, [chartSourceData, hasContextData, allOffers, activeTabKpiConfig]);
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6 md:p-8 font-sans text-slate-100">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="relative min-h-screen bg-[#111111] p-6 md:px-12 md:pb-20 text-white overflow-hidden">
+      {/* Ambient Glows */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="relative max-w-7xl mx-auto space-y-8 z-10">
 
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-slate-900/50 p-6 rounded-2xl border border-white/5 backdrop-blur-xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pt-4 md:pt-12 pb-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-blue-600/20 rounded-lg border border-blue-500/30">
-                <TrendingUp className="w-6 h-6 text-blue-400" />
-              </div>
-              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Performance</h1>
+              <TrendingUp className="w-7 h-7 text-emerald-400" />
+              <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter">Performance</h1>
             </div>
-            <p className="text-slate-400 text-sm">{viewMode === 'month' ? `Analyse pour ${currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}` : 'Analyse globale'}</p>
+            <p className="text-white/40 text-sm font-medium">{viewMode === 'month' ? `Analyse pour ${currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}` : 'Analyse approfondie des indicateurs clés de performance'}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             {hasFullAccess ? (
               <>
                 {viewMode === 'month' && (
-                  <div className="flex items-center bg-slate-800/80 rounded-xl p-1 border border-white/10">
-                    <button onClick={prevMonth} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-300"><ChevronLeft className="w-4 h-4" /></button>
+                  <div className="flex items-center bg-white/[0.03] rounded-full p-1 border border-white/[0.08]">
+                    <button onClick={prevMonth} className="p-2 hover:bg-white/10 rounded-full text-white/60"><ChevronLeft className="w-4 h-4" /></button>
                     <span className="px-4 text-sm font-semibold text-white capitalize min-w-[120px] text-center">{currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</span>
-                    <button onClick={nextMonth} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-300"><ChevronRight className="w-4 h-4" /></button>
+                    <button onClick={nextMonth} className="p-2 hover:bg-white/10 rounded-full text-white/60"><ChevronRight className="w-4 h-4" /></button>
                   </div>
                 )}
-                <button onClick={() => setViewMode(viewMode === 'month' ? 'all' : 'month')} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-sm font-medium text-slate-300 hover:text-white transition-all">
-                  {viewMode === 'month' ? <Infinity className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+                <button onClick={() => setViewMode(viewMode === 'month' ? 'all' : 'month')} className="px-6 py-2.5 rounded-full bg-white text-black font-semibold hover:bg-white/90 transition-all">
                   {viewMode === 'month' ? 'Vue Globale' : 'Vue Mensuelle'}
                 </button>
               </>
             ) : (
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/30 border border-white/5 text-sm text-slate-500">
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-sm text-white/40">
                 <Lock className="w-4 h-4" />
                 Filtres réservés au Pack Pro
               </div>
             )}
             <button
               onClick={() => { setConfigTab(activeOffers.length > 0 ? String(activeOffers[0].id) : 'global'); setShowConfigModal(true); }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-sm font-medium text-white/80 hover:bg-white/10 transition-all"
             >
-              <Settings className="w-4 h-4" /> Configurer mes KPI
+              <Settings className="w-4 h-4" /> Configurer
             </button>
             <SharePerformanceButton />
           </div>
         </div>
 
         {/* TABS BAR */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4 border-b border-white/5 pb-1">
-          <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-2 scrollbar-hide">
-            <button onClick={() => setActiveTab('global')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all border ${activeTab === 'global' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-500/50 text-white shadow-lg' : 'bg-slate-800/30 border-transparent text-slate-400 hover:bg-slate-800'}`}>Global</button>
-            {activeOffers.map((offer) => (
-              <button key={offer.id} onClick={() => setActiveTab(offer.name)} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all border whitespace-nowrap ${activeTab === offer.name ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-500/50 text-white shadow-lg' : 'bg-slate-800/30 border-transparent text-slate-400 hover:bg-slate-800'}`}>{offer.name}</button>
-            ))}
-            {inactiveOffers.length > 0 && (
-              <div className="relative group">
-                <select value={inactiveOffers.some(o => o.name === activeTab) ? activeTab : "archives"} onChange={(e) => setActiveTab(e.target.value)} className={`appearance-none pl-10 pr-8 py-2.5 rounded-xl text-sm font-bold border cursor-pointer outline-none ${inactiveOffers.some(o => o.name === activeTab) ? 'bg-slate-700 border-slate-600 text-white' : 'bg-slate-800/30 border-transparent text-slate-500 hover:text-slate-300'}`}>
-                  <option value="archives" disabled hidden>Archives ({inactiveOffers.length})</option>
-                  {inactiveOffers.map(o => <option key={o.id} value={o.name} className="bg-slate-900">📦 {o.name}</option>)}
-                </select>
-                <Archive className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${inactiveOffers.some(o => o.name === activeTab) ? 'text-white' : 'text-slate-500'}`} />
-              </div>
-            )}
-          </div>
-
-
+        <div className="flex gap-1 p-1 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] rounded-full w-fit mb-4">
+          <button onClick={() => setActiveTab('global')} className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'global' ? 'bg-emerald-500 text-black' : 'text-white/40 hover:text-white'}`}>Global</button>
+          {activeOffers.map((offer) => (
+            <button key={offer.id} onClick={() => setActiveTab(offer.name)} className={`px-8 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${activeTab === offer.name ? 'bg-emerald-500 text-black' : 'text-white/40 hover:text-white'}`}>{offer.name}</button>
+          ))}
+          {inactiveOffers.length > 0 && (
+            <div className="relative group">
+              <select value={inactiveOffers.some(o => o.name === activeTab) ? activeTab : "archives"} onChange={(e) => setActiveTab(e.target.value)} className={`appearance-none pl-10 pr-8 py-2 rounded-full text-sm font-bold border-none cursor-pointer outline-none bg-transparent ${inactiveOffers.some(o => o.name === activeTab) ? 'text-white' : 'text-white/40 hover:text-white'}`}>
+                <option value="archives" disabled hidden>Archives ({inactiveOffers.length})</option>
+                {inactiveOffers.map(o => <option key={o.id} value={o.name} className="bg-[#1a1a1a]">📦 {o.name}</option>)}
+              </select>
+              <Archive className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${inactiveOffers.some(o => o.name === activeTab) ? 'text-white' : 'text-white/40'}`} />
+            </div>
+          )}
         </div>
 
         {/* CARDS KPI */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <KpiCard title="CA Généré" value={`${formatCurrency(finalRevenue)} €`} icon={DollarSign} color="emerald" trend="+12%" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+          <KpiCard title="CA Généré" value={`${formatCurrency(finalRevenue)} €`} icon={DollarSign} color="emerald" glow />
           <KpiCard title="Ventes Totales" value={finalSales.toString()} icon={ShoppingCart} color="blue" />
           <KpiCard title="Taux de Conversion" value={`${formatPercent(finalConversion)} %`} icon={Target} color="purple" />
           <KpiCard title="Mes Commissions" value={`${formatCurrency(finalCommissions)} €`} icon={Award} color="amber" glow />
@@ -658,20 +655,20 @@ export function KPIPage() {
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl">
               <button
                 onClick={showUpgrade}
-                className="flex items-center gap-2.5 px-8 py-4 rounded-xl bg-blue-600 text-white font-bold text-base shadow-2xl shadow-blue-600/30 hover:bg-blue-500 hover:shadow-blue-600/40 active:scale-[0.98] transition-all border border-blue-500/50"
+                className="flex items-center gap-2.5 px-8 py-4 rounded-full bg-emerald-500 text-black font-bold text-base shadow-2xl shadow-emerald-500/20 hover:bg-emerald-400 active:scale-[0.98] transition-all"
               >
                 <Lock className="w-5 h-5" />
                 Débloquer
               </button>
             </div>
           )}
-          <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${!hasFullAccess ? 'blur-md select-none pointer-events-none' : ''}`}>
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 ${!hasFullAccess ? 'blur-md select-none pointer-events-none' : ''}`}>
 
-          <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
-            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-              <Target className="w-5 h-5 text-purple-400" />
-              Historique Taux de Closing
-            </h3>
+          <div className="rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-lg font-bold text-white">Historique Taux de Closing</h3>
+              <span className="text-xs font-medium text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full">Moyenne {chartData.length > 0 ? (chartData.reduce((s, d) => s + d.closingRate, 0) / chartData.length).toFixed(1) : '0'}%</span>
+            </div>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
@@ -681,24 +678,24 @@ export function KPIPage() {
                       <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} unit="%" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} unit="%" />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#fff' }}
                     itemStyle={{ color: '#a855f7' }}
                   />
-                  <Area type="monotone" dataKey="closingRate" stroke="#a855f7" strokeWidth={3} fillOpacity={1} fill="url(#colorClosing)" />
+                  <Area type="monotone" dataKey="closingRate" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorClosing)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="bg-slate-900/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
-            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-              <Award className="w-5 h-5 text-emerald-400" />
-              Historique Commissions
-            </h3>
+          <div className="rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-lg font-bold text-white">Historique Commissions</h3>
+              <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full">Performance</span>
+            </div>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
@@ -708,15 +705,15 @@ export function KPIPage() {
                       <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#fff' }}
                     itemStyle={{ color: '#10b981' }}
                     formatter={(value: number) => [`${value} €`, 'Commission']}
                   />
-                  <Area type="monotone" dataKey="commission" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorCommissions)" />
+                  <Area type="monotone" dataKey="commission" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorCommissions)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -726,11 +723,13 @@ export function KPIPage() {
         </div>
 
         {/* SUMMARY */}
-        <div className="bg-slate-900/50 rounded-2xl p-8 border border-white/5 backdrop-blur-sm">
-          <h2 className="text-xl font-bold text-white mb-8 flex items-center gap-3"><Briefcase className="w-5 h-5 text-indigo-400" />Vue d'ensemble Pipeline</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <SummaryItem label="Total Leads Traités" value={finalLeads} icon={Users} color="indigo" />
-            <SummaryItem label="Deals en Cours" value={finalActiveCount} icon={Briefcase} color="cyan" />
+        <div className="rounded-2xl bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden">
+          <div className="bg-white/5 px-8 py-4 border-b border-white/5">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-white/60">Vue d'ensemble Pipeline</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/5">
+            <SummaryItem label="Total Leads Traités" value={finalLeads} icon={Users} color="blue" />
+            <SummaryItem label="Deals en Cours" value={finalActiveCount} icon={Briefcase} color="emerald" />
             <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="amber" />
           </div>
         </div>
@@ -739,7 +738,7 @@ export function KPIPage() {
         {showConfigModal && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowConfigModal(false)} />
-            <div className="relative w-full max-w-xl mx-4 bg-slate-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+            <div className="relative w-full max-w-xl mx-4 bg-[#1a1a1a] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
 
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/5">
@@ -749,7 +748,7 @@ export function KPIPage() {
                   </div>
                   <h2 className="text-xl font-bold text-white">Configurer mes KPI</h2>
                 </div>
-                <button onClick={() => setShowConfigModal(false)} className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                <button onClick={() => setShowConfigModal(false)} className="p-2 rounded-lg text-white/40 hover:bg-white/5 hover:text-white transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -761,7 +760,7 @@ export function KPIPage() {
               </div>
 
               {/* Recommendation */}
-              <p className="mx-6 mt-3 text-xs text-slate-500 italic">💡 Il est recommandé de commencer par remplir les offres avant l'onglet Global.</p>
+              <p className="mx-6 mt-3 text-xs text-white/40 italic">💡 Il est recommandé de commencer par remplir les offres avant l'onglet Global.</p>
 
               {/* Tabs */}
               <div className="flex items-center gap-2 px-6 mt-4 overflow-x-auto pb-2 scrollbar-hide">
@@ -769,14 +768,14 @@ export function KPIPage() {
                   <button
                     key={offer.id}
                     onClick={() => setConfigTab(String(offer.id))}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${configTab === String(offer.id) ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-500/50 text-white shadow-lg' : 'bg-slate-800/50 border-transparent text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${configTab === String(offer.id) ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-500/50 text-white shadow-lg' : 'bg-white/[0.03] border-transparent text-white/40 hover:bg-white/5 hover:text-white'}`}
                   >
                     {offer.name}
                   </button>
                 ))}
                 <button
                   onClick={() => setConfigTab('global')}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${configTab === 'global' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-500/50 text-white shadow-lg' : 'bg-slate-800/50 border-transparent text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${configTab === 'global' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-500/50 text-white shadow-lg' : 'bg-white/[0.03] border-transparent text-white/40 hover:bg-white/5 hover:text-white'}`}
                 >
                   Global
                 </button>
@@ -785,7 +784,7 @@ export function KPIPage() {
               {/* Form */}
               <div className="p-6 space-y-4 max-h-[50vh] overflow-y-auto">
                 {configTab === 'global' && (
-                  <p className="text-xs text-slate-400 bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700/50">
+                  <p className="text-xs text-white/40 bg-white/[0.03] rounded-lg px-3 py-2 border border-white/[0.08]">
                     📌 Saisissez les chiffres <span className="font-semibold text-white">hors offres déjà inscrites</span> ci-dessus.
                   </p>
                 )}
@@ -801,7 +800,7 @@ export function KPIPage() {
                   ];
                   return fields.map(f => (
                     <div key={f.key}>
-                      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                      <label className="flex items-center gap-2 text-sm font-medium text-white/60 mb-1.5">
                         <span>{f.icon}</span> {f.label}
                       </label>
                       <input
@@ -809,7 +808,7 @@ export function KPIPage() {
                         min={0}
                         value={config[f.key] as number}
                         onChange={(e) => updateConfigField(configTab, f.key, parseInt(e.target.value) || 0)}
-                        className={`w-full rounded-lg border bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none ${f.color}`}
+                        className={`w-full rounded-lg border bg-white/5 px-4 py-2.5 text-sm text-white focus:outline-none ${f.color}`}
                       />
                     </div>
                   ));
@@ -821,16 +820,16 @@ export function KPIPage() {
                   return (
                     <div className="mt-4 space-y-4">
                       {/* Mode switch */}
-                      <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-800/60 border border-white/5">
+                      <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/5">
                         <button
                           onClick={() => updateConfigField(configTab, 'mode', 'formulas')}
-                          className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ${cfgMode === 'formulas' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                          className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ${cfgMode === 'formulas' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
                         >
                           📊 Calcul auto (formules)
                         </button>
                         <button
                           onClick={() => updateConfigField(configTab, 'mode', 'manual')}
-                          className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ${cfgMode === 'manual' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                          className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ${cfgMode === 'manual' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
                         >
                           ✍️ Saisie manuelle
                         </button>
@@ -838,7 +837,7 @@ export function KPIPage() {
 
                       {/* Formula mode */}
                       {cfgMode === 'formulas' && (
-                        <div className="rounded-xl border border-white/10 bg-slate-800/30 p-4 space-y-3">
+                        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
                           <div className="flex items-center justify-between">
                             <h4 className="text-sm font-bold text-white">📋 Formules</h4>
                             <button
@@ -850,13 +849,13 @@ export function KPIPage() {
                           </div>
 
                           {getConfigForKey(configTab).formulas.length === 0 && (
-                            <p className="text-xs text-slate-500 italic">Aucune formule. Cliquez sur "Ajouter" pour en créer une.</p>
+                            <p className="text-xs text-white/40 italic">Aucune formule. Cliquez sur "Ajouter" pour en créer une.</p>
                           )}
 
                           {getConfigForKey(configTab).formulas.map((formula, idx) => (
-                            <div key={idx} className="rounded-lg border border-white/5 bg-slate-900/50 p-3 space-y-2">
+                            <div key={idx} className="rounded-lg border border-white/5 bg-white/[0.03] p-3 space-y-2">
                               <div className="flex items-center justify-between">
-                                <span className="text-xs font-semibold text-slate-400">Formule {idx + 1}</span>
+                                <span className="text-xs font-semibold text-white/40">Formule {idx + 1}</span>
                                 <button
                                   onClick={() => removeFormula(configTab, idx)}
                                   className="p-1 rounded text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
@@ -865,45 +864,45 @@ export function KPIPage() {
                                 </button>
                               </div>
                               <div>
-                                <label className="text-xs text-slate-400 mb-1 block">Nom</label>
+                                <label className="text-xs text-white/40 mb-1 block">Nom</label>
                                 <input
                                   type="text"
                                   value={formula.name}
                                   onChange={(e) => updateFormula(configTab, idx, 'name', e.target.value)}
                                   placeholder="Ex: Formule Gold"
-                                  className="w-full rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                                 />
                               </div>
                               <div className="grid grid-cols-3 gap-3">
                                 <div>
-                                  <label className="text-xs text-slate-400 mb-1 block">💰 Prix (€)</label>
+                                  <label className="text-xs text-white/40 mb-1 block">💰 Prix (€)</label>
                                   <input
                                     type="number"
                                     min={0}
                                     value={formula.price}
                                     onChange={(e) => updateFormula(configTab, idx, 'price', parseFloat(e.target.value) || 0)}
-                                    className="w-full rounded-lg border border-amber-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                                    className="w-full rounded-lg border border-amber-500/30 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-slate-400 mb-1 block">🏆 Commission (%)</label>
+                                  <label className="text-xs text-white/40 mb-1 block">🏆 Commission (%)</label>
                                   <input
                                     type="number"
                                     min={0}
                                     max={100}
                                     value={formula.commission}
                                     onChange={(e) => updateFormula(configTab, idx, 'commission', parseFloat(e.target.value) || 0)}
-                                    className="w-full rounded-lg border border-emerald-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                                    className="w-full rounded-lg border border-emerald-500/30 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-slate-400 mb-1 block">📊 Ventes</label>
+                                  <label className="text-xs text-white/40 mb-1 block">📊 Ventes</label>
                                   <input
                                     type="number"
                                     min={0}
                                     value={formula.sales || 0}
                                     onChange={(e) => updateFormula(configTab, idx, 'sales', parseInt(e.target.value) || 0)}
-                                    className="w-full rounded-lg border border-blue-500/30 bg-slate-800 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full rounded-lg border border-blue-500/30 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                                   />
                                 </div>
                               </div>
@@ -920,10 +919,10 @@ export function KPIPage() {
 
                       {/* Manual mode */}
                       {cfgMode === 'manual' && (
-                        <div className="rounded-xl border border-white/10 bg-slate-800/30 p-4 space-y-3">
+                        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
                           <h4 className="text-sm font-bold text-white">💶 Revenus initiaux</h4>
                           <div>
-                            <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                            <label className="flex items-center gap-2 text-sm font-medium text-white/60 mb-1.5">
                               <span>💰</span> CA Généré (€)
                             </label>
                             <input
@@ -931,11 +930,11 @@ export function KPIPage() {
                               min={0}
                               value={getConfigForKey(configTab).total_revenue}
                               onChange={(e) => updateConfigField(configTab, 'total_revenue', parseFloat(e.target.value) || 0)}
-                              className="w-full rounded-lg border border-emerald-500/30 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                              className="w-full rounded-lg border border-emerald-500/30 bg-white/5 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
                             />
                           </div>
                           <div>
-                            <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                            <label className="flex items-center gap-2 text-sm font-medium text-white/60 mb-1.5">
                               <span>🏆</span> Commission touchée (€)
                             </label>
                             <input
@@ -943,7 +942,7 @@ export function KPIPage() {
                               min={0}
                               value={getConfigForKey(configTab).total_commission}
                               onChange={(e) => updateConfigField(configTab, 'total_commission', parseFloat(e.target.value) || 0)}
-                              className="w-full rounded-lg border border-amber-500/30 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                              className="w-full rounded-lg border border-amber-500/30 bg-white/5 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
                             />
                           </div>
                         </div>
@@ -954,10 +953,10 @@ export function KPIPage() {
 
                 {/* GLOBAL TAB: Commission & CA */}
                 {configTab === 'global' && (
-                  <div className="mt-4 rounded-xl border border-white/10 bg-slate-800/30 p-4 space-y-3">
+                  <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
                     <h4 className="text-sm font-bold text-white">💶 Revenus initiaux</h4>
                     <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                      <label className="flex items-center gap-2 text-sm font-medium text-white/60 mb-1.5">
                         <span>💰</span> CA Généré (€)
                       </label>
                       <input
@@ -965,11 +964,11 @@ export function KPIPage() {
                         min={0}
                         value={getConfigForKey('global').total_revenue}
                         onChange={(e) => updateConfigField('global', 'total_revenue', parseFloat(e.target.value) || 0)}
-                        className="w-full rounded-lg border border-emerald-500/30 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                        className="w-full rounded-lg border border-emerald-500/30 bg-white/5 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
                       />
                     </div>
                     <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-1.5">
+                      <label className="flex items-center gap-2 text-sm font-medium text-white/60 mb-1.5">
                         <span>🏆</span> Commission touchée (€)
                       </label>
                       <input
@@ -977,7 +976,7 @@ export function KPIPage() {
                         min={0}
                         value={getConfigForKey('global').total_commission}
                         onChange={(e) => updateConfigField('global', 'total_commission', parseFloat(e.target.value) || 0)}
-                        className="w-full rounded-lg border border-amber-500/30 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                        className="w-full rounded-lg border border-amber-500/30 bg-white/5 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
                       />
                     </div>
                   </div>
@@ -986,7 +985,7 @@ export function KPIPage() {
 
               {/* Footer */}
               <div className="flex items-center justify-end gap-3 px-6 pb-6">
-                <button onClick={() => setShowConfigModal(false)} className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white transition-colors">
+                <button onClick={() => setShowConfigModal(false)} className="px-4 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:text-white transition-colors">
                   Annuler
                 </button>
                 <button
@@ -1008,31 +1007,33 @@ export function KPIPage() {
 }
 
 const KpiCard = ({ title, value, icon: Icon, color, glow }: any) => {
-  const colors: any = {
-    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    blue: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-    purple: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
-    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    rose: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
-    slate: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
+  const textColors: any = {
+    emerald: 'text-emerald-500',
+    blue: 'text-blue-400',
+    purple: 'text-purple-400',
+    amber: 'text-amber-400',
+    rose: 'text-rose-500',
+    slate: 'text-white/40',
+  };
+  const glowStyles: any = {
+    emerald: 'shadow-[0_0_20px_rgba(16,185,129,0.1)]',
+    amber: 'shadow-[0_0_25px_rgba(245,158,11,0.15)] bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/20',
   };
   return (
-    <div className={`relative p-6 rounded-2xl bg-slate-800/40 border border-white/5 backdrop-blur-md transition-all hover:bg-slate-800/60 group ${glow ? 'shadow-lg shadow-amber-500/10 border-amber-500/30' : ''}`}>
-      <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 rounded-xl ${colors[color] || colors.slate} group-hover:scale-110 transition-transform duration-300`}><Icon className="w-6 h-6" /></div>
-      </div>
-      <h3 className="text-slate-400 text-sm font-medium mb-1">{title}</h3>
-      <p className="text-3xl font-bold text-white tracking-tight">{value}</p>
+    <div className={`relative p-8 rounded-2xl bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] transition-all hover:bg-white/5 group ${glow ? glowStyles[color] || '' : ''}`}>
+      {glow && color === 'amber' && <div className="absolute -right-4 -top-4 h-24 w-24 bg-amber-500/10 blur-3xl group-hover:bg-amber-500/20 transition-all" />}
+      <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">{title}</p>
+      <h3 className={`text-3xl font-extrabold tracking-tight ${glow ? textColors[color] : 'text-white'}`}>{value}</h3>
     </div>
   );
 };
 
 const SummaryItem = ({ label, value, icon: Icon, color }: any) => {
-  const colors: any = { indigo: 'text-indigo-400 bg-indigo-500/10', cyan: 'text-cyan-400 bg-cyan-500/10', amber: 'text-amber-400 bg-amber-500/10' };
+  const colors: any = { blue: 'text-blue-400 bg-blue-500/10', emerald: 'text-emerald-400 bg-emerald-500/10', amber: 'text-amber-400 bg-amber-500/10' };
   return (
-    <div className="flex items-center gap-5 p-4 rounded-xl hover:bg-white/5 transition-colors">
-      <div className={`p-4 rounded-2xl ${colors[color]}`}><Icon className="w-8 h-8" /></div>
-      <div><p className="text-slate-400 text-sm font-medium mb-1">{label}</p><p className="text-2xl font-bold text-white">{value}</p></div>
+    <div className="p-8 flex items-center gap-6">
+      <div className={`h-12 w-12 rounded-full flex items-center justify-center ${colors[color] || colors.blue}`}><Icon className="w-6 h-6" /></div>
+      <div><p className="text-xs text-white/40 font-medium uppercase tracking-widest">{label}</p><p className="text-2xl font-bold text-white">{value}</p></div>
     </div>
   );
 };

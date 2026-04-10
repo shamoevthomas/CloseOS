@@ -173,25 +173,25 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity"
         onClick={handleClose}
       />
 
       {/* Modal - Structure Flexbox Stricte */}
       <div className="relative w-full max-w-2xl mx-4">
-        <div className="flex flex-col rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-slate-800 max-h-[90vh]">
+        <div className="flex flex-col rounded-2xl bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] border border-white/[0.08] max-h-[90vh]">
           {/* Header - Ne s'écrase jamais */}
-          <div className="flex-shrink-0 border-b border-slate-800 px-6 py-5">
+          <div className="flex-shrink-0 border-b border-white/[0.08] px-6 py-5">
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Résumé de l'appel</h2>
-                <p className="mt-1 text-sm text-slate-400">
+                <p className="mt-1 text-sm text-white/40">
                   Qualifiez votre appel avec <span className="font-semibold text-white">{prospectName}</span>
                 </p>
               </div>
               <button
                 onClick={handleClose}
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                className="rounded-lg p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -218,30 +218,30 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                         'group relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all',
                         isSelected
                           ? `${outcome.bgColor} ${outcome.borderColor} shadow-lg`
-                          : 'border-slate-800 bg-slate-800/30 hover:border-slate-700 hover:bg-slate-800/50'
+                          : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.15] hover:bg-white/[0.05]'
                       )}
                     >
                       <div className={cn(
                         'flex h-12 w-12 items-center justify-center rounded-full transition-all',
                         isSelected
                           ? outcome.bgColor
-                          : 'bg-slate-700/50 group-hover:bg-slate-700'
+                          : 'bg-white/5 group-hover:bg-white/10'
                       )}>
                         <Icon className={cn(
                           'h-6 w-6 transition-colors',
                           isSelected
                             ? outcome.textColor
-                            : 'text-slate-400 group-hover:text-slate-300'
+                            : 'text-white/40 group-hover:text-white/60'
                         )} />
                       </div>
                       <div className="text-center">
                         <p className={cn(
                           'text-sm font-semibold transition-colors',
-                          isSelected ? outcome.textColor : 'text-slate-300 group-hover:text-white'
+                          isSelected ? outcome.textColor : 'text-white/60 group-hover:text-white'
                         )}>
                           {outcome.label}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-white/40">
                           {outcome.description}
                         </p>
                       </div>
@@ -272,7 +272,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                   <label className="mb-2 block text-sm font-medium text-white">
                     Prix de l'offre
                   </label>
-                  <div className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-sm text-slate-400">
+                  <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/40">
                     {offerPrice.toFixed(2)} €
                   </div>
                 </div>
@@ -285,7 +285,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                   <select
                     value={paymentType}
                     onChange={(e) => setPaymentType(e.target.value as 'comptant' | 'installments')}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                   >
                     <option value="comptant">Comptant</option>
                     <option value="installments">En plusieurs fois</option>
@@ -307,7 +307,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                           max="12"
                           value={installmentsCount}
                           onChange={(e) => setInstallmentsCount(parseInt(e.target.value) || 2)}
-                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                         />
                       </div>
 
@@ -319,7 +319,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                         <select
                           value={installmentsFrequency}
                           onChange={(e) => setInstallmentsFrequency(e.target.value as 'mensuel' | 'trimestriel')}
-                          className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                         >
                           <option value="mensuel">Mensuel</option>
                           <option value="trimestriel">Trimestriel</option>
@@ -354,7 +354,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                       step="0.5"
                       value={commissionRate}
                       onChange={(e) => setCommissionRate(parseFloat(e.target.value) || 0)}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                       placeholder="Ex: 10"
                     />
                   </div>
@@ -370,7 +370,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                             onChange={(e) => setCommissionSpread(e.target.checked)}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                          <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                         </div>
                         <span className="text-sm font-medium text-white">
                           Commission étalée sur les échéances
@@ -416,7 +416,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                         setFollowupReasonOther('')
                       }
                     }}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
                   >
                     <option value="">Sélectionnez un motif</option>
                     {followupReasons.map((reason) => (
@@ -437,7 +437,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                         value={followupReasonOther}
                         onChange={(e) => setFollowupReasonOther(e.target.value)}
                         placeholder="Ex: Indisponibilité exceptionnelle..."
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
                       />
                     </div>
                   )}
@@ -453,7 +453,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                     type="datetime-local"
                     value={followupDate}
                     onChange={(e) => setFollowupDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
                   />
                 </div>
               </div>
@@ -469,21 +469,21 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Résumez les points clés de votre conversation, les objections, les prochaines étapes..."
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all resize-none"
                 rows={6}
               />
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-white/40">
                 Ces notes seront ajoutées à la fiche prospect
               </p>
             </div>
           </div>
 
           {/* Footer - Toujours visible en bas */}
-          <div className="flex-shrink-0 border-t border-slate-800 px-6 py-4 bg-slate-950/50">
+          <div className="flex-shrink-0 border-t border-white/[0.08] px-6 py-4 bg-black/20">
             <div className="flex items-center justify-between gap-3">
               <button
                 onClick={handleClose}
-                className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-700"
+                className="rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10"
               >
                 Annuler
               </button>
@@ -491,10 +491,10 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                 onClick={handleSubmit}
                 disabled={!isFormValid()}
                 className={cn(
-                  'rounded-lg px-6 py-2.5 text-sm font-semibold text-white transition-all',
+                  'rounded-full px-6 py-2.5 text-sm font-semibold transition-all',
                   isFormValid()
-                    ? 'bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30'
-                    : 'bg-slate-700 cursor-not-allowed opacity-50'
+                    ? 'bg-emerald-500 text-black hover:bg-emerald-400 shadow-lg shadow-emerald-500/20'
+                    : 'bg-white/5 text-white/40 cursor-not-allowed opacity-50'
                 )}
               >
                 Valider et enregistrer

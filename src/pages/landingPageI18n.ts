@@ -99,6 +99,10 @@ export interface SalesTranslations {
   roadmap_q4_title: string
   roadmap_q4_desc: string
 
+  // Testimonials
+  testimonials_title: string
+  testimonials_subtitle: string
+
   // Comparison
   comp_title: string
   comp_subtitle: string
@@ -251,7 +255,7 @@ const fr: SalesTranslations = {
   hero_whatsapp: "Rejoindre la communauté WhatsApp",
   hero_no_card: "\u{1F512} Aucune carte bancaire requise. 10 jours pour tester sans engagement.",
   hero_social_proof: "Produit validé par",
-  hero_social_proof_count: "+150 closers",
+  hero_social_proof_count: "+270 closers",
 
   // Integrations
   integrations_title: "Synchronisation native avec vos outils préférés",
@@ -292,7 +296,7 @@ const fr: SalesTranslations = {
   // Roadmap
   roadmap_badge: "Roadmap 2026",
   roadmap_title: "L'Évolution du Closing",
-  roadmap_subtitle: "Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers, agences et infopreneurs.",
+  roadmap_subtitle: "Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers et infopreneurs.",
   roadmap_q1_title: "Lancement CloseOS Sales",
   roadmap_q1_desc: "CRM, Pipeline, VoIP, KPIs...",
   roadmap_q2_title: "CloseOS Business",
@@ -303,6 +307,10 @@ const fr: SalesTranslations = {
   roadmap_q3_desc: "iOS & Android",
   roadmap_q4_title: "Messagerie Interne",
   roadmap_q4_desc: "Chat équipe intégré",
+
+  // Testimonials
+  testimonials_title: "Ce qu'en disent nos utilisateurs",
+  testimonials_subtitle: "Des closers et infopreneurs qui ont transformé leur quotidien",
 
   // Comparison
   comp_title: "Closer sans CloseOS vs avec CloseOS",
@@ -456,7 +464,7 @@ const en: SalesTranslations = {
   hero_whatsapp: "Join the WhatsApp community",
   hero_no_card: "\u{1F512} No credit card required. 10 days to try with no commitment.",
   hero_social_proof: "Trusted by",
-  hero_social_proof_count: "150+ closers",
+  hero_social_proof_count: "270+ closers",
 
   // Integrations
   integrations_title: "Native sync with your favorite tools",
@@ -508,6 +516,10 @@ const en: SalesTranslations = {
   roadmap_q3_desc: "iOS & Android",
   roadmap_q4_title: "Internal Messaging",
   roadmap_q4_desc: "Built-in team chat",
+
+  // Testimonials
+  testimonials_title: "What our users say",
+  testimonials_subtitle: "Closers and infopreneurs who transformed their daily workflow",
 
   // Comparison
   comp_title: "Closing without CloseOS vs with CloseOS",
