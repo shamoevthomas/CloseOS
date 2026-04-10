@@ -1610,7 +1610,7 @@ const pricingPlans = [
     priceAnnual: '71',
     annualTotal: '852',
     popular: true,
-    description: '3 équipiers inclus — l\'arsenal complet',
+    description: '5 équipiers inclus — l\'arsenal complet',
     features: [
       'Tout ce que Business a',
       'Système d\'acquisition complet en plus :',
