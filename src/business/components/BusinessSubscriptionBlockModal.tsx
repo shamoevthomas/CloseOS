@@ -21,19 +21,19 @@ export function BusinessSubscriptionBlockModal({ deadline }: Props) {
           className="text-2xl font-extrabold text-stone-900 tracking-tight mb-3"
           style={{ fontFamily: 'Manrope, sans-serif' }}
         >
-          {t.block_access_blocked}
+          {t.block_access_blocked || 'Accès bloqué'}
         </h2>
 
         <p className="text-stone-500 mb-4 leading-relaxed">
-          {t.block_renewal_failed}
+          {t.block_renewal_failed || 'Le renouvellement de votre abonnement a échoué. Veuillez mettre à jour votre moyen de paiement pour continuer à utiliser CloseOS Business.'}
         </p>
 
         <div className="rounded-xl bg-red-50 p-4 mb-6 flex items-center gap-3">
           <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
           <p className="text-sm text-red-700 font-semibold text-left">
             {daysLeft > 0
-              ? `${t.block_days_left_prefix} ${daysLeft} ${t.block_days_left_day}${daysLeft > 1 && lang === 'fr' ? 's' : daysLeft > 1 ? 's' : ''} ${t.block_days_left_suffix}`
-              : t.block_deletion_in_progress}
+              ? `${t.block_days_left_prefix || 'Suppression du compte dans'} ${daysLeft} ${t.block_days_left_day || 'jour'}${daysLeft > 1 ? 's' : ''} ${t.block_days_left_suffix || 'si le paiement n\'est pas régularisé.'}`
+              : (t.block_deletion_in_progress || 'La suppression de votre compte est en cours.')}
           </p>
         </div>
 
@@ -42,11 +42,11 @@ export function BusinessSubscriptionBlockModal({ deadline }: Props) {
           className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-4 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-95"
           style={{ fontFamily: 'Manrope, sans-serif' }}
         >
-          {t.block_update_payment}
+          {t.block_update_payment || 'Mettre à jour le paiement'}
         </Link>
 
         <p className="mt-4 text-xs text-stone-400">
-          {t.block_need_help}{' '}
+          {t.block_need_help || 'Besoin d\'aide ?'}{' '}
           <a href="mailto:support@closeos.fr" className="text-stone-600 hover:underline">
             support@closeos.fr
           </a>
