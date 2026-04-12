@@ -1635,6 +1635,14 @@ export interface BusinessTranslations {
   paywall_desc: string;
   paywall_upgrade: string;
   paywall_feature_locked: string;
+  block_access_blocked: string;
+  block_renewal_failed: string;
+  block_days_left_prefix: string;
+  block_days_left_day: string;
+  block_days_left_suffix: string;
+  block_deletion_in_progress: string;
+  block_update_payment: string;
+  block_need_help: string;
 
   // ─── Checkout ───
   checkout_title: string;
@@ -3710,6 +3718,14 @@ export const fr: BusinessTranslations = {
   paywall_desc: 'Cette fonctionnalite est reservee aux formules superieures.',
   paywall_upgrade: 'Passer a la formule superieure',
   paywall_feature_locked: 'Fonctionnalite verrouillee',
+  block_access_blocked: 'Acces bloque',
+  block_renewal_failed: 'Le renouvellement de votre abonnement a echoue. Veuillez mettre a jour votre moyen de paiement pour continuer a utiliser CloseOS Business.',
+  block_days_left_prefix: 'Suppression du compte dans',
+  block_days_left_day: 'jour',
+  block_days_left_suffix: 'si le paiement n\'est pas regularise.',
+  block_deletion_in_progress: 'La suppression de votre compte est en cours.',
+  block_update_payment: 'Mettre a jour le paiement',
+  block_need_help: 'Besoin d\'aide ?',
 
   // ─── Checkout ───
   checkout_title: 'Finaliser votre inscription',
@@ -6478,6 +6494,14 @@ export const en: BusinessTranslations = {
   paywall_desc: 'This feature is reserved for higher plans.',
   paywall_upgrade: 'Upgrade your plan',
   paywall_feature_locked: 'Feature locked',
+  block_access_blocked: 'Access blocked',
+  block_renewal_failed: 'Your subscription renewal failed. Please update your payment method to continue using CloseOS Business.',
+  block_days_left_prefix: 'Account deletion in',
+  block_days_left_day: 'day',
+  block_days_left_suffix: 'if payment is not resolved.',
+  block_deletion_in_progress: 'Your account deletion is in progress.',
+  block_update_payment: 'Update payment',
+  block_need_help: 'Need help?',
 
   // ─── Checkout ───
   checkout_title: 'Complete your registration',
