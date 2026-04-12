@@ -85,7 +85,7 @@ interface Reminder {
 
 // ─── Helpers ───
 
-const formatCurrency = (v: number) =>
+const formatCurrency = (v: number, lang: string = 'fr') =>
   new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 
 const formatCompact = (v: number) => {
@@ -461,7 +461,7 @@ export function BusinessDashboard() {
             </div>
             <div>
               <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Revenue</p>
-              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue)}</p>
+              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalRevenue, lang)}</p>
             </div>
           </Link>
         </KpiTooltip>
@@ -474,7 +474,7 @@ export function BusinessDashboard() {
             </div>
             <div className="mt-2">
               <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Pipeline</p>
-              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalPipeline)}</p>
+              <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(totalPipeline, lang)}</p>
             </div>
           </Link>
         </KpiTooltip>
@@ -642,7 +642,7 @@ export function BusinessDashboard() {
                   <div className="flex justify-between items-end">
                     <span className="font-bold text-neutral-900 dark:text-white text-sm">{obj.label}</span>
                     <span className="text-xs font-black text-neutral-500 dark:text-neutral-400">
-                      {obj.progress.toFixed(0)}% ({obj.metric === 'revenue' ? formatCurrency(obj.current) : obj.current.toFixed(obj.metric.includes('rate') ? 1 : 0)} / {obj.metric === 'revenue' ? formatCurrency(obj.target_value) : obj.target_value})
+                      {obj.progress.toFixed(0)}% ({obj.metric === 'revenue' ? formatCurrency(obj.current, lang) : obj.current.toFixed(obj.metric.includes('rate') ? 1 : 0)} / {obj.metric === 'revenue' ? formatCurrency(obj.target_value, lang) : obj.target_value})
                     </span>
                   </div>
                   <div className="w-full bg-neutral-100 dark:bg-neutral-700 h-2.5 rounded-full overflow-hidden">
@@ -801,7 +801,7 @@ export function BusinessDashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-black text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamCA)}</p>
+                        <p className="text-lg font-black text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamCA, lang)}</p>
                         <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase font-bold tracking-wider">{t.dashboard_revenue_generated}</p>
                       </div>
                     </div>
