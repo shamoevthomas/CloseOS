@@ -1635,6 +1635,10 @@ export interface BusinessTranslations {
   paywall_desc: string;
   paywall_upgrade: string;
   paywall_feature_locked: string;
+  paywall_trial_ended: string;
+  paywall_trial_ended_desc: string;
+  paywall_choose_plan: string;
+  paywall_contact_question: string;
   block_access_blocked: string;
   block_renewal_failed: string;
   block_days_left_prefix: string;
@@ -3718,6 +3722,10 @@ export const fr: BusinessTranslations = {
   paywall_desc: 'Cette fonctionnalite est reservee aux formules superieures.',
   paywall_upgrade: 'Passer a la formule superieure',
   paywall_feature_locked: 'Fonctionnalite verrouillee',
+  paywall_trial_ended: 'Votre période d\'essai est terminée',
+  paywall_trial_ended_desc: 'Votre essai gratuit a expiré. Choisissez une formule pour continuer à utiliser CloseOS Business.',
+  paywall_choose_plan: 'Choisir une formule',
+  paywall_contact_question: 'Une question ?',
   block_access_blocked: 'Acces bloque',
   block_renewal_failed: 'Le renouvellement de votre abonnement a echoue. Veuillez mettre a jour votre moyen de paiement pour continuer a utiliser CloseOS Business.',
   block_days_left_prefix: 'Suppression du compte dans',
@@ -6494,6 +6502,10 @@ export const en: BusinessTranslations = {
   paywall_desc: 'This feature is reserved for higher plans.',
   paywall_upgrade: 'Upgrade your plan',
   paywall_feature_locked: 'Feature locked',
+  paywall_trial_ended: 'Your free trial has ended',
+  paywall_trial_ended_desc: 'Your free trial has expired. Choose a plan to continue using CloseOS Business.',
+  paywall_choose_plan: 'Choose a plan',
+  paywall_contact_question: 'Have a question?',
   block_access_blocked: 'Access blocked',
   block_renewal_failed: 'Your subscription renewal failed. Please update your payment method to continue using CloseOS Business.',
   block_days_left_prefix: 'Account deletion in',
