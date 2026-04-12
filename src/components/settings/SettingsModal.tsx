@@ -677,16 +677,16 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   </div>
 
                   <div className="text-left">
-                    <h3 className="font-bold text-white text-sm">Photo de profil</h3>
+                    <h3 className="font-bold text-white text-sm">{st.profile_photo}</h3>
                     <p className="text-xs text-white/40 mt-0.5">
-                      {uploading ? 'Téléchargement en cours...' : 'Cliquez sur l\'image pour la modifier (JPG, PNG).'}
+                      {uploading ? st.profile_uploading : st.profile_photo_hint}
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-1 col-span-2">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Nom complet</label>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{st.full_name}</label>
                     <input
                       type="text"
                       disabled
@@ -695,12 +695,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                     />
                     <div className="flex items-start gap-2 mt-2 px-1">
                       <AlertCircle className="h-3.5 w-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                      <p className="text-[11px] text-emerald-300/80 leading-relaxed text-left">Le nom est verrouillé pour garantir la stabilité de vos liens.</p>
+                      <p className="text-[11px] text-emerald-300/80 leading-relaxed text-left">{st.profile_name_locked}</p>
                     </div>
                   </div>
 
                   <div className="space-y-1 text-left">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Numéro de téléphone</label>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{st.phone_label}</label>
                     <input
                       type="tel"
                       value={formData.phone}
@@ -711,7 +711,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   </div>
 
                   <div className="space-y-1 text-left">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Spécialité / Rôle</label>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{st.role_label}</label>
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
@@ -772,45 +772,45 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                     <div className="flex items-center gap-4">
                       <Shield className="h-5 w-5 text-emerald-400 shrink-0" />
                       <div>
-                        <p className="font-bold text-white text-sm text-left">Authentification Google active</p>
-                        <p className="text-white/40 text-xs mt-0.5 text-left">Votre compte est sécurisé par Google. La gestion du mot de passe se fait via Google.</p>
+                        <p className="font-bold text-white text-sm text-left">{st.google_auth_active}</p>
+                        <p className="text-white/40 text-xs mt-0.5 text-left">{st.google_auth_desc}</p>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <form onSubmit={handleUpdatePassword} className="space-y-8 text-left">
                     <div className="space-y-1 text-left">
-                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold text-left block">Mot de passe actuel (Requis)</label>
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold text-left block">{st.current_password_required}</label>
                       <input
                         type="password"
                         value={formData.currentPassword}
                         onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
                         className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none text-left"
-                        placeholder="Votre mot de passe actuel"
+                        placeholder={st.current_password_placeholder}
                         required
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-8">
                     <div className="space-y-1 text-left">
-                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold text-left block">Nouveau mot de passe</label>
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold text-left block">{st.new_password}</label>
                       <input
                         type="password"
                         value={formData.newPassword}
                         onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                         className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none text-left"
-                        placeholder="8 caractères minimum"
+                        placeholder={st.new_password_placeholder}
                         minLength={8}
                       />
                     </div>
                     <div className="space-y-1 text-left">
-                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold text-left block">Confirmer le mot de passe</label>
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold text-left block">{st.confirm_password}</label>
                       <input
                         type="password"
                         value={formData.confirmPassword}
                         onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                         className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none text-left"
-                        placeholder="Répétez le mot de passe"
+                        placeholder={st.confirm_password_placeholder}
                         minLength={8}
                       />
                     </div>
@@ -821,7 +821,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       className="w-full bg-white text-black px-8 py-3.5 rounded-full font-bold flex items-center justify-center gap-2 transition-colors hover:bg-white/90 disabled:opacity-50 text-left"
                     >
                       {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Shield className="h-5 w-5" />}
-                      Mettre à jour le mot de passe
+                      {st.update_password_btn}
                     </button>
                   </form>
                 )}
@@ -835,18 +835,18 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 <section className="p-10 border border-red-500/20 bg-red-500/5 rounded-2xl space-y-8 text-left shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                   <div className="flex items-center gap-4 text-red-400 text-left">
                     <AlertCircle className="h-6 w-6 text-left" />
-                    <h3 className="text-2xl font-extrabold text-left">Zone de danger</h3>
+                    <h3 className="text-2xl font-extrabold text-left">{st.danger_zone}</h3>
                   </div>
                   <div className="space-y-4">
                     <p className="text-white/40 leading-relaxed text-left">
-                      La suppression est irréversible. Vous pourrez sélectionner si vous souhaitez supprimer vos données de facturation, contacts internes ou externes avant de valider.
+                      {st.delete_irreversible}
                     </p>
 
                     {formData.deletion_scheduled_at && (
                       <div className="p-4 bg-red-500/20 rounded-xl border border-red-500/30">
-                        <p className="font-bold text-red-200">Compte en cours de suppression</p>
+                        <p className="font-bold text-red-200">{st.delete_in_progress}</p>
                         <p className="text-sm text-red-300 mt-1">
-                          Prévue le : {new Date(formData.deletion_scheduled_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          {st.delete_scheduled_on} : {new Date(formData.deletion_scheduled_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                         </p>
                       </div>
                     )}
@@ -858,7 +858,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       disabled={loading}
                       className="flex items-center justify-center w-full gap-3 px-6 py-4 bg-white/[0.03] hover:bg-white/10 text-white rounded-full font-bold transition-all border border-white/[0.08]"
                     >
-                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : "Annuler la demande de suppression"}
+                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : st.cancel_delete_request}
                     </button>
                   ) : (
                     <button
@@ -866,7 +866,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       className="flex items-center justify-center w-full gap-3 px-8 py-3.5 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-full font-bold transition-all border border-red-600/20 text-left"
                     >
                       <Trash2 className="h-5 w-5 text-left" />
-                      Supprimer mon compte et mes données
+                      {st.delete_my_account}
                     </button>
                   )}
                 </section>
@@ -891,19 +891,19 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   <div className="relative z-10 text-left">
                     <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4 ${cancelAtPeriodEnd ? 'bg-orange-500/20 border border-orange-500/30 text-orange-300' : isPaying ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300' : 'bg-white/5 border border-white/[0.08] text-white/60'}`}>
                       <span className={`w-2 h-2 rounded-full ${cancelAtPeriodEnd ? 'bg-orange-400 animate-pulse' : isPaying ? 'bg-emerald-400 animate-pulse' : 'bg-white/40'}`}></span>
-                      {cancelAtPeriodEnd ? 'Annulation programmée' : isPaying ? 'Plan Actif' : 'Aucun abonnement'}
+                      {cancelAtPeriodEnd ? st.cancel_scheduled_label : isPaying ? st.plan_active : st.no_subscription_label}
                     </span>
                     <h3 className="text-3xl font-bold text-white mb-1">
-                      {isFounder ? 'Pack Pro' : 'Aucun plan'}
+                      {isFounder ? st.pack_pro : st.no_plan}
                     </h3>
                     {profile?.billing_cycle && (
                       <p className="text-white/40 text-sm mb-1">
-                        Facturation {profile.billing_cycle === 'yearly' ? 'annuelle' : 'mensuelle'}
+                        {st.billing_label} {profile.billing_cycle === 'yearly' ? st.billing_yearly : st.billing_monthly}
                       </p>
                     )}
                     {profile?.current_period_end && (
                       <p className="text-white/40 text-xs">
-                        Prochaine échéance : {new Date(profile.current_period_end).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        {st.next_billing} : {new Date(profile.current_period_end).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </p>
                     )}
                   </div>
@@ -918,10 +918,10 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       <div>
                         <p className="text-white font-bold text-sm">
                           {currentPeriodEnd
-                            ? `Votre abonnement prend fin le ${new Date(currentPeriodEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
-                            : 'Votre abonnement est en cours d\'annulation'}
+                            ? `${st.sub_ends_on} ${new Date(currentPeriodEnd).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                            : st.sub_cancelling}
                         </p>
-                        <p className="text-white/40 text-xs mt-1">Après cette date, vous perdrez l'accès à toutes les fonctionnalités.</p>
+                        <p className="text-white/40 text-xs mt-1">{st.sub_after_date}</p>
                       </div>
                     </div>
                     <button
@@ -929,7 +929,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       className="w-full px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-bold transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
                     >
                       <Heart className="h-4 w-4" />
-                      J'ai changé d'avis
+                      {st.changed_mind}
                     </button>
                   </div>
                 )}
@@ -941,12 +941,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                     className="w-full px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-full font-bold transition-all border border-red-600/20 flex items-center justify-center gap-2"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Annuler mon abonnement
+                    {st.cancel_my_sub}
                   </button>
                 )}
 
                 <p className="text-center text-[11px] text-white/40">
-                  Paiement sécurisé par Stripe. Annulation possible à tout moment.
+                  {st.stripe_secure}
                 </p>
               </div>
             )}
@@ -957,7 +957,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 {!isPaying && (
                   <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-[#111111]/60 backdrop-blur-md border border-white/[0.08]">
                     <p className="text-white font-bold text-lg text-center px-6">
-                      Accessible à la fin de votre période d'essai
+                      {st.referral_trial_lock}
                     </p>
                   </div>
                 )}
@@ -967,18 +967,18 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 <div className="p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                   <h3 className="text-white font-bold text-base mb-3 flex items-center gap-2">
                     <Gift className="h-5 w-5 text-emerald-400" />
-                    Comment ça marche ?
+                    {st.referral_how}
                   </h3>
                   <div className="space-y-2 text-sm text-white/60">
-                    <p><strong className="text-white">Pour vous :</strong> -7€/mois pendant 2 mois par filleul (mensuel) ou 1 mois offert (annuel). Cumulable, plancher 18€/mois.</p>
-                    <p><strong className="text-white">Pour votre filleul (mensuel) :</strong> -10€/mois pendant 2 mois (24€/mois au lieu de 34€).</p>
-                    <p><strong className="text-white">Pour votre filleul (annuel) :</strong> -30% sur l'abonnement annuel (285€ au lieu de 408€, soit 23,75€/mois toute l'année).</p>
+                    <p><strong className="text-white">{st.referral_you}</strong> {st.referral_you_desc}</p>
+                    <p><strong className="text-white">{st.referral_them_monthly}</strong> {st.referral_them_monthly_desc}</p>
+                    <p><strong className="text-white">{st.referral_them_yearly}</strong> {st.referral_them_yearly_desc}</p>
                   </div>
                 </div>
 
                 {/* Code de parrainage */}
                 <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Votre code de parrainage</p>
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">{st.referral_your_code}</p>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 bg-[#111111] border border-white/[0.08] rounded-lg px-4 py-3 text-white font-mono text-lg font-bold tracking-widest">
                       {profile?.own_referral_code || '...'}
@@ -992,14 +992,14 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       className="px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all flex items-center gap-2 text-sm font-bold"
                     >
                       {codeCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-                      {codeCopied ? 'Copié' : 'Copier'}
+                      {codeCopied ? st.copied : st.copy}
                     </button>
                   </div>
                 </div>
 
                 {/* Lien de parrainage */}
                 <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Votre lien de parrainage</p>
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">{st.referral_your_link}</p>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 bg-[#111111] border border-white/[0.08] rounded-lg px-4 py-3 text-white/60 text-sm truncate">
                       {`https://closeos.fr?ref=${profile?.own_referral_code || ''}`}
@@ -1013,7 +1013,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       className="px-4 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black transition-all flex items-center gap-2 text-sm font-bold shrink-0"
                     >
                       {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      {linkCopied ? 'Copié' : 'Copier'}
+                      {linkCopied ? st.copied : st.copy}
                     </button>
                   </div>
                 </div>
@@ -1023,17 +1023,17 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] text-center shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                     <Users className="h-6 w-6 text-emerald-400 mx-auto mb-3" />
                     <p className="text-3xl font-black text-white">{referralStats.total}</p>
-                    <p className="text-xs text-white/40 mt-1">Filleuls total</p>
+                    <p className="text-xs text-white/40 mt-1">{st.referral_total_label}</p>
                   </div>
                   <div className="p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 text-center shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                     <Gift className="h-6 w-6 text-emerald-400 mx-auto mb-3" />
                     <p className="text-3xl font-black text-white">{referralStats.active}</p>
-                    <p className="text-xs text-white/40 mt-1">Réductions actives</p>
+                    <p className="text-xs text-white/40 mt-1">{st.referral_active_label}</p>
                   </div>
                 </div>
 
                 <p className="text-xs text-white/40 text-center">
-                  Le filleul peut utiliser votre code lors du paiement, ou simplement s'inscrire via votre lien.
+                  {st.referral_info}
                 </p>
                 </div>
               </div>
@@ -1064,7 +1064,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                           )}
                           <div>
                             <h3 className="text-xl font-bold text-white">{orgData.org_name}</h3>
-                            <p className="text-sm text-white/40">Dirigée par {orgData.owner_name}</p>
+                            <p className="text-sm text-white/40">{st.org_managed_by} {orgData.owner_name}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 flex-wrap">
@@ -1073,7 +1073,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                           </span>
                           {orgData.joined_at && (
                             <span className="text-xs text-white/40">
-                              Membre depuis le {new Date(orgData.joined_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              {st.org_member_since} {new Date(orgData.joined_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </span>
                           )}
                         </div>
@@ -1082,8 +1082,8 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
                     {showLeaveConfirm ? (
                       <div className="p-5 rounded-2xl border border-red-500/20 bg-red-500/5 space-y-4">
-                        <p className="text-white font-bold text-sm">Êtes-vous sûr de vouloir quitter cette organisation ?</p>
-                        <p className="text-white/40 text-xs">Vos prospects assignés resteront dans l'organisation mais vous ne pourrez plus y accéder.</p>
+                        <p className="text-white font-bold text-sm">{st.org_leave_question}</p>
+                        <p className="text-white/40 text-xs">{st.org_leave_warning}</p>
                         <div className="flex gap-3">
                           <button
                             onClick={handleLeaveOrganization}
@@ -1091,13 +1091,13 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                             className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 text-white rounded-full font-bold transition-all flex items-center justify-center gap-2"
                           >
                             {orgLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-                            Confirmer
+                            {st.org_leave_confirm}
                           </button>
                           <button
                             onClick={() => setShowLeaveConfirm(false)}
                             className="flex-1 px-4 py-3 bg-white/[0.03] hover:bg-white/10 text-white/80 rounded-full font-bold transition-all border border-white/[0.08]"
                           >
-                            Annuler
+                            {st.org_leave_cancel}
                           </button>
                         </div>
                       </div>
@@ -1107,14 +1107,14 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                         className="w-full px-6 py-4 bg-red-600/10 hover:bg-red-600 text-red-400 hover:text-white rounded-full font-bold transition-all border border-red-600/20 flex items-center justify-center gap-2"
                       >
                         <LogOut className="h-4 w-4" />
-                        Quitter l'organisation
+                        {st.org_leave}
                       </button>
                     )}
 
                     {/* Rejoindre une organisation supplémentaire */}
                     <div className="mt-8 p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
-                      <h4 className="text-sm font-bold text-white mb-1">Rejoindre une autre organisation</h4>
-                      <p className="text-xs text-white/40 mb-4">Un paiement unique de 10€ est requis par organisation supplémentaire.</p>
+                      <h4 className="text-sm font-bold text-white mb-1">{st.org_join_another}</h4>
+                      <p className="text-xs text-white/40 mb-4">{st.org_join_another_desc}</p>
                       <div className="flex gap-3">
                         <div className="relative flex-1">
                           <Link className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
@@ -1123,7 +1123,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                             value={inviteLink}
                             onChange={(e) => { setInviteLink(e.target.value); setJoinError('') }}
                             className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-sm"
-                            placeholder="Coller le lien d'invitation ici"
+                            placeholder={st.org_invite_placeholder}
                           />
                         </div>
                         <button
@@ -1132,7 +1132,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                           className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center gap-2 shrink-0"
                         >
                           {orgLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                          Rejoindre
+                          {st.org_join_btn}
                         </button>
                       </div>
                       {joinError && (
@@ -1152,13 +1152,13 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                           <Building2 className="h-5 w-5 text-white/40" />
                         </div>
                         <div>
-                          <h3 className="font-bold text-white">Aucune organisation</h3>
-                          <p className="text-xs text-white/40">Vous n'appartenez à aucune organisation</p>
+                          <h3 className="font-bold text-white">{st.org_none}</h3>
+                          <p className="text-xs text-white/40">{st.org_none_desc}</p>
                         </div>
                       </div>
 
                       <div className="space-y-3">
-                        <label className="text-xs font-bold text-white/40 uppercase tracking-wider">Lien d'invitation</label>
+                        <label className="text-xs font-bold text-white/40 uppercase tracking-wider">{st.org_invite_label}</label>
                         <div className="flex gap-3">
                           <div className="relative flex-1">
                             <Link className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
@@ -1167,7 +1167,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                               value={inviteLink}
                               onChange={(e) => { setInviteLink(e.target.value); setJoinError('') }}
                               className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-sm"
-                              placeholder="Coller le lien d'invitation ici"
+                              placeholder={st.org_invite_placeholder}
                             />
                           </div>
                           <button
@@ -1176,7 +1176,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                             className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center gap-2 shrink-0"
                           >
                             {orgLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                            Rejoindre
+                            {st.org_join_btn}
                           </button>
                         </div>
                         {joinError && (
@@ -1190,8 +1190,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
                     <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px]">
                       <p className="text-xs text-white/40 leading-relaxed">
-                        Demandez un lien d'invitation à votre manager ou responsable d'équipe.
-                        Une fois membre, vous aurez accès au pipeline partagé, aux formules et aux KPIs de l'organisation directement depuis votre interface Sales.
+                        {st.org_info}
                       </p>
                     </div>
                   </>
@@ -1208,8 +1207,8 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                         <Mail className="h-6 w-6 text-left" />
                       </div>
                       <div className="text-left">
-                        <p className="font-bold text-white text-sm text-left">Email Support</p>
-                        <p className="text-white/40 text-xs mt-0.5 text-left">Réponse sous 24h ouvrées</p>
+                        <p className="font-bold text-white text-sm text-left">{st.support_email_label}</p>
+                        <p className="text-white/40 text-xs mt-0.5 text-left">{st.support_response}</p>
                       </div>
                     </div>
                     <ExternalLink className="h-5 w-5 text-white/40 group-hover:text-white text-left" />
@@ -1221,8 +1220,8 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                         <AlertCircle className="h-6 w-6 text-left" />
                       </div>
                       <div className="text-left">
-                        <p className="font-bold text-white text-sm text-left">Centre d'aide & FAQ</p>
-                        <p className="text-white/40 text-xs mt-0.5 text-left">Guides et tutoriels (Bientôt disponible)</p>
+                        <p className="font-bold text-white text-sm text-left">{st.support_faq}</p>
+                        <p className="text-white/40 text-xs mt-0.5 text-left">{st.support_faq_desc}</p>
                       </div>
                     </div>
                     <ExternalLink className="h-5 w-5 text-white/40 group-hover:text-white text-left" />
@@ -1245,8 +1244,8 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 text-black shadow-lg shadow-emerald-500/20">
               <Heart className="h-8 w-8" />
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">Vous restez parmi nous alors ?!</h3>
-            <p className="text-white/40 text-sm mb-6">Votre abonnement sera réactivé et continuera normalement.</p>
+            <h3 className="text-2xl font-bold text-white mb-2">{st.reactivate_title}</h3>
+            <p className="text-white/40 text-sm mb-6">{st.reactivate_desc}</p>
             <div className="space-y-3">
               <button
                 onClick={handleReactivate}
@@ -1254,13 +1253,13 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 className="w-full px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {reactivating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
-                {reactivating ? 'Réactivation...' : 'Oui, je reste !'}
+                {reactivating ? st.reactivating : st.reactivate_yes}
               </button>
               <button
                 onClick={() => setIsReactivateModalOpen(false)}
                 className="w-full px-6 py-3 bg-white/[0.03] hover:bg-white/10 text-white/80 rounded-full font-medium transition-all border border-white/[0.08]"
               >
-                Annuler
+                {st.cancel}
               </button>
             </div>
           </div>

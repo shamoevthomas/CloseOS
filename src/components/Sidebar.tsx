@@ -14,7 +14,6 @@ import {
   Smartphone,
   CreditCard,
   CalendarCheck,
-  Coffee,
   X,
   FileText,
   Sparkles,
@@ -223,23 +222,6 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
           </a>
         </div>
 
-        {/* BOUTON KO-FI */}
-        <div className="px-4 pb-4">
-          <a
-            href="https://ko-fi.com/closeos"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-center gap-3 rounded-xl border border-[#F01A74]/20 bg-[#F01A74]/5 px-4 py-3 transition-all hover:bg-[#F01A74]/10"
-          >
-            <div className="rounded-lg bg-[#F01A74]/20 p-2 text-[#F01A74] transition-transform group-hover:scale-110">
-              <Coffee className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-[#F01A74]">{t.support_title}</p>
-              <p className="text-xs text-[#F01A74]/70">{t.support_sub}</p>
-            </div>
-          </a>
-        </div>
 
         {/* User Section */}
         <div className="relative border-t border-white/[0.06] p-4">
