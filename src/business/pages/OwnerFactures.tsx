@@ -301,7 +301,7 @@ export function OwnerFactures() {
         )}
 
         <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">{t.owner_factures_status}
+          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">{t.owner_factures_status}</span>
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
