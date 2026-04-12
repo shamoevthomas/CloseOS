@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useLanguage } from '../contexts/LanguageContext'
 import {
   X,
   Phone,
@@ -72,7 +73,8 @@ interface ExtendedProspect extends Prospect {
   avatar_url?: string
 }
 
-const LOSS_REASONS = ['Je dois y réfléchir', 'Argent/budget', 'Doit en parler', "C'est pas le moment", 'Peur', 'Ecran de fumée', 'Autre']
+const LOSS_REASONS_FR = ['Je dois y réfléchir', 'Argent/budget', 'Doit en parler', "C'est pas le moment", 'Peur', 'Ecran de fumée', 'Autre']
+const LOSS_REASONS_EN = ['Need to think about it', 'Money/budget', 'Need to discuss', "Not the right time", 'Fear', 'Smokescreen', 'Other']
 
 
 interface ProspectViewProps {
@@ -97,8 +99,10 @@ export function ProspectView({
   onDismissFromPipeline,
 }: ProspectViewProps) {
   const navigate = useNavigate()
+  const { lang } = useLanguage()
   const { offers } = useOffers()
   const { allStages, getStageInfo } = useCustomStages()
+  const LOSS_REASONS = lang === 'fr' ? LOSS_REASONS_FR : LOSS_REASONS_EN
   const { tags, addTagToProspect, removeTagFromProspect, getProspectTagObjects } = useTags()
   const [showTagPicker, setShowTagPicker] = useState(false)
 
@@ -270,10 +274,10 @@ export function ProspectView({
       setReminderDesc('')
       setReminderDate('')
       setReminderTime('')
-      toast.success('Rappel créé')
+      toast.success(lang === 'fr' ? 'Rappel créé' : 'Reminder created')
     } catch (err) {
       console.error('Erreur création rappel:', err)
-      toast.error('Impossible de créer le rappel')
+      toast.error(lang === 'fr' ? 'Impossible de créer le rappel' : 'Unable to create reminder')
     } finally {
       setReminderSubmitting(false)
     }
@@ -321,8 +325,8 @@ export function ProspectView({
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!file.type.startsWith('image/')) { toast.error('Fichier image requis'); return }
-    if (file.size > 5 * 1024 * 1024) { toast.error('Image trop lourde (max 5 Mo)'); return }
+    if (!file.type.startsWith('image/')) { toast.error(lang === 'fr' ? 'Fichier image requis' : 'Image file required'); return }
+    if (file.size > 5 * 1024 * 1024) { toast.error(lang === 'fr' ? 'Image trop lourde (max 5 Mo)' : 'Image too large (max 5 MB)'); return }
     setAvatarUploading(true)
     try {
       const ext = file.name.split('.').pop() || 'jpg'
@@ -333,10 +337,10 @@ export function ProspectView({
       await supabase.from('prospects').update({ avatar_url: data.publicUrl }).eq('id', prospect.id)
       setLocalProspect(prev => ({ ...prev, avatar_url: data.publicUrl }))
       if (onUpdate) onUpdate(prospect.id, { avatar_url: data.publicUrl } as any)
-      toast.success('Photo mise à jour')
+      toast.success(lang === 'fr' ? 'Photo mise à jour' : 'Photo updated')
     } catch (err) {
       console.error(err)
-      toast.error("Erreur lors de l'upload")
+      toast.error(lang === 'fr' ? "Erreur lors de l'upload" : 'Upload error')
     } finally {
       setAvatarUploading(false)
       if (avatarInputRef.current) avatarInputRef.current.value = ''
@@ -403,29 +407,38 @@ export function ProspectView({
     return groups.reverse()
   }, [history])
 
-  const FIELD_LABELS: Record<string, string> = {
+  const FIELD_LABELS: Record<string, string> = lang === 'fr' ? {
     firstName: 'Prénom', lastName: 'Nom', contact: 'Contact',
     email: 'Email', phone: 'Téléphone', company: 'Entreprise',
     stage: 'Étape', value: 'Montant', offer: 'Offre',
     payment_type: 'Mode de paiement', installments: 'Mensualités',
     notes: 'Notes', loss_reason: 'Raison de perte', loss_details: 'Détails de perte',
     avatar_url: 'Photo de profil',
+  } : {
+    firstName: 'First name', lastName: 'Last name', contact: 'Contact',
+    email: 'Email', phone: 'Phone', company: 'Company',
+    stage: 'Stage', value: 'Amount', offer: 'Offer',
+    payment_type: 'Payment mode', installments: 'Installments',
+    notes: 'Notes', loss_reason: 'Loss reason', loss_details: 'Loss details',
+    avatar_url: 'Profile photo',
   }
 
   const formatHistoryValue = useCallback((field: string, value: string | null | undefined): string => {
-    if (value == null || value === '') return '(vide)'
+    if (value == null || value === '') return lang === 'fr' ? '(vide)' : '(empty)'
     if (field === 'stage') {
       const si = getStageInfo(value)
       return si?.name || value
     }
-    if (field === 'value') return `${Number(value).toLocaleString('fr-FR')}€`
+    if (field === 'value') return `${Number(value).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US')}€`
     if (field === 'payment_type') {
-      const labels: Record<string, string> = { once: 'Comptant', installments: 'Mensualités', cash: 'Comptant', comptant: 'Comptant' }
+      const labels: Record<string, string> = lang === 'fr'
+        ? { once: 'Comptant', installments: 'Mensualités', cash: 'Comptant', comptant: 'Comptant' }
+        : { once: 'Cash', installments: 'Installments', cash: 'Cash', comptant: 'Cash' }
       return labels[value] || value
     }
-    if (field === 'avatar_url') return 'Photo mise à jour'
+    if (field === 'avatar_url') return lang === 'fr' ? 'Photo mise à jour' : 'Photo updated'
     return value
-  }, [getStageInfo])
+  }, [getStageInfo, lang])
 
   // --- Log history entry helper ---
   const logHistory = useCallback(async (change_type: string, field_name: string, old_value: string | null, new_value: string | null) => {
@@ -492,7 +505,7 @@ export function ProspectView({
       id: Date.now().toString(),
       date: new Date().toISOString(),
       content: newNoteContent,
-      author: 'Manuel'
+      author: lang === 'fr' ? 'Manuel' : 'Manual'
     }
     const updatedNotes = [newNote, ...(localProspect.callNotes || [])]
     handleOptimisticUpdate({
@@ -503,7 +516,7 @@ export function ProspectView({
   }
 
   const handleDeleteNote = (noteId: string) => {
-    if (!confirm("Voulez-vous vraiment supprimer cette note ?")) return
+    if (!confirm(lang === 'fr' ? "Voulez-vous vraiment supprimer cette note ?" : "Are you sure you want to delete this note?")) return
     const updatedNotes = (localProspect.callNotes || []).filter(n => n.id !== noteId)
     handleOptimisticUpdate({
       callNotes: updatedNotes
@@ -565,7 +578,7 @@ export function ProspectView({
 
   const handleSaveOffer = () => {
     if (hasFormulas && !editedFormulaId) {
-      alert("Veuillez sélectionner une formule pour cette offre.")
+      alert(lang === 'fr' ? "Veuillez sélectionner une formule pour cette offre." : "Please select a formula for this offer.")
       return
     }
     // ✅ SAUVEGARDE DE LA FORMULE ET DU MONTANT
@@ -595,7 +608,7 @@ export function ProspectView({
   }
 
   const handleDeleteProspect = () => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer ${localProspect.contact} ?`)) {
+    if (confirm(lang === 'fr' ? `Êtes-vous sûr de vouloir supprimer ${localProspect.contact} ?` : `Are you sure you want to delete ${localProspect.contact}?`)) {
       if (onDelete) onDelete(localProspect.id)
       onClose()
     }
@@ -605,7 +618,7 @@ export function ProspectView({
     if (localProspect.email) {
       window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${localProspect.email}`, '_blank')
     } else {
-      showError("Email manquant !")
+      showError(lang === 'fr' ? "Email manquant !" : "Missing email!")
     }
   }
 
@@ -614,7 +627,7 @@ export function ProspectView({
       const cleanPhone = localProspect.phone.replace(/[^0-9+]/g, '')
       window.open(`https://wa.me/${cleanPhone}`, '_blank')
     } else {
-      showError("Numéro de téléphone manquant !")
+      showError(lang === 'fr' ? "Numéro de téléphone manquant !" : "Missing phone number!")
     }
   }
 
@@ -654,7 +667,7 @@ export function ProspectView({
                   <button
                     onClick={() => avatarInputRef.current?.click()}
                     className="relative w-11 h-11 rounded-full bg-white/5 flex items-center justify-center overflow-hidden text-lg font-extrabold text-white/40 group cursor-pointer shrink-0"
-                    title="Changer la photo"
+                    title={lang === 'fr' ? "Changer la photo" : "Change photo"}
                   >
                     {localProspect.avatar_url ? (
                       <img src={localProspect.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -711,7 +724,7 @@ export function ProspectView({
                   <div className="absolute left-0 top-full mt-1.5 z-10 min-w-[200px] max-w-[300px] rounded-lg border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                     <div className="max-h-48 overflow-y-auto p-1.5">
                       {tags.length === 0 ? (
-                        <p className="px-3 py-2 text-xs text-white/40">Aucun tag. Créez-en dans Personnaliser.</p>
+                        <p className="px-3 py-2 text-xs text-white/40">{lang === 'fr' ? 'Aucun tag. Créez-en dans Personnaliser.' : 'No tags. Create them in Customize.'}</p>
                       ) : (
                         tags.map(tag => {
                           const isAssigned = (getProspectTagObjects(localProspect.id)).some(t => t.id === tag.id)
@@ -746,11 +759,11 @@ export function ProspectView({
                     <Calendar className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Prochain rendez-vous</p>
+                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{lang === 'fr' ? 'Prochain rendez-vous' : 'Next appointment'}</p>
                     <p className="text-sm font-semibold text-white">
-                      {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString('fr-FR', {
+                      {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
                         weekday: 'short', day: 'numeric', month: 'long'
-                      })} à {nextAppointment.time}
+                      })} {lang === 'fr' ? 'à' : 'at'} {nextAppointment.time}
                     </p>
                   </div>
                 </div>
@@ -764,7 +777,7 @@ export function ProspectView({
                   <MessageCircle className="h-4 w-4" /> WhatsApp
                 </button>
                 <button onClick={() => { if (onCreateEvent) onCreateEvent() }} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-bold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20">
-                  <Calendar className="h-4 w-4" /> RDV
+                  <Calendar className="h-4 w-4" /> {lang === 'fr' ? 'RDV' : 'Appt'}
                 </button>
               </div>
               <div className="flex gap-2 mb-6">
@@ -772,7 +785,7 @@ export function ProspectView({
                   onClick={() => setShowReminderForm(true)}
                   className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-orange-600 shadow-lg shadow-orange-500/20"
                 >
-                  <Bell className="h-4 w-4" /> Rappel
+                  <Bell className="h-4 w-4" /> {lang === 'fr' ? 'Rappel' : 'Reminder'}
                 </button>
                 <button
                   onClick={() => navigate(`/live-call?name=${encodeURIComponent(localProspect.contact)}&prospectId=${localProspect.id}&from=/pipeline`)}
@@ -791,7 +804,7 @@ export function ProspectView({
                     activeTab === 'info' ? "text-white" : "text-white/40 hover:text-white"
                   )}
                 >
-                  Informations
+                  {lang === 'fr' ? 'Informations' : 'Info'}
                   {activeTab === 'info' && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
                   )}
@@ -803,7 +816,7 @@ export function ProspectView({
                     activeTab === 'notes' ? "text-white" : "text-white/40 hover:text-white"
                   )}
                 >
-                  Notes d'Appel
+                  {lang === 'fr' ? "Notes d'Appel" : 'Call Notes'}
                   {activeTab === 'notes' && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500" />
                   )}
@@ -815,7 +828,7 @@ export function ProspectView({
                     activeTab === 'rappels' ? "text-white" : "text-white/40 hover:text-white"
                   )}
                 >
-                  Rappels
+                  {lang === 'fr' ? 'Rappels' : 'Reminders'}
                   {activeRemindersCount > 0 && (
                     <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-orange-500/20 px-1.5 text-[10px] font-bold text-orange-400">
                       {activeRemindersCount}
@@ -832,7 +845,7 @@ export function ProspectView({
                     activeTab === 'historique' ? "text-white" : "text-white/40 hover:text-white"
                   )}
                 >
-                  Historique
+                  {lang === 'fr' ? 'Historique' : 'History'}
                   {activeTab === 'historique' && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-500" />
                   )}
@@ -849,7 +862,7 @@ export function ProspectView({
 
                   {/* Étape Pipeline */}
                   <div>
-                    <label className="mb-2 block text-xs font-medium text-white/40">Étape actuelle</label>
+                    <label className="mb-2 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Étape actuelle' : 'Current stage'}</label>
                     <select
                       value={localProspect.stage}
                       onChange={(e) => handleOptimisticUpdate({ stage: e.target.value })}
@@ -868,7 +881,7 @@ export function ProspectView({
                     <div className="animate-in slide-in-from-top-4 fade-in duration-300">
                       <div className="mb-3 flex items-center justify-between">
                         <h3 className="flex items-center gap-2 text-sm font-bold text-emerald-400">
-                          <CreditCard className="h-4 w-4" /> Détails du Paiement
+                          <CreditCard className="h-4 w-4" /> {lang === 'fr' ? 'Détails du Paiement' : 'Payment Details'}
                         </h3>
                         <button onClick={() => setEditingPayment(!editingPayment)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
                           <Pencil className="h-3.5 w-3.5" />
@@ -878,7 +891,7 @@ export function ProspectView({
                       {editingPayment ? (
                         <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
                           <div>
-                            <label className="text-xs text-white/40">Montant final (€)</label>
+                            <label className="text-xs text-white/40">{lang === 'fr' ? 'Montant final (€)' : 'Final amount (€)'}</label>
                             <input
                               type="number"
                               value={editedValue}
@@ -887,57 +900,57 @@ export function ProspectView({
                             />
                           </div>
                           <div className="flex rounded-lg bg-white/[0.03] p-1">
-                            <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>Comptant</button>
-                            <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>Plusieurs fois</button>
+                            <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>{lang === 'fr' ? 'Comptant' : 'Cash'}</button>
+                            <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>{lang === 'fr' ? 'Plusieurs fois' : 'Installments'}</button>
                           </div>
                           {paymentMode === 'installments' && (
                             <div className="animate-in fade-in slide-in-from-top-1">
-                              <label className="text-xs text-white/40">Nombre de mensualités</label>
+                              <label className="text-xs text-white/40">{lang === 'fr' ? 'Nombre de mensualités' : 'Number of installments'}</label>
                               <select value={installments} onChange={(e) => setInstallments(parseInt(e.target.value))} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
-                                {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{n} fois ({(editedValue / n).toFixed(2)}€/mois)</option>)}
+                                {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{n} {lang === 'fr' ? 'fois' : 'times'} ({(editedValue / n).toFixed(2)}€/{lang === 'fr' ? 'mois' : 'mo'})</option>)}
                               </select>
                             </div>
                           )}
                           <div className="rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-emerald-400 flex items-center gap-1"><Wallet className="h-3 w-3" /> Ta Commission ({commissionRate}%)</span>
+                              <span className="text-xs font-medium text-emerald-400 flex items-center gap-1"><Wallet className="h-3 w-3" /> {lang === 'fr' ? 'Ta Commission' : 'Your Commission'} ({commissionRate}%)</span>
                               <span className="text-lg font-bold text-emerald-400">{commissionAmount.toFixed(2)}€</span>
                             </div>
                             {paymentMode === 'installments' && (
                               <p className="mt-1 text-[10px] text-emerald-300/70">
-                                Tu recevras : {(commissionAmount / installments).toFixed(2)}€ / mois
+                                {lang === 'fr' ? 'Tu recevras' : "You'll receive"} : {(commissionAmount / installments).toFixed(2)}€ / {lang === 'fr' ? 'mois' : 'mo'}
                               </p>
                             )}
                           </div>
-                          <button onClick={handleSavePayment} className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500">Valider les détails</button>
+                          <button onClick={handleSavePayment} className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500">{lang === 'fr' ? 'Valider les détails' : 'Confirm details'}</button>
                         </div>
                       ) : (
                         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-white/40">Montant Vente</span>
+                            <span className="text-xs text-white/40">{lang === 'fr' ? 'Montant Vente' : 'Sale Amount'}</span>
                             <span className="text-sm font-bold text-white">{(localProspect.value || 0).toLocaleString()}€</span>
                           </div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-white/40">Commission Totale ({commissionRate}%)</span>
+                            <span className="text-xs text-white/40">{lang === 'fr' ? 'Commission Totale' : 'Total Commission'} ({commissionRate}%)</span>
                             <span className="text-sm font-bold text-emerald-400">+{savedCommission.toFixed(2)}€</span>
                           </div>
 
                           {isPayingInInstallments && (
                             <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
                               <div className="flex justify-between items-center">
-                                <span className="text-xs text-white/60">Client paie (x{savedInstallments}) :</span>
-                                <span className="text-sm font-semibold text-white">{savedMonthlyPayment.toFixed(2)}€ / mois</span>
+                                <span className="text-xs text-white/60">{lang === 'fr' ? `Client paie (x${savedInstallments})` : `Client pays (x${savedInstallments})`} :</span>
+                                <span className="text-sm font-semibold text-white">{savedMonthlyPayment.toFixed(2)}€ / {lang === 'fr' ? 'mois' : 'mo'}</span>
                               </div>
                               <div className="flex justify-between items-center">
-                                <span className="text-xs text-emerald-400/80">Tu reçois :</span>
-                                <span className="text-sm font-bold text-emerald-400">{savedMonthlyCommission.toFixed(2)}€ / mois</span>
+                                <span className="text-xs text-emerald-400/80">{lang === 'fr' ? 'Tu reçois' : 'You receive'} :</span>
+                                <span className="text-sm font-bold text-emerald-400">{savedMonthlyCommission.toFixed(2)}€ / {lang === 'fr' ? 'mois' : 'mo'}</span>
                               </div>
                             </div>
                           )}
 
                           <div className="pt-2 border-t border-emerald-500/20 text-center mt-2">
                             <span className="text-[10px] font-medium text-emerald-300/60 uppercase tracking-wider">
-                              {isPayingInInstallments ? `Paiement en ${savedInstallments} fois` : 'Paiement Comptant'}
+                              {isPayingInInstallments ? (lang === 'fr' ? `Paiement en ${savedInstallments} fois` : `Payment in ${savedInstallments} installments`) : (lang === 'fr' ? 'Paiement Comptant' : 'Cash Payment')}
                             </span>
                           </div>
                         </div>
@@ -949,11 +962,11 @@ export function ProspectView({
                   {localProspect.stage === 'lost' && (
                     <div className="animate-in slide-in-from-top-4 fade-in duration-300">
                       <h3 className="flex items-center gap-2 text-sm font-bold text-red-400 mb-3">
-                        <X className="h-4 w-4" /> Raison de la perte
+                        <X className="h-4 w-4" /> {lang === 'fr' ? 'Raison de la perte' : 'Loss reason'}
                       </h3>
                       <div className="space-y-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
                         <div>
-                          <label className="text-xs font-medium text-white/40 mb-1.5 block">Motif</label>
+                          <label className="text-xs font-medium text-white/40 mb-1.5 block">{lang === 'fr' ? 'Motif' : 'Reason'}</label>
                           <div className="relative">
                             <select
                               value={localProspect.loss_reason || ''}
@@ -964,19 +977,19 @@ export function ProspectView({
                               }}
                               className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none appearance-none"
                             >
-                              <option value="">Sélectionnez un motif</option>
+                              <option value="">{lang === 'fr' ? 'Sélectionnez un motif' : 'Select a reason'}</option>
                               {LOSS_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-white/40" />
                           </div>
                         </div>
                         <div>
-                          <label className="text-xs font-medium text-white/40 mb-1.5 block">Détails</label>
+                          <label className="text-xs font-medium text-white/40 mb-1.5 block">{lang === 'fr' ? 'Détails' : 'Details'}</label>
                           <input
                             type="text"
                             value={localProspect.loss_details || ''}
                             onChange={(e) => handleOptimisticUpdate({ loss_details: e.target.value } as any)}
-                            placeholder="Précisez les détails..."
+                            placeholder={lang === 'fr' ? "Précisez les détails..." : "Specify details..."}
                             className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-red-500 focus:outline-none"
                           />
                         </div>
@@ -987,7 +1000,7 @@ export function ProspectView({
                   {/* Infos Offre */}
                   <div>
                     <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-white">Infos Offre</h3>
+                      <h3 className="text-sm font-semibold text-white">{lang === 'fr' ? 'Infos Offre' : 'Offer Info'}</h3>
                       <button onClick={() => setEditingOffer(!editingOffer)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -995,16 +1008,16 @@ export function ProspectView({
                     {editingOffer ? (
                       <div className="space-y-3">
                         <div>
-                          <label className="mb-2 block text-xs text-white/40">Sélectionner une offre</label>
+                          <label className="mb-2 block text-xs text-white/40">{lang === 'fr' ? 'Sélectionner une offre' : 'Select an offer'}</label>
                           <select
                             value={editedOfferId}
                             onChange={(e) => handleOfferChange(e.target.value)}
                             className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                           >
-                            <option value="">-- Sélectionner --</option>
+                            <option value="">{lang === 'fr' ? '-- Sélectionner --' : '-- Select --'}</option>
                             {availableOffers.map((offer) => (
                               <option key={offer.id} value={offer.id}>
-                                {offer.name} {offer.formulas && offer.formulas.length > 0 ? '(Multi-formules)' : `(${offer.price})`}
+                                {offer.name} {offer.formulas && offer.formulas.length > 0 ? (lang === 'fr' ? '(Multi-formules)' : '(Multi-formula)') : `(${offer.price})`}
                               </option>
                             ))}
                           </select>
@@ -1012,35 +1025,35 @@ export function ProspectView({
                         {hasFormulas && (
                           <div className="animate-in fade-in slide-in-from-top-2">
                             <label className="mb-2 flex items-center gap-2 text-xs text-emerald-400">
-                              <Tag className="h-3 w-3" /> Choix de la formule
+                              <Tag className="h-3 w-3" /> {lang === 'fr' ? 'Choix de la formule' : 'Formula selection'}
                             </label>
                             <select
                               value={editedFormulaId}
                               onChange={(e) => handleFormulaChange(e.target.value)}
                               className="w-full rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                             >
-                              <option value="">-- Sélectionner la formule --</option>
+                              <option value="">{lang === 'fr' ? '-- Sélectionner la formule --' : '-- Select formula --'}</option>
                               {selectedOfferObj?.formulas?.map((formula) => (
                                 <option key={formula.id} value={formula.id}>{formula.name} - {formula.price}€</option>
                               ))}
                             </select>
                           </div>
                         )}
-                        {editedValue > 0 && <p className="text-xs font-medium text-emerald-400 text-right">Nouveau montant : {editedValue.toLocaleString()}€</p>}
+                        {editedValue > 0 && <p className="text-xs font-medium text-emerald-400 text-right">{lang === 'fr' ? 'Nouveau montant' : 'New amount'} : {editedValue.toLocaleString()}€</p>}
                         <div className="flex gap-2">
-                          <button onClick={handleSaveOffer} className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-400">Sauvegarder</button>
-                          <button onClick={handleCancelOffer} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm font-semibold text-white/60 hover:bg-white/10">Annuler</button>
+                          <button onClick={handleSaveOffer} className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-400">{lang === 'fr' ? 'Sauvegarder' : 'Save'}</button>
+                          <button onClick={handleCancelOffer} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm font-semibold text-white/60 hover:bg-white/10">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                         </div>
                       </div>
                     ) : (
                       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-white/40">Offre concernée</p>
+                            <p className="text-sm text-white/40">{lang === 'fr' ? 'Offre concernée' : 'Related offer'}</p>
                             <p className="mt-1 font-medium text-white">{localProspect.offer || 'N/A'}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm text-white/40">Montant</p>
+                            <p className="text-sm text-white/40">{lang === 'fr' ? 'Montant' : 'Amount'}</p>
                             <p className="mt-1 text-lg font-bold text-emerald-400"><MaskedText value={`${(localProspect.value || 0).toLocaleString()}€`} type="number" /></p>
                           </div>
                         </div>
@@ -1051,20 +1064,20 @@ export function ProspectView({
                   {/* Fiche Client */}
                   <div>
                     <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-white">Fiche Client</h3>
+                      <h3 className="text-sm font-semibold text-white">{lang === 'fr' ? 'Fiche Client' : 'Client Info'}</h3>
                       <button onClick={() => setEditingClient(!editingClient)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {editingClient ? (
                       <div className="space-y-3">
-                        <input type="text" value={editedContact} onChange={(e) => setEditedContact(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder="Nom" />
-                        <input type="text" value={editedCompany} onChange={(e) => setEditedCompany(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder="Entreprise" />
+                        <input type="text" value={editedContact} onChange={(e) => setEditedContact(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder={lang === 'fr' ? 'Nom' : 'Name'} />
+                        <input type="text" value={editedCompany} onChange={(e) => setEditedCompany(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder={lang === 'fr' ? 'Entreprise' : 'Company'} />
                         <input type="email" value={editedEmail} onChange={(e) => setEditedEmail(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder="Email" />
-                        <input type="tel" value={editedPhone} onChange={(e) => setEditedPhone(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder="Téléphone" />
+                        <input type="tel" value={editedPhone} onChange={(e) => setEditedPhone(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder={lang === 'fr' ? 'Téléphone' : 'Phone'} />
                         <div className="flex gap-2">
-                          <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black">Sauvegarder</button>
-                          <button onClick={handleCancelClient} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm font-semibold text-white/60">Annuler</button>
+                          <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black">{lang === 'fr' ? 'Sauvegarder' : 'Save'}</button>
+                          <button onClick={handleCancelClient} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm font-semibold text-white/60">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                         </div>
                       </div>
                     ) : (
@@ -1072,14 +1085,14 @@ export function ProspectView({
                         <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
                           <Mail className="h-4 w-4 text-emerald-400" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-white/40">Email</p>
+                            <p className="text-xs text-white/40">{lang === 'fr' ? 'Email' : 'Email'}</p>
                             <button onClick={handleOpenGmail} className="truncate text-sm text-white/60 hover:text-white hover:underline text-left"><MaskedText value={localProspect.email} type="name" /></button>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
                           <Phone className="h-4 w-4 text-emerald-400" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-white/40">Téléphone</p>
+                            <p className="text-xs text-white/40">{lang === 'fr' ? 'Téléphone' : 'Phone'}</p>
                             <button onClick={handleOpenWhatsApp} className="text-sm text-white/60 hover:text-white hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
                           </div>
                         </div>
@@ -1087,7 +1100,7 @@ export function ProspectView({
                           <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
                             <Building2 className="h-4 w-4 text-orange-400" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs text-white/40">Entreprise</p>
+                              <p className="text-xs text-white/40">{lang === 'fr' ? 'Entreprise' : 'Company'}</p>
                               <p className="text-sm text-white/60">{localProspect.company}</p>
                             </div>
                           </div>
@@ -1095,9 +1108,9 @@ export function ProspectView({
                         <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
                           <Clock className="h-4 w-4 text-purple-400" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-white/40">Date de création</p>
+                            <p className="text-xs text-white/40">{lang === 'fr' ? 'Date de création' : 'Created on'}</p>
                             <p className="text-sm text-white/60">
-                              {new Date(localProspect.created_at || localProspect.dateAdded || '').toLocaleDateString('fr-FR', {
+                              {new Date(localProspect.created_at || localProspect.dateAdded || '').toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
                                 day: 'numeric',
                                 month: 'long',
                                 year: 'numeric',
@@ -1114,7 +1127,7 @@ export function ProspectView({
                   {/* Notes Internes (Générales) */}
                   <div>
                     <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-white">Notes Internes</h3>
+                      <h3 className="text-sm font-semibold text-white">{lang === 'fr' ? 'Notes Internes' : 'Internal Notes'}</h3>
                       <button onClick={() => setEditingNotes(!editingNotes)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -1123,13 +1136,13 @@ export function ProspectView({
                       <div>
                         <textarea value={tempNotes} onChange={(e) => setTempNotes(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" rows={4} />
                         <div className="mt-2 flex gap-2">
-                          <button onClick={handleSaveNotes} className="rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-black">Enregistrer</button>
-                          <button onClick={() => setEditingNotes(false)} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-1.5 text-sm font-medium text-white/60">Annuler</button>
+                          <button onClick={handleSaveNotes} className="rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-black">{lang === 'fr' ? 'Enregistrer' : 'Save'}</button>
+                          <button onClick={() => setEditingNotes(false)} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-1.5 text-sm font-medium text-white/60">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                         </div>
                       </div>
                     ) : (
                       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
-                        <p className="whitespace-pre-wrap text-sm text-white/60">{localProspect.notes || 'Aucune note'}</p>
+                        <p className="whitespace-pre-wrap text-sm text-white/60">{localProspect.notes || (lang === 'fr' ? 'Aucune note' : 'No notes')}</p>
                       </div>
                     )}
                   </div>
@@ -1146,15 +1159,15 @@ export function ProspectView({
                       onClick={() => setIsAddingNote(true)}
                       className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-white/[0.08] bg-white/[0.03] py-3 text-sm font-medium text-white/40 hover:bg-white/5 hover:text-white hover:border-white/20 transition-all"
                     >
-                      <Plus className="h-4 w-4" /> Ajouter une note manuelle
+                      <Plus className="h-4 w-4" /> {lang === 'fr' ? 'Ajouter une note manuelle' : 'Add a manual note'}
                     </button>
                   ) : (
                     <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 shadow-[0_20px_40px_rgba(0,0,0,0.2)] animate-in fade-in zoom-in-95">
-                      <h4 className="text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">Nouvelle Note</h4>
+                      <h4 className="text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">{lang === 'fr' ? 'Nouvelle Note' : 'New Note'}</h4>
                       <textarea
                         value={newNoteContent}
                         onChange={(e) => setNewNoteContent(e.target.value)}
-                        placeholder="Écrivez votre note d'appel ici..."
+                        placeholder={lang === 'fr' ? "Écrivez votre note d'appel ici..." : "Write your call note here..."}
                         className="w-full rounded-xl bg-white/5 border border-white/10 p-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500 min-h-[100px] mb-3"
                         autoFocus
                       />
@@ -1163,14 +1176,14 @@ export function ProspectView({
                           onClick={() => { setIsAddingNote(false); setNewNoteContent(''); }}
                           className="px-4 py-2 text-sm font-medium text-white/40 hover:text-white transition-colors"
                         >
-                          Annuler
+                          {lang === 'fr' ? 'Annuler' : 'Cancel'}
                         </button>
                         <button
                           onClick={handleAddManualNote}
                           disabled={!newNoteContent.trim()}
                           className="px-4 py-2 rounded-lg bg-purple-600 text-sm font-bold text-white hover:bg-purple-500 disabled:opacity-50 transition-all shadow-lg shadow-purple-900/20"
                         >
-                          Enregistrer
+                          {lang === 'fr' ? 'Enregistrer' : 'Save'}
                         </button>
                       </div>
                     </div>
@@ -1190,11 +1203,11 @@ export function ProspectView({
                               </div>
                               <div>
                                 <h4 className="text-sm font-semibold text-white">
-                                  {new Date(note.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                  {new Date(note.date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                 </h4>
                                 <div className="flex items-center gap-2 text-xs text-white/40 mt-0.5">
                                   <Clock className="h-3 w-3" />
-                                  <span>{new Date(note.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span>{new Date(note.date).toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                                   {note.author && (
                                     <>
                                       <span>•</span>
@@ -1211,7 +1224,7 @@ export function ProspectView({
                                   handleDeleteNote(note.id)
                                 }}
                                 className="rounded p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
-                                title="Supprimer la note"
+                                title={lang === 'fr' ? "Supprimer la note" : "Delete note"}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -1233,9 +1246,9 @@ export function ProspectView({
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-3">
                           <ClipboardList className="h-6 w-6 text-white/40" />
                         </div>
-                        <p className="text-sm font-medium text-white/40">Aucune note d'appel</p>
+                        <p className="text-sm font-medium text-white/40">{lang === 'fr' ? "Aucune note d'appel" : 'No call notes'}</p>
                         <p className="text-xs text-white/40 mt-1 max-w-[200px]">
-                          L'historique de vos appels et vos notes manuelles apparaîtront ici.
+                          {lang === 'fr' ? "L'historique de vos appels et vos notes manuelles apparaîtront ici." : 'Your call history and manual notes will appear here.'}
                         </p>
                       </div>
                     )}
@@ -1251,7 +1264,7 @@ export function ProspectView({
                     onClick={() => setShowReminderForm(true)}
                     className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-orange-500/30 bg-orange-500/5 py-3 text-sm font-medium text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/50 transition-all"
                   >
-                    <Plus className="h-4 w-4" /> Ajouter un rappel
+                    <Plus className="h-4 w-4" /> {lang === 'fr' ? 'Ajouter un rappel' : 'Add a reminder'}
                   </button>
 
                   {remindersLoading ? (
@@ -1263,9 +1276,9 @@ export function ProspectView({
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-3">
                         <Bell className="h-6 w-6 text-white/40" />
                       </div>
-                      <p className="text-sm font-medium text-white/40">Aucun rappel</p>
+                      <p className="text-sm font-medium text-white/40">{lang === 'fr' ? 'Aucun rappel' : 'No reminders'}</p>
                       <p className="text-xs text-white/40 mt-1">
-                        Créez un rappel pour ce prospect.
+                        {lang === 'fr' ? 'Créez un rappel pour ce prospect.' : 'Create a reminder for this prospect.'}
                       </p>
                     </div>
                   ) : (
@@ -1315,13 +1328,13 @@ export function ProspectView({
                                         'text-xs',
                                         isOverdue ? 'text-red-400 font-medium' : 'text-white/40'
                                       )}>
-                                        {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
+                                        {new Date(reminder.reminder_date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
                                           weekday: 'long',
                                           day: 'numeric',
                                           month: 'long',
                                         })}{' '}
-                                        à{' '}
-                                        {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                                        {lang === 'fr' ? 'à' : 'at'}{' '}
+                                        {new Date(reminder.reminder_date).toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-US', {
                                           hour: '2-digit',
                                           minute: '2-digit',
                                         })}
@@ -1334,10 +1347,10 @@ export function ProspectView({
                                   <div className="flex items-center gap-2 mt-1.5 opacity-60">
                                     <Clock className="h-3 w-3 text-white/40" />
                                     <span className="text-[10px] text-white/40">
-                                      {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
+                                      {new Date(reminder.reminder_date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
                                         day: 'numeric',
                                         month: 'short',
-                                      })} à {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                                      })} {lang === 'fr' ? 'à' : 'at'} {new Date(reminder.reminder_date).toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-US', {
                                         hour: '2-digit',
                                         minute: '2-digit',
                                       })}
@@ -1351,7 +1364,7 @@ export function ProspectView({
                                     onClick={() => handleMarkReminderDone(reminder.id)}
                                     disabled={isLoading}
                                     className="rounded-md p-1.5 text-emerald-400 hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
-                                    title="Marquer comme fait"
+                                    title={lang === 'fr' ? "Marquer comme fait" : "Mark as done"}
                                   >
                                     <Check className="h-4 w-4" />
                                   </button>
@@ -1360,7 +1373,7 @@ export function ProspectView({
                                   onClick={() => handleDeleteReminder(reminder.id)}
                                   disabled={isLoading}
                                   className="rounded-md p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                                  title="Supprimer"
+                                  title={lang === 'fr' ? "Supprimer" : "Delete"}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -1390,8 +1403,8 @@ export function ProspectView({
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-3">
                         <Clock className="h-6 w-6 text-white/40" />
                       </div>
-                      <p className="text-sm font-medium text-white/40">Aucun historique</p>
-                      <p className="text-xs text-white/40 mt-1">Les modifications apparaîtront ici.</p>
+                      <p className="text-sm font-medium text-white/40">{lang === 'fr' ? 'Aucun historique' : 'No history'}</p>
+                      <p className="text-xs text-white/40 mt-1">{lang === 'fr' ? 'Les modifications apparaîtront ici.' : 'Changes will appear here.'}</p>
                     </div>
                   ) : (
                     <div className="space-y-0">
@@ -1399,7 +1412,7 @@ export function ProspectView({
                         const isExpanded = expandedHistory.has(group.key)
                         const isLast = gIdx === historyGroups.length - 1
                         const date = new Date(group.created_at)
-                        const timeStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + ' à ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                        const timeStr = date.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) + (lang === 'fr' ? ' à ' : ' at ') + date.toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
 
                         const CHANGE_STYLES: Record<string, { icon: typeof Plus; bg: string; text: string }> = {
                           created: { icon: Plus, bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
@@ -1411,15 +1424,15 @@ export function ProspectView({
 
                         let title = ''
                         if (group.type === 'created') {
-                          title = 'Création du prospect'
+                          title = lang === 'fr' ? 'Création du prospect' : 'Prospect created'
                         } else if (group.type === 'stage_change') {
                           const stageEntry = group.entries.find((e: any) => e.change_type === 'stage_change')
-                          title = stageEntry ? `Étape → ${formatHistoryValue('stage', stageEntry.new_value)}` : "Changement d'étape"
+                          title = stageEntry ? (lang === 'fr' ? `Étape → ${formatHistoryValue('stage', stageEntry.new_value)}` : `Stage → ${formatHistoryValue('stage', stageEntry.new_value)}`) : (lang === 'fr' ? "Changement d'étape" : 'Stage change')
                         } else {
                           const count = group.entries.length
                           title = count === 1
-                            ? `${FIELD_LABELS[group.entries[0].field_name] || group.entries[0].field_name} modifié`
-                            : `${count} champs modifiés`
+                            ? (lang === 'fr' ? `${FIELD_LABELS[group.entries[0].field_name] || group.entries[0].field_name} modifié` : `${FIELD_LABELS[group.entries[0].field_name] || group.entries[0].field_name} modified`)
+                            : (lang === 'fr' ? `${count} champs modifiés` : `${count} fields modified`)
                         }
 
                         return (
@@ -1499,36 +1512,36 @@ export function ProspectView({
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowReminderForm(false)} />
                 <div className="relative w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                   <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-3">
-                    <h3 className="text-sm font-bold text-white">Nouveau rappel</h3>
+                    <h3 className="text-sm font-bold text-white">{lang === 'fr' ? 'Nouveau rappel' : 'New reminder'}</h3>
                     <button onClick={() => setShowReminderForm(false)} className="rounded-lg p-1 text-white/40 hover:bg-white/5 hover:text-white">
                       <X className="h-4 w-4" />
                     </button>
                   </div>
                   <div className="p-5 space-y-3">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-white/40">Titre *</label>
+                      <label className="mb-1 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Titre' : 'Title'} *</label>
                       <input
                         type="text"
                         value={reminderTitle}
                         onChange={(e) => setReminderTitle(e.target.value)}
-                        placeholder="Ex: Rappeler le prospect"
+                        placeholder={lang === 'fr' ? "Ex: Rappeler le prospect" : "E.g.: Call back the prospect"}
                         className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none"
                         autoFocus
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-white/40">Description</label>
+                      <label className="mb-1 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Description' : 'Description'}</label>
                       <textarea
                         value={reminderDesc}
                         onChange={(e) => setReminderDesc(e.target.value)}
-                        placeholder="Détails optionnels..."
+                        placeholder={lang === 'fr' ? "Détails optionnels..." : "Optional details..."}
                         rows={2}
                         className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none resize-none"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-white/40">Date *</label>
+                        <label className="mb-1 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Date' : 'Date'} *</label>
                         <input
                           type="date"
                           value={reminderDate}
@@ -1537,7 +1550,7 @@ export function ProspectView({
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-white/40">Heure *</label>
+                        <label className="mb-1 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Heure' : 'Time'} *</label>
                         <input
                           type="time"
                           value={reminderTime}
@@ -1549,7 +1562,7 @@ export function ProspectView({
                     <div className="rounded-lg bg-orange-500/10 border border-orange-500/20 px-3 py-2">
                       <p className="text-xs text-orange-400">
                         <Bell className="h-3 w-3 inline mr-1" />
-                        Lié à : <span className="font-semibold">{localProspect.contact || 'Ce prospect'}</span>
+                        {lang === 'fr' ? 'Lié à' : 'Linked to'} : <span className="font-semibold">{localProspect.contact || (lang === 'fr' ? 'Ce prospect' : 'This prospect')}</span>
                       </p>
                     </div>
                     <button
@@ -1560,7 +1573,7 @@ export function ProspectView({
                       {reminderSubmitting ? (
                         <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                       ) : (
-                        'Créer le rappel'
+                        lang === 'fr' ? 'Créer le rappel' : 'Create reminder'
                       )}
                     </button>
                   </div>
@@ -1576,17 +1589,17 @@ export function ProspectView({
                   try {
                     if (isDismissed) {
                       await supabase.from('pipeline_dismissals').delete().eq('user_id', user.id).eq('prospect_id', prospect.id)
-                      toast.success('Prospect rajouté au pipeline')
+                      toast.success(lang === 'fr' ? 'Prospect rajouté au pipeline' : 'Prospect added back to pipeline')
                       setIsDismissed(false)
                       onDismissFromPipeline?.(prospect.id, false)
                     } else {
                       await supabase.from('pipeline_dismissals').upsert({ user_id: user.id, prospect_id: prospect.id }, { onConflict: 'user_id,prospect_id' })
-                      toast.success('Prospect retiré du pipeline — il reste dans vos contacts')
+                      toast.success(lang === 'fr' ? 'Prospect retiré du pipeline — il reste dans vos contacts' : 'Prospect removed from pipeline — it remains in your contacts')
                       setIsDismissed(true)
                       onDismissFromPipeline?.(prospect.id, true)
                       onClose()
                     }
-                  } catch { toast.error('Erreur') }
+                  } catch { toast.error(lang === 'fr' ? 'Erreur' : 'Error') }
                 }}
                 className={cn(
                   "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all",
@@ -1596,13 +1609,13 @@ export function ProspectView({
                 )}
               >
                 {isDismissed ? (
-                  <><Plus className="h-4 w-4" /> Rajouter au pipeline</>
+                  <><Plus className="h-4 w-4" /> {lang === 'fr' ? 'Rajouter au pipeline' : 'Add back to pipeline'}</>
                 ) : (
-                  <><X className="h-4 w-4" /> Retirer du pipeline</>
+                  <><X className="h-4 w-4" /> {lang === 'fr' ? 'Retirer du pipeline' : 'Remove from pipeline'}</>
                 )}
               </button>
               <button onClick={handleDeleteProspect} className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20">
-                <Trash2 className="h-4 w-4" /> Supprimer le prospect
+                <Trash2 className="h-4 w-4" /> {lang === 'fr' ? 'Supprimer le prospect' : 'Delete prospect'}
               </button>
             </div>
           </div>

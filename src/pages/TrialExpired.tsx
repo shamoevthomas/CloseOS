@@ -1,6 +1,7 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpgrade } from '../contexts/UpgradeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { CheckCircle2, LogOut, ShieldCheck, X, ArrowLeft, Square, CheckSquare, AlertCircle, TicketPercent, Loader2, Download } from 'lucide-react';
 import { DataExportModal } from '../components/DataExportModal';
 import { useState, useEffect, useCallback } from 'react';
@@ -11,7 +12,7 @@ import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe
 const stripePromise = loadStripe('pk_live_51SxnxC33xpuYLywqRhYvxhWrChlI3Ckjj1AfJLqRQJQwaXNyVLuLAPaURbnEcrKRAQJTneB3ZjhUHSHuFQ9Xekdt00k1ho4IEt');
 
 // Features Pack Pro
-const PRO_FEATURES = [
+const PRO_FEATURES_FR = [
     'CRM & Pipeline illimité',
     'Agenda & Booking (Liens de rdv)',
     'Facturation & Envoi Automatique',
@@ -20,6 +21,17 @@ const PRO_FEATURES = [
     'Automatisations (Sync CRM, etc.)',
     'Enregistrement Vidéo/Audio',
     'Support Prioritaire',
+];
+
+const PRO_FEATURES_EN = [
+    'Unlimited CRM & Pipeline',
+    'Calendar & Booking (Meeting links)',
+    'Invoicing & Auto-Send',
+    'Advanced KPIs (Trends, Goals)',
+    'Call Room (Scripts & Notes)',
+    'Automations (CRM Sync, etc.)',
+    'Video/Audio Recording',
+    'Priority Support',
 ];
 
 // Price IDs — Pack Pro
@@ -36,6 +48,8 @@ export function TrialExpiredModal() {
     const location = useLocation();
     const { user, logout, profile, isAdmin, refreshProfile } = useAuth();
     const { isUpgradeModalOpen, hideUpgrade } = useUpgrade();
+    const { lang } = useLanguage();
+    const features = lang === 'fr' ? PRO_FEATURES_FR : PRO_FEATURES_EN;
 
     // Step management
     const [step, setStep] = useState<'select' | 'checkout' | 'success'>('select');
@@ -88,9 +102,9 @@ export function TrialExpiredModal() {
             });
             const data = await res.json();
             if (data.url) window.location.href = data.url;
-            else alert('Impossible d\'ouvrir le portail de paiement.');
+            else alert(lang === 'fr' ? 'Impossible d\'ouvrir le portail de paiement.' : 'Unable to open payment portal.');
         } catch {
-            alert('Erreur lors de l\'ouverture du portail.');
+            alert(lang === 'fr' ? 'Erreur lors de l\'ouverture du portail.' : 'Error opening payment portal.');
         } finally {
             setPortalLoading(false);
         }
@@ -138,14 +152,14 @@ export function TrialExpiredModal() {
                 setLoading(false);
                 setIsApplyingCode(false);
                 if (appliedCode && !data.promoApplied) {
-                    alert("Ce code promo n'existe pas ou est inactif.");
+                    alert(lang === 'fr' ? "Ce code promo n'existe pas ou est inactif." : "This promo code doesn't exist or is inactive.");
                     setAppliedCode('');
                     setReferralCode('');
                 }
             })
             .catch((err) => {
                 console.error(err);
-                setError('Erreur de chargement du module de paiement.');
+                setError(lang === 'fr' ? 'Erreur de chargement du module de paiement.' : 'Error loading payment module.');
                 setLoading(false);
                 setIsApplyingCode(false);
             });
@@ -252,9 +266,8 @@ export function TrialExpiredModal() {
     const basePrice = BASE_PRICES[billingCycle];
     const crossedPrice = CROSSED_PRICES[billingCycle];
     const finalPrice = displayDiscount > 0
-        ? (basePrice * (1 - displayDiscount / 100)).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+        ? (basePrice * (1 - displayDiscount / 100)).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', { maximumFractionDigits: 2 })
         : basePrice;
-    const features = PRO_FEATURES;
     const planLabel = 'Pack Pro';
 
     return (
@@ -266,25 +279,25 @@ export function TrialExpiredModal() {
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 border-2 border-red-500/30">
                         <AlertCircle className="h-8 w-8 text-red-400" />
                     </div>
-                    <h2 className="text-2xl font-extrabold text-white mb-2">Échec de paiement</h2>
+                    <h2 className="text-2xl font-extrabold text-white mb-2">{lang === 'fr' ? 'Échec de paiement' : 'Payment Failed'}</h2>
                     <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                        Votre dernier paiement a échoué. Mettez à jour votre moyen de paiement pour continuer à utiliser CloseOS.
+                        {lang === 'fr' ? 'Votre dernier paiement a échoué. Mettez à jour votre moyen de paiement pour continuer à utiliser CloseOS.' : 'Your last payment failed. Please update your payment method to continue using CloseOS.'}
                     </p>
                     <button
                         onClick={handleOpenPortal}
                         disabled={portalLoading}
                         className="w-full rounded-xl bg-blue-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-[0.98] disabled:opacity-50 mb-3"
                     >
-                        {portalLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Mettre à jour mon moyen de paiement'}
+                        {portalLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : (lang === 'fr' ? 'Mettre à jour mon moyen de paiement' : 'Update my payment method')}
                     </button>
                     <div className="mt-4 space-y-3">
                         <button onClick={() => setIsExportOpen(true)} className="flex items-center justify-center gap-2 text-slate-400 hover:text-blue-400 transition-colors text-sm font-medium w-full">
                             <Download className="h-4 w-4" />
-                            Extraire mes données
+                            {lang === 'fr' ? 'Extraire mes données' : 'Export my data'}
                         </button>
                         <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-slate-500 hover:text-slate-300 transition-colors text-sm w-full">
                             <LogOut className="h-4 w-4" />
-                            Se déconnecter
+                            {lang === 'fr' ? 'Se déconnecter' : 'Log out'}
                         </button>
                     </div>
                 </div>
@@ -308,11 +321,11 @@ export function TrialExpiredModal() {
                                 </div>
                                 <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-tight mb-4">
                                     {isTrialExpiredShow
-                                        ? <>Votre essai gratuit de<br />10 jours est terminé</>
-                                        : <>Passez au niveau<br />supérieur</>}
+                                        ? (lang === 'fr' ? <>Votre essai gratuit de<br />10 jours est terminé</> : <>Your 10-day free<br />trial has ended</>)
+                                        : (lang === 'fr' ? <>Passez au niveau<br />supérieur</> : <>Upgrade to the<br />next level</>)}
                                 </h2>
                                 <p className="text-slate-400 text-sm leading-relaxed mb-8 transition-opacity duration-300" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-                                    L'outil tout-en-un pour les closers. Accès complet & illimité.
+                                    {lang === 'fr' ? "L'outil tout-en-un pour les closers. Accès complet & illimité." : 'The all-in-one tool for closers. Full & unlimited access.'}
                                 </p>
                                 <div className="space-y-3" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
                                     {features.map((text, i) => (
@@ -326,18 +339,18 @@ export function TrialExpiredModal() {
                             <div className="mt-8 space-y-3">
                                 <button onClick={() => setIsExportOpen(true)} className="flex items-center gap-2 text-slate-400 hover:text-blue-400 transition-colors text-sm font-medium">
                                     <Download className="h-4 w-4" />
-                                    Extraire mes données
+                                    {lang === 'fr' ? 'Extraire mes données' : 'Export my data'}
                                 </button>
                                 <button onClick={handleLogout} className="flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors text-sm">
                                     <LogOut className="h-4 w-4" />
-                                    Se déconnecter
+                                    {lang === 'fr' ? 'Se déconnecter' : 'Log out'}
                                 </button>
                             </div>
                         </div>
 
                         {/* RIGHT */}
                         <div className="p-8 md:p-10 flex flex-col">
-                            <h3 className="text-lg font-bold text-white text-center mb-6">Pack Pro — Accès complet</h3>
+                            <h3 className="text-lg font-bold text-white text-center mb-6">{lang === 'fr' ? 'Pack Pro — Accès complet' : 'Pro Pack — Full Access'}</h3>
 
                             {/* Billing toggle */}
                             <div className="flex justify-center mb-5">
@@ -346,13 +359,13 @@ export function TrialExpiredModal() {
                                         onClick={() => setBillingCycle('monthly')}
                                         className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
-                                        Mensuel
+                                        {lang === 'fr' ? 'Mensuel' : 'Monthly'}
                                     </button>
                                     <button
                                         onClick={() => setBillingCycle('yearly')}
                                         className={`px-5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white shadow-lg border border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
-                                        Annuel
+                                        {lang === 'fr' ? 'Annuel' : 'Yearly'}
                                         <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-25%</span>
                                     </button>
                                 </div>
@@ -363,13 +376,13 @@ export function TrialExpiredModal() {
                                     <div className="w-full rounded-xl border border-blue-500 bg-blue-500/5 p-5 text-left">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-white font-bold text-base">Offre Pro</p>
-                                                <p className="text-blue-400 text-xs mt-0.5">Accès complet & illimité</p>
+                                                <p className="text-white font-bold text-base">{lang === 'fr' ? 'Offre Pro' : 'Pro Plan'}</p>
+                                                <p className="text-blue-400 text-xs mt-0.5">{lang === 'fr' ? 'Accès complet & illimité' : 'Full & unlimited access'}</p>
                                             </div>
                                             <div className="text-right flex items-center gap-2">
                                                 <span className="text-sm text-slate-500 line-through">{crossedPrice}€</span>
                                                 <span className="text-2xl font-black text-white">{basePrice}€</span>
-                                                <span className="text-slate-400 text-xs">/mois</span>
+                                                <span className="text-slate-400 text-xs">{lang === 'fr' ? '/mois' : '/mo'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -381,10 +394,10 @@ export function TrialExpiredModal() {
                                 onClick={handleGoToCheckout}
                                 className="w-full mt-6 rounded-xl bg-blue-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-[0.98]"
                             >
-                                S'abonner maintenant
+                                {lang === 'fr' ? "S'abonner maintenant" : 'Subscribe now'}
                             </button>
                             <p className="text-center text-[11px] text-slate-500 mt-3 leading-relaxed">
-                                Paiement sécurisé par Stripe. Annulation possible à tout moment.
+                                {lang === 'fr' ? 'Paiement sécurisé par Stripe. Annulation possible à tout moment.' : 'Secure payment by Stripe. Cancel anytime.'}
                             </p>
                         </div>
                     </div>
@@ -398,7 +411,7 @@ export function TrialExpiredModal() {
                     <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#0B1120]/95 backdrop-blur-sm">
                         <button onClick={handleBackToSelect} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm">
                             <ArrowLeft className="h-4 w-4" />
-                            Retour
+                            {lang === 'fr' ? 'Retour' : 'Back'}
                         </button>
                         <img src="/logo-sales.png" alt="CloseOS Logo" className="h-11 w-auto" />
                         <div className="w-16" />
@@ -410,9 +423,9 @@ export function TrialExpiredModal() {
 
                             {/* Plan summary */}
                             <div className="rounded-2xl p-6 border bg-blue-600/5 border-blue-500/20">
-                                <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">🔥 -51% Offre de lancement</div>
-                                <h3 className="text-xl font-extrabold text-white mb-1">{planLabel} {billingCycle === 'yearly' && '(Annuel)'}</h3>
-                                <p className="text-slate-400 text-sm mb-4">Accès complet & illimité</p>
+                                <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">{lang === 'fr' ? '🔥 -51% Offre de lancement' : '🔥 -51% Launch offer'}</div>
+                                <h3 className="text-xl font-extrabold text-white mb-1">{planLabel} {billingCycle === 'yearly' && (lang === 'fr' ? '(Annuel)' : '(Yearly)')}</h3>
+                                <p className="text-slate-400 text-sm mb-4">{lang === 'fr' ? 'Accès complet & illimité' : 'Full & unlimited access'}</p>
 
                                 <div className="flex items-baseline gap-2 mb-4 flex-wrap">
                                     <span className="text-4xl font-black text-white">{finalPrice}€</span>
@@ -429,13 +442,13 @@ export function TrialExpiredModal() {
                                     )}
                                     <span className="text-slate-400 text-sm">
                                         {billingCycle === 'yearly'
-                                            ? '/mois (facturé 306€/an)'
-                                            : '/mois'}
+                                            ? (lang === 'fr' ? '/mois (facturé 306€/an)' : '/mo (billed €306/yr)')
+                                            : (lang === 'fr' ? '/mois' : '/mo')}
                                     </span>
                                 </div>
 
                                 {billingCycle === 'yearly' && (
-                                    <p className="text-xs text-emerald-400 font-medium">✨ -25% avec la facturation annuelle</p>
+                                    <p className="text-xs text-emerald-400 font-medium">{lang === 'fr' ? '✨ -25% avec la facturation annuelle' : '✨ -25% with yearly billing'}</p>
                                 )}
 
                                 <div className="space-y-2.5 mt-4">
@@ -455,13 +468,13 @@ export function TrialExpiredModal() {
                                         onClick={() => setBillingCycle('monthly')}
                                         className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
-                                        Mensuel
+                                        {lang === 'fr' ? 'Mensuel' : 'Monthly'}
                                     </button>
                                     <button
                                         onClick={() => setBillingCycle('yearly')}
                                         className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
-                                        Annuel
+                                        {lang === 'fr' ? 'Annuel' : 'Yearly'}
                                         <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-25%</span>
                                     </button>
                                 </div>
@@ -471,7 +484,7 @@ export function TrialExpiredModal() {
                             <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
                                 <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
                                     <TicketPercent className="h-4 w-4 text-blue-400" />
-                                    <span className="font-semibold">Code de parrainage / Promo</span>
+                                    <span className="font-semibold">{lang === 'fr' ? 'Code de parrainage / Promo' : 'Referral / Promo code'}</span>
                                 </div>
                                 <div className="flex gap-2">
                                     <input
@@ -486,13 +499,13 @@ export function TrialExpiredModal() {
                                         disabled={isApplyingCode || !referralCode}
                                         className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
                                     >
-                                        {isApplyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Appliquer'}
+                                        {isApplyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : (lang === 'fr' ? 'Appliquer' : 'Apply')}
                                     </button>
                                 </div>
                                 {appliedCode && !isApplyingCode && (
                                     <p className="text-xs text-emerald-400 mt-2 font-medium flex items-center gap-1.5">
                                         <CheckCircle2 className="h-3.5 w-3.5" />
-                                        Code appliqué ! Vérifiez le montant total.
+                                        {lang === 'fr' ? 'Code appliqué ! Vérifiez le montant total.' : 'Code applied! Check the total amount.'}
                                     </p>
                                 )}
                             </div>
@@ -502,7 +515,7 @@ export function TrialExpiredModal() {
                                 {showTermsError && (
                                     <div className="flex items-center gap-2 text-red-400 text-sm font-bold mb-3 animate-pulse">
                                         <AlertCircle className="h-4 w-4" />
-                                        Vous devez accepter les conditions pour continuer
+                                        {lang === 'fr' ? 'Vous devez accepter les conditions pour continuer' : 'You must accept the terms to continue'}
                                     </div>
                                 )}
                                 <div className="flex items-start gap-3 cursor-pointer" onClick={toggleTerms}>
@@ -510,7 +523,9 @@ export function TrialExpiredModal() {
                                         {isTermsAccepted ? <CheckSquare className="h-3.5 w-3.5 text-white" /> : <Square className="h-3.5 w-3.5 text-transparent" />}
                                     </div>
                                     <div className="text-xs text-slate-300 leading-relaxed select-none">
-                                        Je reconnais avoir pris connaissance et j'accepte les <Link to="/cgu" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>CGV</Link> et la <Link to="/confidentialite" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Politique de Confidentialité</Link>. Je renonce expressément à mon droit de rétractation pour accéder au service immédiatement.
+                                        {lang === 'fr'
+                                            ? <>Je reconnais avoir pris connaissance et j'accepte les <Link to="/cgu" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>CGV</Link> et la <Link to="/confidentialite" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Politique de Confidentialité</Link>. Je renonce expressément à mon droit de rétractation pour accéder au service immédiatement.</>
+                                            : <>I acknowledge and accept the <Link to="/cgu" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Terms of Service</Link> and the <Link to="/confidentialite" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Privacy Policy</Link>. I expressly waive my right of withdrawal to access the service immediately.</>}
                                     </div>
                                 </div>
                             </div>
@@ -518,7 +533,7 @@ export function TrialExpiredModal() {
                             <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/50 border border-slate-800">
                                 <ShieldCheck className="h-8 w-8 text-blue-500/50 shrink-0" />
                                 <p className="text-[10px] text-slate-500 leading-tight">
-                                    Paiement sécurisé par Stripe. Vos données sont cryptées. Annulation possible à tout moment.
+                                    {lang === 'fr' ? 'Paiement sécurisé par Stripe. Vos données sont cryptées. Annulation possible à tout moment.' : 'Secure payment by Stripe. Your data is encrypted. Cancel anytime.'}
                                 </p>
                             </div>
                         </div>
@@ -530,14 +545,14 @@ export function TrialExpiredModal() {
                                     <div className="bg-red-950/20 border border-red-900/50 p-6 rounded-2xl text-center">
                                         <p className="text-red-400 mb-4 text-sm">{error}</p>
                                         <button onClick={fetchClientSecret} className="text-white bg-slate-800 px-5 py-2 rounded-xl font-bold hover:bg-slate-700 transition-all text-sm">
-                                            Réessayer
+                                            {lang === 'fr' ? 'Réessayer' : 'Retry'}
                                         </button>
                                     </div>
                                 </div>
                             ) : loading || !clientSecret ? (
                                 <div className="flex-1 flex flex-col items-center justify-center">
                                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-4" />
-                                    <p className="text-slate-400 font-medium text-sm">Chargement du module sécurisé...</p>
+                                    <p className="text-slate-400 font-medium text-sm">{lang === 'fr' ? 'Chargement du module sécurisé...' : 'Loading secure module...'}</p>
                                 </div>
                             ) : (
                                 <div className="relative flex-1">
@@ -569,15 +584,17 @@ export function TrialExpiredModal() {
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 border-2 border-emerald-500/30">
                         <CheckCircle2 className="h-8 w-8 text-emerald-400" style={{ animation: 'successPop 0.5s ease-out' }} />
                     </div>
-                    <h2 className="text-2xl font-extrabold text-white mb-2">Paiement validé !</h2>
+                    <h2 className="text-2xl font-extrabold text-white mb-2">{lang === 'fr' ? 'Paiement validé !' : 'Payment confirmed!'}</h2>
                     <p className="text-slate-400 text-sm leading-relaxed mb-5">
-                        Vous avez maintenant accès au <span className="text-white font-semibold">{planLabel}</span>. Bienvenue !
+                        {lang === 'fr'
+                            ? <>Vous avez maintenant accès au <span className="text-white font-semibold">{planLabel}</span>. Bienvenue !</>
+                            : <>You now have access to <span className="text-white font-semibold">{planLabel}</span>. Welcome!</>}
                     </p>
                     <div className="w-full rounded-xl overflow-hidden mb-6 border border-slate-700">
                         <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                             <iframe
                                 src="https://www.youtube.com/embed/as_MdM--MYQ?autoplay=1"
-                                title="Bienvenue sur CloseOS"
+                                title={lang === 'fr' ? 'Bienvenue sur CloseOS' : 'Welcome to CloseOS'}
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
                                 className="absolute inset-0 w-full h-full"
@@ -588,7 +605,7 @@ export function TrialExpiredModal() {
                         onClick={handleSuccessClose}
                         className="w-full rounded-xl bg-emerald-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 active:scale-[0.98]"
                     >
-                        Commencez réellement
+                        {lang === 'fr' ? 'Commencez réellement' : 'Get started'}
                     </button>
                 </div>
             )}

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
 import {
@@ -15,23 +16,23 @@ import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectM
 import { BusinessInvoiceGeneratorModal } from '../components/BusinessInvoiceGeneratorModal'
 
 const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
+  new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
 
 const STATUS_OPTIONS = [
-  { value: 'à payer', label: 'À payer', bg: 'bg-stone-100', text: 'text-stone-600', border: 'border-stone-200' },
-  { value: 'en cours', label: 'En cours', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' },
-  { value: 'payé', label: 'Payé', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  { value: 'à payer', key: 'invoices_status_to_pay', bg: 'bg-stone-100', text: 'text-stone-600', border: 'border-stone-200' },
+  { value: 'en cours', key: 'invoices_status_in_progress', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' },
+  { value: 'payé', key: 'invoices_status_paid_label', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
 ]
 
 const getStatusConfig = (status: string) => {
   const found = STATUS_OPTIONS.find(s => s.value === status)
   if (found) return found
   switch (status) {
-    case 'envoyée': return { value: status, label: 'Envoyée', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' }
-    case 'générée': return { value: status, label: 'Générée', bg: 'bg-stone-100', text: 'text-stone-500', border: 'border-stone-200' }
-    case 'retard': return { value: status, label: 'En retard', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200' }
-    case 'en attente': case 'en_attente': return { value: status, label: 'En attente', bg: 'bg-stone-100', text: 'text-stone-600', border: 'border-stone-200' }
-    default: return { value: status, label: status || 'Brouillon', bg: 'bg-stone-100', text: 'text-stone-500', border: 'border-stone-200' }
+    case 'envoyée': return { value: status, key: 'invoices_status_sent', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' }
+    case 'générée': return { value: status, key: 'invoices_status_generated', bg: 'bg-stone-100', text: 'text-stone-500', border: 'border-stone-200' }
+    case 'retard': return { value: status, key: 'invoices_status_late', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200' }
+    case 'en attente': case 'en_attente': return { value: status, key: 'invoices_status_waiting', bg: 'bg-stone-100', text: 'text-stone-600', border: 'border-stone-200' }
+    default: return { value: status, key: 'invoices_status_draft', bg: 'bg-stone-100', text: 'text-stone-500', border: 'border-stone-200' }
   }
 }
 
@@ -41,6 +42,7 @@ const getStatusConfig = (status: string) => {
 // - Mention obligatoire sur la facture
 export function CloserFactures() {
   const { user, teamMember, ownerUserId, isTeamMember, businessSettings } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const { prospects } = useBusinessProspects()
   const effectiveUserId = ownerUserId || user?.id
 
@@ -266,14 +268,14 @@ export function CloserFactures() {
   // Update status
   const handleStatusChange = useCallback(async (invoiceId: string, newStatus: string) => {
     const { error } = await supabase.from('invoices').update({ status: newStatus }).eq('id', invoiceId)
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.common_error); return }
     setSavedInvoices(prev => prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv))
-    toast.success('Statut mis à jour')
+    toast.success(t.invoices_status_updated)
   }, [])
 
   const copyStripeLink = (link: string) => {
     navigator.clipboard.writeText(link)
-    toast.success('Lien copié')
+    toast.success(t.invoices_link_copied)
   }
 
   if (loading) {
@@ -290,9 +292,9 @@ export function CloserFactures() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {isFixedComp ? 'Factures & Salaire Fixe' : isFixedPlusComm ? 'Factures & Rémunération' : 'Factures & Commissions'}
+            {isFixedComp ? t.invoices_fixed_salary_title : isFixedPlusComm ? t.invoices_fixed_plus_commission_title : t.invoices_commission_title}
           </h1>
-          <p className="text-stone-500 dark:text-neutral-400 mt-2">{isFixedComp ? 'Suivez votre salaire fixe et gérez vos factures' : isFixedPlusComm ? 'Suivez votre fixe, vos commissions et gérez vos factures' : 'Suivez vos commissions et gérez vos factures'}</p>
+          <p className="text-stone-500 dark:text-neutral-400 mt-2">{isFixedComp ? t.invoices_fixed_salary_subtitle : isFixedPlusComm ? t.invoices_fixed_plus_commission_subtitle : t.invoices_commission_subtitle}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <button
@@ -300,27 +302,27 @@ export function CloserFactures() {
             className="flex items-center gap-2 rounded-full bg-[#635BFF] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#5349E0] hover:shadow-lg hover:shadow-[#635BFF]/20 active:scale-95"
           >
             <CreditCard className="h-4 w-4" />
-            Connecter Stripe
+            {t.invoices_connect_stripe}
           </button>
           <button
             onClick={() => setIsIssuerModalOpen(true)}
             className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 px-5 py-2.5 text-sm font-semibold text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors"
           >
             <Building2 className="h-4 w-4" />
-            Infos Émetteur
+            {t.invoices_issuer_info}
           </button>
           <button
             onClick={() => setIsPaymentMethodsOpen(true)}
             className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 px-5 py-2.5 text-sm font-semibold text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors"
           >
             <Wallet className="h-4 w-4" />
-            Moyens de Paiement
+            {t.invoices_payment_methods}
           </button>
           <button
             onClick={() => setIsGenModalOpen(true)}
             className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-white px-5 py-2.5 text-sm font-semibold text-white dark:text-neutral-900 hover:bg-stone-800 dark:hover:bg-neutral-200 transition-colors"
           >
-            <Plus className="h-4 w-4" /> Générer une facture
+            <Plus className="h-4 w-4" /> {t.invoices_generate_invoice}
           </button>
         </div>
       </div>
@@ -328,7 +330,7 @@ export function CloserFactures() {
       {/* Filter Bar — Glass pill */}
       <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-2xl md:rounded-full p-3 px-6 flex flex-col md:flex-row flex-wrap items-start md:items-center gap-4 md:gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-white/40 dark:border-white/10">
         <div className="flex items-center gap-3 border-r border-stone-200/40 dark:border-white/10 pr-6">
-          <span className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">Période</span>
+          <span className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">{t.invoices_period}</span>
           <div className="flex items-center gap-2">
             <input
               type="date"
@@ -384,9 +386,9 @@ export function CloserFactures() {
             <span className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
               <Wallet className="h-5 w-5" />
             </span>
-            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">Mensuel</span>
+            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{t.invoices_monthly}</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">Salaire Fixe</p>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_fixed_salary}</p>
           <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {fixedSalary.toLocaleString('fr-FR')} <span className="text-base">€</span>
           </p>
@@ -403,7 +405,7 @@ export function CloserFactures() {
             </span>
             <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{teamMember?.commission_rate || 10}% CA</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">Ma Commission</p>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_my_commission}</p>
           <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {commissionEstimee.toLocaleString('fr-FR')} <span className="text-base">€</span>
           </p>
@@ -420,7 +422,7 @@ export function CloserFactures() {
             </span>
             <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{myCloserDeals.length} deal{myCloserDeals.length !== 1 ? 's' : ''}</span>
           </div>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">Commission Closer</p>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_commission_closer}</p>
           <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {commissionCloser.toLocaleString('fr-FR')} <span className="text-base">€</span>
           </p>
@@ -594,11 +596,11 @@ export function CloserFactures() {
                     <td className="px-4 md:px-8 py-4 md:py-6 font-mono text-xs font-bold text-stone-700 dark:text-neutral-200">
                       {inv.invoice_number}
                       <span className="md:hidden block text-[10px] font-medium text-stone-500 dark:text-neutral-400 font-sans">
-                        {new Date(inv.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {new Date(inv.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     </td>
                     <td className="hidden md:table-cell px-8 py-6 text-sm text-stone-700 dark:text-neutral-200 font-medium">
-                      {new Date(inv.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {new Date(inv.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-4 md:px-8 py-4 md:py-6">
                       <div className="flex flex-col">
@@ -610,7 +612,7 @@ export function CloserFactures() {
                     <td className="hidden md:table-cell px-8 py-6">
                       {inv.due_date ? (
                         <span className={cn("text-xs font-semibold", isOverdue ? "text-red-500" : "text-stone-500 dark:text-neutral-400")}>
-                          {new Date(inv.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          {new Date(inv.due_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
                           {isOverdue && <span className="ml-1 text-[9px] uppercase font-black text-red-500">Retard</span>}
                         </span>
                       ) : (
@@ -628,10 +630,10 @@ export function CloserFactures() {
                           )}
                         >
                           {STATUS_OPTIONS.map(s => (
-                            <option key={s.value} value={s.value}>{s.label}</option>
+                            <option key={s.value} value={s.value}>{t[s.key]}</option>
                           ))}
                           {!STATUS_OPTIONS.find(s => s.value === inv.status) && inv.status && (
-                            <option value={inv.status}>{getStatusConfig(inv.status).label}</option>
+                            <option value={inv.status}>{t[getStatusConfig(inv.status).key]}</option>
                           )}
                         </select>
                       </div>

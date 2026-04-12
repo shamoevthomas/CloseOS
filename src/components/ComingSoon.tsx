@@ -1,5 +1,6 @@
 import { Check, type LucideIcon } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface ComingSoonProps {
   title: string
@@ -9,6 +10,7 @@ interface ComingSoonProps {
 }
 
 export function ComingSoon({ title, description, icon: Icon, features }: ComingSoonProps) {
+  const { lang } = useLanguage()
   return (
     <div className="flex min-h-[calc(100vh-120px)] items-center justify-center p-8">
       <div className="w-full max-w-2xl text-center">
@@ -38,7 +40,7 @@ export function ComingSoon({ title, description, icon: Icon, features }: ComingS
         {/* Features List */}
         <div className="mb-8 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8 backdrop-blur-2xl">
           <h2 className="mb-6 text-xl font-semibold text-white">
-            Fonctionnalités à venir
+            {lang === 'fr' ? 'Fonctionnalités à venir' : 'Upcoming features'}
           </h2>
           <div className="grid gap-4 text-left">
             {features.map((feature, index) => (
@@ -58,7 +60,7 @@ export function ComingSoon({ title, description, icon: Icon, features }: ComingS
         {/* Coming Soon Badge */}
         <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-6 py-3">
           <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></div>
-          <span className="text-sm font-semibold text-emerald-400">En développement</span>
+          <span className="text-sm font-semibold text-emerald-400">{lang === 'fr' ? 'En développement' : 'In development'}</span>
         </div>
 
         {/* Disabled Button */}
@@ -70,13 +72,13 @@ export function ComingSoon({ title, description, icon: Icon, features }: ComingS
               'opacity-50'
             )}
           >
-            Bientôt disponible
+            {lang === 'fr' ? 'Bientôt disponible' : 'Coming soon'}
           </button>
         </div>
 
         {/* Additional Info */}
         <p className="mt-6 text-xs text-white/40">
-          Cette fonctionnalité sera disponible dans une prochaine mise à jour
+          {lang === 'fr' ? 'Cette fonctionnalité sera disponible dans une prochaine mise à jour' : 'This feature will be available in a future update'}
         </p>
       </div>
     </div>

@@ -5,11 +5,13 @@ import {
   Globe, Building2, User as UserIcon, Eye, EyeOff, Shield, MapPin,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useBusinessLang } from '../i18n/BusinessLangContext';
 import BusinessVerification from './BusinessVerification';
 
 export function BusinessInvitation() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const { t, lang } = useBusinessLang();
 
   const [loading, setLoading] = useState(true);
   const [invitation, setInvitation] = useState<any>(null);
@@ -30,7 +32,7 @@ export function BusinessInvitation() {
   useEffect(() => {
     const validateToken = async () => {
       if (!token) {
-        setError("Lien d'invitation invalide.");
+        setError(t.invitation_invalid_link);
         setLoading(false);
         return;
       }
@@ -40,13 +42,13 @@ export function BusinessInvitation() {
         const data = await res.json();
 
         if (!res.ok) {
-          setError(data.error || 'Invitation invalide ou expirée.');
+          setError(data.error || t.invitation_expired);
         } else {
           setInvitation(data.invitation);
           setOwnerSettings(data.ownerSettings || null);
         }
       } catch {
-        setError("Impossible de valider l'invitation.");
+        setError(t.invitation_validate_error);
       } finally {
         setLoading(false);
       }
@@ -71,7 +73,7 @@ export function BusinessInvitation() {
 
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(data.error || "Erreur lors de l'acceptation de l'invitation.");
+      throw new Error(data.error || t.invitation_accept_error);
     }
     return data;
   };
@@ -91,7 +93,7 @@ export function BusinessInvitation() {
         .maybeSingle();
 
       if (salesProfile) {
-        setError("Cet email est déjà associé à un compte CloseOS Sales. Veuillez utiliser un autre email.");
+        setError(t.invitation_email_sales_conflict);
         setSubmitLoading(false);
         return;
       }
@@ -109,7 +111,7 @@ export function BusinessInvitation() {
           .maybeSingle();
 
         if (salesCheck) {
-          setError("Ce compte est déjà associé à un compte CloseOS Sales. Veuillez vous déconnecter et utiliser un autre email.");
+          setError(t.invitation_account_sales_conflict);
           setSubmitLoading(false);
           return;
         }
@@ -132,7 +134,7 @@ export function BusinessInvitation() {
         }
 
         if (!data.user) {
-          setError('Erreur lors de la création du compte.');
+          setError(t.invitation_account_creation_error);
           setSubmitLoading(false);
           return;
         }
@@ -144,7 +146,7 @@ export function BusinessInvitation() {
       // Show verification before onboarding
       setPendingVerification({ userId, email: userEmail, authMethod: 'classic' });
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue.');
+      setError(err.message || t.invitation_generic_error);
     } finally {
       setSubmitLoading(false);
     }
@@ -170,7 +172,7 @@ export function BusinessInvitation() {
         setGoogleLoading(false);
       }
     } catch {
-      setError('Impossible de lancer la connexion Google.');
+      setError(t.invitation_google_error);
       setGoogleLoading(false);
     }
   };
@@ -198,7 +200,7 @@ export function BusinessInvitation() {
 
       if (salesProfile) {
         oauthAcceptedRef.current = false;
-        setError("Ce compte Google est déjà associé à un compte CloseOS Sales. Veuillez utiliser un autre compte.");
+        setError(t.invitation_google_sales_conflict);
         setSubmitLoading(false);
         return;
       }
@@ -216,7 +218,7 @@ export function BusinessInvitation() {
       setPendingVerification({ userId: user.id, email: user.email || '', authMethod: 'google' });
     } catch (err: any) {
       oauthAcceptedRef.current = false; // allow retry
-      setError(err.message || "Erreur lors de l'acceptation.");
+      setError(err.message || t.invitation_accept_error_short);
     } finally {
       setSubmitLoading(false);
     }
@@ -262,15 +264,15 @@ export function BusinessInvitation() {
   // ─── Success: redirect after verification ───
   useEffect(() => {
     if (success) {
-      const t = setTimeout(() => navigate('/business/organisation'), 2500);
-      return () => clearTimeout(t);
+      const timer = setTimeout(() => navigate('/business/organisation'), 2500);
+      return () => clearTimeout(timer);
     }
   }, [success, navigate]);
 
-  const inviterName = invitation?.inviter?.full_name || 'Un manager';
+  const inviterName = invitation?.inviter?.full_name || t.invitation_default_manager;
   const inviterFirstName = inviterName.split(' ')[0];
-  const companyName = ownerSettings?.company_name || 'une organisation';
-  const role = invitation?.role || 'Membre';
+  const companyName = ownerSettings?.company_name || t.invitation_default_company;
+  const role = invitation?.role || t.invitation_default_role;
 
   // ─── Loading ───
   if (loading) {
@@ -287,13 +289,13 @@ export function BusinessInvitation() {
       <div className="flex min-h-screen items-center justify-center bg-stone-50 dark:bg-neutral-900 px-4">
         <div className="w-full max-w-md rounded-3xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 p-10 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-2">Invitation invalide</h2>
+          <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-2">{t.invitation_invalid_title}</h2>
           <p className="text-stone-500 dark:text-neutral-400 mb-6">{error}</p>
           <Link
             to="/business/register"
             className="inline-flex items-center gap-2 bg-stone-900 text-white px-7 py-3.5 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm"
           >
-            Créer un compte Business
+            {t.invitation_create_business}
           </Link>
         </div>
       </div>
@@ -321,11 +323,11 @@ export function BusinessInvitation() {
       <div className="flex min-h-screen items-center justify-center bg-stone-50 dark:bg-neutral-900 px-4">
         <div className="w-full max-w-md rounded-3xl border border-emerald-200 bg-white dark:bg-neutral-800 p-10 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
-          <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-2">Bienvenue dans l'équipe !</h2>
+          <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-2">{t.invitation_welcome_title}</h2>
           <p className="text-stone-500 dark:text-neutral-400 mb-2">
-            Vous avez rejoint <strong>{companyName}</strong> en tant que <strong>{role}</strong>.
+            {t.invitation_welcome_joined} <strong>{companyName}</strong> {t.invitation_welcome_as} <strong>{role}</strong>.
           </p>
-          <p className="text-sm text-stone-400 dark:text-neutral-500">Redirection vers le dashboard...</p>
+          <p className="text-sm text-stone-400 dark:text-neutral-500">{t.invitation_redirecting}</p>
         </div>
       </div>
     );
@@ -357,7 +359,7 @@ export function BusinessInvitation() {
           {/* Headline */}
           <div className="max-w-md">
             <h1 className="text-5xl font-extrabold tracking-tight leading-[1.1] mb-6 text-stone-900 dark:text-white">
-              Rejoignez <span className="text-emerald-700 italic">{companyName}</span>.
+              {t.invitation_join_company} <span className="text-emerald-700 italic">{companyName}</span>.
             </h1>
             {ownerSettings?.description && (
               <p className="text-stone-500 dark:text-neutral-400 text-lg leading-relaxed">{ownerSettings.description}</p>
@@ -368,14 +370,14 @@ export function BusinessInvitation() {
           <div className="grid gap-4 max-w-sm">
             {inviterName && (
               <div className="p-6 bg-white/50 dark:bg-white/5 border border-stone-200/20 dark:border-neutral-700 rounded-2xl hover:bg-white dark:hover:bg-white/10 transition-colors">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">Dirigeant</p>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">{t.invitation_leader}</p>
                 <p className="font-bold text-lg text-stone-900 dark:text-white">{inviterName}</p>
               </div>
             )}
 
             {ownerSettings?.website && (
               <div className="p-6 bg-white/50 dark:bg-white/5 border border-stone-200/20 dark:border-neutral-700 rounded-2xl hover:bg-white dark:hover:bg-white/10 transition-colors">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">Site web</p>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">{t.invitation_website}</p>
                 <a href={ownerSettings.website.startsWith('http') ? ownerSettings.website : `https://${ownerSettings.website}`} target="_blank" rel="noopener noreferrer" className="font-bold text-lg text-stone-900 dark:text-white hover:text-emerald-700 transition-colors">
                   {ownerSettings.website}
                 </a>
@@ -384,7 +386,7 @@ export function BusinessInvitation() {
 
             {ownerSettings?.address && (
               <div className="p-6 bg-white/50 dark:bg-white/5 border border-stone-200/20 dark:border-neutral-700 rounded-2xl hover:bg-white dark:hover:bg-white/10 transition-colors">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">Adresse</p>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">{t.invitation_address}</p>
                 <p className="font-bold text-lg text-stone-900 dark:text-white">{ownerSettings.address}</p>
               </div>
             )}
@@ -394,7 +396,7 @@ export function BusinessInvitation() {
         {/* Trust badge */}
         <div className="relative z-10 mt-12 flex items-center gap-3 py-4 px-6 bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-full self-start border border-stone-200/10 dark:border-neutral-700">
           <Shield className="h-5 w-5 text-emerald-600" />
-          <span className="text-xs font-bold tracking-widest uppercase text-stone-700 dark:text-neutral-200">Accès sécurisé</span>
+          <span className="text-xs font-bold tracking-widest uppercase text-stone-700 dark:text-neutral-200">{t.invitation_secure_access}</span>
         </div>
       </div>
 
@@ -412,10 +414,10 @@ export function BusinessInvitation() {
           {/* Heading */}
           <div className="space-y-2">
             <h2 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
-              Rejoignez {companyName}
+              {t.invitation_join_company} {companyName}
             </h2>
             <p className="text-stone-500 dark:text-neutral-400">
-              Invité par <span className="text-stone-900 dark:text-white font-semibold underline decoration-amber-300 decoration-4">{inviterFirstName}</span> en tant que{' '}
+              {t.invitation_invited_by} <span className="text-stone-900 dark:text-white font-semibold underline decoration-amber-300 decoration-4">{inviterFirstName}</span> {t.invitation_as_role}{' '}
               <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full uppercase tracking-tight">
                 {role}
               </span>
@@ -435,7 +437,7 @@ export function BusinessInvitation() {
             )}
             <div className="min-w-0">
               <p className="text-sm font-semibold text-stone-800 dark:text-neutral-100 truncate">{companyName}</p>
-              <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">Invité par {inviterName}</p>
+              <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">{t.invitation_invited_by} {inviterName}</p>
             </div>
           </div>
 
@@ -461,13 +463,13 @@ export function BusinessInvitation() {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
             )}
-            Continuer avec Google
+            {t.invitation_google}
           </button>
 
           {/* Separator */}
           <div className="relative flex items-center py-2">
             <div className="flex-grow border-t border-stone-200/20 dark:border-neutral-700" />
-            <span className="flex-shrink mx-4 text-[10px] font-bold tracking-widest uppercase text-stone-400 dark:text-neutral-500">Ou avec email</span>
+            <span className="flex-shrink mx-4 text-[10px] font-bold tracking-widest uppercase text-stone-400 dark:text-neutral-500">{t.invitation_or_email}</span>
             <div className="flex-grow border-t border-stone-200/20 dark:border-neutral-700" />
           </div>
 
@@ -476,7 +478,7 @@ export function BusinessInvitation() {
             {/* First name / Last name */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">Prénom</label>
+                <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">{t.invitation_first_name}</label>
                 <input
                   type="text"
                   value={firstName}
@@ -487,7 +489,7 @@ export function BusinessInvitation() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">Nom</label>
+                <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">{t.invitation_last_name}</label>
                 <input
                   type="text"
                   value={lastName}
@@ -501,7 +503,7 @@ export function BusinessInvitation() {
 
             {/* Email */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">Adresse email</label>
+              <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">{t.invitation_email_label}</label>
               <input
                 type="email"
                 value={email}
@@ -514,7 +516,7 @@ export function BusinessInvitation() {
 
             {/* Password */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">Mot de passe</label>
+              <label className="text-[10px] font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 ml-2">{t.invitation_password_label}</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -544,7 +546,7 @@ export function BusinessInvitation() {
               {submitLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin mx-auto" />
               ) : (
-                "Accepter l'invitation"
+                t.invitation_accept_btn
               )}
             </button>
           </form>
@@ -552,12 +554,12 @@ export function BusinessInvitation() {
           {/* Legal + login link */}
           <div className="space-y-4 text-center">
             <p className="text-[11px] text-stone-500 dark:text-neutral-400 leading-relaxed">
-              En continuant, vous acceptez nos <Link to="#" className="underline text-stone-900 dark:text-white">Conditions Générales</Link> et notre <Link to="#" className="underline text-stone-900 dark:text-white">Politique de Confidentialité</Link>.
+              {t.invitation_terms_prefix} <Link to="#" className="underline text-stone-900 dark:text-white">{t.invitation_terms_link}</Link> {t.invitation_terms_and} <Link to="#" className="underline text-stone-900 dark:text-white">{t.invitation_privacy_link}</Link>.
             </p>
             <p className="text-sm text-stone-500 dark:text-neutral-400">
-              Déjà un compte ?{' '}
+              {t.invitation_already_account}{' '}
               <Link to="/business/login" className="font-semibold text-stone-900 dark:text-white hover:text-stone-600 dark:hover:text-neutral-200 transition-colors">
-                Se connecter
+                {t.invitation_login}
               </Link>
             </p>
           </div>

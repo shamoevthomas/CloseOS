@@ -5,6 +5,7 @@ import {
   Bell, Clock, User, Megaphone, Circle, Zap,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
@@ -52,7 +53,7 @@ interface Reminder {
 }
 
 const formatCurrency = (v: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+  new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
@@ -75,6 +76,7 @@ const METRIC_LABELS: Record<string, string> = {
 
 export function TeamMemberDashboard() {
   const { user, teamMember, ownerUserId, businessSettings, userTimezone } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [prospects, setProspects] = useState<Prospect[]>([])
@@ -165,8 +167,8 @@ export function TeamMemberDashboard() {
     })
   }, [campaigns, prospects])
 
-  const firstName = teamMember?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'Membre'
-  const companyName = businessSettings?.company_name || 'Organisation'
+  const firstName = teamMember?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || t.team_dashboard_member_fallback
+  const companyName = businessSettings?.company_name || t.team_dashboard_org_fallback
   const kpiLink = teamMember?.role === 'Setter' ? '/business/setter-kpi' : '/business/closer-kpi'
 
   const formatApptDate = (dateStr: string) => {
@@ -175,9 +177,9 @@ export function TeamMemberDashboard() {
     today.setHours(0, 0, 0, 0)
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
-    if (d.getTime() === today.getTime()) return 'AUJ'
-    if (d.getTime() === tomorrow.getTime()) return 'DEM'
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).toUpperCase()
+    if (d.getTime() === today.getTime()) return t.team_dashboard_today_short
+    if (d.getTime() === tomorrow.getTime()) return t.team_dashboard_tomorrow_short
+    return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' }).toUpperCase()
   }
 
   if (loading) {
@@ -200,7 +202,7 @@ export function TeamMemberDashboard() {
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b] dark:text-white">Bonjour {firstName}</h1>
+              <h1 className="font-['Manrope'] text-5xl font-extrabold tracking-tighter text-[#1b1c1b] dark:text-white">{t.team_dashboard_hello} {firstName}</h1>
               <span className={`text-[10px] font-bold px-3 py-1 rounded-full tracking-widest uppercase ${ROLE_BADGE[teamMember?.role || ''] || 'bg-[#eae8e7] text-[#444748] dark:bg-white/10 dark:text-neutral-300'}`}>
                 {teamMember?.role}
               </span>
@@ -211,8 +213,8 @@ export function TeamMemberDashboard() {
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <div className="text-right">
-            <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">Dernière Sync</p>
-            <p className="font-bold text-[#1b1c1b] dark:text-white">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+            <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">{t.team_dashboard_last_sync}</p>
+            <p className="font-bold text-[#1b1c1b] dark:text-white">{new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</p>
           </div>
         </div>
       </header>
@@ -227,7 +229,7 @@ export function TeamMemberDashboard() {
               <DollarSign className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Revenue</h3>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">{t.team_dashboard_revenue}</h3>
           <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-emerald-400">{formatCurrency(totalRevenue)}</p>
         </Link>
         )}
@@ -240,7 +242,7 @@ export function TeamMemberDashboard() {
               <DollarSign className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">CA Généré</h3>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">{t.team_dashboard_revenue_generated}</h3>
           <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-emerald-400">{formatCurrency(totalRevenue)}</p>
         </Link>
         )}
@@ -252,9 +254,9 @@ export function TeamMemberDashboard() {
               <TrendingUp className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Closing Rate</h3>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">{t.team_dashboard_closing_rate}</h3>
           <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-amber-400">{formatPct(closingRate)}</p>
-          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{wonProspects.length} signés / {totalDecided} présentés</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{wonProspects.length} {t.team_dashboard_signed} / {totalDecided} {t.team_dashboard_presented}</p>
         </Link>
 
         {/* Appointments */}
@@ -264,9 +266,9 @@ export function TeamMemberDashboard() {
               <CalendarDays className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">Rendez-vous</h3>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">{t.team_dashboard_appointments}</h3>
           <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-blue-400">{totalAppts}</p>
-          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">Ce mois-ci</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{t.team_dashboard_this_month}</p>
         </Link>
 
         {/* No-Show Rate */}
@@ -276,9 +278,9 @@ export function TeamMemberDashboard() {
               <UserX className="h-5 w-5" />
             </div>
           </div>
-          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">No-Show Rate</h3>
+          <h3 className="text-[#444748] dark:text-neutral-400 text-[10px] font-bold uppercase tracking-widest mb-1">{t.team_dashboard_noshow_rate}</h3>
           <p className="font-['Manrope'] text-3xl font-extrabold text-[#1b1c1b] dark:text-rose-400">{formatPct(noshowRate)}</p>
-          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{noshowProspects.length} absences sur {prospects.length}</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-[11px] mt-1 font-medium italic">{noshowProspects.length} {t.team_dashboard_absences_on} {prospects.length}</p>
         </Link>
       </section>
 
@@ -286,8 +288,8 @@ export function TeamMemberDashboard() {
       {objectivesWithProgress.length > 0 && (
         <section className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Mes Objectifs</h2>
-            <Link to="/business/closer-objectifs" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">Voir tout</Link>
+            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">{t.team_dashboard_my_objectives}</h2>
+            <Link to="/business/closer-objectifs" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">{t.team_dashboard_view_all}</Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {objectivesWithProgress.map((obj, i) => {
@@ -297,7 +299,7 @@ export function TeamMemberDashboard() {
                 { bar: 'bg-[#000000] dark:bg-white', text: 'text-[#000000] dark:text-white' },
               ]
               const color = colors[i % colors.length]
-              const deadlineStr = obj.deadline ? new Date(obj.deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : null
+              const deadlineStr = obj.deadline ? new Date(obj.deadline).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' }) : null
               const overdue = obj.deadline ? new Date(obj.deadline) < now : false
               return (
                 <div key={obj.id} className="bg-[#f5f3f2] dark:bg-white/5 rounded-xl p-6 space-y-4">
@@ -314,7 +316,7 @@ export function TeamMemberDashboard() {
                     </p>
                     {deadlineStr && (
                       <span className={`text-[11px] font-medium ${overdue ? 'text-[#ba1a1a] dark:text-rose-400' : 'text-[#444748] dark:text-neutral-400'}`}>
-                        {overdue ? 'Expiré ' : ''}{deadlineStr}
+                        {overdue ? t.team_dashboard_expired + ' ' : ''}{deadlineStr}
                       </span>
                     )}
                   </div>
@@ -330,13 +332,13 @@ export function TeamMemberDashboard() {
         {/* Prochains rendez-vous */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Prochains rendez-vous</h2>
-            <Link to="/business/rendez-vous" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">Voir tout</Link>
+            <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">{t.team_dashboard_upcoming_appointments}</h2>
+            <Link to="/business/rendez-vous" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">{t.team_dashboard_view_all}</Link>
           </div>
           {upcomingAppts.length === 0 ? (
             <div className="text-center py-12">
               <CalendarDays className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
-              <p className="text-sm text-[#444748] dark:text-neutral-400">Aucun rendez-vous à venir</p>
+              <p className="text-sm text-[#444748] dark:text-neutral-400">{t.team_dashboard_no_upcoming_appointments}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -351,7 +353,7 @@ export function TeamMemberDashboard() {
                       </div>
                       <div className="h-10 w-px bg-[#c4c7c7]/20 dark:bg-white/10" />
                       <div>
-                        <p className="font-bold text-lg leading-tight text-[#1b1c1b] dark:text-white">{a.prospect?.contact || 'Rendez-vous'}</p>
+                        <p className="font-bold text-lg leading-tight text-[#1b1c1b] dark:text-white">{a.prospect?.contact || t.team_dashboard_appointment}</p>
                         <p className="text-sm text-[#444748] dark:text-neutral-400">{a.campaign?.name || `${a.duration}min`}</p>
                       </div>
                     </div>
@@ -366,19 +368,19 @@ export function TeamMemberDashboard() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Mes Rappels</h2>
-              <Link to="/business/rappels" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">Voir tout</Link>
+              <h2 className="font-['Manrope'] text-2xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">{t.team_dashboard_my_reminders}</h2>
+              <Link to="/business/rappels" className="text-[10px] font-bold text-[#000000] dark:text-white uppercase tracking-widest hover:underline">{t.team_dashboard_view_all}</Link>
             </div>
             {reminders.filter(r => new Date(r.reminder_date) < now).length > 0 && (
               <span className="bg-[#ba1a1a]/10 text-[#ba1a1a] dark:bg-rose-900/30 dark:text-rose-400 px-2 py-0.5 rounded text-[10px] font-bold">
-                {reminders.filter(r => new Date(r.reminder_date) < now).length} RETARDS
+                {reminders.filter(r => new Date(r.reminder_date) < now).length} {t.team_dashboard_overdue_badge}
               </span>
             )}
           </div>
           {reminders.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="h-8 w-8 text-[#c4c7c7] mx-auto mb-3" />
-              <p className="text-sm text-[#444748] dark:text-neutral-400">Aucun rappel en attente</p>
+              <p className="text-sm text-[#444748] dark:text-neutral-400">{t.team_dashboard_no_pending_reminders}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -397,8 +399,8 @@ export function TeamMemberDashboard() {
                           const rLocal = fromUTC(r.reminder_date, userTimezone)
                           const localDate = new Date(rLocal.date + 'T00:00:00')
                           return overdue
-                            ? `Retard : ${Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24))}j`
-                            : `Échéance : ${localDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ${rLocal.time}`
+                            ? `${t.team_dashboard_overdue_prefix}${Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24))}${t.team_dashboard_days_suffix}`
+                            : `${t.team_dashboard_due_prefix}${localDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} ${rLocal.time}`
                         })()}
                       </p>
                     </div>
@@ -426,11 +428,11 @@ export function TeamMemberDashboard() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">Campagnes actives</h3>
+                  <h3 className="font-['Manrope'] text-xl font-extrabold text-[#1b1c1b] dark:text-white">{t.team_dashboard_active_campaigns}</h3>
                   <span className="text-[10px] font-black text-[#006c49] uppercase tracking-[0.2em]">LIVE</span>
                 </div>
                 <p className="text-sm text-[#444748] dark:text-neutral-400 max-w-md mt-1">
-                  Vous êtes actuellement affecté à <span className="font-bold text-[#1b1c1b] dark:text-white">{activeCampaigns.length} campagne{activeCampaigns.length > 1 ? 's' : ''}</span>. {activeCampaigns.reduce((s, c) => s + c.leadCount, 0)} leads au total.
+                  {t.team_dashboard_assigned_to} <span className="font-bold text-[#1b1c1b] dark:text-white">{activeCampaigns.length} {activeCampaigns.length > 1 ? t.team_dashboard_campaigns_plural : t.team_dashboard_campaign_singular}</span>. {activeCampaigns.reduce((s, c) => s + c.leadCount, 0)} {t.team_dashboard_leads_total}.
                 </p>
               </div>
             </div>

@@ -17,12 +17,14 @@ import { useCalls } from '../contexts/CallsContext'
 import { useProspects } from '../contexts/ProspectsContext'
 import { MaskedText } from '../components/MaskedText'
 import { cn } from '../lib/utils'
+import { useLanguage } from '../contexts/LanguageContext'
 
 export function CallDetailsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { callHistory } = useCalls()
   const { prospects } = useProspects()
+  const { lang } = useLanguage()
 
   const [call, setCall] = useState<typeof callHistory[0] | null>(null)
   const [relatedProspect, setRelatedProspect] = useState<typeof prospects[0] | null>(null)
@@ -44,7 +46,7 @@ export function CallDetailsPage() {
   if (!call) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#1a1a1a] text-white/40">
-        <p>Chargement de l'appel...</p>
+        <p>{lang === 'fr' ? "Chargement de l'appel..." : 'Loading call...'}</p>
       </div>
     )
   }
@@ -66,7 +68,7 @@ export function CallDetailsPage() {
           onClick={() => navigate('/calls')}
           className="flex items-center gap-2 text-sm text-white/40 hover:text-white transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" /> Retour aux appels
+          <ArrowLeft className="h-4 w-4" /> {lang === 'fr' ? 'Retour aux appels' : 'Back to calls'}
         </button>
 
         {/* EN-TÊTE */}
@@ -90,11 +92,11 @@ export function CallDetailsPage() {
               <div className="mt-2 flex items-center gap-4 text-sm text-white/40">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4" />
-                  {new Date(call.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                  {new Date(call.date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4" />
-                  {new Date(call.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(call.date).toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
             </div>
@@ -106,11 +108,11 @@ export function CallDetailsPage() {
               call.answered ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
             )}>
               {call.answered ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-              {call.answered ? "Appel Abouti" : "Sans réponse"}
+              {call.answered ? (lang === 'fr' ? "Appel Abouti" : "Call Connected") : (lang === 'fr' ? "Sans réponse" : "No Answer")}
             </div>
             {call.isAi && (
               <div className="flex items-center justify-end gap-2 text-purple-400 text-sm font-medium">
-                <Sparkles className="h-3.5 w-3.5" /> Assisté par IA
+                <Sparkles className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Assisté par IA' : 'AI Assisted'}
               </div>
             )}
           </div>
@@ -120,14 +122,14 @@ export function CallDetailsPage() {
           {/* COLONNE GAUCHE */}
           <div className="space-y-6">
             <div className="rounded-xl bg-[#1a1a1a] border border-white/[0.08] p-6 shadow-lg">
-              <h3 className="text-sm font-semibold text-white/40 uppercase tracking-wider mb-4">Détails techniques</h3>
+              <h3 className="text-sm font-semibold text-white/40 uppercase tracking-wider mb-4">{lang === 'fr' ? 'Détails techniques' : 'Technical Details'}</h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-3 border-b border-white/[0.08]">
-                  <span className="flex items-center gap-2 text-white/40"><Clock className="h-4 w-4" /> Durée</span>
+                  <span className="flex items-center gap-2 text-white/40"><Clock className="h-4 w-4" /> {lang === 'fr' ? 'Durée' : 'Duration'}</span>
                   <span className="font-mono font-bold text-white text-lg">{call.duration}</span>
                 </div>
                 <div className="flex justify-between items-center py-3">
-                  <span className="flex items-center gap-2 text-white/40"><User className="h-4 w-4" /> ID Contact</span>
+                  <span className="flex items-center gap-2 text-white/40"><User className="h-4 w-4" /> {lang === 'fr' ? 'ID Contact' : 'Contact ID'}</span>
                   <span className="font-mono text-white/40">#{call.contactId}</span>
                 </div>
               </div>
@@ -135,7 +137,7 @@ export function CallDetailsPage() {
 
             {relatedProspect && (
               <div className="rounded-xl bg-[#1a1a1a] border border-white/[0.08] p-6 shadow-lg">
-                <h3 className="text-sm font-semibold text-white/40 uppercase tracking-wider mb-4">Fiche Prospect</h3>
+                <h3 className="text-sm font-semibold text-white/40 uppercase tracking-wider mb-4">{lang === 'fr' ? 'Fiche Prospect' : 'Prospect Details'}</h3>
                 <div className="space-y-3">
                   {relatedProspect.company && (
                     <div className="flex items-center gap-3 text-white/60">
@@ -161,11 +163,11 @@ export function CallDetailsPage() {
             <div className="rounded-xl bg-[#1a1a1a] border border-white/[0.08] p-8 shadow-lg min-h-[400px]">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-purple-400" /> Notes de l'appel
+                  <FileText className="h-5 w-5 text-purple-400" /> {lang === 'fr' ? "Notes de l'appel" : 'Call Notes'}
                 </h2>
                 {matchedNote && (
                   <span className="text-xs text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-full">
-                    <CheckCircle2 className="h-3 w-3" /> Synchronisé
+                    <CheckCircle2 className="h-3 w-3" /> {lang === 'fr' ? 'Synchronisé' : 'Synced'}
                   </span>
                 )}
               </div>
@@ -176,18 +178,18 @@ export function CallDetailsPage() {
                     {matchedNote.content}
                   </div>
                   <p className="mt-4 text-xs text-white/40 text-right">
-                    Sauvegardé par {matchedNote.author || 'Système'} le {new Date(matchedNote.date).toLocaleString()}
+                    {lang === 'fr' ? 'Sauvegardé par' : 'Saved by'} {matchedNote.author || (lang === 'fr' ? 'Système' : 'System')} {lang === 'fr' ? 'le' : 'on'} {new Date(matchedNote.date).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US')}
                   </p>
                 </div>
               ) : relatedProspect ? (
                 <div className="text-center py-12 bg-[#1a1a1a]/50 rounded-xl border border-dashed border-white/[0.08]">
                   <FileText className="h-10 w-10 text-white/10 mx-auto mb-3" />
-                  <p className="text-white/40 font-medium">Aucune note liée trouvée pour cet horaire.</p>
-                  <p className="text-sm text-white/10 mt-1">Consultez la fiche prospect complète pour voir tout l'historique.</p>
+                  <p className="text-white/40 font-medium">{lang === 'fr' ? 'Aucune note liée trouvée pour cet horaire.' : 'No linked notes found for this time slot.'}</p>
+                  <p className="text-sm text-white/10 mt-1">{lang === 'fr' ? "Consultez la fiche prospect complète pour voir tout l'historique." : 'Check the full prospect profile to see the complete history.'}</p>
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-white/40">Pas de notes disponibles pour cet appel.</p>
+                  <p className="text-white/40">{lang === 'fr' ? 'Pas de notes disponibles pour cet appel.' : 'No notes available for this call.'}</p>
                 </div>
               )}
             </div>

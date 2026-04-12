@@ -10,6 +10,8 @@ import { CreateEventModal } from '../components/CreateEventModal'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 import { useOrganization } from '../contexts/OrganizationContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { agendaTranslations } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
 
 
@@ -130,12 +132,12 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
 type ViewMode = 'day' | 'week' | 'month'
 
-const formatDate = (date: Date): string => {
-  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+const formatDate = (date: Date, loc: string): string => {
+  return date.toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-const formatShortDayName = (date: Date): string => {
-  return date.toLocaleDateString('fr-FR', { weekday: 'short' })
+const formatShortDayName = (date: Date, loc: string): string => {
+  return date.toLocaleDateString(loc, { weekday: 'short' })
 }
 
 const getWeekDates = (date: Date): Date[] => {
@@ -200,6 +202,9 @@ export function Agenda() {
   const { meetings, deleteMeeting } = useMeetings()
   const { googleEvents, isConnected, login, isLoading } = useGoogleCalendar()
   const { isInOrganization, organization } = useOrganization()
+  const { lang } = useLanguage()
+  const t = agendaTranslations[lang]
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
   const dateInputRef = useRef<HTMLInputElement>(null)
   const dayViewScrollRef = useRef<HTMLDivElement>(null)
   const weekViewScrollRef = useRef<HTMLDivElement>(null)
@@ -247,7 +252,7 @@ export function Agenda() {
           const endDate = getGoogleDate(ge.end);
           if (!startDate || !endDate) return null;
           const isVideo = !!(ge as any).hangoutLink || ge.location?.toLowerCase().includes('meet') || ge.description?.includes('zoom');
-          const eventTitle = ge.title || (ge as any).summary || 'Sans titre';
+          const eventTitle = ge.title || (ge as any).summary || (lang === 'fr' ? 'Sans titre' : 'Untitled');
           return {
             id: ge.id as any,
             title: eventTitle,
@@ -333,18 +338,18 @@ export function Agenda() {
 
   const getTitle = () => {
     if (view === 'day') {
-      return formatDate(currentDate)
+      return formatDate(currentDate, locale)
     } else if (view === 'week') {
       const weekDates = getWeekDates(currentDate)
       const start = weekDates[0]
       const end = weekDates[6]
       if (start.getMonth() === end.getMonth()) {
-        return `${start.getDate()} - ${end.getDate()} ${start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
+        return `${start.getDate()} - ${end.getDate()} ${start.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}`
       } else {
-        return `${start.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
+        return `${start.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}`
       }
     } else {
-      return currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+      return currentDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
     }
   }
 
@@ -425,7 +430,7 @@ export function Agenda() {
           const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`
 
           // Google utilise souvent 'summary' à la place de 'title'
-          const eventTitle = event.title || (event as any).summary || 'Sans titre'
+          const eventTitle = event.title || (event as any).summary || (lang === 'fr' ? 'Sans titre' : 'Untitled')
 
           const signature = `${startTime}-${(eventTitle).substring(0, 5).toLowerCase()}`;
           if (existingSignatures.has(signature)) return null;
@@ -472,11 +477,11 @@ export function Agenda() {
         const endTime = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`
         return {
           id: `biz-${a.id}` as any,
-          title: a.prospect?.contact || a.prospect?.company || 'RDV Business',
+          title: a.prospect?.contact || a.prospect?.company || (lang === 'fr' ? 'RDV Business' : 'Business Meeting'),
           date: a.date,
           time: `${startTime} - ${endTime}`,
           type: (a.type === 'visio' ? 'video' : 'meeting') as 'video' | 'meeting',
-          contact: a.prospect?.contact || 'Prospect',
+          contact: a.prospect?.contact || (lang === 'fr' ? 'Prospect' : 'Prospect'),
           prospectId: 0,
           status: a.status === 'confirmed' ? 'scheduled' : 'scheduled',
           isBusinessEvent: true,
@@ -554,7 +559,7 @@ export function Agenda() {
       <div className="flex flex-col flex-1 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         {allDayEvents.length > 0 && (
           <div className="bg-white/[0.02] p-4">
-            <div className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">Toute la journee</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">{t.all_day}</div>
             <div className="space-y-1.5">
               {allDayEvents.map(event => (
                 <div
@@ -628,7 +633,7 @@ export function Agenda() {
                     {isShort ? (
                       <div className="flex h-full items-center">
                         <p className="truncate text-xs font-semibold">
-                          {event.title?.split(' - ')[0] || 'Sans titre'}
+                          {event.title?.split(' - ')[0] || (lang === 'fr' ? 'Sans titre' : 'Untitled')}
                         </p>
                       </div>
                     ) : (
@@ -637,7 +642,7 @@ export function Agenda() {
                           {event.time?.split(' - ')[0] || event.time} - {isOvernight ? '→' : event.time?.split(' - ')[1]}
                         </p>
                         <p className="mt-0.5 truncate text-sm font-bold">
-                          {event.title?.split(' - ')[0] || 'Sans titre'}
+                          {event.title?.split(' - ')[0] || (lang === 'fr' ? 'Sans titre' : 'Untitled')}
                         </p>
                         {event.contact && (
                           <p className="truncate text-xs opacity-80">
@@ -679,7 +684,7 @@ export function Agenda() {
                 )}
               >
                 <div className="text-xs font-bold uppercase tracking-widest text-white/40">
-                  {formatShortDayName(date)}
+                  {formatShortDayName(date, locale)}
                 </div>
                 <div className={cn(
                   'mt-1 text-lg font-bold',
@@ -693,7 +698,7 @@ export function Agenda() {
 
           <div className="sticky top-[73px] z-10 flex border-b border-white/[0.08] bg-[#111111]/80 backdrop-blur-[16px]">
             <div className="w-16 border-r border-white/[0.08] p-2 flex-shrink-0">
-              <span className="text-[10px] font-semibold text-white/40">Toute la journée</span>
+              <span className="text-[10px] font-semibold text-white/40">{t.all_day}</span>
             </div>
             {weekDates.map((date, dayIndex) => {
               const allDayEvents = getAllDayEventsForDate(date)
@@ -773,14 +778,14 @@ export function Agenda() {
                           {isShort ? (
                             <div className="flex h-full items-center">
                               <p className="truncate text-[10px] font-semibold">
-                                {event.title?.split(' - ')[0] || 'Sans titre'}
+                                {event.title?.split(' - ')[0] || (lang === 'fr' ? 'Sans titre' : 'Untitled')}
                               </p>
                             </div>
                           ) : (
                             <div className="flex h-full flex-col overflow-hidden">
                               <p className="truncate text-[10px] font-semibold opacity-90">→ {end}</p>
                               <p className="truncate text-xs font-bold">
-                                {event.title?.split(' - ')[0] || 'Sans titre'}
+                                {event.title?.split(' - ')[0] || (lang === 'fr' ? 'Sans titre' : 'Untitled')}
                               </p>
                               {event.contact && (
                                 <p className="truncate text-[10px] opacity-80">
@@ -819,7 +824,7 @@ export function Agenda() {
                           {isShort ? (
                             <div className="flex h-full items-center">
                               <p className="truncate text-[10px] font-semibold">
-                                {event.title?.split(' - ')[0] || 'Sans titre'}
+                                {event.title?.split(' - ')[0] || (lang === 'fr' ? 'Sans titre' : 'Untitled')}
                               </p>
                             </div>
                           ) : (
@@ -828,7 +833,7 @@ export function Agenda() {
                                 {event.time?.split(' - ')[0] || event.time}{isOvernight ? ' →' : ''}
                               </p>
                               <p className="truncate text-xs font-bold">
-                                {event.title?.split(' - ')[0] || 'Sans titre'}
+                                {event.title?.split(' - ')[0] || (lang === 'fr' ? 'Sans titre' : 'Untitled')}
                               </p>
                               {event.contact && (
                                 <p className="truncate text-[10px] opacity-80">
@@ -857,7 +862,7 @@ export function Agenda() {
     return (
       <div className="flex-1 overflow-auto rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
         <div className="grid grid-cols-7 bg-white/[0.02]">
-          {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
+          {[t.mon, t.tue, t.wed, t.thu, t.fri, t.sat, t.sun].map((day) => (
             <div key={day} className="border-r border-white/[0.08] py-3 text-center text-xs font-semibold uppercase tracking-wider text-white/40">
               {day}
             </div>
@@ -902,7 +907,7 @@ export function Agenda() {
                         style={style}
                       >
                         <div className="truncate">
-                          {event.time?.split(' - ')[0] || event.time} {event.title?.split(' - ')[0] || 'Sans titre'}
+                          {event.time?.split(' - ')[0] || event.time} {event.title?.split(' - ')[0] || (lang === 'fr' ? 'Sans titre' : 'Untitled')}
                         </div>
                       </div>
                     )
@@ -910,7 +915,7 @@ export function Agenda() {
 
                   {hiddenCount > 0 && (
                     <div className="px-1.5 text-[10px] font-medium text-white/40">
-                      + {hiddenCount} autre{hiddenCount > 1 ? 's' : ''}
+                      + {hiddenCount} {lang === 'fr' ? `autre${hiddenCount > 1 ? 's' : ''}` : 'more'}
                     </div>
                   )}
                 </div>
@@ -938,7 +943,7 @@ export function Agenda() {
                 onClick={goToToday}
                 className="rounded-full border border-white/[0.08] bg-white/[0.03] px-6 py-2.5 text-sm font-bold text-white/80 transition-all duration-300 hover:bg-white/[0.04] hover:text-white"
               >
-                Aujourd'hui
+                {t.today}
               </button>
 
               <div className="flex items-center gap-4 rounded-full border border-white/[0.08] bg-white/[0.03] px-5 py-2.5 backdrop-blur-[16px]">
@@ -965,7 +970,7 @@ export function Agenda() {
                 <button
                   onClick={() => dateInputRef.current?.showPicker()}
                   className="rounded-full p-2 text-white/40 transition-all hover:bg-white/10 hover:text-white border border-transparent hover:border-white/[0.08]"
-                  title="Choisir une date"
+                  title={lang === 'fr' ? 'Choisir une date' : 'Pick a date'}
                 >
                   <CalendarIcon className="h-5 w-5" />
                 </button>
@@ -988,7 +993,7 @@ export function Agenda() {
                     view === 'day' ? 'bg-emerald-500 text-black shadow-lg' : 'text-white/40 hover:text-white font-medium'
                   )}
                 >
-                  Jour
+                  {lang === 'fr' ? 'Jour' : 'Day'}
                 </button>
                 <button
                   onClick={() => setView('week')}
@@ -997,7 +1002,7 @@ export function Agenda() {
                     view === 'week' ? 'bg-emerald-500 text-black shadow-lg' : 'text-white/40 hover:text-white font-medium'
                   )}
                 >
-                  Semaine
+                  {t.week}
                 </button>
                 <button
                   onClick={() => setView('month')}
@@ -1006,7 +1011,7 @@ export function Agenda() {
                     view === 'month' ? 'bg-emerald-500 text-black shadow-lg' : 'text-white/40 hover:text-white font-medium'
                   )}
                 >
-                  Mois
+                  {t.month}
                 </button>
               </div>
 
@@ -1021,7 +1026,7 @@ export function Agenda() {
                 )}
               >
                 <CalendarIcon className="h-4 w-4" />
-                {isLoading ? 'Chargement...' : isConnected ? 'Compte connecté' : 'Synchroniser Google'}
+                {isLoading ? (lang === 'fr' ? 'Chargement...' : 'Loading...') : isConnected ? t.google_connected : t.google_sync}
               </button>
 
               <button
@@ -1029,7 +1034,7 @@ export function Agenda() {
                 className="flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 active:scale-95"
               >
                 <Plus className="h-4 w-4" />
-                Nouveau RDV
+                {t.add_event}
               </button>
             </div>
           </div>
@@ -1042,7 +1047,7 @@ export function Agenda() {
         <div className="w-full mt-12">
           <h3 className="mb-6 text-xl font-bold text-white flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Aujourd'hui
+            {t.today}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {getTodayMeetings().map((event) => {
@@ -1079,7 +1084,7 @@ export function Agenda() {
 
                     <div className="flex-1 min-w-0">
                       <p className={cn("font-bold truncate", isGoogleEvent ? "text-black/90" : "text-white")}>
-                        {event.title?.split(' - ')[0] || 'Sans titre'}
+                        {event.title?.split(' - ')[0] || (lang === 'fr' ? 'Sans titre' : 'Untitled')}
                       </p>
                       {event.contact && (
                         <p className={cn("mt-0.5 text-xs font-medium truncate", isGoogleEvent ? "text-black/50" : "text-white/40")}>
@@ -1101,7 +1106,7 @@ export function Agenda() {
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-sm font-bold text-emerald-400 transition-all hover:bg-emerald-500 hover:text-black"
                   >
                     <FileText className="h-4 w-4" />
-                    Détails
+                    {lang === 'fr' ? 'Détails' : 'Details'}
                   </button>
                 </div>
               )
@@ -1162,7 +1167,7 @@ export function Agenda() {
                           )}
                           disabled={isGoogleEvent}
                         >
-                          <MaskedText value={selectedEvent.contact || 'Inconnu'} type="name" />
+                          <MaskedText value={selectedEvent.contact || (lang === 'fr' ? 'Inconnu' : 'Unknown')} type="name" />
                           {!isGoogleEvent && <ExternalLink className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100" />}
                         </button>
                         <p className="mt-1 text-sm font-medium text-white/40">{selectedEvent.title}</p>
@@ -1181,21 +1186,21 @@ export function Agenda() {
                   <div className="flex items-start gap-4 rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
                     <Clock className="mt-0.5 h-5 w-5 text-blue-400" />
                     <div>
-                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Date & Heure</p>
+                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">{lang === 'fr' ? 'Date & Heure' : 'Date & Time'}</p>
                       <p className="mt-1 text-base font-bold text-white">
-                        {formatDate(currentDate)}
+                        {formatDate(currentDate, locale)}
                       </p>
                       <p className="mt-0.5 text-sm font-medium text-white/60 font-mono">{selectedEvent.time}</p>
                     </div>
                   </div>
 
                   <div className="rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
-                    <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Type de rendez-vous</p>
+                    <p className="text-xs font-bold text-white/40 uppercase tracking-wider">{lang === 'fr' ? 'Type de rendez-vous' : 'Appointment type'}</p>
                     <p className="mt-1 text-base font-semibold capitalize text-white">
-                      {selectedEvent.type === 'video' && 'Visioconférence'}
-                      {selectedEvent.type === 'call' && 'Appel téléphonique'}
-                      {selectedEvent.type === 'meeting' && 'Réunion en présentiel'}
-                      {selectedEvent.type === 'other' && 'Autre événement'}
+                      {selectedEvent.type === 'video' && (lang === 'fr' ? 'Visioconférence' : 'Video call')}
+                      {selectedEvent.type === 'call' && (lang === 'fr' ? 'Appel téléphonique' : 'Phone call')}
+                      {selectedEvent.type === 'meeting' && (lang === 'fr' ? 'Réunion en présentiel' : 'In-person meeting')}
+                      {selectedEvent.type === 'other' && (lang === 'fr' ? 'Autre événement' : 'Other event')}
                     </p>
                   </div>
 
@@ -1206,7 +1211,7 @@ export function Agenda() {
                         <div className="flex items-start gap-4 rounded-xl bg-blue-500/5 border border-blue-500/20 p-4 backdrop-blur-sm">
                           <Video className="mt-0.5 h-5 w-5 text-blue-400 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">Lien de visio</p>
+                            <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">{lang === 'fr' ? 'Lien de visio' : 'Video link'}</p>
                             <p className="mt-1 text-sm font-medium text-white break-all font-mono">
                               {meetingLink}
                             </p>
@@ -1224,7 +1229,7 @@ export function Agenda() {
                                 : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/[0.08]'
                             )}
                           >
-                            {copiedLink ? <><Check className="h-3.5 w-3.5" /> Copié</> : <><Copy className="h-3.5 w-3.5" /> Copier</>}
+                            {copiedLink ? <><Check className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Copié' : 'Copied'}</> : <><Copy className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Copier' : 'Copy'}</>}
                           </button>
                         </div>
                       )
@@ -1236,7 +1241,7 @@ export function Agenda() {
                     <div className="flex items-start gap-4 rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
                       <MapPin className="mt-0.5 h-5 w-5 text-emerald-400" />
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Lieu</p>
+                        <p className="text-xs font-bold text-white/40 uppercase tracking-wider">{lang === 'fr' ? 'Lieu' : 'Location'}</p>
                         <p className="mt-1 text-base font-medium text-white break-all">
                           {selectedEvent.location}
                         </p>
@@ -1258,9 +1263,9 @@ export function Agenda() {
 
                   {!isGoogleEvent && (
                     <div className="rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
-                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Statut</p>
+                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">{lang === 'fr' ? 'Statut' : 'Status'}</p>
                       <div className="mt-2 inline-flex rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-sm font-bold text-emerald-400">
-                        À venir
+                        {lang === 'fr' ? 'À venir' : 'Upcoming'}
                       </div>
                     </div>
                   )}
@@ -1287,7 +1292,7 @@ export function Agenda() {
                         }}
                         className="mb-3 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-3 font-semibold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20"
                       >
-                        <Video className="h-5 w-5" /> Rejoindre la réunion
+                        <Video className="h-5 w-5" /> {lang === 'fr' ? 'Rejoindre la réunion' : 'Join meeting'}
                       </button>
                     ) : null
                   })()}
@@ -1299,14 +1304,14 @@ export function Agenda() {
                         className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white"
                       >
                         <Pencil className="h-4 w-4" />
-                        Modifier
+                        {lang === 'fr' ? 'Modifier' : 'Edit'}
                       </button>
                       <button
                         onClick={handleDeleteEvent}
                         className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-bold text-red-400 transition-all hover:bg-red-500/20"
                       >
                         <Trash2 className="h-4 w-4" />
-                        Supprimer
+                        {lang === 'fr' ? 'Supprimer' : 'Delete'}
                       </button>
                     </div>
                   )}
@@ -1356,8 +1361,8 @@ export function Agenda() {
             <div className="flex items-center gap-3 px-6 py-4 bg-purple-500/20 border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
               <Sparkles className="h-5 w-5 text-purple-400 animate-pulse" />
               <div>
-                <p className="text-sm font-semibold text-white">Appel analysé par l'IA</p>
-                <p className="text-xs text-purple-300 mt-0.5">Les données ont été sauvegardées automatiquement</p>
+                <p className="text-sm font-semibold text-white">{lang === 'fr' ? "Appel analysé par l'IA" : 'Call analyzed by AI'}</p>
+                <p className="text-xs text-purple-300 mt-0.5">{lang === 'fr' ? 'Les données ont été sauvegardées automatiquement' : 'Data has been saved automatically'}</p>
               </div>
             </div>
           </div>

@@ -1,18 +1,13 @@
 import { useState, useEffect } from 'react'
 import { X, Loader2, Plus, Minus, Users } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 
 const SEAT_TIERS = [
   { key: 'closer_setter', label: 'Setter / Closer', prices: { monthly: 5, quarterly: 12, annual: 42 } },
   { key: 'setter_closer', label: 'Setter-Closer', prices: { monthly: 8, quarterly: 17, annual: 67 } },
   { key: 'hos_admin', label: 'Head of Sales / Admin', prices: { monthly: 12, quarterly: 25, annual: 99 } },
 ]
-
-const CYCLE_LABELS: Record<string, string> = {
-  monthly: '/mois',
-  quarterly: '/trimestre',
-  annual: '/an',
-}
 
 const PLAN_LABELS: Record<string, string> = {
   solo: 'Solo',
@@ -29,6 +24,13 @@ interface Props {
 
 export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props) {
   const { user } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
+
+  const CYCLE_LABELS: Record<string, string> = {
+    monthly: `/${t.common_month}`,
+    quarterly: `/${t.common_quarter}`,
+    annual: `/${t.common_year}`,
+  }
   const [loading, setLoading] = useState(true)
   const [purchasing, setPurchasing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -43,7 +45,7 @@ export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props)
     fetch(`/api/business-checkout?action=seat-info&user_id=${user.id}`)
       .then(r => r.json())
       .then(data => { setSeatInfo(data); setLoading(false) })
-      .catch(() => { setError('Erreur de chargement'); setLoading(false) })
+      .catch(() => { setError(t.seat_loading_error); setLoading(false) })
   }, [isOpen, user?.id])
 
   if (!isOpen) return null
@@ -71,14 +73,14 @@ export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props)
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Erreur lors de l\'achat')
+        setError(data.error || t.seat_purchase_error)
         setPurchasing(false)
         return
       }
 
       onPurchaseComplete()
     } catch {
-      setError('Une erreur est survenue.')
+      setError(t.error_generic)
       setPurchasing(false)
     }
   }
@@ -100,7 +102,7 @@ export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props)
               <Users className="h-4.5 w-4.5 text-amber-600" />
             </div>
             <h2 className="text-lg font-extrabold text-stone-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Ajouter des sieges
+              {t.seat_add_seats}
             </h2>
           </div>
           <button onClick={onClose} className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-white transition-colors rounded-full hover:bg-stone-100 dark:hover:bg-neutral-800">
@@ -117,10 +119,10 @@ export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props)
             <>
               {/* Info banner */}
               <div className="rounded-xl bg-amber-50/80 dark:bg-amber-900/20 p-4 text-sm text-amber-800 dark:text-amber-300">
-                Votre plan <span className="font-bold">{PLAN_LABELS[seatInfo?.plan] || seatInfo?.plan}</span> inclut{' '}
-                <span className="font-bold">{seatInfo?.base_limit}</span> membre{seatInfo?.base_limit > 1 ? 's' : ''}.
+                {t.seat_plan_includes_prefix} <span className="font-bold">{PLAN_LABELS[seatInfo?.plan] || seatInfo?.plan}</span> {t.seat_plan_includes_middle}{' '}
+                <span className="font-bold">{seatInfo?.base_limit}</span> {seatInfo?.base_limit > 1 ? t.team_member_count_plural : t.team_member_count}.
                 {seatInfo?.current_count >= seatInfo?.effective_limit && (
-                  <> Vous avez atteint la limite ({seatInfo?.current_count}/{seatInfo?.effective_limit}).</>
+                  <> {t.seat_limit_reached} ({seatInfo?.current_count}/{seatInfo?.effective_limit}).</>
                 )}
               </div>
 
@@ -132,7 +134,7 @@ export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props)
                     <div key={tier.key} className="flex items-center justify-between rounded-xl bg-stone-50/80 dark:bg-neutral-800/60 p-4">
                       <div className="min-w-0">
                         <p className="font-bold text-sm text-stone-900 dark:text-white">{tier.label}</p>
-                        <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">{unitPrice}€{CYCLE_LABELS[cycle]} par siege</p>
+                        <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">{unitPrice}€{CYCLE_LABELS[cycle]} {t.seat_per_seat}</p>
                       </div>
                       <div className="flex items-center gap-2.5">
                         <button
@@ -160,7 +162,7 @@ export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props)
               {/* Total */}
               {totalSeats > 0 && (
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-sm font-semibold text-stone-500 dark:text-neutral-400">Total</span>
+                  <span className="text-sm font-semibold text-stone-500 dark:text-neutral-400">{t.checkout_total}</span>
                   <span className="text-lg font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
                     {totalPrice}€{CYCLE_LABELS[cycle]}
                   </span>
@@ -182,7 +184,8 @@ export function SeatUpgradeModal({ isOpen, onClose, onPurchaseComplete }: Props)
                 {purchasing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <>Ajouter {totalSeats} siege{totalSeats > 1 ? 's' : ''} et payer</>
+                  <>{t.seat_add_and_pay_prefix} {totalSeats} {totalSeats > 1 ? t.seat_seats_plural : t.seat_seat_singular} {t.seat_add_and_pay_suffix}</>
+
                 )}
               </button>
             </>

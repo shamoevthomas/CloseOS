@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
 import {
@@ -42,6 +43,7 @@ const formatPercent = (n: number) => n.toFixed(1)
 
 export function CloserKPI() {
   const { user, teamMember, ownerUserId, isTeamMember, isSolo } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const [searchParams] = useSearchParams()
   const effectiveOwnerId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
@@ -204,8 +206,8 @@ export function CloserKPI() {
       business_owner_id: effectiveOwnerId,
       config: kpiConfig,
     }, { onConflict: 'team_member_id' })
-    if (error) { toast.error('Erreur de sauvegarde'); return }
-    toast.success('Configuration sauvegardée')
+    if (error) { toast.error(t.kpi_save_error); return }
+    toast.success(t.kpi_config_saved)
     setIsConfigOpen(false)
   }
 
@@ -439,17 +441,17 @@ export function CloserKPI() {
   // Tabs definition
   const tabs = isOwnerView
     ? [
-        { key: 'org' as const, label: 'Organisation' },
-        { key: 'offer' as const, label: 'Par Formule' },
-        { key: 'campaign' as const, label: 'Par Campagne' },
-        { key: 'source' as const, label: 'Par Source' },
+        { key: 'org' as const, label: t.kpi_tab_org },
+        { key: 'offer' as const, label: t.kpi_tab_by_formula },
+        { key: 'campaign' as const, label: t.kpi_tab_by_campaign },
+        { key: 'source' as const, label: t.kpi_tab_by_source },
       ]
     : [
-        { key: 'personal' as const, label: 'Global (Personnel)' },
-        { key: 'org' as const, label: 'Organisation' },
-        { key: 'offer' as const, label: 'Par Formule' },
-        { key: 'campaign' as const, label: 'Par Campagne' },
-        { key: 'source' as const, label: 'Par Source' },
+        { key: 'personal' as const, label: t.kpi_tab_personal },
+        { key: 'org' as const, label: t.kpi_tab_org },
+        { key: 'offer' as const, label: t.kpi_tab_by_formula },
+        { key: 'campaign' as const, label: t.kpi_tab_by_campaign },
+        { key: 'source' as const, label: t.kpi_tab_by_source },
       ]
 
   const handleExportPdf = async () => {
@@ -458,7 +460,7 @@ export function CloserKPI() {
     try {
       const periodLabel = periodFrom || periodTo
         ? `${periodFrom || '...'} → ${periodTo || '...'}`
-        : 'Toutes périodes'
+        : t.kpi_all_periods
       const opt = {
         margin: 10,
         filename: `KPI-Closer-${new Date().toISOString().slice(0, 10)}.pdf`,
@@ -467,10 +469,10 @@ export function CloserKPI() {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
       }
       await html2pdf().set(opt).from(pdfRef.current).save()
-      toast.success('PDF exporté')
+      toast.success(t.kpi_pdf_exported)
     } catch (err) {
       console.error('PDF export error:', err)
-      toast.error("Erreur lors de l'export PDF")
+      toast.error(t.kpi_pdf_export_error)
     } finally {
       setExporting(false)
     }
@@ -485,8 +487,8 @@ export function CloserKPI() {
   }
 
   const periodLabel = periodFrom || periodTo
-    ? `${periodFrom ? new Date(periodFrom + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '...'} → ${periodTo ? new Date(periodTo + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '...'}`
-    : 'Toutes périodes'
+    ? `${periodFrom ? new Date(periodFrom + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '...'} → ${periodTo ? new Date(periodTo + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '...'}`
+    : t.kpi_all_periods
 
   return (
     <div className="space-y-8">
@@ -497,9 +499,9 @@ export function CloserKPI() {
             <TrendingUp className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
           </div>
           <div>
-            <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">PERFORMANCE CLOSER</p>
-            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">Performance Closer</h1>
-            <p className="text-sm text-stone-500 dark:text-neutral-400">{isOwnerView ? "Vue d'ensemble de l'équipe" : 'Vos indicateurs de performance'}</p>
+            <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">{t.kpi_performance_closer.toUpperCase()}</p>
+            <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.kpi_performance_closer}</h1>
+            <p className="text-sm text-stone-500 dark:text-neutral-400">{isOwnerView ? t.kpi_team_overview : t.kpi_your_performance}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -508,7 +510,7 @@ export function CloserKPI() {
               onClick={() => setIsConfigOpen(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/10 transition-colors"
             >
-              <Settings className="h-4 w-4" /> Configurer
+              <Settings className="h-4 w-4" /> {t.kpi_configure}
             </button>
           )}
           <button
@@ -517,7 +519,7 @@ export function CloserKPI() {
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-stone-900 dark:bg-white text-sm font-bold text-white dark:text-stone-900 hover:opacity-90 transition-all disabled:opacity-50 active:scale-95"
           >
             {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Exporter PDF
+            {t.kpi_export_pdf}
           </button>
         </div>
       </div>
@@ -525,7 +527,7 @@ export function CloserKPI() {
       {/* Period selector */}
       <div className="flex items-center gap-3 flex-wrap">
         <CalendarDays className="h-4 w-4 text-stone-400" />
-        <span className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Période</span>
+        <span className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.kpi_period_label}</span>
         <input
           type="date"
           value={periodFrom}
@@ -544,7 +546,7 @@ export function CloserKPI() {
             onClick={() => { setPeriodFrom(''); setPeriodTo('') }}
             className="text-xs text-stone-500 hover:text-stone-900 dark:hover:text-white font-medium transition-colors"
           >
-            Réinitialiser
+            {t.kpi_reset}
           </button>
         )}
       </div>
@@ -575,7 +577,7 @@ export function CloserKPI() {
               onChange={(e) => setGlobalMemberId(e.target.value || null)}
               className="bg-transparent text-sm font-semibold text-stone-900 dark:text-white pr-6 py-1.5 focus:outline-none appearance-none cursor-pointer"
             >
-              <option value="">Tous les membres</option>
+              <option value="">{t.kpi_all_members}</option>
               {teamClosers.map(c => (
                 <option key={c.id} value={c.id}>{c.first_name} {c.last_name} ({c.role})</option>
               ))}
@@ -586,21 +588,21 @@ export function CloserKPI() {
 
       {activeTab === 'org' && (
         <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
-          <p className="text-sm text-stone-700">KPIs de l'organisation</p>
+          <p className="text-sm text-stone-700">{t.kpi_org_kpis}</p>
         </div>
       )}
 
       {activeTab === 'offer' && (
         <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">Par Formule</p>
+            <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">{t.kpi_by_formula_label}</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedOfferId || ''}
                 onChange={(e) => setSelectedOfferId(e.target.value)}
                 className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
-                {formulas.length === 0 && <option value="">Aucune formule</option>}
+                {formulas.length === 0 && <option value="">{t.kpi_no_formula}</option>}
                 {formulas.map(f => (
                   <option key={f.id} value={f.id}>{f.name} ({f.price}€)</option>
                 ))}
@@ -613,14 +615,14 @@ export function CloserKPI() {
       {activeTab === 'campaign' && (
         <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">Par Campagne</p>
+            <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">{t.kpi_by_campaign_label}</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedCampaignId || ''}
                 onChange={(e) => setSelectedCampaignId(e.target.value)}
                 className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
-                {campaigns.length === 0 && <option value="">Aucune campagne</option>}
+                {campaigns.length === 0 && <option value="">{t.kpi_no_campaign}</option>}
                 {campaigns.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -633,14 +635,14 @@ export function CloserKPI() {
       {activeTab === 'source' && (
         <div className="rounded-xl bg-stone-50 dark:bg-white/5 border border-stone-200 dark:border-white/10 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">Par Source</p>
+            <p className="text-sm text-stone-700 dark:text-neutral-200 shrink-0">{t.kpi_by_source_label}</p>
             <div className="flex items-center gap-2">
               <select
                 value={selectedSource || ''}
                 onChange={(e) => setSelectedSource(e.target.value)}
                 className="rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-stone-900 dark:text-white px-3 py-1.5 focus:border-stone-400 focus:outline-none"
               >
-                {uniqueSources.length === 0 && <option value="">Aucune source</option>}
+                {uniqueSources.length === 0 && <option value="">{t.kpi_no_source}</option>}
                 {uniqueSources.map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
@@ -654,24 +656,24 @@ export function CloserKPI() {
       <div ref={pdfRef} className="space-y-6">
       {/* PDF header (hidden on screen, visible in PDF) */}
       <div className="hidden print:block mb-6">
-        <h1 className="text-2xl font-extrabold text-stone-900">Performance Closer — {periodLabel}</h1>
-        <p className="text-sm text-stone-500">Exporté le {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <h1 className="text-2xl font-extrabold text-stone-900">{t.kpi_performance_closer} — {periodLabel}</h1>
+        <p className="text-sm text-stone-500">{t.kpi_exported_on} {new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <KpiCard title="CA Généré" value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
-        <KpiCard title="Ventes Totales" value={v.sales} icon={ShoppingCart} color="blue" />
-        <KpiCard title="Taux de Closing" value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" />
-        {!isFixedComp && !isSolo && <KpiCard title={isOwnerView ? 'Commissions' : 'Mes Commissions'} value={`${formatCurrency(v.commission)} €`} icon={Award} color="stone" highlight />}
-        <KpiCard title="Taux de No Show" value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" />
-        <KpiCard title="Deals Perdus" value={v.lost} icon={Ban} color="stone" />
+        <KpiCard title={t.kpi_ca_generated} value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
+        <KpiCard title={t.kpi_total_sales} value={v.sales} icon={ShoppingCart} color="blue" />
+        <KpiCard title={t.kpi_closing_rate} value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" />
+        {!isFixedComp && !isSolo && <KpiCard title={isOwnerView ? t.kpi_commissions : t.kpi_my_commissions} value={`${formatCurrency(v.commission)} €`} icon={Award} color="stone" highlight />}
+        <KpiCard title={t.kpi_noshow_rate} value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" />
+        <KpiCard title={t.kpi_deals_lost} value={v.lost} icon={Ban} color="stone" />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
-          <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Historique Taux de Closing</h3>
+          <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">{t.kpi_closing_rate_chart}</h3>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
@@ -693,7 +695,7 @@ export function CloserKPI() {
 
         {!isFixedComp && (
         <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
-          <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Historique Commissions</h3>
+          <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">{t.kpi_commission_chart}</h3>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
@@ -718,7 +720,7 @@ export function CloserKPI() {
       {/* Loss Reason Pie Chart */}
       {lossReasonData.length > 0 && (
       <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
-        <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Raisons de Perte</h3>
+        <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">{t.kpi_loss_reasons}</h3>
         <div className="flex flex-col lg:flex-row items-center gap-8">
           <div className="w-56 h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -765,8 +767,8 @@ export function CloserKPI() {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-neutral-800">
               <div>
-                <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">Détail des motifs « Autre »</h3>
-                <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{autreDetails.length} résultat{autreDetails.length > 1 ? 's' : ''}</p>
+                <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.kpi_autre_details_title}</h3>
+                <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{t.kpi_autre_results.replace('{n}', String(autreDetails.length))}</p>
               </div>
               <button onClick={() => setShowAutreModal(false)} className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5 text-stone-500" />
@@ -782,7 +784,7 @@ export function CloserKPI() {
                 onChange={e => setAutreFilterCloser(e.target.value)}
                 className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
               >
-                <option value="all">Tous les closers</option>
+                <option value="all">{t.kpi_all_closers}</option>
                 {teamClosers.map(m => (
                   <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                 ))}
@@ -794,7 +796,7 @@ export function CloserKPI() {
                   onChange={e => setAutreFilterTeam(e.target.value)}
                   className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
                 >
-                  <option value="all">Toutes les équipes</option>
+                  <option value="all">{t.kpi_all_teams}</option>
                   {teams.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
@@ -807,17 +809,17 @@ export function CloserKPI() {
               {autreDetails.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-stone-400 dark:text-neutral-500">
                   <UserX className="h-10 w-10 mb-3 opacity-50" />
-                  <p className="text-sm font-medium">Aucun motif « Autre » trouvé</p>
-                  <p className="text-xs mt-1">Essayez de modifier les filtres</p>
+                  <p className="text-sm font-medium">{t.kpi_no_autre_found}</p>
+                  <p className="text-xs mt-1">{t.kpi_try_change_filters}</p>
                 </div>
               ) : (
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-stone-100 dark:border-neutral-800">
-                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Motif</th>
-                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Prospect</th>
-                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Closer</th>
-                      <th className="text-right text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Date</th>
+                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.kpi_autre_header_motif}</th>
+                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.kpi_autre_header_prospect}</th>
+                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.kpi_autre_header_closer}</th>
+                      <th className="text-right text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.kpi_autre_header_date}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -829,7 +831,7 @@ export function CloserKPI() {
                         <td className="px-6 py-3.5 text-sm text-stone-600 dark:text-neutral-300">{row.prospect}</td>
                         <td className="px-6 py-3.5 text-sm text-stone-600 dark:text-neutral-300">{row.closer}</td>
                         <td className="px-6 py-3.5 text-xs text-stone-400 dark:text-neutral-500 text-right whitespace-nowrap">
-                          {new Date(row.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(row.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </td>
                       </tr>
                     ))}
@@ -843,11 +845,11 @@ export function CloserKPI() {
 
       {/* Pipeline Summary */}
       <div className="bg-stone-900 text-white rounded-2xl p-6">
-        <h3 className="text-sm font-bold tracking-widest uppercase text-stone-400 mb-4">Résumé du Pipeline</h3>
+        <h3 className="text-sm font-bold tracking-widest uppercase text-stone-400 mb-4">{t.kpi_pipeline_summary}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <SummaryItem label="Total Leads" value={v.leads} icon={Users} color="indigo" dark />
-          <SummaryItem label="Deals en Cours" value={v.deals} icon={Briefcase} color="cyan" dark />
-          {!isFixedComp && <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />}
+          <SummaryItem label={t.kpi_total_leads} value={v.leads} icon={Users} color="indigo" dark />
+          <SummaryItem label={t.kpi_deals_in_progress} value={v.deals} icon={Briefcase} color="cyan" dark />
+          {!isFixedComp && <SummaryItem label={t.kpi_avg_comm} value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />}
         </div>
       </div>
       </div>{/* end pdfRef */}
@@ -857,14 +859,14 @@ export function CloserKPI() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 px-6 py-4">
-              <h2 className="text-xl font-extrabold text-stone-900 dark:text-white">Configuration KPI</h2>
+              <h2 className="text-xl font-extrabold text-stone-900 dark:text-white">{t.kpi_config_title}</h2>
               <button onClick={() => setIsConfigOpen(false)} className="text-stone-400 hover:text-stone-600 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Objectif de revenue (€)</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.kpi_revenue_target}</label>
                 <input
                   type="number"
                   value={kpiConfig.revenue_target}
@@ -873,7 +875,7 @@ export function CloserKPI() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Appels prévus / mois</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.kpi_planned_calls}</label>
                 <input
                   type="number"
                   value={kpiConfig.planned_calls}
@@ -882,7 +884,7 @@ export function CloserKPI() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Taux de commission (%)</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.kpi_commission_rate}</label>
                 <input
                   type="number"
                   value={kpiConfig.commission_rate}
@@ -893,13 +895,13 @@ export function CloserKPI() {
             </div>
             <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-6 py-4">
               <button onClick={() => setIsConfigOpen(false)} className="rounded-xl border border-stone-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
-                Annuler
+                {t.common_cancel}
               </button>
               <button
                 onClick={saveConfig}
                 className="flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-colors"
               >
-                <Save className="h-4 w-4" /> Sauvegarder
+                <Save className="h-4 w-4" /> {t.common_save}
               </button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import {
   Plus, Package, Pencil, Trash2, X, Loader2,
@@ -54,6 +55,7 @@ const API_URL = '/api/business'
 
 export function BusinessFormules() {
   const { user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const isOwnerOnly = !isTeamMember
   const isHoSOrAdmin = isTeamMember && (teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin')
@@ -80,6 +82,41 @@ export function BusinessFormules() {
   const [teamMembers, setTeamMembers] = useState<TeamMemberBasic[]>([])
   const [teams, setTeams] = useState<BusinessTeam[]>([])
   const [formTeamId, setFormTeamId] = useState<string | null>(null)
+
+  // Auto-save form draft to sessionStorage so tab-switching doesn't lose data
+  const DRAFT_KEY = 'closeos_formule_draft'
+
+  // Save draft whenever form fields change while modal is open
+  useEffect(() => {
+    if (!isModalOpen) return
+    const draft = {
+      formName, formPrice, formDescription, formResources,
+      formBillingType, formYearlyPrice, formTeamId,
+      roleRates, memberRates,
+      editingFormulaId: editingFormula?.id || null,
+    }
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+  }, [isModalOpen, formName, formPrice, formDescription, formResources, formBillingType, formYearlyPrice, formTeamId, roleRates, memberRates, editingFormula])
+
+  // Restore draft on mount if one exists
+  useEffect(() => {
+    const raw = sessionStorage.getItem(DRAFT_KEY)
+    if (!raw) return
+    try {
+      const d = JSON.parse(raw)
+      setFormName(d.formName || '')
+      setFormPrice(d.formPrice || '')
+      setFormDescription(d.formDescription || '')
+      setFormResources(d.formResources || [])
+      setFormBillingType(d.formBillingType || 'one_time')
+      setFormYearlyPrice(d.formYearlyPrice || '')
+      setFormTeamId(d.formTeamId || null)
+      setRoleRates(d.roleRates || {})
+      setMemberRates(d.memberRates || {})
+      setIsModalOpen(true)
+    } catch { /* ignore corrupted draft */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Stripe connection status
   const [stripeConnected, setStripeConnected] = useState(false)
@@ -143,6 +180,7 @@ export function BusinessFormules() {
     setFormResources([]); setEditingFormula(null)
     setRoleRates({}); setMemberRates({}); setExpandedRoles({})
     setFormTeamId(null); setFormBillingType('one_time'); setFormYearlyPrice('')
+    sessionStorage.removeItem(DRAFT_KEY)
   }
 
   const openCreate = () => { resetForm(); setIsModalOpen(true) }
@@ -195,7 +233,7 @@ export function BusinessFormules() {
   }
 
   const handleSave = async () => {
-    if (!formName.trim()) return toast.error('Le nom est requis')
+    if (!formName.trim()) return toast.error(t.formulas_name_required)
     setSaving(true)
     try {
       const payload: Record<string, unknown> = {
@@ -215,8 +253,8 @@ export function BusinessFormules() {
           body: JSON.stringify({ ...payload, id: editingFormula.id }),
         })
         const data = await res.json()
-        if (data.formula) toast.success('Formule modifiée')
-        else toast.error(data.error || 'Erreur')
+        if (data.formula) toast.success(t.formulas_modified)
+        else toast.error(data.error || t.formulas_error)
       } else {
         const res = await fetch(`${API_URL}?action=formulas-create`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -225,8 +263,8 @@ export function BusinessFormules() {
         const data = await res.json()
         if (data.formula) {
           savedFormulaId = data.formula.id
-          toast.success('Formule créée')
-        } else { toast.error(data.error || 'Erreur') }
+          toast.success(t.formulas_created)
+        } else { toast.error(data.error || t.formulas_error) }
       }
 
       // Save commissions if owner
@@ -235,7 +273,7 @@ export function BusinessFormules() {
       }
 
       setIsModalOpen(false); resetForm(); fetchFormulas()
-    } catch { toast.error('Erreur réseau') }
+    } catch { toast.error(t.formulas_network_error) }
     finally { setSaving(false) }
   }
 
@@ -246,16 +284,16 @@ export function BusinessFormules() {
         body: JSON.stringify({ user_id: user?.id, id: formula.id, is_active: !formula.is_active }),
       })
       fetchFormulas()
-      toast.success(formula.is_active ? 'Formule désactivée' : 'Formule activée')
-    } catch { toast.error('Erreur') }
+      toast.success(formula.is_active ? t.formulas_deactivated : t.formulas_activated)
+    } catch { toast.error(t.formulas_error) }
   }
 
   const deleteFormula = async (formula: Formula) => {
-    if (!confirm(`Supprimer la formule "${formula.name}" ?`)) return
+    if (!confirm(`${t.formulas_delete_confirm} "${formula.name}" ?`)) return
     try {
       await fetch(`${API_URL}?action=formulas-delete&id=${formula.id}&user_id=${user?.id}`, { method: 'DELETE' })
-      toast.success('Formule supprimée'); fetchFormulas()
-    } catch { toast.error('Erreur') }
+      toast.success(t.formulas_deleted); fetchFormulas()
+    } catch { toast.error(t.formulas_error) }
   }
 
   const [uploadingResourceIdx, setUploadingResourceIdx] = useState<number | null>(null)
@@ -272,21 +310,21 @@ export function BusinessFormules() {
 
   const handlePdfUpload = async (index: number, file: File) => {
     if (!file || file.type !== 'application/pdf') {
-      toast.error('Veuillez sélectionner un fichier PDF')
+      toast.error(t.formulas_select_pdf)
       return
     }
     setUploadingResourceIdx(index)
     const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`
     const { error } = await supabase.storage.from('resources').upload(fileName, file)
     if (error) {
-      toast.error('Erreur lors du téléversement')
+      toast.error(t.formulas_upload_error)
       setUploadingResourceIdx(null)
       return
     }
     const { data: { publicUrl } } = supabase.storage.from('resources').getPublicUrl(fileName)
     updateResource(index, { url: publicUrl, name: file.name.replace(/\.pdf$/i, '') || formResources[index].name })
     setUploadingResourceIdx(null)
-    toast.success('PDF téléversé')
+    toast.success(t.formulas_pdf_uploaded)
   }
 
   const getResourceIcon = (type: Resource['type']) => {
@@ -315,12 +353,12 @@ export function BusinessFormules() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-          <span className="text-xs uppercase tracking-[0.2em] text-stone-400 dark:text-neutral-500 font-bold">Gestion Commerciale</span>
-          <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">Formules</h1>
+          <span className="text-xs uppercase tracking-[0.2em] text-stone-400 dark:text-neutral-500 font-bold">{t.formulas_management}</span>
+          <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.formulas_title}</h1>
         </div>
         {!isTeamMember && (
           <button onClick={openCreate} className="flex items-center gap-2 bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-7 py-3.5 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm">
-            <Plus className="h-4 w-4" /> Nouvelle Formule
+            <Plus className="h-4 w-4" /> {t.formulas_new_formula}
           </button>
         )}
       </div>
@@ -329,11 +367,11 @@ export function BusinessFormules() {
       {formulas.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 dark:border-neutral-800 bg-stone-50 dark:bg-neutral-800 py-16">
           <Package className="h-12 w-12 text-stone-300 dark:text-neutral-600 mb-4" />
-          <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">Aucune formule</h3>
-          <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4">Créez votre première formule tarifaire</p>
+          <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">{t.formulas_no_formulas}</h3>
+          <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4">{t.formulas_create_first_desc}</p>
           {!isTeamMember && (
             <button onClick={openCreate} className="flex items-center gap-2 bg-stone-900 text-white px-6 py-3 rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xl text-sm">
-              <Plus className="h-4 w-4" /> Créer une formule
+              <Plus className="h-4 w-4" /> {t.formulas_create_formula}
             </button>
           )}
         </div>
@@ -353,7 +391,7 @@ export function BusinessFormules() {
                     ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                     : 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'
                 }`}>
-                  {formula.is_active ? 'Active' : 'Inactive'}
+                  {formula.is_active ? t.formulas_active : t.formulas_inactive}
                 </span>
                 <div className="flex gap-1">
                   {isTeamMember ? (
@@ -383,19 +421,19 @@ export function BusinessFormules() {
               {/* Price */}
               <div className="mb-8">
                 {formula.billing_type === 'quote' ? (
-                  <span className="text-2xl font-extrabold text-stone-900 dark:text-white">Sur devis</span>
+                  <span className="text-2xl font-extrabold text-stone-900 dark:text-white">{t.formulas_on_quote}</span>
                 ) : (
                   <>
                     <span className="text-4xl font-extrabold text-stone-900 dark:text-white">
                       {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                     </span>
-                    <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ {formula.billing_type === 'subscription' ? 'mois' : 'unique'}</span>
+                    <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ {formula.billing_type === 'subscription' ? t.formulas_per_month : t.formulas_one_time}</span>
                     {formula.billing_type === 'subscription' && formula.yearly_price != null && (
                       <div className="mt-1">
                         <span className="text-lg font-bold text-stone-600 dark:text-neutral-300">
                           {formula.yearly_price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                         </span>
-                        <span className="text-stone-400 dark:text-neutral-500 text-xs ml-1">/ an</span>
+                        <span className="text-stone-400 dark:text-neutral-500 text-xs ml-1">/ {t.formulas_per_year}</span>
                       </div>
                     )}
                   </>
@@ -405,7 +443,7 @@ export function BusinessFormules() {
               {/* Footer stats */}
               <div className="flex items-center gap-4 py-4 border-t border-stone-100 dark:border-neutral-800">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-neutral-300">
-                  <File className="h-3.5 w-3.5" /> {resourceCount} Ressource{resourceCount !== 1 ? 's' : ''}
+                  <File className="h-3.5 w-3.5" /> {t.formulas_resources_count.replace('{n}', String(resourceCount)).replace('{s}', resourceCount !== 1 ? 's' : '')}
                 </div>
                 {!isTeamMember && (
                   <button onClick={(e) => { e.stopPropagation(); toggleActive(formula) }} className="ml-auto">
@@ -425,7 +463,7 @@ export function BusinessFormules() {
             {/* Modal header */}
             <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 px-4 md:px-8 py-4 md:py-5 flex-shrink-0">
               <h3 className="text-xl font-extrabold text-stone-900 dark:text-white">
-                {isTeamMember ? 'Détails de la formule' : editingFormula ? 'Modifier la formule' : 'Nouvelle formule'}
+                {isTeamMember ? t.formulas_detail_title : editingFormula ? t.formulas_edit_formula : t.formulas_new_formula}
               </h3>
               <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
                 <X className="h-5 w-5" />
@@ -436,26 +474,26 @@ export function BusinessFormules() {
             <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-6 space-y-6">
               {/* Name */}
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Nom de la formule *</label>
-                <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Formule Premium" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">{t.formulas_formula_name_label}</label>
+                <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t.formulas_formula_name_placeholder} disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Price (only for one_time) */}
               {formBillingType !== 'subscription' && formBillingType !== 'quote' && (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Prix (€)</label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">{t.formulas_price_label}</label>
                   <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="0.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
                 </div>
               )}
 
               {/* Billing type */}
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Type de facturation</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">{t.formulas_billing_type_label}</label>
                 <div className="flex flex-wrap gap-2">
                   {([
-                    { value: 'one_time', label: 'Paiement unique' },
-                    { value: 'subscription', label: 'Abonnement' },
-                    { value: 'quote', label: 'Sur devis' },
+                    { value: 'one_time', label: t.formulas_billing_one_time },
+                    { value: 'subscription', label: t.formulas_billing_subscription },
+                    { value: 'quote', label: t.formulas_billing_quote },
                   ] as const).map((opt) => (
                     <button
                       key={opt.value}
@@ -478,16 +516,16 @@ export function BusinessFormules() {
               {formBillingType === 'subscription' && (
                 <div className="space-y-4">
                   <div className="rounded-2xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 p-5 space-y-4">
-                    <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">Tarification abonnement</p>
+                    <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">{t.formulas_subscription_pricing}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">Prix mensuel (€) *</label>
+                        <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">{t.formulas_monthly_price_label}</label>
                         <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="49.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">Prix annuel (€)</label>
+                        <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">{t.formulas_yearly_price_label}</label>
                         <input type="number" min="0" step="0.01" value={formYearlyPrice} onChange={(e) => setFormYearlyPrice(e.target.value)} placeholder="490.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
-                        <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">Laissez vide si pas d'option annuelle</p>
+                        <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">{t.formulas_yearly_hint}</p>
                         {formYearlyPrice && parseFloat(formYearlyPrice) > 0 && (
                           <p className="text-[11px] text-stone-600 dark:text-neutral-300 mt-1 font-semibold">
                             ≈ {(parseFloat(formYearlyPrice) / 12).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / mois
@@ -504,12 +542,12 @@ export function BusinessFormules() {
                     </div>
                     <div className="flex-1">
                       <p className={`text-sm font-bold ${stripeConnected ? 'text-emerald-700 dark:text-emerald-400' : 'text-[#635BFF]'}`}>
-                        {stripeConnected ? 'Stripe connecte' : 'Stripe non connecte'}
+                        {stripeConnected ? t.formulas_stripe_connected : t.formulas_stripe_not_connected}
                       </p>
                       <p className="text-[11px] text-stone-500 dark:text-neutral-400">
                         {stripeConnected
-                          ? 'Les paiements recurrents seront automatiquement lies aux prospects gagnes avec cette formule.'
-                          : 'Connectez Stripe dans Chiffre d\'affaires pour lier automatiquement les paiements recurrents.'}
+                          ? t.formulas_stripe_connected_desc
+                          : t.formulas_stripe_not_connected_desc}
                       </p>
                     </div>
                   </div>
@@ -518,37 +556,37 @@ export function BusinessFormules() {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Description</label>
-                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} placeholder="Décrivez cette formule..." disabled={isTeamMember} className={`${inputCls} resize-none ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">{t.formulas_description_label}</label>
+                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} placeholder={t.formulas_description_placeholder} disabled={isTeamMember} className={`${inputCls} resize-none ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
               </div>
 
               {/* Team assignment */}
               {teams.length > 0 && canEdit && (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">Équipe assignée</label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">{t.formulas_team_assigned}</label>
                   <div className="relative">
                     <select value={formTeamId || ''} onChange={(e) => setFormTeamId(e.target.value || null)} className={selectCls}>
-                      <option value="">Toute l'équipe</option>
+                      <option value="">{t.formulas_all_team}</option>
                       {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
                   </div>
-                  <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">Les commissions avancées ne montreront que les membres de cette équipe.</p>
+                  <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">{t.formulas_team_hint}</p>
                 </div>
               )}
 
               {/* Resources */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-semibold text-stone-900 dark:text-white">Ressources incluses</label>
+                  <label className="text-sm font-semibold text-stone-900 dark:text-white">{t.formulas_resources_included}</label>
                   {!isTeamMember && (
                     <button onClick={addResource} className="flex items-center gap-1.5 text-xs font-semibold text-stone-900 dark:text-white hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">
-                      <Plus className="h-3.5 w-3.5" /> Ajouter
+                      <Plus className="h-3.5 w-3.5" /> {t.formulas_add_resource}
                     </button>
                   )}
                 </div>
                 {formResources.length === 0 && (
-                  <p className="text-xs text-stone-400 dark:text-neutral-500 italic">{isTeamMember ? 'Aucune ressource' : 'Aucune ressource. Ajoutez des fichiers PDF, liens vidéo, accès contenus...'}</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 italic">{isTeamMember ? t.formulas_no_resources_member : t.formulas_no_resources_hint}</p>
                 )}
                 <div className="space-y-2">
                   {formResources.map((resource, idx) => (
@@ -574,11 +612,11 @@ export function BusinessFormules() {
                           <div className="flex-[2] flex items-center gap-2">
                             <a href={resource.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#006c49] font-medium truncate hover:underline flex items-center gap-1">
                               <FileText className="h-3.5 w-3.5 flex-shrink-0" />
-                              PDF téléversé
+                              {t.formulas_pdf_uploaded_link}
                             </a>
                             {!isTeamMember && (
                               <label className="text-[10px] font-bold text-stone-500 hover:text-stone-700 dark:text-neutral-400 dark:hover:text-neutral-200 cursor-pointer transition-colors">
-                                Changer
+                                {t.formulas_change}
                                 <input type="file" accept=".pdf" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handlePdfUpload(idx, e.target.files[0]) }} />
                               </label>
                             )}
@@ -586,9 +624,9 @@ export function BusinessFormules() {
                         ) : (
                           <label className={`flex-[2] flex items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 dark:border-neutral-600 px-3 py-2 cursor-pointer hover:border-stone-400 dark:hover:border-neutral-500 transition-colors ${isTeamMember ? 'opacity-50 cursor-not-allowed' : ''}`}>
                             {uploadingResourceIdx === idx ? (
-                              <><Loader2 className="h-3.5 w-3.5 animate-spin text-stone-400" /><span className="text-xs text-stone-400">Téléversement...</span></>
+                              <><Loader2 className="h-3.5 w-3.5 animate-spin text-stone-400" /><span className="text-xs text-stone-400">{t.formulas_uploading}</span></>
                             ) : (
-                              <><Upload className="h-3.5 w-3.5 text-stone-400" /><span className="text-xs text-stone-500 dark:text-neutral-400">Téléverser un PDF</span></>
+                              <><Upload className="h-3.5 w-3.5 text-stone-400" /><span className="text-xs text-stone-500 dark:text-neutral-400">{t.formulas_upload_pdf}</span></>
                             )}
                             <input type="file" accept=".pdf" className="hidden" disabled={isTeamMember || uploadingResourceIdx === idx} onChange={(e) => { if (e.target.files?.[0]) handlePdfUpload(idx, e.target.files[0]) }} />
                           </label>
@@ -618,7 +656,7 @@ export function BusinessFormules() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Percent className="h-4 w-4 text-stone-600 dark:text-neutral-300" />
-                    <label className="text-sm font-semibold text-stone-900 dark:text-white">Commission</label>
+                    <label className="text-sm font-semibold text-stone-900 dark:text-white">{t.formulas_commission_label}</label>
                   </div>
                   <div className="space-y-2 overflow-x-auto">
                     {activeRoles.map(role => {
@@ -641,7 +679,7 @@ export function BusinessFormules() {
                             {isSetterCloser ? (
                               <div className="flex items-center gap-2">
                                 <div className="flex items-center gap-1">
-                                  <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">Closing</span>
+                                  <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">{t.formulas_closing_label}</span>
                                   <input
                                     type="number" min="0" max="100" step="0.5"
                                     value={roleRate}
@@ -655,7 +693,7 @@ export function BusinessFormules() {
                                   <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">Setting</span>
+                                  <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">{t.formulas_setting_label}</span>
                                   <input
                                     type="number" min="0" max="100" step="0.5"
                                     value={setterCloserSetterRate}
@@ -674,7 +712,7 @@ export function BusinessFormules() {
                                     className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-colors"
                                   >
                                     {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                                    Avancé
+                                    {t.formulas_advanced}
                                   </button>
                                 )}
                               </div>
@@ -699,7 +737,7 @@ export function BusinessFormules() {
                                     className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-colors"
                                   >
                                     {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                                    Avancé
+                                    {t.formulas_advanced}
                                   </button>
                                 )}
                               </div>
@@ -725,7 +763,7 @@ export function BusinessFormules() {
                                       <div className="flex-1 min-w-0">
                                         <span className="text-sm text-stone-700 dark:text-neutral-200">{member.first_name} {member.last_name}</span>
                                         {hasAnyOverride && (
-                                          <span className="ml-2 text-[10px] font-bold text-stone-900 dark:text-white bg-stone-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-full">Personnalisé</span>
+                                          <span className="ml-2 text-[10px] font-bold text-stone-900 dark:text-white bg-stone-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-full">{t.formulas_customized}</span>
                                         )}
                                       </div>
                                       <div className="flex items-center gap-3">
@@ -763,7 +801,7 @@ export function BusinessFormules() {
                                           <button
                                             onClick={() => setMemberRates(prev => ({ ...prev, [member.id]: null, [member.id + ':setter']: null }))}
                                             className="ml-1 text-xs text-stone-400 dark:text-neutral-500 hover:text-red-500 transition-colors"
-                                            title="Réinitialiser au taux du rôle"
+                                            title={t.formulas_reset_role_rate}
                                           >
                                             <X className="h-3.5 w-3.5" />
                                           </button>
@@ -820,12 +858,12 @@ export function BusinessFormules() {
             {/* Footer */}
             <div className="flex flex-wrap justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-4 md:px-8 py-4 md:py-5 flex-shrink-0">
               <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-full border border-stone-200 dark:border-neutral-800 px-6 py-2.5 text-sm font-semibold text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
-                {isTeamMember ? 'Fermer' : 'Annuler'}
+                {isTeamMember ? t.formulas_close_btn : t.formulas_cancel_btn}
               </button>
               {canEdit && (
                 <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all shadow-lg">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {editingFormula ? 'Enregistrer' : 'Créer'}
+                  {editingFormula ? t.formulas_save_btn : t.formulas_create_btn}
                 </button>
               )}
             </div>

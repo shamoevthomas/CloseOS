@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Check, ExternalLink, Loader2, RefreshCw, Link as LinkIcon, Copy, Info, ChevronDown, Key, Trash2, Zap, Eye, EyeOff, CalendarDays, Save, Download, Upload, FileSpreadsheet, AlertTriangle, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext';
 import { supabase } from '../../lib/supabase';
 
@@ -36,6 +37,7 @@ interface Props {
 
 export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   const { user, businessSettings, updateBusinessSettings } = useBusinessAuth();
+  const { t, lang } = useBusinessLang()
   const { prospects, addProspect, syncHubspot, syncPipedrive, syncAirtable, syncGhl, isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable, isSyncingGhl, hubspotConnected, pipedriveConnected, airtableConnected, ghlConnected } = useBusinessProspects();
 
   const [selected, setSelected] = useState(businessSettings?.crm_provider || 'closeos');

@@ -3,6 +3,7 @@ import { X, Plus, Trash2, ChevronUp, ChevronDown, Pencil, Check, AlertTriangle }
 import { cn } from '../lib/utils'
 import { type CustomStage, type StageDefinition } from '../hooks/useCustomStages'
 import { type Tag } from '../hooks/useTags'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const COLOR_PALETTE = [
   '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
@@ -34,6 +35,7 @@ export function CustomStagesConfig({
   isOpen, onClose, defaultStages, customStages, onAdd, onUpdate, onDelete, onReorder, prospectsCountByStage,
   tags, onCreateTag, onUpdateTag, onDeleteTag, getTagProspectCount,
 }: Props) {
+  const { lang } = useLanguage()
   const [activeTab, setActiveTab] = useState<TabId>('stages')
 
   // Stage state
@@ -141,8 +143,8 @@ export function CustomStagesConfig({
         <div className="border-b border-white/[0.08] p-6 pb-0">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-bold text-white">Personnaliser le pipeline</h2>
-              <p className="mt-1 text-sm text-white/40">Gérez vos étapes et tags personnalisés</p>
+              <h2 className="text-lg font-bold text-white">{lang === 'fr' ? 'Personnaliser le pipeline' : 'Customize pipeline'}</h2>
+              <p className="mt-1 text-sm text-white/40">{lang === 'fr' ? 'Gérez vos étapes et tags personnalisés' : 'Manage your custom stages and tags'}</p>
             </div>
             <button onClick={onClose} className="rounded-lg p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors">
               <X className="h-5 w-5" />
@@ -160,7 +162,7 @@ export function CustomStagesConfig({
                   : 'text-white/40 hover:text-white/60 hover:bg-white/[0.03]'
               )}
             >
-              Étapes
+              {lang === 'fr' ? 'Étapes' : 'Stages'}
             </button>
             <button
               onClick={() => setActiveTab('tags')}
@@ -187,13 +189,13 @@ export function CustomStagesConfig({
             <>
               {/* Default stages */}
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-white/40">Étapes par défaut</h3>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-white/40">{lang === 'fr' ? 'Étapes par défaut' : 'Default stages'}</h3>
                 <div className="space-y-2">
                   {defaultStages.map(stage => (
                     <div key={stage.id} className="flex items-center gap-3 rounded-xl bg-white/[0.02] border border-white/5 px-4 py-3 opacity-60">
                       <span className={cn('h-3 w-3 rounded-full shrink-0', stage.color)} />
                       <span className="text-sm text-white/40">{stage.name}</span>
-                      <span className="ml-auto text-xs text-white/20">Par défaut</span>
+                      <span className="ml-auto text-xs text-white/20">{lang === 'fr' ? 'Par défaut' : 'Default'}</span>
                     </div>
                   ))}
                 </div>
@@ -202,12 +204,12 @@ export function CustomStagesConfig({
               {/* Custom stages */}
               <div>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-white/40">
-                  Étapes personnalisées ({customStages.length})
+                  {lang === 'fr' ? `Étapes personnalisées (${customStages.length})` : `Custom stages (${customStages.length})`}
                 </h3>
                 {customStages.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-white/[0.08] py-6 text-center">
-                    <p className="text-sm text-white/40">Aucune étape personnalisée</p>
-                    <p className="mt-1 text-xs text-white/30">Ajoutez des étapes ci-dessous</p>
+                    <p className="text-sm text-white/40">{lang === 'fr' ? 'Aucune étape personnalisée' : 'No custom stages'}</p>
+                    <p className="mt-1 text-xs text-white/30">{lang === 'fr' ? 'Ajoutez des étapes ci-dessous' : 'Add stages below'}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -250,11 +252,11 @@ export function CustomStagesConfig({
                             <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
                             <div className="flex-1">
                               <p className="text-sm text-amber-300">
-                                Supprimer "{stage.name}" ?
+                                {lang === 'fr' ? `Supprimer "${stage.name}" ?` : `Delete "${stage.name}"?`}
                               </p>
                               {(prospectsCountByStage[`custom_${stage.id}`] || 0) > 0 && (
                                 <p className="text-xs text-white/40 mt-0.5">
-                                  {prospectsCountByStage[`custom_${stage.id}`]} prospect(s) seront déplacés vers "Prospect"
+                                  {lang === 'fr' ? `${prospectsCountByStage[`custom_${stage.id}`]} prospect(s) seront déplacés vers "Prospect"` : `${prospectsCountByStage[`custom_${stage.id}`]} prospect(s) will be moved to "Prospect"`}
                                 </p>
                               )}
                             </div>
@@ -262,13 +264,13 @@ export function CustomStagesConfig({
                               onClick={() => handleDelete(stage.id)}
                               className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/20"
                             >
-                              Confirmer
+                              {lang === 'fr' ? 'Confirmer' : 'Confirm'}
                             </button>
                             <button
                               onClick={() => setDeleteConfirm(null)}
                               className="rounded-lg px-3 py-1.5 text-xs text-white/40 hover:bg-white/5"
                             >
-                              Annuler
+                              {lang === 'fr' ? 'Annuler' : 'Cancel'}
                             </button>
                           </div>
                         ) : (
@@ -306,18 +308,18 @@ export function CustomStagesConfig({
 
               {/* Add new stage */}
               <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-4">
-                <h3 className="mb-3 text-sm font-semibold text-white/60">Ajouter une étape</h3>
+                <h3 className="mb-3 text-sm font-semibold text-white/60">{lang === 'fr' ? 'Ajouter une étape' : 'Add a stage'}</h3>
                 <div className="space-y-3">
                   <input
                     type="text"
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
-                    placeholder="Nom de l'étape (ex: Négociation, Démo planifiée...)"
+                    placeholder={lang === 'fr' ? "Nom de l'étape (ex: Négociation, Démo planifiée...)" : "Stage name (e.g.: Negotiation, Demo scheduled...)"}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
                     onKeyDown={e => e.key === 'Enter' && handleAdd()}
                   />
                   <div>
-                    <p className="mb-2 text-xs text-white/40">Couleur</p>
+                    <p className="mb-2 text-xs text-white/40">{lang === 'fr' ? 'Couleur' : 'Color'}</p>
                     <div className="flex flex-wrap gap-2">
                       {COLOR_PALETTE.map(c => (
                         <button
@@ -338,7 +340,7 @@ export function CustomStagesConfig({
                     className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Plus className="h-4 w-4" />
-                    Ajouter l'étape
+                    {lang === 'fr' ? "Ajouter l'étape" : 'Add stage'}
                   </button>
                 </div>
               </div>
@@ -349,12 +351,12 @@ export function CustomStagesConfig({
               {/* Tag list */}
               <div>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-white/40">
-                  Vos tags ({tags.length})
+                  {lang === 'fr' ? `Vos tags (${tags.length})` : `Your tags (${tags.length})`}
                 </h3>
                 {tags.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-white/[0.08] py-6 text-center">
-                    <p className="text-sm text-white/40">Aucun tag</p>
-                    <p className="mt-1 text-xs text-white/30">Créez votre premier tag ci-dessous</p>
+                    <p className="text-sm text-white/40">{lang === 'fr' ? 'Aucun tag' : 'No tags'}</p>
+                    <p className="mt-1 text-xs text-white/30">{lang === 'fr' ? 'Créez votre premier tag ci-dessous' : 'Create your first tag below'}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -398,10 +400,10 @@ export function CustomStagesConfig({
                             <div className="flex flex-1 items-center gap-3">
                               <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
                               <div className="flex-1">
-                                <p className="text-sm text-amber-300">Supprimer "{tag.name}" ?</p>
+                                <p className="text-sm text-amber-300">{lang === 'fr' ? `Supprimer "${tag.name}" ?` : `Delete "${tag.name}"?`}</p>
                                 {count > 0 && (
                                   <p className="text-xs text-white/40 mt-0.5">
-                                    {count} prospect(s) ont ce tag, il sera retiré
+                                    {lang === 'fr' ? `${count} prospect(s) ont ce tag, il sera retiré` : `${count} prospect(s) have this tag, it will be removed`}
                                   </p>
                                 )}
                               </div>
@@ -409,13 +411,13 @@ export function CustomStagesConfig({
                                 onClick={() => handleDeleteTag(tag.id)}
                                 className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/20"
                               >
-                                Confirmer
+                                {lang === 'fr' ? 'Confirmer' : 'Confirm'}
                               </button>
                               <button
                                 onClick={() => setDeleteTagConfirm(null)}
                                 className="rounded-lg px-3 py-1.5 text-xs text-white/40 hover:bg-white/5"
                               >
-                                Annuler
+                                {lang === 'fr' ? 'Annuler' : 'Cancel'}
                               </button>
                             </div>
                           ) : (
@@ -444,18 +446,18 @@ export function CustomStagesConfig({
 
               {/* Add new tag */}
               <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-4">
-                <h3 className="mb-3 text-sm font-semibold text-white/60">Ajouter un tag</h3>
+                <h3 className="mb-3 text-sm font-semibold text-white/60">{lang === 'fr' ? 'Ajouter un tag' : 'Add a tag'}</h3>
                 <div className="space-y-3">
                   <input
                     type="text"
                     value={newTagName}
                     onChange={e => setNewTagName(e.target.value)}
-                    placeholder="Nom du tag (ex: VIP, Chaud, Prioritaire...)"
+                    placeholder={lang === 'fr' ? "Nom du tag (ex: VIP, Chaud, Prioritaire...)" : "Tag name (e.g.: VIP, Hot, Priority...)"}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
                     onKeyDown={e => e.key === 'Enter' && handleAddTag()}
                   />
                   <div>
-                    <p className="mb-2 text-xs text-white/40">Couleur</p>
+                    <p className="mb-2 text-xs text-white/40">{lang === 'fr' ? 'Couleur' : 'Color'}</p>
                     <div className="flex flex-wrap gap-2">
                       {COLOR_PALETTE.map(c => (
                         <button
@@ -476,7 +478,7 @@ export function CustomStagesConfig({
                     className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Plus className="h-4 w-4" />
-                    Ajouter le tag
+                    {lang === 'fr' ? 'Ajouter le tag' : 'Add tag'}
                   </button>
                 </div>
               </div>

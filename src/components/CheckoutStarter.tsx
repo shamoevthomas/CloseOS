@@ -7,11 +7,13 @@ import {
 import { CheckCircle2, ShieldCheck, ArrowLeft, Rocket, Square, CheckSquare, AlertCircle, TicketPercent, Loader2 } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { DemoExitModal } from '../components/DemoExitModal'; // 👈 IMPORT DU MODAL
+import { useLanguage } from '../contexts/LanguageContext';
 
 // On force la clé live directement pour être sûr
 const stripePromise = loadStripe('pk_live_51SxnxC33xpuYLywqRhYvxhWrChlI3Ckjj1AfJLqRQJQwaXNyVLuLAPaURbnEcrKRAQJTneB3ZjhUHSHuFQ9Xekdt00k1ho4IEt');
 
 export const CheckoutStarter = () => {
+  const { lang } = useLanguage();
   const [clientSecret, setClientSecret] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -84,14 +86,14 @@ export const CheckoutStarter = () => {
 
         // Si l'utilisateur a tapé un code mais que Stripe renvoie 0%, c'est invalide
         if (appliedCode && !data.percentOff) {
-          alert("Ce code promo n'existe pas ou est inactif.");
+          alert(lang === 'fr' ? "Ce code promo n'existe pas ou est inactif." : "This promo code doesn't exist or is inactive.");
           setAppliedCode(''); // On réinitialise
           setReferralCode('');
         }
       })
       .catch((err) => {
         console.error(err);
-        setError("Erreur de chargement du module de paiement.");
+        setError(lang === 'fr' ? "Erreur de chargement du module de paiement." : "Error loading payment module.");
         setLoading(false);
         setIsApplyingCode(false);
       });
@@ -135,7 +137,7 @@ export const CheckoutStarter = () => {
         <div className="bg-red-950/20 border border-red-900/50 p-8 rounded-3xl text-center max-w-md">
           <p className="text-red-400 mb-6">{error}</p>
           <Link to="/" className="text-white bg-slate-800 px-6 py-3 rounded-xl font-bold hover:bg-slate-700 transition-all">
-            Retour à l'accueil
+            {lang === 'fr' ? "Retour à l'accueil" : 'Back to home'}
           </Link>
         </div>
       </div>
@@ -154,7 +156,7 @@ export const CheckoutStarter = () => {
             className="flex items-center gap-2 group text-slate-400 hover:text-white transition-colors bg-transparent border-none cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-medium">Retour</span>
+            <span className="text-sm font-medium">{lang === 'fr' ? 'Retour' : 'Back'}</span>
           </button>
 
           <div className="flex items-center gap-2">
@@ -171,11 +173,11 @@ export const CheckoutStarter = () => {
           <div className="space-y-8">
             <div>
               <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 mb-6">
-                <Rocket className="w-3 h-3" /> Offre Standard {isYearly && "(Annuel)"}
+                <Rocket className="w-3 h-3" /> {lang === 'fr' ? 'Offre Standard' : 'Standard Offer'} {isYearly && (lang === 'fr' ? "(Annuel)" : "(Yearly)")}
               </span>
               <h1 className="text-4xl font-extrabold text-white mb-4">Pack Starter</h1>
               <p className="text-slate-400 text-lg">
-                Tout ce qu'il faut pour organiser votre closing et encaisser vos premières commissions.
+                {lang === 'fr' ? "Tout ce qu'il faut pour organiser votre closing et encaisser vos premières commissions." : "Everything you need to organize your closing and earn your first commissions."}
               </p>
             </div>
 
@@ -186,13 +188,13 @@ export const CheckoutStarter = () => {
                   onClick={() => handleBillingSwitch('monthly')}
                   className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${!isYearly ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
                 >
-                  Mensuel
+                  {lang === 'fr' ? 'Mensuel' : 'Monthly'}
                 </button>
                 <button
                   onClick={() => handleBillingSwitch('yearly')}
                   className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${isYearly ? 'bg-blue-600 text-white shadow-lg border border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}
                 >
-                  Annuel
+                  {lang === 'fr' ? 'Annuel' : 'Yearly'}
                   {/* LA PETITE BULLE -15% */}
                   <span className="bg-white text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">
                     -15%
@@ -222,19 +224,26 @@ export const CheckoutStarter = () => {
                 )}
 
                 <span className="text-slate-400 font-medium w-full sm:w-auto">
-                  {isYearly ? "/mois (facturé annuellement)" : "/mois"}
+                  {isYearly ? (lang === 'fr' ? "/mois (facturé annuellement)" : "/mo (billed yearly)") : (lang === 'fr' ? "/mois" : "/mo")}
                 </span>
               </div>
 
               <div className="space-y-4 mb-8">
-                {[
+                {(lang === 'fr' ? [
                   "Pipeline Visuel illimité",
                   "Agenda & Booking (Liens de rdv)",
                   "Facturation (Générateur PDF)",
                   "KPIs (CA, Conversion, Ventes)",
                   "Rappels programmables",
                   "Support standard email"
-                ].map((item, i) => (
+                ] : [
+                  "Unlimited Visual Pipeline",
+                  "Calendar & Booking (Appointment links)",
+                  "Invoicing (PDF Generator)",
+                  "KPIs (Revenue, Conversion, Sales)",
+                  "Programmable Reminders",
+                  "Standard email support"
+                ]).map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-slate-300 text-sm font-medium">
                     <CheckCircle2 className="h-5 w-5 text-blue-500 shrink-0" />
                     <span>{item}</span>
@@ -248,7 +257,7 @@ export const CheckoutStarter = () => {
             <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
               <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
                 <TicketPercent className="h-4 w-4 text-blue-400" />
-                <span className="font-semibold">Code de parrainage / Promo</span>
+                <span className="font-semibold">{lang === 'fr' ? 'Code de parrainage / Promo' : 'Referral / Promo code'}</span>
               </div>
               <div className="flex gap-3">
                 <input
@@ -263,13 +272,13 @@ export const CheckoutStarter = () => {
                   disabled={isApplyingCode || !referralCode}
                   className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
                 >
-                  {isApplyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Appliquer'}
+                  {isApplyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : (lang === 'fr' ? 'Appliquer' : 'Apply')}
                 </button>
               </div>
               {appliedCode && !isApplyingCode && (
                 <p className="text-xs text-emerald-400 mt-2 font-medium flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Code appliqué ! Vérifiez le montant total à droite.
+                  {lang === 'fr' ? 'Code appliqué ! Vérifiez le montant total à droite.' : 'Code applied! Check the total amount on the right.'}
                 </p>
               )}
             </div>
@@ -279,7 +288,7 @@ export const CheckoutStarter = () => {
               {showTermsError && (
                 <div className="flex items-center gap-2 text-red-400 text-sm font-bold mb-3 animate-pulse">
                   <AlertCircle className="h-4 w-4" />
-                  Vous devez accepter les conditions pour continuer
+                  {lang === 'fr' ? 'Vous devez accepter les conditions pour continuer' : 'You must accept the terms to continue'}
                 </div>
               )}
 
@@ -288,7 +297,7 @@ export const CheckoutStarter = () => {
                   {isTermsAccepted ? <CheckSquare className="h-3.5 w-3.5 text-white" /> : <Square className="h-3.5 w-3.5 text-transparent" />}
                 </div>
                 <div className="text-sm text-slate-300 leading-relaxed select-none">
-                  Je reconnais avoir pris connaissance et j'accepte les <Link to="/cgu" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Conditions Générales de Vente (CGV)</Link> et la <Link to="/confidentialite" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Politique de Confidentialité</Link>. Je renonce expressément à mon droit de rétractation pour accéder au service immédiatement.
+                  {lang === 'fr' ? (<>Je reconnais avoir pris connaissance et j'accepte les <Link to="/cgu" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Conditions Générales de Vente (CGV)</Link> et la <Link to="/confidentialite" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Politique de Confidentialité</Link>. Je renonce expressément à mon droit de rétractation pour accéder au service immédiatement.</>) : (<>I acknowledge and accept the <Link to="/cgu" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Terms and Conditions</Link> and the <Link to="/confidentialite" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Privacy Policy</Link>. I expressly waive my right of withdrawal to access the service immediately.</>)}
                 </div>
               </div>
             </div>
@@ -296,7 +305,7 @@ export const CheckoutStarter = () => {
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800">
               <ShieldCheck className="h-10 w-10 text-slate-600" />
               <p className="text-xs text-slate-500 leading-tight">
-                Paiement sécurisé par Stripe. Prélèvement automatique après 10 jours d'essai. Annulable à tout moment.
+                {lang === 'fr' ? "Paiement sécurisé par Stripe. Prélèvement automatique après 10 jours d'essai. Annulable à tout moment." : "Secure payment by Stripe. Automatic billing after 10-day trial. Cancel anytime."}
               </p>
             </div>
           </div>
@@ -308,7 +317,7 @@ export const CheckoutStarter = () => {
             {loading || !clientSecret ? (
               <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-slate-500 mb-6"></div>
-                <p className="text-slate-400 font-medium text-sm">Chargement du module sécurisé...</p>
+                <p className="text-slate-400 font-medium text-sm">{lang === 'fr' ? 'Chargement du module sécurisé...' : 'Loading secure module...'}</p>
               </div>
             ) : (
               <div className="relative h-full w-full">

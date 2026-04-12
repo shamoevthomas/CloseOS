@@ -3,6 +3,7 @@ import { X, AlertTriangle, Trash2, ArrowRight, Loader2, Lock, ShieldAlert } from
 import { getCalApi } from "@calcom/embed-react";
 import Cal from "@calcom/embed-react";
 import { supabase } from '../../lib/supabase';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface DeletionModalProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface DeletionModalProps {
 }
 
 export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }: DeletionModalProps) {
+    const { lang } = useLanguage();
     const [step, setStep] = useState<'initial' | 'select' | 'confirm' | 'cal' | 'final'>('initial');
     const [scope, setScope] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
@@ -95,7 +97,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
 
     const handleConfirmDeletion = async () => {
         if (!password) {
-            setError('Le mot de passe est requis.');
+            setError(lang === 'fr' ? 'Le mot de passe est requis.' : 'Password is required.');
             return;
         }
 
@@ -110,7 +112,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
             });
 
             if (authError) {
-                throw new Error('Mot de passe incorrect.');
+                throw new Error(lang === 'fr' ? 'Mot de passe incorrect.' : 'Incorrect password.');
             }
 
             // 2. Request Deletion
@@ -125,7 +127,9 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
 
             if (data.deferred) {
                 // Subscription active — deletion scheduled for later
-                alert(`Votre compte sera supprimé le ${new Date(data.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}. Vous gardez l'accès jusque là.`);
+                alert(lang === 'fr'
+                    ? `Votre compte sera supprimé le ${new Date(data.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}. Vous gardez l'accès jusque là.`
+                    : `Your account will be deleted on ${new Date(data.scheduledAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}. You keep access until then.`);
                 onSuccess();
                 onClose();
             } else {
@@ -135,7 +139,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
             }
         } catch (error: any) {
             console.error(error);
-            setError(error.message || "Erreur lors de la suppression.");
+            setError(error.message || (lang === 'fr' ? "Erreur lors de la suppression." : "Error during deletion."));
         } finally {
             setLoading(false);
         }
@@ -153,8 +157,8 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                             <Trash2 className="h-5 w-5 text-red-500" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-white">Suppression du compte</h2>
-                            <p className="text-sm text-white/40">Cette action est importante et irreversible.</p>
+                            <h2 className="text-xl font-bold text-white">{lang === 'fr' ? 'Suppression du compte' : 'Account deletion'}</h2>
+                            <p className="text-sm text-white/40">{lang === 'fr' ? 'Cette action est importante et irreversible.' : 'This action is important and irreversible.'}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -171,9 +175,9 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                 <ShieldAlert className="h-12 w-12 text-emerald-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-white mb-4">Souhaitez-vous supprimer vos données ?</h3>
+                                <h3 className="text-2xl font-bold text-white mb-4">{lang === 'fr' ? 'Souhaitez-vous supprimer vos données ?' : 'Do you want to delete your data?'}</h3>
                                 <p className="text-white/40 max-w-md mx-auto">
-                                    En plus de votre compte, souhaitez-vous supprimer définitivement les données qui y sont associées (factures, contacts, historiques...) ?
+                                    {lang === 'fr' ? 'En plus de votre compte, souhaitez-vous supprimer définitivement les données qui y sont associées (factures, contacts, historiques...) ?' : 'In addition to your account, do you want to permanently delete associated data (invoices, contacts, history...)?'}
                                 </p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
@@ -181,13 +185,13 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                     onClick={() => handleInitialChoice(true)}
                                     className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-full font-bold transition-all border border-red-500/20"
                                 >
-                                    Oui, supprimer des données
+                                    {lang === 'fr' ? 'Oui, supprimer des données' : 'Yes, delete data'}
                                 </button>
                                 <button
                                     onClick={() => handleInitialChoice(false)}
                                     className="px-6 py-3 bg-white/[0.03] hover:bg-white/10 text-white rounded-full font-bold transition-all border border-white/[0.08]"
                                 >
-                                    Non, conserver les données
+                                    {lang === 'fr' ? 'Non, conserver les données' : 'No, keep data'}
                                 </button>
                             </div>
                         </div>
@@ -197,7 +201,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                         <div className="space-y-6">
                             <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-3 text-amber-200">
                                 <AlertTriangle className="h-5 w-5 shrink-0" />
-                                <p className="text-sm">Sélectionnez les données que vous souhaitez supprimer définitivement.</p>
+                                <p className="text-sm">{lang === 'fr' ? 'Sélectionnez les données que vous souhaitez supprimer définitivement.' : 'Select the data you want to permanently delete.'}</p>
                             </div>
 
                             <div className="space-y-3">
@@ -209,8 +213,8 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                         className="w-5 h-5 rounded border-white/20 bg-white/10 text-red-500 focus:ring-red-500"
                                     />
                                     <div>
-                                        <span className="text-white font-medium block">Tout Supprimer</span>
-                                        <span className="text-white/40 text-sm">Compte, facturation, contacts, historiques...</span>
+                                        <span className="text-white font-medium block">{lang === 'fr' ? 'Tout Supprimer' : 'Delete All'}</span>
+                                        <span className="text-white/40 text-sm">{lang === 'fr' ? 'Compte, facturation, contacts, historiques...' : 'Account, billing, contacts, history...'}</span>
                                     </div>
                                 </label>
 
@@ -223,7 +227,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                             disabled={scope.includes('all')}
                                             className="w-4 h-4 rounded border-white/20 bg-white/10 text-red-500 focus:ring-red-500"
                                         />
-                                        <span className="text-white/60">Données personnelles (Nom, email...)</span>
+                                        <span className="text-white/60">{lang === 'fr' ? 'Données personnelles (Nom, email...)' : 'Personal data (Name, email...)'}</span>
                                     </label>
                                     <label className="flex items-center gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/[0.08] cursor-pointer hover:bg-white/10 transition-colors">
                                         <input
@@ -233,7 +237,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                             disabled={scope.includes('all')}
                                             className="w-4 h-4 rounded border-white/20 bg-white/10 text-red-500 focus:ring-red-500"
                                         />
-                                        <span className="text-white/60">Données de facturation</span>
+                                        <span className="text-white/60">{lang === 'fr' ? 'Données de facturation' : 'Billing data'}</span>
                                     </label>
                                     <label className="flex items-center gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/[0.08] cursor-pointer hover:bg-white/10 transition-colors">
                                         <input
@@ -243,7 +247,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                             disabled={scope.includes('all')}
                                             className="w-4 h-4 rounded border-white/20 bg-white/10 text-red-500 focus:ring-red-500"
                                         />
-                                        <span className="text-white/60">Données de contacts internes</span>
+                                        <span className="text-white/60">{lang === 'fr' ? 'Données de contacts internes' : 'Internal contacts data'}</span>
                                     </label>
                                     <label className="flex items-center gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/[0.08] cursor-pointer hover:bg-white/10 transition-colors">
                                         <input
@@ -253,7 +257,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                             disabled={scope.includes('all')}
                                             className="w-4 h-4 rounded border-white/20 bg-white/10 text-red-500 focus:ring-red-500"
                                         />
-                                        <span className="text-white/60">Données de contacts externes</span>
+                                        <span className="text-white/60">{lang === 'fr' ? 'Données de contacts externes' : 'External contacts data'}</span>
                                     </label>
                                 </div>
                             </div>
@@ -264,9 +268,9 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                         <div className="space-y-6 text-center py-8">
                             <AlertTriangle className="h-20 w-20 text-red-500 mx-auto opacity-80" />
                             <div>
-                                <h3 className="text-2xl font-bold text-white mb-2">Êtes-vous vraiment sûr ?</h3>
+                                <h3 className="text-2xl font-bold text-white mb-2">{lang === 'fr' ? 'Êtes-vous vraiment sûr ?' : 'Are you really sure?'}</h3>
                                 <p className="text-white/40 max-w-md mx-auto mb-6">
-                                    Cette action est la dernière étape avant la suppression définitive.
+                                    {lang === 'fr' ? 'Cette action est la dernière étape avant la suppression définitive.' : 'This is the final step before permanent deletion.'}
                                 </p>
 
                                 <div className="max-w-sm mx-auto space-y-4">
@@ -277,7 +281,7 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all placeholder:text-white/30"
-                                            placeholder="Entrez votre mot de passe pour confirmer"
+                                            placeholder={lang === 'fr' ? 'Entrez votre mot de passe pour confirmer' : 'Enter your password to confirm'}
                                         />
                                     </div>
                                     {error && (
@@ -291,8 +295,8 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                     {step === 'cal' && (
                         <div className="h-[400px] w-full bg-white/[0.03] rounded-2xl overflow-hidden border border-white/[0.08]">
                             <div className="p-4 text-center border-b border-white/[0.08] bg-[#111111]">
-                                <h3 className="text-lg font-bold text-white">Avant de partir...</h3>
-                                <p className="text-white/40 text-sm">Discutons une dernière fois ? (Facultatif)</p>
+                                <h3 className="text-lg font-bold text-white">{lang === 'fr' ? 'Avant de partir...' : 'Before you go...'}</h3>
+                                <p className="text-white/40 text-sm">{lang === 'fr' ? 'Discutons une dernière fois ? (Facultatif)' : 'Let\'s talk one last time? (Optional)'}</p>
                             </div>
                             <div className="h-full overflow-y-auto">
                                 <Cal
@@ -315,14 +319,14 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                 onClick={onClose}
                                 className="px-6 py-2 bg-white/[0.03] hover:bg-white/10 text-white/80 rounded-full transition-colors border border-white/[0.08]"
                             >
-                                Finalement ne rien supprimer
+                                {lang === 'fr' ? 'Finalement ne rien supprimer' : 'Actually, don\'t delete anything'}
                             </button>
                             <button
                                 onClick={handleValidation}
                                 disabled={scope.length === 0}
                                 className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
-                                Continuer <ArrowRight className="h-4 w-4" />
+                                {lang === 'fr' ? 'Continuer' : 'Continue'} <ArrowRight className="h-4 w-4" />
                             </button>
                         </>
                     )}
@@ -333,27 +337,27 @@ export function DeletionModal({ isOpen, onClose, userEmail, userId, onSuccess }:
                                 onClick={handleAppointmentBooked}
                                 className="flex-1 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-semibold transition-colors flex items-center justify-center gap-2"
                             >
-                                J'ai pris rendez-vous
+                                {lang === 'fr' ? "J'ai pris rendez-vous" : 'I booked an appointment'}
                             </button>
                             <button
                                 onClick={handleRefuseMeeting}
                                 disabled={loading}
                                 className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 text-white rounded-full font-medium transition-colors flex items-center justify-center gap-2"
                             >
-                                Je ne souhaite pas discuter
+                                {lang === 'fr' ? 'Je ne souhaite pas discuter' : "I don't want to discuss"}
                             </button>
                         </div>
                     )}
 
                     {step === 'confirm' && (
                         <>
-                            <button onClick={onClose} className="px-6 py-2 bg-white/[0.03] hover:bg-white/10 text-white/80 rounded-full transition-colors border border-white/[0.08]">Annuler</button>
+                            <button onClick={onClose} className="px-6 py-2 bg-white/[0.03] hover:bg-white/10 text-white/80 rounded-full transition-colors border border-white/[0.08]">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                             <button
                                 onClick={handleConfirmDeletion}
                                 disabled={loading || !password}
                                 className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-full font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
                             >
-                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Valider la suppression"}
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (lang === 'fr' ? "Valider la suppression" : "Confirm deletion")}
                             </button>
                         </>
                     )}

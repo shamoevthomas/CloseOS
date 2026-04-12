@@ -12,12 +12,17 @@ import { CreateProspectModal } from '../components/CreateProspectModal'
 import { CreateEventModal } from '../components/CreateEventModal'
 import { MaskedText } from '../components/MaskedText'
 import { cn } from '../lib/utils'
+import { useLanguage } from '../contexts/LanguageContext'
+import { contactsTranslations } from '../i18n/translations'
 
 interface LocalProspect extends Prospect {
   status?: string
 }
 
 export function Contacts() {
+  const { lang } = useLanguage()
+  const t = contactsTranslations[lang]
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
   const { allStages, getStageInfo } = useCustomStages()
   const { tags, prospectTags, getProspectTagObjects } = useTags()
   const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
@@ -197,7 +202,7 @@ export function Contacts() {
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newContact.name || !newContact.role || !newContact.email || !newContact.phone) {
-      alert('Veuillez remplir tous les champs')
+      alert(lang === 'fr' ? 'Veuillez remplir tous les champs' : 'Please fill in all fields')
       return
     }
 
@@ -220,11 +225,11 @@ export function Contacts() {
     e.stopPropagation()
 
     if (!isConnected || !deleteProspect) {
-      alert('⚠️ Mode Local: Impossible de supprimer les prospects en mode déconnecté')
+      alert(lang === 'fr' ? '⚠️ Mode Local: Impossible de supprimer les prospects en mode déconnecté' : '⚠️ Local Mode: Cannot delete prospects while disconnected')
       return
     }
 
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce prospect ?')) {
+    if (confirm(lang === 'fr' ? 'Êtes-vous sûr de vouloir supprimer ce prospect ?' : 'Are you sure you want to delete this prospect?')) {
       deleteProspect(id)
     }
   }
@@ -261,7 +266,7 @@ export function Contacts() {
 
     try {
       const dateObj = typeof date === 'string' ? new Date(date) : date
-      return dateObj.toLocaleDateString('fr-FR', {
+      return dateObj.toLocaleDateString(locale, {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -273,7 +278,7 @@ export function Contacts() {
 
   // Format relative time helper
   const formatRelativeTime = (date: Date | string | undefined) => {
-    if (!date) return 'Jamais'
+    if (!date) return lang === 'fr' ? 'Jamais' : 'Never'
 
     try {
       const dateObj = typeof date === 'string' ? new Date(date) : date
@@ -281,10 +286,10 @@ export function Contacts() {
       const diffMs = now.getTime() - dateObj.getTime()
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-      if (diffDays === 0) return "Aujourd'hui"
-      if (diffDays === 1) return 'Hier'
-      if (diffDays < 7) return `Il y a ${diffDays}j`
-      if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} sem.`
+      if (diffDays === 0) return lang === 'fr' ? "Aujourd'hui" : 'Today'
+      if (diffDays === 1) return lang === 'fr' ? 'Hier' : 'Yesterday'
+      if (diffDays < 7) return lang === 'fr' ? `Il y a ${diffDays}j` : `${diffDays}d ago`
+      if (diffDays < 30) return lang === 'fr' ? `Il y a ${Math.floor(diffDays / 7)} sem.` : `${Math.floor(diffDays / 7)}w ago`
       return formatDate(dateObj)
     } catch {
       return String(date)
@@ -303,8 +308,8 @@ export function Contacts() {
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div>
-            <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tighter">Contacts</h1>
-            <p className="text-white/40 text-sm font-medium mt-2">Gérez vos prospects et votre équipe.</p>
+            <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tighter">{t.title}</h1>
+            <p className="text-white/40 text-sm font-medium mt-2">{lang === 'fr' ? 'Gérez vos prospects et votre équipe.' : 'Manage your prospects and your team.'}</p>
           </div>
         </div>
 
@@ -320,7 +325,7 @@ export function Contacts() {
                 <User className="h-5 w-5 text-emerald-400" />
               </div>
               <div className="text-left">
-                <h2 className="text-lg font-bold text-white">Mes Prospects</h2>
+                <h2 className="text-lg font-bold text-white">{lang === 'fr' ? 'Mes Prospects' : 'My Prospects'}</h2>
                 <p className="text-sm text-white/40">{filteredProspects.length} contact(s)</p>
               </div>
             </div>
@@ -331,7 +336,7 @@ export function Contacts() {
                 <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                 <input
                   type="text"
-                  placeholder="Rechercher..."
+                  placeholder={lang === 'fr' ? 'Rechercher...' : 'Search...'}
                   value={prospectSearch}
                   onChange={(e) => setProspectSearch(e.target.value)}
                   className="h-11 w-64 rounded-xl border border-white/10 bg-white/5 pl-11 pr-4 text-sm text-white focus:border-emerald-500 focus:outline-none placeholder:text-white/30 transition-all hover:bg-white/[0.08]"
@@ -346,7 +351,7 @@ export function Contacts() {
                   onChange={(e) => setSelectedOfferFilter(e.target.value)}
                   className="h-11 rounded-xl border border-white/10 bg-white/5 pl-11 pr-9 text-sm text-white focus:border-emerald-500 focus:outline-none appearance-none cursor-pointer hover:bg-white/[0.08] transition-all"
                 >
-                  <option value="all" className="bg-[#1a1a1a]">Toutes les offres</option>
+                  <option value="all" className="bg-[#1a1a1a]">{lang === 'fr' ? 'Toutes les offres' : 'All offers'}</option>
                   {offers.filter(o => o.status === 'active').map(offer => (
                     <option key={offer.id} value={offer.id.toString()} className="bg-[#1a1a1a]">
                       {offer.name}
@@ -404,7 +409,7 @@ export function Contacts() {
                             onClick={() => { setSelectedTagFilters([]); setIsTagDropdownOpen(false) }}
                             className="w-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40 hover:text-white/60 transition-colors rounded-lg"
                           >
-                            Réinitialiser
+                            {lang === 'fr' ? 'Réinitialiser' : 'Reset'}
                           </button>
                         </>
                       )}
@@ -418,7 +423,7 @@ export function Contacts() {
                 className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-600/20 active:scale-95"
               >
                 <Plus className="h-4 w-4" />
-                Nouveau
+                {lang === 'fr' ? 'Nouveau' : 'New'}
               </button>
               <ChevronDown
                 className={`h-5 w-5 text-white/40 transition-transform ${prospectsExpanded ? 'rotate-180' : ''}`}
@@ -433,25 +438,25 @@ export function Contacts() {
                 <thead>
                   <tr className="bg-white/[0.02]">
                     <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
-                      Nom & Entreprise
+                      {lang === 'fr' ? 'Nom & Entreprise' : 'Name & Company'}
                     </th>
                     <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
                       Tags
                     </th>
                     <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
-                      Offre
+                      {lang === 'fr' ? 'Offre' : 'Offer'}
                     </th>
                     <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
-                      Statut
+                      {lang === 'fr' ? 'Statut' : 'Status'}
                     </th>
                     <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
-                      Dernier Contact
+                      {lang === 'fr' ? 'Dernier Contact' : 'Last Contact'}
                     </th>
                     <th className="px-8 py-5 text-left text-xs font-bold uppercase tracking-widest text-white/40">
-                      Date d'ajout
+                      {lang === 'fr' ? "Date d'ajout" : 'Date Added'}
                     </th>
                     <th className="px-8 py-5 text-center text-xs font-bold uppercase tracking-widest text-white/40">
-                      Actions
+                      {lang === 'fr' ? 'Actions' : 'Actions'}
                     </th>
                   </tr>
                 </thead>
@@ -533,7 +538,7 @@ export function Contacts() {
                                   setIsAddMeetingModalOpen(true)
                                 }}
                                 className="rounded-lg border border-white/[0.08] bg-white/5 p-2 text-white/40 transition-all hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-400"
-                                title="Planifier RDV"
+                                title={lang === 'fr' ? 'Planifier RDV' : 'Schedule meeting'}
                               >
                                 <Calendar className="h-4 w-4" />
                               </button>
@@ -545,11 +550,11 @@ export function Contacts() {
                                   if (email) {
                                     window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank')
                                   } else {
-                                    alert('Pas d\'email renseigné')
+                                    alert(lang === 'fr' ? 'Pas d\'email renseigné' : 'No email provided')
                                   }
                                 }}
                                 className="rounded-lg border border-white/[0.08] bg-white/5 p-2 text-white/40 transition-all hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-400"
-                                title="Envoyer un email"
+                                title={lang === 'fr' ? 'Envoyer un email' : 'Send email'}
                               >
                                 <Mail className="h-4 w-4" />
                               </button>
@@ -557,7 +562,7 @@ export function Contacts() {
                               <button
                                 onClick={(e) => handleDeleteProspect(e, prospect.id)}
                                 className="rounded-lg border border-white/[0.08] bg-white/5 p-2 text-white/40 transition-all hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
-                                title="Supprimer"
+                                title={lang === 'fr' ? 'Supprimer' : 'Delete'}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -569,7 +574,7 @@ export function Contacts() {
                   ) : (
                     <tr>
                       <td colSpan={7} className="px-8 py-16 text-center text-white/40 italic">
-                        Aucun prospect ne correspond à ces critères.
+                        {lang === 'fr' ? 'Aucun prospect ne correspond à ces critères.' : 'No prospects match these criteria.'}
                       </td>
                     </tr>
                   )}
@@ -591,7 +596,7 @@ export function Contacts() {
                 <UserPlus className="h-5 w-5 text-purple-400" />
               </div>
               <div className="text-left">
-                <h2 className="text-lg font-bold text-white">Contacts Internes</h2>
+                <h2 className="text-lg font-bold text-white">{t.internal}</h2>
                 <p className="text-sm text-white/40">{filteredInternalContacts.length} contact(s)</p>
               </div>
             </div>
@@ -601,7 +606,7 @@ export function Contacts() {
                 <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
                 <input
                   type="text"
-                  placeholder="Rechercher..."
+                  placeholder={lang === 'fr' ? 'Rechercher...' : 'Search...'}
                   value={internalSearch}
                   onChange={(e) => setInternalSearch(e.target.value)}
                   className="h-11 w-64 rounded-xl border border-white/10 bg-white/5 pl-11 pr-4 text-sm text-white focus:border-emerald-500 focus:outline-none placeholder:text-white/30 transition-all hover:bg-white/[0.08]"
@@ -613,7 +618,7 @@ export function Contacts() {
                 className="flex items-center gap-2 rounded-xl bg-purple-500 px-5 py-2 text-sm font-bold text-white transition-all hover:bg-purple-600 shadow-lg shadow-purple-600/20"
               >
                 <Plus className="h-4 w-4" />
-                Nouveau
+                {lang === 'fr' ? 'Nouveau' : 'New'}
               </button>
               <ChevronDown
                 className={`h-5 w-5 text-white/40 transition-transform ${internalsExpanded ? 'rotate-180' : ''}`}
@@ -681,7 +686,7 @@ export function Contacts() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                if (confirm(`Êtes-vous sûr de vouloir supprimer ${contact.name} ?`)) {
+                                if (confirm(lang === 'fr' ? `Êtes-vous sûr de vouloir supprimer ${contact.name} ?` : `Are you sure you want to delete ${contact.name}?`)) {
                                   handleDeleteContact(contact.id)
                                 }
                               }}

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { cn } from '../../lib/utils'
@@ -30,6 +31,7 @@ interface Offer {
 
 export function CloserCallRoom() {
   const { teamMember, ownerUserId, user, isTeamMember } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveOwnerId = ownerUserId || user?.id
   const { prospects, updateProspect, deleteProspect } = useBusinessProspects()
   const [searchParams] = useSearchParams()
@@ -53,7 +55,7 @@ export function CloserCallRoom() {
   // Scripts
   const [scripts, setScripts] = useState<Script[]>([])
   const [selectedScriptId, setSelectedScriptId] = useState<string | number>('')
-  const [currentScriptContent, setCurrentScriptContent] = useState('Chargement...')
+  const [currentScriptContent, setCurrentScriptContent] = useState(t.callroom_loading)
 
   // Offers
   const [offers, setOffers] = useState<Offer[]>([])
@@ -100,7 +102,7 @@ export function CloserCallRoom() {
         setSelectedScriptId(scriptsData[0].id)
         setCurrentScriptContent(scriptsData[0].content)
       } else {
-        setCurrentScriptContent('Aucun script trouvé.')
+        setCurrentScriptContent(t.callroom_no_script)
       }
 
       // Load all business formulas
@@ -183,7 +185,7 @@ export function CloserCallRoom() {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.style.display = 'none'; a.href = url
-        a.download = `Enregistrement_${contactName}_${new Date().toISOString().slice(0, 10)}.mp4`
+        a.download = `${lang === 'en' ? 'Recording' : 'Enregistrement'}_${contactName}_${new Date().toISOString().slice(0, 10)}.mp4`
         document.body.appendChild(a); a.click()
         combinedStream.getTracks().forEach(t => t.stop())
         displayStream.getTracks().forEach(t => t.stop())
@@ -194,7 +196,7 @@ export function CloserCallRoom() {
       mediaRecorderRef.current = recorder
       setIsRecording(true)
     } catch {
-      alert("Impossible de lancer l'enregistrement.")
+      alert(t.callroom_recording_failed)
     }
   }
 
@@ -251,10 +253,10 @@ export function CloserCallRoom() {
         <div className="w-14 h-14 rounded-2xl bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
           <Monitor className="h-7 w-7 text-stone-400" />
         </div>
-        <h2 className="text-lg font-extrabold text-stone-900 dark:text-white tracking-tight">Disponible sur ordinateur uniquement</h2>
-        <p className="text-sm text-stone-500 dark:text-neutral-400 max-w-xs">La Call Room necessite un ecran large pour fonctionner correctement.</p>
+        <h2 className="text-lg font-extrabold text-stone-900 dark:text-white tracking-tight">{t.callroom_desktop_only}</h2>
+        <p className="text-sm text-stone-500 dark:text-neutral-400 max-w-xs">{t.callroom_desktop_only_desc}</p>
         <button onClick={() => navigate('/business/dashboard')} className="mt-2 bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-6 py-2.5 rounded-full font-bold text-sm hover:opacity-90 transition-opacity">
-          Retour au dashboard
+          {t.callroom_back_dashboard}
         </button>
       </div>
     </div>
@@ -263,7 +265,7 @@ export function CloserCallRoom() {
       {/* ─── TopAppBar ─── */}
       <header className="h-[72px] shrink-0 bg-white/80 dark:bg-white/5 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] px-8 flex items-center justify-between z-50 border-b border-stone-200/10 dark:border-white/10">
         <div className="flex items-center gap-6">
-          <span className="font-extrabold text-xl tracking-tighter text-stone-900 dark:text-white">Closer Call Room</span>
+          <span className="font-extrabold text-xl tracking-tighter text-stone-900 dark:text-white">{t.callroom_header}</span>
           <div className="h-8 w-px bg-stone-200/30 dark:bg-white/10" />
           <div className="flex flex-col">
             <span className="text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">{contactName}</span>
@@ -284,17 +286,17 @@ export function CloserCallRoom() {
           {prospect && (
             <button onClick={() => setShowProspectView(true)}
               className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-stone-200/30 dark:border-white/10 text-sm font-semibold hover:bg-stone-50 dark:hover:bg-white/5 transition-all">
-              <ExternalLink className="h-4 w-4" /> Fiche Prospect
+              <ExternalLink className="h-4 w-4" /> {t.callroom_prospect_sheet}
             </button>
           )}
           <button onClick={isRecording ? stopRecording : startRecording}
             className={cn("flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all",
               isRecording ? 'bg-red-50 text-red-600 border border-red-200' : 'border border-stone-200/30 dark:border-white/10 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/5')}>
-            {isRecording ? <><div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />{formatDuration(recordingSeconds)}</> : <><div className="h-2.5 w-2.5 rounded-full bg-stone-400" />Enregistrer</>}
+            {isRecording ? <><div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />{formatDuration(recordingSeconds)}</> : <><div className="h-2.5 w-2.5 rounded-full bg-stone-400" />{t.callroom_record}</>}
           </button>
           <button onClick={handleLeave}
             className="px-7 py-2.5 rounded-full bg-red-500 text-white text-sm font-bold shadow-lg shadow-red-500/20 hover:scale-95 active:scale-90 transition-transform">
-            Fin d'appel
+            {t.callroom_end}
           </button>
           <button onClick={() => setIsPanelOpen(!isPanelOpen)}
             className="p-2.5 rounded-full hover:bg-stone-100 dark:hover:bg-white/5 transition-all">
@@ -316,7 +318,7 @@ export function CloserCallRoom() {
               <div className="relative">
                 <select value={selectedScriptId} onChange={(e) => setSelectedScriptId(e.target.value)}
                   className="appearance-none bg-white dark:bg-neutral-800 border-none rounded-full px-5 py-2 pr-10 text-xs font-bold shadow-sm focus:ring-2 focus:ring-emerald-600/20 cursor-pointer dark:text-white">
-                  {scripts.map(s => <option key={s.id} value={s.id}>{s.title || 'Sans titre'}</option>)}
+                  {scripts.map(s => <option key={s.id} value={s.id}>{s.title || t.callroom_no_title}</option>)}
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
               </div>
@@ -333,11 +335,11 @@ export function CloserCallRoom() {
             <div className="flex items-center gap-5 border-b border-stone-200/10 dark:border-white/10">
               <button onClick={() => setActiveOfferTab('formulas')}
                 className={cn("pb-3 text-sm font-bold border-b-2 transition-all", activeOfferTab === 'formulas' ? 'border-stone-900 dark:border-white text-stone-900 dark:text-white' : 'border-transparent text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300')}>
-                Formules
+                {t.callroom_formulas_tab}
               </button>
 <button onClick={() => setActiveOfferTab('resources')}
                 className={cn("pb-3 text-sm font-semibold transition-all", activeOfferTab === 'resources' ? 'border-b-2 border-stone-900 dark:border-white text-stone-900 dark:text-white' : 'text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300')}>
-                Ressources
+                {t.callroom_resources_tab}
               </button>
 
               {/* Offer selector */}
@@ -394,7 +396,7 @@ export function CloserCallRoom() {
                             {/* Subscription: badge + chevron */}
                             {formula.billing_type === 'subscription' && (
                               <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-full">Abonnement</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-full">{t.callroom_subscription}</span>
                                 {isExpanded ? <ChevronUp className="h-4 w-4 text-stone-400" /> : <ChevronDown className="h-4 w-4 text-stone-400" />}
                               </div>
                             )}
@@ -402,7 +404,7 @@ export function CloserCallRoom() {
                             {/* Quote: badge + chevron */}
                             {formula.billing_type === 'quote' && (
                               <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-full">Sur devis</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-full">{t.callroom_quote}</span>
                                 {isExpanded ? <ChevronUp className="h-4 w-4 text-stone-400" /> : <ChevronDown className="h-4 w-4 text-stone-400" />}
                               </div>
                             )}
@@ -418,17 +420,17 @@ export function CloserCallRoom() {
                               {formula.billing_type === 'subscription' && (
                                 <div className="space-y-2">
                                   <div className="flex items-baseline justify-between bg-stone-50 dark:bg-white/5 rounded-xl px-4 py-3">
-                                    <span className="text-xs font-semibold text-stone-500 dark:text-neutral-400">Mensuel</span>
+                                    <span className="text-xs font-semibold text-stone-500 dark:text-neutral-400">{t.callroom_monthly_label}</span>
                                     <span className="font-['Manrope'] text-lg font-extrabold text-stone-900 dark:text-white">
-                                      {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €<span className="text-xs font-medium text-stone-400 ml-1">/ mois</span>
+                                      {formula.price?.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €<span className="text-xs font-medium text-stone-400 ml-1">{t.callroom_per_month}</span>
                                     </span>
                                   </div>
                                   {formula.yearly_price != null && (
                                     <div className="flex items-baseline justify-between bg-stone-50 dark:bg-white/5 rounded-xl px-4 py-3">
-                                      <span className="text-xs font-semibold text-stone-500 dark:text-neutral-400">Annuel</span>
+                                      <span className="text-xs font-semibold text-stone-500 dark:text-neutral-400">{t.callroom_yearly_label}</span>
                                       <div className="text-right">
                                         <span className="font-['Manrope'] text-lg font-extrabold text-stone-900 dark:text-white">
-                                          {formula.yearly_price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €<span className="text-xs font-medium text-stone-400 ml-1">/ an</span>
+                                          {formula.yearly_price.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €<span className="text-xs font-medium text-stone-400 ml-1">{t.callroom_per_year}</span>
                                         </span>
                                         <div className="text-[10px] text-stone-400 dark:text-neutral-500">
                                           ≈ {(formula.yearly_price / 12).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / mois
@@ -579,7 +581,7 @@ export function CloserCallRoom() {
                           selectedPreviousNote === n.id ? 'bg-stone-200 dark:bg-white/10 text-stone-900 dark:text-white' : 'bg-stone-100 dark:bg-white/5 text-stone-500 dark:text-neutral-400 hover:bg-stone-200 dark:hover:bg-white/10'
                         )}
                       >
-                        {new Date(n.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                        {new Date(n.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: '2-digit', month: 'short' })}
                       </button>
                     ))}
                   </>

@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Zap, Target, TrendingUp } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { lang } = useLanguage();
 
-  const features = [
+  const features = lang === 'fr' ? [
     {
       icon: Target,
       title: 'Pipeline Visuel',
@@ -20,15 +22,38 @@ export default function Landing() {
       title: 'Analytics Avancés',
       description: 'Suivez vos KPIs et optimisez votre closing'
     }
+  ] : [
+    {
+      icon: Target,
+      title: 'Visual Pipeline',
+      description: 'Manage your prospects with an intuitive Kanban pipeline'
+    },
+    {
+      icon: Zap,
+      title: 'Smart Calls',
+      description: 'Automatic recording and AI analysis of your calls'
+    },
+    {
+      icon: TrendingUp,
+      title: 'Advanced Analytics',
+      description: 'Track your KPIs and optimize your closing'
+    }
   ];
 
-  const benefits = [
+  const benefits = lang === 'fr' ? [
     'Scripts de vente personnalisables',
     'Gestion complète des prospects',
     'Enregistrement et analyse des appels',
     'Calendrier intégré pour vos RDV',
     'Tableaux de bord KPI en temps réel',
     'Facturation automatisée'
+  ] : [
+    'Customizable sales scripts',
+    'Complete prospect management',
+    'Call recording and analysis',
+    'Integrated calendar for appointments',
+    'Real-time KPI dashboards',
+    'Automated invoicing'
   ];
 
   return (
@@ -47,7 +72,7 @@ export default function Landing() {
               onClick={() => navigate('/login')}
               className="rounded-lg px-6 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
             >
-              Se connecter
+              {lang === 'fr' ? 'Se connecter' : 'Sign in'}
             </button>
           </div>
         </div>
@@ -59,22 +84,17 @@ export default function Landing() {
           {/* Badge */}
           <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-4 py-2 text-sm font-medium text-orange-500 ring-1 ring-orange-500/20">
             <Zap className="h-4 w-4" />
-            La solution tout-en-un pour closers d'élite
+            {lang === 'fr' ? "La solution tout-en-un pour closers d'élite" : "The all-in-one solution for elite closers"}
           </div>
 
           {/* Main Title */}
           <h1 className="mb-6 text-5xl font-bold leading-tight md:text-6xl">
-            CloserOS : La Révolution du{' '}
-            <span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-              Closing High-Ticket
-            </span>
+            {lang === 'fr' ? <>CloserOS : La Révolution du{' '}<span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Closing High-Ticket</span></> : <>CloserOS: The{' '}<span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">High-Ticket Closing</span>{' '}Revolution</>}
           </h1>
 
           {/* Subtitle */}
           <p className="mb-10 text-xl text-gray-400 md:text-2xl">
-            Gérez vos prospects, vos scripts et vos appels en un seul endroit.
-            <br />
-            L'outil tout-en-un pour les closers d'élite.
+            {lang === 'fr' ? <>Gérez vos prospects, vos scripts et vos appels en un seul endroit.<br />L'outil tout-en-un pour les closers d'élite.</> : <>Manage your prospects, scripts and calls in one place.<br />The all-in-one tool for elite closers.</>}
           </p>
 
           {/* CTA Buttons */}
@@ -83,14 +103,14 @@ export default function Landing() {
               onClick={() => navigate('/register')}
               className="flex items-center gap-2 rounded-xl bg-orange-500 px-8 py-4 text-lg font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-orange-600 hover:scale-105"
             >
-              🚀 Commencer Gratuitement
+              {lang === 'fr' ? '🚀 Commencer Gratuitement' : '🚀 Get Started Free'}
               <ArrowRight className="h-5 w-5" />
             </button>
             <button
               onClick={() => navigate('/login')}
               className="rounded-xl border-2 border-gray-700 px-8 py-4 text-lg font-semibold text-white transition-all hover:border-gray-600 hover:bg-gray-800"
             >
-              Se connecter
+              {lang === 'fr' ? 'Se connecter' : 'Sign in'}
             </button>
           </div>
 
@@ -110,10 +130,10 @@ export default function Landing() {
         <div className="container mx-auto px-6">
           <div className="mb-12 text-center">
             <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-              Tout ce dont vous avez besoin pour closer
+              {lang === 'fr' ? 'Tout ce dont vous avez besoin pour closer' : 'Everything you need to close'}
             </h2>
             <p className="text-xl text-gray-400">
-              Une plateforme complète pour gérer votre activité de closing
+              {lang === 'fr' ? 'Une plateforme complète pour gérer votre activité de closing' : 'A complete platform to manage your closing activity'}
             </p>
           </div>
 
@@ -140,10 +160,10 @@ export default function Landing() {
           <div className="mx-auto max-w-3xl">
             <div className="mb-12 text-center">
               <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-                Fonctionnalités incluses
+                {lang === 'fr' ? 'Fonctionnalités incluses' : 'Included features'}
               </h2>
               <p className="text-xl text-gray-400">
-                Tout ce qu'il faut pour maximiser vos conversions
+                {lang === 'fr' ? "Tout ce qu'il faut pour maximiser vos conversions" : 'Everything you need to maximize your conversions'}
               </p>
             </div>
 
@@ -166,16 +186,16 @@ export default function Landing() {
       <section className="border-t border-gray-800 bg-gray-900/50 py-20">
         <div className="container mx-auto px-6 text-center">
           <h2 className="mb-6 text-3xl font-bold md:text-4xl">
-            Prêt à booster vos performances ?
+            {lang === 'fr' ? 'Prêt à booster vos performances ?' : 'Ready to boost your performance?'}
           </h2>
           <p className="mb-8 text-xl text-gray-400">
-            Rejoignez les closers qui utilisent CloserOS pour closer plus, plus vite.
+            {lang === 'fr' ? 'Rejoignez les closers qui utilisent CloserOS pour closer plus, plus vite.' : 'Join the closers who use CloserOS to close more, faster.'}
           </p>
           <button
             onClick={() => navigate('/register')}
             className="rounded-xl bg-orange-500 px-10 py-5 text-xl font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:bg-orange-600 hover:scale-105"
           >
-            Démarrer maintenant - C'est gratuit
+            {lang === 'fr' ? "Démarrer maintenant - C'est gratuit" : "Start now - It's free"}
           </button>
         </div>
       </section>
@@ -183,7 +203,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-gray-800 py-8">
         <div className="container mx-auto px-6 text-center text-gray-500">
-          <p>&copy; 2024 CloserOS. Tous droits réservés.</p>
+          <p>&copy; 2024 CloserOS. {lang === 'fr' ? 'Tous droits réservés.' : 'All rights reserved.'}</p>
         </div>
       </footer>
     </div>

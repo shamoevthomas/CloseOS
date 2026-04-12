@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase'
 import { getBrowserTimezone, getTimezoneLabel } from '../../lib/timezone'
 import BusinessVerification from '../pages/BusinessVerification'
 import { BusinessPaywallModal } from '../components/BusinessPaywallModal'
+import { BusinessSubscriptionBlockModal } from '../components/BusinessSubscriptionBlockModal'
 
 const OWNER_PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/business/dashboard': { title: 'Dashboard', subtitle: "Vue d'ensemble de votre business" },
@@ -172,10 +173,13 @@ export function BusinessLayout() {
 
   // Paywall: block access if trial expired and no active subscription (owners only)
   const showPaywall = !isTeamMember && !isLifetimeFree && !isTrialActive && !isSubscribed && !!businessProfile
+  const isSubscriptionBlocked = !!businessSettings?.subscription_deletion_deadline
+    && new Date(businessSettings.subscription_deletion_deadline) > new Date()
 
   return (
     <BusinessThemeProvider>
     {showPaywall && <BusinessPaywallModal />}
+    {isSubscriptionBlocked && <BusinessSubscriptionBlockModal deadline={businessSettings.subscription_deletion_deadline} />}
     <BusinessLayoutInner
       isSidebarOpen={isSidebarOpen}
       setIsSidebarOpen={setIsSidebarOpen}
@@ -190,6 +194,8 @@ export function BusinessLayout() {
       handleAcceptTzChange={handleAcceptTzChange}
       handleDismissTzBanner={handleDismissTzBanner}
       seatGraceDeadline={!isTeamMember ? businessSettings?.seat_grace_deadline : null}
+      subscriptionGraceDeadline={!isTeamMember ? businessSettings?.subscription_grace_deadline : null}
+      subscriptionDeletionDeadline={businessSettings?.subscription_deletion_deadline}
     />
     </BusinessThemeProvider>
   )
@@ -199,6 +205,7 @@ function BusinessLayoutInner({
   isSidebarOpen, setIsSidebarOpen, isSidebarCollapsed, setIsSidebarCollapsed,
   isSettingsOpen, setIsSettingsOpen, pageInfo, tzBannerVisible, storedTz,
   browserTz, handleAcceptTzChange, handleDismissTzBanner, seatGraceDeadline,
+  subscriptionGraceDeadline, subscriptionDeletionDeadline,
 }: any) {
   const { dark } = useTheme()
 
@@ -254,6 +261,27 @@ function BusinessLayoutInner({
             </div>
           </div>
         )}
+
+        {/* Subscription grace period warning banner (5 days to pay before blocking) */}
+        {subscriptionGraceDeadline && !subscriptionDeletionDeadline && new Date(subscriptionGraceDeadline) > new Date() && (() => {
+          const daysLeft = Math.ceil((new Date(subscriptionGraceDeadline).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+          return (
+            <div className="border-b border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-900/40 px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <p className="text-sm text-amber-800 dark:text-amber-300">
+                  <span className="font-bold">Paiement en echec</span> — Il vous reste <span className="font-bold">{daysLeft} jour{daysLeft > 1 ? 's' : ''}</span> pour regulariser votre paiement avant le blocage de l'acces.
+                </p>
+              </div>
+              <a
+                href="/business/organisation"
+                className="shrink-0 rounded-full bg-amber-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-amber-700 transition-colors"
+              >
+                Mettre a jour
+              </a>
+            </div>
+          )
+        })()}
 
         {/* Seat grace period warning banner */}
         {seatGraceDeadline && new Date(seatGraceDeadline) > new Date() && (() => {

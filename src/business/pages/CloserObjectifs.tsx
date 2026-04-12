@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import {
   Target, Plus, Pencil, Trash2, X, Loader2, ChevronDown,
@@ -38,22 +39,23 @@ interface PersonalObjective {
   created_at: string
 }
 
-const METRICS = [
-  { value: 'revenue', label: 'CA généré' },
-  { value: 'sales_count', label: 'Nombre de ventes' },
-  { value: 'conversion_rate', label: 'Taux de conversion (%)' },
-  { value: 'leads', label: 'Nombre de leads' },
-  { value: 'appointments', label: 'Nombre de RDV' },
-  { value: 'noshow_rate', label: 'Taux de no-show (%)' },
-  { value: 'custom', label: 'Personnalisé' },
-]
+// Moved inside the component as useMemo to access t
+const METRICS_BASE = [
+  { value: 'revenue', key: 'objectives_metric_revenue' },
+  { value: 'sales_count', key: 'objectives_metric_sales_count' },
+  { value: 'conversion_rate', key: 'objectives_metric_conversion_rate' },
+  { value: 'leads', key: 'objectives_metric_leads' },
+  { value: 'appointments', key: 'objectives_metric_appointments' },
+  { value: 'noshow_rate', key: 'objectives_metric_noshow_rate' },
+  { value: 'custom', key: 'objectives_metric_custom' },
+] as const
 
-const PERIODS = [
-  { value: 'weekly', label: 'Hebdomadaire' },
-  { value: 'monthly', label: 'Mensuel' },
-  { value: 'quarterly', label: 'Trimestriel' },
-  { value: 'yearly', label: 'Annuel' },
-]
+const PERIODS_BASE = [
+  { value: 'weekly', key: 'objectives_period_weekly' },
+  { value: 'monthly', key: 'objectives_period_monthly' },
+  { value: 'quarterly', key: 'objectives_period_quarterly' },
+  { value: 'yearly', key: 'objectives_period_yearly' },
+] as const
 
 const PERIOD_DAYS: Record<string, number> = {
   weekly: 7, monthly: 30, quarterly: 90, yearly: 365,
@@ -69,9 +71,7 @@ const METRIC_BADGE: Record<string, { bg: string; text: string }> = {
   custom: { bg: 'bg-stone-100', text: 'text-stone-600' },
 }
 
-const PERIOD_LABELS: Record<string, string> = {
-  weekly: 'Hebdo', monthly: 'Mensuel', quarterly: 'Trimestriel', yearly: 'Annuel',
-}
+// PERIOD_LABELS moved inside component to access t
 
 const API_URL = '/api/business'
 
@@ -79,7 +79,17 @@ type TabId = 'org' | 'assigned' | 'personal'
 
 export function CloserObjectifs() {
   const { user, teamMember, ownerUserId } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const { prospects } = useBusinessProspects()
+
+  const METRICS = useMemo(() => METRICS_BASE.map(m => ({ value: m.value, label: (t as any)[m.key] || m.value })), [t])
+  const PERIODS = useMemo(() => PERIODS_BASE.map(p => ({ value: p.value, label: (t as any)[p.key] || p.value })), [t])
+  const PERIOD_LABELS: Record<string, string> = useMemo(() => ({
+    weekly: t.objectives_period_short_weekly,
+    monthly: t.objectives_period_short_monthly,
+    quarterly: t.objectives_period_short_quarterly,
+    yearly: t.objectives_period_short_yearly,
+  }), [t])
 
   const [activeTab, setActiveTab] = useState<TabId>('assigned')
   const [orgObjectives, setOrgObjectives] = useState<Objective[]>([])
@@ -199,7 +209,7 @@ export function CloserObjectifs() {
 
   const formatDeadline = (d: string | null) => {
     if (!d) return null
-    return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+    return new Date(d).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
   }
   const isOverdue = (d: string | null) => d ? new Date(d) < new Date() : false
 
@@ -225,7 +235,7 @@ export function CloserObjectifs() {
   }
 
   const handleSave = async () => {
-    if (!formLabel.trim()) return toast.error('Le label est requis')
+    if (!formLabel.trim()) return toast.error(t.objectives_label_required)
     if (!teamMember?.id || !ownerUserId) return
     setSaving(true)
     try {
@@ -245,7 +255,7 @@ export function CloserObjectifs() {
             visible_to_owner: formVisibleToOwner,
           }),
         })
-        toast.success('Objectif modifié')
+        toast.success(t.objectives_modified)
       } else {
         const createRes = await fetch(`${API_URL}?action=personal-objectives-create`, {
           method: 'POST',
@@ -264,28 +274,28 @@ export function CloserObjectifs() {
         })
         const createData = await createRes.json()
         if (createData.error) { toast.error(createData.error); return }
-        toast.success('Objectif créé')
+        toast.success(t.objectives_created)
       }
       setIsModalOpen(false)
       resetForm()
       fetchAll()
-    } catch { toast.error('Erreur réseau') }
+    } catch { toast.error(t.objectives_network_error) }
     finally { setSaving(false) }
   }
 
   const deletePersonalObjective = async (obj: PersonalObjective) => {
-    if (!confirm(`Supprimer l'objectif "${obj.label}" ?`)) return
+    if (!confirm(t.objectives_delete_confirm.replace('{name}', obj.label))) return
     try {
       await fetch(`${API_URL}?action=personal-objectives-delete&id=${obj.id}&team_member_id=${teamMember?.id}`, { method: 'DELETE' })
-      toast.success('Objectif supprimé')
+      toast.success(t.objectives_deleted)
       fetchAll()
-    } catch { toast.error('Erreur') }
+    } catch { toast.error(t.common_error) }
   }
 
   const tabs: { id: TabId; label: string; count: number; icon: any }[] = [
-    { id: 'assigned', label: 'Mes objectifs', count: assignedObjectives.length, icon: User },
-    { id: 'org', label: 'Organisation', count: orgObjectives.length, icon: Building2 },
-    { id: 'personal', label: 'Personnel', count: personalObjectives.length, icon: Lock },
+    { id: 'assigned', label: t.objectives_tab_assigned, count: assignedObjectives.length, icon: User },
+    { id: 'org', label: t.objectives_tab_org, count: orgObjectives.length, icon: Building2 },
+    { id: 'personal', label: t.objectives_tab_personal, count: personalObjectives.length, icon: Lock },
   ]
 
   if (loading) {
@@ -356,7 +366,7 @@ export function CloserObjectifs() {
           </div>
           {progress !== null && (
             <p className={cn('text-xs font-semibold', progress >= 100 ? 'text-emerald-600' : 'text-stone-400 dark:text-neutral-500')}>
-              {progress}% atteint
+              {t.objectives_percent_reached.replace('{n}', String(progress))}
             </p>
           )}
         </div>
@@ -367,7 +377,7 @@ export function CloserObjectifs() {
             <div className="flex items-center gap-2">
               <CalendarDays className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-400')} />
               <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-stone-500 dark:text-neutral-400')}>
-                {overdue ? 'En retard (' + deadlineStr + ')' : 'Échéance : ' + deadlineStr}
+                {overdue ? t.objectives_overdue + ' (' + deadlineStr + ')' : t.objectives_deadline + ' : ' + deadlineStr}
               </span>
             </div>
           </div>
@@ -412,11 +422,11 @@ export function CloserObjectifs() {
           </div>
           <div className="flex items-center gap-1 ml-2">
             {obj.visible_to_owner ? (
-              <span className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full" title="Visible par le manager">
+              <span className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full" title={t.objectives_visible_to_manager}>
                 <Eye className="h-3 w-3" />
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-xs text-stone-400 bg-stone-50 px-2 py-0.5 rounded-full" title="Privé">
+              <span className="flex items-center gap-1 text-xs text-stone-400 bg-stone-50 px-2 py-0.5 rounded-full" title={t.objectives_private}>
                 <EyeOff className="h-3 w-3" />
               </span>
             )}
@@ -450,7 +460,7 @@ export function CloserObjectifs() {
           </div>
           {progress !== null && (
             <p className={cn('text-xs font-semibold', progress >= 100 ? 'text-emerald-600' : 'text-stone-400 dark:text-neutral-500')}>
-              {progress}% atteint
+              {t.objectives_percent_reached.replace('{n}', String(progress))}
             </p>
           )}
         </div>
@@ -460,7 +470,7 @@ export function CloserObjectifs() {
           <div className="flex items-center gap-2 mb-4">
             <CalendarDays className={cn('h-3.5 w-3.5', overdue ? 'text-red-500' : 'text-stone-400')} />
             <span className={cn('text-xs font-medium', overdue ? 'text-red-600' : 'text-stone-500 dark:text-neutral-400')}>
-              {overdue ? 'En retard (' + deadlineStr + ')' : 'Échéance : ' + deadlineStr}
+              {overdue ? t.objectives_overdue + ' (' + deadlineStr + ')' : t.objectives_deadline + ' : ' + deadlineStr}
             </span>
           </div>
         )}
@@ -468,7 +478,7 @@ export function CloserObjectifs() {
         {/* Actions */}
         <div className="flex gap-2 border-t border-stone-100 dark:border-white/10 pt-3">
           <button onClick={() => openEdit(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white transition-colors">
-            <Pencil className="h-3.5 w-3.5" /> Modifier
+            <Pencil className="h-3.5 w-3.5" /> {t.common_edit}
           </button>
           <button onClick={() => deletePersonalObjective(obj)} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
             <Trash2 className="h-3.5 w-3.5" /> Supprimer

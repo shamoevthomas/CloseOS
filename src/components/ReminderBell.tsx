@@ -4,6 +4,8 @@ import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useLanguage } from '../contexts/LanguageContext'
+import { reminderBellTranslations } from '../i18n/translations'
 
 interface Reminder {
   id: number
@@ -16,6 +18,8 @@ interface Reminder {
 export function ReminderBell() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { lang } = useLanguage()
+  const t = reminderBellTranslations[lang]
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [dismissed, setDismissed] = useState<Set<number>>(new Set())
@@ -110,7 +114,7 @@ export function ReminderBell() {
           <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-3">
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4 text-orange-400" />
-              <h3 className="text-sm font-bold text-white">Rappels du jour</h3>
+              <h3 className="text-sm font-bold text-white">{t.title}</h3>
               {count > 0 && (
                 <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400">
                   {count}
@@ -121,7 +125,7 @@ export function ReminderBell() {
               onClick={() => { setIsOpen(false); navigate('/reminders') }}
               className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
             >
-              Tout voir
+              {t.view_all}
             </button>
           </div>
 
@@ -130,7 +134,7 @@ export function ReminderBell() {
             {visibleReminders.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Bell className="h-8 w-8 text-white/10 mx-auto mb-2" />
-                <p className="text-sm text-white/40">Aucun rappel pour aujourd'hui</p>
+                <p className="text-sm text-white/40">{t.no_reminders}</p>
               </div>
             ) : (
               <div className="divide-y divide-white/[0.08]">
@@ -160,8 +164,8 @@ export function ReminderBell() {
                             'text-[10px] font-medium mt-1',
                             overdue ? 'text-red-400' : 'text-white/40'
                           )}>
-                            {overdue ? 'En retard — ' : ''}
-                            {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                            {overdue ? `${t.overdue} — ` : ''}
+                            {new Date(reminder.reminder_date).toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-US', {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}
@@ -171,7 +175,7 @@ export function ReminderBell() {
                           <button
                             onClick={() => handleMarkDone(reminder.id)}
                             className="rounded-md p-1.5 text-emerald-400 hover:bg-emerald-500/20 transition-all"
-                            title="Marquer comme fait"
+                            title={t.mark_done}
                           >
                             <Check className="h-3.5 w-3.5" />
                           </button>

@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { useNavigate } from 'react-router-dom'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import { getProspectCA } from '../lib/getProspectCA'
 // @ts-ignore
@@ -74,12 +75,6 @@ interface Appointment {
 
 // ─── Helpers ───
 
-const formatCurrency = (v: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
-
-const formatDate = (d: string) =>
-  new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
-
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
 const STAGE_COLORS: Record<string, string> = {
@@ -92,17 +87,6 @@ const STAGE_COLORS: Record<string, string> = {
   noanswer: '#747878',
   noshow: '#444748',
 }
-
-const PERIODS = [
-  { label: "Aujourd'hui", days: 1 },
-  { label: '7 jours', days: 7 },
-  { label: '14 jours', days: 14 },
-  { label: '30 jours', days: 30 },
-  { label: '90 jours', days: 90 },
-  { label: '6 mois', days: 180 },
-  { label: '1 an', days: 365 },
-  { label: 'Tout', days: 0 },
-]
 
 const ROLE_COLORS: Record<string, string> = {
   Closer: 'bg-stone-100 dark:bg-neutral-800 text-stone-800 dark:text-neutral-100',
@@ -117,7 +101,25 @@ const ROLE_COLORS: Record<string, string> = {
 
 export function BusinessReport() {
   const { user, ownerUserId } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const navigate = useNavigate()
+
+  const formatCurrency = (v: number) =>
+    new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+
+  const PERIODS = [
+    { label: t.common_today, days: 1 },
+    { label: t.report_7_days, days: 7 },
+    { label: t.report_14_days, days: 14 },
+    { label: t.report_30_days, days: 30 },
+    { label: t.report_90_days, days: 90 },
+    { label: t.report_6_months, days: 180 },
+    { label: t.report_1_year, days: 365 },
+    { label: t.report_all_time, days: 0 },
+  ]
   const effectiveUserId = ownerUserId || user?.id
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -261,21 +263,21 @@ export function BusinessReport() {
   // ─── Stage distribution for pie ───
   const stageData = useMemo(() => {
     const stages = [
-      { id: 'prospect', name: 'Nouveau Lead', color: '#006c49' },
-      { id: 'qualified', name: 'Qualifié', color: '#ffb95f' },
-      { id: 'unqualified', name: 'Non-Qualifié', color: '#c4c7c7' },
-      { id: 'followup', name: 'Follow Up', color: '#1b1c1b' },
-      { id: 'won', name: 'Gagné', color: '#006c49' },
-      { id: 'lost', name: 'Perdu', color: '#ba1a1a' },
-      { id: 'noanswer', name: 'Pas de Réponse', color: '#747878' },
-      { id: 'noshow', name: 'No Show', color: '#444748' },
+      { id: 'prospect', name: t.report_stage_new_lead, color: '#006c49' },
+      { id: 'qualified', name: t.report_stage_qualified, color: '#ffb95f' },
+      { id: 'unqualified', name: t.report_stage_unqualified, color: '#c4c7c7' },
+      { id: 'followup', name: t.report_stage_followup, color: '#1b1c1b' },
+      { id: 'won', name: t.report_stage_won, color: '#006c49' },
+      { id: 'lost', name: t.report_stage_lost, color: '#ba1a1a' },
+      { id: 'noanswer', name: t.report_stage_no_answer, color: '#747878' },
+      { id: 'noshow', name: t.report_stage_no_show, color: '#444748' },
     ]
     return stages.map(s => ({
       name: s.name,
       value: filteredProspects.filter(p => p.stage === s.id).length,
       color: s.color,
     })).filter(s => s.value > 0)
-  }, [filteredProspects])
+  }, [filteredProspects, t])
 
   // ─── Loss reason distribution ───
   const LOSS_REASON_COLORS: Record<string, string> = {
@@ -330,14 +332,14 @@ export function BusinessReport() {
         const closer = members.find(m => m.id === p.assigned_to)
         return {
           id: p.id,
-          motif: p.loss_details || 'Non précisé',
+          motif: p.loss_details || t.report_not_specified,
           prospect: p.contact || `Prospect #${p.id}`,
-          closer: closer ? `${closer.first_name} ${closer.last_name}`.trim() : 'Non assigné',
+          closer: closer ? `${closer.first_name} ${closer.last_name}`.trim() : t.report_not_assigned,
           date: p.created_at,
         }
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [prospects, members, autreFilterPeriod, autreFilterCampaign, autreFilterCloser, autreFilterTeam, allTeamMembers])
+  }, [prospects, members, autreFilterPeriod, autreFilterCampaign, autreFilterCloser, autreFilterTeam, allTeamMembers, t])
 
   // ─── CA bar per campaign ───
   const caBarData = useMemo(() =>
@@ -374,7 +376,7 @@ export function BusinessReport() {
     }
   }
 
-  const periodLabel = PERIODS.find(p => p.days === periodDays)?.label || '7 jours'
+  const periodLabel = PERIODS.find(p => p.days === periodDays)?.label || t.report_7_days
 
   // ─── Activity Feed (Today only) ───
   const todayActivities = useMemo(() => {
@@ -386,9 +388,9 @@ export function BusinessReport() {
     tomorrow.setDate(tomorrow.getDate() + 1)
 
     const getMemberName = (memberId: string | null) => {
-      if (!memberId) return 'Vous'
+      if (!memberId) return t.report_you
       const m = members.find(mem => mem.id === memberId)
-      return m ? `${m.first_name} ${m.last_name}` : 'Membre'
+      return m ? `${m.first_name} ${m.last_name}` : t.report_member
     }
 
     const events: ActivityEvent[] = []
@@ -401,7 +403,7 @@ export function BusinessReport() {
           id: `prospect-${p.id}`,
           member_name: getMemberName((p as any).assigned_to),
           member_id: (p as any).assigned_to || 'owner',
-          action: 'a ajouté un prospect',
+          action: t.report_added_prospect,
           detail: (p as any).contact || `Prospect #${p.id}`,
           timestamp: d,
           icon: Users,
@@ -416,9 +418,9 @@ export function BusinessReport() {
         const d = new Date(p.created_at)
         if (d >= today && d < tomorrow) {
           const actionMap: Record<string, string> = {
-            won: 'a conclu une vente',
-            lost: 'a perdu un deal',
-            noshow: 'a marqué un no-show',
+            won: t.report_closed_sale,
+            lost: t.report_lost_deal,
+            noshow: t.report_marked_noshow,
           }
           const colorMap: Record<string, string> = {
             won: 'text-emerald-700 bg-emerald-50',
@@ -429,7 +431,7 @@ export function BusinessReport() {
             id: `stage-${p.id}-${p.stage}`,
             member_name: getMemberName((p as any).assigned_to),
             member_id: (p as any).assigned_to || 'owner',
-            action: actionMap[p.stage] || 'a modifié le pipeline',
+            action: actionMap[p.stage] || t.report_modified_pipeline,
             detail: (p as any).contact || `Prospect #${p.id}`,
             timestamp: d,
             icon: GitBranch,
@@ -447,7 +449,7 @@ export function BusinessReport() {
           id: `appt-${a.id}`,
           member_name: getMemberName((a as any).assigned_to),
           member_id: (a as any).assigned_to || 'owner',
-          action: 'a fixé un rendez-vous',
+          action: t.report_scheduled_appointment,
           detail: `Le ${a.date}`,
           timestamp: d,
           icon: Calendar,
@@ -464,7 +466,7 @@ export function BusinessReport() {
           id: `reminder-${r.id}`,
           member_name: getMemberName(r.created_by_member_id),
           member_id: r.created_by_member_id || 'owner',
-          action: 'a programmé un rappel',
+          action: t.report_scheduled_reminder,
           detail: r.title,
           timestamp: d,
           icon: Bell,
@@ -480,7 +482,7 @@ export function BusinessReport() {
     }
 
     return events
-  }, [periodDays, filteredProspects, filteredAppointments, reminders, members, activityFilterMember])
+  }, [periodDays, filteredProspects, filteredAppointments, reminders, members, activityFilterMember, t])
 
   // ─── Conic gradient for donut chart ───
   const conicGradient = useMemo(() => {
@@ -508,7 +510,7 @@ export function BusinessReport() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-1">Business Report</h1>
-          <p className="text-stone-500 dark:text-neutral-400 text-sm">Visualisez la performance globale de vos campagnes et de votre équipe commerciale en temps réel.</p>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm">{t.report_subtitle}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex gap-1 items-baseline">
@@ -532,7 +534,7 @@ export function BusinessReport() {
             className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-neutral-700 px-5 py-2 text-sm font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-600 disabled:opacity-50 transition-all active:scale-95"
           >
             {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Export PDF
+            {t.report_export_pdf_btn}
           </button>
         </div>
       </div>
@@ -547,7 +549,7 @@ export function BusinessReport() {
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">CA Généré</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_ca_generated}</p>
             <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(totalCA)}</p>
           </div>
         </div>
@@ -558,10 +560,10 @@ export function BusinessReport() {
             <div className="p-3 bg-stone-100 dark:bg-neutral-800 rounded-2xl">
               <ShoppingCart className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
             </div>
-            <span className="text-stone-500 dark:text-neutral-400 font-bold text-[10px] bg-stone-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">{formatCurrency(avgDeal)} moy.</span>
+            <span className="text-stone-500 dark:text-neutral-400 font-bold text-[10px] bg-stone-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">{formatCurrency(avgDeal)} {t.report_avg_short}</span>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Ventes</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_sales}</p>
             <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{wonLeads.length}</p>
           </div>
         </div>
@@ -573,11 +575,11 @@ export function BusinessReport() {
               <Target className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
             </div>
             <span className="text-stone-700 dark:text-neutral-200 font-bold text-[10px] bg-stone-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full">
-              {closingRate >= 25 ? 'High' : closingRate >= 15 ? 'Normal' : 'Low'}
+              {closingRate >= 25 ? t.report_closing_rate_high : closingRate >= 15 ? t.report_closing_rate_normal : t.report_closing_rate_low}
             </span>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Taux de Closing</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_closing_rate}</p>
             <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{formatPct(closingRate)}</p>
           </div>
         </div>
@@ -590,7 +592,7 @@ export function BusinessReport() {
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Commission estimée</p>
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_estimated_commission}</p>
             <p className="text-3xl font-extrabold text-stone-900 dark:text-white">{formatCurrency(totalCommission)}</p>
           </div>
         </div>
@@ -599,19 +601,19 @@ export function BusinessReport() {
       {/* Secondary KPIs row */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
         <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Total Leads</p>
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_total_leads}</p>
           <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{totalLeads}</p>
         </div>
         <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Show Up</p>
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_show_up}</p>
           <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{doneAppts}</p>
         </div>
         <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">No Show</p>
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_no_show}</p>
           <p className="text-2xl font-extrabold text-red-600">{noshowLeads.length}</p>
         </div>
         <div className="glass-card p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
-          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">Taux de perte</p>
+          <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_loss_rate}</p>
           <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{formatPct(lostRate)}</p>
         </div>
       </section>
@@ -620,7 +622,7 @@ export function BusinessReport() {
       {periodDays === 1 && (
         <section className="glass-card rounded-2xl p-7 mb-14">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">Fil d'activité — Aujourd'hui</h3>
+            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_activity_feed_today}</h3>
             {members.length > 0 && (
               <div className="relative">
                 <select
@@ -628,8 +630,8 @@ export function BusinessReport() {
                   onChange={(e) => setActivityFilterMember(e.target.value)}
                   className="appearance-none rounded-full border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 pl-8 pr-9 py-2 text-xs font-semibold text-stone-600 dark:text-neutral-300 focus:border-emerald-500 focus:outline-none"
                 >
-                  <option value="all">Tous les membres</option>
-                  <option value="owner">Moi (Owner)</option>
+                  <option value="all">{t.report_all_members}</option>
+                  <option value="owner">{t.report_me_owner}</option>
                   {members.map(m => (
                     <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
                   ))}
@@ -643,7 +645,7 @@ export function BusinessReport() {
           {todayActivities.length === 0 ? (
             <div className="text-center py-10">
               <Activity className="h-10 w-10 text-stone-200 dark:text-neutral-700 mx-auto mb-2" />
-              <p className="text-sm text-stone-400 dark:text-neutral-500">Aucune activité aujourd'hui</p>
+              <p className="text-sm text-stone-400 dark:text-neutral-500">{t.report_no_activity_today}</p>
             </div>
           ) : (
             <div className="space-y-1 max-h-[400px] overflow-y-auto">
@@ -662,7 +664,7 @@ export function BusinessReport() {
                       <p className="text-xs text-stone-400 dark:text-neutral-500 truncate">{event.detail}</p>
                     </div>
                     <span className="text-[10px] text-stone-400 dark:text-neutral-500 font-semibold shrink-0 mt-0.5">
-                      {event.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      {event.timestamp.toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 )
@@ -676,9 +678,9 @@ export function BusinessReport() {
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-7 mb-14">
         {/* Donut chart: Répartition des leads */}
         <div className="lg:col-span-2 glass-card p-7 rounded-2xl">
-          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">Répartition des leads par étape</h3>
+          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">{t.report_leads_by_stage}</h3>
           {stageData.length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-sm text-stone-400 dark:text-neutral-500">Aucune donnée</div>
+            <div className="flex items-center justify-center h-64 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_data}</div>
           ) : (
             <>
               <div className="relative w-56 h-56 mx-auto mb-7">
@@ -707,9 +709,9 @@ export function BusinessReport() {
 
         {/* Horizontal bars: CA par campagne */}
         <div className="lg:col-span-3 glass-card p-7 rounded-2xl">
-          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">CA par campagne</h3>
+          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">{t.report_ca_by_campaign}</h3>
           {campaignStats.filter(c => c.ca > 0).length === 0 ? (
-            <div className="flex items-center justify-center h-64 text-sm text-stone-400 dark:text-neutral-500">Aucune donnée</div>
+            <div className="flex items-center justify-center h-64 text-sm text-stone-400 dark:text-neutral-500">{t.report_no_data}</div>
           ) : (
             <div className="space-y-5">
               {campaignStats.filter(c => c.ca > 0).map((c, i) => (
@@ -734,7 +736,7 @@ export function BusinessReport() {
       {/* ─── Loss Reason Pie Chart ─── */}
       {lossReasonData.length > 0 && (
       <section className="glass-card p-7 rounded-2xl mb-14">
-        <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">Raisons de Perte</h3>
+        <h3 className="text-lg font-extrabold text-stone-900 dark:text-white mb-7">{t.report_loss_reasons}</h3>
         <div className="flex flex-col lg:flex-row items-center gap-8">
           <div className="relative w-56 h-56 mx-auto lg:mx-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -781,8 +783,8 @@ export function BusinessReport() {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-neutral-800">
               <div>
-                <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">Détail des motifs « Autre »</h3>
-                <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{autreDetails.length} résultat{autreDetails.length > 1 ? 's' : ''}</p>
+                <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_autre_detail_title}</h3>
+                <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{autreDetails.length} {autreDetails.length > 1 ? t.report_results : t.report_result}</p>
               </div>
               <button onClick={() => setShowAutreModal(false)} className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5 text-stone-500" />
@@ -806,7 +808,7 @@ export function BusinessReport() {
                 onChange={e => setAutreFilterCampaign(e.target.value)}
                 className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
               >
-                <option value="all">Toutes les campagnes</option>
+                <option value="all">{t.report_all_campaigns}</option>
                 {campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               {/* Closer */}
@@ -815,7 +817,7 @@ export function BusinessReport() {
                 onChange={e => setAutreFilterCloser(e.target.value)}
                 className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
               >
-                <option value="all">Tous les closers</option>
+                <option value="all">{t.report_all_closers}</option>
                 {members.filter(m => ['Closer', 'Setter-Closer', 'Owner', 'Head of Sales'].includes(m.role)).map(m => (
                   <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
                 ))}
@@ -827,7 +829,7 @@ export function BusinessReport() {
                   onChange={e => setAutreFilterTeam(e.target.value)}
                   className="text-xs font-bold bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl px-3 py-2 text-stone-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-stone-900/10"
                 >
-                  <option value="all">Toutes les équipes</option>
+                  <option value="all">{t.report_all_teams}</option>
                   {teams.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
@@ -840,17 +842,17 @@ export function BusinessReport() {
               {autreDetails.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-stone-400 dark:text-neutral-500">
                   <UserX className="h-10 w-10 mb-3 opacity-50" />
-                  <p className="text-sm font-medium">Aucun motif « Autre » trouvé</p>
-                  <p className="text-xs mt-1">Essayez de modifier les filtres</p>
+                  <p className="text-sm font-medium">{t.report_no_autre_found}</p>
+                  <p className="text-xs mt-1">{t.report_try_modify_filters}</p>
                 </div>
               ) : (
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-stone-100 dark:border-neutral-800">
-                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Motif</th>
-                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Prospect</th>
-                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Closer</th>
-                      <th className="text-right text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">Date</th>
+                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.report_reason}</th>
+                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.report_prospect}</th>
+                      <th className="text-left text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.report_closer}</th>
+                      <th className="text-right text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 px-6 py-3">{t.report_date}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -862,7 +864,7 @@ export function BusinessReport() {
                         <td className="px-6 py-3.5 text-sm text-stone-600 dark:text-neutral-300">{row.prospect}</td>
                         <td className="px-6 py-3.5 text-sm text-stone-600 dark:text-neutral-300">{row.closer}</td>
                         <td className="px-6 py-3.5 text-xs text-stone-400 dark:text-neutral-500 text-right whitespace-nowrap">
-                          {new Date(row.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(row.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </td>
                       </tr>
                     ))}
@@ -877,22 +879,22 @@ export function BusinessReport() {
       {/* ─── Campaign Performance Table ─── */}
       <section className="glass-card rounded-2xl overflow-hidden mb-14">
         <div className="p-7 border-b border-stone-100 dark:border-neutral-800">
-          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">Performance des Campagnes</h3>
+          <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_campaign_performance}</h3>
         </div>
         {campaignStats.length === 0 ? (
-          <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">Aucune campagne</p>
+          <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">{t.report_no_campaign}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-stone-50 dark:bg-neutral-800/50">
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">Campagne</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">Statut</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">Date</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">Vues</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">Conv.</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">CA</th>
-                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">Commission</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_campaign}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_status}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_date}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_views}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_conv}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500">{t.report_ca}</th>
+                  <th className="px-7 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500 text-right">{t.report_commission}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-50 dark:divide-neutral-800">
@@ -901,11 +903,11 @@ export function BusinessReport() {
                     <td className="px-7 py-5 font-bold text-stone-900 dark:text-white">{c.name}</td>
                     <td className="px-7 py-5">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${c.is_active ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400'}`}>
-                        {c.is_active ? 'Active' : 'Paused'}
+                        {c.is_active ? t.report_active : t.report_paused}
                       </span>
                     </td>
                     <td className="px-7 py-5 text-sm text-stone-500 dark:text-neutral-400">{formatDate(c.created_at)}</td>
-                    <td className="px-7 py-5 text-sm text-stone-700 dark:text-neutral-200">{c.views.toLocaleString('fr-FR')}</td>
+                    <td className="px-7 py-5 text-sm text-stone-700 dark:text-neutral-200">{c.views.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')}</td>
                     <td className="px-7 py-5 text-sm font-bold text-stone-700 dark:text-neutral-200">{formatPct(c.conversionRate)}</td>
                     <td className="px-7 py-5 font-extrabold text-stone-900 dark:text-white">{formatCurrency(c.ca)}</td>
                     <td className="px-7 py-5 text-right font-medium text-emerald-700 dark:text-emerald-400">{formatCurrency(c.commission)}</td>
@@ -913,10 +915,10 @@ export function BusinessReport() {
                 ))}
                 {/* Totals row */}
                 <tr className="border-t-2 border-stone-200 dark:border-neutral-800 font-bold bg-stone-50 dark:bg-neutral-800/30">
-                  <td className="px-7 py-5 text-stone-900 dark:text-white">Total</td>
+                  <td className="px-7 py-5 text-stone-900 dark:text-white">{t.report_total}</td>
                   <td></td>
                   <td></td>
-                  <td className="px-7 py-5 text-sm text-stone-700 dark:text-neutral-200">{campaignStats.reduce((s, c) => s + c.views, 0).toLocaleString('fr-FR')}</td>
+                  <td className="px-7 py-5 text-sm text-stone-700 dark:text-neutral-200">{campaignStats.reduce((s, c) => s + c.views, 0).toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')}</td>
                   <td></td>
                   <td className="px-7 py-5 font-extrabold text-stone-900 dark:text-white">{formatCurrency(totalCA)}</td>
                   <td className="px-7 py-5 text-right font-medium text-emerald-700 dark:text-emerald-400">{formatCurrency(totalCommission)}</td>
@@ -932,10 +934,10 @@ export function BusinessReport() {
         {/* Team Performance */}
         <div className="lg:col-span-2 glass-card rounded-2xl overflow-hidden">
           <div className="p-7 border-b border-stone-100 dark:border-neutral-800">
-            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">Performance de l'Équipe</h3>
+            <h3 className="text-lg font-extrabold text-stone-900 dark:text-white">{t.report_team_performance}</h3>
           </div>
           {members.length === 0 ? (
-            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">Aucun membre dans l'équipe</p>
+            <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-10">{t.report_no_team_member}</p>
           ) : (
             <div className="divide-y divide-stone-50 dark:divide-neutral-800">
               {members.map(m => {
@@ -970,7 +972,7 @@ export function BusinessReport() {
                         {m.role}
                       </span>
                       <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-stone-400 dark:text-neutral-500">Wins</span>
+                        <span className="text-[10px] text-stone-400 dark:text-neutral-500">{t.report_wins}</span>
                         <span className="font-bold text-stone-900 dark:text-white">{memberWins}</span>
                       </div>
                       <ChevronRight className="h-4 w-4 text-stone-300 dark:text-neutral-600" />
@@ -985,18 +987,18 @@ export function BusinessReport() {
         {/* Financial Summary Card (gradient) */}
         <div className="rounded-2xl p-7 text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #ffb95f 0%, #006c49 100%)' }}>
           <div className="relative z-10 flex flex-col h-full">
-            <h3 className="text-lg font-extrabold mb-7">Résumé Financier</h3>
+            <h3 className="text-lg font-extrabold mb-7">{t.report_financial_summary}</h3>
             <div className="space-y-5 flex-grow">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">Taux de Closing</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">{t.report_closing_rate}</p>
                 <p className="text-4xl font-black">{formatPct(closingRate)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">Panier Moyen</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">{t.report_avg_deal}</p>
                 <p className="text-2xl font-bold">{formatCurrency(avgDeal)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">Show Up Rate</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mb-1">{t.report_show_up_rate}</p>
                 <p className="text-2xl font-bold">{formatPct(showUpRate)}</p>
               </div>
             </div>
@@ -1015,17 +1017,17 @@ export function BusinessReport() {
               <Calendar className="h-5 w-5 text-stone-700 dark:text-neutral-200" />
             </div>
             <div>
-              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white">Rendez-vous</h4>
-              <p className="text-sm text-stone-400 dark:text-neutral-500">{totalAppts} total · {doneAppts} terminé{doneAppts !== 1 ? 's' : ''}</p>
+              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white">{t.report_appointments}</h4>
+              <p className="text-sm text-stone-400 dark:text-neutral-500">{totalAppts} {t.report_total_short} · {doneAppts} {doneAppts !== 1 ? t.report_done_plural : t.report_done}</p>
             </div>
           </div>
           <div className="space-y-2">
-            <StatLine label="Total RDV" value={totalAppts} color="stone" />
-            <StatLine label="Terminés" value={doneAppts} color="emerald" />
-            <StatLine label="En attente" value={filteredAppointments.filter(a => a.status === 'pending').length} color="amber" />
-            <StatLine label="Confirmés" value={filteredAppointments.filter(a => a.status === 'confirmed').length} color="stone" />
-            <StatLine label="Annulés" value={cancelledAppts} color="red" />
-            <StatLine label="Taux Show Up" value={formatPct(showUpRate)} color="emerald" isText />
+            <StatLine label={t.report_total_rdv} value={totalAppts} color="stone" />
+            <StatLine label={t.report_completed} value={doneAppts} color="emerald" />
+            <StatLine label={t.report_pending} value={filteredAppointments.filter(a => a.status === 'pending').length} color="amber" />
+            <StatLine label={t.report_confirmed} value={filteredAppointments.filter(a => a.status === 'confirmed').length} color="stone" />
+            <StatLine label={t.report_cancelled} value={cancelledAppts} color="red" />
+            <StatLine label={t.report_show_up_rate_label} value={formatPct(showUpRate)} color="emerald" isText />
           </div>
         </div>
 
@@ -1036,8 +1038,8 @@ export function BusinessReport() {
               <TrendingUp className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white">Pipeline Détaillé</h4>
-              <p className="text-sm text-stone-400 dark:text-neutral-500">Valeur totale : {formatCurrency(totalPipeline)}</p>
+              <h4 className="font-extrabold text-lg text-stone-900 dark:text-white">{t.report_detailed_pipeline}</h4>
+              <p className="text-sm text-stone-400 dark:text-neutral-500">{t.report_total_value} {formatCurrency(totalPipeline)}</p>
             </div>
           </div>
           {/* Pipeline bar */}
@@ -1058,11 +1060,11 @@ export function BusinessReport() {
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
               <p className="text-2xl font-black text-stone-900 dark:text-white">{filteredProspects.filter(p => p.stage === 'prospect').length}</p>
-              <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-[0.15em]">Prospects</p>
+              <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-[0.15em]">{t.report_prospects}</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-black text-stone-900 dark:text-white">{wonLeads.length}</p>
-              <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-[0.15em]">Gagnés</p>
+              <p className="text-[10px] text-stone-400 dark:text-neutral-500 font-bold uppercase tracking-[0.15em]">{t.report_won}</p>
             </div>
           </div>
         </div>
@@ -1073,29 +1075,29 @@ export function BusinessReport() {
         <div ref={pdfRef} style={{ fontFamily: 'Inter, Helvetica, Arial, sans-serif', background: '#ffffff', padding: '32px', width: '900px', color: '#1e293b' }}>
           {/* PDF Header */}
           <div style={{ background: 'linear-gradient(135deg, #ffb95f, #006c49)', borderRadius: '16px', padding: '24px 32px', marginBottom: '24px', color: '#fff' }}>
-            <div style={{ fontSize: '22px', fontWeight: 'bold' }}>CloseOS Business — Rapport</div>
-            <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>Période : {periodLabel} · Généré le {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+            <div style={{ fontSize: '22px', fontWeight: 'bold' }}>{t.report_pdf_title}</div>
+            <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>{t.report_pdf_period} {periodLabel} · {t.report_pdf_generated_on} {new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
           </div>
 
           {/* PDF KPIs */}
           <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-            <PdfKpi label="CA Généré" value={formatCurrency(totalCA)} />
-            <PdfKpi label="Ventes" value={String(wonLeads.length)} />
-            <PdfKpi label="Closing" value={formatPct(closingRate)} />
-            <PdfKpi label="Commission" value={formatCurrency(totalCommission)} />
-            <PdfKpi label="Total Leads" value={String(totalLeads)} />
-            <PdfKpi label="Show Up" value={formatPct(showUpRate)} />
-            <PdfKpi label="No Show" value={formatPct(noshowRate)} />
-            <PdfKpi label="Panier Moyen" value={formatCurrency(avgDeal)} />
+            <PdfKpi label={t.report_ca_generated} value={formatCurrency(totalCA)} />
+            <PdfKpi label={t.report_sales} value={String(wonLeads.length)} />
+            <PdfKpi label={t.report_pdf_closing} value={formatPct(closingRate)} />
+            <PdfKpi label={t.report_commission} value={formatCurrency(totalCommission)} />
+            <PdfKpi label={t.report_total_leads} value={String(totalLeads)} />
+            <PdfKpi label={t.report_show_up} value={formatPct(showUpRate)} />
+            <PdfKpi label={t.report_no_show} value={formatPct(noshowRate)} />
+            <PdfKpi label={t.report_avg_deal} value={formatCurrency(avgDeal)} />
           </div>
 
           {/* PDF Pipeline */}
           <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>Répartition Pipeline</div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>{t.report_pdf_pipeline_distribution}</div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e4e2e1' }}>
-                  {['Prospect', 'Qualifié', 'Follow Up', 'Gagné', 'Perdu', 'No Show'].map(s => (
+                  {[t.report_stage_new_lead, t.report_stage_qualified, t.report_stage_followup, t.report_stage_won, t.report_stage_lost, t.report_stage_no_show].map(s => (
                     <th key={s} style={{ textAlign: 'center', padding: '6px', fontWeight: 'bold', color: '#747878' }}>{s}</th>
                   ))}
                 </tr>
@@ -1114,12 +1116,12 @@ export function BusinessReport() {
 
           {/* PDF Campaign table */}
           <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>Performance Campagnes</div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>{t.report_pdf_campaign_performance}</div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e4e2e1' }}>
-                  {['Campagne', 'Statut', 'Vues', 'Inscrits', 'Conv.', 'Gagnés', 'CA', 'Commission'].map(h => (
-                    <th key={h} style={{ textAlign: h === 'Campagne' ? 'left' : 'center', padding: '5px 4px', fontWeight: 'bold', color: '#747878' }}>{h}</th>
+                  {[t.report_campaign, t.report_status, t.report_views, t.report_pdf_registered, t.report_conv, t.report_won, t.report_ca, t.report_commission].map((h, idx) => (
+                    <th key={idx} style={{ textAlign: idx === 0 ? 'left' : 'center', padding: '5px 4px', fontWeight: 'bold', color: '#747878' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1127,7 +1129,7 @@ export function BusinessReport() {
                 {campaignStats.map(c => (
                   <tr key={c.id} style={{ borderBottom: '1px solid #efedec' }}>
                     <td style={{ padding: '5px 4px', fontWeight: 500 }}>{c.name}</td>
-                    <td style={{ padding: '5px 4px', textAlign: 'center' }}>{c.is_active ? 'Active' : 'Inactive'}</td>
+                    <td style={{ padding: '5px 4px', textAlign: 'center' }}>{c.is_active ? t.report_active : t.report_pdf_inactive}</td>
                     <td style={{ padding: '5px 4px', textAlign: 'center' }}>{c.views}</td>
                     <td style={{ padding: '5px 4px', textAlign: 'center' }}>{c.inscriptions}</td>
                     <td style={{ padding: '5px 4px', textAlign: 'center' }}>{formatPct(c.conversionRate)}</td>
@@ -1137,7 +1139,7 @@ export function BusinessReport() {
                   </tr>
                 ))}
                 <tr style={{ borderTop: '2px solid #006c49' }}>
-                  <td style={{ padding: '5px 4px', fontWeight: 'bold' }}>Total</td>
+                  <td style={{ padding: '5px 4px', fontWeight: 'bold' }}>{t.report_total}</td>
                   <td></td>
                   <td style={{ padding: '5px 4px', textAlign: 'center', fontWeight: 'bold' }}>{campaignStats.reduce((s, c) => s + c.views, 0)}</td>
                   <td style={{ padding: '5px 4px', textAlign: 'center', fontWeight: 'bold' }}>{campaignStats.reduce((s, c) => s + c.inscriptions, 0)}</td>
@@ -1153,12 +1155,12 @@ export function BusinessReport() {
           {/* PDF Team */}
           {members.length > 0 && (
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>Équipe ({members.length} membres)</div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>{t.report_pdf_team} ({members.length} {t.report_pdf_members})</div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e4e2e1' }}>
-                    {['Membre', 'Rôle', 'Email', 'Depuis'].map(h => (
-                      <th key={h} style={{ textAlign: h === 'Membre' ? 'left' : 'center', padding: '5px 4px', fontWeight: 'bold', color: '#747878' }}>{h}</th>
+                    {[t.report_pdf_member_col, t.report_pdf_role, t.report_pdf_email, t.report_pdf_since].map((h, idx) => (
+                      <th key={idx} style={{ textAlign: idx === 0 ? 'left' : 'center', padding: '5px 4px', fontWeight: 'bold', color: '#747878' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1178,18 +1180,18 @@ export function BusinessReport() {
 
           {/* PDF Appointments */}
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>Rendez-vous</div>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#1b1c1b' }}>{t.report_pdf_appointments}</div>
             <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
-              <span>Total : <b>{totalAppts}</b></span>
-              <span>Terminés : <b>{doneAppts}</b></span>
-              <span>Annulés : <b>{cancelledAppts}</b></span>
-              <span>Show Up : <b>{formatPct(showUpRate)}</b></span>
+              <span>{t.report_pdf_total} <b>{totalAppts}</b></span>
+              <span>{t.report_pdf_done} <b>{doneAppts}</b></span>
+              <span>{t.report_pdf_cancelled} <b>{cancelledAppts}</b></span>
+              <span>{t.report_pdf_show_up} <b>{formatPct(showUpRate)}</b></span>
             </div>
           </div>
 
           {/* PDF Footer */}
           <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #e4e2e1', fontSize: '10px', color: '#747878', textAlign: 'center' }}>
-            CloseOS Business · Rapport généré automatiquement · {new Date().toLocaleDateString('fr-FR')}
+            {t.report_pdf_footer} · {new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')}
           </div>
         </div>
       </div>

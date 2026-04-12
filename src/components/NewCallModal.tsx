@@ -4,6 +4,8 @@ import { X, Copy, Check, Phone } from 'lucide-react'
 import { createDailyRoom } from '../services/dailyService'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useCalls } from '../contexts/CallsContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { newCallTranslations } from '../i18n/translations'
 
 interface NewCallModalProps {
   onClose: () => void
@@ -13,6 +15,8 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
   const navigate = useNavigate()
   const { prospects } = useProspects()
   const { addCallLog } = useCalls()
+  const { lang } = useLanguage()
+  const t = newCallTranslations[lang]
 
   const [selectedProspectId, setSelectedProspectId] = useState<number | null>(null)
   const [generatedLink, setGeneratedLink] = useState<string | null>(null)
@@ -22,7 +26,7 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
   // Phase 1: Generate Link
   const handleGenerateLink = async () => {
     if (!selectedProspectId) {
-      alert('Veuillez sélectionner un prospect')
+      alert(lang === 'fr' ? 'Veuillez sélectionner un prospect' : 'Please select a prospect')
       return
     }
 
@@ -32,7 +36,7 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
       setGeneratedLink(url)
     } catch (error) {
       console.error('Failed to create room:', error)
-      alert('Erreur lors de la création du lien')
+      alert(lang === 'fr' ? 'Erreur lors de la création du lien' : 'Error creating link')
     } finally {
       setIsCreating(false)
     }

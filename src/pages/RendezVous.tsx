@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import {
    Calendar,
@@ -49,6 +50,7 @@ interface EventTypeData {
 }
 
 export function RendezVous() {
+   const { lang } = useLanguage()
    const { user } = useAuth()
    const navigate = useNavigate()
    const { meetings, loading: meetingsLoading, refreshMeetings } = useMeetings()
@@ -106,7 +108,7 @@ export function RendezVous() {
 
    const webhookUrl = user?.id
       ? `${baseUrl}/api/cal-webhook?user_id=${user.id}`
-      : 'Chargement...'
+      : lang === 'fr' ? 'Chargement...' : 'Loading...'
 
    // 1. Chargement initial (OAuth)
    // 1. Chargement initial (OAuth) + Auto-Refresh
@@ -194,7 +196,7 @@ export function RendezVous() {
             const endTimeStr = endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: userTz });
             const fullTimeStr = `${apiTimeStr} - ${endTimeStr}`;
 
-            const contactName = b.attendees?.[0]?.name || b.title || 'Prospect Inconnu';
+            const contactName = b.attendees?.[0]?.name || b.title || (lang === 'fr' ? 'Prospect Inconnu' : 'Unknown Prospect');
             const contactNorm = normalize(contactName);
 
             // Vérifier si existe déjà en DB
@@ -226,7 +228,7 @@ export function RendezVous() {
                   type: 'video',
                   status: b.status === 'ACCEPTED' ? 'Confirmé' : 'upcoming',
                   location: calLocation,
-                  description: b.description || 'Importé depuis Cal.com',
+                  description: b.description || (lang === 'fr' ? 'Importé depuis Cal.com' : 'Imported from Cal.com'),
                   email: calEmail,
                   phone: calPhone ? String(calPhone) : null,
                   notes: calNotes ? String(calNotes) : null,
@@ -355,14 +357,14 @@ export function RendezVous() {
             setCalBookings(bookings);
             const count = await runDeepSync(bookings);
             if (manualTrigger) {
-               alert(`Synchronisation terminée : ${count} changements.`);
+               alert(lang === 'fr' ? `Synchronisation terminée : ${count} changements.` : `Sync complete: ${count} changes.`);
             }
          } else {
             console.log("Aucun booking trouvé dans la réponse API");
          }
       } catch (error) {
          console.error("Erreur fetch Bookings Cal.com:", error);
-         if (manualTrigger) alert("Erreur lors de la synchronisation.");
+         if (manualTrigger) alert(lang === 'fr' ? "Erreur lors de la synchronisation." : "Error during sync.");
       } finally {
          if (manualTrigger) setIsSyncing(false);
       }
@@ -370,7 +372,7 @@ export function RendezVous() {
 
    // 4. Suppression Event Type (OAuth) - V2
    const handleDeleteEventType = async (id: number) => {
-      if (!window.confirm("Voulez-vous supprimer ce lien définitivement (CloseOS + Cal.com) ?")) return
+      if (!window.confirm(lang === 'fr' ? "Voulez-vous supprimer ce lien définitivement (CloseOS + Cal.com) ?" : "Do you want to permanently delete this link (CloseOS + Cal.com)?")) return
       setIsDeletingEvent(id)
       try {
          const response = await fetch(`/api/cal-proxy?url=${encodeURIComponent(`/v2/event-types/${id}`)}`, {
@@ -379,7 +381,7 @@ export function RendezVous() {
          })
          if (!response.ok) throw new Error("Erreur suppression")
          if (calAccessToken) await fetchEventTypes(calAccessToken)
-      } catch (error) { alert("Erreur suppression Cal.com"); console.error(error) } finally { setIsDeletingEvent(null) }
+      } catch (error) { alert(lang === 'fr' ? "Erreur suppression Cal.com" : "Cal.com deletion error"); console.error(error) } finally { setIsDeletingEvent(null) }
    }
 
    // 5. Créer Event (Mis à jour avec tous les champs)
@@ -427,7 +429,7 @@ export function RendezVous() {
          setNewEventBeforeBuffer(0)
          setNewEventAfterBuffer(0)
          setNewEventNotice(0)
-      } catch (error) { alert("Erreur lors de la création") } finally { setIsCreatingEvent(false) }
+      } catch (error) { alert(lang === 'fr' ? "Erreur lors de la création" : "Error during creation") } finally { setIsCreatingEvent(false) }
    }
 
    // 6. Ouvrir Modale Édition
@@ -489,7 +491,7 @@ export function RendezVous() {
          if (!response.ok) throw new Error('Erreur mise à jour')
          if (calAccessToken) await fetchEventTypes(calAccessToken)
          setIsEditModalOpen(false)
-      } catch (error) { alert("Erreur maj"); console.error(error) } finally { setIsUpdatingEvent(false) }
+      } catch (error) { alert(lang === 'fr' ? "Erreur maj" : "Update error"); console.error(error) } finally { setIsUpdatingEvent(false) }
    }
 
    const handleCopyLink = (slug: string, id: number) => {
@@ -556,12 +558,12 @@ export function RendezVous() {
 
    const handleUpdateStatus = async (newStatus: string) => {
       if (!selectedMeeting) return; setIsUpdatingStatus(true);
-      try { await supabase.from('meetings').update({ status: newStatus }).eq('id', selectedMeeting.id); setSelectedMeeting({ ...selectedMeeting, status: newStatus }); if (refreshMeetings) refreshMeetings(); } catch (err) { alert("Erreur maj statut"); } finally { setIsUpdatingStatus(false); }
+      try { await supabase.from('meetings').update({ status: newStatus }).eq('id', selectedMeeting.id); setSelectedMeeting({ ...selectedMeeting, status: newStatus }); if (refreshMeetings) refreshMeetings(); } catch (err) { alert(lang === 'fr' ? "Erreur maj statut" : "Status update error"); } finally { setIsUpdatingStatus(false); }
    };
 
    const handleCancelBooking = async () => {
       if (!selectedMeeting) return;
-      if (!window.confirm('Êtes-vous sûr de vouloir annuler ce rendez-vous ?')) return;
+      if (!window.confirm(lang === 'fr' ? 'Êtes-vous sûr de vouloir annuler ce rendez-vous ?' : 'Are you sure you want to cancel this appointment?')) return;
       setIsCancellingBooking(true);
       try {
          // 1. Annuler sur Cal.com si on a le booking UID
@@ -582,7 +584,7 @@ export function RendezVous() {
          if (refreshMeetings) refreshMeetings();
       } catch (err) {
          console.error('Erreur annulation:', err);
-         alert('Erreur lors de l\'annulation.');
+         alert(lang === 'fr' ? 'Erreur lors de l\'annulation.' : 'Error during cancellation.');
       } finally {
          setIsCancellingBooking(false);
       }
@@ -590,7 +592,7 @@ export function RendezVous() {
 
    const handleRescheduleBooking = () => {
       if (!selectedMeeting?.cal_booking_uid) {
-         alert('Pas de lien de replanification disponible pour ce rendez-vous.');
+         alert(lang === 'fr' ? 'Pas de lien de replanification disponible pour ce rendez-vous.' : 'No reschedule link available for this appointment.');
          return;
       }
       const rescheduleUrl = `https://app.cal.com/reschedule/${selectedMeeting.cal_booking_uid}`;
@@ -598,11 +600,11 @@ export function RendezVous() {
    };
 
    const handleDeleteAllPast = async () => {
-      if (!window.confirm("Tout supprimer ?")) return; setIsDeleting(true);
+      if (!window.confirm(lang === 'fr' ? "Tout supprimer ?" : "Delete all?")) return; setIsDeleting(true);
       try { await supabase.from('meetings').delete().eq('user_id', user?.id).lt('date', format(new Date(), 'yyyy-MM-dd')); if (refreshMeetings) refreshMeetings(); } catch (err) { console.error(err); } finally { setIsDeleting(false); }
    };
 
-   const safeFormat = (dateStr: string, formatStr: string) => { try { const date = parseISO(dateStr); return isValid(date) ? format(date, formatStr, { locale: fr }) : 'N/A'; } catch { return 'N/A' } }
+   const safeFormat = (dateStr: string, formatStr: string) => { try { const date = parseISO(dateStr); return isValid(date) ? format(date, formatStr, { locale: lang === 'fr' ? fr : undefined }) : 'N/A'; } catch { return 'N/A' } }
 
    const getStatusStyle = (s: string) => {
       s = s?.toLowerCase() || '';
@@ -613,9 +615,9 @@ export function RendezVous() {
 
    const getStatusLabel = (s: string) => {
       s = s?.toLowerCase() || '';
-      if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'Confirmé';
-      if (['annulé', 'cancelled', 'canceled', 'annule'].includes(s)) return 'Annulé';
-      if (['rejected'].includes(s)) return 'Refusé';
+      if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return lang === 'fr' ? 'Confirmé' : 'Confirmed';
+      if (['annulé', 'cancelled', 'canceled', 'annule'].includes(s)) return lang === 'fr' ? 'Annulé' : 'Cancelled';
+      if (['rejected'].includes(s)) return lang === 'fr' ? 'Refusé' : 'Rejected';
       return s.charAt(0).toUpperCase() + s.slice(1);
    }
 
@@ -627,9 +629,9 @@ export function RendezVous() {
          if (loc.includes('google:meet')) return 'Google Meet';
          if (loc.includes('zoom:video')) return 'Zoom';
          if (loc.includes('discord')) return 'Discord';
-         if (loc.includes('phone')) return 'Téléphone';
-         if (loc.includes('in_person')) return 'En personne';
-         if (loc.includes('http')) return 'Lien';
+         if (loc.includes('phone')) return lang === 'fr' ? 'Téléphone' : 'Phone';
+         if (loc.includes('in_person')) return lang === 'fr' ? 'En personne' : 'In-Person';
+         if (loc.includes('http')) return lang === 'fr' ? 'Lien' : 'Link';
          return m.apiLocation;
       }
       // 2. Fallback DB
@@ -639,13 +641,13 @@ export function RendezVous() {
          if (loc.includes('meet.google')) return 'Google Meet';
          if (loc.includes('zoom.us')) return 'Zoom';
          if (loc.includes('discord')) return 'Discord';
-         if (loc.includes('http')) return 'Lien';
+         if (loc.includes('http')) return lang === 'fr' ? 'Lien' : 'Link';
          return m.location;
       }
       // 3. Fallback Description
       if (m.description?.match(/Lieu:\s*([^\n\r]+)/)) return m.description.match(/Lieu:\s*([^\n\r]+)/)[1].trim();
 
-      return 'À vérifier';
+      return lang === 'fr' ? 'À vérifier' : 'To verify';
    }
 
    // --- RENDU ---
@@ -663,17 +665,17 @@ export function RendezVous() {
                   <button
                      onClick={onRefresh}
                      className={`ml-1 p-2 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all ${isSyncing ? 'animate-spin text-emerald-500' : ''}`}
-                     title="Forcer la synchronisation (MàJ Statuts)"
+                     title={lang === 'fr' ? "Forcer la synchronisation (MàJ Statuts)" : "Force sync (Update Statuses)"}
                   >
                      <RefreshCw className="h-4 w-4" />
                   </button>
                )}
             </div>
-            {showDeleteAction && data.length > 0 && (<button onClick={handleDeleteAllPast} disabled={isDeleting} className="flex items-center gap-2 rounded-full bg-red-500/10 px-4 py-2 text-xs font-bold text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">{isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} Tout supprimer</button>)}
+            {showDeleteAction && data.length > 0 && (<button onClick={handleDeleteAllPast} disabled={isDeleting} className="flex items-center gap-2 rounded-full bg-red-500/10 px-4 py-2 text-xs font-bold text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">{isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} {lang === 'fr' ? 'Tout supprimer' : 'Delete all'}</button>)}
          </div>
          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
             <table className="w-full">
-               <thead><tr className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-left"><th className="px-6 py-5">Date & Heure</th><th className="px-6 py-5">Contact</th><th className="px-6 py-5">Lieu</th><th className="px-6 py-5">Statut</th><th className="px-6 py-5 text-right">Détails</th></tr></thead>
+               <thead><tr className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-left"><th className="px-6 py-5">{lang === 'fr' ? 'Date & Heure' : 'Date & Time'}</th><th className="px-6 py-5">Contact</th><th className="px-6 py-5">{lang === 'fr' ? 'Lieu' : 'Location'}</th><th className="px-6 py-5">{lang === 'fr' ? 'Statut' : 'Status'}</th><th className="px-6 py-5 text-right">{lang === 'fr' ? 'Détails' : 'Details'}</th></tr></thead>
                <tbody>
                   {loading ? (
                      <tr><td colSpan={5} className="px-6 py-12 text-center"><div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-emerald-500" /></div></td></tr>
@@ -767,7 +769,7 @@ export function RendezVous() {
       } else if (params.get('error')) {
          const error = params.get('error')
          window.history.replaceState({}, '', window.location.pathname)
-         alert("Erreur connexion Cal.com: " + error)
+         alert((lang === 'fr' ? "Erreur connexion Cal.com: " : "Cal.com connection error: ") + error)
          fetchProfile()
       } else {
          fetchProfile()
@@ -813,15 +815,15 @@ export function RendezVous() {
          <div className="mx-auto max-w-6xl">
             <div className="mb-10 flex items-end justify-between">
                <div>
-                  <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white mb-2">Rendez-vous</h1>
-                  <p className="text-white/40 text-sm font-medium">Consultez vos rendez-vous et gérez votre agenda.</p>
+                  <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white mb-2">{lang === 'fr' ? 'Rendez-vous' : 'Appointments'}</h1>
+                  <p className="text-white/40 text-sm font-medium">{lang === 'fr' ? 'Consultez vos rendez-vous et gérez votre agenda.' : 'View your appointments and manage your calendar.'}</p>
                </div>
                {/* BOUTON D'OUVERTURE DE LA CONFIGURATION */}
                <button
                   onClick={() => setIsConfigModalOpen(true)}
                   className="flex items-center gap-2 rounded-full bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] px-6 py-3 text-sm font-bold text-white/80 hover:bg-white/[0.06] hover:border-white/[0.15] transition-all shadow-[0_20px_40px_rgba(0,0,0,0.2)]"
                >
-                  <Settings className="h-4 w-4" /> Configurer les Booking
+                  <Settings className="h-4 w-4" /> {lang === 'fr' ? 'Configurer les Booking' : 'Configure Bookings'}
                </button>
             </div>
 
@@ -831,9 +833,9 @@ export function RendezVous() {
                   <div className="flex items-center justify-between mb-8">
                      <div className="flex items-start gap-4">
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-xl"><LinkIcon className="h-6 w-6" /></div>
-                        <div><h2 className="text-xl font-extrabold text-white">Vos Liens de Réservation</h2><p className="text-sm text-white/40 mt-1">Vos types d'événements actifs sur Cal.com.</p></div>
+                        <div><h2 className="text-xl font-extrabold text-white">{lang === 'fr' ? 'Vos Liens de Réservation' : 'Your Booking Links'}</h2><p className="text-sm text-white/40 mt-1">{lang === 'fr' ? "Vos types d'événements actifs sur Cal.com." : 'Your active event types on Cal.com.'}</p></div>
                      </div>
-                     <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"><Plus className="h-4 w-4" /> Nouveau</button>
+                     <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"><Plus className="h-4 w-4" /> {lang === 'fr' ? 'Nouveau' : 'New'}</button>
                   </div>
 
                   {isLoadingEvents ? (<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-white/40" /></div>) : (
@@ -854,12 +856,12 @@ export function RendezVous() {
                                           onClick={() => handleDeleteEventType(evt.id)}
                                           disabled={isDeletingEvent === evt.id}
                                           className="p-2 rounded-xl hover:bg-red-500/10 text-white/30 hover:text-red-500 transition-all"
-                                          title="Supprimer ce lien"
+                                          title={lang === 'fr' ? "Supprimer ce lien" : "Delete this link"}
                                        >
                                           {isDeletingEvent === evt.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                        </button>
                                        {/* BOUTON OUVRIR */}
-                                       <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="p-2 rounded-xl hover:bg-white/5 text-white/30 hover:text-white transition-all" title="Ouvrir le lien"><ExternalLink className="h-4 w-4" /></a>
+                                       <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="p-2 rounded-xl hover:bg-white/5 text-white/30 hover:text-white transition-all" title={lang === 'fr' ? "Ouvrir le lien" : "Open link"}><ExternalLink className="h-4 w-4" /></a>
                                     </div>
                                  </div>
                                  <h3 className="font-extrabold text-white text-lg mb-1">{evt.title}</h3>
@@ -871,27 +873,27 @@ export function RendezVous() {
                                     onClick={() => handleCopyLink(evt.slug, evt.id)}
                                     className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-white/[0.04] py-2.5 text-xs font-bold text-white/70 hover:text-white hover:bg-white/[0.08] transition-all"
                                  >
-                                    {linkCopiedId === evt.id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />} Copier
+                                    {linkCopiedId === evt.id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />} {lang === 'fr' ? 'Copier' : 'Copy'}
                                  </button>
                                  <button
                                     onClick={() => handleOpenEdit(evt)}
                                     className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all"
                                  >
-                                    <Pencil className="h-3 w-3" /> Modifier
+                                    <Pencil className="h-3 w-3" /> {lang === 'fr' ? 'Modifier' : 'Edit'}
                                  </button>
                                  <a
                                     href={`https://app.cal.com/event-types/${evt.id}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="flex items-center justify-center rounded-xl bg-white/[0.04] px-3 text-white/30 hover:text-white hover:bg-white/[0.08] transition-all"
-                                    title="Paramètres avancés sur Cal.com"
+                                    title={lang === 'fr' ? "Paramètres avancés sur Cal.com" : "Advanced settings on Cal.com"}
                                  >
                                     <Settings className="h-4 w-4" />
                                  </a>
                               </div>
                            </div>
                         ))}
-                        {eventTypes.length === 0 && (<div className="col-span-full text-center py-12 text-white/40 italic border border-dashed border-white/[0.08] rounded-2xl bg-white/[0.02]">Aucun événement trouvé. Créez-en un !</div>)}
+                        {eventTypes.length === 0 && (<div className="col-span-full text-center py-12 text-white/40 italic border border-dashed border-white/[0.08] rounded-2xl bg-white/[0.02]">{lang === 'fr' ? 'Aucun événement trouvé. Créez-en un !' : 'No events found. Create one!'}</div>)}
                      </div>
                   )}
                </div>
@@ -900,13 +902,13 @@ export function RendezVous() {
             {/* --- CONTENU PRINCIPAL : LES TABLEAUX --- */}
             <MeetingTable
                data={upcomingMeetings}
-               title="Rendez-vous à venir"
+               title={lang === 'fr' ? "Rendez-vous à venir" : "Upcoming appointments"}
                icon={Calendar}
-               emptyText="Aucun rendez-vous synchronisé."
+               emptyText={lang === 'fr' ? "Aucun rendez-vous synchronisé." : "No appointments synced."}
                onRefresh={calAccessToken ? () => fetchCalBookings(calAccessToken, true) : undefined}
                loading={meetingsLoading}
             />
-            <MeetingTable data={pastMeetings} title="Historique" icon={History} emptyText="Aucun historique disponible." showDeleteAction={true} loading={meetingsLoading} />
+            <MeetingTable data={pastMeetings} title={lang === 'fr' ? "Historique" : "History"} icon={History} emptyText={lang === 'fr' ? "Aucun historique disponible." : "No history available."} showDeleteAction={true} loading={meetingsLoading} />
          </div>
 
          {/* --- GRANDE MODALE DE CONFIGURATION --- */}
@@ -922,9 +924,9 @@ export function RendezVous() {
                            <div className="h-8 w-8 flex items-center justify-center overflow-hidden rounded-full">
                               <img src="/Calcom.png" alt="Cal.com" className="w-full h-full object-contain" />
                            </div>
-                           Configuration Cal.com
+                           {lang === 'fr' ? 'Configuration Cal.com' : 'Cal.com Configuration'}
                         </h2>
-                        <p className="text-white/40 text-sm mt-1">Paramètres de connexion et synchronisation.</p>
+                        <p className="text-white/40 text-sm mt-1">{lang === 'fr' ? 'Paramètres de connexion et synchronisation.' : 'Connection and sync settings.'}</p>
                      </div>
                      <button onClick={() => setIsConfigModalOpen(false)} className="p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all">
                         <X className="h-5 w-5" />
@@ -934,12 +936,12 @@ export function RendezVous() {
                   {/* Corps Modale */}
                   <div className="px-8 pb-8 space-y-8 bg-[#111111]/50 overflow-y-auto custom-scrollbar">
                      <section className="rounded-2xl bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] p-8">
-                        <h3 className="text-[10px] font-bold text-white/40 mb-6 uppercase tracking-widest">1. Connexion Cal.com</h3>
+                        <h3 className="text-[10px] font-bold text-white/40 mb-6 uppercase tracking-widest">{lang === 'fr' ? '1. Connexion Cal.com' : '1. Cal.com Connection'}</h3>
 
                         {!calAccessToken ? (
                            <div className="rounded-2xl bg-white/5 border border-white/5 p-6 text-center">
                               <p className="text-sm text-white/60 mb-6 leading-relaxed">
-                                 Connectez votre compte Cal.com pour synchroniser automatiquement vos rendez-vous et gérer vos liens de réservation.
+                                 {lang === 'fr' ? 'Connectez votre compte Cal.com pour synchroniser automatiquement vos rendez-vous et gérer vos liens de réservation.' : 'Connect your Cal.com account to automatically sync your appointments and manage your booking links.'}
                               </p>
                               <button
                                  onClick={handleConnectCal}
@@ -948,7 +950,7 @@ export function RendezVous() {
                                  <div className="h-5 w-5 rounded-full bg-black flex items-center justify-center p-0.5">
                                     <img src="/Calcom.png" alt="" className="w-full h-full object-contain" />
                                  </div>
-                                 Se connecter avec Cal.com
+                                 {lang === 'fr' ? 'Se connecter avec Cal.com' : 'Connect with Cal.com'}
                               </button>
                            </div>
                         ) : (
@@ -958,12 +960,12 @@ export function RendezVous() {
                                     <Check className="h-5 w-5" />
                                  </div>
                                  <div>
-                                    <p className="font-bold text-emerald-400 text-sm">Compte Connecté</p>
+                                    <p className="font-bold text-emerald-400 text-sm">{lang === 'fr' ? 'Compte Connecté' : 'Account Connected'}</p>
                                     <p className="text-xs text-emerald-500/70 mt-0.5">@{calUsername || 'Utilisateur'}</p>
                                  </div>
                               </div>
                               <button onClick={async () => {
-                                 if (window.confirm('Déconnecter votre compte Cal.com ?')) {
+                                 if (window.confirm(lang === 'fr' ? 'Déconnecter votre compte Cal.com ?' : 'Disconnect your Cal.com account?')) {
                                     setCalAccessToken(null)
                                     setCalUsername('')
                                     setEventTypes([])
@@ -976,7 +978,7 @@ export function RendezVous() {
                                        }).eq('id', user.id)
                                     }
                                  }
-                              }} className="text-xs font-bold text-white/40 hover:text-white underline">Déconnecter</button>
+                              }} className="text-xs font-bold text-white/40 hover:text-white underline">{lang === 'fr' ? 'Déconnecter' : 'Disconnect'}</button>
                            </div>
                         )}
                      </section>
@@ -984,13 +986,13 @@ export function RendezVous() {
                      {/* 2. Webhook */}
                      {calAccessToken && (
                         <section className="rounded-2xl bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] p-8">
-                           <h3 className="text-[10px] font-bold text-white/40 mb-4 uppercase tracking-widest">2. Synchronisation (Webhook)</h3>
+                           <h3 className="text-[10px] font-bold text-white/40 mb-4 uppercase tracking-widest">{lang === 'fr' ? '2. Synchronisation (Webhook)' : '2. Sync (Webhook)'}</h3>
                            <div className="flex items-center gap-2 bg-white/5 border border-white/5 rounded-2xl p-3 pl-5">
                               <code className="text-xs font-mono text-emerald-300 truncate flex-1 select-all">{webhookUrl}</code>
-                              <button onClick={handleCopyWebhook} className="p-2.5 rounded-xl hover:bg-white/[0.08] text-white/40 hover:text-white transition-all" title="Copier l'URL">{webhookCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}</button>
+                              <button onClick={handleCopyWebhook} className="p-2.5 rounded-xl hover:bg-white/[0.08] text-white/40 hover:text-white transition-all" title={lang === 'fr' ? "Copier l'URL" : "Copy URL"}>{webhookCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}</button>
                            </div>
                            <p className="text-xs text-white/40 mt-3 leading-relaxed">
-                              Copiez cette URL et ajoutez-la dans la section <b>Webhooks</b> de vos paramètres Cal.com pour recevoir les notifications de réservation.
+                              {lang === 'fr' ? <>Copiez cette URL et ajoutez-la dans la section <b>Webhooks</b> de vos paramètres Cal.com pour recevoir les notifications de réservation.</> : <>Copy this URL and add it in the <b>Webhooks</b> section of your Cal.com settings to receive booking notifications.</>}
                            </p>
                         </section>
                      )}
@@ -1006,8 +1008,8 @@ export function RendezVous() {
                <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1a1a1a] border border-white/[0.08] p-10 shadow-[0_20px_40px_rgba(0,0,0,0.2)] animate-in fade-in zoom-in-95 custom-scrollbar">
                   <div className="flex items-start justify-between mb-10">
                      <div>
-                        <h3 className="text-2xl font-extrabold text-white">Nouveau Type d'Événement</h3>
-                        <p className="text-white/40 text-sm mt-1">Configurez les détails et les limites de votre nouveau lien.</p>
+                        <h3 className="text-2xl font-extrabold text-white">{lang === 'fr' ? "Nouveau Type d'Événement" : 'New Event Type'}</h3>
+                        <p className="text-white/40 text-sm mt-1">{lang === 'fr' ? 'Configurez les détails et les limites de votre nouveau lien.' : 'Configure the details and limits of your new link.'}</p>
                      </div>
                      <button onClick={() => setIsCreateModalOpen(false)} className="p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all"><X className="h-5 w-5" /></button>
                   </div>
@@ -1015,14 +1017,14 @@ export function RendezVous() {
                   <div className="space-y-10">
                      {/* 1. INFO GÉNÉRALES */}
                      <section className="space-y-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] p-8">
-                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Plus className="h-3.5 w-3.5" /> Informations Générales</h4>
+                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Plus className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Informations Générales' : 'General Information'}</h4>
                         <div className="grid grid-cols-2 gap-8">
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Titre</label>
-                              <input type="text" value={newEventTitle} onChange={(e) => { setNewEventTitle(e.target.value); setNewEventSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) }} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none" placeholder="Ex: Appel Découverte" />
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Titre' : 'Title'}</label>
+                              <input type="text" value={newEventTitle} onChange={(e) => { setNewEventTitle(e.target.value); setNewEventSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) }} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none" placeholder={lang === 'fr' ? "Ex: Appel Découverte" : "Ex: Discovery Call"} />
                            </div>
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Durée (min)</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Durée (min)' : 'Duration (min)'}</label>
                               <input type="number" value={newEventDuration} onChange={(e) => setNewEventDuration(parseInt(e.target.value))} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none" />
                            </div>
                            <div className="col-span-2 space-y-1">
@@ -1034,11 +1036,11 @@ export function RendezVous() {
                            </div>
                            <div className="col-span-2 space-y-1">
                               <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Description</label>
-                              <textarea rows={3} value={newEventDescription} onChange={(e) => setNewEventDescription(e.target.value)} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none resize-none" placeholder="Détails du rendez-vous..." />
+                              <textarea rows={3} value={newEventDescription} onChange={(e) => setNewEventDescription(e.target.value)} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none resize-none" placeholder={lang === 'fr' ? "Détails du rendez-vous..." : "Appointment details..."} />
                            </div>
 
                            <div className="col-span-2 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Lieu / Location</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Lieu / Location' : 'Location'}</label>
                               <div className="space-y-3">
                                  <div className="flex items-center gap-2 border-b border-white/10 focus-within:border-emerald-500 transition-colors py-2">
                                     <MapPin className="h-4 w-4 text-emerald-400 shrink-0" />
@@ -1047,21 +1049,21 @@ export function RendezVous() {
                                        onChange={(e) => setNewEventLocationType(e.target.value)}
                                        value={newEventLocationType}
                                     >
-                                       <optgroup label="Visio">
-                                          <option value="integrations:daily">Cal Video (Par défaut)</option>
+                                       <optgroup label={lang === 'fr' ? "Visio" : "Video"}>
+                                          <option value="integrations:daily">{lang === 'fr' ? 'Cal Video (Par défaut)' : 'Cal Video (Default)'}</option>
                                           <option value="integrations:google:meet">Google Meet</option>
                                           <option value="integrations:zoom:video">Zoom Video</option>
                                        </optgroup>
-                                       <optgroup label="Téléphone">
-                                          <option value="attendee_phone">Numéro de téléphone du participant</option>
-                                          <option value="phone">Appel téléphonique (Organisateur appelle)</option>
+                                       <optgroup label={lang === 'fr' ? "Téléphone" : "Phone"}>
+                                          <option value="attendee_phone">{lang === 'fr' ? 'Numéro de téléphone du participant' : 'Attendee phone number'}</option>
+                                          <option value="phone">{lang === 'fr' ? 'Appel téléphonique (Organisateur appelle)' : 'Phone call (Host calls)'}</option>
                                        </optgroup>
-                                       <optgroup label="Physique">
-                                          <option value="attendee_in_person">En personne (adresse du participant)</option>
-                                          <option value="in_person">En personne (adresse de l'organisateur)</option>
+                                       <optgroup label={lang === 'fr' ? "Physique" : "In-Person"}>
+                                          <option value="attendee_in_person">{lang === 'fr' ? 'En personne (adresse du participant)' : 'In-person (attendee address)'}</option>
+                                          <option value="in_person">{lang === 'fr' ? "En personne (adresse de l'organisateur)" : 'In-person (host address)'}</option>
                                        </optgroup>
-                                       <optgroup label="Autre">
-                                          <option value="link">Lien personnalisé / Autre</option>
+                                       <optgroup label={lang === 'fr' ? "Autre" : "Other"}>
+                                          <option value="link">{lang === 'fr' ? 'Lien personnalisé / Autre' : 'Custom link / Other'}</option>
                                        </optgroup>
                                     </select>
                                  </div>
@@ -1069,7 +1071,7 @@ export function RendezVous() {
                                  {['in_person', 'link', 'phone'].includes(newEventLocationType) && (
                                     <div className="animate-in fade-in slide-in-from-top-2 space-y-1">
                                        <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
-                                          {newEventLocationType === 'phone' ? 'Numéro à appeler' : newEventLocationType === 'link' ? 'URL du lien' : 'Adresse exacte'}
+                                          {newEventLocationType === 'phone' ? (lang === 'fr' ? 'Numéro à appeler' : 'Number to call') : newEventLocationType === 'link' ? (lang === 'fr' ? 'URL du lien' : 'Link URL') : (lang === 'fr' ? 'Adresse exacte' : 'Exact address')}
                                        </label>
                                        <input
                                           type="text"
@@ -1087,31 +1089,31 @@ export function RendezVous() {
 
                      {/* 2. DISPONIBILITÉS */}
                      <section className="space-y-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] p-8">
-                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Clock className="h-3.5 w-3.5" /> Disponibilités & Limites</h4>
+                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Clock className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Disponibilités & Limites' : 'Availability & Limits'}</h4>
                         <div className="grid grid-cols-2 gap-8">
                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Marge avant (min)</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Marge avant (min)' : 'Buffer before (min)'}</label>
                               <select
                                  value={newEventBeforeBuffer}
                                  onChange={(e) => setNewEventBeforeBuffer(parseInt(e.target.value))}
                                  className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
                               >
-                                 <option value={0}>Aucune</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
+                                 <option value={0}>{lang === 'fr' ? 'Aucune' : 'None'}</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
                               </select>
                            </div>
                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Marge après (min)</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Marge après (min)' : 'Buffer after (min)'}</label>
                               <select
                                  value={newEventAfterBuffer}
                                  onChange={(e) => setNewEventAfterBuffer(parseInt(e.target.value))}
                                  className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
                               >
-                                 <option value={0}>Aucune</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
+                                 <option value={0}>{lang === 'fr' ? 'Aucune' : 'None'}</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
                               </select>
                            </div>
 
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Préavis minimum</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Préavis minimum' : 'Minimum notice'}</label>
                               <div className="flex border-b border-white/10 focus-within:border-emerald-500 transition-colors">
                                  <input
                                     type="number"
@@ -1125,19 +1127,19 @@ export function RendezVous() {
                                     className="flex-1 bg-transparent py-2 px-1 text-white font-medium outline-none cursor-pointer"
                                  >
                                     <option value="minutes">Minutes</option>
-                                    <option value="hours">Heures</option>
+                                    <option value="hours">{lang === 'fr' ? 'Heures' : 'Hours'}</option>
                                  </select>
                               </div>
                            </div>
 
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Fréquence des créneaux</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Fréquence des créneaux' : 'Slot frequency'}</label>
                               <select
                                  value={newEventSlotInterval || 'default'}
                                  onChange={(e) => setNewEventSlotInterval(e.target.value === 'default' ? null : parseInt(e.target.value))}
                                  className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
                               >
-                                 <option value="default">Par défaut (Durée)</option>
+                                 <option value="default">{lang === 'fr' ? 'Par défaut (Durée)' : 'Default (Duration)'}</option>
                                  <option value={15}>15 min</option><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
                               </select>
                            </div>
@@ -1146,14 +1148,14 @@ export function RendezVous() {
                   </div>
 
                   <div className="mt-10 flex gap-4">
-                     <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3.5 rounded-full font-bold text-white/40 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/[0.08]">Annuler</button>
+                     <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3.5 rounded-full font-bold text-white/40 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/[0.08]">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                      <button
                         onClick={handleCreateEventType}
                         disabled={isCreatingEvent || !newEventTitle}
                         className="flex-1 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
                      >
                         {isCreatingEvent ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        Créer l'événement
+                        {lang === 'fr' ? "Créer l'événement" : 'Create event'}
                      </button>
                   </div>
                </div>
@@ -1168,22 +1170,22 @@ export function RendezVous() {
 
                   <div className="flex items-start justify-between mb-10">
                      <div>
-                        <h3 className="text-2xl font-extrabold text-white">Modifier l'événement</h3>
-                        <p className="text-white/40 text-sm mt-1">Configurez les détails et les disponibilités.</p>
+                        <h3 className="text-2xl font-extrabold text-white">{lang === 'fr' ? "Modifier l'événement" : 'Edit event'}</h3>
+                        <p className="text-white/40 text-sm mt-1">{lang === 'fr' ? 'Configurez les détails et les disponibilités.' : 'Configure details and availability.'}</p>
                      </div>
                      <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all"><X className="h-5 w-5" /></button>
                   </div>
 
                   <div className="space-y-10">
                      <section className="space-y-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] p-8">
-                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Pencil className="h-3.5 w-3.5" /> Informations Générales</h4>
+                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Pencil className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Informations Générales' : 'General Information'}</h4>
                         <div className="grid grid-cols-2 gap-8">
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Titre</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Titre' : 'Title'}</label>
                               <input type="text" value={editingEvent.title} onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none" />
                            </div>
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Durée (min)</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Durée (min)' : 'Duration (min)'}</label>
                               <input type="number" value={editingEvent.length} onChange={(e) => setEditingEvent({ ...editingEvent, length: parseInt(e.target.value) })} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none" />
                            </div>
                            <div className="col-span-2 space-y-1">
@@ -1192,7 +1194,7 @@ export function RendezVous() {
                            </div>
 
                            <div className="col-span-2 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Lieu / Location</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Lieu / Location' : 'Location'}</label>
                               <div className="space-y-3">
                                  <div className="flex items-center gap-2 border-b border-white/10 focus-within:border-emerald-500 transition-colors py-2">
                                     <MapPin className="h-4 w-4 text-emerald-400 shrink-0" />
@@ -1208,29 +1210,29 @@ export function RendezVous() {
                                        }}
                                        value={editingEvent.locations[0]?.type || 'integrations:daily'}
                                     >
-                                       <optgroup label="Visio">
-                                          <option value="integrations:daily">Cal Video (Par défaut)</option>
+                                       <optgroup label={lang === 'fr' ? "Visio" : "Video"}>
+                                          <option value="integrations:daily">{lang === 'fr' ? 'Cal Video (Par défaut)' : 'Cal Video (Default)'}</option>
                                           <option value="integrations:google:meet">Google Meet</option>
                                           <option value="integrations:zoom:video">Zoom Video</option>
                                           <option value="integrations:discord">Discord</option>
                                        </optgroup>
-                                       <optgroup label="Téléphone">
-                                          <option value="attendee_phone">Numéro de téléphone du participant</option>
-                                          <option value="phone">Appel téléphonique (Organisateur appelle)</option>
+                                       <optgroup label={lang === 'fr' ? "Téléphone" : "Phone"}>
+                                          <option value="attendee_phone">{lang === 'fr' ? 'Numéro de téléphone du participant' : 'Attendee phone number'}</option>
+                                          <option value="phone">{lang === 'fr' ? 'Appel téléphonique (Organisateur appelle)' : 'Phone call (Host calls)'}</option>
                                        </optgroup>
-                                       <optgroup label="Physique">
-                                          <option value="attendee_in_person">En personne (adresse du participant)</option>
-                                          <option value="in_person">En personne (adresse de l'organisateur)</option>
+                                       <optgroup label={lang === 'fr' ? "Physique" : "In-Person"}>
+                                          <option value="attendee_in_person">{lang === 'fr' ? 'En personne (adresse du participant)' : 'In-person (attendee address)'}</option>
+                                          <option value="in_person">{lang === 'fr' ? "En personne (adresse de l'organisateur)" : 'In-person (host address)'}</option>
                                        </optgroup>
-                                       <optgroup label="Autre">
-                                          <option value="link">Lien personnalisé / Autre</option>
+                                       <optgroup label={lang === 'fr' ? "Autre" : "Other"}>
+                                          <option value="link">{lang === 'fr' ? 'Lien personnalisé / Autre' : 'Custom link / Other'}</option>
                                        </optgroup>
                                     </select>
                                  </div>
 
                                  {editingEvent.locations[0]?.type === 'in_person' && (
                                     <div className="animate-in fade-in slide-in-from-top-2 space-y-1">
-                                       <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Adresse exacte du RDV</label>
+                                       <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{lang === 'fr' ? 'Adresse exacte du RDV' : 'Exact appointment address'}</label>
                                        <input
                                           type="text"
                                           placeholder="Ex: 12 Rue de la Paix, Paris"
@@ -1247,7 +1249,7 @@ export function RendezVous() {
 
                                  {editingEvent.locations[0]?.type === 'link' && (
                                     <div className="animate-in fade-in slide-in-from-top-2 space-y-1">
-                                       <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">URL du lien</label>
+                                       <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{lang === 'fr' ? 'URL du lien' : 'Link URL'}</label>
                                        <input
                                           type="text"
                                           placeholder="https://..."
@@ -1264,7 +1266,7 @@ export function RendezVous() {
 
                                  {editingEvent.locations[0]?.type === 'phone' && (
                                     <div className="animate-in fade-in slide-in-from-top-2 space-y-1">
-                                       <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Numéro à appeler</label>
+                                       <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{lang === 'fr' ? 'Numéro à appeler' : 'Number to call'}</label>
                                        <input
                                           type="text"
                                           placeholder="+33 6..."
@@ -1284,31 +1286,31 @@ export function RendezVous() {
                      </section>
 
                      <section className="space-y-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] p-8">
-                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Clock className="h-3.5 w-3.5" /> Disponibilités & Limites</h4>
+                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Clock className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Disponibilités & Limites' : 'Availability & Limits'}</h4>
                         <div className="grid grid-cols-2 gap-8">
                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Marge avant l'événement (min)</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? "Marge avant l'événement (min)" : 'Buffer before event (min)'}</label>
                               <select
                                  value={editingEvent.beforeEventBuffer}
                                  onChange={(e) => setEditingEvent({ ...editingEvent, beforeEventBuffer: parseInt(e.target.value) })}
                                  className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
                               >
-                                 <option value={0}>Aucune</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
+                                 <option value={0}>{lang === 'fr' ? 'Aucune' : 'None'}</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
                               </select>
                            </div>
                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Marge après l'événement (min)</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? "Marge après l'événement (min)" : 'Buffer after event (min)'}</label>
                               <select
                                  value={editingEvent.afterEventBuffer}
                                  onChange={(e) => setEditingEvent({ ...editingEvent, afterEventBuffer: parseInt(e.target.value) })}
                                  className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
                               >
-                                 <option value={0}>Aucune</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
+                                 <option value={0}>{lang === 'fr' ? 'Aucune' : 'None'}</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
                               </select>
                            </div>
 
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Préavis minimum</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Préavis minimum' : 'Minimum notice'}</label>
                               <div className="flex border-b border-white/10 focus-within:border-emerald-500 transition-colors">
                                  <input
                                     type="number"
@@ -1322,19 +1324,19 @@ export function RendezVous() {
                                     className="flex-1 bg-transparent py-2 px-1 text-white font-medium outline-none cursor-pointer"
                                  >
                                     <option value="minutes">Minutes</option>
-                                    <option value="hours">Heures</option>
+                                    <option value="hours">{lang === 'fr' ? 'Heures' : 'Hours'}</option>
                                  </select>
                               </div>
                            </div>
 
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Fréquence des créneaux</label>
+                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Fréquence des créneaux' : 'Slot frequency'}</label>
                               <select
                                  value={editingEvent.slotInterval || 'default'}
                                  onChange={(e) => setEditingEvent({ ...editingEvent, slotInterval: e.target.value === 'default' ? null : parseInt(e.target.value) })}
                                  className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
                               >
-                                 <option value="default">Par défaut (Durée)</option>
+                                 <option value="default">{lang === 'fr' ? 'Par défaut (Durée)' : 'Default (Duration)'}</option>
                                  <option value={15}>15 min</option><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
                               </select>
                            </div>
@@ -1344,10 +1346,10 @@ export function RendezVous() {
                      <div className="p-6 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-3">
                         <AlertCircle className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
                         <div>
-                           <p className="text-sm text-white/60 font-medium">Besoin de plus de réglages ?</p>
-                           <p className="text-xs text-white/40 mt-1">Pour les règles avancées (questions, paiements, workflows), utilisez l'interface native.</p>
+                           <p className="text-sm text-white/60 font-medium">{lang === 'fr' ? 'Besoin de plus de réglages ?' : 'Need more settings?'}</p>
+                           <p className="text-xs text-white/40 mt-1">{lang === 'fr' ? "Pour les règles avancées (questions, paiements, workflows), utilisez l'interface native." : 'For advanced rules (questions, payments, workflows), use the native interface.'}</p>
                            <a href={`https://app.cal.com/event-types/${editingEvent.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 mt-2 hover:underline">
-                              Ouvrir les paramètres avancés <ExternalLink className="h-3 w-3" />
+                              {lang === 'fr' ? 'Ouvrir les paramètres avancés' : 'Open advanced settings'} <ExternalLink className="h-3 w-3" />
                            </a>
                         </div>
                      </div>
@@ -1355,9 +1357,9 @@ export function RendezVous() {
                   </div>
 
                   <div className="mt-10 flex gap-4">
-                     <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3.5 rounded-full font-bold text-white/40 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/[0.08]">Annuler</button>
+                     <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3.5 rounded-full font-bold text-white/40 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/[0.08]">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                      <button onClick={handleUpdateEvent} disabled={isUpdatingEvent} className="flex-1 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
-                        {isUpdatingEvent ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Enregistrer
+                        {isUpdatingEvent ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {lang === 'fr' ? 'Enregistrer' : 'Save'}
                      </button>
                   </div>
 
@@ -1370,7 +1372,7 @@ export function RendezVous() {
             <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 text-left">
                <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#1a1a1a] p-10 shadow-[0_20px_40px_rgba(0,0,0,0.2)] custom-scrollbar">
                   <div className="mb-10 flex items-center justify-between">
-                     <h2 className="text-2xl font-extrabold text-white">Détails de l'appel</h2>
+                     <h2 className="text-2xl font-extrabold text-white">{lang === 'fr' ? "Détails de l'appel" : 'Call details'}</h2>
                      <button onClick={() => setSelectedMeeting(null)} className="rounded-xl p-2.5 hover:bg-white/5 text-white/40 transition-all"><X className="h-5 w-5" /></button>
                   </div>
                   <div className="space-y-4">
@@ -1385,7 +1387,7 @@ export function RendezVous() {
                         </div>
                         <div className="relative">
                            <select disabled={isUpdatingStatus} value={selectedMeeting.status} onChange={(e) => handleUpdateStatus(e.target.value)} className={cn("appearance-none pl-4 pr-10 py-2 rounded-xl border text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer transition-all", getStatusStyle(selectedMeeting.status))}>
-                              <option value="Confirmé">Confirmé</option><option value="Terminé">Terminé</option><option value="Annulé">Annulé</option>
+                              <option value="Confirmé">{lang === 'fr' ? 'Confirmé' : 'Confirmed'}</option><option value="Terminé">{lang === 'fr' ? 'Terminé' : 'Completed'}</option><option value="Annulé">{lang === 'fr' ? 'Annulé' : 'Cancelled'}</option>
                            </select>
                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none opacity-50" />
                         </div>
@@ -1395,19 +1397,19 @@ export function RendezVous() {
                      <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
                            <p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Mail size={10} /> Email</p>
-                           <p className="text-white font-bold truncate text-sm">{maskData(selectedMeeting.email || 'Non renseigné', 'email')}</p>
+                           <p className="text-white font-bold truncate text-sm">{maskData(selectedMeeting.email || (lang === 'fr' ? 'Non renseigné' : 'Not provided'), 'email')}</p>
                         </div>
                         <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-                           <p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Phone size={10} /> Téléphone</p>
+                           <p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Phone size={10} /> {lang === 'fr' ? 'Téléphone' : 'Phone'}</p>
                            <div className="flex items-center gap-2">
-                              <p className="text-white font-bold text-sm flex-1 truncate">{maskData(selectedMeeting.phone || 'Non renseigné', 'phone')}</p>
+                              <p className="text-white font-bold text-sm flex-1 truncate">{maskData(selectedMeeting.phone || (lang === 'fr' ? 'Non renseigné' : 'Not provided'), 'phone')}</p>
                               {selectedMeeting.phone && (
                                  <a
                                     href={`https://wa.me/${selectedMeeting.phone.replace(/[\s\-\(\)]/g, '')}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-green-600 hover:bg-green-500 transition-colors shadow-lg shadow-green-600/20"
-                                    title="Ouvrir WhatsApp"
+                                    title={lang === 'fr' ? "Ouvrir WhatsApp" : "Open WhatsApp"}
                                  >
                                     <svg viewBox="0 0 24 24" className="h-4 w-4 text-white fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                                  </a>
@@ -1419,26 +1421,26 @@ export function RendezVous() {
                      {/* Date + Heure */}
                      <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]"><p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Calendar size={10} /> Date</p><p className="text-white font-bold">{safeFormat(selectedMeeting.date, 'dd MMMM yyyy')}</p></div>
-                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]"><p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Clock size={10} /> Heure</p><p className="text-white font-bold">{selectedMeeting.time}</p></div>
+                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]"><p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Clock size={10} /> {lang === 'fr' ? 'Heure' : 'Time'}</p><p className="text-white font-bold">{selectedMeeting.time}</p></div>
                      </div>
 
                      {/* Lieu / Lien visio */}
                      <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-                        <p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><MapPin size={10} /> Lieu</p>
+                        <p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><MapPin size={10} /> {lang === 'fr' ? 'Lieu' : 'Location'}</p>
                         {(() => {
                            const videoLink = selectedMeeting.video_link || selectedMeeting.location;
                            const isVideoUrl = videoLink && (videoLink.startsWith('http') || videoLink.startsWith('https'));
                            if (isVideoUrl) {
                               return <a href={videoLink} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 font-bold text-sm truncate block underline">{videoLink}</a>;
                            }
-                           return <p className="text-white font-bold text-sm">{selectedMeeting.location || 'Non renseigné'}</p>;
+                           return <p className="text-white font-bold text-sm">{selectedMeeting.location || (lang === 'fr' ? 'Non renseigné' : 'Not provided')}</p>;
                         })()}
                      </div>
 
                      {/* Notes */}
                      <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
                         <p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Pencil size={10} /> Notes</p>
-                        <p className="text-white text-sm whitespace-pre-wrap">{selectedMeeting.notes || selectedMeeting.description || 'Aucune note'}</p>
+                        <p className="text-white text-sm whitespace-pre-wrap">{selectedMeeting.notes || selectedMeeting.description || (lang === 'fr' ? 'Aucune note' : 'No notes')}</p>
                      </div>
                   </div>
 
@@ -1455,7 +1457,7 @@ export function RendezVous() {
                            const contactName = selectedMeeting.contact || 'Appel';
                            navigate(`/live-call?name=${encodeURIComponent(contactName)}&from=/rendez-vous`);
                         }} className="w-full flex items-center justify-center gap-2 rounded-full bg-emerald-500 py-3.5 font-bold text-black hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 transition-all">
-                           <Video className="h-5 w-5" /> Rejoindre l'appel
+                           <Video className="h-5 w-5" /> {lang === 'fr' ? "Rejoindre l'appel" : 'Join the call'}
                         </button>
                      )}
                      {/* Annuler & Reporter */}
@@ -1465,20 +1467,20 @@ export function RendezVous() {
                               onClick={handleRescheduleBooking}
                               disabled={!selectedMeeting.cal_booking_uid}
                               className="flex items-center justify-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 py-3 font-bold text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                              title={!selectedMeeting.cal_booking_uid ? 'Pas de lien Cal.com disponible' : 'Reporter ce rendez-vous'}
+                              title={!selectedMeeting.cal_booking_uid ? (lang === 'fr' ? 'Pas de lien Cal.com disponible' : 'No Cal.com link available') : (lang === 'fr' ? 'Reporter ce rendez-vous' : 'Reschedule this appointment')}
                            >
-                              <CalendarClock className="h-4 w-4" /> Reporter
+                              <CalendarClock className="h-4 w-4" /> {lang === 'fr' ? 'Reporter' : 'Reschedule'}
                            </button>
                            <button
                               onClick={handleCancelBooking}
                               disabled={isCancellingBooking}
                               className="flex items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 py-3 font-bold text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                            >
-                              {isCancellingBooking ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />} Annuler
+                              {isCancellingBooking ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />} {lang === 'fr' ? 'Annuler' : 'Cancel'}
                            </button>
                         </div>
                      )}
-                     <button onClick={() => setSelectedMeeting(null)} className="w-full rounded-full border border-white/[0.08] bg-white/[0.02] py-3.5 font-bold text-white/60 hover:bg-white/5 transition-all">Fermer</button>
+                     <button onClick={() => setSelectedMeeting(null)} className="w-full rounded-full border border-white/[0.08] bg-white/[0.02] py-3.5 font-bold text-white/60 hover:bg-white/5 transition-all">{lang === 'fr' ? 'Fermer' : 'Close'}</button>
                   </div>
                </div>
             </div>

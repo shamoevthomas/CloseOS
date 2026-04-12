@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Zap, Calendar, Building2, Wallet, Mail, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Offer } from '../contexts/OffersContext'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface AutoInvoiceConfig {
     id?: string
@@ -33,6 +34,7 @@ interface AutoInvoiceConfigModalProps {
 }
 
 export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceConfigModalProps) {
+    const { lang } = useLanguage()
     const [configs, setConfigs] = useState<Record<number, AutoInvoiceConfig>>({})
     const [issuerProfiles, setIssuerProfiles] = useState<IssuerProfile[]>([])
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
@@ -148,10 +150,10 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                 }
             }
 
-            alert('Configuration sauvegardée !')
+            alert(lang === 'fr' ? 'Configuration sauvegardée !' : 'Configuration saved!')
         } catch (err) {
             console.error('Erreur sauvegarde:', err)
-            alert('Erreur lors de la sauvegarde.')
+            alert(lang === 'fr' ? 'Erreur lors de la sauvegarde.' : 'Error saving.')
         } finally {
             setSaving(null)
         }
@@ -185,8 +187,8 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                             <Zap className="h-6 w-6 text-amber-400" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-white">Facturation Automatique</h2>
-                            <p className="text-sm text-white/40">Configurez la génération et l'envoi automatique par offre</p>
+                            <h2 className="text-2xl font-bold text-white">{lang === 'fr' ? 'Facturation Automatique' : 'Automatic Invoicing'}</h2>
+                            <p className="text-sm text-white/40">{lang === 'fr' ? "Configurez la génération et l'envoi automatique par offre" : 'Configure automatic generation and sending per offer'}</p>
                         </div>
                     </div>
 
@@ -196,7 +198,7 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                         </div>
                     ) : activeOffers.length === 0 ? (
                         <div className="text-center py-12">
-                            <p className="text-white/40">Aucune offre active. Créez d'abord une offre.</p>
+                            <p className="text-white/40">{lang === 'fr' ? "Aucune offre active. Créez d'abord une offre." : 'No active offers. Create an offer first.'}</p>
                         </div>
                     ) : (
                         <>
@@ -224,9 +226,9 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                             <div className="flex items-center gap-3">
                                                 <Zap className="h-5 w-5 text-amber-400" />
                                                 <div>
-                                                    <p className="text-sm font-bold text-white">Activer la facturation automatique</p>
+                                                    <p className="text-sm font-bold text-white">{lang === 'fr' ? 'Activer la facturation automatique' : 'Enable automatic invoicing'}</p>
                                                     <p className="text-xs text-white/40 mt-0.5">
-                                                        Génère et envoie automatiquement une facture chaque mois
+                                                        {lang === 'fr' ? 'Génère et envoie automatiquement une facture chaque mois' : 'Automatically generates and sends an invoice each month'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -251,7 +253,7 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                             <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-5">
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <Calendar className="h-4 w-4 text-purple-400" />
-                                                    <label className="text-sm font-bold text-white">Jour de génération</label>
+                                                    <label className="text-sm font-bold text-white">{lang === 'fr' ? 'Jour de génération' : 'Generation day'}</label>
                                                 </div>
                                                 <select
                                                     value={currentConfig.day_of_month}
@@ -260,12 +262,12 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                                 >
                                                     {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
                                                         <option key={day} value={day}>
-                                                            Le {day}{day === 1 ? 'er' : ''} du mois
+                                                            {lang === 'fr' ? `Le ${day}${day === 1 ? 'er' : ''} du mois` : `${day}${day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of the month`}
                                                         </option>
                                                     ))}
                                                 </select>
                                                 <p className="text-xs text-white/40 mt-2">
-                                                    La facture couvrira la période du mois précédent
+                                                    {lang === 'fr' ? 'La facture couvrira la période du mois précédent' : 'The invoice will cover the previous month period'}
                                                 </p>
                                             </div>
 
@@ -273,7 +275,7 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                             <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-5">
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <Building2 className="h-4 w-4 text-blue-400" />
-                                                    <label className="text-sm font-bold text-white">Profil Émetteur</label>
+                                                    <label className="text-sm font-bold text-white">{lang === 'fr' ? 'Profil Émetteur' : 'Issuer Profile'}</label>
                                                 </div>
                                                 {issuerProfiles.length > 0 ? (
                                                     <select
@@ -281,14 +283,14 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                                         onChange={(e) => updateConfig(selectedOfferId!, { issuer_profile_id: e.target.value || null })}
                                                         className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
                                                     >
-                                                        <option value="">— Sélectionner un profil —</option>
+                                                        <option value="">{lang === 'fr' ? '— Sélectionner un profil —' : '— Select a profile —'}</option>
                                                         {issuerProfiles.map(p => (
                                                             <option key={p.id} value={p.id}>{p.name} - {p.company_name}</option>
                                                         ))}
                                                     </select>
                                                 ) : (
                                                     <p className="text-xs text-amber-400">
-                                                        ⚠️ Aucun profil émetteur enregistré. Créez-en un via le bouton "Infos Émetteur".
+                                                        {lang === 'fr' ? '⚠️ Aucun profil émetteur enregistré. Créez-en un via le bouton "Infos Émetteur".' : '⚠️ No issuer profile saved. Create one via the "Issuer Info" button.'}
                                                     </p>
                                                 )}
                                             </div>
@@ -297,7 +299,7 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                             <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-5">
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <Wallet className="h-4 w-4 text-emerald-400" />
-                                                    <label className="text-sm font-bold text-white">Moyen de Paiement</label>
+                                                    <label className="text-sm font-bold text-white">{lang === 'fr' ? 'Moyen de Paiement' : 'Payment Method'}</label>
                                                 </div>
                                                 {paymentMethods.length > 0 ? (
                                                     <select
@@ -305,14 +307,14 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                                         onChange={(e) => updateConfig(selectedOfferId!, { payment_method_id: e.target.value || null })}
                                                         className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
                                                     >
-                                                        <option value="">— Sélectionner un moyen —</option>
+                                                        <option value="">{lang === 'fr' ? '— Sélectionner un moyen —' : '— Select a method —'}</option>
                                                         {paymentMethods.map(m => (
                                                             <option key={m.id} value={m.id}>{m.name} ({m.type})</option>
                                                         ))}
                                                     </select>
                                                 ) : (
                                                     <p className="text-xs text-amber-400">
-                                                        ⚠️ Aucun moyen de paiement enregistré. Créez-en un via le bouton "Moyens de Paiement".
+                                                        {lang === 'fr' ? '⚠️ Aucun moyen de paiement enregistré. Créez-en un via le bouton "Moyens de Paiement".' : '⚠️ No payment method saved. Create one via the "Payment Methods" button.'}
                                                     </p>
                                                 )}
                                             </div>
@@ -321,8 +323,8 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                             <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-5">
                                                 <label className="flex cursor-pointer items-center justify-between">
                                                     <div>
-                                                        <p className="text-sm font-bold text-white">TVA applicable (20%)</p>
-                                                        <p className="text-xs text-white/40 mt-0.5">Appliquer la TVA sur les factures générées</p>
+                                                        <p className="text-sm font-bold text-white">{lang === 'fr' ? 'TVA applicable (20%)' : 'VAT applicable (20%)'}</p>
+                                                        <p className="text-xs text-white/40 mt-0.5">{lang === 'fr' ? 'Appliquer la TVA sur les factures générées' : 'Apply VAT on generated invoices'}</p>
                                                     </div>
                                                     <div className="relative">
                                                         <input
@@ -343,9 +345,9 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                                     <div className="flex items-center gap-3">
                                                         <Mail className="h-5 w-5 text-cyan-400" />
                                                         <div>
-                                                            <p className="text-sm font-bold text-white">M'envoyer une copie par mail</p>
+                                                            <p className="text-sm font-bold text-white">{lang === 'fr' ? "M'envoyer une copie par mail" : 'Send me a copy by email'}</p>
                                                             <p className="text-xs text-white/40 mt-0.5">
-                                                                Recevez une copie de chaque facture à votre adresse email d'inscription
+                                                                {lang === 'fr' ? "Recevez une copie de chaque facture à votre adresse email d'inscription" : 'Receive a copy of each invoice to your registration email'}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -366,8 +368,9 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                             {!selectedOffer.billingEmail && (
                                                 <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4">
                                                     <p className="text-sm text-rose-300">
-                                                        ⚠️ <strong>Aucun email de facturation</strong> configuré pour cette offre.
-                                                        Ajoutez un email dans les détails de l'offre (onglet Facturation) pour que la facture soit envoyée à l'infopreneur.
+                                                        {lang === 'fr'
+                                                          ? <>⚠️ <strong>Aucun email de facturation</strong> configuré pour cette offre. Ajoutez un email dans les détails de l'offre (onglet Facturation) pour que la facture soit envoyée à l'infopreneur.</>
+                                                          : <>⚠️ <strong>No billing email</strong> configured for this offer. Add an email in the offer details (Billing tab) so the invoice is sent to the client.</>}
                                                     </p>
                                                 </div>
                                             )}
@@ -383,12 +386,12 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                         {saving === selectedOfferId ? (
                                             <>
                                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                                Sauvegarde...
+                                                {lang === 'fr' ? 'Sauvegarde...' : 'Saving...'}
                                             </>
                                         ) : (
                                             <>
                                                 <Zap className="h-4 w-4" />
-                                                Sauvegarder la configuration
+                                                {lang === 'fr' ? 'Sauvegarder la configuration' : 'Save configuration'}
                                             </>
                                         )}
                                     </button>
@@ -397,12 +400,9 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                     {currentConfig.enabled && (
                                         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
                                             <p className="text-sm text-emerald-300">
-                                                ✅ Une facture sera générée automatiquement le <strong>{currentConfig.day_of_month}{currentConfig.day_of_month === 1 ? 'er' : ''}</strong> de chaque mois
-                                                {selectedOffer.billingEmail && (
-                                                    <> et envoyée à <strong>{selectedOffer.billingEmail}</strong></>
-                                                )}
-                                                {currentConfig.send_copy_to_user && <> + une copie pour vous</>}
-                                                .
+                                                {lang === 'fr'
+                                                  ? <>✅ Une facture sera générée automatiquement le <strong>{currentConfig.day_of_month}{currentConfig.day_of_month === 1 ? 'er' : ''}</strong> de chaque mois{selectedOffer.billingEmail && <> et envoyée à <strong>{selectedOffer.billingEmail}</strong></>}{currentConfig.send_copy_to_user && <> + une copie pour vous</>}.</>
+                                                  : <>✅ An invoice will be generated automatically on the <strong>{currentConfig.day_of_month}{currentConfig.day_of_month === 1 ? 'st' : currentConfig.day_of_month === 2 ? 'nd' : currentConfig.day_of_month === 3 ? 'rd' : 'th'}</strong> of each month{selectedOffer.billingEmail && <> and sent to <strong>{selectedOffer.billingEmail}</strong></>}{currentConfig.send_copy_to_user && <> + a copy for you</>}.</>}
                                             </p>
                                         </div>
                                     )}

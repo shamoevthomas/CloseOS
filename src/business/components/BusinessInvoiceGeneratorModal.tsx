@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { X, ChevronLeft, Download, Loader2, CheckCircle2, Plus, Trash2, Pencil } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import type { BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { supabase } from '../../lib/supabase'
 import { cn } from '../../lib/utils'
@@ -48,6 +49,7 @@ export function BusinessInvoiceGeneratorModal({
   formulaCommRates = {},
 }: BusinessInvoiceGeneratorModalProps) {
   const { user, teamMember, ownerUserId, businessSettings } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
   const invoiceRef = useRef<HTMLDivElement>(null)
 
@@ -161,8 +163,8 @@ export function BusinessInvoiceGeneratorModal({
       const isInstallment = deal.payment_type === 'installments' || (deal.installments && deal.installments > 1)
       const offerLabel = deal.offer || 'Commission'
       const paymentLabel = isInstallment
-        ? `Mensualite (Paiement en ${deal.installments}x)`
-        : 'Paiement Comptant'
+        ? (lang === 'en' ? `Installment (${deal.installments}x payment)` : `Mensualite (Paiement en ${deal.installments}x)`)
+        : (lang === 'en' ? 'Lump Sum Payment' : 'Paiement Comptant')
 
       const key = `${offerLabel}-${paymentLabel}`
       const fullValue = deal.value || 0
@@ -206,10 +208,10 @@ export function BusinessInvoiceGeneratorModal({
 
   // ---------- EDITABLE LINE ITEMS (Step 2) ----------
   const [editableItems, setEditableItems] = useState<EditableLineItem[]>([])
-  const [editableInvoiceTitle, setEditableInvoiceTitle] = useState('FACTURE')
-  const [editableEcheance, setEditableEcheance] = useState('A reception')
+  const [editableInvoiceTitle, setEditableInvoiceTitle] = useState(lang === 'en' ? 'INVOICE' : 'FACTURE')
+  const [editableEcheance, setEditableEcheance] = useState(lang === 'en' ? 'Upon receipt' : 'A reception')
   const [editableFooterNote, setEditableFooterNote] = useState('')
-  const [editableCustomSectionTitle, setEditableCustomSectionTitle] = useState('Autres')
+  const [editableCustomSectionTitle, setEditableCustomSectionTitle] = useState(lang === 'en' ? 'Other' : 'Autres')
   const [editablePenaltyText, setEditablePenaltyText] = useState('')
 
   // Initialize editable items when entering step 2
@@ -218,7 +220,7 @@ export function BusinessInvoiceGeneratorModal({
       // Fixed compensation: single line item for fixed salary
       setEditableItems([{
         id: 'fixed-salary',
-        description: 'Salaire Fixe Mensuel',
+        description: t.invoice_gen_fixed_salary,
         subtitle: '',
         count: 1,
         unitPrice: fixedSalary,
@@ -231,7 +233,7 @@ export function BusinessInvoiceGeneratorModal({
     if (fixedSalary > 0) {
       items.push({
         id: 'fixed-salary',
-        description: 'Salaire Fixe Mensuel',
+        description: t.invoice_gen_fixed_salary,
         subtitle: '',
         count: 1,
         unitPrice: fixedSalary,
@@ -274,7 +276,7 @@ export function BusinessInvoiceGeneratorModal({
   const addItem = (section: 'closer' | 'setter' | 'custom') => {
     setEditableItems(prev => [...prev, {
       id: `custom-${Date.now()}`,
-      description: 'Nouvelle ligne',
+      description: t.invoice_gen_new_line,
       subtitle: '',
       count: 1,
       unitPrice: 0,
@@ -310,7 +312,7 @@ export function BusinessInvoiceGeneratorModal({
 
   // Format currency
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
+    new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
 
   // ---------- DATA LOADING ----------
 
@@ -500,7 +502,7 @@ export function BusinessInvoiceGeneratorModal({
   const getPaymentMethodLabel = () => {
     const labels: Record<PaymentMethodType, string> = {
       paypal: 'PayPal',
-      virement: 'Virement Bancaire',
+      virement: t.invoice_gen_bank_transfer,
       revolut: 'Revolut',
       stripe: 'Stripe',
     }
@@ -511,23 +513,23 @@ export function BusinessInvoiceGeneratorModal({
 
   const validateForm = (): boolean => {
     if (commissionHT <= 0) {
-      toast.error('Aucune commission a facturer sur cette periode')
+      toast.error(t.invoice_gen_no_commission_error)
       return false
     }
     if (paymentMethod === 'virement' && (!iban || !bic || !accountHolder) && selectedMethodId === 'custom') {
-      toast.error('Veuillez renseigner tous les champs du virement bancaire')
+      toast.error(t.invoice_gen_bank_fields_error)
       return false
     }
     if (paymentMethod === 'paypal' && !paypalEmail && selectedMethodId === 'custom') {
-      toast.error('Veuillez renseigner votre email PayPal')
+      toast.error(t.invoice_gen_paypal_error)
       return false
     }
     if (paymentMethod === 'revolut' && !revtag && selectedMethodId === 'custom') {
-      toast.error('Veuillez renseigner votre Revtag')
+      toast.error(t.invoice_gen_revtag_error)
       return false
     }
     if (paymentMethod === 'stripe' && !stripeLink && !useStripePayment && selectedMethodId === 'custom') {
-      toast.error('Veuillez renseigner votre lien de paiement Stripe')
+      toast.error(t.invoice_gen_stripe_link_error)
       return false
     }
     return true
@@ -565,18 +567,18 @@ export function BusinessInvoiceGeneratorModal({
           setQrCodeUrl(qrDataUrl)
         } else {
           console.error('Erreur Link:', data)
-          toast.error('Erreur lors de la creation du lien Stripe. La facture sera generee sans.')
+          toast.error(t.invoice_gen_stripe_error)
         }
       } catch (e) {
         console.error('Erreur API:', e)
-        toast.error('Impossible de joindre le serveur de paiement.')
+        toast.error(t.invoice_gen_payment_server_error)
       } finally {
         setIsGeneratingLink(false)
       }
     }
 
     initEditableItems()
-    setEditablePenaltyText(`En cas de retard de paiement, penalites de retard au taux annuel de ${latePenaltyRate}%.\nIndemnite forfaitaire pour frais de recouvrement : ${formatCurrency(latePenaltyFixed)}.`)
+    setEditablePenaltyText(t.invoice_gen_penalty_default.replace('{rate}', String(latePenaltyRate)).replace('{amount}', formatCurrency(latePenaltyFixed)))
     setStep(2)
   }
 
@@ -618,7 +620,7 @@ export function BusinessInvoiceGeneratorModal({
     // Save to invoices table
     const { error: insertError } = await supabase.from('invoices').insert([{
       invoice_number: invoiceNumber,
-      offer_name: `Commission ${new Date(startDate).toLocaleDateString('fr-FR')} - ${new Date(endDate).toLocaleDateString('fr-FR')}`,
+      offer_name: `Commission ${new Date(startDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')} - ${new Date(endDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')}`,
       client_name: receiverInfo.company || receiverInfo.name,
       client_email: businessSettings?.billing_email || null,
       amount_ht: editableTotalHT,
@@ -670,11 +672,11 @@ export function BusinessInvoiceGeneratorModal({
       link.download = `${invoiceNumber}.pdf`
       link.click()
 
-      toast.success('Facture validee et telechargee !')
+      toast.success(t.invoice_gen_validated_toast)
       onClose()
     } catch (err) {
       console.error('Erreur validation facture:', err)
-      toast.error("Une erreur est survenue lors de la validation.")
+      toast.error(t.invoice_gen_validation_error)
     } finally {
       setIsValidating(false)
     }
@@ -690,9 +692,9 @@ export function BusinessInvoiceGeneratorModal({
     setLatePenaltyFixed(40)
     setEditableItems([])
     setEditableFooterNote('')
-    setEditableInvoiceTitle('FACTURE')
-    setEditableEcheance('A reception')
-    setEditableCustomSectionTitle('Autres')
+    setEditableInvoiceTitle(lang === 'en' ? 'INVOICE' : 'FACTURE')
+    setEditableEcheance(lang === 'en' ? 'Upon receipt' : 'A reception')
+    setEditableCustomSectionTitle(lang === 'en' ? 'Other' : 'Autres')
     setEditablePenaltyText('')
     setGeneratedLink('')
     setQrCodeUrl('')
@@ -731,13 +733,13 @@ export function BusinessInvoiceGeneratorModal({
         {step === 1 && (
           <div className="p-4 md:p-8">
             <h2 className="mb-6 text-2xl font-bold text-[#1b1c1b] dark:text-white">
-              Configuration de la Facture
+              {t.invoice_gen_config_title}
             </h2>
 
             <div className="space-y-6">
               {/* Invoice Number */}
               <div>
-                <label className={labelCls}>Numero de Facture</label>
+                <label className={labelCls}>{t.invoice_gen_invoice_number}</label>
                 <input
                   type="text"
                   value={invoiceNumber}
@@ -750,13 +752,13 @@ export function BusinessInvoiceGeneratorModal({
               {/* Saved Issuer Profiles */}
               {savedProfiles.length > 0 && (
                 <div>
-                  <label className={labelCls}>Profil Emetteur Enregistre</label>
+                  <label className={labelCls}>{t.invoice_gen_saved_profile}</label>
                   <select
                     value={selectedProfileId}
                     onChange={(e) => handleProfileSelect(e.target.value)}
                     className={inputCls}
                   >
-                    <option value="custom">Saisie manuelle...</option>
+                    <option value="custom">{t.invoice_gen_manual_entry}</option>
                     {savedProfiles.map(profile => (
                       <option key={profile.id} value={profile.id}>
                         {profile.name} - {profile.companyName}
@@ -770,40 +772,40 @@ export function BusinessInvoiceGeneratorModal({
               {selectedProfileId === 'custom' && (
                 <div className="space-y-3">
                   <div>
-                    <label className={labelCls}>Nom / Raison Sociale de l'Emetteur</label>
+                    <label className={labelCls}>{t.invoice_gen_issuer_name}</label>
                     <input type="text" value={issuerCompanyName} onChange={(e) => setIssuerCompanyName(e.target.value)} className={inputCls} placeholder="Ex: ACME SARL, Jean Dupont EI..." />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={labelCls}>Adresse</label>
+                      <label className={labelCls}>{t.invoice_gen_address}</label>
                       <input type="text" value={issuerAddress} onChange={(e) => setIssuerAddress(e.target.value)} className={inputCls} placeholder="123 Rue de la Paix" />
                     </div>
                     <div>
-                      <label className={labelCls}>Ville</label>
+                      <label className={labelCls}>{t.invoice_gen_city}</label>
                       <input type="text" value={issuerCity} onChange={(e) => setIssuerCity(e.target.value)} className={inputCls} placeholder="Paris" />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className={labelCls}>Code Postal</label>
+                      <label className={labelCls}>{t.invoice_gen_zip}</label>
                       <input type="text" value={issuerZip} onChange={(e) => setIssuerZip(e.target.value)} className={inputCls} placeholder="75001" />
                     </div>
                     <div>
-                      <label className={labelCls}>Pays</label>
+                      <label className={labelCls}>{t.invoice_gen_country}</label>
                       <input type="text" value={issuerCountry} onChange={(e) => setIssuerCountry(e.target.value)} className={inputCls} placeholder="France" />
                     </div>
                     <div>
-                      <label className={labelCls}>SIRET</label>
+                      <label className={labelCls}>{t.invoice_gen_siret}</label>
                       <input type="text" value={issuerSiret} onChange={(e) => setIssuerSiret(e.target.value)} className={inputCls} placeholder="123 456 789 00012" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={labelCls}>Email</label>
+                      <label className={labelCls}>{t.invoice_gen_email}</label>
                       <input type="email" value={issuerEmail} onChange={(e) => setIssuerEmail(e.target.value)} className={inputCls} placeholder="contact@entreprise.com" />
                     </div>
                     <div>
-                      <label className={labelCls}>Telephone</label>
+                      <label className={labelCls}>{t.invoice_gen_phone}</label>
                       <input type="tel" value={issuerPhone} onChange={(e) => setIssuerPhone(e.target.value)} className={inputCls} placeholder="+33 1 23 45 67 89" />
                     </div>
                   </div>
@@ -814,22 +816,22 @@ export function BusinessInvoiceGeneratorModal({
               <div className="space-y-4 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-5">
                 <h3 className="text-sm font-bold text-[#1b1c1b] dark:text-white flex items-center gap-2">
                   <Download className="h-4 w-4 text-[#006c49]" />
-                  Moyen de paiement principal
+                  {t.invoice_gen_payment_method}
                 </h3>
 
                 {savedMethods.length > 0 && (
                   <select value={selectedMethodId} onChange={(e) => handleMethodSelect(e.target.value)} className={inputCls}>
-                    <option value="custom">Saisie manuelle...</option>
+                    <option value="custom">{t.invoice_gen_manual_entry}</option>
                     {savedMethods.map(m => <option key={m.id} value={m.id}>{m.name} ({m.type})</option>)}
                   </select>
                 )}
 
                 {selectedMethodId === 'custom' && (
                   <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethodType)} className={inputCls}>
-                    <option value="virement">Virement Bancaire</option>
+                    <option value="virement">{t.invoice_gen_bank_transfer}</option>
                     <option value="paypal">PayPal</option>
                     <option value="revolut">Revolut</option>
-                    <option value="stripe">Autre lien manuel</option>
+                    <option value="stripe">{t.invoice_gen_other_manual_link}</option>
                   </select>
                 )}
 
@@ -862,11 +864,11 @@ export function BusinessInvoiceGeneratorModal({
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 text-sm font-bold text-[#1b1c1b] dark:text-white">
-                        Service de reglement en ligne (Stripe)
-                        <span className="rounded bg-[#635BFF] px-1.5 py-0.5 text-[10px] uppercase text-white font-bold">Recommande</span>
+                        {t.invoice_gen_stripe_toggle}
+                        <span className="rounded bg-[#635BFF] px-1.5 py-0.5 text-[10px] uppercase text-white font-bold">{t.invoice_gen_stripe_recommended}</span>
                       </div>
                       <p className="mt-1 text-xs text-[#635BFF]/80 dark:text-[#635BFF]/70">
-                        Ajoute un bouton de paiement securise + QR Code sur la facture pour se faire payer par CB instantanement.
+                        {t.invoice_gen_stripe_desc}
                       </p>
                     </div>
                   </label>
@@ -887,9 +889,9 @@ export function BusinessInvoiceGeneratorModal({
                     <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-semibold text-[#1b1c1b] dark:text-white">TVA Applicable ?</div>
+                    <div className="text-sm font-semibold text-[#1b1c1b] dark:text-white">{t.invoice_gen_tva_toggle}</div>
                     <div className="mt-1 text-xs text-[#444748] dark:text-neutral-400">
-                      Ajouter 20% de TVA au montant de la commission
+                      {t.invoice_gen_tva_desc}
                     </div>
                   </div>
                 </label>
@@ -898,11 +900,11 @@ export function BusinessInvoiceGeneratorModal({
               {/* Late Payment Penalties */}
               <div className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-400 mb-3">
-                  Penalites de retard
+                  {t.invoice_gen_late_penalties}
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelCls}>Taux annuel (%)</label>
+                    <label className={labelCls}>{t.invoice_gen_annual_rate}</label>
                     <input
                       type="number"
                       step="0.1"
@@ -913,7 +915,7 @@ export function BusinessInvoiceGeneratorModal({
                     />
                   </div>
                   <div>
-                    <label className={labelCls}>Indemnite forfaitaire (EUR)</label>
+                    <label className={labelCls}>{t.invoice_gen_fixed_indemnity}</label>
                     <input
                       type="number"
                       step="1"
@@ -936,10 +938,10 @@ export function BusinessInvoiceGeneratorModal({
                 {isGeneratingLink ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Generation du lien Stripe...
+                    {t.invoice_gen_generating_stripe}
                   </>
                 ) : (
-                  'Previsualiser la facture'
+                  t.invoice_gen_preview
                 )}
               </button>
             </div>
@@ -956,7 +958,7 @@ export function BusinessInvoiceGeneratorModal({
                 className="flex items-center gap-2 rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2 text-sm font-semibold text-[#444748] dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Retour
+                {t.invoice_gen_back}
               </button>
 
               <button
@@ -965,7 +967,7 @@ export function BusinessInvoiceGeneratorModal({
                 className="flex items-center gap-2 bg-[#006c49] text-white rounded-full px-8 py-2.5 font-bold hover:bg-[#005a3d] transition-colors disabled:opacity-50"
               >
                 {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                {isValidating ? 'Validation...' : 'Valider la facture'}
+                {isValidating ? t.invoice_gen_validating : t.invoice_gen_validate}
               </button>
             </div>
 
@@ -975,21 +977,21 @@ export function BusinessInvoiceGeneratorModal({
               <div className="w-full md:w-[340px] shrink-0 md:border-r border-b md:border-b-0 border-[#c4c7c7]/10 dark:border-neutral-800 overflow-y-auto p-4 space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-500 flex items-center gap-2">
                   <Pencil className="h-3.5 w-3.5" />
-                  Modifier la facture
+                  {t.invoice_gen_edit_invoice}
                 </h3>
 
                 {/* Title & Invoice number */}
                 <div className="space-y-3">
                   <div>
-                    <label className={labelCls}>Titre du document</label>
+                    <label className={labelCls}>{t.invoice_gen_doc_title}</label>
                     <input type="text" value={editableInvoiceTitle} onChange={e => setEditableInvoiceTitle(e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className={labelCls}>Numero de facture</label>
+                    <label className={labelCls}>{t.invoice_gen_invoice_number_label}</label>
                     <input type="text" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className={labelCls}>Echeance</label>
+                    <label className={labelCls}>{t.invoice_gen_due_date}</label>
                     <input type="text" value={editableEcheance} onChange={e => setEditableEcheance(e.target.value)} className={inputCls} placeholder="A reception" />
                   </div>
                 </div>
@@ -998,7 +1000,7 @@ export function BusinessInvoiceGeneratorModal({
                 {editableCloserItems.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-bold uppercase tracking-widest text-[#006c49]">
-                      Lignes Closer
+                      {t.invoice_gen_closer_lines}
                     </p>
                     {editableCloserItems.map(item => (
                       <div key={item.id} className="rounded-lg border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-3 space-y-2">
@@ -1008,7 +1010,7 @@ export function BusinessInvoiceGeneratorModal({
                             value={item.description}
                             onChange={e => updateItem(item.id, 'description', e.target.value)}
                             className={cn(inputCls, 'text-xs flex-1')}
-                            placeholder="Description"
+                            placeholder={t.invoice_gen_description}
                           />
                           <button onClick={() => removeItem(item.id)} className="text-[#ba1a1a] hover:bg-[#ba1a1a]/10 rounded-lg p-1.5 transition-colors shrink-0">
                             <Trash2 className="h-3.5 w-3.5" />
@@ -1019,11 +1021,11 @@ export function BusinessInvoiceGeneratorModal({
                           value={item.subtitle}
                           onChange={e => updateItem(item.id, 'subtitle', e.target.value)}
                           className={cn(inputCls, 'text-xs')}
-                          placeholder="Sous-titre / description (optionnel)"
+                          placeholder={t.invoice_gen_subtitle_placeholder}
                         />
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] text-[#444748] dark:text-neutral-500">Qte</label>
+                            <label className="text-[10px] text-[#444748] dark:text-neutral-500">{t.invoice_gen_qty}</label>
                             <input
                               type="number"
                               min={1}
@@ -1033,7 +1035,7 @@ export function BusinessInvoiceGeneratorModal({
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-[#444748] dark:text-neutral-500">Prix unitaire (EUR)</label>
+                            <label className="text-[10px] text-[#444748] dark:text-neutral-500">{t.invoice_gen_unit_price}</label>
                             <input
                               type="number"
                               step="0.01"
@@ -1053,7 +1055,7 @@ export function BusinessInvoiceGeneratorModal({
                       onClick={() => addItem('closer')}
                       className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#006c49]/30 text-[#006c49] text-xs font-medium py-2 hover:bg-[#006c49]/5 transition-colors"
                     >
-                      <Plus className="h-3.5 w-3.5" /> Ajouter une ligne Closer
+                      <Plus className="h-3.5 w-3.5" /> {t.invoice_gen_add_closer_line}
                     </button>
                   </div>
                 )}
@@ -1062,7 +1064,7 @@ export function BusinessInvoiceGeneratorModal({
                 {editableSetterItems.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-bold uppercase tracking-widest text-[#006c49]">
-                      Lignes Setter
+                      {t.invoice_gen_setter_lines}
                     </p>
                     {editableSetterItems.map(item => (
                       <div key={item.id} className="rounded-lg border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-white/5 p-3 space-y-2">
@@ -1072,7 +1074,7 @@ export function BusinessInvoiceGeneratorModal({
                             value={item.description}
                             onChange={e => updateItem(item.id, 'description', e.target.value)}
                             className={cn(inputCls, 'text-xs flex-1')}
-                            placeholder="Description"
+                            placeholder={t.invoice_gen_description}
                           />
                           <button onClick={() => removeItem(item.id)} className="text-[#ba1a1a] hover:bg-[#ba1a1a]/10 rounded-lg p-1.5 transition-colors shrink-0">
                             <Trash2 className="h-3.5 w-3.5" />
@@ -1083,11 +1085,11 @@ export function BusinessInvoiceGeneratorModal({
                           value={item.subtitle}
                           onChange={e => updateItem(item.id, 'subtitle', e.target.value)}
                           className={cn(inputCls, 'text-xs')}
-                          placeholder="Sous-titre / description (optionnel)"
+                          placeholder={t.invoice_gen_subtitle_placeholder}
                         />
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] text-[#444748] dark:text-neutral-500">Qte</label>
+                            <label className="text-[10px] text-[#444748] dark:text-neutral-500">{t.invoice_gen_qty}</label>
                             <input
                               type="number"
                               min={1}
@@ -1097,7 +1099,7 @@ export function BusinessInvoiceGeneratorModal({
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-[#444748] dark:text-neutral-500">Prix unitaire (EUR)</label>
+                            <label className="text-[10px] text-[#444748] dark:text-neutral-500">{t.invoice_gen_unit_price}</label>
                             <input
                               type="number"
                               step="0.01"
@@ -1117,7 +1119,7 @@ export function BusinessInvoiceGeneratorModal({
                       onClick={() => addItem('setter')}
                       className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#006c49]/30 text-[#006c49] text-xs font-medium py-2 hover:bg-[#006c49]/5 transition-colors"
                     >
-                      <Plus className="h-3.5 w-3.5" /> Ajouter une ligne Setter
+                      <Plus className="h-3.5 w-3.5" /> {t.invoice_gen_add_setter_line}
                     </button>
                   </div>
                 )}
@@ -1130,7 +1132,7 @@ export function BusinessInvoiceGeneratorModal({
                       value={editableCustomSectionTitle}
                       onChange={e => setEditableCustomSectionTitle(e.target.value)}
                       className="text-xs font-bold uppercase tracking-widest text-[#444748] dark:text-neutral-500 bg-transparent border-b border-dashed border-[#c4c7c7]/40 dark:border-neutral-600 focus:border-[#006c49] outline-none pb-1 w-full"
-                      placeholder="Titre de la section"
+                      placeholder={t.invoice_gen_section_title_placeholder}
                     />
                   )}
                   {editableCustomItems.map(item => (
@@ -1186,7 +1188,7 @@ export function BusinessInvoiceGeneratorModal({
                     onClick={() => addItem('custom')}
                     className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#c4c7c7]/30 dark:border-neutral-600 text-[#444748] dark:text-neutral-400 text-xs font-medium py-2 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Ajouter un produit
+                    <Plus className="h-3.5 w-3.5" /> {t.invoice_gen_add_product}
                   </button>
                 </div>
 
@@ -1205,7 +1207,7 @@ export function BusinessInvoiceGeneratorModal({
                         <div className="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-4"></div>
                       </div>
                       <span className="text-xs font-medium text-[#1b1c1b] dark:text-white">
-                        Afficher le paiement Stripe sur la facture
+                        {t.invoice_gen_stripe_show_toggle}
                       </span>
                     </label>
                   </div>
@@ -1213,32 +1215,32 @@ export function BusinessInvoiceGeneratorModal({
 
                 {/* Late penalty text */}
                 <div>
-                  <label className={labelCls}>Mentions penalites de retard</label>
+                  <label className={labelCls}>{t.invoice_gen_penalty_mentions}</label>
                   <textarea
                     value={editablePenaltyText}
                     onChange={e => setEditablePenaltyText(e.target.value)}
                     rows={3}
                     className={cn(inputCls, 'resize-none text-xs')}
-                    placeholder="Ex: En cas de retard de paiement..."
+                    placeholder={t.invoice_gen_penalty_placeholder}
                   />
                 </div>
 
                 {/* Note / Footer */}
                 <div>
-                  <label className={labelCls}>Note libre (bas de facture)</label>
+                  <label className={labelCls}>{t.invoice_gen_footer_note}</label>
                   <textarea
                     value={editableFooterNote}
                     onChange={e => setEditableFooterNote(e.target.value)}
                     rows={3}
                     className={cn(inputCls, 'resize-none')}
-                    placeholder="Ajouter une note, un commentaire..."
+                    placeholder={t.invoice_gen_footer_placeholder}
                   />
                 </div>
 
                 {/* Totals summary */}
                 <div className="rounded-xl border border-[#006c49]/20 bg-[#006c49]/5 p-4 space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#444748] dark:text-neutral-400">Total HT</span>
+                    <span className="text-[#444748] dark:text-neutral-400">{t.invoice_gen_total_ht}</span>
                     <span className="font-bold text-[#1b1c1b] dark:text-white">{formatCurrency(editableTotalHT)}</span>
                   </div>
                   {tvaApplicable && (
@@ -1248,7 +1250,7 @@ export function BusinessInvoiceGeneratorModal({
                     </div>
                   )}
                   <div className="flex justify-between text-base pt-1 border-t border-[#006c49]/20">
-                    <span className="font-bold text-[#1b1c1b] dark:text-white">Total {tvaApplicable ? 'TTC' : ''}</span>
+                    <span className="font-bold text-[#1b1c1b] dark:text-white">{tvaApplicable ? t.invoice_gen_total_ttc : 'Total'}</span>
                     <span className="font-bold text-[#006c49]">{formatCurrency(editableTotalTTC)}</span>
                   </div>
                 </div>
@@ -1277,7 +1279,7 @@ export function BusinessInvoiceGeneratorModal({
                         <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>{editableInvoiceTitle}</h1>
                         <div style={{ textAlign: 'right' }}>
                           <p style={{ fontSize: '0.875rem', color: '#475569', margin: 0 }}>
-                            {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            {new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                           </p>
                         </div>
                       </div>
@@ -1285,16 +1287,16 @@ export function BusinessInvoiceGeneratorModal({
                       {/* Invoice Number */}
                       <div style={{ fontSize: '0.875rem', color: '#334155', marginTop: '0.5rem', marginBottom: '2rem' }}>
                         <p style={{ margin: 0 }}>
-                          <span style={{ fontWeight: 600 }}>Numero de facture:</span> {invoiceNumber}
+                          <span style={{ fontWeight: 600 }}>{t.invoice_gen_invoice_number_pdf}</span> {invoiceNumber}
                         </p>
                       </div>
 
                       {/* Emetteur / Destinataire */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                         <div>
-                          <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>Emetteur</p>
+                          <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>{t.invoice_gen_issuer_label}</p>
                           <div style={{ fontSize: '0.875rem', color: '#0f172a' }}>
-                            <p style={{ fontWeight: 700, margin: '0 0 0.25rem 0' }}>{issuerCompanyName || issuerName || 'Emetteur'}</p>
+                            <p style={{ fontWeight: 700, margin: '0 0 0.25rem 0' }}>{issuerCompanyName || issuerName || t.invoice_gen_issuer_label}</p>
                             {(issuerAddress || issuerCity || issuerZip || issuerCountry) && (
                               <div style={{ color: '#334155', marginBottom: '0.25rem' }}>
                                 {issuerAddress && <p style={{ margin: 0 }}>{issuerAddress}</p>}
@@ -1308,9 +1310,9 @@ export function BusinessInvoiceGeneratorModal({
                           </div>
                         </div>
                         <div>
-                          <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>Destinataire</p>
+                          <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>{t.invoice_gen_receiver_label}</p>
                           <div style={{ fontSize: '0.875rem', color: '#0f172a' }}>
-                            <p style={{ fontWeight: 700, margin: '0 0 0.25rem 0' }}>{receiverInfo.company || 'Organisation'}</p>
+                            <p style={{ fontWeight: 700, margin: '0 0 0.25rem 0' }}>{receiverInfo.company || (lang === 'en' ? 'Organization' : 'Organisation')}</p>
                             {receiverInfo.billingAddress && <p style={{ color: '#334155', margin: '0.125rem 0' }}>{receiverInfo.billingAddress}</p>}
                             {(receiverInfo.billingZip || receiverInfo.billingCity) && <p style={{ color: '#334155', margin: '0.125rem 0' }}>{receiverInfo.billingZip} {receiverInfo.billingCity}</p>}
                             {receiverInfo.billingCountry && <p style={{ color: '#334155', margin: '0.125rem 0' }}>{receiverInfo.billingCountry}</p>}
@@ -1323,8 +1325,8 @@ export function BusinessInvoiceGeneratorModal({
                       {/* Period */}
                       <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem', marginBottom: '2rem' }}>
                         <p style={{ fontSize: '0.875rem', color: '#334155', margin: 0 }}>
-                          <span style={{ fontWeight: 600 }}>Periode:</span>{' '}
-                          Du {new Date(startDate).toLocaleDateString('fr-FR')} au {new Date(endDate).toLocaleDateString('fr-FR')}
+                          <span style={{ fontWeight: 600 }}>{t.invoice_gen_period_label}</span>{' '}
+                          {t.invoice_gen_from_to.replace('{start}', new Date(startDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')).replace('{end}', new Date(endDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR'))}
                         </p>
                       </div>
 
@@ -1332,15 +1334,15 @@ export function BusinessInvoiceGeneratorModal({
                       {editableCloserItems.length > 0 && (
                         <>
                           <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>
-                            Commission Closer
+                            {t.invoice_gen_commission_closer}
                           </p>
                           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
                             <thead>
                               <tr style={{ borderBottom: '2px solid #0f172a', backgroundColor: '#f8fafc' }}>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Description</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Qte</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Prix Unitaire</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Total HT</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_description}</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_qty}</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_unit_price}</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_total_ht}</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1363,15 +1365,15 @@ export function BusinessInvoiceGeneratorModal({
                       {editableSetterItems.length > 0 && (
                         <>
                           <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>
-                            Commission Setter
+                            {t.invoice_gen_commission_setter}
                           </p>
                           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
                             <thead>
                               <tr style={{ borderBottom: '2px solid #0f172a', backgroundColor: '#f8fafc' }}>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Description</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Qte</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Prix Unitaire</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Total HT</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_description}</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_qty}</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_unit_price}</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_total_ht}</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1399,10 +1401,10 @@ export function BusinessInvoiceGeneratorModal({
                           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
                             <thead>
                               <tr style={{ borderBottom: '2px solid #0f172a', backgroundColor: '#f8fafc' }}>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Description</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Qte</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Prix Unitaire</th>
-                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Total HT</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_description}</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_qty}</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_unit_price}</th>
+                                <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{t.invoice_gen_col_total_ht}</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1426,7 +1428,7 @@ export function BusinessInvoiceGeneratorModal({
                       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
                         <div style={{ width: '20rem' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-                            <span style={{ color: '#334155' }}>Total HT</span>
+                            <span style={{ color: '#334155' }}>{t.invoice_gen_total_ht}</span>
                             <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatCurrency(editableTotalHT)}</span>
                           </div>
                           {tvaApplicable && (
@@ -1436,7 +1438,7 @@ export function BusinessInvoiceGeneratorModal({
                             </div>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid #0f172a', paddingTop: '0.5rem', fontSize: '1.125rem' }}>
-                            <span style={{ fontWeight: 700, color: '#0f172a' }}>Total {tvaApplicable ? 'TTC' : ''}</span>
+                            <span style={{ fontWeight: 700, color: '#0f172a' }}>{tvaApplicable ? t.invoice_gen_total_ttc : 'Total'}</span>
                             <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatCurrency(editableTotalTTC)}</span>
                           </div>
                         </div>
@@ -1449,23 +1451,23 @@ export function BusinessInvoiceGeneratorModal({
                         {/* Left - Payment info */}
                         <div style={{ maxWidth: '50%' }}>
                           <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', marginBottom: '0.75rem' }}>
-                            Conditions de reglement
+                            {t.invoice_gen_payment_terms}
                           </p>
                           <div style={{ fontSize: '0.875rem', color: '#334155' }}>
                             <p style={{ margin: '0.25rem 0' }}>
-                              <span style={{ fontWeight: 500 }}>Echeance:</span> {editableEcheance}
+                              <span style={{ fontWeight: 500 }}>{t.invoice_gen_due_label}</span> {editableEcheance}
                             </p>
                             <p style={{ margin: '0.25rem 0' }}>
-                              <span style={{ fontWeight: 500 }}>Mode de reglement:</span> {getPaymentMethodLabel()}
+                              <span style={{ fontWeight: 500 }}>{t.invoice_gen_payment_mode}</span> {getPaymentMethodLabel()}
                             </p>
 
                             {paymentMethod === 'virement' && (
                               <div style={{ marginTop: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem', backgroundColor: '#f8fafc', padding: '0.75rem' }}>
-                                <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#475569', marginBottom: '0.5rem' }}>Coordonnees bancaires</p>
+                                <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#475569', marginBottom: '0.5rem' }}>{t.invoice_gen_bank_details}</p>
                                 <div style={{ fontSize: '0.75rem' }}>
                                   <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>IBAN:</span> {iban}</p>
                                   <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>BIC:</span> {bic}</p>
-                                  <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>Titulaire:</span> {accountHolder}</p>
+                                  <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>{lang === 'en' ? 'Holder:' : 'Titulaire:'}</span> {accountHolder}</p>
                                 </div>
                               </div>
                             )}
@@ -1473,7 +1475,7 @@ export function BusinessInvoiceGeneratorModal({
                             {paymentMethod === 'revolut' && <p style={{ margin: '0.25rem 0' }}><span style={{ fontWeight: 500 }}>Revolut:</span> {revtag}</p>}
                             {paymentMethod === 'stripe' && stripeLink && (
                               <p style={{ margin: '0.25rem 0', wordBreak: 'break-all' }}>
-                                <span style={{ fontWeight: 500 }}>Lien Stripe:</span>{' '}
+                                <span style={{ fontWeight: 500 }}>{lang === 'en' ? 'Stripe Link:' : 'Lien Stripe:'}</span>{' '}
                                 <a href={stripeLink} style={{ color: '#2563eb', textDecoration: 'underline' }}>{stripeLink}</a>
                               </p>
                             )}
@@ -1481,7 +1483,7 @@ export function BusinessInvoiceGeneratorModal({
                             {!tvaApplicable && (
                               <div style={{ marginTop: '1rem', borderLeft: '4px solid #006c49', backgroundColor: '#f0fdf4', padding: '0.75rem', borderRadius: '0.25rem' }}>
                                 <p style={{ fontSize: '0.75rem', fontWeight: 600, fontStyle: 'italic', color: '#0f172a', margin: 0 }}>
-                                  TVA non applicable, art. 293 B du CGI
+                                  {t.invoice_gen_tva_not_applicable}
                                 </p>
                               </div>
                             )}
@@ -1498,9 +1500,9 @@ export function BusinessInvoiceGeneratorModal({
                         {showStripeOnInvoice && generatedLink && qrCodeUrl && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
                             <div style={{ textAlign: 'right' }}>
-                              <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.25rem' }}>Payer en ligne</p>
+                              <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.25rem' }}>{t.invoice_gen_pay_online}</p>
                               <p style={{ fontSize: '0.625rem', color: '#94a3b8', marginBottom: '0.5rem', maxWidth: '120px' }}>
-                                Scannez pour regler par CB instantanement
+                                {t.invoice_gen_scan_to_pay}
                               </p>
                               <a
                                 href={generatedLink}
@@ -1517,10 +1519,10 @@ export function BusinessInvoiceGeneratorModal({
                                   textDecoration: 'none',
                                 }}
                               >
-                                Payer maintenant &rarr;
+                                {t.invoice_gen_pay_now} &rarr;
                               </a>
                             </div>
-                            <img src={qrCodeUrl} alt="QR Code Paiement" style={{ width: '80px', height: '80px' }} />
+                            <img src={qrCodeUrl} alt="QR Code" style={{ width: '80px', height: '80px' }} />
                           </div>
                         )}
                       </div>
@@ -1534,7 +1536,7 @@ export function BusinessInvoiceGeneratorModal({
 
                       <div style={{ marginTop: '2rem', textAlign: 'center' }}>
                         <p style={{ fontSize: '0.625rem', color: '#94a3b8', margin: 0 }}>
-                          Facture generee automatiquement par CloseOS
+                          {t.invoice_gen_generated_by}
                         </p>
                       </div>
                     </div>

@@ -30,6 +30,7 @@ import {
   CheckCircle,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
@@ -96,12 +97,13 @@ function SectionEditor({
   emptyLabel: string
   emptyDesc: string
 }) {
+  const { t } = useBusinessLang()
   const [newTitle, setNewTitle] = useState('')
 
   const addSection = () => {
-    const t = newTitle.trim()
-    if (!t) return
-    onUpdate([...sections, { id: genId(), title: t, blocks: [] }])
+    const trimmed = newTitle.trim()
+    if (!trimmed) return
+    onUpdate([...sections, { id: genId(), title: trimmed, blocks: [] }])
     setNewTitle('')
   }
 
@@ -160,11 +162,11 @@ function SectionEditor({
           onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSection() } }}
           className={`${stoneInputClass} flex-1 border border-[#c4c7c7]/20 dark:border-neutral-700 rounded-xl px-4 py-3 bg-white dark:bg-neutral-800`}
-          placeholder="Nom de la nouvelle section..."
+          placeholder={t.org_section_name_placeholder}
         />
         <button type="button" onClick={addSection} className="px-6 py-3 rounded-full bg-[#000000] text-white font-['Manrope'] font-extrabold text-sm hover:bg-[#1b1c1b] transition-all active:scale-95 flex items-center gap-2 shrink-0">
           <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Ajouter</span>
+          <span className="hidden sm:inline">{t.org_add_section}</span>
         </button>
       </div>
 
@@ -204,7 +206,7 @@ function SectionEditor({
                           value={block.content}
                           onChange={(e) => updateBlock(section.id, block.id, { content: e.target.value })}
                           className={`${stoneInputClass} resize-none h-20 border-b border-[#c4c7c7]/20`}
-                          placeholder="Écrivez votre texte ici..."
+                          placeholder={t.org_text_placeholder}
                         />
                       )}
                       {block.type === 'video' && (
@@ -213,7 +215,7 @@ function SectionEditor({
                           value={block.content}
                           onChange={(e) => updateBlock(section.id, block.id, { content: e.target.value })}
                           className={stoneInputClass}
-                          placeholder="URL de la vidéo (YouTube, Loom...)"
+                          placeholder={t.org_video_placeholder}
                         />
                       )}
                       {block.type === 'link' && (
@@ -223,7 +225,7 @@ function SectionEditor({
                             value={block.label || ''}
                             onChange={(e) => updateBlock(section.id, block.id, { label: e.target.value })}
                             className={stoneInputClass}
-                            placeholder="Titre du lien"
+                            placeholder={t.org_link_title_placeholder}
                           />
                           <input
                             type="url"
@@ -240,7 +242,7 @@ function SectionEditor({
                             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#ba1a1a]/5">
                               <FileText className="h-5 w-5 text-[#ba1a1a] shrink-0" />
                               <span className="text-sm font-medium text-[#1b1c1b] truncate flex-1">{block.label || 'PDF'}</span>
-                              <a href={block.content} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#ba1a1a] hover:underline shrink-0">Voir</a>
+                              <a href={block.content} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#ba1a1a] hover:underline shrink-0">{t.org_view}</a>
                             </div>
                           ) : (
                             <label className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-[#ba1a1a]/20 cursor-pointer hover:bg-[#ba1a1a]/5 transition-colors">
@@ -249,7 +251,7 @@ function SectionEditor({
                               ) : (
                                 <Upload className="h-5 w-5 text-[#ba1a1a]/40 shrink-0" />
                               )}
-                              <span className="text-sm text-[#444748]">{pdfUploading === block.id ? 'Upload en cours...' : 'Choisir un fichier PDF'}</span>
+                              <span className="text-sm text-[#444748]">{pdfUploading === block.id ? t.org_upload_in_progress : t.org_choose_pdf}</span>
                               <input
                                 type="file"
                                 accept=".pdf"
@@ -275,10 +277,10 @@ function SectionEditor({
               {/* Add block buttons */}
               <div className="flex flex-wrap gap-3 pt-2">
                 {[
-                  { type: 'text' as const, label: 'Texte', Icon: Type, color: 'text-[#006c49]', hover: 'hover:border-[#006c49] hover:bg-[#006c49]/5' },
-                  { type: 'video' as const, label: 'Vidéo', Icon: Video, color: 'text-[#b87500]', hover: 'hover:border-[#ffb95f] hover:bg-[#ffddb8]/20' },
-                  { type: 'link' as const, label: 'Lien', Icon: ExternalLink, color: 'text-[#474646]', hover: 'hover:border-[#474646] hover:bg-[#e5e2e1]/30' },
-                  { type: 'pdf' as const, label: 'PDF', Icon: FileText, color: 'text-[#ba1a1a]', hover: 'hover:border-[#ba1a1a] hover:bg-[#ba1a1a]/5' },
+                  { type: 'text' as const, label: t.org_text_block, Icon: Type, color: 'text-[#006c49]', hover: 'hover:border-[#006c49] hover:bg-[#006c49]/5' },
+                  { type: 'video' as const, label: t.org_video_block, Icon: Video, color: 'text-[#b87500]', hover: 'hover:border-[#ffb95f] hover:bg-[#ffddb8]/20' },
+                  { type: 'link' as const, label: t.org_link_block, Icon: ExternalLink, color: 'text-[#474646]', hover: 'hover:border-[#474646] hover:bg-[#e5e2e1]/30' },
+                  { type: 'pdf' as const, label: t.org_pdf_block, Icon: FileText, color: 'text-[#ba1a1a]', hover: 'hover:border-[#ba1a1a] hover:bg-[#ba1a1a]/5' },
                 ].map(({ type, label, Icon, color, hover }) => (
                   <button key={type} onClick={() => addBlock(section.id, type)} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${color} border-2 border-dashed border-[#c4c7c7]/20 ${hover} transition-all`}>
                     <Icon className="h-3.5 w-3.5" /> {label}
@@ -306,8 +308,9 @@ function SectionEditor({
 // ─── Section Viewer (read-only for team members) ───
 
 function SectionViewer({ sections }: { sections: ContentSection[] }) {
+  const { t } = useBusinessLang()
   if (!sections || sections.length === 0) {
-    return <p className="text-sm text-[#444748] text-center py-8">Aucun contenu disponible.</p>
+    return <p className="text-sm text-[#444748] text-center py-8">{t.org_no_content}</p>
   }
 
   return (
@@ -361,7 +364,7 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
                         className="flex items-center gap-2 text-sm font-medium text-[#ba1a1a] hover:underline transition-colors"
                       >
                         <FileText className="h-4 w-4 shrink-0" />
-                        {block.label || 'Voir le PDF'}
+                        {block.label || t.org_view_pdf}
                       </a>
                     )}
                   </div>
@@ -369,7 +372,7 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
               )
             })}
             {section.blocks.length === 0 && (
-              <p className="text-xs text-[#444748]/50 italic">Section vide</p>
+              <p className="text-xs text-[#444748]/50 italic">{t.org_section_empty}</p>
             )}
           </div>
         </div>
@@ -382,6 +385,7 @@ function SectionViewer({ sections }: { sections: ContentSection[] }) {
 
 function TeamMemberOrganizationView() {
   const { businessSettings, teamMember, refreshProfile } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const [activeTab, setActiveTab] = useState('organisation')
   const [ackLoading, setAckLoading] = useState(false)
 
@@ -414,17 +418,17 @@ function TeamMemberOrganizationView() {
   }
 
   const allTabs = [
-    { key: 'organisation', label: 'Organisation' },
-    { key: 'onboarding', label: 'Onboarding' },
-    ...customTabs.map(t => ({ key: t.id, label: t.name })),
+    { key: 'organisation', label: t.org_tab_organisation },
+    { key: 'onboarding', label: t.org_tab_onboarding },
+    ...customTabs.map(ct => ({ key: ct.id, label: ct.name })),
   ]
 
   return (
     <div className="max-w-5xl mx-auto pb-12">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">Organisation</h1>
-        <p className="text-[#444748] dark:text-neutral-400 mt-3 leading-relaxed max-w-xl">Informations et parcours d'intégration de votre organisation.</p>
+        <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">{t.org_title}</h1>
+        <p className="text-[#444748] dark:text-neutral-400 mt-3 leading-relaxed max-w-xl">{t.org_subtitle}</p>
       </div>
 
       {/* Tabs */}
@@ -460,7 +464,7 @@ function TeamMemberOrganizationView() {
                 )}
               </div>
               <div className="flex-1 space-y-3">
-                <h2 className="text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{settings.company_name || 'Organisation'}</h2>
+                <h2 className="text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{settings.company_name || t.org_title}</h2>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-[#444748]">
                   {settings.website && (
                     <a href={settings.website.startsWith('http') ? settings.website : `https://${settings.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[#006c49] hover:underline transition-colors">
@@ -475,7 +479,7 @@ function TeamMemberOrganizationView() {
                   )}
                   {settings.team_size && (
                     <span className="px-3 py-1 rounded-full bg-[#eae8e7] text-[10px] font-bold uppercase tracking-widest text-[#444748]">
-                      {settings.team_size} pers.
+                      {settings.team_size} {t.org_persons}
                     </span>
                   )}
                 </div>
@@ -485,11 +489,11 @@ function TeamMemberOrganizationView() {
 
           {/* Details */}
           <div className="bg-white dark:bg-neutral-800 rounded-xl p-8 space-y-6" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}>
-            <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Informations</h3>
+            <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">{t.org_info_title}</h3>
 
             {settings.description && (
               <div>
-                <p className={stoneLabelClass}>Description</p>
+                <p className={stoneLabelClass}>{t.org_description_label}</p>
                 <p className="text-sm text-[#444748] dark:text-neutral-400 leading-relaxed whitespace-pre-wrap">{settings.description}</p>
               </div>
             )}
@@ -499,7 +503,7 @@ function TeamMemberOrganizationView() {
                 <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                   <Mail className="h-4 w-4 text-[#747878] shrink-0" />
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Email</p>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">{t.org_email_label}</p>
                     <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.org_email}</p>
                   </div>
                 </div>
@@ -508,7 +512,7 @@ function TeamMemberOrganizationView() {
                 <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                   <Phone className="h-4 w-4 text-[#747878] shrink-0" />
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Téléphone</p>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">{t.org_phone_info_label}</p>
                     <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.org_phone}</p>
                   </div>
                 </div>
@@ -519,14 +523,14 @@ function TeamMemberOrganizationView() {
               <div className="flex items-center gap-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 px-4 py-3">
                 <MapPin className="h-4 w-4 text-[#747878] shrink-0" />
                 <div>
-                  <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">Adresse</p>
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-[#444748]">{t.org_address_info_label}</p>
                   <p className="text-sm font-medium text-[#1b1c1b] dark:text-white">{settings.address}</p>
                 </div>
               </div>
             )}
 
             {!settings.description && !settings.org_email && !settings.org_phone && !settings.address && (
-              <p className="text-sm text-[#444748] text-center py-4">Aucune information renseignée par l'organisation.</p>
+              <p className="text-sm text-[#444748] text-center py-4">{t.org_no_info}</p>
             )}
           </div>
         </div>
@@ -549,8 +553,8 @@ function TeamMemberOrganizationView() {
                   <Rocket className="h-7 w-7 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-['Manrope'] font-extrabold text-2xl text-white leading-tight">📖 Guide d'onboarding — {memberRole}</h3>
-                  <p className="text-white/60 text-sm mt-1 font-medium">Lecture obligatoire avant de commencer. Cliquez pour ouvrir le guide complet.</p>
+                  <h3 className="font-['Manrope'] font-extrabold text-2xl text-white leading-tight">{t.org_onboarding_guide} — {memberRole}</h3>
+                  <p className="text-white/60 text-sm mt-1 font-medium">{t.org_onboarding_guide_desc}</p>
                 </div>
                 <ExternalLink className="h-6 w-6 text-white/40 group-hover:text-white transition-colors shrink-0" />
               </div>
@@ -564,8 +568,8 @@ function TeamMemberOrganizationView() {
                 <Rocket className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Onboarding général</h3>
-                <p className="text-xs text-[#444748] dark:text-neutral-400">Parcours d'intégration de votre organisation</p>
+                <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">{t.org_onboarding_general}</h3>
+                <p className="text-xs text-[#444748] dark:text-neutral-400">{t.org_onboarding_general_desc}</p>
               </div>
             </div>
 
@@ -580,8 +584,8 @@ function TeamMemberOrganizationView() {
                   <Rocket className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">Onboarding {memberRole}</h3>
-                  <p className="text-xs text-[#444748] dark:text-neutral-400">Parcours spécifique à votre rôle</p>
+                  <h3 className="font-['Manrope'] font-extrabold text-xl text-[#1b1c1b] dark:text-white">{t.org_onboarding_role} {memberRole}</h3>
+                  <p className="text-xs text-[#444748] dark:text-neutral-400">{t.org_onboarding_role_desc}</p>
                 </div>
               </div>
 
@@ -601,14 +605,14 @@ function TeamMemberOrganizationView() {
               ) : (
                 <CheckCircle className="h-5 w-5" />
               )}
-              J'AI BIEN PRIS CONNAISSANCE DE L'ONBOARDING
+              {t.org_onboarding_ack_button}
             </button>
           )}
 
           {hasAcknowledged && (
             <div className="flex items-center gap-3 p-4 rounded-xl bg-[#006c49]/5 text-[#006c49]">
               <CheckCircle className="h-5 w-5 shrink-0" />
-              <p className="font-medium text-sm">Vous avez validé l'onboarding.</p>
+              <p className="font-medium text-sm">{t.org_onboarding_ack_done}</p>
             </div>
           )}
         </div>
@@ -639,6 +643,7 @@ function TeamMemberOrganizationView() {
 
 export function BusinessOrganization() {
   const { user, businessSettings, businessProfile, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile, isSolo } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
 
   const isHoS = isTeamMember && (teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin')
 
@@ -749,10 +754,10 @@ export function BusinessOrganization() {
       if (error) throw error
       const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
       setFormData(prev => ({ ...prev, logo_url: data.publicUrl }))
-      setMessage({ type: 'success', text: 'Logo mis à jour !' })
+      setMessage({ type: 'success', text: t.org_logo_updated })
       setImageSrc(null)
     } catch {
-      setMessage({ type: 'error', text: "Erreur lors de l'upload du logo." })
+      setMessage({ type: 'error', text: t.org_logo_upload_error })
     } finally {
       setUploading(false)
     }
@@ -782,9 +787,9 @@ export function BusinessOrganization() {
         const { error } = await updateBusinessSettings(formData)
         if (error) throw error
       }
-      setMessage({ type: 'success', text: 'Organisation mise à jour avec succès !' })
+      setMessage({ type: 'success', text: t.org_save_success })
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Erreur lors de la sauvegarde.' })
+      setMessage({ type: 'error', text: err.message || t.org_save_error })
     } finally {
       setLoading(false)
     }
@@ -792,7 +797,7 @@ export function BusinessOrganization() {
 
   // ─── Custom tabs ───
   const addCustomTab = () => {
-    const newTab: CustomTab = { id: genId(), name: 'Nouvel onglet', sections: [] }
+    const newTab: CustomTab = { id: genId(), name: t.org_new_tab, sections: [] }
     setFormData(prev => ({ ...prev, custom_tabs: [...prev.custom_tabs, newTab] }))
     setActiveTab(newTab.id)
   }
@@ -809,7 +814,7 @@ export function BusinessOrganization() {
 
   const commitRename = () => {
     if (!renamingTabId) return
-    const name = renamingValue.trim() || 'Sans titre'
+    const name = renamingValue.trim() || t.org_untitled
     setFormData(prev => ({
       ...prev,
       custom_tabs: prev.custom_tabs.map(t => t.id === renamingTabId ? { ...t, name } : t),
@@ -826,7 +831,7 @@ export function BusinessOrganization() {
 
   const [selectedOnboardingRole, setSelectedOnboardingRole] = useState('Général')
 
-  const ownerName = businessProfile?.full_name || user?.user_metadata?.full_name || 'Propriétaire'
+  const ownerName = businessProfile?.full_name || user?.user_metadata?.full_name || t.org_owner
 
   const activeCustomTab = formData.custom_tabs.find(t => t.id === activeTab)
 
@@ -847,11 +852,11 @@ export function BusinessOrganization() {
             </div>
             <div className="flex gap-4 justify-center">
               <button onClick={() => setImageSrc(null)} disabled={uploading} className="px-6 py-3 rounded-full border border-[#444748] text-[#c4c7c7] font-['Manrope'] font-bold hover:bg-[#1b1c1b] transition-colors flex items-center gap-2">
-                <X className="h-4 w-4" /> Annuler
+                <X className="h-4 w-4" /> {t.org_cancel_crop}
               </button>
               <button onClick={saveCroppedImage} disabled={uploading} className="px-6 py-3 rounded-full bg-white text-[#000000] font-['Manrope'] font-extrabold hover:bg-[#f5f3f2] transition-colors flex items-center gap-2">
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Valider le logo
+                {t.org_validate_logo}
               </button>
             </div>
           </div>
@@ -869,8 +874,8 @@ export function BusinessOrganization() {
       {/* ─── Page Header ─── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">Organisation</h1>
-          <p className="text-[#444748] dark:text-neutral-400 mt-3 leading-relaxed max-w-xl">Personnalisez votre identité de marque et définissez les parcours d'intégration de votre équipe.</p>
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white leading-none">{t.org_title}</h1>
+          <p className="text-[#444748] dark:text-neutral-400 mt-3 leading-relaxed max-w-xl">{t.org_subtitle_owner}</p>
         </div>
         <button
           onClick={handleSave}
@@ -878,7 +883,7 @@ export function BusinessOrganization() {
           className="bg-[#000000] text-white px-8 py-4 rounded-full font-['Manrope'] font-extrabold text-sm tracking-widest hover:bg-[#1b1c1b] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
         >
           {loading ? <Loader2 className="animate-spin h-4 w-4" /> : <Save className="h-4 w-4" />}
-          ENREGISTRER
+          {t.org_save_button}
         </button>
       </div>
 
@@ -886,8 +891,8 @@ export function BusinessOrganization() {
       <div className="flex gap-10 mb-10 border-b border-[#c4c7c7]/10 dark:border-neutral-800 overflow-x-auto">
         {/* Fixed tabs */}
         {[
-          { key: 'organisation', label: 'ORGANISATION' },
-          ...(!isSolo ? [{ key: 'onboarding', label: 'ONBOARDING' }] : []),
+          { key: 'organisation', label: t.org_tab_organisation },
+          ...(!isSolo ? [{ key: 'onboarding', label: t.org_tab_onboarding }] : []),
         ].map(tab => (
           <button
             key={tab.key}

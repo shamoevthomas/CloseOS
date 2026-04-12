@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { Target, MessageCircle, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { welcomeFounderTranslations } from '../i18n/translations';
 
 export function WelcomeFounder() {
   useEffect(() => {
@@ -11,6 +13,8 @@ export function WelcomeFounder() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { lang } = useLanguage();
+  const t = welcomeFounderTranslations[lang];
 
   // 👇 TON LIEN WHATSAPP OFFICIEL
   const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s";
@@ -53,7 +57,7 @@ export function WelcomeFounder() {
             className="text-slate-500 hover:text-white transition-colors flex items-center gap-2 text-sm bg-transparent border-none cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
-            <span>Déconnexion</span>
+            <span>{lang === 'fr' ? 'Déconnexion' : 'Log out'}</span>
           </button>
         </div>
       </nav>
@@ -66,17 +70,17 @@ export function WelcomeFounder() {
             {/* BADGE QUI CHANGE DE COULEUR ET DE TEXTE */}
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-widest mb-6 bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
               <Target className="h-3 w-3" />
-              Pack Pro Activé
+              {lang === 'fr' ? 'Pack Pro Activé' : 'Pro Pack Activated'}
             </span>
 
             <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
-              Bienvenue sur CloseOS.
+              {lang === 'fr' ? 'Bienvenue sur CloseOS.' : 'Welcome to CloseOS.'}
             </h1>
 
             <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
-              Félicitations. Ton abonnement Pro est activé.
+              {lang === 'fr' ? 'Félicitations. Ton abonnement Pro est activé.' : 'Congratulations. Your Pro subscription is active.'}
               <br />
-              Regarde cette courte vidéo pour comprendre la suite.
+              {lang === 'fr' ? 'Regarde cette courte vidéo pour comprendre la suite.' : 'Watch this short video to understand what comes next.'}
             </p>
           </div>
 
@@ -95,13 +99,13 @@ export function WelcomeFounder() {
           {/* INSTRUCTIONS & WHATSAPP */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 text-left space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
             <div>
-              <h3 className="text-xl font-bold text-white mb-4">La suite des événements :</h3>
+              <h3 className="text-xl font-bold text-white mb-4">{lang === 'fr' ? 'La suite des événements :' : 'What happens next:'}</h3>
               <ul className="space-y-4 text-slate-400">
                 <li className="flex gap-4 items-start">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-600/30 mt-0.5">1</span>
                   <span>
-                    <strong>Onboarding :</strong> L'accès au logiciel ouvrira officiellement le <span className="text-white font-bold">1er Mars</span>.{" "}
-                    <span className="text-white font-medium">Vos jours d'essai ne commenceront qu'à partir du lancement de l'outil.</span>
+                    <strong>{lang === 'fr' ? 'Onboarding :' : 'Onboarding:'}</strong> {lang === 'fr' ? "L'accès au logiciel ouvrira officiellement le" : 'The software will officially open on'} <span className="text-white font-bold">{lang === 'fr' ? '1er Mars' : 'March 1st'}</span>.{" "}
+                    <span className="text-white font-medium">{lang === 'fr' ? "Vos jours d'essai ne commenceront qu'à partir du lancement de l'outil." : 'Your trial days will only start from the tool launch.'}</span>
                   </span>
                 </li>
                 <li className="flex gap-4 items-start">

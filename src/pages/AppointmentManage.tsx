@@ -5,7 +5,9 @@ import { Loader2, CheckCircle2, XCircle, Calendar, ChevronLeft, ChevronRight, Cl
 const API_URL = '/api/business'
 
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+const DAYS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 interface AppointmentInfo {
   id: string
@@ -27,6 +29,10 @@ function isSameDay(a: Date, b: Date) {
 }
 
 export function AppointmentManage() {
+  const lang = (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
+  const MONTHS = lang === 'fr' ? MONTHS_FR : MONTHS_EN
+  const DAYS = lang === 'fr' ? DAYS_FR : DAYS_EN
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
   const { token } = useParams<{ token: string }>()
   const [searchParams] = useSearchParams()
   const actionParam = searchParams.get('action') as 'cancel' | 'reschedule' | null
@@ -62,7 +68,7 @@ export function AppointmentManage() {
         setInfo(data)
         if (data.status === 'cancelled') setCancelled(true)
       })
-      .catch(() => setError('Impossible de charger le rendez-vous'))
+      .catch(() => setError(lang === 'fr' ? 'Impossible de charger le rendez-vous' : 'Unable to load appointment'))
       .finally(() => setLoading(false))
   }, [token])
 
@@ -164,9 +170,9 @@ export function AppointmentManage() {
         <div className="text-center max-w-md mx-auto p-8">
           <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
           <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Rendez-vous introuvable
+            {lang === 'fr' ? 'Rendez-vous introuvable' : 'Appointment not found'}
           </h1>
-          <p className="text-[#444748]">Ce lien n'est plus valide ou le rendez-vous n'existe pas.</p>
+          <p className="text-[#444748]">{lang === 'fr' ? "Ce lien n'est plus valide ou le rendez-vous n'existe pas." : "This link is no longer valid or the appointment doesn't exist."}</p>
         </div>
       </div>
     )
@@ -174,7 +180,7 @@ export function AppointmentManage() {
 
   // Format date
   const apptDate = new Date(`${info.date}T${info.time}:00`)
-  const dateFr = apptDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const dateFr = apptDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const [eH, eM] = info.time.split(':').map(Number)
   const endMins = eH * 60 + eM + (info.duration || 30)
   const endTimeStr = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
@@ -190,10 +196,10 @@ export function AppointmentManage() {
             </div>
           </div>
           <h1 className="text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Rendez-vous annulé
+            {lang === 'fr' ? 'Rendez-vous annulé' : 'Appointment cancelled'}
           </h1>
-          <p className="text-[#444748] mb-6">Votre rendez-vous du {dateFr} à {info.time} a été annulé.</p>
-          <p className="text-sm text-[#444748]/60">L'équipe a été notifiée de cette annulation.</p>
+          <p className="text-[#444748] mb-6">{lang === 'fr' ? `Votre rendez-vous du ${dateFr} à ${info.time} a été annulé.` : `Your appointment on ${dateFr} at ${info.time} has been cancelled.`}</p>
+          <p className="text-sm text-[#444748]/60">{lang === 'fr' ? "L'équipe a été notifiée de cette annulation." : 'The team has been notified of this cancellation.'}</p>
         </div>
       </div>
     )
@@ -201,7 +207,7 @@ export function AppointmentManage() {
 
   if (rescheduled) {
     const newDate = selectedDate!
-    const newDateFr = newDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    const newDateFr = newDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     return (
       <div className="min-h-screen bg-[#fbf9f8] flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
@@ -211,13 +217,13 @@ export function AppointmentManage() {
             </div>
           </div>
           <h1 className="text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Rendez-vous reprogrammé
+            {lang === 'fr' ? 'Rendez-vous reprogrammé' : 'Appointment rescheduled'}
           </h1>
           <div className="rounded-2xl bg-[#f5f3f2] p-5 mb-4">
             <p className="text-sm font-bold text-[#1b1c1b]">{newDateFr}</p>
             <p className="text-sm text-[#444748] mt-1">{selectedTime}</p>
           </div>
-          <p className="text-sm text-[#444748]/60">Un email de confirmation vous a été envoyé.</p>
+          <p className="text-sm text-[#444748]/60">{lang === 'fr' ? 'Un email de confirmation vous a été envoyé.' : 'A confirmation email has been sent to you.'}</p>
         </div>
       </div>
     )
@@ -235,9 +241,9 @@ export function AppointmentManage() {
               </div>
             </div>
             <h1 className="text-2xl font-extrabold text-[#1b1c1b] text-center mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Annuler votre rendez-vous ?
+              {lang === 'fr' ? 'Annuler votre rendez-vous ?' : 'Cancel your appointment?'}
             </h1>
-            <p className="text-[#444748] text-center mb-8">Cette action est irréversible.</p>
+            <p className="text-[#444748] text-center mb-8">{lang === 'fr' ? 'Cette action est irréversible.' : 'This action is irreversible.'}</p>
 
             <div className="rounded-2xl bg-[#f5f3f2] p-6 mb-8">
               <div className="flex items-center gap-3 mb-3">
@@ -249,7 +255,7 @@ export function AppointmentManage() {
                 <span className="font-bold text-[#1b1c1b]">{info.time} — {endTimeStr} ({info.duration} min)</span>
               </div>
               {info.assignee_name && (
-                <p className="text-sm text-[#444748] mt-3">Avec {info.assignee_name}</p>
+                <p className="text-sm text-[#444748] mt-3">{lang === 'fr' ? 'Avec' : 'With'} {info.assignee_name}</p>
               )}
             </div>
 
@@ -261,7 +267,7 @@ export function AppointmentManage() {
                 style={{ fontFamily: 'Manrope, sans-serif' }}
               >
                 {cancelling ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-                Confirmer l'annulation
+                {lang === 'fr' ? "Confirmer l'annulation" : 'Confirm cancellation'}
               </button>
             </div>
           </div>
@@ -276,9 +282,9 @@ export function AppointmentManage() {
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-3xl p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]" style={{ border: '1px solid rgba(196,199,199,0.1)' }}>
           <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Reprogrammer votre rendez-vous
+            {lang === 'fr' ? 'Reprogrammer votre rendez-vous' : 'Reschedule your appointment'}
           </h1>
-          <p className="text-[#444748] mb-2">Rendez-vous actuel :</p>
+          <p className="text-[#444748] mb-2">{lang === 'fr' ? 'Rendez-vous actuel :' : 'Current appointment:'}</p>
           <div className="rounded-2xl bg-[#f5f3f2] p-5 mb-8 flex items-center gap-4">
             <Calendar className="h-5 w-5 text-[#006c49] shrink-0" />
             <div>
@@ -288,7 +294,7 @@ export function AppointmentManage() {
           </div>
 
           <h2 className="text-lg font-extrabold text-[#1b1c1b] mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Choisissez un nouveau créneau
+            {lang === 'fr' ? 'Choisissez un nouveau créneau' : 'Choose a new time slot'}
           </h2>
 
           {slotsLoading ? (
@@ -300,7 +306,7 @@ export function AppointmentManage() {
               {/* Calendar */}
               <div className={`transition-all duration-500 ease-in-out overflow-hidden ${selectedDate ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100'}`}>
                 <div className="flex items-center justify-between mb-3 px-1">
-                  <span className="text-lg font-bold text-[#1b1c1b]">{MONTHS_FR[calMonth]} {calYear}</span>
+                  <span className="text-lg font-bold text-[#1b1c1b]">{MONTHS[calMonth]} {calYear}</span>
                   <div className="flex gap-1">
                     <button onClick={prevMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
                       <ChevronLeft className="h-5 w-5 text-[#1b1c1b]" />
@@ -311,7 +317,7 @@ export function AppointmentManage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                  {DAYS_FR.map((d, i) => (
+                  {DAYS.map((d, i) => (
                     <div key={i} className="py-1 text-[10px] font-bold text-[#444748]/40 uppercase tracking-widest">{d}</div>
                   ))}
                 </div>
@@ -352,11 +358,11 @@ export function AppointmentManage() {
                       <ChevronLeft className="h-4 w-4 text-[#006c49] group-hover:-translate-x-0.5 transition-transform" />
                       <Calendar className="h-4 w-4 text-[#006c49]" />
                       <span className="text-sm font-bold text-[#006c49]">
-                        {selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        {selectedDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
                       </span>
-                      <span className="text-xs text-[#006c49]/60 font-medium">— Changer de date</span>
+                      <span className="text-xs text-[#006c49]/60 font-medium">— {lang === 'fr' ? 'Changer de date' : 'Change date'}</span>
                     </button>
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-3">Créneaux disponibles</h3>
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-3">{lang === 'fr' ? 'Créneaux disponibles' : 'Available slots'}</h3>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                       {availableTimesForDate.map(slot => (
                         <button
@@ -374,7 +380,7 @@ export function AppointmentManage() {
                       ))}
                     </div>
                     {availableTimesForDate.length === 0 && (
-                      <p className="text-xs text-[#444748]/40 mt-2">Aucun créneau disponible ce jour.</p>
+                      <p className="text-xs text-[#444748]/40 mt-2">{lang === 'fr' ? 'Aucun créneau disponible ce jour.' : 'No slots available for this day.'}</p>
                     )}
                   </div>
                 )}
@@ -389,7 +395,7 @@ export function AppointmentManage() {
                   style={{ fontFamily: 'Manrope, sans-serif' }}
                 >
                   {rescheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  Confirmer le nouveau créneau
+                  {lang === 'fr' ? 'Confirmer le nouveau créneau' : 'Confirm new time slot'}
                 </button>
               )}
             </div>

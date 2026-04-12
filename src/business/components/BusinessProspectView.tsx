@@ -11,6 +11,7 @@ import {
 import { cn } from '../../lib/utils'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
@@ -21,16 +22,16 @@ const LABEL_STYLE = 'text-[11px] font-business-display font-extrabold uppercase 
 const SELECT_CLS = 'w-full bg-[#f5f3f2] dark:bg-neutral-800 border-0 rounded-xl py-3.5 px-4 font-business-display font-bold text-stone-900 dark:text-white appearance-none focus:ring-2 focus:ring-stone-900 transition-all'
 const INPUT_CLS = 'w-full bg-[#f5f3f2] dark:bg-neutral-800 border-0 rounded-xl px-4 py-3 text-sm text-stone-900 dark:text-white font-medium focus:ring-2 focus:ring-stone-900 transition-all placeholder:text-stone-400 dark:placeholder:text-neutral-500'
 
-const ALL_STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500' },
-  { id: 'unqualified', name: 'Non-Qualifié', color: 'bg-yellow-500' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' },
-  { id: 'noanswer', name: 'Pas de Réponse', color: 'bg-cyan-500' },
-  { id: 'noshow', name: 'No Show', color: 'bg-slate-600' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500' },
-]
+const ALL_STAGE_DEFS = [
+  { id: 'prospect', color: 'bg-blue-500' },
+  { id: 'qualified', color: 'bg-purple-500' },
+  { id: 'unqualified', color: 'bg-yellow-500' },
+  { id: 'won', color: 'bg-emerald-500' },
+  { id: 'followup', color: 'bg-orange-500' },
+  { id: 'noanswer', color: 'bg-cyan-500' },
+  { id: 'noshow', color: 'bg-slate-600' },
+  { id: 'lost', color: 'bg-red-500' },
+] as const
 
 interface CallNote {
   id: string
@@ -74,7 +75,14 @@ export function BusinessProspectView({
 }: BusinessProspectViewProps) {
   const navigate = useNavigate()
   const { user, isTeamMember, teamMember, ownerUserId, userTimezone } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const { customStages } = useCustomStages()
+  const STAGE_NAME_MAP: Record<string, string> = {
+    prospect: t.stage_prospect, qualified: t.stage_qualified, unqualified: t.stage_unqualified,
+    won: t.stage_won, followup: t.stage_followup, noanswer: t.stage_noanswer,
+    noshow: t.stage_noshow, lost: t.stage_lost,
+  }
+  const ALL_STAGES = ALL_STAGE_DEFS.map(s => ({ ...s, name: STAGE_NAME_MAP[s.id] || s.id }))
   const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string; setter_scope?: string }[]>([])
 
   // Pipeline dismissal state
@@ -165,8 +173,8 @@ export function BusinessProspectView({
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!file.type.startsWith('image/')) { toast.error('Fichier image requis'); return }
-    if (file.size > 5 * 1024 * 1024) { toast.error('Image trop lourde (max 5 Mo)'); return }
+    if (!file.type.startsWith('image/')) { toast.error(t.prospect_toast_file_required); return }
+    if (file.size > 5 * 1024 * 1024) { toast.error(t.prospect_toast_file_too_large); return }
 
     setAvatarUploading(true)
     try {
@@ -181,10 +189,10 @@ export function BusinessProspectView({
       await supabase.from('business_prospects').update({ avatar_url: avatarUrl }).eq('id', prospect.id)
       setLocal(prev => ({ ...prev, avatar_url: avatarUrl }))
       onUpdate(prospect.id, { avatar_url: avatarUrl })
-      toast.success('Photo mise à jour')
+      toast.success(t.prospect_toast_photo_updated)
     } catch (err) {
       console.error(err)
-      toast.error('Erreur lors de l\'upload')
+      toast.error(t.prospect_toast_upload_error)
     } finally {
       setAvatarUploading(false)
       if (avatarInputRef.current) avatarInputRef.current.value = ''
@@ -376,7 +384,7 @@ export function BusinessProspectView({
           subscription_interval: data.subscription_interval,
           matched_via: data.matched_via,
         } as any)
-        toast.success('Abonnement Stripe lie automatiquement')
+        toast.success(t.prospect_toast_stripe_auto)
       } else {
         setStripeAutoStatus('not_found')
       }
@@ -424,12 +432,12 @@ export function BusinessProspectView({
         } as any)
         setStripeAutoStatus('matched')
         setStripeLinkOpen(false)
-        toast.success('Abonnement Stripe lie')
+        toast.success(t.prospect_toast_stripe_linked)
       } else {
-        toast.error('Impossible de lier l\'abonnement')
+        toast.error(t.prospect_toast_stripe_error)
       }
     } catch {
-      toast.error('Erreur de liaison Stripe')
+      toast.error(t.prospect_toast_stripe_link_error)
     }
     setStripeMatching(false)
   }
@@ -456,12 +464,12 @@ export function BusinessProspectView({
         } as any)
         setStripeAutoStatus('matched')
         setStripeLinkOpen(false)
-        toast.success('Abonnement Stripe lie manuellement')
+        toast.success(t.prospect_toast_stripe_manual)
       } else {
-        toast.error('Impossible de lier l\'abonnement')
+        toast.error(t.prospect_toast_stripe_error)
       }
     } catch {
-      toast.error('Erreur de liaison Stripe')
+      toast.error(t.prospect_toast_stripe_link_error)
     }
     setStripeMatching(false)
   }
@@ -540,7 +548,7 @@ export function BusinessProspectView({
         groups.push({
           key: entry.created_at,
           created_at: entry.created_at,
-          changed_by_name: entry.changed_by_name || 'Système',
+          changed_by_name: entry.changed_by_name || t.prospect_system_author,
           type: 'created',
           entries: [entry],
           metadata: entry.metadata || {},
@@ -557,14 +565,14 @@ export function BusinessProspectView({
         groups.push({
           key: `${entry.created_at}_${entry.id}`,
           created_at: entry.created_at,
-          changed_by_name: entry.changed_by_name || 'Système',
+          changed_by_name: entry.changed_by_name || t.prospect_system_author,
           type: entry.change_type || 'field_update',
           entries: [entry],
         })
       }
     }
     return groups
-  }, [history])
+  }, [history, t])
 
   // Auto-expand last group on first load
   useEffect(() => {
@@ -576,14 +584,14 @@ export function BusinessProspectView({
 
   // Helpers for resolving IDs to display names
   const resolveMemberName = useCallback((id: string | null | undefined) => {
-    if (!id) return '(aucun)'
+    if (!id) return t.prospect_assign_none
     const member = teamMembers.find(m => m.id === id)
     if (member) return `${member.first_name} ${member.last_name}`.trim()
     return id
   }, [teamMembers])
 
   const resolveStageLabel = useCallback((stage: string | null | undefined) => {
-    if (!stage) return '(aucun)'
+    if (!stage) return t.prospect_assign_none
     const custom = customStages.find(s => s.id === stage)
     if (custom) return custom.label
     const s = ALL_STAGES.find(s => s.id === stage)
@@ -591,24 +599,24 @@ export function BusinessProspectView({
   }, [customStages])
 
   const resolveFormulaName = useCallback((formulaId: string | null | undefined) => {
-    if (!formulaId) return '(aucune)'
+    if (!formulaId) return t.prospect_history_none_formula
     const f = allFormulas.find(f => f.id === formulaId)
     return f?.name || formulaId
   }, [allFormulas])
 
   const formatHistoryValue = useCallback((field: string, value: string | null | undefined): string => {
-    if (value == null || value === '') return '(vide)'
+    if (value == null || value === '') return t.prospect_history_empty
     if (field === 'assigned_to' || field === 'assigned_setter') return resolveMemberName(value)
     if (field === 'stage') return resolveStageLabel(value)
     if (field === 'formula_id') return resolveFormulaName(value)
     if (field === 'value') return `${Number(value).toLocaleString('fr-FR')}€`
     if (field === 'probability') return `${value}%`
-    if (field === 'pipeline_visible') return value === 'true' ? 'Oui' : 'Non'
+    if (field === 'pipeline_visible') return value === 'true' ? t.prospect_history_yes : t.prospect_history_no
     if (field === 'payment_type') {
-      const labels: Record<string, string> = { once: 'Comptant', installments: 'Mensualités', cash: 'Comptant', comptant: 'Comptant' }
+      const labels: Record<string, string> = { once: t.prospect_history_cash, installments: t.prospect_history_installments_label, cash: t.prospect_history_cash, comptant: t.prospect_history_cash }
       return labels[value] || value
     }
-    if (field === 'avatar_url') return 'Photo mise à jour'
+    if (field === 'avatar_url') return t.prospect_history_photo_updated
     return value
   }, [resolveMemberName, resolveStageLabel, resolveFormulaName])
 
@@ -647,7 +655,7 @@ export function BusinessProspectView({
       id: Date.now().toString(),
       date: new Date().toISOString(),
       content,
-      author: 'Manuel',
+      author: t.prospect_manual_author,
     }
     const updated = [newNote, ...callNotes]
     handleUpdate({ call_notes: updated })
@@ -656,7 +664,7 @@ export function BusinessProspectView({
   }
 
   const handleDeleteNote = (noteId: string) => {
-    if (!confirm('Supprimer cette note ?')) return
+    if (!confirm(t.prospect_confirm_delete_note)) return
     const updated = callNotes.filter(n => n.id !== noteId)
     handleUpdate({ call_notes: updated })
   }
@@ -675,8 +683,8 @@ export function BusinessProspectView({
       setProspectReminders(prev => [...prev, data])
       setShowReminderForm(false)
       setReminderTitle(''); setReminderDesc(''); setReminderDate(''); setReminderTime('')
-      toast.success('Rappel créé')
-    } catch { toast.error('Impossible de créer le rappel') }
+      toast.success(t.prospect_toast_reminder_created)
+    } catch { toast.error(t.prospect_toast_reminder_error) }
     finally { setReminderSubmitting(false) }
   }
 
@@ -703,16 +711,16 @@ export function BusinessProspectView({
   // -- Actions --
   const handleOpenGmail = () => {
     if (local.email) window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${local.email}`, '_blank')
-    else toast.error('Email manquant')
+    else toast.error(t.prospect_toast_email_missing)
   }
   const handleOpenWhatsApp = () => {
     if (local.phone) {
       const clean = local.phone.replace(/[^0-9+]/g, '')
       window.open(`https://wa.me/${clean}`, '_blank')
-    } else toast.error('Téléphone manquant')
+    } else toast.error(t.prospect_toast_phone_missing)
   }
   const handleDelete = () => {
-    if (confirm(`Supprimer ${local.contact} ?`)) { onDelete(prospect.id); onClose() }
+    if (confirm(t.prospect_confirm_delete.replace('{name}', local.contact))) { onDelete(prospect.id); onClose() }
   }
 
   // Parse capture custom data from notes
@@ -740,7 +748,7 @@ export function BusinessProspectView({
                 <button
                   onClick={() => avatarInputRef.current?.click()}
                   className="relative w-11 h-11 rounded-full bg-[#e4e2e1] dark:bg-neutral-800 flex items-center justify-center overflow-hidden text-lg font-business-display font-extrabold text-stone-500 dark:text-neutral-400 group cursor-pointer"
-                  title="Changer la photo"
+                  title={t.prospect_change_photo}
                 >
                   {local.avatar_url ? (
                     <img src={local.avatar_url} alt={local.contact} className="w-full h-full object-cover" />
@@ -791,7 +799,7 @@ export function BusinessProspectView({
               </div>
               <div className="min-w-0">
                 <h2 className="text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
-                  {local.contact || 'Sans nom'}
+                  {local.contact || t.prospect_no_name}
                 </h2>
                 {local.company && (
                   <p className="text-stone-500 dark:text-neutral-400 font-medium truncate">{local.company}</p>
@@ -867,7 +875,7 @@ export function BusinessProspectView({
                     )
                   })}
                   {allTags.length === 0 && (
-                    <p className="text-xs text-stone-400 dark:text-neutral-500 text-center py-3">Aucun tag disponible</p>
+                    <p className="text-xs text-stone-400 dark:text-neutral-500 text-center py-3">{t.prospect_no_tags}</p>
                   )}
                 </div>
               </div>
@@ -882,14 +890,14 @@ export function BusinessProspectView({
             className="flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-full font-business-display font-bold text-sm tracking-wide transition-transform active:scale-95 shadow-lg shadow-stone-900/20"
           >
             <PhoneCall className="h-4 w-4" strokeWidth={1.5} />
-            Ouvrir le Call Room
+            {t.prospect_open_callroom}
           </button>
           <button
             onClick={() => setShowReminderForm(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 rounded-full font-business-display font-bold text-sm transition-all hover:brightness-105 active:scale-95"
           >
             <Bell className="h-4 w-4" strokeWidth={1.5} />
-            Créer un rappel
+            {t.prospect_create_reminder}
           </button>
           <div className="flex gap-2">
             <button
@@ -910,10 +918,10 @@ export function BusinessProspectView({
         {/* Tabs */}
         <nav className="px-4 md:px-6 pt-4 flex gap-4 md:gap-6 overflow-x-auto">
           {([
-            { key: 'info' as const, label: 'Informations' },
-            { key: 'notes' as const, label: "Notes d'Appel" },
-            { key: 'rappels' as const, label: 'Rappels', badge: activeRemindersCount },
-            { key: 'historique' as const, label: 'Historique' },
+            { key: 'info' as const, label: t.prospect_tab_info },
+            { key: 'notes' as const, label: t.prospect_tab_call_notes },
+            { key: 'rappels' as const, label: t.prospect_tab_reminders, badge: activeRemindersCount },
+            { key: 'historique' as const, label: t.prospect_tab_history },
           ]).map(tab => (
             <button
               key={tab.key}
@@ -944,7 +952,7 @@ export function BusinessProspectView({
 
               {/* Stage */}
               <div>
-                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Étape actuelle</label>
+                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_current_stage}</label>
                 <div className="relative">
                   <select
                     value={local.stage}
@@ -972,36 +980,36 @@ export function BusinessProspectView({
                     if (match) { displayReason = match[1]; break }
                   }
                 }
-                const lossReasons = ['Je dois y réfléchir', 'Argent/budget', 'Doit en parler', "C'est pas le moment", 'Peur', 'Ecran de fumée', 'Autre']
+                const lossReasons = [t.loss_thinking, t.loss_budget, t.loss_need_talk, t.loss_not_now, t.loss_fear, t.loss_smokescreen, t.loss_other]
                 return (
                   <div className="animate-in slide-in-from-top-4 fade-in duration-300">
                     <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-red-600 dark:text-red-400 mb-3">
-                      <X className="h-4 w-4" /> Raison de la perte
+                      <X className="h-4 w-4" /> {t.prospect_loss_reason_title}
                     </h3>
                     <div className="space-y-3 rounded-2xl border border-red-500/20 bg-red-500/5 dark:bg-red-500/5 p-5">
                       {canEditLoss ? (
                         <>
                           <div>
-                            <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1.5 block">Motif</label>
+                            <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1.5 block">{t.prospect_loss_reason_label}</label>
                             <div className="relative">
                               <select
                                 value={displayReason}
                                 onChange={(e) => handleUpdate({ loss_reason: e.target.value } as any)}
                                 className={cn(SELECT_CLS, 'text-sm py-3')}
                               >
-                                <option value="">Sélectionnez un motif</option>
+                                <option value="">{t.prospect_loss_reason_select}</option>
                                 {lossReasons.map(r => <option key={r} value={r}>{r}</option>)}
                               </select>
                               <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400" strokeWidth={1.5} />
                             </div>
                           </div>
                           <div>
-                            <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1.5 block">Détails</label>
+                            <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1.5 block">{t.prospect_loss_details}</label>
                             <input
                               type="text"
                               value={displayDetails}
                               onChange={(e) => handleUpdate({ loss_details: e.target.value } as any)}
-                              placeholder="Précisez les détails..."
+                              placeholder={t.prospect_loss_details_placeholder}
                               className={INPUT_CLS}
                             />
                           </div>
@@ -1009,12 +1017,12 @@ export function BusinessProspectView({
                       ) : (
                         <>
                           <div>
-                            <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1 block">Motif</label>
+                            <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1 block">{t.prospect_loss_reason_label}</label>
                             <p className="text-sm font-medium text-stone-900 dark:text-white">{displayReason || '—'}</p>
                           </div>
                           {displayDetails && (
                             <div>
-                              <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1 block">Détails</label>
+                              <label className="text-xs font-bold text-stone-500 dark:text-neutral-400 mb-1 block">{t.prospect_loss_details}</label>
                               <p className="text-sm text-stone-700 dark:text-neutral-300">{displayDetails}</p>
                             </div>
                           )}
@@ -1030,7 +1038,7 @@ export function BusinessProspectView({
                 <div className="animate-in slide-in-from-top-4 fade-in duration-300">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-emerald-600 dark:text-emerald-400">
-                      <CreditCard className="h-4 w-4" /> Détails du Paiement
+                      <CreditCard className="h-4 w-4" /> {t.prospect_payment_title}
                     </h3>
                     <button onClick={() => { setEditingPayment(!editingPayment); setEditedValue(local.value || 0); }} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                       <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -1041,7 +1049,7 @@ export function BusinessProspectView({
                     <div className="space-y-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/5 p-5">
                       {canEditPrice ? (
                         <div>
-                          <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">Montant final (€)</label>
+                          <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">{t.prospect_payment_final_amount}</label>
                           <input
                             type="number"
                             value={editedValue}
@@ -1051,62 +1059,62 @@ export function BusinessProspectView({
                         </div>
                       ) : (
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-stone-500 dark:text-neutral-400">Montant Vente</span>
+                          <span className="text-xs font-bold text-stone-500 dark:text-neutral-400">{t.prospect_payment_sale_amount}</span>
                           <span className="text-sm font-extrabold text-stone-900 dark:text-white">{(editedValue).toLocaleString()}€</span>
                         </div>
                       )}
                       <div className="flex rounded-xl bg-stone-100 dark:bg-neutral-800 p-1">
-                        <button type="button" onClick={() => { setPaymentMode('cash'); setEditedInstallments(1); }} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>Comptant</button>
-                        <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>Plusieurs fois</button>
+                        <button type="button" onClick={() => { setPaymentMode('cash'); setEditedInstallments(1); }} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>{t.prospect_payment_cash}</button>
+                        <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>{t.prospect_payment_installments}</button>
                       </div>
                       {paymentMode === 'installments' && (
                         <div className="animate-in fade-in slide-in-from-top-1">
-                          <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">Nombre de mensualités</label>
+                          <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">{t.prospect_payment_nb_installments}</label>
                           <select value={editedInstallments} onChange={(e) => setEditedInstallments(parseInt(e.target.value))} className="mt-1.5 w-full rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-3 text-sm font-medium text-stone-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all">
-                            {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{n} fois ({(editedValue / n).toFixed(2)}€/mois)</option>)}
+                            {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{t.prospect_payment_times_per_month.replace('{n}', String(n)).replace('{amount}', `${(editedValue / n).toFixed(2)}€`)}</option>)}
                           </select>
                         </div>
                       )}
                       <div className="rounded-xl bg-emerald-500/10 p-4 border border-emerald-500/20">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" /> Ta Commission ({commissionRate}%)</span>
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" /> {t.prospect_payment_commission.replace('{rate}', String(commissionRate))}</span>
                           <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{commissionAmount.toFixed(2)}€</span>
                         </div>
                         {paymentMode === 'installments' && (
                           <p className="mt-1 text-[10px] text-emerald-500/70 dark:text-emerald-300/70">
-                            Tu recevras : {(commissionAmount / editedInstallments).toFixed(2)}€ / mois
+                            {t.prospect_payment_you_receive.replace('{amount}', `${(commissionAmount / editedInstallments).toFixed(2)}€`)}
                           </p>
                         )}
                       </div>
-                      <button onClick={handleSavePayment} className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-business-display font-bold text-white hover:bg-emerald-500 transition-colors">Valider les détails</button>
+                      <button onClick={handleSavePayment} className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-business-display font-bold text-white hover:bg-emerald-500 transition-colors">{t.prospect_payment_validate}</button>
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/5 p-5">
                       <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Montant Vente</span>
+                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.prospect_payment_sale_amount}</span>
                         <span className="text-sm font-extrabold text-stone-900 dark:text-white">{(local.value || 0).toLocaleString()}€</span>
                       </div>
                       <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Commission Totale ({commissionRate}%)</span>
+                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.prospect_payment_total_commission.replace('{rate}', String(commissionRate))}</span>
                         <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">+{savedCommission.toFixed(2)}€</span>
                       </div>
 
                       {isPayingInInstallments && (
                         <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
                           <div className="flex justify-between items-center">
-                            <span className="text-xs text-stone-500 dark:text-neutral-300">Client paie (x{savedInstallments}) :</span>
-                            <span className="text-sm font-bold text-stone-900 dark:text-white">{savedMonthlyPayment.toFixed(2)}€ / mois</span>
+                            <span className="text-xs text-stone-500 dark:text-neutral-300">{t.prospect_payment_client_pays.replace('{count}', String(savedInstallments))}</span>
+                            <span className="text-sm font-bold text-stone-900 dark:text-white">{savedMonthlyPayment.toFixed(2)}€ {t.prospect_payment_monthly}</span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Tu reçois :</span>
-                            <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{savedMonthlyCommission.toFixed(2)}€ / mois</span>
+                            <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80">{t.prospect_payment_you_get}</span>
+                            <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{savedMonthlyCommission.toFixed(2)}€ {t.prospect_payment_monthly}</span>
                           </div>
                         </div>
                       )}
 
                       <div className="pt-2.5 border-t border-emerald-500/20 text-center mt-2.5">
                         <span className="text-[10px] font-bold text-emerald-600/50 dark:text-emerald-300/50 uppercase tracking-widest">
-                          {isPayingInInstallments ? `Paiement en ${savedInstallments} fois` : 'Paiement Comptant'}
+                          {isPayingInInstallments ? t.prospect_payment_label_installments.replace('{count}', String(savedInstallments)) : t.prospect_payment_label_cash}
                         </span>
                       </div>
                     </div>
@@ -1118,41 +1126,41 @@ export function BusinessProspectView({
               {local.stripe_subscription_id && formula?.billing_type === 'subscription' && stripeConnected && (
                 <div className="animate-in slide-in-from-top-4 fade-in duration-300">
                   <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-[#635BFF] mb-3">
-                    <CreditCard className="h-4 w-4" /> Abonnement Stripe
+                    <CreditCard className="h-4 w-4" /> {t.prospect_stripe_subscription}
                   </h3>
                   <div className="rounded-2xl border border-[#635BFF]/20 bg-[#635BFF]/5 p-5 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Statut</span>
+                      <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.prospect_stripe_status}</span>
                       <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full', {
                         'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400': local.subscription_status === 'active',
                         'bg-amber-500/10 text-amber-600 dark:text-amber-400': local.subscription_status === 'past_due',
                         'bg-red-500/10 text-red-600 dark:text-red-400': local.subscription_status === 'canceled',
                         'bg-blue-500/10 text-blue-600 dark:text-blue-400': local.subscription_status === 'trialing',
                       })}>
-                        {local.subscription_status === 'active' ? 'Actif' : local.subscription_status === 'past_due' ? 'En retard' : local.subscription_status === 'canceled' ? 'Annule' : local.subscription_status === 'trialing' ? 'Essai' : local.subscription_status}
+                        {local.subscription_status === 'active' ? t.prospect_stripe_active : local.subscription_status === 'past_due' ? t.prospect_stripe_past_due : local.subscription_status === 'canceled' ? t.prospect_stripe_canceled : local.subscription_status === 'trialing' ? t.prospect_stripe_trialing : local.subscription_status}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Montant</span>
+                      <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.prospect_stripe_amount_label}</span>
                       <span className="text-sm font-extrabold text-stone-900 dark:text-white">
-                        {(Number(local.subscription_amount) || 0).toFixed(2)} EUR / {local.subscription_interval === 'month' ? 'mois' : 'an'}
+                        {(Number(local.subscription_amount) || 0).toFixed(2)} EUR / {local.subscription_interval === 'month' ? t.prospect_stripe_month : t.prospect_stripe_year}
                       </span>
                     </div>
                     {local.last_payment_date && (
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Dernier paiement</span>
-                        <span className="text-xs text-stone-700 dark:text-neutral-300">{new Date(local.last_payment_date).toLocaleDateString('fr-FR')}</span>
+                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.prospect_stripe_last_payment}</span>
+                        <span className="text-xs text-stone-700 dark:text-neutral-300">{new Date(local.last_payment_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')}</span>
                       </div>
                     )}
                     {local.next_payment_date && (
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">Prochain paiement</span>
-                        <span className="text-xs text-stone-700 dark:text-neutral-300">{new Date(local.next_payment_date).toLocaleDateString('fr-FR')}</span>
+                        <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.prospect_stripe_next_payment}</span>
+                        <span className="text-xs text-stone-700 dark:text-neutral-300">{new Date(local.next_payment_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')}</span>
                       </div>
                     )}
                     <div className="pt-2 border-t border-[#635BFF]/10 text-center">
                       <span className="text-[10px] font-bold text-[#635BFF]/50 uppercase tracking-widest">
-                        {local.matched_via === 'webhook' ? 'Lie automatiquement (webhook)' : local.matched_via === 'auto_won' ? 'Lie automatiquement' : 'Lie manuellement'}
+                        {local.matched_via === 'webhook' ? t.prospect_stripe_linked_webhook : local.matched_via === 'auto_won' ? t.prospect_stripe_linked_auto : t.prospect_stripe_linked_manual}
                       </span>
                     </div>
                   </div>
@@ -1168,13 +1176,13 @@ export function BusinessProspectView({
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[#635BFF]/30 text-[#635BFF] hover:bg-[#635BFF]/5 transition-colors text-sm font-bold"
                     >
                       <Link2 className="h-4 w-4" />
-                      Lier un abonnement Stripe
+                      {t.prospect_stripe_link_btn}
                     </button>
                   ) : (
                     <div className="rounded-2xl border border-[#635BFF]/20 bg-[#635BFF]/5 dark:bg-[#635BFF]/5 p-5 space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-[#635BFF]">
-                          <CreditCard className="h-4 w-4" /> Lier a Stripe
+                          <CreditCard className="h-4 w-4" /> {t.prospect_stripe_link_title}
                         </h3>
                         <button onClick={() => setStripeLinkOpen(false)} className="text-stone-400 hover:text-stone-600 dark:hover:text-white">
                           <X className="h-4 w-4" />
@@ -1191,12 +1199,12 @@ export function BusinessProspectView({
                         <button onClick={() => setStripeLinkMode('search')}
                           className={cn('flex-1 rounded-lg py-2 text-[11px] font-bold transition-all flex items-center justify-center gap-1',
                             stripeLinkMode === 'search' ? 'bg-[#635BFF] text-white shadow-sm' : 'text-stone-500 dark:text-neutral-400')}>
-                          <Search className="h-3 w-3" /> Recherche
+                          <Search className="h-3 w-3" /> {t.prospect_search_label}
                         </button>
                         <button onClick={() => setStripeLinkMode('manual')}
                           className={cn('flex-1 rounded-lg py-2 text-[11px] font-bold transition-all flex items-center justify-center gap-1',
                             stripeLinkMode === 'manual' ? 'bg-[#635BFF] text-white shadow-sm' : 'text-stone-500 dark:text-neutral-400')}>
-                          <Link2 className="h-3 w-3" /> Manuel
+                          <Link2 className="h-3 w-3" /> {t.prospect_manual_label}
                         </button>
                       </div>
 
@@ -1204,16 +1212,16 @@ export function BusinessProspectView({
                       {stripeLinkMode === 'auto' && (
                         <div className="space-y-3">
                           <p className="text-xs text-stone-500 dark:text-neutral-400">
-                            Recherche automatique via l'email <span className="font-bold text-stone-700 dark:text-white">{local.email || '—'}</span>
+                            {t.prospect_stripe_auto_search} <span className="font-bold text-stone-700 dark:text-white">{local.email || '—'}</span>
                           </p>
                           {stripeAutoStatus === 'not_found' && (
                             <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 rounded-lg p-2.5 border border-amber-200 dark:border-amber-500/20">
-                              Aucun abonnement trouve. Essayez Recherche ou Manuel.
+                              {t.prospect_stripe_not_found}
                             </p>
                           )}
                           <button onClick={handleStripeAutoMatch} disabled={!local.email || stripeAutoStatus === 'loading'}
                             className="w-full py-2.5 bg-[#635BFF] hover:bg-[#5349E0] disabled:opacity-50 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm">
-                            {stripeAutoStatus === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Zap className="h-3.5 w-3.5" /> Rechercher</>}
+                            {stripeAutoStatus === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Zap className="h-3.5 w-3.5" /> {t.prospect_stripe_search_btn}</>}
                           </button>
                         </div>
                       )}
@@ -1224,7 +1232,7 @@ export function BusinessProspectView({
                           <div className="flex gap-2">
                             <input type="email" value={stripeSearchEmail} onChange={e => setStripeSearchEmail(e.target.value)}
                               onKeyDown={e => e.key === 'Enter' && handleStripeSearch()}
-                              placeholder="Email du client Stripe"
+                              placeholder={t.prospect_stripe_search_placeholder}
                               className="flex-1 px-3 py-2 bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-lg text-xs text-stone-900 dark:text-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30" />
                             <button onClick={handleStripeSearch} disabled={stripeSearching || !stripeSearchEmail.trim()}
                               className="px-3 py-2 bg-[#635BFF] hover:bg-[#5349E0] disabled:opacity-50 text-white font-bold rounded-lg transition-colors">
@@ -1232,21 +1240,21 @@ export function BusinessProspectView({
                             </button>
                           </div>
                           {stripeSearched && stripeSearchResults.length === 0 && (
-                            <p className="text-xs text-stone-500 dark:text-neutral-400 text-center py-3">Aucun client trouve.</p>
+                            <p className="text-xs text-stone-500 dark:text-neutral-400 text-center py-3">{t.prospect_stripe_no_customer}</p>
                           )}
                           {stripeSearchResults.map((customer: any) => (
                             <div key={customer.id} className="bg-white dark:bg-neutral-800 rounded-xl p-3 border border-stone-200 dark:border-neutral-700">
                               <p className="text-xs font-bold text-stone-900 dark:text-white">{customer.name || customer.email}</p>
                               <p className="text-[10px] text-stone-500 font-mono mb-2">{customer.id}</p>
                               {customer.subscriptions?.length === 0 ? (
-                                <p className="text-[10px] text-stone-400">Aucun abonnement</p>
+                                <p className="text-[10px] text-stone-400">{t.prospect_stripe_no_sub}</p>
                               ) : customer.subscriptions?.map((sub: any) => (
                                 <button key={sub.id} onClick={() => handleStripeSelectSub(customer.id, sub.id)} disabled={stripeMatching}
                                   className="w-full flex items-center justify-between p-2.5 bg-stone-50 dark:bg-neutral-900 rounded-lg border border-stone-200 dark:border-neutral-700 hover:border-[#635BFF]/30 hover:bg-[#635BFF]/5 transition-all text-left group mt-1">
                                   <div>
                                     <div className="flex items-center gap-1.5">
                                       <span className={`inline-block w-1.5 h-1.5 rounded-full ${sub.status === 'active' ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                                      <span className="text-xs font-medium text-stone-900 dark:text-white">{sub.amount?.toFixed(2)} EUR / {sub.interval === 'month' ? 'mois' : 'an'}</span>
+                                      <span className="text-xs font-medium text-stone-900 dark:text-white">{sub.amount?.toFixed(2)} EUR / {sub.interval === 'month' ? t.prospect_stripe_month : t.prospect_stripe_year}</span>
                                     </div>
                                     <p className="text-[9px] text-stone-500 font-mono mt-0.5">{sub.id}</p>
                                   </div>
@@ -1273,7 +1281,7 @@ export function BusinessProspectView({
                           </div>
                           <button onClick={handleStripeManualMatch} disabled={stripeMatching || !stripeManualCusId.trim() || !stripeManualSubId.trim()}
                             className="w-full py-2.5 bg-[#635BFF] hover:bg-[#5349E0] disabled:opacity-50 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm">
-                            {stripeMatching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Lier cet abonnement'}
+                            {stripeMatching ? <Loader2 className="h-4 w-4 animate-spin" /> : t.prospect_stripe_link_manual_btn}
                           </button>
                         </div>
                       )}
@@ -1286,7 +1294,7 @@ export function BusinessProspectView({
               {local.stage === 'won' && formula?.billing_type === 'subscription' && stripeConnected && !local.stripe_subscription_id && stripeAutoStatus === 'matched' && (
                 <div className="rounded-2xl border border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/5 p-4 flex items-center gap-3">
                   <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Abonnement Stripe lie avec succes</p>
+                  <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">{t.prospect_stripe_linked_success}</p>
                 </div>
               )}
 
@@ -1299,7 +1307,7 @@ export function BusinessProspectView({
                   <div className="grid grid-cols-2 gap-4">
                     {closers.length > 0 && (
                       <div>
-                        <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Assigner un Closer</label>
+                        <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_assign_closer}</label>
                         <div className="relative">
                           <select
                             value={closers.find(c => c.id === (local as any).assigned_to)?.id || ''}
@@ -1307,7 +1315,7 @@ export function BusinessProspectView({
                             disabled={!canAssign}
                             className={cn(SELECT_CLS, 'text-sm font-semibold font-sans', !canAssign && 'opacity-60 cursor-not-allowed')}
                           >
-                            <option value="">Aucun</option>
+                            <option value="">{t.prospect_assign_none}</option>
                             {closers.map(tm => (
                               <option key={tm.id} value={tm.id}>
                                 {tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}
@@ -1321,7 +1329,7 @@ export function BusinessProspectView({
 
                     {setters.length > 0 && (
                       <div>
-                        <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Assigner un Setter</label>
+                        <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_assign_setter}</label>
                         <div className="relative">
                           <select
                             value={setters.find(s => s.id === (local as any).assigned_setter)?.id || ''}
@@ -1339,7 +1347,7 @@ export function BusinessProspectView({
                             disabled={!(!isTeamMember || isHosOrAdmin)}
                             className={cn(SELECT_CLS, 'text-sm font-semibold font-sans', !(!isTeamMember || isHosOrAdmin) && 'opacity-60 cursor-not-allowed')}
                           >
-                            <option value="">Aucun</option>
+                            <option value="">{t.prospect_assign_none}</option>
                             {setters.map(tm => (
                               <option key={tm.id} value={tm.id}>
                                 {tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}
@@ -1357,7 +1365,7 @@ export function BusinessProspectView({
               {/* Campagne d'origine */}
               {campaign && (
                 <div>
-                  <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Campagne d'origine</label>
+                  <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_campaign_origin}</label>
                   <div className="rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3.5">
                     <p className="font-business-display font-bold text-stone-900 dark:text-white">{campaign.name}</p>
                   </div>
@@ -1366,7 +1374,7 @@ export function BusinessProspectView({
 
               {/* Offre / Formule */}
               <div>
-                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Offre / Formule</label>
+                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_offer_formula}</label>
                 <div className="relative">
                   <select
                     value={(local as any).formula_id || ''}
@@ -1378,7 +1386,7 @@ export function BusinessProspectView({
                     }}
                     className={cn(SELECT_CLS, 'py-4 px-5')}
                   >
-                    <option value="">Aucune offre</option>
+                    <option value="">{t.prospect_no_offer}</option>
                     {allFormulas.map(f => (
                       <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>
                     ))}
@@ -1406,7 +1414,7 @@ export function BusinessProspectView({
               {captureData && Object.keys(captureData).length > 0 && (
                 <div>
                   <label className={cn(LABEL_STYLE, 'block mb-2 ml-1 flex items-center gap-2')}>
-                    <FileText className="h-3.5 w-3.5" strokeWidth={1.5} /> Réponses de capture
+                    <FileText className="h-3.5 w-3.5" strokeWidth={1.5} /> {t.prospect_capture_responses}
                   </label>
                   <div className="rounded-xl bg-white dark:bg-neutral-800 p-5 space-y-3 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
                     {Object.entries(captureData).map(([key, val]) => (
@@ -1429,7 +1437,7 @@ export function BusinessProspectView({
                 return (
                   <div>
                     <label className={cn(LABEL_STYLE, 'block mb-2 ml-1 flex items-center gap-2')}>
-                      <ClipboardList className="h-3.5 w-3.5" strokeWidth={1.5} /> {isQualifying ? 'Qualification' : 'Réponses'}
+                      <ClipboardList className="h-3.5 w-3.5" strokeWidth={1.5} /> {isQualifying ? t.prospect_qualification : t.prospect_answers}
                     </label>
                     <div className="rounded-xl bg-white dark:bg-neutral-800 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm space-y-4">
                       {/* Global summary — only in qualifying mode */}
@@ -1444,7 +1452,7 @@ export function BusinessProspectView({
                               {avgScore}%
                             </div>
                           )}
-                          <span className="text-xs text-stone-500 dark:text-neutral-400">Score global</span>
+                          <span className="text-xs text-stone-500 dark:text-neutral-400">{t.prospect_global_score}</span>
                         </div>
                         <div className={cn(
                           'text-xs font-bold px-2.5 py-1 rounded-lg',
@@ -1452,8 +1460,8 @@ export function BusinessProspectView({
                             ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400'
                             : 'bg-stone-100 text-stone-500 dark:bg-neutral-700 dark:text-neutral-400'
                         )}>
-                          Éliminatoires : {eliminatoryCount}/{maxElim}
-                          {eliminatoryCount > maxElim && ' — Disqualifié'}
+                          {t.prospect_eliminatory.replace('{count}', String(eliminatoryCount)).replace('{max}', String(maxElim))}
+                          {eliminatoryCount > maxElim && ` — ${t.prospect_disqualified}`}
                         </div>
                       </div>
                       )}
@@ -1506,7 +1514,7 @@ export function BusinessProspectView({
                                 </div>
                               )}
                               {a.is_eliminatory && (
-                                <span className="inline-block mt-1.5 text-[10px] font-bold text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">Éliminatoire</span>
+                                <span className="inline-block mt-1.5 text-[10px] font-bold text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">{t.prospect_eliminatory_label}</span>
                               )}
                             </div>
                           )
@@ -1520,20 +1528,20 @@ export function BusinessProspectView({
               {/* Fiche Client */}
               <section className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5 dark:border-neutral-700">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className={cn(LABEL_STYLE, 'text-xs')}>Fiche Client</h3>
+                  <h3 className={cn(LABEL_STYLE, 'text-xs')}>{t.prospect_client_card}</h3>
                   <button onClick={() => setEditingClient(!editingClient)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                     <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
                   </button>
                 </div>
                 {editingClient ? (
                   <div className="space-y-3">
-                    <input type="text" value={editedContact} onChange={e => setEditedContact(e.target.value)} className={INPUT_CLS} placeholder="Nom" />
-                    <input type="text" value={editedCompany} onChange={e => setEditedCompany(e.target.value)} className={INPUT_CLS} placeholder="Entreprise" />
+                    <input type="text" value={editedContact} onChange={e => setEditedContact(e.target.value)} className={INPUT_CLS} placeholder={t.prospect_field_contact} />
+                    <input type="text" value={editedCompany} onChange={e => setEditedCompany(e.target.value)} className={INPUT_CLS} placeholder={t.prospect_field_company} />
                     <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className={INPUT_CLS} placeholder="Email" />
                     <PhoneInput value={editedPhone} onChange={setEditedPhone} />
                     <div className="flex gap-2 pt-2">
-                      <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">Sauvegarder</button>
-                      <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone) }} className="rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
+                      <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">{t.prospect_sauvegarder}</button>
+                      <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone) }} className="rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">{t.prospect_cancel_btn}</button>
                     </div>
                   </div>
                 ) : (
@@ -1552,7 +1560,7 @@ export function BusinessProspectView({
                         <Phone className="h-5 w-5" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Téléphone</p>
+                        <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{t.prospect_phone}</p>
                         <button onClick={handleOpenWhatsApp} className="text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] text-left transition-colors">{local.phone || '—'}</button>
                       </div>
                     </div>
@@ -1561,9 +1569,9 @@ export function BusinessProspectView({
                         <Calendar className="h-5 w-5" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Date de création</p>
+                        <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{t.prospect_creation_date}</p>
                         <p className="text-sm font-semibold text-stone-900 dark:text-white">
-                          {local.created_at ? new Date(local.created_at).toLocaleDateString('fr-FR', {
+                          {local.created_at ? new Date(local.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
                             day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
                           }) : '—'}
                         </p>
@@ -1575,11 +1583,11 @@ export function BusinessProspectView({
                           <Calendar className="h-5 w-5" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-[#006c49] uppercase tracking-wider">Prochain rendez-vous</p>
+                          <p className="text-[10px] font-bold text-[#006c49] uppercase tracking-wider">{t.prospect_next_appointment}</p>
                           <p className="text-sm font-semibold text-stone-900 dark:text-white">
-                            {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString('fr-FR', {
+                            {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
                               weekday: 'short', day: 'numeric', month: 'long'
-                            })} à {nextAppointment.time?.slice(0, 5)}
+                            })} {lang === 'en' ? 'at' : 'à'} {nextAppointment.time?.slice(0, 5)}
                           </p>
                         </div>
                       </div>
@@ -1591,23 +1599,23 @@ export function BusinessProspectView({
               {/* Notes internes */}
               <div>
                 <div className="flex items-center justify-between mb-2 ml-1">
-                  <label className={LABEL_STYLE}>Notes Internes</label>
+                  <label className={LABEL_STYLE}>{t.prospect_internal_notes}</label>
                   <button onClick={() => setEditingNotes(!editingNotes)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                     <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
                   </button>
                 </div>
                 {editingNotes ? (
                   <div>
-                    <textarea value={tempNotes} onChange={e => setTempNotes(e.target.value)} className={cn(INPUT_CLS, 'resize-none h-32')} placeholder="Ajouter un commentaire sur le profil du prospect..." />
+                    <textarea value={tempNotes} onChange={e => setTempNotes(e.target.value)} className={cn(INPUT_CLS, 'resize-none h-32')} placeholder={t.prospect_notes_placeholder} />
                     <div className="mt-3 flex gap-2">
-                      <button onClick={handleSaveNotes} className="rounded-full bg-stone-900 px-5 py-2 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">Enregistrer</button>
-                      <button onClick={() => setEditingNotes(false)} className="rounded-full border border-[#c4c7c7]/20 px-5 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
+                      <button onClick={handleSaveNotes} className="rounded-full bg-stone-900 px-5 py-2 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">{t.prospect_save_btn}</button>
+                      <button onClick={() => setEditingNotes(false)} className="rounded-full border border-[#c4c7c7]/20 px-5 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">{t.prospect_cancel_btn}</button>
                     </div>
                   </div>
                 ) : (
                   <div className="rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 p-5">
                     <p className="whitespace-pre-wrap text-sm text-stone-600 dark:text-neutral-300">
-                      {captureData ? '(Données de capture - voir section ci-dessus)' : (local.notes || 'Aucune note')}
+                      {captureData ? t.prospect_capture_data_ref : (local.notes || t.prospect_no_notes)}
                     </p>
                   </div>
                 )}
@@ -1623,21 +1631,21 @@ export function BusinessProspectView({
                   onClick={() => setIsAddingNote(true)}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 py-4 text-sm font-business-display font-bold text-stone-500 dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 hover:border-stone-300 dark:hover:border-neutral-600 transition-all"
                 >
-                  <Plus className="h-4 w-4" strokeWidth={1.5} /> Ajouter une note manuelle
+                  <Plus className="h-4 w-4" strokeWidth={1.5} /> {t.prospect_add_manual_note}
                 </button>
               ) : (
                 <div className="rounded-xl bg-white dark:bg-neutral-800 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
-                  <h4 className={cn(LABEL_STYLE, 'mb-3')}>Nouvelle Note</h4>
+                  <h4 className={cn(LABEL_STYLE, 'mb-3')}>{t.prospect_new_note}</h4>
                   <textarea
                     ref={noteTextareaRef}
                     defaultValue=""
-                    placeholder="Écrivez votre note d'appel ici..."
+                    placeholder={t.prospect_note_placeholder}
                     className={cn(INPUT_CLS, 'min-h-[100px] mb-3')}
                     autoFocus
                   />
                   <div className="flex justify-end gap-2">
-                    <button onClick={() => { setIsAddingNote(false); if (noteTextareaRef.current) noteTextareaRef.current.value = '' }} className="px-4 py-2 text-sm font-medium text-stone-500 dark:text-neutral-400 hover:text-stone-700 dark:hover:text-neutral-200 rounded-full hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">Annuler</button>
-                    <button onClick={handleAddManualNote} className="px-5 py-2 rounded-full bg-stone-900 text-sm font-business-display font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-colors">Enregistrer</button>
+                    <button onClick={() => { setIsAddingNote(false); if (noteTextareaRef.current) noteTextareaRef.current.value = '' }} className="px-4 py-2 text-sm font-medium text-stone-500 dark:text-neutral-400 hover:text-stone-700 dark:hover:text-neutral-200 rounded-full hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">{t.prospect_cancel_btn}</button>
+                    <button onClick={handleAddManualNote} className="px-5 py-2 rounded-full bg-stone-900 text-sm font-business-display font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-colors">{t.prospect_save_btn}</button>
                   </div>
                 </div>
               )}
@@ -1655,7 +1663,7 @@ export function BusinessProspectView({
                           </div>
                           <div>
                             <h4 className="text-sm font-semibold text-stone-900 dark:text-white">
-                              {new Date(note.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                              {new Date(note.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                             </h4>
                             <div className="flex items-center gap-2 text-xs text-stone-400 mt-0.5">
                               <Clock className="h-3 w-3" strokeWidth={1.5} />
@@ -1681,8 +1689,8 @@ export function BusinessProspectView({
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-3">
                       <ClipboardList className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
                     </div>
-                    <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">Aucune note d'appel</p>
-                    <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">Vos notes manuelles apparaîtront ici.</p>
+                    <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">{t.prospect_no_call_notes}</p>
+                    <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.prospect_manual_notes_hint}</p>
                   </div>
                 )}
               </div>
@@ -1696,7 +1704,7 @@ export function BusinessProspectView({
                 onClick={() => setShowReminderForm(true)}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 py-4 text-sm font-business-display font-bold text-stone-500 dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 hover:border-stone-300 dark:hover:border-neutral-600 transition-all"
               >
-                <Plus className="h-4 w-4" strokeWidth={1.5} /> Ajouter un rappel
+                <Plus className="h-4 w-4" strokeWidth={1.5} /> {t.prospect_add_reminder}
               </button>
 
               {remindersLoading ? (
@@ -1708,8 +1716,8 @@ export function BusinessProspectView({
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-3">
                     <Bell className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
                   </div>
-                  <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">Aucun rappel</p>
-                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">Créez un rappel pour ce prospect.</p>
+                  <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">{t.prospect_no_reminders}</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.prospect_create_reminder_hint}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1734,10 +1742,10 @@ export function BusinessProspectView({
                             <div className="flex items-center gap-2 mt-1.5">
                               <Clock className="h-3 w-3 text-stone-400" strokeWidth={1.5} />
                               <span className={cn('text-xs', isOverdue ? 'text-[#ba1a1a] font-medium' : 'text-stone-400')}>
-                                {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(reminder.reminder_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} {lang === 'en' ? 'at' : 'à'} {new Date(reminder.reminder_date).toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
                               </span>
-                              {isDone && <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Fait</span>}
-                              {isOverdue && <span className="text-[10px] text-[#ba1a1a] font-bold uppercase tracking-wider">En retard</span>}
+                              {isDone && <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">{t.prospect_reminder_done}</span>}
+                              {isOverdue && <span className="text-[10px] text-[#ba1a1a] font-bold uppercase tracking-wider">{t.prospect_reminder_overdue}</span>}
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
@@ -1771,8 +1779,8 @@ export function BusinessProspectView({
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-3">
                     <Clock className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
                   </div>
-                  <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">Aucun historique enregistré</p>
-                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">Les modifications apparaîtront ici.</p>
+                  <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">{t.prospect_no_history}</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.prospect_history_changes_hint}</p>
                 </div>
               ) : (
                 <div className="space-y-0">
@@ -1780,19 +1788,19 @@ export function BusinessProspectView({
                     const isExpanded = expandedHistory.has(group.key)
                     const isLast = gIdx === historyGroups.length - 1
                     const date = new Date(group.created_at)
-                    const timeStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + ' à ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                    const timeStr = date.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + ` ${lang === 'en' ? 'at' : 'à'} ` + date.toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })
 
                     const FIELD_LABELS: Record<string, string> = {
-                      firstName: 'Prénom', lastName: 'Nom', contact: 'Contact',
-                      email: 'Email', phone: 'Téléphone', company: 'Entreprise', title: 'Poste',
-                      stage: 'Étape', value: 'Montant',
-                      offer: 'Offre', offer_id: 'Offre ID', formula_id: 'Formule',
-                      assigned_to: 'Closer assigné', assigned_setter: 'Setter assigné',
-                      payment_type: 'Mode de paiement', installments: 'Mensualités',
-                      probability: 'Probabilité', notes: 'Notes',
-                      avatar_url: 'Photo de profil', pipeline_visible: 'Visible pipeline',
-                      loss_reason: 'Raison de perte', loss_details: 'Détails de perte',
-                      stripe_subscription_id: 'Abonnement Stripe', subscription_status: 'Statut abonnement',
+                      firstName: t.prospect_field_firstname, lastName: t.prospect_field_lastname, contact: t.prospect_field_contact,
+                      email: t.prospect_field_email, phone: t.prospect_field_phone_label, company: t.prospect_field_company, title: t.prospect_field_title,
+                      stage: t.prospect_field_stage, value: t.prospect_field_value,
+                      offer: t.prospect_field_offer, offer_id: t.prospect_field_offer_id, formula_id: t.prospect_field_formula_id,
+                      assigned_to: t.prospect_field_assigned_closer, assigned_setter: t.prospect_field_assigned_setter,
+                      payment_type: t.prospect_field_payment_type, installments: t.prospect_field_installments,
+                      probability: t.prospect_field_probability, notes: t.prospect_field_notes_label,
+                      avatar_url: t.prospect_field_avatar, pipeline_visible: t.prospect_field_pipeline_visible,
+                      loss_reason: t.prospect_field_loss_reason, loss_details: t.prospect_field_loss_details,
+                      stripe_subscription_id: t.prospect_field_stripe_sub, subscription_status: t.prospect_field_sub_status,
                     }
 
                     const CHANGE_ICONS: Record<string, { icon: typeof Plus; bg: string; text: string }> = {
@@ -1808,19 +1816,19 @@ export function BusinessProspectView({
 
                     let title = ''
                     if (group.type === 'created') {
-                      title = 'Création du prospect'
+                      title = t.prospect_history_created
                     } else if (group.type === 'stage_change') {
                       const stageEntry = group.entries.find(e => e.change_type === 'stage_change')
-                      title = stageEntry ? `Étape → ${resolveStageLabel(stageEntry.new_value)}` : 'Changement d\'étape'
+                      title = stageEntry ? t.prospect_history_stage_arrow.replace('{stage}', resolveStageLabel(stageEntry.new_value)) : t.prospect_history_step_change
                     } else if (group.type === 'stripe_renewal') {
-                      title = 'Renouvellement Stripe'
+                      title = t.prospect_history_stripe_renewal
                     } else if (group.type === 'stripe_linked') {
-                      title = 'Abonnement Stripe lié'
+                      title = t.prospect_history_stripe_linked
                     } else {
                       const count = group.entries.length
                       title = count === 1
-                        ? `${FIELD_LABELS[group.entries[0].field_name] || group.entries[0].field_name} modifié`
-                        : `${count} champs modifiés`
+                        ? t.prospect_history_field_modified.replace('{field}', FIELD_LABELS[group.entries[0].field_name] || group.entries[0].field_name)
+                        : t.prospect_history_fields_modified.replace('{count}', String(count))
                     }
 
                     return (
@@ -1840,7 +1848,7 @@ export function BusinessProspectView({
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-stone-900 dark:text-white truncate">{title}</p>
                               <p className="text-[10px] text-stone-400 dark:text-neutral-500">
-                                Par : {group.changed_by_name} &bull; {timeStr}
+                                {t.prospect_history_by} {group.changed_by_name} &bull; {timeStr}
                               </p>
                             </div>
                             <ChevronDown className={cn('h-4 w-4 text-stone-400 transition-transform shrink-0', isExpanded && 'rotate-180')} />
@@ -1912,34 +1920,34 @@ export function BusinessProspectView({
             <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => setShowReminderForm(false)} />
             <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
               <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
-                <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">Nouveau rappel</h3>
+                <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">{t.prospect_new_reminder}</h3>
                 <button onClick={() => setShowReminderForm(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                   <X className="h-4 w-4" strokeWidth={1.5} />
                 </button>
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className={cn(LABEL_STYLE, 'block mb-1.5')}>Titre *</label>
-                  <input type="text" value={reminderTitle} onChange={e => setReminderTitle(e.target.value)} placeholder="Ex: Rappeler le prospect" className={INPUT_CLS} autoFocus />
+                  <label className={cn(LABEL_STYLE, 'block mb-1.5')}>{t.prospect_reminder_title}</label>
+                  <input type="text" value={reminderTitle} onChange={e => setReminderTitle(e.target.value)} placeholder={t.prospect_reminder_title_placeholder} className={INPUT_CLS} autoFocus />
                 </div>
                 <div>
-                  <label className={cn(LABEL_STYLE, 'block mb-1.5')}>Description</label>
-                  <textarea value={reminderDesc} onChange={e => setReminderDesc(e.target.value)} placeholder="Détails optionnels..." rows={2} className={cn(INPUT_CLS, 'resize-none')} />
+                  <label className={cn(LABEL_STYLE, 'block mb-1.5')}>{t.prospect_reminder_description}</label>
+                  <textarea value={reminderDesc} onChange={e => setReminderDesc(e.target.value)} placeholder={t.prospect_reminder_desc_placeholder} rows={2} className={cn(INPUT_CLS, 'resize-none')} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={cn(LABEL_STYLE, 'block mb-1.5')}>Date *</label>
+                    <label className={cn(LABEL_STYLE, 'block mb-1.5')}>{t.prospect_reminder_date}</label>
                     <input type="date" value={reminderDate} onChange={e => setReminderDate(e.target.value)} className={INPUT_CLS} />
                   </div>
                   <div>
-                    <label className={cn(LABEL_STYLE, 'block mb-1.5')}>Heure *</label>
+                    <label className={cn(LABEL_STYLE, 'block mb-1.5')}>{t.prospect_reminder_time}</label>
                     <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)} className={INPUT_CLS} />
                   </div>
                 </div>
                 <div className="rounded-xl bg-[#ffddb8]/30 dark:bg-amber-700/20 px-4 py-3">
                   <p className="text-xs text-[#2a1700] dark:text-amber-200 font-medium">
                     <Bell className="h-3 w-3 inline mr-1" strokeWidth={1.5} />
-                    Lié à : <span className="font-bold">{local.contact || 'Ce prospect'}</span>
+                    {t.prospect_reminder_linked} <span className="font-bold">{local.contact || t.prospect_reminder_this_prospect}</span>
                   </p>
                 </div>
                 <button
@@ -1947,7 +1955,7 @@ export function BusinessProspectView({
                   disabled={!reminderTitle.trim() || !reminderDate || !reminderTime || reminderSubmitting}
                   className="w-full rounded-full bg-stone-900 py-3 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
                 >
-                  {reminderSubmitting ? <Loader2 className="h-4 w-4 animate-spin mx-auto" strokeWidth={1.5} /> : 'Créer le rappel'}
+                  {reminderSubmitting ? <Loader2 className="h-4 w-4 animate-spin mx-auto" strokeWidth={1.5} /> : t.prospect_reminder_create_btn}
                 </button>
               </div>
             </div>
@@ -1963,7 +1971,7 @@ export function BusinessProspectView({
                 className="text-[#ba1a1a] font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 hover:bg-[#ba1a1a]/5 rounded-full transition-colors"
               >
                 <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                Supprimer
+                {t.prospect_footer_delete}
               </button>
             )}
             <button
@@ -1972,17 +1980,17 @@ export function BusinessProspectView({
                 try {
                   if (isDismissed) {
                     await supabase.from('business_pipeline_dismissals').delete().eq('user_id', user.id).eq('prospect_id', prospect.id)
-                    toast.success('Prospect rajouté au pipeline')
+                    toast.success(t.prospect_toast_added_pipeline)
                     setIsDismissed(false)
                     onDismissFromPipeline?.(prospect.id, false)
                   } else {
                     await supabase.from('business_pipeline_dismissals').upsert({ user_id: user.id, prospect_id: prospect.id }, { onConflict: 'user_id,prospect_id' })
-                    toast.success('Prospect retiré du pipeline')
+                    toast.success(t.prospect_toast_removed_pipeline)
                     setIsDismissed(true)
                     onDismissFromPipeline?.(prospect.id, true)
                     onClose()
                   }
-                } catch { toast.error('Erreur') }
+                } catch { toast.error(t.prospect_toast_error) }
               }}
               className={cn(
                 "font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 rounded-full transition-colors",
@@ -1992,9 +2000,9 @@ export function BusinessProspectView({
               )}
             >
               {isDismissed ? (
-                <><Plus className="h-4 w-4" strokeWidth={1.5} /> Rajouter au pipeline</>
+                <><Plus className="h-4 w-4" strokeWidth={1.5} /> {t.prospect_footer_add_pipeline}</>
               ) : (
-                <><X className="h-4 w-4" strokeWidth={1.5} /> Retirer du pipeline</>
+                <><X className="h-4 w-4" strokeWidth={1.5} /> {t.prospect_footer_remove_pipeline}</>
               )}
             </button>
           </div>
@@ -2002,7 +2010,7 @@ export function BusinessProspectView({
             onClick={() => handleUpdate(local)}
             className="bg-stone-900 text-white px-8 py-3 rounded-full font-business-display font-bold text-sm transition-transform active:scale-95"
           >
-            Enregistrer
+            {t.prospect_footer_save}
           </button>
         </footer>
       </aside>

@@ -5,6 +5,7 @@ import Cal from "@calcom/embed-react";
 import { Loader2, ArrowLeft, CalendarCheck } from 'lucide-react';
 
 export function SubscriptionRetention() {
+    const lang = (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en';
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const uid = searchParams.get('uid');
@@ -37,11 +38,11 @@ export function SubscriptionRetention() {
                 setCalOpen(true);
             } else {
                 console.error("Failed to reactivate");
-                alert("Une erreur est survenue lors de la réactivation. Veuillez contacter le support.");
+                alert(lang === 'fr' ? "Une erreur est survenue lors de la réactivation. Veuillez contacter le support." : "An error occurred during reactivation. Please contact support.");
             }
         } catch (error) {
             console.error("Error:", error);
-            alert("Erreur de connexion.");
+            alert(lang === 'fr' ? "Erreur de connexion." : "Connection error.");
         } finally {
             setLoading(false);
         }
@@ -54,7 +55,7 @@ export function SubscriptionRetention() {
     if (!uid) {
         return (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
-                <p>Lien invalide.</p>
+                <p>{lang === 'fr' ? 'Lien invalide.' : 'Invalid link.'}</p>
             </div>
         );
     }
@@ -69,12 +70,12 @@ export function SubscriptionRetention() {
                             <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <CalendarCheck className="h-8 w-8 text-blue-400" />
                             </div>
-                            <h1 className="text-3xl font-bold text-white mb-4">Avant de nous quitter...</h1>
+                            <h1 className="text-3xl font-bold text-white mb-4">{lang === 'fr' ? 'Avant de nous quitter...' : 'Before you leave...'}</h1>
                             <p className="text-slate-400 text-lg">
-                                Votre départ nous attriste. Nous aimerions comprendre ce qui n'a pas fonctionné pour vous.
+                                {lang === 'fr' ? "Votre départ nous attriste. Nous aimerions comprendre ce qui n'a pas fonctionné pour vous." : "We're sad to see you go. We'd like to understand what didn't work for you."}
                             </p>
                             <p className="text-slate-400 mt-2">
-                                Acceptez-vous d'en discuter 5 minutes de vive voix ?
+                                {lang === 'fr' ? "Acceptez-vous d'en discuter 5 minutes de vive voix ?" : 'Would you agree to a 5-minute call to discuss?'}
                             </p>
                         </div>
 
@@ -85,7 +86,7 @@ export function SubscriptionRetention() {
                                 className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-3"
                             >
                                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                                Je prends rendez-vous avant de partir
+                                {lang === 'fr' ? 'Je prends rendez-vous avant de partir' : 'Book an appointment before leaving'}
                             </button>
                         </div>
 
@@ -93,13 +94,13 @@ export function SubscriptionRetention() {
                             onClick={handleLeave}
                             className="text-slate-500 hover:text-white transition-colors text-sm underline underline-offset-4"
                         >
-                            Non merci, je préfère partir
+                            {lang === 'fr' ? 'Non merci, je préfère partir' : "No thanks, I'd rather leave"}
                         </button>
                     </>
                 ) : (
                     <div className="space-y-6 animate-in fade-in zoom-in duration-300">
                         <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-green-400 font-medium">
-                            Votre abonnement a été maintenu. Merci de nous donner une seconde chance ! ❤️
+                            {lang === 'fr' ? 'Votre abonnement a été maintenu. Merci de nous donner une seconde chance !' : 'Your subscription has been maintained. Thank you for giving us a second chance!'} ❤️
                         </div>
                         <div className="h-[600px] w-full bg-slate-800 rounded-xl overflow-hidden border border-white/10">
                             <Cal
@@ -113,7 +114,7 @@ export function SubscriptionRetention() {
                             onClick={() => navigate('/dashboard')}
                             className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
                         >
-                            Retour au Dashboard
+                            {lang === 'fr' ? 'Retour au Dashboard' : 'Back to Dashboard'}
                         </button>
                     </div>
                 )}

@@ -3,6 +3,7 @@ import { Bell, X, Check, Clock } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useNavigate } from 'react-router-dom'
 
 interface Reminder {
@@ -14,7 +15,8 @@ interface Reminder {
 }
 
 export function BusinessReminderBell() {
-  const { user } = useBusinessAuth()
+  const { user, isTeamMember, teamMember } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const navigate = useNavigate()
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [isOpen, setIsOpen] = useState(false)
@@ -53,6 +55,56 @@ export function BusinessReminderBell() {
     const interval = setInterval(fetchTodayReminders, 60000)
     return () => { isMounted = false; clearInterval(interval) }
   }, [user?.id])
+
+  // Auto-create a reminder 2 days before pay_day for team members
+  useEffect(() => {
+    if (!user || !isTeamMember || !teamMember?.pay_day) return
+
+    const checkPayDayReminder = async () => {
+      const payDay = teamMember.pay_day as number
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = now.getMonth()
+
+      // Calculate next pay date
+      let nextPayDate = new Date(year, month, payDay)
+      if (nextPayDate <= now) {
+        nextPayDate = new Date(year, month + 1, payDay)
+      }
+
+      // Check if today is exactly 2 days before
+      const diffMs = nextPayDate.getTime() - now.getTime()
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+      if (diffDays > 2 || diffDays < 0) return
+
+      // Format the pay date for display
+      const payDateStr = nextPayDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long' })
+
+      // Check if we already created this reminder (avoid duplicates)
+      const { data: existing } = await supabase
+        .from('reminders')
+        .select('id')
+        .eq('user_id', user.id)
+        .like('title', '%Date de facturation%')
+        .gte('reminder_date', new Date(year, month, payDay - 3).toISOString())
+        .lte('reminder_date', new Date(year, month, payDay).toISOString())
+        .limit(1)
+
+      if (existing && existing.length > 0) return
+
+      // Create the reminder
+      await supabase.from('reminders').insert({
+        user_id: user.id,
+        title: `\ud83d\udccb ${t.reminder_bell_billing_approaching}`,
+        description: t.reminder_bell_billing_desc.replace('{date}', payDateStr),
+        reminder_date: new Date(year, month, now.getDate(), 9, 0, 0).toISOString(),
+        is_done: false,
+        is_notification: true,
+      })
+    }
+
+    checkPayDayReminder()
+  }, [user?.id, isTeamMember, teamMember?.pay_day])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -122,7 +174,7 @@ export function BusinessReminderBell() {
           <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 px-4 py-3">
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4 text-stone-500 dark:text-neutral-400" />
-              <h3 className="text-sm font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">Rappels du jour</h3>
+              <h3 className="text-sm font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">{t.reminder_bell_today_reminders}</h3>
               {visibleReminders.length > 0 && (
                 <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-100">
                   {visibleReminders.length}
@@ -133,7 +185,7 @@ export function BusinessReminderBell() {
               onClick={() => { setIsOpen(false); navigate('/business/rappels') }}
               className="text-xs font-semibold text-stone-900 dark:text-white hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
             >
-              Tout voir
+              {t.reminder_bell_view_all}
             </button>
           </div>
 
@@ -141,7 +193,7 @@ export function BusinessReminderBell() {
             {visibleReminders.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Bell className="h-8 w-8 text-stone-300 dark:text-neutral-600 mx-auto mb-2" />
-                <p className="text-sm text-stone-400 dark:text-neutral-500">Aucun rappel pour aujourd'hui</p>
+                <p className="text-sm text-stone-400 dark:text-neutral-500">{t.reminder_bell_no_reminders}</p>
               </div>
             ) : (
               <div className="divide-y divide-stone-100 dark:divide-neutral-800">
@@ -171,8 +223,8 @@ export function BusinessReminderBell() {
                             'text-[10px] font-medium mt-1',
                             overdue ? 'text-red-500' : 'text-stone-400 dark:text-neutral-500'
                           )}>
-                            {overdue ? 'En retard \u2014 ' : ''}
-                            {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                            {overdue ? `${t.reminder_bell_overdue} \u2014 ` : ''}
+                            {new Date(reminder.reminder_date).toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR', {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}
@@ -182,14 +234,14 @@ export function BusinessReminderBell() {
                           <button
                             onClick={() => handleMarkDone(reminder.id)}
                             className="rounded-full p-1.5 text-emerald-500 hover:bg-emerald-50 transition-all"
-                            title="Marquer comme fait"
+                            title={t.reminder_bell_mark_done}
                           >
                             <Check className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleDismiss(reminder.id)}
                             className="rounded-full p-1.5 text-stone-400 dark:text-neutral-500 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-600 dark:hover:text-neutral-300 transition-all"
-                            title="Masquer"
+                            title={t.reminder_bell_hide}
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>

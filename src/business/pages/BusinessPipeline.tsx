@@ -8,6 +8,7 @@ import {
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { useCustomStages, type CustomStage } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
@@ -32,13 +33,7 @@ const INACTIVE_STAGES = STAGES.filter(s => INACTIVE_STAGE_IDS.includes(s.id))
 
 const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 font-bold'
 
-const PERIOD_OPTIONS = [
-  { label: 'Tout', days: 0 },
-  { label: "Aujourd'hui", days: 1 },
-  { label: '7 jours', days: 7 },
-  { label: '30 jours', days: 30 },
-  { label: '90 jours', days: 90 },
-]
+// PERIOD_OPTIONS moved inside component for i18n access
 
 interface TeamMember {
   id: string
@@ -83,6 +78,27 @@ const ROLE_OPTIONS = [
 export function BusinessPipeline() {
   const { prospects, updateProspect, deleteProspect } = useBusinessProspects()
   const { user, ownerUserId, businessSettings, userTimezone } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
+
+  const PERIOD_OPTIONS = useMemo(() => [
+    { label: t.pipeline_period_all, days: 0 },
+    { label: t.common_today, days: 1 },
+    { label: t.pipeline_period_7days, days: 7 },
+    { label: t.pipeline_period_30days, days: 30 },
+    { label: t.pipeline_period_90days, days: 90 },
+  ], [t])
+
+  const stageNames: Record<string, string> = useMemo(() => ({
+    prospect: t.pipeline_stage_prospect,
+    qualified: t.pipeline_stage_qualified,
+    unqualified: t.pipeline_stage_unqualified,
+    won: t.pipeline_stage_won,
+    followup: t.pipeline_stage_followup,
+    noanswer: t.pipeline_stage_noanswer,
+    noshow: t.pipeline_stage_noshow,
+    lost: t.pipeline_stage_lost,
+  }), [t])
+
   const effectiveUserId = ownerUserId || user?.id
   const { customStages, addCustomStage, deleteCustomStage, canManage } = useCustomStages()
   const crmProvider = businessSettings?.crm_provider || 'closeos'
@@ -210,19 +226,19 @@ export function BusinessPipeline() {
         const { data } = await supabase.from('business_pipeline_reset_config').insert(payload).select().single()
         if (data) setResetConfig(prev => ({ ...prev, id: data.id }))
       }
-      toast.success('Configuration sauvegardée')
+      toast.success(t.pipeline_config_saved)
       setShowResetConfig(false)
     } catch {
-      toast.error('Erreur lors de la sauvegarde')
+      toast.error(t.pipeline_save_error)
     } finally {
       setSavingResetConfig(false)
     }
   }
 
   const FREQUENCY_OPTIONS = [
-    { value: 'weekly' as const, label: 'Toutes les semaines' },
-    { value: 'biweekly' as const, label: 'Toutes les 2 semaines' },
-    { value: 'monthly' as const, label: 'Tous les mois' },
+    { value: 'weekly' as const, label: t.pipeline_weekly },
+    { value: 'biweekly' as const, label: t.pipeline_biweekly },
+    { value: 'monthly' as const, label: t.pipeline_monthly },
   ]
 
   // Merge built-in + custom stages for display
@@ -254,14 +270,14 @@ export function BusinessPipeline() {
         color: newStageColor,
         roles: newStageRoles,
       })
-      toast.success('Statut créé avec succès')
+      toast.success(t.pipeline_stage_created)
       setShowCreateStage(false)
       setNewStageName('')
       setNewStageDescription('')
       setNewStageColor('#6366f1')
       setNewStageRoles(['Closer'])
     } catch {
-      toast.error('Erreur lors de la création')
+      toast.error(t.pipeline_stage_create_error)
     } finally {
       setCreatingStage(false)
     }
@@ -412,7 +428,7 @@ export function BusinessPipeline() {
 
   const getDisplayName = (deal: BusinessProspect) => {
     if (deal.firstName || deal.lastName) return `${deal.firstName || ''} ${deal.lastName || ''}`.trim()
-    return deal.contact || 'Prospect sans nom'
+    return deal.contact || t.pipeline_prospect_no_name
   }
 
   // Auto-scroll during drag near viewport edges
@@ -469,7 +485,7 @@ export function BusinessPipeline() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher..."
+            placeholder={t.pipeline_search}
             className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
         </div>
@@ -501,7 +517,7 @@ export function BusinessPipeline() {
           )}
         >
           <Filter className="h-4 w-4" />
-          Filtres
+          {t.pipeline_filters}
           {hasActiveFilters && (
             <span className="ml-1 bg-stone-900 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
               {(selectedPeriod > 0 ? 1 : 0) + (selectedMembers.length > 0 ? 1 : 0) + (selectedStages.length > 0 ? 1 : 0) + (selectedOffers.length > 0 ? 1 : 0) + (selectedTags.length > 0 ? 1 : 0)}
@@ -517,12 +533,12 @@ export function BusinessPipeline() {
               className="flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold bg-stone-900 text-white hover:opacity-90 transition-all"
             >
               <Plus className="h-4 w-4" strokeWidth={2} />
-              Nouveau statut
+              {t.pipeline_new_status}
             </button>
             <button
               onClick={() => setShowResetConfig(true)}
               className="relative p-2.5 rounded-full bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
-              title="Configuration du pipeline"
+              title={t.pipeline_config_pipeline}
             >
               <Settings className="h-4 w-4" />
               {resetConfig.is_active && (
@@ -537,10 +553,10 @@ export function BusinessPipeline() {
       {showFilters && (
         <div className="mb-4 rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-extrabold text-stone-900 dark:text-white">Filtres</h3>
+            <h3 className="text-sm font-extrabold text-stone-900 dark:text-white">{t.pipeline_filters}</h3>
             {hasActiveFilters && (
               <button onClick={clearFilters} className="text-xs text-stone-600 dark:text-neutral-300 hover:text-stone-900 dark:hover:text-white font-medium">
-                Réinitialiser tout
+                {t.pipeline_reset_all}
               </button>
             )}
           </div>
@@ -549,7 +565,7 @@ export function BusinessPipeline() {
             {/* Period */}
             <div>
               <label className="block text-xs font-medium text-stone-500 mb-2">
-                <Calendar className="h-3 w-3 inline mr-1" />Période
+                <Calendar className="h-3 w-3 inline mr-1" />{t.pipeline_period}
               </label>
               <div className="flex flex-wrap gap-1">
                 {PERIOD_OPTIONS.map(p => (
@@ -572,7 +588,7 @@ export function BusinessPipeline() {
             {/* Teams */}
             {teams.length > 0 && (
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-2">Équipe</label>
+                <label className="block text-xs font-medium text-stone-500 mb-2">{t.pipeline_team}</label>
                 <div className="flex flex-wrap gap-1">
                   {teams.map(t => (
                     <button
@@ -594,7 +610,7 @@ export function BusinessPipeline() {
 
             {/* Members */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 mb-2">Closer / Setter</label>
+              <label className="block text-xs font-medium text-stone-500 mb-2">{t.pipeline_closer_setter}</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {teamMembers.map(m => (
                   <button
@@ -610,13 +626,13 @@ export function BusinessPipeline() {
                     {m.first_name} {m.last_name} <span className="opacity-60">({filterCounts.byMember[m.id] || 0})</span>
                   </button>
                 ))}
-                {teamMembers.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun membre</span>}
+                {teamMembers.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">{t.pipeline_no_members}</span>}
               </div>
             </div>
 
             {/* Stages */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 mb-2">Statut</label>
+              <label className="block text-xs font-medium text-stone-500 mb-2">{t.pipeline_stage}</label>
               <div className="flex flex-wrap gap-1">
                 {STAGES.map(s => (
                   <button
@@ -630,7 +646,7 @@ export function BusinessPipeline() {
                     )}
                   >
                     <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
-                    {s.name} <span className="opacity-60">({filterCounts.byStage[s.id] || 0})</span>
+                    {stageNames[s.id] || s.name} <span className="opacity-60">({filterCounts.byStage[s.id] || 0})</span>
                   </button>
                 ))}
                 {customStages.map(cs => (
@@ -653,7 +669,7 @@ export function BusinessPipeline() {
 
             {/* Offers */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 mb-2">Offre / Formule</label>
+              <label className="block text-xs font-medium text-stone-500 mb-2">{t.pipeline_offer_formula}</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {formulas.map(f => (
                   <button
@@ -669,14 +685,14 @@ export function BusinessPipeline() {
                     {f.name} <span className="opacity-60">({filterCounts.byOffer[f.id] || 0})</span>
                   </button>
                 ))}
-                {formulas.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucune formule</span>}
+                {formulas.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">{t.pipeline_no_formulas}</span>}
               </div>
             </div>
 
             {/* Tags */}
             <div>
               <label className="block text-xs font-medium text-stone-500 mb-2">
-                <Tag className="h-3 w-3 inline mr-1" />Tags
+                <Tag className="h-3 w-3 inline mr-1" />{t.pipeline_tags}
               </label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {tags.map(t => (
@@ -695,7 +711,7 @@ export function BusinessPipeline() {
                     {t.name} <span className="opacity-60">({filterCounts.byTag[t.id] || 0})</span>
                   </button>
                 ))}
-                {tags.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun tag</span>}
+                {tags.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">{t.pipeline_no_tags}</span>}
               </div>
             </div>
           </div>
@@ -704,14 +720,14 @@ export function BusinessPipeline() {
 
       {/* Stats bar */}
       <div className="mb-3 flex items-center gap-4 text-xs text-stone-500 dark:text-neutral-400 flex-wrap">
-        <span className="font-medium text-stone-700">{filtered.length} prospect{filtered.length !== 1 ? 's' : ''}</span>
+        <span className="font-medium text-stone-700">{filtered.length} {filtered.length !== 1 ? t.pipeline_prospect_count_plural : t.pipeline_prospect_count}</span>
         {STAGES.map(s => {
           const count = filtered.filter(p => p.stage === s.id).length
           if (count === 0) return null
           return (
             <span key={s.id} className="flex items-center gap-1">
               <span className={cn('h-2 w-2 rounded-full', s.color)} />
-              {s.name}: {count}
+              {stageNames[s.id] || s.name}: {count}
             </span>
           )
         })}
@@ -734,9 +750,9 @@ export function BusinessPipeline() {
             {/* FLUX ACTIF */}
             <section>
               <div className="flex items-baseline space-x-3 mb-6">
-                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Flux Actif</h2>
+                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.pipeline_active_flow}</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300" />
-                <span className={LABEL_STYLE}>Opérations Prioritaires</span>
+                <span className={LABEL_STYLE}>{t.pipeline_priority_ops}</span>
               </div>
               <div className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '400px' }}>
                 {ACTIVE_STAGES.map((stage) => {
@@ -747,7 +763,7 @@ export function BusinessPipeline() {
                       <div className="flex items-center justify-between px-2">
                         <div className="flex items-center gap-2">
                           <div className={cn("h-3 w-3 rounded-full", stage.color)} />
-                          <span className="text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">{stage.name}</span>
+                          <span className="text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">{stageNames[stage.id] || stage.name}</span>
                         </div>
                         <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5">
                           {stageDeals.length}
@@ -818,7 +834,7 @@ export function BusinessPipeline() {
                                         <div className="flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-lg bg-[#006c49]/8 dark:bg-emerald-900/20">
                                           <Calendar className="h-3 w-3 text-[#006c49] dark:text-emerald-400 shrink-0" strokeWidth={2} />
                                           <span className="text-[11px] font-bold text-[#006c49] dark:text-emerald-400">
-                                            {new Date(nextAppointments[deal.id].date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {nextAppointments[deal.id].time?.slice(0, 5)}
+                                            {new Date(nextAppointments[deal.id].date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} {t.pipeline_at} {nextAppointments[deal.id].time?.slice(0, 5)}
                                           </span>
                                         </div>
                                       )}
@@ -841,9 +857,9 @@ export function BusinessPipeline() {
             {/* FLUX INACTIF */}
             <section className="opacity-60 hover:opacity-100 transition-opacity">
               <div className="flex items-baseline space-x-3 mb-6">
-                <h2 className="font-business-display text-xl font-extrabold tracking-tight text-stone-600 dark:text-neutral-300">Flux Inactif</h2>
+                <h2 className="font-business-display text-xl font-extrabold tracking-tight text-stone-600 dark:text-neutral-300">{t.pipeline_inactive_flow}</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300" />
-                <span className={LABEL_STYLE}>Archives & Rejets</span>
+                <span className={LABEL_STYLE}>{t.pipeline_archives}</span>
               </div>
               <div className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '150px' }}>
                 {INACTIVE_STAGES.map((stage) => {
@@ -854,7 +870,7 @@ export function BusinessPipeline() {
                       <div className="flex items-center justify-between px-2">
                         <div className="flex items-center gap-2">
                           <div className={cn("h-2.5 w-2.5 rounded-full", stage.id === 'lost' ? 'bg-[#ba1a1a]/40' : 'bg-stone-300')} />
-                          <span className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-neutral-300">{stage.name}</span>
+                          <span className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-neutral-300">{stageNames[stage.id] || stage.name}</span>
                         </div>
                         <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500">
                           {stageDeals.length}
@@ -905,7 +921,7 @@ export function BusinessPipeline() {
                             ))}
                             {stageDeals.length === 0 && (
                               <div className="flex items-center justify-center h-20">
-                                <span className="text-xs text-stone-400 dark:text-neutral-500">{stageDeals.length} éléments</span>
+                                <span className="text-xs text-stone-400 dark:text-neutral-500">{stageDeals.length} {t.pipeline_elements}</span>
                               </div>
                             )}
                             {provided.placeholder}
@@ -922,9 +938,9 @@ export function BusinessPipeline() {
             {customStages.length > 0 && (
               <section>
                 <div className="flex items-baseline space-x-3 mb-6">
-                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Statuts Personnalisés</h2>
+                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.pipeline_custom_stages}</h2>
                   <div className="h-1 w-1 rounded-full bg-stone-300" />
-                  <span className={LABEL_STYLE}>Créés par votre équipe</span>
+                  <span className={LABEL_STYLE}>{t.pipeline_created_by_team}</span>
                 </div>
                 <div className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '250px' }}>
                   {customStages.map((cs) => {
@@ -944,7 +960,7 @@ export function BusinessPipeline() {
                             </span>
                             {canManage && (
                               <button
-                                onClick={() => { if (confirm(`Supprimer le statut "${cs.name}" ?`)) deleteCustomStage(cs.id) }}
+                                onClick={() => { if (confirm(t.pipeline_delete_stage_confirm.replace('{name}', cs.name))) deleteCustomStage(cs.id) }}
                                 className="p-1 text-stone-300 hover:text-red-500 transition-colors"
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -1022,7 +1038,7 @@ export function BusinessPipeline() {
                               ))}
                               {stageDeals.length === 0 && (
                                 <div className="flex items-center justify-center h-20">
-                                  <span className="text-xs text-stone-400 dark:text-neutral-500 italic">Aucun prospect</span>
+                                  <span className="text-xs text-stone-400 dark:text-neutral-500 italic">{t.pipeline_no_prospect}</span>
                                 </div>
                               )}
                               {provided.placeholder}
@@ -1045,21 +1061,21 @@ export function BusinessPipeline() {
           <table className="w-full min-w-[900px]">
             <thead className="sticky top-0 z-10 bg-stone-50/50 dark:bg-neutral-800/50 border-b border-stone-100 dark:border-neutral-700">
               <tr>
-                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Contact</th>
-                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Entreprise</th>
-                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Étape</th>
-                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Tags</th>
-                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Assigné à</th>
-                <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Valeur</th>
-                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Date</th>
-                <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">Actions</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">{t.pipeline_contact_header}</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">{t.pipeline_company_header}</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">{t.pipeline_stage_header}</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">{t.pipeline_tags_header}</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">{t.pipeline_assigned_header}</th>
+                <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">{t.pipeline_value_header}</th>
+                <th className="text-left text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">{t.pipeline_date_header}</th>
+                <th className="text-right text-[10px] font-extrabold text-stone-400 uppercase tracking-widest px-4 py-3">{t.pipeline_actions_header}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-12 text-sm text-stone-400">
-                    Aucun prospect trouvé
+                    {t.pipeline_no_prospect_found}
                   </td>
                 </tr>
               ) : (
@@ -1090,7 +1106,7 @@ export function BusinessPipeline() {
                         {stage ? (
                           <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full", stage.bgLight, stage.textColor)}>
                             <span className={cn("h-2 w-2 rounded-full", stage.color)} />
-                            {stage.name}
+                            {stageNames[stage.id] || stage.name}
                           </span>
                         ) : (() => {
                           const cs = customStages.find(c => `custom_${c.id}` === deal.stage)
@@ -1134,7 +1150,7 @@ export function BusinessPipeline() {
                       <td className="px-4 py-3">
                         {deal.created_at ? (
                           <span className="text-xs text-stone-500 dark:text-neutral-400">
-                            {new Date(deal.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                            {new Date(deal.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
                           </span>
                         ) : (
                           <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
@@ -1189,8 +1205,8 @@ export function BusinessPipeline() {
                   <RefreshCw className="h-5 w-5 text-stone-600 dark:text-neutral-300" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-stone-900 dark:text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>Réinitialisation automatique</h3>
-                  <p className="text-xs text-stone-400 dark:text-neutral-500">Vider le pipeline périodiquement</p>
+                  <h3 className="text-lg font-black text-stone-900 dark:text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>{t.pipeline_auto_reset}</h3>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500">{t.pipeline_auto_reset_desc}</p>
                 </div>
               </div>
               <button onClick={() => setShowResetConfig(false)} className="p-1.5 rounded-full hover:bg-stone-100 dark:hover:bg-white/5 transition-colors">
@@ -1202,8 +1218,8 @@ export function BusinessPipeline() {
               {/* Toggle */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold text-stone-900 dark:text-white">Activer la réinitialisation</p>
-                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">Les prospects seront retirés du pipeline mais resteront dans le CRM</p>
+                  <p className="text-sm font-bold text-stone-900 dark:text-white">{t.pipeline_enable_reset}</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">{t.pipeline_enable_reset_desc}</p>
                 </div>
                 <button
                   onClick={() => setResetConfig(prev => ({ ...prev, is_active: !prev.is_active }))}
@@ -1220,7 +1236,7 @@ export function BusinessPipeline() {
                 <>
                   {/* Frequency */}
                   <div>
-                    <label className="text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2 block">Fréquence</label>
+                    <label className="text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2 block">{t.pipeline_frequency}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {FREQUENCY_OPTIONS.map(opt => (
                         <button
@@ -1241,8 +1257,8 @@ export function BusinessPipeline() {
 
                   {/* Stages to clear */}
                   <div>
-                    <label className="text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2 block">Colonnes à vider</label>
-                    <p className="text-xs text-stone-400 dark:text-neutral-500 mb-3">Sélectionnez les statuts dont les prospects seront retirés du pipeline</p>
+                    <label className="text-[10px] uppercase tracking-widest text-stone-400 font-bold mb-2 block">{t.pipeline_columns_to_clear}</label>
+                    <p className="text-xs text-stone-400 dark:text-neutral-500 mb-3">{t.pipeline_columns_desc}</p>
                     <div className="space-y-1.5 max-h-[250px] overflow-y-auto">
                       {ALL_STAGES_WITH_CUSTOM.map(stage => {
                         const isSelected = resetConfig.stages_to_clear.includes(stage.id)
@@ -1281,8 +1297,8 @@ export function BusinessPipeline() {
                             >
                               {!stage.isCustom && <span className={cn('block w-full h-full rounded-full', stage.color)} />}
                             </span>
-                            <span className="flex-1">{stage.name}</span>
-                            {isWon && <span className="text-[10px] text-stone-400 uppercase tracking-widest">par défaut</span>}
+                            <span className="flex-1">{stageNames[stage.id] || stage.name}</span>
+                            {isWon && <span className="text-[10px] text-stone-400 uppercase tracking-widest">{t.pipeline_default_label}</span>}
                           </button>
                         )
                       })}
@@ -1293,7 +1309,7 @@ export function BusinessPipeline() {
                   {resetConfig.last_reset_at && (
                     <div className="flex items-center gap-2 text-xs text-stone-400 dark:text-neutral-500">
                       <Calendar className="h-3.5 w-3.5" />
-                      Dernière réinitialisation : {new Date(resetConfig.last_reset_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {t.pipeline_last_reset} : {new Date(resetConfig.last_reset_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </div>
                   )}
                 </>
@@ -1306,14 +1322,14 @@ export function BusinessPipeline() {
                 onClick={() => setShowResetConfig(false)}
                 className="px-5 py-2.5 rounded-full text-sm font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-white/5 transition-all"
               >
-                Annuler
+                {t.common_cancel}
               </button>
               <button
                 onClick={handleSaveResetConfig}
                 disabled={savingResetConfig || (resetConfig.is_active && resetConfig.stages_to_clear.length === 0)}
                 className="px-6 py-2.5 rounded-full text-sm font-bold bg-stone-900 text-white hover:opacity-90 disabled:opacity-50 transition-all"
               >
-                {savingResetConfig ? 'Enregistrement...' : 'Enregistrer'}
+                {savingResetConfig ? t.pipeline_saving : t.common_save}
               </button>
             </div>
           </div>
@@ -1325,7 +1341,7 @@ export function BusinessPipeline() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCreateStage(false)}>
           <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-business-display text-lg font-extrabold text-stone-900 dark:text-white">Nouveau statut</h3>
+              <h3 className="font-business-display text-lg font-extrabold text-stone-900 dark:text-white">{t.pipeline_new_stage_title}</h3>
               <button onClick={() => setShowCreateStage(false)} className="p-1 text-stone-400 hover:text-stone-600">
                 <X className="h-5 w-5" />
               </button>
@@ -1335,36 +1351,36 @@ export function BusinessPipeline() {
               <div className="mb-4 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3">
                 <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-700">
-                  Votre CRM intégré (<span className="font-bold">{crmProvider}</span>) ne prendra pas en compte les statuts personnalisés. Seuls Zapier et Make sont compatibles.
+                  {t.pipeline_crm_warning_text.replace('{provider}', crmProvider)}
                 </p>
               </div>
             )}
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">Titre</label>
+                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">{t.pipeline_stage_title_label}</label>
                 <input
                   type="text"
                   value={newStageName}
                   onChange={e => setNewStageName(e.target.value)}
-                  placeholder="Ex: Négociation"
+                  placeholder={t.pipeline_stage_title_placeholder}
                   className="w-full rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">Description</label>
+                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">{t.pipeline_stage_desc}</label>
                 <input
                   type="text"
                   value={newStageDescription}
                   onChange={e => setNewStageDescription(e.target.value)}
-                  placeholder="Optionnel"
+                  placeholder={t.pipeline_stage_desc_placeholder}
                   className="w-full rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">Couleur</label>
+                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">{t.pipeline_stage_color}</label>
                 <div className="flex flex-wrap gap-2">
                   {STAGE_COLORS.map(c => (
                     <button
@@ -1382,7 +1398,7 @@ export function BusinessPipeline() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">Rôles concernés</label>
+                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-1.5">{t.pipeline_stage_roles}</label>
                 <div className="flex gap-2">
                   {ROLE_OPTIONS.map(r => (
                     <button

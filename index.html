@@ -2,20 +2,61 @@
 <html lang="fr">
 
 <head>
-  <!-- Start cookieyes banner -->
+  <!-- 1. Google Consent Mode v2 — defaults (AVANT tout le reste) -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+      analytics_storage: 'denied',
+      functionality_storage: 'denied',
+      personalization_storage: 'denied',
+      security_storage: 'granted',
+      wait_for_update: 2000,
+    });
+    gtag('set', 'ads_data_redaction', true);
+    gtag('set', 'url_passthrough', true);
+  </script>
+  <!-- 2. CookieYes banner (met a jour le consentement) -->
   <script id="cookieyes" type="text/javascript"
-    src="https://cdn-cookieyes.com/client_data/e7fb9a198c41139782e3f8609587c29b/script.js" defer></script>
-  <!-- End cookieyes banner -->
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-CD3VW4QM4Z" type="text/plain"
-    data-cookieyes="analytics"></script>
-  <script type="text/plain" data-cookieyes="analytics">
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-CD3VW4QM4Z');
-    </script>
+    src="https://cdn-cookieyes.com/client_data/e7fb9a198c41139782e3f8609587c29b/script.js"></script>
+  <!-- 3. Google Analytics gtag.js (pages publiques uniquement) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-CD3VW4QM4Z"></script>
+  <script>
+    gtag('js', new Date());
+    // Pages publiques autorisees pour le tracking GA
+    var GA_PUBLIC = ['/', '/landing', '/sales', '/business', '/tarifs', '/fonctionnalites',
+      '/login', '/register', '/checkout', '/mentions-legales', '/cgu', '/cgv',
+      '/confidentialite', '/business/login', '/business/checkout', '/business/return',
+      '/business/politique-utilisation', '/business/register'];
+    function isPublicPage(p) {
+      if (GA_PUBLIC.indexOf(p) !== -1) return true;
+      if (p.indexOf('/fonctionnalites/') === 0) return true;
+      if (p.indexOf('/capture/') === 0) return true;
+      if (p.indexOf('/book/') === 0) return true;
+      return false;
+    }
+    if (isPublicPage(window.location.pathname)) {
+      gtag('config', 'G-CD3VW4QM4Z', { send_page_view: true });
+    } else {
+      gtag('config', 'G-CD3VW4QM4Z', { send_page_view: false });
+    }
+    // SPA: tracker les navigations vers les pages publiques
+    var _origPush = history.pushState;
+    history.pushState = function() {
+      _origPush.apply(this, arguments);
+      if (isPublicPage(window.location.pathname)) {
+        gtag('event', 'page_view', { page_path: window.location.pathname });
+      }
+    };
+    window.addEventListener('popstate', function() {
+      if (isPublicPage(window.location.pathname)) {
+        gtag('event', 'page_view', { page_path: window.location.pathname });
+      }
+    });
+  </script>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
 

@@ -14,6 +14,7 @@ import { Toaster } from 'react-hot-toast'
 import { GoogleCalendarProvider } from './contexts/GoogleCalendarContext'
 import { UpgradeProvider } from './contexts/UpgradeContext'
 import { OrganizationProvider } from './contexts/OrganizationContext'
+import { LanguageProvider } from './contexts/LanguageContext'
 
 // Imports des Composants
 import { SettingsModal } from './components/settings/SettingsModal'
@@ -42,6 +43,7 @@ import { EcosystemChoice } from './pages/EcosystemChoice'
 import { CaptureForm } from './pages/CaptureForm'
 import { PublicBooking } from './pages/PublicBooking'
 import { AppointmentManage } from './pages/AppointmentManage'
+import BusinessAdminReferral from './pages/BusinessAdminReferral'
 
 // Imports lazy (pages authentifiées — chargées à la demande)
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })))
@@ -83,6 +85,7 @@ import BusinessLogin from './business/pages/BusinessLogin'
 import BusinessRegister from './business/pages/BusinessRegister'
 import { BusinessInvitation } from './business/pages/BusinessInvitation'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
+import { BusinessLangWrapper } from './business/i18n/BusinessLangWrapper'
 
 // Business lazy imports
 const BusinessDashboard = lazy(() => import('./business/pages/BusinessDashboard').then(m => ({ default: m.BusinessDashboard })))
@@ -370,16 +373,19 @@ function AuthenticatedApp() {
           </BusinessAuthProvider>
         } />
         <Route path="/business/invitation/:token" element={<BusinessInvitation />} />
+        <Route path="/business/admin-referral" element={<BusinessAdminReferral />} />
 
         {/* Business Protected Routes */}
         <Route path="/business" element={
           <BusinessAuthProvider>
+            <BusinessLangWrapper>
             <BusinessProspectsProvider>
               <BusinessGoogleCalendarProvider>
                 <BusinessLayout />
                 <BusinessOnboardingModal />
               </BusinessGoogleCalendarProvider>
             </BusinessProspectsProvider>
+            </BusinessLangWrapper>
           </BusinessAuthProvider>
         }>
           <Route path="dashboard" element={<TeamOnboardingGuard><BusinessDashboard /></TeamOnboardingGuard>} />
@@ -556,6 +562,7 @@ function App() {
     <BrowserRouter>
       <ScrollToTop />
       <AuthProvider>
+        <LanguageProvider>
         <GoogleCalendarProvider>
           <PrivacyProvider>
             <OrganizationProvider>
@@ -596,6 +603,7 @@ function App() {
             </OrganizationProvider>
           </PrivacyProvider>
         </GoogleCalendarProvider>
+        </LanguageProvider>
       </AuthProvider>
     </BrowserRouter>
   )

@@ -12,12 +12,17 @@ import { AutoInvoiceConfigModal } from '../components/AutoInvoiceConfigModal'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useUpgrade } from '../contexts/UpgradeContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { invoicesTranslations } from '../i18n/translations'
 
 export function InvoicesPage() {
   const { prospects } = useProspects()
   const { offers } = useOffers()
   const { user, isFounder, isInTrial, isAdmin } = useAuth()
   const { showUpgrade } = useUpgrade()
+  const { lang } = useLanguage()
+  const t = invoicesTranslations[lang]
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
   const canUseAutoInvoice = isFounder || isInTrial || isAdmin
 
   const [searchParams] = useSearchParams()
@@ -208,7 +213,7 @@ export function InvoicesPage() {
   }, [prospects, selectedOffer, startDate, endDate])
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'EUR',
     }).format(amount)
@@ -218,7 +223,7 @@ export function InvoicesPage() {
     if (!startDateStr) return 'N/A'
     const d = new Date(startDateStr)
     d.setMonth(d.getMonth() + (months - 1))
-    return d.toLocaleDateString('fr-FR')
+    return d.toLocaleDateString(locale)
   }
 
   const getStatusColor = (status: string) => {
@@ -245,8 +250,8 @@ export function InvoicesPage() {
         {/* HEADER */}
         <div className="flex flex-col md:flex-row items-start justify-between gap-6">
           <div>
-            <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tighter">Factures & Commissions</h1>
-            <p className="mt-1 text-white/40 text-sm font-medium">Générez vos factures et suivez vos commissions</p>
+            <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tighter">{lang === 'fr' ? 'Factures & Commissions' : 'Invoices & Commissions'}</h1>
+            <p className="mt-1 text-white/40 text-sm font-medium">{lang === 'fr' ? 'Générez vos factures et suivez vos commissions' : 'Generate your invoices and track your commissions'}</p>
           </div>
           <div className="flex gap-3 flex-wrap">
             <button
@@ -254,7 +259,7 @@ export function InvoicesPage() {
               className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-white transition-all active:scale-95 ${canUseAutoInvoice ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-lg hover:shadow-amber-500/20' : 'bg-white/10 opacity-70 hover:opacity-90'}`}
             >
               <Zap className="h-4 w-4" />
-              Facturation Auto
+              {t.auto_invoicing}
               {!canUseAutoInvoice && <Lock className="h-3.5 w-3.5 ml-1" />}
             </button>
             <button
@@ -262,7 +267,7 @@ export function InvoicesPage() {
               className="flex items-center gap-2 rounded-full bg-[#635BFF] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#5349E0] hover:shadow-lg hover:shadow-[#635BFF]/20 active:scale-95"
             >
               <CreditCard className="h-4 w-4" />
-              Connecter Stripe
+              {t.stripe_connect}
             </button>
 
             <button
@@ -270,14 +275,14 @@ export function InvoicesPage() {
               className="flex items-center gap-2 rounded-full bg-white/[0.03] border border-white/[0.08] px-5 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/10 transition-all backdrop-blur-sm"
             >
               <Building2 className="h-4 w-4" />
-              Infos Émetteur
+              {t.issuer_profiles}
             </button>
             <button
               onClick={() => setIsPaymentMethodsOpen(true)}
               className="flex items-center gap-2 rounded-full bg-white/[0.03] border border-white/[0.08] px-5 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/10 transition-all backdrop-blur-sm"
             >
               <Wallet className="h-4 w-4" />
-              Moyens de Paiement
+              {t.payment_methods}
             </button>
           </div>
         </div>
@@ -288,11 +293,11 @@ export function InvoicesPage() {
             <div className="p-3 rounded-xl bg-purple-500/5">
               <Calendar className="h-5 w-5 text-purple-400" />
             </div>
-            <span className="font-bold text-white">Période :</span>
+            <span className="font-bold text-white">{lang === 'fr' ? 'Période :' : 'Period:'}</span>
           </div>
           <div className="flex items-center gap-4 flex-1">
             <div className="flex-1">
-              <label className="mb-2 block text-xs font-bold text-white/40 uppercase tracking-widest">Date de début</label>
+              <label className="mb-2 block text-xs font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? 'Date de début' : 'Start date'}</label>
               <input
                 type="date"
                 value={startDate}
@@ -302,7 +307,7 @@ export function InvoicesPage() {
             </div>
             <div className="mt-6 text-white/40 font-light">→</div>
             <div className="flex-1">
-              <label className="mb-2 block text-xs font-bold text-white/40 uppercase tracking-widest">Date de fin</label>
+              <label className="mb-2 block text-xs font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? 'Date de fin' : 'End date'}</label>
               <input
                 type="date"
                 value={endDate}
@@ -343,7 +348,7 @@ export function InvoicesPage() {
                   </div>
                   <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">{stats.dealsCount} deal(s)</span>
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">CA Genere</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">{lang === 'fr' ? 'CA Généré' : 'Revenue Generated'}</p>
                 <p className="text-3xl font-extrabold tracking-tight text-white">{formatCurrency(stats.revenue)}</p>
               </div>
 
@@ -355,7 +360,7 @@ export function InvoicesPage() {
                   </div>
                   <span className="text-xs font-medium text-white/40">{selectedOffer.commission}</span>
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Ma Commission</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">{lang === 'fr' ? 'Ma Commission' : 'My Commission'}</p>
                 <p className="text-3xl font-extrabold tracking-tight text-white">{formatCurrency(stats.commission)}</p>
               </div>
 
@@ -366,7 +371,7 @@ export function InvoicesPage() {
                     <CreditCard className="h-5 w-5 text-purple-400" />
                   </div>
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Commission Moy.</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">{lang === 'fr' ? 'Commission Moy.' : 'Avg. Commission'}</p>
                 <p className="text-3xl font-extrabold tracking-tight text-white">
                   {stats.dealsCount > 0
                     ? formatCurrency(stats.commission / stats.dealsCount)
@@ -380,9 +385,9 @@ export function InvoicesPage() {
                   <div className="p-3 rounded-xl bg-amber-500/5">
                     <Clock className="h-5 w-5 text-amber-400" />
                   </div>
-                  <span className="text-xs font-medium text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">{pendingStats.count} facture(s)</span>
+                  <span className="text-xs font-medium text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">{pendingStats.count} {lang === 'fr' ? 'facture(s)' : 'invoice(s)'}</span>
                 </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">En attente</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">{t.total_pending}</p>
                 <p className="text-3xl font-extrabold tracking-tight text-white">{formatCurrency(pendingStats.amount)}</p>
               </div>
             </div>
@@ -392,7 +397,7 @@ export function InvoicesPage() {
               <div className="bg-white/5 px-8 py-4 border-b border-white/5">
                 <h4 className="text-sm font-bold uppercase tracking-wider text-white/60 flex items-center gap-2">
                   <Info className="h-4 w-4 text-emerald-400" />
-                  Details de la periode
+                  {lang === 'fr' ? 'Détails de la période' : 'Period details'}
                 </h4>
               </div>
               <div className="p-8">
@@ -403,7 +408,7 @@ export function InvoicesPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                      <h4 className="font-bold text-white/80">Paiement Comptant</h4>
+                      <h4 className="font-bold text-white/80">{lang === 'fr' ? 'Paiement Comptant' : 'Cash Payment'}</h4>
                       <div className="relative">
                         <button
                           onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'cash' ? null : 'cash'); }}
@@ -414,7 +419,7 @@ export function InvoicesPage() {
 
                         {activeTooltip === 'cash' && (
                           <div className="absolute left-0 top-8 z-50 w-72 rounded-2xl border border-white/[0.08] bg-[#1a1a1a] p-4 shadow-2xl backdrop-blur-xl">
-                            <h5 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">Liste des clients (Comptant)</h5>
+                            <h5 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">{lang === 'fr' ? 'Liste des clients (Comptant)' : 'Client list (Cash)'}</h5>
                             {stats.cashDeals.length > 0 ? (
                               <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                                 {stats.cashDeals.map(deal => (
@@ -422,13 +427,13 @@ export function InvoicesPage() {
                                     <p className="text-sm font-bold text-white">{deal.contact}</p>
                                     <p className="text-xs text-emerald-400 font-medium">{formatCurrency(deal.value || 0)}</p>
                                     <p className="text-[10px] text-white/40">
-                                      Acheté le : {new Date(deal.lastContact || deal.last_contact || deal.dateAdded || deal.created_at || "").toLocaleDateString('fr-FR')}
+                                      {lang === 'fr' ? 'Acheté le' : 'Purchased on'} : {new Date(deal.lastContact || deal.last_contact || deal.dateAdded || deal.created_at || "").toLocaleDateString(locale)}
                                     </p>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-xs text-white/40 italic">Aucun paiement comptant sur cette période.</p>
+                              <p className="text-xs text-white/40 italic">{lang === 'fr' ? 'Aucun paiement comptant sur cette période.' : 'No cash payments in this period.'}</p>
                             )}
                           </div>
                         )}
@@ -443,7 +448,7 @@ export function InvoicesPage() {
                     ></div>
                   </div>
                   <p className="text-xs text-white/40 mt-3 text-right font-medium">
-                    Total : <span className="text-emerald-400">{formatCurrency(stats.cashDeals.reduce((sum, d) => sum + (d.value || 0), 0))}</span>
+                    {lang === 'fr' ? 'Total' : 'Total'} : <span className="text-emerald-400">{formatCurrency(stats.cashDeals.reduce((sum, d) => sum + (d.value || 0), 0))}</span>
                   </p>
                 </div>
 
@@ -452,7 +457,7 @@ export function InvoicesPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
-                      <h4 className="font-bold text-white/80">Paiement en plusieurs fois</h4>
+                      <h4 className="font-bold text-white/80">{lang === 'fr' ? 'Paiement en plusieurs fois' : 'Installment Payment'}</h4>
                       <div className="relative">
                         <button
                           onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === 'installments' ? null : 'installments'); }}
@@ -463,7 +468,7 @@ export function InvoicesPage() {
 
                         {activeTooltip === 'installments' && (
                           <div className="absolute right-0 top-8 z-50 w-80 rounded-2xl border border-white/[0.08] bg-[#1a1a1a] p-4 shadow-2xl backdrop-blur-xl">
-                            <h5 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">Liste des clients (Échelonné)</h5>
+                            <h5 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">{lang === 'fr' ? 'Liste des clients (Échelonné)' : 'Client list (Installments)'}</h5>
                             {stats.installmentDeals.length > 0 ? (
                               <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                                 {stats.installmentDeals.map(deal => (
@@ -474,20 +479,20 @@ export function InvoicesPage() {
                                         {deal.installments}x
                                       </span>
                                     </div>
-                                    <p className="text-xs text-blue-400 font-medium">Contrat total: {formatCurrency(deal.value || 0)}</p>
+                                    <p className="text-xs text-blue-400 font-medium">{lang === 'fr' ? 'Contrat total' : 'Total contract'}: {formatCurrency(deal.value || 0)}</p>
                                     <div className="flex justify-between mt-1">
                                       <p className="text-[10px] text-white/40">
-                                        Début : {new Date(deal.lastContact || deal.last_contact || deal.dateAdded || deal.created_at || "").toLocaleDateString('fr-FR')}
+                                        {lang === 'fr' ? 'Début' : 'Start'} : {new Date(deal.lastContact || deal.last_contact || deal.dateAdded || deal.created_at || "").toLocaleDateString(locale)}
                                       </p>
                                       <p className="text-[10px] text-white/40">
-                                        Fin : {getInstallmentEndDate(deal.lastContact || deal.last_contact || deal.dateAdded || deal.created_at || "", deal.installments || 1)}
+                                        {lang === 'fr' ? 'Fin' : 'End'} : {getInstallmentEndDate(deal.lastContact || deal.last_contact || deal.dateAdded || deal.created_at || "", deal.installments || 1)}
                                       </p>
                                     </div>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-xs text-white/40 italic">Aucun paiement échelonné actif sur cette période.</p>
+                              <p className="text-xs text-white/40 italic">{lang === 'fr' ? 'Aucun paiement échelonné actif sur cette période.' : 'No active installment payments in this period.'}</p>
                             )}
                           </div>
                         )}
@@ -502,7 +507,7 @@ export function InvoicesPage() {
                     ></div>
                   </div>
                   <p className="text-xs text-white/40 mt-3 text-right font-medium">
-                    Part mensuelle : <span className="text-blue-400">{formatCurrency(stats.revenue - stats.cashDeals.reduce((sum, d) => sum + (d.value || 0), 0))}</span>
+                    {lang === 'fr' ? 'Part mensuelle' : 'Monthly share'} : <span className="text-blue-400">{formatCurrency(stats.revenue - stats.cashDeals.reduce((sum, d) => sum + (d.value || 0), 0))}</span>
                   </p>
                 </div>
               </div>
@@ -512,9 +517,9 @@ export function InvoicesPage() {
         ) : (
           <div className="mb-8 rounded-2xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] p-12 text-center">
             <FileText className="mx-auto mb-4 h-12 w-12 text-white/10" />
-            <p className="text-lg font-bold text-white">Aucune offre active</p>
+            <p className="text-lg font-bold text-white">{lang === 'fr' ? 'Aucune offre active' : 'No active offer'}</p>
             <p className="mt-2 text-sm text-white/40">
-              Créez une offre active pour commencer à générer des factures
+              {lang === 'fr' ? 'Créez une offre active pour commencer à générer des factures' : 'Create an active offer to start generating invoices'}
             </p>
           </div>
         )}
@@ -526,7 +531,7 @@ export function InvoicesPage() {
               className="group flex items-center gap-3 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-10 py-5 text-lg font-bold text-white shadow-xl shadow-purple-500/30 transition-all hover:scale-105 hover:shadow-purple-500/50 active:scale-95"
             >
               <FileText className="h-6 w-6" />
-              Générer Facture
+              {lang === 'fr' ? 'Générer Facture' : 'Generate Invoice'}
             </button>
           </div>
         )}
@@ -535,17 +540,17 @@ export function InvoicesPage() {
           <div className="rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.2)] flex flex-col">
             {/* Header bar */}
             <div className="bg-white/5 px-8 py-4 border-b border-white/5">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-white/60">Historique des factures</h4>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-white/60">{lang === 'fr' ? 'Historique des factures' : 'Invoice history'}</h4>
             </div>
             <div className="overflow-y-auto max-h-[400px] custom-scrollbar">
               <table className="w-full text-left text-sm text-white/60 relative border-collapse">
                 <thead className="bg-white/[0.02] text-xs uppercase text-white/40 sticky top-0 z-10">
                   <tr>
-                    <th className="px-8 py-4 font-bold tracking-widest">N deg. Facture</th>
-                    <th className="px-8 py-4 font-bold tracking-widest">Date</th>
-                    <th className="px-8 py-4 font-bold tracking-widest">Client / Offre</th>
-                    <th className="px-8 py-4 font-bold tracking-widest">Montant TTC</th>
-                    <th className="px-8 py-4 font-bold tracking-widest">Statut</th>
+                    <th className="px-8 py-4 font-bold tracking-widest">{lang === 'fr' ? 'N° Facture' : 'Invoice #'}</th>
+                    <th className="px-8 py-4 font-bold tracking-widest">{t.date}</th>
+                    <th className="px-8 py-4 font-bold tracking-widest">{lang === 'fr' ? 'Client / Offre' : 'Client / Offer'}</th>
+                    <th className="px-8 py-4 font-bold tracking-widest">{lang === 'fr' ? 'Montant TTC' : 'Amount incl. tax'}</th>
+                    <th className="px-8 py-4 font-bold tracking-widest">{t.status}</th>
                     <th className="px-8 py-4 text-right font-bold tracking-widest">Actions</th>
                   </tr>
                 </thead>
@@ -576,7 +581,7 @@ export function InvoicesPage() {
                               target="_blank"
                               rel="noreferrer"
                               className="p-2 rounded-xl hover:bg-white/[0.04] text-white/40 hover:text-emerald-400 transition-all duration-300"
-                              title="Voir"
+                              title={lang === 'fr' ? 'Voir' : 'View'}
                             >
                               <Eye className="h-5 w-5" />
                             </a>
@@ -584,7 +589,7 @@ export function InvoicesPage() {
                               href={inv.pdf_url}
                               download
                               className="p-2 rounded-xl hover:bg-white/[0.04] text-white/40 hover:text-emerald-400 transition-all duration-300"
-                              title="Telecharger"
+                              title={lang === 'fr' ? 'Télécharger' : 'Download'}
                             >
                               <Download className="h-5 w-5" />
                             </a>
@@ -596,7 +601,7 @@ export function InvoicesPage() {
                   {savedInvoices.length === 0 && (
                     <tr>
                       <td colSpan={6} className="px-8 py-16 text-center text-white/40 italic">
-                        Aucune facture enregistree dans l'historique.
+                        {lang === 'fr' ? "Aucune facture enregistrée dans l'historique." : 'No invoices recorded in history.'}
                       </td>
                     </tr>
                   )}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-const funFacts = [
+const funFactsFr = [
     "Le saviez-vous ? CloseOS est né dans un jardin, en plein déblayage de feuilles mortes. 🍂",
     "Le saviez-vous ? CloseOS a été fondé par Thomas Shamoev, alors âgé de seulement 19 ans. 🚀",
     "Le saviez-vous ? CloseOS est le premier outil du marché à centraliser l'ensemble du closing. 🎯",
@@ -8,7 +8,17 @@ const funFacts = [
     "Le saviez-vous ? CloseOS permet de libérer jusqu'à 10h par semaine pour chaque closer. ⏱️",
 ]
 
+const funFactsEn = [
+    "Did you know? CloseOS was born in a garden, while clearing fallen leaves. 🍂",
+    "Did you know? CloseOS was founded by Thomas Shamoev, who was only 19 years old. 🚀",
+    "Did you know? CloseOS is the first tool on the market to centralize the entire closing process. 🎯",
+    "Did you know? Originally, CloseOS was only for closers. Today, it goes far beyond. 💡",
+    "Did you know? CloseOS can free up to 10 hours per week for each closer. ⏱️",
+]
+
 export function LoadingScreen() {
+    const lang = (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
+    const funFacts = lang === 'fr' ? funFactsFr : funFactsEn
     const [currentIndex, setCurrentIndex] = useState(0)
     const [fade, setFade] = useState(true)
     const isPaused = useRef(false)
@@ -49,7 +59,7 @@ export function LoadingScreen() {
                 </div>
 
                 {/* Texte principal */}
-                <p className="loading-screen__status">Connexion en cours…</p>
+                <p className="loading-screen__status">{lang === 'fr' ? 'Connexion en cours…' : 'Connecting…'}</p>
 
                 {/* Fun facts */}
                 <div

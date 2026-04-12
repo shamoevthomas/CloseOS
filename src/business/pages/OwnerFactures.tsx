@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import {
   FileText, Calendar, Loader2, Receipt, ExternalLink, Filter, ChevronDown, ChevronLeft, ChevronRight, Download, User, Copy, Eye,
@@ -57,12 +58,26 @@ const getStatusConfig = (status: string) => {
 }
 
 const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
+  new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
 
 const ITEMS_PER_PAGE = 10
 
 export function OwnerFactures() {
   const { user, isTeamMember, teamMember, ownerUserId } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
+  const statusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      'à payer': t.owner_factures_status_to_pay,
+      'en cours': t.owner_factures_status_in_progress,
+      'payé': t.owner_factures_status_paid,
+      'envoyée': t.owner_factures_status_sent,
+      'générée': t.owner_factures_status_generated,
+      'retard': t.owner_factures_status_overdue,
+      'en attente': t.owner_factures_status_waiting,
+      'en_attente': t.owner_factures_status_waiting,
+    }
+    return map[status] || status || t.owner_factures_status_draft
+  }
   const effectiveUserId = ownerUserId || user?.id
 
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -135,9 +150,9 @@ export function OwnerFactures() {
   // Update status
   const handleStatusChange = useCallback(async (invoiceId: string, newStatus: string) => {
     const { error } = await supabase.from('invoices').update({ status: newStatus }).eq('id', invoiceId)
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.common_error); return }
     setInvoices(prev => prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv))
-    toast.success('Statut mis à jour')
+    toast.success(t.owner_factures_status_updated)
   }, [])
 
   const getMemberName = (id: string | null) => {
@@ -154,12 +169,12 @@ export function OwnerFactures() {
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr)
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+    return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   const formatDateInput = (dateStr: string) => {
     const d = new Date(dateStr + 'T00:00:00')
-    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
   }
 
   if (loading) {
@@ -171,9 +186,9 @@ export function OwnerFactures() {
       {/* Header */}
       <div>
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-          Factures
+          {t.owner_factures_title}
         </h1>
-        <p className="text-[#444748] dark:text-neutral-400 mt-2">Toutes les factures de votre organisation</p>
+        <p className="text-[#444748] dark:text-neutral-400 mt-2">{t.owner_factures_subtitle}</p>
       </div>
 
       {/* KPI Cards — Bento */}
@@ -184,9 +199,9 @@ export function OwnerFactures() {
             <span className="p-3 rounded-2xl bg-[#efedec] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300">
               <Receipt className="h-5 w-5" />
             </span>
-            <span className="text-[10px] font-bold text-[#444748]/40 dark:text-neutral-500 tracking-widest uppercase">Global</span>
+            <span className="text-[10px] font-bold text-[#444748]/40 dark:text-neutral-500 tracking-widest uppercase">{t.owner_factures_global}</span>
           </div>
-          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">Total facturé</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">{t.owner_factures_total_billed}</p>
           <p className="text-4xl font-extrabold mt-1 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {totalAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
           </p>
@@ -200,7 +215,7 @@ export function OwnerFactures() {
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
             </span>
           </div>
-          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">Payé</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">{t.owner_factures_paid}</p>
           <p className="text-4xl font-extrabold mt-1 text-[#006c49]" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {paidAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
           </p>
@@ -213,9 +228,9 @@ export function OwnerFactures() {
             <span className="p-3 rounded-2xl bg-[#ffb95f]/20 text-[#b87500]">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
             </span>
-            <span className="text-[10px] font-bold text-[#b87500] tracking-widest uppercase">{pendingCount} facture{pendingCount !== 1 ? 's' : ''}</span>
+            <span className="text-[10px] font-bold text-[#b87500] tracking-widest uppercase">{pendingCount} {pendingCount !== 1 ? t.owner_factures_invoices_plural : t.owner_factures_invoice_singular}</span>
           </div>
-          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">En attente</p>
+          <p className="text-[#444748] dark:text-neutral-400 text-sm font-medium">{t.owner_factures_pending}</p>
           <p className="text-4xl font-extrabold mt-1 text-[#b87500]" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {pendingAmount.toLocaleString('fr-FR')} <span className="text-xl">€</span>
           </p>
@@ -225,7 +240,7 @@ export function OwnerFactures() {
       {/* Filter Bar — Glass pill */}
       <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl rounded-2xl md:rounded-full p-3 px-4 md:px-6 flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 md:gap-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] ring-1 ring-[#c4c7c7]/10 dark:ring-neutral-700">
         <div className="flex items-center gap-3 md:border-r border-[#c4c7c7]/20 dark:border-neutral-700 md:pr-6">
-          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">Période</span>
+          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">{t.owner_factures_period}</span>
           <div className="flex items-center gap-2 min-w-0">
             <input
               type="date"
@@ -271,13 +286,13 @@ export function OwnerFactures() {
 
         {teamMembers.length > 0 && (
           <div className="flex items-center gap-3 md:border-r border-[#c4c7c7]/20 dark:border-neutral-700 md:pr-6">
-            <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">Membre</span>
+            <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">{t.owner_factures_member}</span>
             <select
               value={filterMember}
               onChange={e => setFilterMember(e.target.value)}
               className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white min-w-0"
             >
-              <option value="all">Tous les membres</option>
+              <option value="all">{t.owner_factures_all_members}</option>
               {teamMembers.map(m => (
                 <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
               ))}
@@ -286,15 +301,15 @@ export function OwnerFactures() {
         )}
 
         <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">Statut</span>
+          <span className="text-xs font-bold text-[#444748]/60 dark:text-neutral-400 uppercase tracking-tighter shrink-0">{t.owner_factures_status}
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
             className="bg-transparent border-none text-sm font-semibold focus:ring-0 p-0 pr-8 cursor-pointer text-[#1b1c1b] dark:text-white min-w-0"
           >
-            <option value="all">Tous les statuts</option>
+            <option value="all">{t.owner_factures_all_statuses}</option>
             {STATUS_OPTIONS.map(s => (
-              <option key={s.value} value={s.value}>{s.label}</option>
+              <option key={s.value} value={s.value}>{statusLabel(s.value)}</option>
             ))}
           </select>
         </div>
@@ -315,14 +330,14 @@ export function OwnerFactures() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#f5f3f2]/50 dark:bg-neutral-900/50">
-                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>N° Facture</th>
-                <th className="hidden md:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Date</th>
-                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Client</th>
-                <th className="hidden lg:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Membre</th>
-                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Montant</th>
-                <th className="hidden md:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>Échéance</th>
-                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>Statut</th>
-                <th className="hidden sm:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>Actions</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.owner_factures_th_invoice_number}</th>
+                <th className="hidden md:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.owner_factures_th_date}</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.owner_factures_th_client}</th>
+                <th className="hidden lg:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.owner_factures_th_member}</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.owner_factures_th_amount}</th>
+                <th className="hidden md:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.owner_factures_th_due_date}</th>
+                <th className="px-4 md:px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.owner_factures_th_status}</th>
+                <th className="hidden sm:table-cell px-8 py-5 text-[11px] font-black text-[#444748]/60 dark:text-neutral-500 uppercase tracking-widest text-right" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.owner_factures_th_actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#c4c7c7]/10 dark:divide-neutral-700">
@@ -360,9 +375,9 @@ export function OwnerFactures() {
                     <td className="hidden md:table-cell px-8 py-6">
                       {inv.due_date ? (
                         <span className={cn("text-xs font-semibold", inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'payé' ? "text-[#ba1a1a]" : "text-[#444748] dark:text-neutral-400")}>
-                          {new Date(inv.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          {new Date(inv.due_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
                           {inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'payé' && (
-                            <span className="ml-1 text-[9px] uppercase font-black text-[#ba1a1a]">Retard</span>
+                            <span className="ml-1 text-[9px] uppercase font-black text-[#ba1a1a]">{t.owner_factures_late}</span>
                           )}
                         </span>
                       ) : (
@@ -380,10 +395,10 @@ export function OwnerFactures() {
                           )}
                         >
                           {STATUS_OPTIONS.map(s => (
-                            <option key={s.value} value={s.value}>{s.label}</option>
+                            <option key={s.value} value={s.value}>{statusLabel(s.value)}</option>
                           ))}
                           {!STATUS_OPTIONS.find(s => s.value === inv.status) && inv.status && (
-                            <option value={inv.status}>{getStatusConfig(inv.status).label}</option>
+                            <option value={inv.status}>{statusLabel(inv.status)}</option>
                           )}
                         </select>
                       </div>
@@ -392,12 +407,12 @@ export function OwnerFactures() {
                       <div className="flex justify-end gap-2">
                         {inv.stripe_payment_link && (
                           <button
-                            onClick={() => { navigator.clipboard.writeText(inv.stripe_payment_link!); toast.success('Lien copié') }}
+                            onClick={() => { navigator.clipboard.writeText(inv.stripe_payment_link!); toast.success(t.owner_factures_link_copied) }}
                             className="bg-[#1b1c1b] text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#1b1c1b]/80 transition-all inline-flex items-center gap-1.5"
-                            title="Copier le lien de paiement"
+                            title={t.owner_factures_copy_payment_link}
                           >
                             <Copy className="h-3 w-3" />
-                            <span className="hidden lg:inline">Lien</span>
+                            <span className="hidden lg:inline">{t.owner_factures_link}</span>
                           </button>
                         )}
                         {inv.stripe_payment_link && (
@@ -407,23 +422,23 @@ export function OwnerFactures() {
                             rel="noopener noreferrer"
                             className="bg-[#635BFF] text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#5349E0] transition-all inline-flex items-center gap-1.5"
                           >
-                            <span className="hidden lg:inline">Payer</span>
+                            <span className="hidden lg:inline">{t.owner_factures_pay}</span>
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         )}
                         {inv.pdf_url && (
                           <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                            <a href={inv.pdf_url} target="_blank" rel="noreferrer" className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors" title="Voir">
+                            <a href={inv.pdf_url} target="_blank" rel="noreferrer" className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors" title={t.owner_factures_view}>
                               <Eye className="h-4 w-4" />
                             </a>
-                            <a href={inv.pdf_url} download className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 text-[#444748] dark:text-neutral-400 hover:text-[#006c49] transition-colors" title="Télécharger">
+                            <a href={inv.pdf_url} download className="p-2 rounded-full hover:bg-[#eae8e7] dark:hover:bg-neutral-700 text-[#444748] dark:text-neutral-400 hover:text-[#006c49] transition-colors" title={t.owner_factures_download}>
                               <Download className="h-4 w-4" />
                             </a>
                           </div>
                         )}
                         {!inv.stripe_payment_link && !inv.pdf_url && (
                           <button className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors">
-                            Détails
+                            {t.owner_factures_details}
                           </button>
                         )}
                       </div>
@@ -438,8 +453,8 @@ export function OwnerFactures() {
                       <div className="w-16 h-16 bg-[#f5f3f2] dark:bg-neutral-700 rounded-full flex items-center justify-center mb-4">
                         <FileText className="h-8 w-8 text-[#c4c7c7]" />
                       </div>
-                      <p className="text-sm font-semibold text-[#1b1c1b] dark:text-white mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>Aucune facture</p>
-                      <p className="text-xs text-[#444748] dark:text-neutral-400">Aucune facture sur cette période</p>
+                      <p className="text-sm font-semibold text-[#1b1c1b] dark:text-white mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.owner_factures_empty_title}</p>
+                      <p className="text-xs text-[#444748] dark:text-neutral-400">{t.owner_factures_empty_desc}</p>
                     </div>
                   </td>
                 </tr>
@@ -452,7 +467,7 @@ export function OwnerFactures() {
         {filtered.length > 0 && (
           <div className="px-4 md:px-8 py-4 md:py-6 bg-[#f5f3f2]/30 dark:bg-neutral-900/30 flex flex-col sm:flex-row justify-between items-center gap-3">
             <p className="text-[10px] font-bold text-[#444748] dark:text-neutral-400 uppercase tracking-widest">
-              {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} sur {filtered.length}
+              {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} {t.owner_factures_of} {filtered.length}
             </p>
             <div className="flex gap-2">
               <button

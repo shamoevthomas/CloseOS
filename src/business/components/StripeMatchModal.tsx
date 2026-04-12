@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X, Search, CreditCard, Loader2, CheckCircle2, Link2 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 
 interface StripeCustomerResult {
@@ -25,6 +26,7 @@ interface StripeMatchModalProps {
 
 export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }: StripeMatchModalProps) {
   const { user } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const { matchStripeManually } = useBusinessProspects()
 
   const [mode, setMode] = useState<'search' | 'manual'>('search')
@@ -83,7 +85,7 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
               <Link2 className="h-6 w-6 text-[#635BFF]" />
             </div>
             <h2 className="text-lg font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">
-              Lier un abonnement Stripe
+              {t.stripe_match_title}
             </h2>
           </div>
           <button onClick={onClose} className="text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white transition-colors">
@@ -98,14 +100,14 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
             className={`flex-1 py-3 text-sm font-bold transition-colors ${mode === 'search' ? 'text-[#635BFF] border-b-2 border-[#635BFF]' : 'text-[#444748] dark:text-neutral-400'}`}
           >
             <Search className="h-4 w-4 inline mr-1.5" />
-            Recherche par email
+            {t.stripe_match_search_by_email}
           </button>
           <button
             onClick={() => setMode('manual')}
             className={`flex-1 py-3 text-sm font-bold transition-colors ${mode === 'manual' ? 'text-[#635BFF] border-b-2 border-[#635BFF]' : 'text-[#444748] dark:text-neutral-400'}`}
           >
             <CreditCard className="h-4 w-4 inline mr-1.5" />
-            Saisie manuelle
+            {t.stripe_match_manual_entry}
           </button>
         </div>
 
@@ -120,7 +122,7 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
                   value={searchEmail}
                   onChange={e => setSearchEmail(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  placeholder="Email du client Stripe"
+                  placeholder={t.stripe_match_email_placeholder}
                   className="flex-1 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 rounded-xl text-sm text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/50 focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30"
                 />
                 <button
@@ -135,12 +137,12 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
               {/* Results */}
               {searched && results.length === 0 && (
                 <div className="text-center py-8">
-                  <p className="text-sm text-[#444748] dark:text-neutral-400">Aucun client Stripe trouve pour cet email.</p>
+                  <p className="text-sm text-[#444748] dark:text-neutral-400">{t.stripe_match_no_results}</p>
                   <button
                     onClick={() => setMode('manual')}
                     className="mt-3 text-sm text-[#635BFF] font-medium hover:underline"
                   >
-                    Saisir les IDs manuellement
+                    {t.stripe_match_enter_ids_manually}
                   </button>
                 </div>
               )}
@@ -155,7 +157,7 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
                   </div>
 
                   {customer.subscriptions.length === 0 ? (
-                    <p className="text-xs text-[#444748] dark:text-neutral-500">Aucun abonnement</p>
+                    <p className="text-xs text-[#444748] dark:text-neutral-500">{t.stripe_match_no_subscription}</p>
                   ) : (
                     <div className="space-y-2">
                       {customer.subscriptions.map(sub => (
@@ -169,7 +171,7 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
                             <div className="flex items-center gap-2">
                               <span className={`inline-block w-2 h-2 rounded-full ${sub.status === 'active' ? 'bg-emerald-500' : sub.status === 'past_due' ? 'bg-amber-500' : sub.status === 'trialing' ? 'bg-blue-500' : 'bg-red-500'}`} />
                               <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">
-                                {sub.amount.toFixed(2)} EUR / {sub.interval === 'month' ? 'mois' : 'an'}
+                                {sub.amount.toFixed(2)} EUR / {sub.interval === 'month' ? t.stripe_match_per_month : t.stripe_match_per_year}
                               </span>
                             </div>
                             <p className="text-[10px] text-[#444748] dark:text-neutral-500 font-mono mt-0.5">{sub.id}</p>
@@ -190,7 +192,7 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
             /* Manual mode */
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#1b1c1b] dark:text-white mb-1.5">Customer ID Stripe</label>
+                <label className="block text-sm font-medium text-[#1b1c1b] dark:text-white mb-1.5">{t.stripe_match_customer_id}</label>
                 <input
                   type="text"
                   value={manualCustomerId}
@@ -200,7 +202,7 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1b1c1b] dark:text-white mb-1.5">Subscription ID Stripe</label>
+                <label className="block text-sm font-medium text-[#1b1c1b] dark:text-white mb-1.5">{t.stripe_match_subscription_id}</label>
                 <input
                   type="text"
                   value={manualSubscriptionId}
@@ -214,7 +216,7 @@ export function StripeMatchModal({ isOpen, onClose, prospectId, prospectEmail }:
                 disabled={matching || !manualCustomerId.trim() || !manualSubscriptionId.trim()}
                 className="w-full py-3 bg-[#635BFF] hover:bg-[#5349E0] disabled:opacity-50 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-2"
               >
-                {matching ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Lier cet abonnement'}
+                {matching ? <Loader2 className="h-5 w-5 animate-spin" /> : t.stripe_match_link_subscription}
               </button>
             </div>
           )}

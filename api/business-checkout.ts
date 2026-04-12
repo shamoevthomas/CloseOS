@@ -186,7 +186,7 @@ async function handleCompleteRegistration(req: VercelRequest, res: VercelRespons
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { setup_intent_id, plan, billing_cycle, promo_code, extras, user_email, user_name, user_phone } = req.body;
+    const { setup_intent_id, plan, billing_cycle, promo_code, extras, user_email, user_name, user_phone, referral_slug } = req.body;
 
     if (!setup_intent_id || !plan || !billing_cycle || !user_email) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -259,10 +259,35 @@ async function handleCompleteRegistration(req: VercelRequest, res: VercelRespons
       items: [{ price: priceId }],
       default_payment_method: paymentMethodId,
       trial_period_days: trialDays,
-      metadata: { plan, billing_cycle },
+      metadata: { plan, billing_cycle, ...(referral_slug ? { referral_slug } : {}) },
       ...(couponId ? { coupon: couponId } : {}),
       ...(addInvoiceItems.length > 0 ? { add_invoice_items: addInvoiceItems } : {}),
     });
+
+    // ─── Referral attribution ───
+    let referralLinkId: string | null = null;
+    if (referral_slug) {
+      const { data: refLink } = await supabase
+        .from('business_referral_links')
+        .select('id')
+        .eq('slug', referral_slug)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (refLink) {
+        referralLinkId = refLink.id;
+        await supabase.from('business_referral_conversions').insert({
+          referral_link_id: refLink.id,
+          user_id: '00000000-0000-0000-0000-000000000000', // placeholder, updated after Supabase auth user is created
+          user_email,
+          user_name,
+          subscription_plan: plan,
+          billing_cycle,
+          status: 'trial',
+          stripe_customer_id: customer.id,
+        });
+      }
+    }
 
     // Send notification email if extras were purchased
     if (Array.isArray(extras) && extras.length > 0) {
@@ -316,6 +341,7 @@ async function handleCompleteRegistration(req: VercelRequest, res: VercelRespons
       customer_id: customer.id,
       subscription_id: subscription.id,
       trial_days: trialDays,
+      ...(referralLinkId ? { referral_link_id: referralLinkId } : {}),
     });
   } catch (err: any) {
     console.error('COMPLETE REGISTRATION ERROR:', err.message);

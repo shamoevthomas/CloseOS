@@ -4,10 +4,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader2, LogIn, X, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useLanguage } from '../contexts/LanguageContext';
+import { loginTranslations } from '../i18n/translations';
 
 export default function Login() {
   const navigate = useNavigate();
   const { login, user, loading: authLoading, isBusinessUser, profile, profileReady } = useAuth();
+  const { lang } = useLanguage();
+  const t = loginTranslations[lang];
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,7 +24,7 @@ export default function Login() {
       // Business-only users (no Sales profile) → error
       if (isBusinessUser && !profile) {
         supabase.auth.signOut();
-        setError("Ce compte est associé à CloseOS Business. Connectez-vous sur closeos.fr/business/login");
+        setError(t.error_business);
       } else {
         navigate('/dashboard', { replace: true });
       }
@@ -50,13 +54,13 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de la demande");
+        throw new Error(data.error || t.error_reset_request);
       }
 
-      setResetMessage({ type: 'success', text: 'Un email de réinitialisation a été envoyé. Vérifiez votre boîte de réception (et vos spams).' });
+      setResetMessage({ type: 'success', text: t.forgot_success });
       setResetEmail('');
     } catch (error: any) {
-      setResetMessage({ type: 'error', text: error.message || "Une erreur est survenue." });
+      setResetMessage({ type: 'error', text: error.message || t.error_generic });
     } finally {
       setResetLoading(false);
     }
@@ -82,7 +86,7 @@ export default function Login() {
         ]);
 
         if ((businessOwner.data || businessTeam.data) && !salesProfile.data) {
-          setError("Ce compte est associé à CloseOS Business. Connectez-vous sur closeos.fr/business/login");
+          setError(t.error_business);
           setLoading(false);
           return;
         }
@@ -90,13 +94,13 @@ export default function Login() {
 
       const result = await login({ email: loginEmail, password });
       if (result?.error) {
-        setError(result.error.message || "Email ou mot de passe incorrect");
+        setError(result.error.message || t.error_credentials);
         setLoading(false);
       } else {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError("Une erreur est survenue.");
+      setError(t.error_generic);
       setLoading(false);
     }
   };
@@ -113,7 +117,7 @@ export default function Login() {
 
       if (error) setError(error.message);
     } catch (err) {
-      setError("Impossible de lancer la connexion Google.");
+      setError(t.error_google);
     } finally {
       setGoogleLoading(false);
     }
@@ -134,9 +138,9 @@ export default function Login() {
           <div className="mb-8">
             <h2 className="mb-2 text-2xl font-bold text-white flex items-center gap-2">
               <LogIn className="h-6 w-6 text-blue-500" />
-              Connexion
+              {t.title}
             </h2>
-            <p className="text-slate-400">Accédez à votre espace CloseOS.</p>
+            <p className="text-slate-400">{t.subtitle}</p>
           </div>
 
           {error && (
@@ -156,17 +160,17 @@ export default function Login() {
             ) : (
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="Google" />
             )}
-            Continuer avec Google
+            {t.google}
           </button>
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0B1121] px-2 text-slate-500 font-bold">Ou avec email</span></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0B1121] px-2 text-slate-500 font-bold">{t.or_email}</span></div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-300 text-left">Email</label>
+              <label className="mb-2 block text-sm font-bold text-slate-300 text-left">{t.email}</label>
               <div className="relative group">
                 <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                 <input
@@ -174,7 +178,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-xl border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-4 text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
-                  placeholder="Pseudo ou email"
+                  placeholder={t.placeholder_email}
                   required
                 />
               </div>
@@ -182,8 +186,8 @@ export default function Login() {
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-bold text-slate-300">Mot de passe</label>
-                <button type="button" onClick={() => setIsResetModalOpen(true)} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">Oublié ?</button>
+                <label className="block text-sm font-bold text-slate-300">{t.password}</label>
+                <button type="button" onClick={() => setIsResetModalOpen(true)} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">{t.forgot}</button>
               </div>
               <div className="relative group">
                 <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
@@ -204,17 +208,17 @@ export default function Login() {
               disabled={loading}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 font-bold text-white transition-all hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Se connecter"}
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t.submit}
               {!loading && <ArrowRight className="h-5 w-5" />}
             </button>
           </form>
 
           <div className="mt-8 text-center border-t border-slate-800 pt-6">
             <p className="text-slate-400 text-sm">
-              Pas encore de compte ?{' '}
+              {t.no_account}{' '}
               {/* LIEN VERS LE PRICING */}
               <a href="/#pricing" className="font-bold text-blue-500 hover:text-blue-400 hover:underline transition-all">
-                S'inscrire
+                {t.signup}
               </a>
             </p>
           </div>
@@ -233,8 +237,8 @@ export default function Login() {
             </button>
 
             <div className="mb-6">
-              <h3 className="text-xl font-bold text-white mb-2">Mot de passe oublié ?</h3>
-              <p className="text-slate-400 text-sm">Entrez votre email pour recevoir un lien de réinitialisation.</p>
+              <h3 className="text-xl font-bold text-white mb-2">{t.forgot_title}</h3>
+              <p className="text-slate-400 text-sm">{t.forgot_subtitle}</p>
             </div>
 
             {resetMessage && (
@@ -253,7 +257,7 @@ export default function Login() {
 
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-bold text-slate-300">Email</label>
+                <label className="mb-2 block text-sm font-bold text-slate-300">{t.email}</label>
                 <div className="relative group">
                   <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                   <input
@@ -272,7 +276,7 @@ export default function Login() {
                 disabled={resetLoading || !resetEmail}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-bold text-white transition-all hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {resetLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Envoyer le lien"}
+                {resetLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : t.forgot_send}
               </button>
             </form>
           </div>

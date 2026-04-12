@@ -3,6 +3,7 @@ import { X, Plus, Pencil, Trash2, CreditCard, Building, Repeat, DollarSign, Chec
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 
 export type PaymentMethodType = 'VIREMENT' | 'PAYPAL' | 'REVOLUT' | 'STRIPE'
 
@@ -28,6 +29,7 @@ interface BusinessPaymentMethodsModalProps {
 
 export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPaymentMethodsModalProps) {
   const { ownerUserId, user } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
 
   const [methods, setMethods] = useState<PaymentMethod[]>([])
@@ -82,7 +84,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
 
   const saveMethod = async (method: PaymentMethod) => {
     if (!effectiveUserId) {
-      alert('Session expirée')
+      alert(t.payment_methods_session_expired)
       return
     }
     setIsLoading(true)
@@ -105,7 +107,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
       resetForm()
     } catch (err) {
       console.error('Erreur sauvegarde:', err)
-      alert('Erreur lors de la sauvegarde')
+      alert(t.payment_methods_save_error)
     } finally {
       setIsLoading(false)
     }
@@ -159,7 +161,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formName.trim()) return alert('Nom obligatoire')
+    if (!formName.trim()) return alert(t.payment_methods_name_required)
 
     const method: PaymentMethod = {
       id: editingId || '',
@@ -203,7 +205,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#c4c7c7]/10 dark:border-neutral-800 p-6 flex-shrink-0">
           <h2 className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">
-            Moyens de Paiement
+            {t.payment_methods_title}
           </h2>
           <button
             onClick={onClose}
@@ -221,7 +223,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
               onClick={() => setIsAdding(true)}
               className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 px-4 py-4 text-sm font-semibold text-[#444748] dark:text-neutral-400 hover:border-[#006c49] hover:text-[#006c49] transition-colors"
             >
-              <Plus className="h-4 w-4" /> Ajouter un moyen de paiement
+              <Plus className="h-4 w-4" /> {t.payment_methods_add}
             </button>
           )}
 
@@ -229,17 +231,17 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
           {isAdding && (
             <div className="mb-6 rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-6">
               <h3 className="mb-4 text-lg font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">
-                {editingId ? 'Modifier' : 'Nouveau'} moyen de paiement
+                {editingId ? t.payment_methods_form_title_edit : t.payment_methods_form_title_new}
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Name */}
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">Nom</label>
+                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.payment_methods_name_label}</label>
                   <input
                     type="text"
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
-                    placeholder="Ex: Compte principal"
+                    placeholder={t.payment_methods_name_placeholder}
                     className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none transition-colors"
                     required
                   />
@@ -247,7 +249,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
 
                 {/* Type selector */}
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">Type</label>
+                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.payment_methods_type_label}</label>
                   <div className="grid grid-cols-2 gap-2">
                     {(['VIREMENT', 'PAYPAL', 'REVOLUT', 'STRIPE'] as PaymentMethodType[]).map(type => (
                       <button
@@ -271,10 +273,10 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
                 {formType === 'VIREMENT' && (
                   <div className="space-y-3 rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#444748] dark:text-neutral-400">Banque</label>
+                      <label className="mb-1 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.payment_methods_bank_label}</label>
                       <input
                         type="text"
-                        placeholder="Nom de la banque"
+                        placeholder={t.payment_methods_bank_placeholder}
                         value={formBankName}
                         onChange={e => setFormBankName(e.target.value)}
                         className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none transition-colors"
@@ -303,10 +305,10 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#444748] dark:text-neutral-400">Titulaire</label>
+                      <label className="mb-1 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.payment_methods_holder_label}</label>
                       <input
                         type="text"
-                        placeholder="Nom du titulaire"
+                        placeholder={t.payment_methods_holder_placeholder}
                         value={formAccountHolder}
                         onChange={e => setFormAccountHolder(e.target.value)}
                         className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none transition-colors"
@@ -319,7 +321,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
                 {(formType === 'PAYPAL' || formType === 'REVOLUT') && (
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[#444748] dark:text-neutral-400">
-                      {formType === 'PAYPAL' ? 'Email PayPal' : 'Revtag'}
+                      {formType === 'PAYPAL' ? t.payment_methods_paypal_email_label : t.payment_methods_revtag_label}
                     </label>
                     <input
                       type="text"
@@ -334,7 +336,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
 
                 {formType === 'STRIPE' && (
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#444748] dark:text-neutral-400">Lien de paiement Stripe</label>
+                    <label className="mb-1 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.payment_methods_stripe_link_label}</label>
                     <input
                       type="text"
                       placeholder="https://buy.stripe.com/..."
@@ -353,14 +355,14 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
                     onClick={resetForm}
                     className="flex-1 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm font-semibold text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors"
                   >
-                    Annuler
+                    {t.common_cancel}
                   </button>
                   <button
                     type="submit"
                     disabled={isLoading}
                     className="flex-1 rounded-xl bg-[#1b1c1b] dark:bg-white px-4 py-2.5 text-sm font-semibold text-white dark:text-neutral-900 hover:bg-[#2d2e2d] dark:hover:bg-neutral-200 transition-colors flex justify-center items-center gap-2"
                   >
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingId ? 'Enregistrer' : 'Ajouter')}
+                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingId ? t.common_save : t.payment_methods_add)}
                   </button>
                 </div>
               </form>
@@ -371,9 +373,9 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
           {methods.length === 0 && !isAdding && (
             <div className="rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-12 text-center">
               <CreditCard className="mx-auto mb-4 h-12 w-12 text-[#c4c7c7]" />
-              <p className="text-[#444748] dark:text-neutral-400 font-medium">Aucun moyen de paiement.</p>
+              <p className="text-[#444748] dark:text-neutral-400 font-medium">{t.payment_methods_no_methods}</p>
               <p className="mt-1 text-sm text-[#444748]/60 dark:text-neutral-500">
-                Ajoutez un moyen de paiement pour vos factures.
+                {t.payment_methods_no_methods_desc}
               </p>
             </div>
           )}
@@ -395,7 +397,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
                         <h4 className="font-semibold text-[#1b1c1b] dark:text-white">{method.name}</h4>
                         {method.isDefault && (
                           <span className="bg-[#006c49]/10 text-[#006c49] px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
-                            <Check className="h-3 w-3" /> Défaut
+                            <Check className="h-3 w-3" /> {t.payment_methods_default}
                           </span>
                         )}
                       </div>
@@ -417,7 +419,7 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
                       {!method.isDefault && (
                         <button
                           onClick={() => setDefault(method.id)}
-                          title="Définir par défaut"
+                          title={t.payment_methods_set_default}
                           className="rounded-lg p-2 text-[#444748] dark:text-neutral-400 hover:bg-[#eae8e7] dark:hover:bg-neutral-700 hover:text-[#006c49] transition-colors"
                         >
                           <Star className="h-4 w-4" />
@@ -425,14 +427,14 @@ export function BusinessPaymentMethodsModal({ isOpen, onClose }: BusinessPayment
                       )}
                       <button
                         onClick={() => handleEdit(method)}
-                        title="Modifier"
+                        title={t.payment_methods_edit_title}
                         className="rounded-lg p-2 text-[#444748] dark:text-neutral-400 hover:bg-[#eae8e7] dark:hover:bg-neutral-700 hover:text-[#006c49] transition-colors"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => confirm('Supprimer ce moyen de paiement ?') && deleteMethod(method.id)}
-                        title="Supprimer"
+                        onClick={() => confirm(t.payment_methods_delete_confirm) && deleteMethod(method.id)}
+                        title={t.common_delete}
                         className="rounded-lg p-2 text-[#444748] dark:text-neutral-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />

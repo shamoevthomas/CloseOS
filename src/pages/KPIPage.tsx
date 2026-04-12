@@ -38,6 +38,8 @@ import { useOrganization } from '../contexts/OrganizationContext';
 import { supabase } from '../lib/supabase';
 import { SharePerformanceButton } from '../components/SharePerformanceButton';
 import { Lock } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { kpiTranslations } from '../i18n/translations';
 
 interface KpiFormulaEntry {
   name: string;
@@ -157,6 +159,9 @@ export function KPIPage() {
   const { showUpgrade } = useUpgrade();
   const { isInOrganization, organization } = useOrganization();
   const hasFullAccess = isFounder || isAdmin || isInTrial;
+  const { lang } = useLanguage();
+  const t = kpiTranslations[lang];
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US';
 
   // Business hybrid data
   const [bizProspects, setBizProspects] = useState<any[]>([]);
@@ -307,7 +312,7 @@ export function KPIPage() {
   const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
 
-  const formatCurrency = (value: number) => new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+  const formatCurrency = (value: number) => new Intl.NumberFormat(locale, { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
   const formatPercent = (value: number) => value.toFixed(1);
 
   // Helper de filtrage (Offre Active)
@@ -559,7 +564,7 @@ export function KPIPage() {
     const result = Object.values(grouped)
       .sort((a, b) => a.date.getTime() - b.date.getTime())
       .map(d => ({
-        name: d.date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }),
+        name: d.date.toLocaleDateString(locale, { month: 'short', year: '2-digit' }),
         closingRate: d.total > 0 ? parseFloat(((d.won / d.total) * 100).toFixed(1)) : 0,
         commission: Math.round(d.commission)
       }));
@@ -589,7 +594,7 @@ export function KPIPage() {
               <TrendingUp className="w-7 h-7 text-emerald-400" />
               <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter">Performance</h1>
             </div>
-            <p className="text-white/40 text-sm font-medium">{viewMode === 'month' ? `Analyse pour ${currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}` : 'Analyse approfondie des indicateurs clés de performance'}</p>
+            <p className="text-white/40 text-sm font-medium">{viewMode === 'month' ? (lang === 'fr' ? `Analyse pour ${currentDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}` : `Analysis for ${currentDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}`) : (lang === 'fr' ? 'Analyse approfondie des indicateurs clés de performance' : 'In-depth analysis of key performance indicators')}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -598,25 +603,25 @@ export function KPIPage() {
                 {viewMode === 'month' && (
                   <div className="flex items-center bg-white/[0.03] rounded-full p-1 border border-white/[0.08]">
                     <button onClick={prevMonth} className="p-2 hover:bg-white/10 rounded-full text-white/60"><ChevronLeft className="w-4 h-4" /></button>
-                    <span className="px-4 text-sm font-semibold text-white capitalize min-w-[120px] text-center">{currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</span>
+                    <span className="px-4 text-sm font-semibold text-white capitalize min-w-[120px] text-center">{currentDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</span>
                     <button onClick={nextMonth} className="p-2 hover:bg-white/10 rounded-full text-white/60"><ChevronRight className="w-4 h-4" /></button>
                   </div>
                 )}
                 <button onClick={() => setViewMode(viewMode === 'month' ? 'all' : 'month')} className="px-6 py-2.5 rounded-full bg-white text-black font-semibold hover:bg-white/90 transition-all">
-                  {viewMode === 'month' ? 'Vue Globale' : 'Vue Mensuelle'}
+                  {viewMode === 'month' ? (lang === 'fr' ? 'Vue Globale' : 'Global View') : (lang === 'fr' ? 'Vue Mensuelle' : 'Monthly View')}
                 </button>
               </>
             ) : (
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-sm text-white/40">
                 <Lock className="w-4 h-4" />
-                Filtres réservés au Pack Pro
+                {lang === 'fr' ? 'Filtres réservés au Pack Pro' : 'Filters reserved for Pro Pack'}
               </div>
             )}
             <button
               onClick={() => { setConfigTab(activeOffers.length > 0 ? String(activeOffers[0].id) : 'global'); setShowConfigModal(true); }}
               className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-sm font-medium text-white/80 hover:bg-white/10 transition-all"
             >
-              <Settings className="w-4 h-4" /> Configurer
+              <Settings className="w-4 h-4" /> {lang === 'fr' ? 'Configurer' : 'Configure'}
             </button>
             <SharePerformanceButton />
           </div>
@@ -641,12 +646,12 @@ export function KPIPage() {
 
         {/* CARDS KPI */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-          <KpiCard title="CA Généré" value={`${formatCurrency(finalRevenue)} €`} icon={DollarSign} color="emerald" glow />
-          <KpiCard title="Ventes Totales" value={finalSales.toString()} icon={ShoppingCart} color="blue" />
-          <KpiCard title="Taux de Conversion" value={`${formatPercent(finalConversion)} %`} icon={Target} color="purple" />
-          <KpiCard title="Mes Commissions" value={`${formatCurrency(finalCommissions)} €`} icon={Award} color="amber" glow />
-          <KpiCard title="Taux de No Show" value={`${finalNoShowRate.toFixed(1)} %`} icon={UserX} color="rose" />
-          <KpiCard title="Deals Perdus" value={finalLost.toString()} icon={Ban} color="slate" />
+          <KpiCard title={t.cash_generated} value={`${formatCurrency(finalRevenue)} €`} icon={DollarSign} color="emerald" glow />
+          <KpiCard title={lang === 'fr' ? 'Ventes Totales' : 'Total Sales'} value={finalSales.toString()} icon={ShoppingCart} color="blue" />
+          <KpiCard title={t.conversion_rate} value={`${formatPercent(finalConversion)} %`} icon={Target} color="purple" />
+          <KpiCard title={t.commissions} value={`${formatCurrency(finalCommissions)} €`} icon={Award} color="amber" glow />
+          <KpiCard title={lang === 'fr' ? 'Taux de No Show' : 'No Show Rate'} value={`${finalNoShowRate.toFixed(1)} %`} icon={UserX} color="rose" />
+          <KpiCard title={t.deals_lost} value={finalLost.toString()} icon={Ban} color="slate" />
         </div>
 
         {/* GRAPHIQUES RECHARTS */}
@@ -658,7 +663,7 @@ export function KPIPage() {
                 className="flex items-center gap-2.5 px-8 py-4 rounded-full bg-emerald-500 text-black font-bold text-base shadow-2xl shadow-emerald-500/20 hover:bg-emerald-400 active:scale-[0.98] transition-all"
               >
                 <Lock className="w-5 h-5" />
-                Débloquer
+                {lang === 'fr' ? 'Débloquer' : 'Unlock'}
               </button>
             </div>
           )}
@@ -666,8 +671,8 @@ export function KPIPage() {
 
           <div className="rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-lg font-bold text-white">Historique Taux de Closing</h3>
-              <span className="text-xs font-medium text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full">Moyenne {chartData.length > 0 ? (chartData.reduce((s, d) => s + d.closingRate, 0) / chartData.length).toFixed(1) : '0'}%</span>
+              <h3 className="text-lg font-bold text-white">{lang === 'fr' ? 'Historique Taux de Closing' : 'Closing Rate History'}</h3>
+              <span className="text-xs font-medium text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full">{lang === 'fr' ? 'Moyenne' : 'Average'} {chartData.length > 0 ? (chartData.reduce((s, d) => s + d.closingRate, 0) / chartData.length).toFixed(1) : '0'}%</span>
             </div>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -693,8 +698,8 @@ export function KPIPage() {
 
           <div className="rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-lg font-bold text-white">Historique Commissions</h3>
-              <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full">Performance</span>
+              <h3 className="text-lg font-bold text-white">{lang === 'fr' ? 'Historique Commissions' : 'Commissions History'}</h3>
+              <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full">{t.performance}</span>
             </div>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -711,7 +716,7 @@ export function KPIPage() {
                   <Tooltip
                     contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#fff' }}
                     itemStyle={{ color: '#10b981' }}
-                    formatter={(value: number) => [`${value} €`, 'Commission']}
+                    formatter={(value: number) => [`${value.toLocaleString(locale)} €`, lang === 'fr' ? 'Commission' : 'Commission']}
                   />
                   <Area type="monotone" dataKey="commission" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorCommissions)" />
                 </AreaChart>
@@ -725,12 +730,12 @@ export function KPIPage() {
         {/* SUMMARY */}
         <div className="rounded-2xl bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden">
           <div className="bg-white/5 px-8 py-4 border-b border-white/5">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-white/60">Vue d'ensemble Pipeline</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-white/60">{lang === 'fr' ? 'Vue d\'ensemble Pipeline' : 'Pipeline Overview'}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/5">
-            <SummaryItem label="Total Leads Traités" value={finalLeads} icon={Users} color="blue" />
-            <SummaryItem label="Deals en Cours" value={finalActiveCount} icon={Briefcase} color="emerald" />
-            <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="amber" />
+            <SummaryItem label={lang === 'fr' ? 'Total Leads Traités' : 'Total Leads Processed'} value={finalLeads} icon={Users} color="blue" />
+            <SummaryItem label={lang === 'fr' ? 'Deals en Cours' : 'Active Deals'} value={finalActiveCount} icon={Briefcase} color="emerald" />
+            <SummaryItem label={lang === 'fr' ? 'Commission Moy.' : 'Avg. Commission'} value={`${formatCurrency(avgCommission)} €`} icon={Award} color="amber" />
           </div>
         </div>
 
@@ -746,7 +751,7 @@ export function KPIPage() {
                   <div className="p-2 bg-blue-600/20 rounded-lg border border-blue-500/30">
                     <Settings className="w-5 h-5 text-blue-400" />
                   </div>
-                  <h2 className="text-xl font-bold text-white">Configurer mes KPI</h2>
+                  <h2 className="text-xl font-bold text-white">{lang === 'fr' ? 'Configurer mes KPI' : 'Configure my KPI'}</h2>
                 </div>
                 <button onClick={() => setShowConfigModal(false)} className="p-2 rounded-lg text-white/40 hover:bg-white/5 hover:text-white transition-colors">
                   <X className="w-5 h-5" />
@@ -756,11 +761,11 @@ export function KPIPage() {
               {/* Warning */}
               <div className="mx-6 mt-4 flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
                 <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                <p className="text-sm text-amber-300">Merci de créer vos différentes offres tout d'abord</p>
+                <p className="text-sm text-amber-300">{lang === 'fr' ? 'Merci de créer vos différentes offres tout d\'abord' : 'Please create your offers first'}</p>
               </div>
 
               {/* Recommendation */}
-              <p className="mx-6 mt-3 text-xs text-white/40 italic">💡 Il est recommandé de commencer par remplir les offres avant l'onglet Global.</p>
+              <p className="mx-6 mt-3 text-xs text-white/40 italic">{lang === 'fr' ? '💡 Il est recommandé de commencer par remplir les offres avant l\'onglet Global.' : '💡 We recommend filling in offers before the Global tab.'}</p>
 
               {/* Tabs */}
               <div className="flex items-center gap-2 px-6 mt-4 overflow-x-auto pb-2 scrollbar-hide">
@@ -785,7 +790,7 @@ export function KPIPage() {
               <div className="p-6 space-y-4 max-h-[50vh] overflow-y-auto">
                 {configTab === 'global' && (
                   <p className="text-xs text-white/40 bg-white/[0.03] rounded-lg px-3 py-2 border border-white/[0.08]">
-                    📌 Saisissez les chiffres <span className="font-semibold text-white">hors offres déjà inscrites</span> ci-dessus.
+                    {lang === 'fr' ? <>📌 Saisissez les chiffres <span className="font-semibold text-white">hors offres déjà inscrites</span> ci-dessus.</> : <>📌 Enter figures <span className="font-semibold text-white">excluding offers already listed</span> above.</>}
                   </p>
                 )}
 
@@ -793,10 +798,10 @@ export function KPIPage() {
                 {(() => {
                   const config = getConfigForKey(configTab);
                   const fields: { key: keyof KpiConfigEntry; label: string; icon: string; color: string }[] = [
-                    { key: 'planned_calls', label: 'Combien de calls prévus initialement ?', icon: '📞', color: 'border-blue-500/30 focus:border-blue-500' },
-                    { key: 'no_shows', label: 'Combien de no show ?', icon: '👻', color: 'border-rose-500/30 focus:border-rose-500' },
-                    { key: 'lost_calls', label: 'Combien de calls perdus ?', icon: '❌', color: 'border-red-500/30 focus:border-red-500' },
-                    { key: 'won_calls', label: 'Combien de calls gagnés ?', icon: '✅', color: 'border-emerald-500/30 focus:border-emerald-500' },
+                    { key: 'planned_calls', label: lang === 'fr' ? 'Combien de calls prévus initialement ?' : 'How many calls initially planned?', icon: '📞', color: 'border-blue-500/30 focus:border-blue-500' },
+                    { key: 'no_shows', label: lang === 'fr' ? 'Combien de no show ?' : 'How many no shows?', icon: '👻', color: 'border-rose-500/30 focus:border-rose-500' },
+                    { key: 'lost_calls', label: lang === 'fr' ? 'Combien de calls perdus ?' : 'How many lost calls?', icon: '❌', color: 'border-red-500/30 focus:border-red-500' },
+                    { key: 'won_calls', label: lang === 'fr' ? 'Combien de calls gagnés ?' : 'How many won calls?', icon: '✅', color: 'border-emerald-500/30 focus:border-emerald-500' },
                   ];
                   return fields.map(f => (
                     <div key={f.key}>

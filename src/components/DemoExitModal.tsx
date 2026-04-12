@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { X, ArrowLeft } from 'lucide-react';
 import Cal, { getCalApi } from "@calcom/embed-react";
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface DemoExitModalProps {
   isOpen: boolean;
@@ -9,7 +10,8 @@ interface DemoExitModalProps {
 }
 
 export function DemoExitModal({ isOpen, onClose, onConfirmExit }: DemoExitModalProps) {
-  
+  const { lang } = useLanguage();
+
   useEffect(() => {
     if (isOpen) {
       (async function () {
@@ -32,9 +34,9 @@ export function DemoExitModal({ isOpen, onClose, onConfirmExit }: DemoExitModalP
         {/* En-tête du Modal */}
         <div className="flex items-center justify-between p-6 border-b border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl">
           <div>
-            <h2 className="text-xl font-bold text-white">Pas encore convaincu ? 🤔</h2>
+            <h2 className="text-xl font-bold text-white">{lang === 'fr' ? 'Pas encore convaincu ? 🤔' : 'Not convinced yet? 🤔'}</h2>
             <p className="text-white/40 text-sm">
-              Prenez 15 min de démo pour voir comment CloseOS peut exploser vos commissions.
+              {lang === 'fr' ? 'Prenez 15 min de démo pour voir comment CloseOS peut exploser vos commissions.' : 'Take a 15-min demo to see how CloseOS can skyrocket your commissions.'}
             </p>
           </div>
           <button 
@@ -65,7 +67,7 @@ export function DemoExitModal({ isOpen, onClose, onConfirmExit }: DemoExitModalP
             className="flex items-center gap-2 text-sm text-white/40 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Non merci, je veux vraiment retourner à l'accueil
+            {lang === 'fr' ? "Non merci, je veux vraiment retourner à l'accueil" : "No thanks, I really want to go back to home"}
           </button>
         </div>
 

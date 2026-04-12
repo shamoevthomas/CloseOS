@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Loader2, Lock, User, Mail, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { trackFirstPromoterReferral } from '../lib/firstpromoter';
 
 export function Return() {
@@ -9,6 +10,7 @@ export function Return() {
   const [customerEmail, setCustomerEmail] = useState('');
   const [loadingStripe, setLoadingStripe] = useState(true);
 
+  const { lang } = useLanguage();
   // 👇 On récupère le paramètre "plan" de l'URL (envoyé par Stripe)
   const [searchParams] = useSearchParams();
   const plan = searchParams.get('plan');
@@ -162,7 +164,7 @@ export function Return() {
         navigate('/welcome-founder');
       }
     } catch (err: any) {
-      setError("Une erreur est survenue lors de la création du compte.");
+      setError(lang === 'fr' ? "Une erreur est survenue lors de la création du compte." : "An error occurred while creating the account.");
       setAuthLoading(false);
     }
   };
@@ -177,7 +179,7 @@ export function Return() {
       // Note : Pour Google, la redirection dépend de la configuration Supabase, 
       // mais pour le mot de passe, c'est géré juste au-dessus.
     } catch (err) {
-      setError("Impossible de lancer la connexion Google.");
+      setError(lang === 'fr' ? "Impossible de lancer la connexion Google." : "Unable to launch Google login.");
     } finally {
       setAuthLoading(false);
     }
@@ -195,7 +197,7 @@ export function Return() {
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
-          <p className="text-white/40 text-sm">Vérification du paiement...</p>
+          <p className="text-white/40 text-sm">{lang === 'fr' ? 'Vérification du paiement...' : 'Verifying payment...'}</p>
         </div>
       </div>
     );
@@ -209,10 +211,9 @@ export function Return() {
           <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 rounded-full mb-4 ring-1 ring-emerald-500/20 shadow-lg shadow-emerald-500/10">
             <CheckCircle2 className="w-10 h-10 text-emerald-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Paiement réussi !</h1>
+          <h1 className="text-2xl font-bold text-white mb-2">{lang === 'fr' ? 'Paiement réussi !' : 'Payment successful!'}</h1>
           <p className="text-white/40">
-            {/* Texte dynamique selon le plan */}
-Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
+            {lang === 'fr' ? 'Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.' : 'Welcome to CloseOS Pro. Complete your account to access your workspace.'}
           </p>
         </div>
 
@@ -224,7 +225,7 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
               : 'text-white/40 hover:text-white/60'
               }`}
           >
-            Mot de passe
+            {lang === 'fr' ? 'Mot de passe' : 'Password'}
           </button>
           <button
             onClick={() => setActiveTab('google')}
@@ -246,7 +247,7 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
         {activeTab === 'password' && (
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 ml-1">Email (lié au paiement)</label>
+              <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 ml-1">{lang === 'fr' ? 'Email (lié au paiement)' : 'Email (linked to payment)'}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
                 <input
@@ -263,7 +264,7 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 ml-1">Votre Nom</label>
+              <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 ml-1">{lang === 'fr' ? 'Votre Nom' : 'Your Name'}</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
                 <input
@@ -278,7 +279,7 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 ml-1">Choisir un mot de passe</label>
+              <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 ml-1">{lang === 'fr' ? 'Choisir un mot de passe' : 'Choose a password'}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
                 <input
@@ -298,7 +299,7 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
               disabled={authLoading}
               className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Activer mon compte"}
+              {authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (lang === 'fr' ? "Activer mon compte" : "Activate my account")}
               {!authLoading && <LayoutDashboard className="h-4 w-4" />}
             </button>
           </form>
@@ -307,9 +308,9 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
         {activeTab === 'google' && (
           <div className="text-center py-4">
             <p className="text-white/40 mb-6 text-sm">
-              Utilisez votre compte Google pour accéder directement à l'espace membre.
+              {lang === 'fr' ? "Utilisez votre compte Google pour accéder directement à l'espace membre." : 'Use your Google account to directly access the member area.'}
               <br />
-              <span className="text-xs text-white/40">(L'email doit correspondre à celui utilisé pour le paiement)</span>
+              <span className="text-xs text-white/40">{lang === 'fr' ? "(L'email doit correspondre à celui utilisé pour le paiement)" : '(Email must match the one used for payment)'}</span>
             </p>
 
             <button
@@ -322,7 +323,7 @@ Bienvenue sur CloseOS Pro. Finalisez votre compte pour accéder à votre espace.
               ) : (
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="Google" />
               )}
-              Continuer avec Google
+              {lang === 'fr' ? 'Continuer avec Google' : 'Continue with Google'}
             </button>
           </div>
         )}

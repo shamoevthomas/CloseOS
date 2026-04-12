@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import { useCustomStages } from '../hooks/useCustomStages'
@@ -14,11 +15,11 @@ import { supabase } from '../../lib/supabase'
 import { toUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
 
-const setterOutcomes = [
-  { id: 'qualified', label: 'Qualifié', icon: CheckCircle2, iconClass: 'text-emerald-600' },
-  { id: 'booklater', label: 'À booker plus tard', icon: Calendar, iconClass: 'text-stone-500' },
-  { id: 'unqualified', label: 'Non Qualifié', icon: XCircle, iconClass: 'text-stone-500' },
-  { id: 'noanswer', label: 'Pas de Réponse', icon: PhoneMissed, iconClass: 'text-stone-500' },
+const getSetterOutcomes = (t: any) => [
+  { id: 'qualified', label: t.setter_calldetails_outcome_qualified, icon: CheckCircle2, iconClass: 'text-emerald-600' },
+  { id: 'booklater', label: t.setter_calldetails_outcome_booklater, icon: Calendar, iconClass: 'text-stone-500' },
+  { id: 'unqualified', label: t.setter_calldetails_outcome_unqualified, icon: XCircle, iconClass: 'text-stone-500' },
+  { id: 'noanswer', label: t.setter_calldetails_outcome_noanswer, icon: PhoneMissed, iconClass: 'text-stone-500' },
 ]
 
 interface Closer {
@@ -54,6 +55,8 @@ export function SetterCallDetails() {
   const [searchParams] = useSearchParams()
   const isReadonly = searchParams.get('readonly') === '1'
   const { user, teamMember, ownerUserId, isTeamMember, userTimezone } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
+  const setterOutcomes = getSetterOutcomes(t)
   const { prospects, updateProspect } = useBusinessProspects()
   const { createEvent: createGoogleEvent, isConnected: isGoogleConnected } = useBusinessGoogleCalendar()
   const { getStagesForRole } = useCustomStages()
@@ -183,7 +186,7 @@ export function SetterCallDetails() {
       setSelectedCloser(closer)
       loadAvailableSlots(closer.id)
     } else {
-      toast.error('Aucun closer disponible')
+      toast.error(t.setter_calldetails_toast_no_closer)
     }
   }
 
@@ -268,7 +271,7 @@ export function SetterCallDetails() {
             })
             if (hasConflict) continue
 
-            const dateLabel = date.toLocaleDateString('fr-FR', {
+            const dateLabel = date.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
               weekday: 'long', day: 'numeric', month: 'long'
             })
 
@@ -286,7 +289,7 @@ export function SetterCallDetails() {
       setCurrentDateIndex(0)
     } catch (err) {
       console.error('Error loading slots:', err)
-      toast.error('Erreur lors du chargement des créneaux')
+      toast.error(t.setter_calldetails_toast_slots_error)
     } finally {
       setLoadingSlots(false)
     }
@@ -311,7 +314,7 @@ export function SetterCallDetails() {
         stageMap[selectedOutcome] = selectedOutcome
       }
 
-      let technicalSummary = `[${new Date().toLocaleDateString('fr-FR')}] Qualification: ${selectedOutcome}`
+      let technicalSummary = `[${new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')}] Qualification: ${selectedOutcome}`
       if (selectedOutcome === 'qualified' && selectedCloser && selectedSlot) {
         technicalSummary += `\n- Closer assigné: ${selectedCloser.first_name} ${selectedCloser.last_name}`
         technicalSummary += `\n- RDV: ${selectedSlot.dateLabel} à ${selectedSlot.timeLabel}`
@@ -412,11 +415,11 @@ export function SetterCallDetails() {
         }
       }
 
-      toast.success('Sauvegardé')
+      toast.success(t.setter_calldetails_toast_saved)
       navigate('/business/appels')
     } catch (err) {
       console.error(err)
-      toast.error('Erreur lors de la sauvegarde')
+      toast.error(t.setter_calldetails_toast_save_error)
     } finally {
       setSaving(false)
     }
@@ -440,9 +443,9 @@ export function SetterCallDetails() {
       setReminderDescription('')
       setReminderDate('')
       setReminderTime('')
-      toast.success('Rappel programmé')
+      toast.success(t.setter_calldetails_toast_reminder_saved)
     } catch {
-      toast.error('Erreur lors de la création du rappel')
+      toast.error(t.setter_calldetails_toast_reminder_error)
     }
     setIsSavingReminder(false)
   }
@@ -454,8 +457,8 @@ export function SetterCallDetails() {
   if (!call) {
     return (
       <div className="text-center py-16">
-        <p className="text-stone-500">Appel introuvable</p>
-        <button onClick={() => navigate('/business/appels')} className="mt-4 text-stone-900 font-semibold hover:underline">Retour aux appels</button>
+        <p className="text-stone-500">{t.setter_calldetails_not_found}</p>
+        <button onClick={() => navigate('/business/appels')} className="mt-4 text-stone-900 font-semibold hover:underline">{t.setter_calldetails_back_to_calls}</button>
       </div>
     )
   }
@@ -471,9 +474,9 @@ export function SetterCallDetails() {
   const currentDateSlots = currentDateKey ? slotsByDate[currentDateKey] : []
 
   const tabs = [
-    { id: 'qualification' as const, label: 'Qualification' },
-    { id: 'notes' as const, label: "Notes d'appel" },
-    { id: 'reminder' as const, label: 'Programmer un rappel' },
+    { id: 'qualification' as const, label: t.setter_calldetails_tab_qualification },
+    { id: 'notes' as const, label: t.setter_calldetails_tab_notes },
+    { id: 'reminder' as const, label: t.setter_calldetails_tab_reminder },
   ]
 
   return (
@@ -484,26 +487,26 @@ export function SetterCallDetails() {
           onClick={() => navigate('/business/appels')}
           className="mb-6 flex items-center gap-2 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors font-['Manrope'] font-semibold"
         >
-          <ArrowLeft className="h-5 w-5" /> Retour
+          <ArrowLeft className="h-5 w-5" /> {t.setter_calldetails_back}
         </button>
 
         {/* Readonly banner */}
         {isReadonly && (
           <div className="rounded-xl border border-blue-200 bg-blue-50/70 backdrop-blur-md px-5 py-3 flex items-center gap-3 mb-6">
             <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
-            <p className="text-sm font-medium text-blue-700">Mode consultation — Cet appel a déjà été qualifié</p>
+            <p className="text-sm font-medium text-blue-700">{t.setter_calldetails_readonly_banner}</p>
           </div>
         )}
 
         <h1 className="font-['Manrope'] text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">
-          {isReadonly ? "Détails de l'appel avec" : 'Qualifiez votre appel avec'} {call.contact_name}
+          {isReadonly ? t.setter_calldetails_title_readonly : t.setter_calldetails_title_default} {call.contact_name}
         </h1>
         <div className="flex items-center gap-2 text-stone-500 dark:text-neutral-400">
           <Clock className="h-4 w-4" />
           <span className="text-sm font-medium">
-            {new Date(call.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            {' à '}
-            {new Date(call.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            {new Date(call.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {` ${t.setter_calldetails_at} `}
+            {new Date(call.date).toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
             {call.duration && call.duration !== 'En cours...' && ` (${call.duration})`}
           </span>
         </div>
@@ -537,7 +540,7 @@ export function SetterCallDetails() {
             <section>
               <h3 className="font-['Manrope'] text-lg font-bold mb-5 flex items-center gap-2 text-stone-900 dark:text-white">
                 <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                Résultat de l'appel
+                {t.setter_calldetails_outcome_label}
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 {setterOutcomes.map(outcome => {
@@ -619,24 +622,24 @@ export function SetterCallDetails() {
             {/* Étape 1 — Assigner un Closer */}
             {selectedOutcome === 'qualified' && (
               <section>
-                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">Étape 1 — Assigner un Closer</h3>
+                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">{t.setter_calldetails_step1_assign}</h3>
                 <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-white/10 shadow-sm">
                   {closers.length === 0 ? (
                     <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
                       <AlertCircle className="h-4 w-4 text-amber-500" />
-                      Aucun closer dans l'équipe
+                      {t.setter_calldetails_no_closer}
                     </div>
                   ) : (
                     <>
                       {/* Manual closer dropdown */}
                       <div className="mb-5">
-                        <label className="mb-2 block text-xs font-medium text-stone-500 dark:text-neutral-400">Sélectionner manuellement</label>
+                        <label className="mb-2 block text-xs font-medium text-stone-500 dark:text-neutral-400">{t.setter_calldetails_select_manually}</label>
                         <select
                           value={assignmentMode === 'manual' ? selectedCloser?.id || '' : ''}
                           onChange={(e) => e.target.value && handleManualSelect(e.target.value)}
                           className="w-full rounded-lg border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm text-stone-700 dark:text-neutral-200 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                         >
-                          <option value="">— Choisir un closer —</option>
+                          <option value="">{t.setter_calldetails_choose_closer}</option>
                           {closers.map(c => (
                             <option key={c.id} value={c.id}>{c.first_name} {c.last_name}{c.role === 'Owner' ? ' (Owner)' : ''}</option>
                           ))}
@@ -653,7 +656,7 @@ export function SetterCallDetails() {
                               : 'border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-white/5'
                           )}
                         >
-                          Suivant (Tournante)
+                          {t.setter_calldetails_round_robin}
                         </button>
                         <button
                           onClick={() => handleAssign('hasard')}
@@ -664,7 +667,7 @@ export function SetterCallDetails() {
                               : 'border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-white/5'
                           )}
                         >
-                          Hasard
+                          {t.setter_calldetails_random}
                         </button>
                       </div>
 
@@ -678,7 +681,7 @@ export function SetterCallDetails() {
                               {selectedCloser.first_name} {selectedCloser.last_name}
                             </h4>
                             <p className="text-emerald-700 font-bold text-xs uppercase tracking-widest">
-                              {selectedCloser.role === 'Owner' ? 'Owner' : 'Closer'} • Disponible
+                              {selectedCloser.role === 'Owner' ? 'Owner' : 'Closer'} {'\u2022'} {t.setter_calldetails_available}
                             </p>
                           </div>
                           <CheckCircle2 className="h-6 w-6 text-emerald-600 shrink-0" />
@@ -695,17 +698,17 @@ export function SetterCallDetails() {
           {selectedOutcome === 'qualified' && selectedCloser && (
             <div className="lg:col-span-5">
               <section>
-                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">Étape 2 — Programmer le RDV</h3>
+                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">{t.setter_calldetails_step2_schedule}</h3>
                 <div className="bg-white dark:bg-white/5 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   {loadingSlots ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
-                      <span className="ml-2 text-sm text-stone-500">Chargement des créneaux...</span>
+                      <span className="ml-2 text-sm text-stone-500">{t.setter_calldetails_loading_slots}</span>
                     </div>
                   ) : dateKeys.length === 0 ? (
                     <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
                       <AlertCircle className="h-4 w-4 text-amber-500" />
-                      Aucun créneau disponible pour ce closer dans les 14 prochains jours.
+                      {t.setter_calldetails_no_slots}
                     </div>
                   ) : (
                     <>
@@ -760,7 +763,7 @@ export function SetterCallDetails() {
                             onClick={() => setShowAllSlots(true)}
                             className="text-emerald-700 font-['Manrope'] font-bold text-sm hover:underline"
                           >
-                            Voir tous les créneaux
+                            {t.setter_calldetails_see_all_slots}
                           </button>
                         </div>
                       )}
@@ -771,7 +774,7 @@ export function SetterCallDetails() {
                           <div className="flex items-center gap-2">
                             <CalendarCheck className="h-4 w-4 text-emerald-600" />
                             <div>
-                              <p className="text-sm font-semibold text-stone-900 dark:text-white">RDV confirmé</p>
+                              <p className="text-sm font-semibold text-stone-900 dark:text-white">{t.setter_calldetails_slot_confirmed}</p>
                               <p className="text-xs text-stone-500 dark:text-neutral-400">
                                 {selectedSlot.dateLabel} — {selectedSlot.timeLabel} avec {selectedCloser.first_name} {selectedCloser.last_name}
                               </p>
@@ -792,13 +795,13 @@ export function SetterCallDetails() {
       {activeTab === 'notes' && (
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 h-[500px] flex flex-col">
           <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 dark:text-white font-['Manrope']">
-            <FileText className="h-4 w-4 text-stone-500" /> Historique et Notes de l'appel
+            <FileText className="h-4 w-4 text-stone-500" /> {t.setter_calldetails_notes_label}
           </label>
           <textarea
             value={notes}
             onChange={(e) => !isReadonly && setNotes(e.target.value)}
             readOnly={isReadonly}
-            placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
+            placeholder={t.setter_calldetails_notes_placeholder}
             className={cn(
               "flex-1 w-full rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-3 text-base text-stone-800 dark:text-neutral-100 placeholder-stone-400 dark:placeholder-neutral-500 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none leading-relaxed",
               isReadonly && "cursor-default"
@@ -806,7 +809,7 @@ export function SetterCallDetails() {
           />
           <p className="mt-3 text-xs text-stone-400 dark:text-neutral-500 flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3" />
-            Ces notes s'ajouteront à l'historique des appels du prospect.
+            {t.setter_calldetails_notes_info}
           </p>
         </div>
       )}
@@ -816,34 +819,34 @@ export function SetterCallDetails() {
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
           <div className="flex items-center gap-2 mb-2">
             <Bell className="h-5 w-5 text-stone-500" />
-            <h3 className="text-lg font-bold text-stone-900 dark:text-white font-['Manrope']">Programmer un rappel</h3>
+            <h3 className="text-lg font-bold text-stone-900 dark:text-white font-['Manrope']">{t.setter_calldetails_reminder_title}</h3>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Titre <span className="text-red-500">*</span></label>
+            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.setter_calldetails_reminder_label_title} <span className="text-red-500">*</span></label>
             <input type="text" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)}
-              placeholder="Ex: Rappeler Jean pour le contrat"
+              placeholder={t.setter_calldetails_reminder_title_placeholder}
               className="w-full rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Description <span className="text-stone-400">(optionnel)</span></label>
+            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.setter_calldetails_reminder_label_desc} <span className="text-stone-400">{t.setter_calldetails_reminder_optional}</span></label>
             <textarea value={reminderDescription} onChange={(e) => setReminderDescription(e.target.value)}
-              placeholder="Détails supplémentaires..." rows={3}
+              placeholder={t.setter_calldetails_reminder_desc_placeholder} rows={3}
               className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
-                <Calendar className="h-4 w-4" /> Date <span className="text-red-500">*</span>
+                <Calendar className="h-4 w-4" /> {t.setter_calldetails_reminder_label_date} <span className="text-red-500">*</span>
               </label>
               <input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)}
                 className="w-full rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
             </div>
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
-                <Clock className="h-4 w-4" /> Heure <span className="text-red-500">*</span>
+                <Clock className="h-4 w-4" /> {t.setter_calldetails_reminder_label_time} <span className="text-red-500">*</span>
               </label>
               <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)}
                 className="w-full rounded-lg border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
@@ -858,8 +861,8 @@ export function SetterCallDetails() {
                 : 'bg-stone-300 !text-stone-500 cursor-not-allowed'
             )}>
             {isSavingReminder ? (
-              <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement...</span>
-            ) : 'Enregistrer le rappel'}
+              <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> {t.setter_calldetails_reminder_saving}</span>
+            ) : t.setter_calldetails_reminder_save}
           </button>
         </div>
       )}
@@ -869,7 +872,7 @@ export function SetterCallDetails() {
         <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-4 md:px-8 py-4 md:py-5 flex items-center justify-end gap-3 md:gap-5 z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
             className="px-8 py-3 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 font-['Manrope'] font-bold text-sm hover:bg-stone-50 dark:hover:bg-white/5 transition-all">
-            Annuler
+            {t.setter_calldetails_cancel}
           </button>
           <button onClick={handleSave} disabled={!isFormValid() || saving}
             className={cn(
@@ -878,7 +881,7 @@ export function SetterCallDetails() {
                 ? 'bg-stone-900 hover:bg-stone-800'
                 : 'bg-stone-300 !text-stone-500 cursor-not-allowed'
             )}>
-            {saving ? 'Enregistrement...' : 'Tout Enregistrer'}
+            {saving ? t.setter_calldetails_saving : t.setter_calldetails_save_all}
           </button>
         </div>
       )}
@@ -886,7 +889,7 @@ export function SetterCallDetails() {
         <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-4 md:px-8 py-4 md:py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
             className="px-10 py-3 rounded-full bg-stone-900 text-white font-['Manrope'] font-bold text-sm hover:bg-stone-800 transition-all shadow-xl active:scale-95">
-            Retour aux appels
+            {t.setter_calldetails_back_to_calls}
           </button>
         </div>
       )}

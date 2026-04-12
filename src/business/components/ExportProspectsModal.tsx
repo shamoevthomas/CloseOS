@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 import type { BusinessProspect } from '../contexts/BusinessProspectsContext'
 import type { CustomStage } from '../hooks/useCustomStages'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 
 interface BusinessTag {
   id: string
@@ -37,51 +38,61 @@ interface Props {
   customStages: CustomStage[]
 }
 
-const ALL_STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500' },
-  { id: 'unqualified', name: 'Non-Qualifié', color: 'bg-yellow-500' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500' },
-  { id: 'noanswer', name: 'Pas de Réponse', color: 'bg-cyan-500' },
-  { id: 'noshow', name: 'No Show', color: 'bg-slate-500' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500' },
+const ALL_STAGE_IDS = [
+  { id: 'prospect', color: 'bg-blue-500' },
+  { id: 'qualified', color: 'bg-purple-500' },
+  { id: 'unqualified', color: 'bg-yellow-500' },
+  { id: 'won', color: 'bg-emerald-500' },
+  { id: 'followup', color: 'bg-orange-500' },
+  { id: 'noanswer', color: 'bg-cyan-500' },
+  { id: 'noshow', color: 'bg-slate-500' },
+  { id: 'lost', color: 'bg-red-500' },
 ]
 
-const PERIOD_OPTIONS = [
-  { label: 'Tout', days: 0 },
-  { label: "Aujourd'hui", days: 1 },
-  { label: '7 jours', days: 7 },
-  { label: '30 jours', days: 30 },
-  { label: '90 jours', days: 90 },
-]
-
-const COLUMNS = [
-  { key: 'contact', label: 'Nom', header: 'Nom' },
-  { key: 'firstName', label: 'Prénom', header: 'Prénom' },
-  { key: 'lastName', label: 'Nom de famille', header: 'Nom de famille' },
-  { key: 'email', label: 'Email', header: 'Email' },
-  { key: 'phone', label: 'Téléphone', header: 'Téléphone' },
-  { key: 'company', label: 'Entreprise', header: 'Entreprise' },
-  { key: 'stage', label: 'Étape', header: 'Étape' },
-  { key: 'value', label: 'Valeur', header: 'Valeur' },
-  { key: 'offer', label: 'Formule', header: 'Formule' },
-  { key: 'created_at', label: 'Date de création', header: 'Date de création' },
-  { key: 'notes', label: 'Notes', header: 'Notes' },
+const COLUMN_KEYS = [
+  'contact', 'firstName', 'lastName', 'email', 'phone', 'company', 'stage', 'value', 'offer', 'created_at', 'notes',
 ] as const
 
-const STAGE_LABELS: Record<string, string> = {
-  prospect: 'Prospect',
-  qualified: 'Qualifié',
-  unqualified: 'Non qualifié',
-  won: 'Gagné',
-  lost: 'Perdu',
-  noshow: 'No Show',
-  noanswer: 'Pas de réponse',
-  followup: 'Suivi',
-}
-
 export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMembers, formulas, tags, prospectTags, customStages }: Props) {
+  const { t, lang } = useBusinessLang()
+
+  const STAGE_NAMES: Record<string, string> = useMemo(() => ({
+    prospect: t.export_stage_prospect, qualified: t.export_stage_qualified, unqualified: t.export_stage_unqualified,
+    won: t.export_stage_won, followup: t.export_stage_followup, noanswer: t.export_stage_noanswer,
+    noshow: t.export_stage_noshow, lost: t.export_stage_lost,
+  }), [t])
+
+  const ALL_STAGES = useMemo(() => ALL_STAGE_IDS.map(s => ({ ...s, name: STAGE_NAMES[s.id] || s.id })), [STAGE_NAMES])
+
+  const PERIOD_OPTIONS = useMemo(() => [
+    { label: t.export_period_all, days: 0 },
+    { label: t.export_period_today, days: 1 },
+    { label: t.export_period_7days, days: 7 },
+    { label: t.export_period_30days, days: 30 },
+    { label: t.export_period_90days, days: 90 },
+  ], [t])
+
+  const COLUMNS = useMemo(() => [
+    { key: 'contact' as const, label: t.export_col_name, header: t.export_col_name },
+    { key: 'firstName' as const, label: t.export_col_firstname, header: t.export_col_firstname },
+    { key: 'lastName' as const, label: t.export_col_lastname, header: t.export_col_lastname },
+    { key: 'email' as const, label: t.export_col_email, header: t.export_col_email },
+    { key: 'phone' as const, label: t.export_col_phone, header: t.export_col_phone },
+    { key: 'company' as const, label: t.export_col_company, header: t.export_col_company },
+    { key: 'stage' as const, label: t.export_col_stage, header: t.export_col_stage },
+    { key: 'value' as const, label: t.export_col_value, header: t.export_col_value },
+    { key: 'offer' as const, label: t.export_col_offer, header: t.export_col_offer },
+    { key: 'created_at' as const, label: t.export_col_created, header: t.export_col_created },
+    { key: 'notes' as const, label: t.export_col_notes, header: t.export_col_notes },
+  ], [t])
+
+  const STAGE_LABELS: Record<string, string> = useMemo(() => ({
+    prospect: t.export_stage_label_prospect, qualified: t.export_stage_label_qualified,
+    unqualified: t.export_stage_label_unqualified, won: t.export_stage_label_won,
+    lost: t.export_stage_label_lost, noshow: t.export_stage_label_noshow,
+    noanswer: t.export_stage_label_noanswer, followup: t.export_stage_label_followup,
+  }), [t])
+
   // Filter state (independent from CRM page)
   const [selectedPeriod, setSelectedPeriod] = useState(0)
   const [dateFrom, setDateFrom] = useState('')
@@ -90,7 +101,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
   const [selectedStages, setSelectedStages] = useState<string[]>([])
   const [selectedOffers, setSelectedOffers] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(COLUMNS.map(c => c.key))
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([...COLUMN_KEYS])
 
   const toggleMultiSelect = (arr: string[], setArr: (v: string[]) => void, val: string) => {
     setArr(arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val])
@@ -259,7 +270,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-extrabold tracking-tight text-stone-900 dark:text-white">Exporter les prospects</h2>
+          <h2 className="text-lg font-extrabold tracking-tight text-stone-900 dark:text-white">{t.export_title}</h2>
           <button onClick={onClose} className="text-stone-400 hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">
             <X className="h-5 w-5" />
           </button>
@@ -267,12 +278,12 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
 
         {/* ═══ FILTERS SECTION ═══ */}
         <div className="mb-5 space-y-4">
-          <h3 className="text-sm font-extrabold text-stone-900 dark:text-white">Filtres</h3>
+          <h3 className="text-sm font-extrabold text-stone-900 dark:text-white">{t.export_filters}</h3>
 
           {/* Period shortcuts */}
           <div>
             <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">
-              <Calendar className="h-3 w-3 inline mr-1" />Période
+              <Calendar className="h-3 w-3 inline mr-1" />{t.export_period_label}
             </label>
             <div className="flex flex-wrap gap-1">
               {PERIOD_OPTIONS.map(p => (
@@ -290,7 +301,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
           {/* Members */}
           {allTeamMembers.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Closer / Setter</label>
+              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.export_closer_setter}</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {allTeamMembers.map(m => (
                   <button
@@ -307,7 +318,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
 
           {/* Stages */}
           <div>
-            <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Statut</label>
+            <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.export_status_label}</label>
             <div className="flex flex-wrap gap-1">
               {ALL_STAGES.map(s => (
                 <button
@@ -335,7 +346,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
           {/* Offers */}
           {formulas.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Offre / Formule</label>
+              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.export_offer_formula}</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {formulas.map(f => (
                   <button
@@ -354,7 +365,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
           {tags.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">
-                <Tag className="h-3 w-3 inline mr-1" />Tags
+                <Tag className="h-3 w-3 inline mr-1" />{t.export_tags_label}
               </label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {tags.map(t => (
@@ -380,10 +391,10 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
 
         {/* ═══ DATE RANGE (manual) ═══ */}
         <div className="mb-5">
-          <h3 className="text-sm font-bold text-stone-700 dark:text-neutral-300 mb-2">Période personnalisée</h3>
+          <h3 className="text-sm font-bold text-stone-700 dark:text-neutral-300 mb-2">{t.export_custom_period}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-stone-500 dark:text-neutral-500 mb-1 block">Du</label>
+              <label className="text-xs text-stone-500 dark:text-neutral-500 mb-1 block">{t.export_date_from}</label>
               <input
                 type="date"
                 value={dateFrom}
@@ -392,7 +403,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
               />
             </div>
             <div>
-              <label className="text-xs text-stone-500 dark:text-neutral-500 mb-1 block">Au</label>
+              <label className="text-xs text-stone-500 dark:text-neutral-500 mb-1 block">{t.export_date_to}</label>
               <input
                 type="date"
                 value={dateTo}
@@ -406,9 +417,9 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
         {/* ═══ COLUMNS ═══ */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold text-stone-700 dark:text-neutral-300">Colonnes</h3>
+            <h3 className="text-sm font-bold text-stone-700 dark:text-neutral-300">{t.export_columns}</h3>
             <button onClick={toggleAllColumns} className="text-xs font-medium text-stone-500 dark:text-neutral-400 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
-              {allColumnsSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+              {allColumnsSelected ? t.export_deselect_all : t.export_select_all}
             </button>
           </div>
           <div className="grid grid-cols-2 gap-1.5">

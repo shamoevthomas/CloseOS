@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Mail, Send } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface EmailCapturePopupProps {
   closerName: string
@@ -8,6 +9,7 @@ interface EmailCapturePopupProps {
 }
 
 export function EmailCapturePopup({ closerName, shareLinkId }: EmailCapturePopupProps) {
+  const { lang } = useLanguage()
   const [visible, setVisible] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const [email, setEmail] = useState('')
@@ -75,17 +77,17 @@ export function EmailCapturePopup({ closerName, shareLinkId }: EmailCapturePopup
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
               <Mail className="h-6 w-6 text-emerald-400" />
             </div>
-            <p className="text-sm font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Merci !</p>
-            <p className="text-xs text-white/40 mt-1">Vous recevrez les mises à jour</p>
+            <p className="text-sm font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{lang === 'fr' ? 'Merci !' : 'Thank you!'}</p>
+            <p className="text-xs text-white/40 mt-1">{lang === 'fr' ? 'Vous recevrez les mises à jour' : "You'll receive updates"}</p>
           </div>
         ) : (
           <>
             <div className="mb-5 pr-6">
               <p className="text-sm font-bold text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                Suivez les performances de {closerName || 'ce closer'}
+                {lang === 'fr' ? `Suivez les performances de ${closerName || 'ce closer'}` : `Follow ${closerName || 'this closer'}'s performance`}
               </p>
               <p className="text-xs text-white/40 mt-1.5">
-                Recevez les mises à jour par email
+                {lang === 'fr' ? 'Recevez les mises à jour par email' : 'Get updates by email'}
               </p>
             </div>
 
@@ -108,14 +110,14 @@ export function EmailCapturePopup({ closerName, shareLinkId }: EmailCapturePopup
             </form>
 
             <p className="mt-3 text-center text-[9px] text-white/30 leading-relaxed">
-              En continuant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées dans notre base de données.
+              {lang === 'fr' ? "En continuant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées dans notre base de données." : 'By continuing, you agree to be contacted and that your information is stored in our database.'}
             </p>
 
             <button
               onClick={handleDismiss}
               className="mt-3 w-full text-center text-[10px] font-bold uppercase tracking-widest text-white/30 hover:text-white/60 transition-colors"
             >
-              Non merci
+              {lang === 'fr' ? 'Non merci' : 'No thanks'}
             </button>
           </>
         )}

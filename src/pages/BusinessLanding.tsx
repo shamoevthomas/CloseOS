@@ -54,6 +54,17 @@ export const BusinessLanding: React.FC = () => {
 
   useEffect(() => {
     setLang(detectLang());
+
+    // Capture referral parameter and set cookie
+    const refParam = new URLSearchParams(window.location.search).get('ref');
+    if (refParam) {
+      document.cookie = `closeos_ref=${refParam}; path=/; max-age=2592000; SameSite=Lax`;
+      fetch('/api/business-referral?action=track-view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: refParam }),
+      }).catch(() => {});
+    }
   }, []);
 
   // Dynamic iframe height from embed postMessage
@@ -1549,7 +1560,7 @@ const FAQItem = ({ question, answer }: { question: string; answer: React.ReactNo
   );
 };
 
-const pricingPlans = [
+const getPricingPlans = (lang: string) => [
   {
     name: 'Solo',
     planKey: 'solo',
@@ -1560,8 +1571,10 @@ const pricingPlans = [
     priceAnnual: '28',
     annualTotal: '336',
     popular: false,
-    description: '1 seul utilisateur — l\'infopreneur qui close seul',
-    features: [
+    description: lang === 'fr'
+      ? '1 seul utilisateur — l\'infopreneur qui close seul'
+      : '1 user — the solopreneur who closes alone',
+    features: lang === 'fr' ? [
       'CRM & Pipeline visuel',
       'Système d\'acquisition complet (campagnes, embed/iframe, tracking UTM, KPIs par source)',
       'Cockpit d\'appel plein écran (script, notes, offre, ressources)',
@@ -1573,6 +1586,18 @@ const pricingPlans = [
       'Facturation',
       'Objectifs personnels',
       'Rapports',
+    ] : [
+      'CRM & Visual Pipeline',
+      'Full acquisition system (campaigns, embed/iframe, UTM tracking, KPIs per source)',
+      'Full-screen call cockpit (script, notes, offer, resources)',
+      'Video/audio call recording',
+      'Calendar + Google Calendar sync',
+      'Appointments + booking links',
+      'Reminders',
+      'Personal KPIs',
+      'Invoicing',
+      'Personal objectives',
+      'Reports',
     ],
   },
   {
@@ -1585,8 +1610,10 @@ const pricingPlans = [
     priceAnnual: '42',
     annualTotal: '504',
     popular: false,
-    description: '3 équipiers inclus — tout pour gérer une équipe',
-    features: [
+    description: lang === 'fr'
+      ? '3 équipiers inclus — tout pour gérer une équipe'
+      : '3 team members included — everything to manage a team',
+    features: lang === 'fr' ? [
       'Tout ce que le Solo a, SAUF le système d\'acquisition',
       'Gestion d\'équipe complète (6 rôles : Owner, Admin, HOS, Closer, Setter, Setter-Closer)',
       'Vue macro Owner en temps réel sur toute l\'équipe',
@@ -1598,6 +1625,18 @@ const pricingPlans = [
       'KPIs par membre / par offre / global',
       'Rapport avec export PDF',
       'Gestion des disponibilités et absences par membre',
+    ] : [
+      'Everything in Solo, EXCEPT the acquisition system',
+      'Full team management (6 roles: Owner, Admin, HOS, Closer, Setter, Setter-Closer)',
+      'Real-time Owner macro view of the entire team',
+      'Member invitation via magic link (7-day expiry)',
+      'Shared Kanban with advanced filters',
+      'Assignable objectives per member',
+      'Automatic Monday Morning Reporting',
+      'Organization-wide invoices',
+      'KPIs per member / per offer / global',
+      'Report with PDF export',
+      'Availability & absence management per member',
     ],
   },
   {
@@ -1610,18 +1649,30 @@ const pricingPlans = [
     priceAnnual: '71',
     annualTotal: '852',
     popular: true,
-    description: '5 équipiers inclus — l\'arsenal complet',
-    features: [
+    description: lang === 'fr'
+      ? '5 équipiers inclus — l\'arsenal complet'
+      : '5 team members included — the full arsenal',
+    features: lang === 'fr' ? [
       'Tout ce que Business a',
       'Système d\'acquisition complet en plus :',
+    ] : [
+      'Everything in Business',
+      'Full acquisition system on top:',
     ],
-    subFeatures: [
+    subFeatures: lang === 'fr' ? [
       'Création/gestion de campagnes (mode avec RDV ou inscription seule)',
       'Page de capture configurable (titre, vidéo, champs custom, redirection)',
       'Génération de code embed (iframe ou popup bloquant)',
       'Tracking UTM + formule par défaut',
       'KPIs acquisition : vues, leads, taux de conversion par campagne',
       'Graphiques : camembert (campagnes les plus converties), barres (CA par campagne)',
+    ] : [
+      'Campaign creation/management (appointment or sign-up mode)',
+      'Configurable capture page (title, video, custom fields, redirect)',
+      'Embed code generation (iframe or blocking popup)',
+      'UTM tracking + default plan',
+      'Acquisition KPIs: views, leads, conversion rate per campaign',
+      'Charts: pie (top converting campaigns), bar (revenue per campaign)',
     ],
   },
   {
@@ -1632,36 +1683,49 @@ const pricingPlans = [
     priceAnnual: null,
     annualTotal: null,
     popular: false,
-    description: 'Sur devis — idéal pour les challenges & grandes organisations',
-    features: [
+    description: lang === 'fr'
+      ? 'Sur devis — idéal pour les challenges & grandes organisations'
+      : 'Custom pricing — ideal for challenges & large organizations',
+    features: lang === 'fr' ? [
       'Membres illimités',
       'Tout le système d\'acquisition inclus',
       'Setup + Intégration inclus',
       'Support prioritaire dédié',
       'Accès one-shot limité à la durée du challenge',
       'Aussi disponible en abonnement mensuel classique',
+    ] : [
+      'Unlimited members',
+      'Full acquisition system included',
+      'Setup + Integration included',
+      'Dedicated priority support',
+      'One-shot access limited to challenge duration',
+      'Also available as a standard monthly subscription',
     ],
   },
 ];
 
-const pricingExtras = [
+const getPricingExtras = (lang: string) => [
   {
     name: 'Setup',
     price: '60€',
     type: 'one-shot',
-    description: 'Configuration complète de l\'outil : campagnes, formules, pipeline, équipe, onboarding des membres. L\'infopreneur n\'a rien à toucher, tout est livré prêt à l\'emploi.',
+    description: lang === 'fr'
+      ? 'Configuration complète de l\'outil : campagnes, formules, pipeline, équipe, onboarding des membres. L\'infopreneur n\'a rien à toucher, tout est livré prêt à l\'emploi.'
+      : 'Full tool setup: campaigns, plans, pipeline, team, member onboarding. The business owner doesn\'t have to touch anything — everything is delivered ready to use.',
   },
   {
-    name: 'Intégration',
+    name: lang === 'fr' ? 'Intégration' : 'Integration',
     price: '80€',
     type: 'one-shot',
-    description: 'Intégration technique sur le site du client : rajout/remplacement iframe, embed, pop up. Utile pour ceux qui avaient un iframe iClosed et veulent passer sur CloseOS.',
+    description: lang === 'fr'
+      ? 'Intégration technique sur le site du client : rajout/remplacement iframe, embed, pop up. Utile pour ceux qui avaient un iframe iClosed et veulent passer sur CloseOS.'
+      : 'Technical integration on the client\'s website: add/replace iframe, embed, popup. Useful for those switching from iClosed to CloseOS.',
   },
   {
-    name: 'Setup + Intégration',
+    name: lang === 'fr' ? 'Setup + Intégration' : 'Setup + Integration',
     price: '120€',
     type: 'one-shot',
-    description: 'Les deux combinés.',
+    description: lang === 'fr' ? 'Les deux combinés.' : 'Both combined.',
   },
 ];
 
@@ -1672,6 +1736,8 @@ const PricingSection = () => {
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);
   const { t, lang } = useLang();
+  const pricingPlans = getPricingPlans(lang);
+  const pricingExtras = getPricingExtras(lang);
 
   return (
     <motion.section

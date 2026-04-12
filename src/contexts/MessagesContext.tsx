@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext'
 import { withRetry } from '../lib/supabaseHelpers'
 import toast from 'react-hot-toast'
 
+const getLang = () => (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
+
 export interface Message {
   id: string
   text: string
@@ -54,7 +56,7 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) {
-        toast.error('Impossible de charger les messages', { id: 'load-messages' })
+        toast.error(getLang() === 'fr' ? 'Impossible de charger les messages' : 'Unable to load messages', { id: 'load-messages' })
         return
       }
       setThreads(data || [])
@@ -113,7 +115,7 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
             t.id === threadId ? { ...t, messages: thread.messages, last_message: thread.last_message } : t
           )
         )
-        toast.error('Impossible d\'envoyer le message.')
+        toast.error(getLang() === 'fr' ? 'Impossible d\'envoyer le message.' : 'Unable to send message.')
       }
     } catch (error) {
       console.error('Erreur envoi message:', error)
@@ -142,7 +144,7 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) {
-        toast.error('Impossible de creer la conversation.')
+        toast.error(getLang() === 'fr' ? 'Impossible de créer la conversation.' : 'Unable to create conversation.')
         return ''
       }
       if (data) {

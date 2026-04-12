@@ -30,6 +30,8 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useUpgrade } from '../../contexts/UpgradeContext'
+import { useLanguage, type Lang } from '../../contexts/LanguageContext'
+import { settingsTranslations } from '../../i18n/translations'
 import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
@@ -47,6 +49,8 @@ type TabType = 'profile' | 'security' | 'subscription' | 'referral' | 'support' 
 
 export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: SettingsModalProps) {
   const { user, profile, updateProfile, updatePassword, isFounder, isPaying, refreshProfile } = useAuth()
+  const { lang, setLang } = useLanguage()
+  const st = settingsTranslations[lang]
 
   const [activeTab, setActiveTab] = useState<TabType>(initialTab)
   const [loading, setLoading] = useState(false)
@@ -250,10 +254,10 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
       if (!res.ok) throw new Error(data.error)
       setCancelAtPeriodEnd(false)
       setIsReactivateModalOpen(false)
-      setMessage({ type: 'success', text: 'Votre abonnement a été réactivé !' })
+      setMessage({ type: 'success', text: lang === 'fr' ? 'Votre abonnement a été réactivé !' : 'Your subscription has been reactivated!' })
       refreshProfile()
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Erreur lors de la réactivation' })
+      setMessage({ type: 'error', text: err.message || (lang === 'fr' ? 'Erreur lors de la réactivation' : 'Error during reactivation') })
       setIsReactivateModalOpen(false)
     } finally {
       setReactivating(false)
@@ -343,12 +347,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
       }
 
       setFormData(prev => ({ ...prev, avatar_url: publicUrl }))
-      setMessage({ type: 'success', text: 'Photo de profil mise à jour !' })
+      setMessage({ type: 'success', text: lang === 'fr' ? 'Photo de profil mise à jour !' : 'Profile picture updated!' })
       setImageSrc(null); // Close cropper
 
     } catch (error: any) {
       console.error('Erreur upload:', error)
-      setMessage({ type: 'error', text: 'Erreur lors de l\'upload de l\'image.' })
+      setMessage({ type: 'error', text: lang === 'fr' ? 'Erreur lors de l\'upload de l\'image.' : 'Error uploading image.' })
     } finally {
       setUploading(false)
     }
@@ -382,11 +386,11 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
     if (error || dbErrorMsg) {
       const finalError = error?.message || dbErrorMsg;
       setMessage({ type: 'error', text: finalError })
-      window.alert("Il y a une erreur : " + finalError)
+      window.alert(lang === 'fr' ? "Il y a une erreur : " + finalError : "An error occurred: " + finalError)
     }
     else {
-      setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' })
-      window.alert("Fait avec succès !")
+      setMessage({ type: 'success', text: lang === 'fr' ? 'Profil mis à jour avec succès !' : 'Profile updated successfully!' })
+      window.alert(lang === 'fr' ? "Fait avec succès !" : "Done successfully!")
     }
     setLoading(false)
   }
@@ -394,11 +398,11 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (formData.newPassword !== formData.confirmPassword) {
-      setMessage({ type: 'error', text: 'Les mots de passe ne correspondent pas.' })
+      setMessage({ type: 'error', text: lang === 'fr' ? 'Les mots de passe ne correspondent pas.' : 'Passwords do not match.' })
       return
     }
     if (!formData.currentPassword) {
-      setMessage({ type: 'error', text: 'Veuillez entrer votre mot de passe actuel.' })
+      setMessage({ type: 'error', text: lang === 'fr' ? 'Veuillez entrer votre mot de passe actuel.' : 'Please enter your current password.' })
       return
     }
 
@@ -413,7 +417,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
       });
 
       if (signInError) {
-        throw new Error('Mot de passe actuel incorrect.');
+        throw new Error(lang === 'fr' ? 'Mot de passe actuel incorrect.' : 'Current password is incorrect.');
       }
 
       // 2. Mettre à jour le mot de passe
@@ -428,12 +432,12 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
         body: JSON.stringify({ email: user?.email })
       });
 
-      setMessage({ type: 'success', text: 'Mot de passe modifié avec succès ! Un email de sécurité a été envoyé.' })
+      setMessage({ type: 'success', text: lang === 'fr' ? 'Mot de passe modifié avec succès ! Un email de sécurité a été envoyé.' : 'Password changed successfully! A security email has been sent.' })
       setFormData(prev => ({ ...prev, newPassword: '', confirmPassword: '', currentPassword: '' }))
 
     } catch (error: any) {
       console.error(error);
-      setMessage({ type: 'error', text: error.message || "Erreur lors de la mise à jour." })
+      setMessage({ type: 'error', text: error.message || (lang === 'fr' ? "Erreur lors de la mise à jour." : "Error during update.") })
     } finally {
       setLoading(false)
     }
@@ -442,7 +446,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
 
 
   const handleCancelDeletion = async () => {
-    if (!window.confirm("Voulez-vous vraiment annuler la suppression de votre compte ?")) return;
+    if (!window.confirm(lang === 'fr' ? "Voulez-vous vraiment annuler la suppression de votre compte ?" : "Are you sure you want to cancel your account deletion?")) return;
 
     setLoading(true);
     try {
@@ -452,13 +456,13 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
         body: JSON.stringify({ userId: user?.id })
       });
 
-      if (!response.ok) throw new Error('Erreur lors de l\'annulation');
+      if (!response.ok) throw new Error(lang === 'fr' ? 'Erreur lors de l\'annulation' : 'Error during cancellation');
 
       setFormData(prev => ({ ...prev, deletion_scheduled_at: null }));
-      setMessage({ type: 'success', text: 'La demande de suppression a été annulée.' });
+      setMessage({ type: 'success', text: lang === 'fr' ? 'La demande de suppression a été annulée.' : 'The deletion request has been cancelled.' });
     } catch (error) {
       console.error(error);
-      setMessage({ type: 'error', text: 'Impossible d\'annuler la suppression.' });
+      setMessage({ type: 'error', text: lang === 'fr' ? 'Impossible d\'annuler la suppression.' : 'Unable to cancel deletion.' });
     } finally {
       setLoading(false);
     }
@@ -546,54 +550,54 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
             <div className="h-9 w-9 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
               <User className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-xl font-extrabold text-white">Paramètres</h2>
+            <h2 className="text-xl font-extrabold text-white">{st.title}</h2>
           </div>
 
           <nav className="space-y-1 flex-1">
-            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Compte</p>
+            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">{st.tab_account}</p>
             <button onClick={() => setActiveTab('profile')} className={tabButtonClass('profile')}>
-              <User className="w-4 h-4" /> Profil
+              <User className="w-4 h-4" /> {st.tab_profile}
             </button>
 
             {/* RETRAIT DU BOUTON FUSEAU HORAIRE ICI */}
             <button onClick={() => setActiveTab('security')} className={tabButtonClass('security')}>
-              <Lock className="w-4 h-4" /> Sécurité
+              <Lock className="w-4 h-4" /> {st.tab_security}
             </button>
             <button onClick={() => setActiveTab('delete_account')} className={tabButtonClass('delete_account')}>
-              <Trash2 className="w-4 h-4 text-red-400" /> Suppression
+              <Trash2 className="w-4 h-4 text-red-400" /> {st.tab_deletion}
             </button>
 
             <button onClick={() => setActiveTab('organization')} className={tabButtonClass('organization')}>
-              <Building2 className="w-4 h-4" /> Organisation
+              <Building2 className="w-4 h-4" /> {st.tab_organization}
             </button>
 
             <div className="my-5 mx-4" />
 
-            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Abonnement</p>
+            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">{st.tab_subscription_group}</p>
             <button onClick={() => setActiveTab('subscription')} className={tabButtonClass('subscription')}>
-              <CreditCard className="w-4 h-4" /> Abonnement
+              <CreditCard className="w-4 h-4" /> {st.tab_subscription}
             </button>
             <button onClick={() => setActiveTab('referral')} className={tabButtonClass('referral')}>
-              <Gift className="w-4 h-4" /> Parrainage
+              <Gift className="w-4 h-4" /> {st.tab_referral}
             </button>
 
             <div className="my-5 mx-4" />
 
-            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Données</p>
+            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">{st.tab_data_group}</p>
             <button onClick={() => setActiveTab('data')} className={tabButtonClass('data')}>
-              <Database className="w-4 h-4" /> Données
+              <Database className="w-4 h-4" /> {st.tab_data}
             </button>
 
             <div className="my-5 mx-4" />
 
-            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">Aide</p>
+            <p className="px-4 text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">{st.tab_help}</p>
             <button onClick={() => setActiveTab('support')} className={tabButtonClass('support')}>
-              <Headphones className="w-4 h-4" /> Support
+              <Headphones className="w-4 h-4" /> {st.tab_support}
             </button>
           </nav>
 
           <button onClick={onClose} className="mt-auto flex items-center gap-3 px-4 py-3.5 text-white/40 hover:text-white font-bold transition-all rounded-2xl hover:bg-white/5 border border-transparent hover:border-white/5">
-            <X className="w-4 h-4" /> Fermer
+            <X className="w-4 h-4" /> {st.close}
           </button>
         </div>
 
@@ -602,28 +606,28 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
           <div className="px-10 py-8 flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-extrabold text-white text-left">
-                {activeTab === 'profile' && 'Mon Profil'}
+                {activeTab === 'profile' && st.profile_title}
 
                 {/* Retrait du titre Fuseau Horaire */}
-                {activeTab === 'security' && 'Sécurité & Connexion'}
-                {activeTab === 'subscription' && 'Mon Abonnement'}
-                {activeTab === 'referral' && 'Parrainage'}
-                {activeTab === 'support' && 'Centre d\'Aide'}
-                {activeTab === 'delete_account' && 'Suppression du compte'}
-                {activeTab === 'data' && 'Mes Données'}
-                {activeTab === 'organization' && 'Organisation'}
+                {activeTab === 'security' && st.security_title}
+                {activeTab === 'subscription' && st.subscription_title}
+                {activeTab === 'referral' && st.referral_title}
+                {activeTab === 'support' && st.support_title}
+                {activeTab === 'delete_account' && st.delete_title}
+                {activeTab === 'data' && st.data_title}
+                {activeTab === 'organization' && st.org_title}
               </h2>
               <p className="text-white/40 text-sm mt-1 text-left">
-                {activeTab === 'profile' && 'Gérez vos informations personnelles et votre rôle.'}
+                {activeTab === 'profile' && st.profile_subtitle}
 
                 {/* Retrait de la description Fuseau Horaire */}
-                {activeTab === 'security' && 'Protégez l\'accès à votre compte CloserOS.'}
-                {activeTab === 'subscription' && 'Gérez votre plan, vos factures et l\'annulation.'}
-                {activeTab === 'referral' && 'Partagez votre lien et gagnez des réductions.'}
-                {activeTab === 'support' && 'Une question ? Notre équipe est là pour vous.'}
-                {activeTab === 'delete_account' && 'Zone de danger : Supprimer votre compte et vos données.'}
-                {activeTab === 'data' && 'Exportez vos données au format PDF.'}
-                {activeTab === 'organization' && 'Rejoignez ou gérez votre organisation.'}
+                {activeTab === 'security' && st.security_subtitle}
+                {activeTab === 'subscription' && st.subscription_subtitle}
+                {activeTab === 'referral' && st.referral_subtitle}
+                {activeTab === 'support' && st.support_subtitle}
+                {activeTab === 'delete_account' && st.delete_subtitle}
+                {activeTab === 'data' && st.data_subtitle}
+                {activeTab === 'organization' && st.org_subtitle}
               </p>
             </div>
           </div>
@@ -720,6 +724,27 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   </div>
                 </div>
 
+                {/* Language selector */}
+                <div className="mt-8 space-y-1 text-left">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{st.language}</label>
+                  <div className="flex gap-3 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setLang('fr')}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-medium text-sm transition-all ${lang === 'fr' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'}`}
+                    >
+                      🇫🇷 {st.language_fr}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLang('en')}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-medium text-sm transition-all ${lang === 'en' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'}`}
+                    >
+                      🇬🇧 {st.language_en}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="mt-10">
                 <button
                   type="submit"
@@ -727,7 +752,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   className="w-full bg-emerald-500 hover:bg-emerald-400 text-black px-8 py-3.5 rounded-full font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                 >
                   {loading ? <Loader2 className="animate-spin h-5 w-5" /> : <Save className="h-5 w-5" />}
-                  Enregistrer les modifications
+                  {st.save}
                 </button>
                 </div>
                 </section>
@@ -1261,7 +1286,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 }
               });
           }
-          setMessage({ type: 'success', text: 'Demande de suppression enregistrée.' });
+          setMessage({ type: 'success', text: lang === 'fr' ? 'Demande de suppression enregistrée.' : 'Deletion request submitted.' });
         }}
       />
 

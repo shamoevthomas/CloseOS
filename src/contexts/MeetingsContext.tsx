@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext'
 import { withRetry } from '../lib/supabaseHelpers'
 import toast from 'react-hot-toast'
 
+const getLang = () => (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
+
 export interface Meeting {
   id: number
   user_id: string
@@ -58,7 +60,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) {
-        toast.error('Impossible de charger les rendez-vous', { id: 'load-meetings' })
+        toast.error(getLang() === 'fr' ? 'Impossible de charger les rendez-vous' : 'Unable to load appointments', { id: 'load-meetings' })
         return
       }
       setMeetings(data || [])
@@ -152,7 +154,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) {
-        toast.error('Impossible de creer le rendez-vous. Veuillez reessayer.')
+        toast.error(getLang() === 'fr' ? 'Impossible de créer le rendez-vous. Veuillez réessayer.' : 'Unable to create appointment. Please try again.')
         return { data: null, error }
       }
 
@@ -162,7 +164,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
 
       return { data, error: null }
     } catch (error) {
-      toast.error('Erreur lors de la creation du rendez-vous.')
+      toast.error(getLang() === 'fr' ? 'Erreur lors de la création du rendez-vous.' : 'Error creating appointment.')
       return { data: null, error }
     }
   }
@@ -181,7 +183,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         setMeetings(previousMeetings)
-        toast.error('Impossible de modifier le rendez-vous. Veuillez reessayer.')
+        toast.error(getLang() === 'fr' ? 'Impossible de modifier le rendez-vous. Veuillez réessayer.' : 'Unable to update appointment. Please try again.')
         return { error }
       }
       return { error: null }
@@ -205,7 +207,7 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         setMeetings(previousMeetings)
-        toast.error('Impossible de supprimer le rendez-vous. Veuillez reessayer.')
+        toast.error(getLang() === 'fr' ? 'Impossible de supprimer le rendez-vous. Veuillez réessayer.' : 'Unable to delete appointment. Please try again.')
         return { error }
       }
       return { error: null }

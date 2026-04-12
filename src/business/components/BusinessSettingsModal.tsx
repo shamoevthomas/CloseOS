@@ -44,6 +44,7 @@ import {
 import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useTheme } from '../contexts/BusinessThemeContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../../lib/image-crop'
@@ -99,6 +100,7 @@ interface BusinessSettingsModalProps {
 export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' }: BusinessSettingsModalProps) {
   const { user, businessProfile, updateBusinessProfile, businessSettings, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile, isSolo } = useBusinessAuth()
   const { dark, toggle: toggleDark } = useTheme()
+  const { lang, setLang, t } = useBusinessLang()
 
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'interface' | 'devices' | 'organisation' | 'support' | 'delete_account'>(initialTab)
 
@@ -1318,17 +1320,43 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                   }
                 </div>
 
+                {/* Language toggle */}
+                <div className="p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 mb-1">{t.settings_language}</label>
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">{t.settings_language_desc}</p>
+                  <div className="flex gap-2">
+                    {([
+                      { value: 'fr' as const, label: '🇫🇷 Francais' },
+                      { value: 'en' as const, label: '🇬🇧 English' },
+                    ]).map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setLang(opt.value)}
+                        className={cn(
+                          'px-5 py-2.5 rounded-full text-sm font-bold transition-all',
+                          lang === opt.value
+                            ? 'bg-stone-900 dark:bg-white text-white dark:text-neutral-900'
+                            : 'bg-[#f5f3f2] dark:bg-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-600'
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Dashboard Period */}
                 <div className="p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800">
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 mb-1">Période du Dashboard</label>
-                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">Choisissez la période par défaut pour les KPI affichés sur le dashboard.</p>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 mb-1">{t.settings_dashboard_period}</label>
+                  <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">{t.settings_dashboard_period_desc}</p>
                   <div className="flex flex-wrap gap-2">
                     {([
-                      { value: 'today', label: "Aujourd'hui" },
-                      { value: 'week', label: 'Cette semaine' },
-                      { value: 'month', label: 'Ce mois' },
+                      { value: 'today', label: t.common_today },
+                      { value: 'week', label: t.common_this_week },
+                      { value: 'month', label: t.common_this_month },
                       { value: 'year', label: "Cette année" },
-                      { value: 'all', label: 'Depuis toujours' },
+                      { value: 'all', label: t.common_since_forever },
                     ] as const).map(opt => (
                       <button
                         key={opt.value}
@@ -1536,7 +1564,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                                 )}
                               </div>
                               <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">
-                                Connect&eacute; le {createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} &middot; Expire dans {daysLeft}j
+                                Connect&eacute; le {createdAt.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} &middot; Expire dans {daysLeft}j
                               </p>
                             </div>
                           </div>

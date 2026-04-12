@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectModal'
 import toast from 'react-hot-toast'
@@ -63,28 +64,32 @@ interface Charge {
   created_at: string
 }
 
-const MONTH_LABELS: Record<string, string> = {
-  '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Avr', '05': 'Mai', '06': 'Jun',
-  '07': 'Jul', '08': 'Aou', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
-}
+// MONTH_LABELS moved inside component for i18n access
 
-function formatMonth(m: string) {
-  const [, mm] = m.split('-')
-  return MONTH_LABELS[mm] || mm
-}
+// formatMonth moved inside component for i18n access
 
-const PERIODS = [
-  { key: '1m', label: 'Ce mois' },
-  { key: '3m', label: '3 mois' },
-  { key: '6m', label: '6 mois' },
-  { key: '12m', label: 'Cette annee' },
-  { key: 'all', label: 'Tout' },
-] as const
-
-type PeriodKey = typeof PERIODS[number]['key']
+type PeriodKey = '1m' | '3m' | '6m' | '12m' | 'all'
 
 export function BusinessRevenue() {
   const { user } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
+
+  const MONTH_LABELS: Record<string, string> = {
+    '01': t.revenue_month_jan, '02': t.revenue_month_feb, '03': t.revenue_month_mar, '04': t.revenue_month_apr, '05': t.revenue_month_may, '06': t.revenue_month_jun,
+    '07': t.revenue_month_jul, '08': t.revenue_month_aug, '09': t.revenue_month_sep, '10': t.revenue_month_oct, '11': t.revenue_month_nov, '12': t.revenue_month_dec,
+  }
+  const formatMonth = (m: string) => {
+    const [, mm] = m.split('-')
+    return MONTH_LABELS[mm] || mm
+  }
+  const PERIODS: { key: PeriodKey; label: string }[] = [
+    { key: '1m', label: t.revenue_period_this_month },
+    { key: '3m', label: t.revenue_period_3m },
+    { key: '6m', label: t.revenue_period_6m },
+    { key: '12m', label: t.revenue_period_this_year },
+    { key: 'all', label: t.revenue_period_all },
+  ]
+
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<RevenueSummary | null>(null)
   const [stripeConnected, setStripeConnected] = useState(() => {
@@ -113,14 +118,14 @@ export function BusinessRevenue() {
 
   const disconnectStripe = useCallback(async () => {
     if (!user?.id) return
-    if (!confirm('Voulez-vous vraiment deconnecter votre compte Stripe ? Les donnees existantes seront conservees.')) return
+    if (!confirm(t.revenue_disconnect_confirm)) return
     setDisconnecting(true)
     try {
       await supabase.from('profiles').update({ stripe_connected: false }).eq('id', user.id)
       setStripeConnected(false)
-      toast.success('Compte Stripe deconnecte')
+      toast.success(t.revenue_stripe_disconnected)
     } catch {
-      toast.error('Erreur lors de la deconnexion')
+      toast.error(t.revenue_stripe_disconnect_error)
     }
     setDisconnecting(false)
   }, [user?.id])
@@ -170,7 +175,7 @@ export function BusinessRevenue() {
       const json = await res.json()
       console.log('[stripe-sync] Response:', JSON.stringify(json))
       if (json.synced > 0) {
-        toast.success(`${json.created} fiche(s) creee(s), ${json.matched} matchee(s) depuis Stripe`)
+        toast.success(t.revenue_sync_created.replace('{created}', String(json.created)).replace('{matched}', String(json.matched)))
         return true
       } else if (json.total_subscriptions === 0 && json.accountInfo) {
         console.warn('[stripe-sync] 0 subscriptions found. Account info:', json.accountInfo)
@@ -191,7 +196,7 @@ export function BusinessRevenue() {
       const json = await res.json()
       setData(json)
     } catch {
-      toast.error('Erreur lors du chargement des donnees')
+      toast.error(t.revenue_load_error)
     }
     if (!silent) setLoading(false)
   }, [user?.id, selectedPeriod])
@@ -225,7 +230,7 @@ export function BusinessRevenue() {
         .eq('id', user.id)
         .then(() => {
           setStripeConnected(true)
-          toast.success('Compte Stripe connecte avec succes !')
+          toast.success(t.revenue_stripe_connected_success)
           fetchRevenue()
         })
     }
@@ -248,9 +253,9 @@ export function BusinessRevenue() {
       setNewLabel('')
       setNewAmount('')
       setAddingCharge(null)
-      toast.success('Charge ajoutee')
+      toast.success(t.revenue_charge_added)
     } catch {
-      toast.error('Erreur')
+      toast.error(t.revenue_error)
     }
   }
 
@@ -264,7 +269,7 @@ export function BusinessRevenue() {
       setLocalCharges(prev => prev.map(c => c.id === chargeId ? { ...c, label: editLabel.trim(), amount: parseFloat(editAmount) } : c))
       setEditingCharge(null)
     } catch {
-      toast.error('Erreur')
+      toast.error(t.revenue_error)
     }
   }
 
@@ -273,7 +278,7 @@ export function BusinessRevenue() {
       await fetch(`/api/business-charges?charge_id=${chargeId}`, { method: 'DELETE' })
       setLocalCharges(prev => prev.filter(c => c.id !== chargeId))
     } catch {
-      toast.error('Erreur')
+      toast.error(t.revenue_error)
     }
   }
 
@@ -294,7 +299,7 @@ export function BusinessRevenue() {
           <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#006c49]/10 to-[#635BFF]/10" />
           <Loader2 className="h-6 w-6 animate-spin text-[#006c49] absolute top-3 left-3" />
         </div>
-        {syncing && <p className="text-sm text-[#444748] font-medium">Synchronisation Stripe en cours...</p>}
+        {syncing && <p className="text-sm text-[#444748] font-medium">{t.revenue_stripe_syncing}</p>}
       </div>
     )
   }
@@ -312,15 +317,15 @@ export function BusinessRevenue() {
                 <CreditCard className="h-6 w-6 sm:h-7 sm:w-7 text-[#635BFF]" />
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope'] tracking-tight">Connectez Stripe</h2>
-                <p className="text-sm text-[#444748] dark:text-neutral-400 mt-0.5">Synchronisez vos paiements pour un suivi CA en temps reel</p>
+                <h2 className="text-base sm:text-lg font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope'] tracking-tight">{t.revenue_connect_stripe_title}</h2>
+                <p className="text-sm text-[#444748] dark:text-neutral-400 mt-0.5">{t.revenue_connect_stripe_desc}</p>
               </div>
             </div>
             <button
               onClick={() => setStripeModalOpen(true)}
               className="px-6 py-3 bg-[#635BFF] hover:bg-[#5349E0] text-white font-extrabold rounded-full transition-all shadow-lg shadow-[#635BFF]/20 hover:shadow-xl hover:shadow-[#635BFF]/30 shrink-0 w-full sm:w-auto text-center"
             >
-              Connecter
+              {t.revenue_connect_btn}
             </button>
           </div>
         </div>
@@ -357,7 +362,7 @@ export function BusinessRevenue() {
                   : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
               }`}
             >
-              {tab === 'revenue' ? 'Revenus' : tab === 'charges' ? 'Charges' : 'Marge nette'}
+              {tab === 'revenue' ? t.revenue_tab_revenue : tab === 'charges' ? t.revenue_tab_charges : t.revenue_tab_margin}
             </button>
           ))}
           {hasSubscriptionFormula && stripeConnected && (
@@ -365,7 +370,7 @@ export function BusinessRevenue() {
               <button
                 onClick={() => syncStripeData().then(ok => ok && fetchRevenue())}
                 className="p-2 rounded-full text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-white dark:hover:bg-neutral-700 transition-all"
-                title="Re-synchroniser Stripe"
+                title={t.revenue_resync_stripe}
               >
                 <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
               </button>
@@ -373,7 +378,7 @@ export function BusinessRevenue() {
                 onClick={disconnectStripe}
                 disabled={disconnecting}
                 className="p-2 rounded-full text-[#444748] dark:text-neutral-400 hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/10 transition-all"
-                title="Deconnecter Stripe"
+                title={t.revenue_disconnect_stripe}
               >
                 <Unplug className="h-4 w-4" />
               </button>
@@ -415,7 +420,7 @@ export function BusinessRevenue() {
                   <div className="p-1.5 rounded-lg bg-[#1b1c1b]/5 dark:bg-white/10">
                     <TrendingUp className="h-4 w-4 text-[#1b1c1b] dark:text-white" />
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">CA {PERIODS.find(p => p.key === selectedPeriod)?.label}</span>
+                  <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_ca_label} {PERIODS.find(p => p.key === selectedPeriod)?.label}</span>
                 </div>
                 <p className="text-3xl font-extrabold font-['Manrope'] tracking-tight text-[#1b1c1b] dark:text-white">{fmt(data.ca)} <span className="text-base text-[#444748]/40">EUR</span></p>
               </div>
@@ -432,7 +437,7 @@ export function BusinessRevenue() {
                     <div className={`p-1.5 rounded-lg ${margin >= 0 ? 'bg-[#006c49]/10' : 'bg-red-500/10'}`}>
                       <Percent className={`h-4 w-4 ${margin >= 0 ? 'text-[#006c49]' : 'text-red-500'}`} />
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">Marge nette</span>
+                    <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_net_margin}</span>
                   </div>
                   <p className={`text-3xl font-extrabold font-['Manrope'] tracking-tight ${margin >= 0 ? 'text-[#006c49]' : 'text-red-500'}`}>
                     {margin >= 0 ? '+' : ''}{fmt(margin)} <span className="text-base opacity-40">EUR</span>
@@ -449,14 +454,14 @@ export function BusinessRevenue() {
             <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Users className="h-4 w-4 text-blue-500" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">Nouveaux clients</span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_new_clients}</span>
               </div>
               <p className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.newClients}</p>
             </div>
             <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-3">
                 <UserMinus className="h-4 w-4 text-red-400" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">Annulations</span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400">{t.revenue_cancellations}</span>
               </div>
               <p className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{data.canceledCount}</p>
             </div>
@@ -475,7 +480,7 @@ export function BusinessRevenue() {
           <div className="rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400">
-                Abonnements actifs <span className="text-[#006c49] ml-1">{data.activeSubscriptions.length}</span>
+                {t.revenue_active_subscriptions} <span className="text-[#006c49] ml-1">{data.activeSubscriptions.length}</span>
               </h3>
             </div>
             {data.activeSubscriptions.length === 0 ? (
@@ -484,7 +489,7 @@ export function BusinessRevenue() {
                   <AlertCircle className="h-7 w-7 text-[#c4c7c7]" />
                 </div>
                 <p className="text-sm text-[#444748] dark:text-neutral-400">
-                  {stripeConnected ? 'Aucun abonnement actif detecte' : 'Connectez Stripe pour voir vos abonnements'}
+                  {stripeConnected ? t.revenue_no_active_sub : t.revenue_connect_stripe_to_see}
                 </p>
               </div>
             ) : (
@@ -502,13 +507,13 @@ export function BusinessRevenue() {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${sub.subscription_status === 'active' ? 'bg-[#006c49]/10 text-[#006c49]' : 'bg-blue-500/10 text-blue-500'}`}>
-                        {sub.subscription_status === 'active' ? 'Actif' : 'Essai'}
+                        {sub.subscription_status === 'active' ? t.revenue_sub_active : t.revenue_sub_trial}
                       </span>
                       <div className="text-right">
                         <p className="font-extrabold text-[#1b1c1b] dark:text-white text-sm font-['Manrope']">
                           {Number(sub.subscription_amount).toFixed(2)} EUR
                         </p>
-                        <p className="text-[10px] text-[#444748] dark:text-neutral-500">/ {sub.subscription_interval === 'month' ? 'mois' : 'an'}</p>
+                        <p className="text-[10px] text-[#444748] dark:text-neutral-500">/ {sub.subscription_interval === 'month' ? t.revenue_per_month : t.revenue_per_year}</p>
                       </div>
                     </div>
                   </div>
@@ -526,11 +531,11 @@ export function BusinessRevenue() {
           {/* Commissions */}
           <div className="rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400">Commissions equipe</h3>
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400">{t.revenue_team_commissions}</h3>
               <span className="text-sm font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{fmt(data.commissions.total)} EUR</span>
             </div>
             {data.commissions.details.length === 0 ? (
-              <p className="text-sm text-[#444748] dark:text-neutral-400 text-center py-6">Aucune commission calculee</p>
+              <p className="text-sm text-[#444748] dark:text-neutral-400 text-center py-6">{t.revenue_no_commission}</p>
             ) : (
               <div className="space-y-1">
                 {data.commissions.details.map(c => (
@@ -546,7 +551,7 @@ export function BusinessRevenue() {
                     </div>
                     <div className="text-right">
                       <span className="font-extrabold text-[#1b1c1b] dark:text-white text-sm font-['Manrope']">{fmt(c.amount)} EUR</span>
-                      <span className="block text-[10px] text-[#444748] dark:text-neutral-500">{c.type === 'fixed' ? 'Salaire fixe' : 'Commission'}</span>
+                      <span className="block text-[10px] text-[#444748] dark:text-neutral-500">{c.type === 'fixed' ? t.revenue_fixed_salary : t.revenue_commission_label}</span>
                     </div>
                   </div>
                 ))}
@@ -556,7 +561,7 @@ export function BusinessRevenue() {
 
           {/* Fixed charges */}
           <ChargesSection
-            title="Charges fixes"
+            title={t.revenue_fixed_charges}
             type="fixed"
             charges={localFixed}
             total={localTotalFixed}
@@ -579,7 +584,7 @@ export function BusinessRevenue() {
 
           {/* Variable charges */}
           <ChargesSection
-            title="Charges variables"
+            title={t.revenue_variable_charges}
             type="variable"
             charges={localVariable}
             total={localTotalVariable}
@@ -614,14 +619,14 @@ export function BusinessRevenue() {
               <div className="absolute top-0 right-0 w-56 h-56 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
               <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-0">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] opacity-60 mb-3">Marge nette {PERIODS.find(p => p.key === selectedPeriod)?.label}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] opacity-60 mb-3">{t.revenue_net_margin} {PERIODS.find(p => p.key === selectedPeriod)?.label}</p>
                   <p className="text-3xl sm:text-5xl font-extrabold font-['Manrope'] tracking-tight">
                     {margin >= 0 ? '+' : ''}{fmt(margin)} <span className="text-base sm:text-xl opacity-40">EUR</span>
                   </p>
                 </div>
                 <div className="text-left sm:text-right space-y-2 opacity-80">
-                  <p className="text-sm">CA <span className="font-extrabold">{fmt(data.ca)}</span></p>
-                  <p className="text-sm">Charges <span className="font-extrabold">{fmt(totalAllCharges)}</span></p>
+                  <p className="text-sm">{t.revenue_ca_label} <span className="font-extrabold">{fmt(data.ca)}</span></p>
+                  <p className="text-sm">{t.revenue_tab_charges} <span className="font-extrabold">{fmt(totalAllCharges)}</span></p>
                 </div>
               </div>
             </div>
@@ -630,7 +635,7 @@ export function BusinessRevenue() {
 
           {/* Chart */}
           <div className="rounded-3xl bg-white dark:bg-white/5 p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400 mb-6">Evolution mensuelle</h3>
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400 mb-6">{t.revenue_monthly_evolution}</h3>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
@@ -666,15 +671,15 @@ export function BusinessRevenue() {
           {/* Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-3">Commissions</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-3">{t.revenue_commissions_breakdown}</p>
               <p className="text-xl font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(data.commissions.total)} EUR</p>
             </div>
             <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-3">Charges fixes</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-3">{t.revenue_fixed_charges}</p>
               <p className="text-xl font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(data.charges.totalFixed)} EUR</p>
             </div>
             <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-3">Charges variables</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#444748] dark:text-neutral-400 mb-3">{t.revenue_variable_charges}</p>
               <p className="text-xl font-extrabold text-[#1b1c1b] dark:text-white font-['Manrope']">{fmt(data.charges.totalVariable)} EUR</p>
             </div>
           </div>
@@ -686,11 +691,11 @@ export function BusinessRevenue() {
         onClose={() => { setStripeModalOpen(false); checkStripe() }}
         returnPath="/business/revenue"
         benefits={[
-          "Suivez votre chiffre d'affaires reel base sur les paiements Stripe.",
-          "Chaque paiement recurrent met a jour automatiquement le CA de vos closers.",
-          "Visualisez MRR, abonnements actifs, churn et marge nette en temps reel.",
+          t.revenue_stripe_benefit_1,
+          t.revenue_stripe_benefit_2,
+          t.revenue_stripe_benefit_3,
         ]}
-        connectedDescription="Votre compte Stripe est connecte. Vos revenus et abonnements sont synchronises en temps reel."
+        connectedDescription={t.revenue_stripe_connected_desc}
       />
     </div>
   )
@@ -723,6 +728,7 @@ function ChargesSection({
   updateCharge: (id: string) => void
   deleteCharge: (id: string) => void
 }) {
+  const { t } = useBusinessLang()
   const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   return (
@@ -741,7 +747,7 @@ function ChargesSection({
       </div>
 
       {charges.length === 0 && addingCharge !== type && (
-        <p className="text-sm text-[#444748] dark:text-neutral-400 text-center py-8">Aucune charge {type === 'fixed' ? 'fixe' : 'variable'}</p>
+        <p className="text-sm text-[#444748] dark:text-neutral-400 text-center py-8">{type === 'fixed' ? t.revenue_no_fixed_charge : t.revenue_no_variable_charge}</p>
       )}
 
       <div className="space-y-1">
@@ -769,8 +775,8 @@ function ChargesSection({
 
         {addingCharge === type && (
           <div className="flex items-center gap-2 pt-3">
-            <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Libelle" className="flex-1 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
-            <input value={newAmount} onChange={e => setNewAmount(e.target.value)} type="number" placeholder="Montant" className="w-28 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
+            <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder={t.revenue_label_placeholder} className="flex-1 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
+            <input value={newAmount} onChange={e => setNewAmount(e.target.value)} type="number" placeholder={t.revenue_amount_placeholder} className="w-28 px-4 py-2.5 bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl text-sm text-[#1b1c1b] dark:text-white border-none outline-none focus:ring-2 focus:ring-[#006c49]/20 placeholder:text-[#c4c7c7]" />
             <button onClick={() => addCharge(type)} className="p-2.5 bg-[#1b1c1b] dark:bg-white text-white dark:text-[#1b1c1b] rounded-full hover:opacity-80 transition-opacity"><Check className="h-4 w-4" /></button>
             <button onClick={() => setAddingCharge(null)} className="p-2.5 text-[#444748] hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-full transition-colors"><X className="h-4 w-4" /></button>
           </div>

@@ -152,10 +152,19 @@ export function LandingPage() {
   const navigate = useNavigate();
   const pageRef = useRef<HTMLDivElement>(null);
   const [isExiting, setIsExiting] = useState(false);
-  const [lang, setLang] = useState<SalesLang>('fr');
+  const [lang, setLangState] = useState<SalesLang>('fr');
   const t = salesTranslations[lang];
 
-  useEffect(() => { setLang(detectSalesLang()) }, []);
+  const setLang = (newLang: SalesLang) => {
+    setLangState(newLang);
+    localStorage.setItem('closeos_lang', newLang);
+  };
+
+  useEffect(() => {
+    const detected = detectSalesLang();
+    setLangState(detected);
+    localStorage.setItem('closeos_lang', detected);
+  }, []);
 
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
@@ -293,13 +302,8 @@ export function LandingPage() {
   return (
     <div ref={pageRef} className={`min-h-screen bg-[#111111] text-stone-200 selection:bg-secondary/30 overflow-x-hidden transition-all duration-500 ${isExiting ? 'translate-y-full opacity-0' : 'animate-[pageEnterFromTop_0.5s_ease-out]'}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
 
-      {/* ═══ BANDEAU ═══ */}
-      <div className="fixed top-0 z-[60] w-full premium-gradient py-2.5 text-center text-xs sm:text-sm font-bold text-white shadow-[0_4px_20px_rgba(0,108,73,0.3)]">
-        {t.banner}
-      </div>
-
       {/* ═══ NAVBAR — Glass ═══ */}
-      <nav className="fixed top-[40px] z-50 w-full bg-[#111111]/80 backdrop-blur-xl border-b border-white/[0.06]">
+      <nav className="fixed top-0 z-50 w-full bg-[#111111]/80 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-8">
           <div className="relative group flex items-center gap-1.5 cursor-pointer">
             <img src="/logo-sales.png" alt="CloseOS Logo" className="h-10 w-auto" fetchPriority="high" width={120} height={48} />
@@ -369,7 +373,7 @@ export function LandingPage() {
       </nav>
 
       {/* ═══ HERO ═══ */}
-      <section className="relative pt-48 pb-32 overflow-hidden">
+      <section className="relative pt-28 pb-32 overflow-hidden">
         <div className="absolute top-0 right-[-10%] w-[600px] h-[600px] bg-secondary/5 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute bottom-[-20%] left-[-8%] w-[500px] h-[500px] bg-[#ffb95f]/5 rounded-full blur-[120px] pointer-events-none" />
 

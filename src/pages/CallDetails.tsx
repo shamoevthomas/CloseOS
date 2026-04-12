@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom' // Ajout useLocation
 import { ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign, Calendar, Award, UserPlus, X, Tag, LayoutList, PenTool, Bell, Loader2 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { useLanguage } from '../contexts/LanguageContext'
 import { useCalls } from '../contexts/CallsContext'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
@@ -19,12 +20,20 @@ const parseOfferPrice = (priceString: string): number => {
   return isNaN(parsed) ? 0 : parsed
 }
 
-const objectionReasons = [
+const objectionReasons_FR = [
   'Je dois y réfléchir',
   'Manque de budget',
   'Doit en parler',
   'C\'est pas le moment',
   'Autre'
+]
+
+const objectionReasons_EN = [
+  'I need to think about it',
+  'Lack of budget',
+  'Needs to discuss',
+  'Not the right time',
+  'Other'
 ]
 
 // Ajout des sources pour le formulaire de création
@@ -37,7 +46,7 @@ const SOURCES = [
   'Autre'
 ]
 
-const outcomes = [
+const outcomes_FR = [
   {
     id: 'won' as const,
     label: 'Vente',
@@ -84,10 +93,58 @@ const outcomes = [
   }
 ]
 
+const outcomes_EN = [
+  {
+    id: 'won' as const,
+    label: 'Sale',
+    description: 'Deal won',
+    icon: CheckCircle2,
+    color: 'emerald',
+    bgColor: 'bg-emerald-500/10',
+    borderColor: 'border-emerald-500/30',
+    textColor: 'text-emerald-400',
+    hoverBg: 'hover:bg-emerald-500/20'
+  },
+  {
+    id: 'followup' as const,
+    label: 'Follow up',
+    description: 'To call back',
+    icon: Clock,
+    color: 'orange',
+    bgColor: 'bg-orange-500/10',
+    borderColor: 'border-orange-500/30',
+    textColor: 'text-orange-400',
+    hoverBg: 'hover:bg-orange-500/20'
+  },
+  {
+    id: 'lost' as const,
+    label: 'Lost',
+    description: 'Deal lost',
+    icon: XCircle,
+    color: 'red',
+    bgColor: 'bg-red-500/10',
+    borderColor: 'border-red-500/30',
+    textColor: 'text-red-400',
+    hoverBg: 'hover:bg-red-500/20'
+  },
+  {
+    id: 'noshow' as const,
+    label: 'No Show',
+    description: 'Absent',
+    icon: XCircle,
+    color: 'gray',
+    bgColor: 'bg-gray-500/10',
+    borderColor: 'border-gray-500/30',
+    textColor: 'text-gray-400',
+    hoverBg: 'hover:bg-gray-500/20'
+  }
+]
+
 export function CallDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation() // Init location
+  const { lang } = useLanguage()
   const { callHistory } = useCalls()
   // AJOUT: récupération de addProspect pour mettre à jour la liste globale
   const { prospects, updateProspect, addProspect } = useProspects()
@@ -97,6 +154,9 @@ export function CallDetails() {
 
   const { addMeeting } = useMeetings()
   const { isConnected: isGoogleConnected, createEvent: createGoogleEvent } = useGoogleCalendar()
+
+  const objectionReasons = lang === 'fr' ? objectionReasons_FR : objectionReasons_EN
+  const outcomes = lang === 'fr' ? outcomes_FR : outcomes_EN
 
   // --- NOUVEAU STATE POUR LES ONGLETS ---
   const [activeTab, setActiveTab] = useState<'qualification' | 'notes' | 'reminder'>('qualification')
@@ -238,7 +298,7 @@ export function CallDetails() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error("Non connecté")
+      if (!user) throw new Error(lang === 'fr' ? "Non connecté" : "Not connected")
 
       const selectedOffer = offers.find(o => String(o.id) === newProspectForm.offerId)
       let offerName = selectedOffer ? selectedOffer.name : ''
@@ -293,7 +353,7 @@ export function CallDetails() {
 
     } catch (error) {
       console.error("Erreur création", error)
-      alert("Erreur lors de la création")
+      alert(lang === 'fr' ? "Erreur lors de la création" : "Error during creation")
     } finally {
       setIsCreating(false)
     }
@@ -308,10 +368,10 @@ export function CallDetails() {
             className="mb-6 flex items-center gap-2 text-white/40 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
-            Retour
+            {lang === 'fr' ? 'Retour' : 'Back'}
           </button>
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-12 text-center">
-            <p className="text-white/40">Appel non trouvé</p>
+            <p className="text-white/40">{lang === 'fr' ? 'Appel non trouvé' : 'Call not found'}</p>
           </div>
         </div>
       </div>
@@ -334,15 +394,16 @@ export function CallDetails() {
 
   // Validation
   const isFormValid = () => {
+    const otherLabel = lang === 'fr' ? 'Autre' : 'Other'
     if (!selectedOutcome) return false
     if (selectedOutcome === 'won' && (!amount || amount <= 0)) return false
     if (selectedOutcome === 'followup') {
       if (!followupDate || !followupReason) return false
-      if (followupReason === 'Autre' && !followupReasonOther.trim()) return false
+      if (followupReason === otherLabel && !followupReasonOther.trim()) return false
     }
     if (selectedOutcome === 'lost') {
       if (!lostReason) return false
-      if (lostReason === 'Autre' && !lostReasonOther.trim()) return false
+      if (lostReason === otherLabel && !lostReasonOther.trim()) return false
     }
     return true
   }
@@ -363,22 +424,25 @@ export function CallDetails() {
       }
 
       // Build technical summary
-      let technicalSummary = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
+      const dateFmt = lang === 'fr' ? 'fr-FR' : 'en-US'
+      let technicalSummary = `[${new Date().toLocaleDateString(dateFmt)}] ${lang === 'fr' ? 'Appel' : 'Call'}: ${selectedOutcome}`
 
       if (selectedOutcome === 'won') {
-        technicalSummary += `\n- Montant: ${amount}€ (${paymentType === 'comptant' ? 'Comptant' : `${installmentsCount}x`})`
-        technicalSummary += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/mois)` : ''}`
+        technicalSummary += `\n- ${lang === 'fr' ? 'Montant' : 'Amount'}: ${amount}€ (${paymentType === 'comptant' ? (lang === 'fr' ? 'Comptant' : 'Cash') : `${installmentsCount}x`})`
+        technicalSummary += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/${lang === 'fr' ? 'mois' : 'mo'})` : ''}`
       }
 
       if (selectedOutcome === 'followup') {
-        const reason = followupReason === 'Autre' ? followupReasonOther : followupReason
-        technicalSummary += `\n- Motif: ${reason}`
-        technicalSummary += `\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
+        const otherLabel = lang === 'fr' ? 'Autre' : 'Other'
+        const reason = followupReason === otherLabel ? followupReasonOther : followupReason
+        technicalSummary += `\n- ${lang === 'fr' ? 'Motif' : 'Reason'}: ${reason}`
+        technicalSummary += `\n- ${lang === 'fr' ? 'Rappel' : 'Reminder'}: ${new Date(followupDate).toLocaleDateString(dateFmt)}`
       }
 
       if (selectedOutcome === 'lost') {
-        const reason = lostReason === 'Autre' ? lostReasonOther : lostReason
-        technicalSummary += `\n- Motif: ${reason}`
+        const otherLabel = lang === 'fr' ? 'Autre' : 'Other'
+        const reason = lostReason === otherLabel ? lostReasonOther : lostReason
+        technicalSummary += `\n- ${lang === 'fr' ? 'Motif' : 'Reason'}: ${reason}`
       }
 
       // --- CORRECTION SAUVEGARDE : JSONB call_notes ---
@@ -484,7 +548,7 @@ export function CallDetails() {
       navigate('/')
     } catch (error) {
       console.error('Error saving call summary:', error)
-      alert('Erreur lors de la sauvegarde')
+      alert(lang === 'fr' ? 'Erreur lors de la sauvegarde' : 'Error while saving')
     } finally {
       setIsSaving(false)
     }
@@ -499,7 +563,7 @@ export function CallDetails() {
     setReminderError('')
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Non connecté')
+      if (!user) throw new Error(lang === 'fr' ? 'Non connecté' : 'Not connected')
 
       const reminderDateTime = `${reminderDate}T${reminderTime}:00`
 
@@ -525,7 +589,7 @@ export function CallDetails() {
       setTimeout(() => setReminderToast(false), 3000)
     } catch (error: any) {
       console.error('Erreur création rappel:', error)
-      setReminderError(error?.message || 'Erreur lors de la création du rappel. Vérifiez votre connexion et désactivez votre bloqueur de pub.')
+      setReminderError(error?.message || (lang === 'fr' ? 'Erreur lors de la création du rappel. Vérifiez votre connexion et désactivez votre bloqueur de pub.' : 'Error creating reminder. Check your connection and disable your ad blocker.'))
     }
     setIsSavingReminder(false)
   }
@@ -540,12 +604,12 @@ export function CallDetails() {
             className="mb-6 flex items-center gap-2 text-white/40 hover:text-white transition-all duration-300"
           >
             <ArrowLeft className="h-5 w-5" />
-            Retour
+            {lang === 'fr' ? 'Retour' : 'Back'}
           </button>
           <div>
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white">Resume de Vente</h1>
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white">{lang === 'fr' ? 'Resume de Vente' : 'Sales Summary'}</h1>
             <p className="mt-2 text-white/40">
-              Qualifiez votre appel avec <span className="font-semibold text-white">{createdProspect ? createdProspect.contact : call.contactName}</span>
+              {lang === 'fr' ? 'Qualifiez votre appel avec' : 'Qualify your call with'} <span className="font-semibold text-white">{createdProspect ? createdProspect.contact : call.contactName}</span>
               {prospect && (() => {
                 const si = getStageInfo(prospect.stage)
                 return si ? (
@@ -574,7 +638,7 @@ export function CallDetails() {
                 <div className="flex items-center gap-2">
                   <Award className="h-4 w-4 text-emerald-400" />
                   <div>
-                    <p className="text-xs text-white/40">Offre liee</p>
+                    <p className="text-xs text-white/40">{lang === 'fr' ? 'Offre liee' : 'Linked offer'}</p>
                     <p className="text-sm font-semibold text-emerald-400">
                       {prospectOffer.name} - {prospectOffer.price}
                     </p>
@@ -585,7 +649,7 @@ export function CallDetails() {
             {prospect && !prospectOffer && (
               <div className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 px-5 py-3">
                 <p className="text-sm text-yellow-400">
-                  ⚠️ Aucune offre liée à ce prospect
+                  {lang === 'fr' ? '⚠️ Aucune offre liée à ce prospect' : '⚠️ No offer linked to this prospect'}
                 </p>
               </div>
             )}
@@ -597,18 +661,18 @@ export function CallDetails() {
           <h3 className="text-sm font-semibold text-purple-400 mb-3">Debug: Data Linking</h3>
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="rounded-xl bg-white/5 p-3">
-              <p className="text-white/40 mb-1">Prospect trouvé</p>
+              <p className="text-white/40 mb-1">{lang === 'fr' ? 'Prospect trouvé' : 'Prospect found'}</p>
               <p className={prospect ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                {prospect ? `✓ ${prospect.contact}` : '✗ Non trouvé'}
+                {prospect ? `✓ ${prospect.contact}` : (lang === 'fr' ? '✗ Non trouvé' : '✗ Not found')}
               </p>
               {prospect && (
                 <p className="text-white/40 mt-1">ID: {prospect.id} | offerId: {prospect.offerId || 'N/A'}</p>
               )}
             </div>
             <div className="rounded-xl bg-white/5 p-3">
-              <p className="text-white/40 mb-1">Offre liée</p>
+              <p className="text-white/40 mb-1">{lang === 'fr' ? 'Offre liée' : 'Linked offer'}</p>
               <p className={prospectOffer ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'}>
-                {prospectOffer ? `✓ ${prospectOffer.name}` : '✗ Non trouvée'}
+                {prospectOffer ? `✓ ${prospectOffer.name}` : (lang === 'fr' ? '✗ Non trouvée' : '✗ Not found')}
               </p>
               {prospectOffer && (
                 <p className="text-white/40 mt-1">Prix: {prospectOffer.price} | Commission: {prospectOffer.commission}</p>
@@ -618,17 +682,17 @@ export function CallDetails() {
           {!prospect && (
             <div className="mt-3 rounded-xl bg-red-500/10 border border-red-500/30 p-3">
               <p className="text-sm text-red-400">
-                Prospect non trouve avec le nom: <span className="font-semibold">{call.contactName}</span>
+                {lang === 'fr' ? 'Prospect non trouve avec le nom:' : 'Prospect not found with name:'} <span className="font-semibold">{call.contactName}</span>
               </p>
               <p className="text-xs text-white/40 mt-1">
-                Verifiez que le prospect existe dans ProspectsContext
+                {lang === 'fr' ? 'Verifiez que le prospect existe dans ProspectsContext' : 'Verify the prospect exists in ProspectsContext'}
               </p>
             </div>
           )}
           {prospect && !prospectOffer && (
             <div className="mt-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 p-3">
               <p className="text-sm text-yellow-400">
-                Prospect trouve mais aucune offre liee
+                {lang === 'fr' ? 'Prospect trouve mais aucune offre liee' : 'Prospect found but no linked offer'}
               </p>
               <p className="text-xs text-white/40 mt-1">
                 offerId: {prospect.offerId || 'null'} | offer: {prospect.offer || 'null'}
@@ -647,7 +711,7 @@ export function CallDetails() {
                 )}
             >
                 <LayoutList className="h-4 w-4" />
-                Qualification
+                {lang === 'fr' ? 'Qualification' : 'Qualification'}
             </button>
             <button
                 onClick={() => setActiveTab('notes')}
@@ -657,7 +721,7 @@ export function CallDetails() {
                 )}
             >
                 <PenTool className="h-4 w-4" />
-                Notes d'appel
+                {lang === 'fr' ? "Notes d'appel" : 'Call Notes'}
             </button>
             <button
                 onClick={() => setActiveTab('reminder')}
@@ -667,7 +731,7 @@ export function CallDetails() {
                 )}
             >
                 <Bell className="h-4 w-4" />
-                Programmer un rappel
+                {lang === 'fr' ? 'Programmer un rappel' : 'Schedule a reminder'}
             </button>
         </div>
 
@@ -682,15 +746,15 @@ export function CallDetails() {
                     <UserPlus className="h-6 w-6 text-emerald-400" />
                 </div>
                 <div>
-                    <h3 className="font-bold text-white">Prospect inconnu</h3>
-                    <p className="text-sm text-emerald-200">Pour qualifier l'appel, vous devez lier ou creer un prospect.</p>
+                    <h3 className="font-bold text-white">{lang === 'fr' ? 'Prospect inconnu' : 'Unknown prospect'}</h3>
+                    <p className="text-sm text-emerald-200">{lang === 'fr' ? "Pour qualifier l'appel, vous devez lier ou creer un prospect." : 'To qualify the call, you must link or create a prospect.'}</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(true)}
                 className="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-2 px-4 rounded-full shadow-lg transition-all"
               >
-                Créer un prospect ?
+                {lang === 'fr' ? 'Créer un prospect ?' : 'Create a prospect?'}
               </button>
             </div>
           )}
@@ -703,7 +767,7 @@ export function CallDetails() {
             {/* Outcome Selection */}
             <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8">
                 <label className="mb-6 block text-xs font-bold uppercase tracking-widest text-white/40">
-                Resultat de l'appel <span className="text-red-400">*</span>
+                {lang === 'fr' ? "Resultat de l'appel" : 'Call outcome'} <span className="text-red-400">*</span>
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {outcomes.map((outcome) => {
@@ -765,13 +829,13 @@ export function CallDetails() {
                 <div className="space-y-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-8 animate-in slide-in-from-top-2">
                 <h3 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Details de la vente
+                    {lang === 'fr' ? 'Details de la vente' : 'Sale details'}
                 </h3>
 
                 {/* Amount Input */}
                 <div>
                     <label className="mb-2 block text-sm font-medium text-white">
-                    Montant de la vente <span className="text-red-400">*</span>
+                    {lang === 'fr' ? 'Montant de la vente' : 'Sale amount'} <span className="text-red-400">*</span>
                     </label>
                     <div className="relative">
                     <input
@@ -792,7 +856,7 @@ export function CallDetails() {
                 {/* Payment Type Toggle */}
                 <div>
                     <label className="mb-2 block text-sm font-medium text-white">
-                    Mode de paiement
+                    {lang === 'fr' ? 'Mode de paiement' : 'Payment method'}
                     </label>
                     <div className="flex gap-2">
                     <button
@@ -804,7 +868,7 @@ export function CallDetails() {
                             : 'border-white/[0.08] bg-white/[0.03] text-white/40 hover:border-white/[0.12] hover:bg-white/[0.04]'
                         )}
                     >
-                        Comptant
+                        {lang === 'fr' ? 'Comptant' : 'Cash'}
                     </button>
                     <button
                         onClick={() => setPaymentType('installments')}
@@ -815,7 +879,7 @@ export function CallDetails() {
                             : 'border-white/[0.08] bg-white/[0.03] text-white/40 hover:border-white/[0.12] hover:bg-white/[0.04]'
                         )}
                     >
-                        Plusieurs fois
+                        {lang === 'fr' ? 'Plusieurs fois' : 'Installments'}
                     </button>
                     </div>
                 </div>
@@ -824,7 +888,7 @@ export function CallDetails() {
                 {paymentType === 'installments' && (
                     <div>
                     <label className="mb-2 block text-sm font-medium text-white">
-                        Nombre de mensualités
+                        {lang === 'fr' ? 'Nombre de mensualités' : 'Number of installments'}
                     </label>
                     <select
                         value={installmentsCount}
@@ -832,11 +896,11 @@ export function CallDetails() {
                         className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
                     >
                         {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
-                        <option key={num} value={num}>{num} mois</option>
+                        <option key={num} value={num}>{num} {lang === 'fr' ? 'mois' : 'months'}</option>
                         ))}
                     </select>
                     <p className="mt-2 text-sm text-white/40">
-                        Montant par mois: <span className="text-emerald-400 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
+                        {lang === 'fr' ? 'Montant par mois:' : 'Monthly amount:'} <span className="text-emerald-400 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
                     </p>
                     </div>
                 )}
@@ -846,18 +910,18 @@ export function CallDetails() {
                     <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6">
                     <div className="flex items-center gap-2 mb-2">
                         <Award className="h-4 w-4 text-emerald-400" />
-                        <h4 className="text-sm font-semibold text-emerald-400">Ta Commission</h4>
+                        <h4 className="text-sm font-semibold text-emerald-400">{lang === 'fr' ? 'Ta Commission' : 'Your Commission'}</h4>
                     </div>
                     <p className="text-2xl font-bold text-emerald-400">
                         {totalCommission.toFixed(2)} €
                     </p>
                     {paymentType === 'installments' && (
                         <p className="mt-1 text-sm text-white/60">
-                        Tu recevras: <span className="font-semibold text-emerald-400">{monthlyCommission.toFixed(2)}€/mois</span>
+                        {lang === 'fr' ? 'Tu recevras:' : "You'll receive:"} <span className="font-semibold text-emerald-400">{monthlyCommission.toFixed(2)}€/{lang === 'fr' ? 'mois' : 'mo'}</span>
                         </p>
                     )}
                     <p className="mt-2 text-xs text-white/40">
-                        Taux de commission: {commissionRate}%
+                        {lang === 'fr' ? 'Taux de commission:' : 'Commission rate:'} {commissionRate}%
                     </p>
                     </div>
                 )}
@@ -869,14 +933,14 @@ export function CallDetails() {
                 <div className="space-y-6 rounded-2xl border border-orange-500/30 bg-orange-500/5 p-8 animate-in slide-in-from-top-2">
                 <h3 className="text-sm font-semibold text-orange-400 flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    Informations de suivi
+                    {lang === 'fr' ? 'Informations de suivi' : 'Follow-up information'}
                 </h3>
 
                 {/* Reschedule Date */}
                 <div>
                     <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
                     <Calendar className="h-4 w-4" />
-                    Date de reprogrammation <span className="text-red-400">*</span>
+                    {lang === 'fr' ? 'Date de reprogrammation' : 'Reschedule date'} <span className="text-red-400">*</span>
                     </label>
                     <input
                     type="datetime-local"
@@ -889,19 +953,20 @@ export function CallDetails() {
                 {/* Reason Selector */}
                 <div>
                     <label className="mb-2 block text-sm font-medium text-white">
-                    Motif du report <span className="text-red-400">*</span>
+                    {lang === 'fr' ? 'Motif du report' : 'Postponement reason'} <span className="text-red-400">*</span>
                     </label>
                     <select
                     value={followupReason}
                     onChange={(e) => {
                         setFollowupReason(e.target.value)
-                        if (e.target.value !== 'Autre') {
+                        const otherLabel = lang === 'fr' ? 'Autre' : 'Other'
+                        if (e.target.value !== otherLabel) {
                         setFollowupReasonOther('')
                         }
                     }}
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
                     >
-                    <option value="">Sélectionnez un motif</option>
+                    <option value="">{lang === 'fr' ? 'Sélectionnez un motif' : 'Select a reason'}</option>
                     {objectionReasons.map((reason) => (
                         <option key={reason} value={reason}>
                         {reason}
@@ -910,16 +975,16 @@ export function CallDetails() {
                     </select>
 
                     {/* Conditional "Autre" textarea */}
-                    {followupReason === 'Autre' && (
+                    {followupReason === (lang === 'fr' ? 'Autre' : 'Other') && (
                     <div className="mt-3">
                         <label className="mb-2 block text-sm font-medium text-white">
-                        Précisez le motif <span className="text-red-400">*</span>
+                        {lang === 'fr' ? 'Précisez le motif' : 'Specify the reason'} <span className="text-red-400">*</span>
                         </label>
                         <input
                         type="text"
                         value={followupReasonOther}
                         onChange={(e) => setFollowupReasonOther(e.target.value)}
-                        placeholder="Ex: Indisponibilité exceptionnelle..."
+                        placeholder={lang === 'fr' ? "Ex: Indisponibilité exceptionnelle..." : "E.g.: Exceptional unavailability..."}
                         className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
                         />
                     </div>
@@ -933,25 +998,26 @@ export function CallDetails() {
                 <div className="space-y-6 rounded-2xl border border-red-500/30 bg-red-500/5 p-8 animate-in slide-in-from-top-2">
                 <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2">
                     <XCircle className="h-4 w-4" />
-                    Raison de la perte
+                    {lang === 'fr' ? 'Raison de la perte' : 'Reason for loss'}
                 </h3>
 
                 {/* Reason Selector */}
                 <div>
                     <label className="mb-2 block text-sm font-medium text-white">
-                    Motif <span className="text-red-400">*</span>
+                    {lang === 'fr' ? 'Motif' : 'Reason'} <span className="text-red-400">*</span>
                     </label>
                     <select
                     value={lostReason}
                     onChange={(e) => {
                         setLostReason(e.target.value)
-                        if (e.target.value !== 'Autre') {
+                        const otherLabel = lang === 'fr' ? 'Autre' : 'Other'
+                        if (e.target.value !== otherLabel) {
                         setLostReasonOther('')
                         }
                     }}
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none transition-all"
                     >
-                    <option value="">Sélectionnez un motif</option>
+                    <option value="">{lang === 'fr' ? 'Sélectionnez un motif' : 'Select a reason'}</option>
                     {objectionReasons.map((reason) => (
                         <option key={reason} value={reason}>
                         {reason}
@@ -960,16 +1026,16 @@ export function CallDetails() {
                     </select>
 
                     {/* Conditional "Autre" textarea */}
-                    {lostReason === 'Autre' && (
+                    {lostReason === (lang === 'fr' ? 'Autre' : 'Other') && (
                     <div className="mt-3">
                         <label className="mb-2 block text-sm font-medium text-white">
-                        Précisez le motif <span className="text-red-400">*</span>
+                        {lang === 'fr' ? 'Précisez le motif' : 'Specify the reason'} <span className="text-red-400">*</span>
                         </label>
                         <input
                         type="text"
                         value={lostReasonOther}
                         onChange={(e) => setLostReasonOther(e.target.value)}
-                        placeholder="Ex: Prix trop élevé..."
+                        placeholder={lang === 'fr' ? "Ex: Prix trop élevé..." : "E.g.: Price too high..."}
                         className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-red-500 focus:outline-none transition-all"
                         />
                     </div>
@@ -985,17 +1051,17 @@ export function CallDetails() {
                 <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8 h-[500px] flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
                     <label className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/40">
                         <FileText className="h-4 w-4" />
-                        Historique et Notes de l'appel
+                        {lang === 'fr' ? "Historique et Notes de l'appel" : 'Call History and Notes'}
                     </label>
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Prenez vos notes ici. Elles seront enregistrees dans l'historique des appels..."
+                        placeholder={lang === 'fr' ? "Prenez vos notes ici. Elles seront enregistrees dans l'historique des appels..." : "Take your notes here. They will be saved in the call history..."}
                         className="flex-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all resize-none leading-relaxed"
                     />
                     <p className="mt-3 text-xs text-white/40 flex items-center gap-1">
                         <CheckCircle2 className="h-3 w-3" />
-                        Ces notes s'ajouteront à l'historique des appels du prospect.
+                        {lang === 'fr' ? "Ces notes s'ajouteront à l'historique des appels du prospect." : "These notes will be added to the prospect's call history."}
                     </p>
                 </div>
             )}
@@ -1005,19 +1071,19 @@ export function CallDetails() {
                 <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div className="flex items-center gap-2 mb-2">
                         <Bell className="h-5 w-5 text-orange-400" />
-                        <h3 className="text-sm font-semibold text-white">Programmer un rappel</h3>
+                        <h3 className="text-sm font-semibold text-white">{lang === 'fr' ? 'Programmer un rappel' : 'Schedule a reminder'}</h3>
                     </div>
 
                     {/* Titre */}
                     <div>
                         <label className="mb-2 block text-sm font-medium text-white">
-                            Titre <span className="text-red-400">*</span>
+                            {lang === 'fr' ? 'Titre' : 'Title'} <span className="text-red-400">*</span>
                         </label>
                         <input
                             type="text"
                             value={reminderTitle}
                             onChange={(e) => setReminderTitle(e.target.value)}
-                            placeholder="Ex: Rappeler Jean pour le contrat"
+                            placeholder={lang === 'fr' ? "Ex: Rappeler Jean pour le contrat" : "E.g.: Call Jean about the contract"}
                             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
                         />
                     </div>
@@ -1025,12 +1091,12 @@ export function CallDetails() {
                     {/* Description */}
                     <div>
                         <label className="mb-2 block text-sm font-medium text-white">
-                            Description <span className="text-white/40">(optionnel)</span>
+                            Description <span className="text-white/40">({lang === 'fr' ? 'optionnel' : 'optional'})</span>
                         </label>
                         <textarea
                             value={reminderDescription}
                             onChange={(e) => setReminderDescription(e.target.value)}
-                            placeholder="Détails supplémentaires..."
+                            placeholder={lang === 'fr' ? "Détails supplémentaires..." : "Additional details..."}
                             rows={3}
                             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all resize-none"
                         />
@@ -1041,7 +1107,7 @@ export function CallDetails() {
                         <div>
                             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
                                 <Calendar className="h-4 w-4" />
-                                Date <span className="text-red-400">*</span>
+                                {lang === 'fr' ? 'Date' : 'Date'} <span className="text-red-400">*</span>
                             </label>
                             <input
                                 type="date"
@@ -1053,7 +1119,7 @@ export function CallDetails() {
                         <div>
                             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
                                 <Clock className="h-4 w-4" />
-                                Heure <span className="text-red-400">*</span>
+                                {lang === 'fr' ? 'Heure' : 'Time'} <span className="text-red-400">*</span>
                             </label>
                             <input
                                 type="time"
@@ -1085,10 +1151,10 @@ export function CallDetails() {
                         {isSavingReminder ? (
                             <span className="flex items-center justify-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                Enregistrement...
+                                {lang === 'fr' ? 'Enregistrement...' : 'Saving...'}
                             </span>
                         ) : (
-                            'Enregistrer le rappel'
+                            lang === 'fr' ? 'Enregistrer le rappel' : 'Save reminder'
                         )}
                     </button>
                 </div>
@@ -1100,7 +1166,7 @@ export function CallDetails() {
                 onClick={() => navigate('/')}
                 className="rounded-full border border-white/[0.08] bg-white/[0.03] px-8 py-3 text-sm font-semibold text-white/80 transition-all duration-300 hover:bg-white/[0.04]"
                 >
-                Annuler
+                {lang === 'fr' ? 'Annuler' : 'Cancel'}
                 </button>
                 <button
                 onClick={handleSave}
@@ -1112,7 +1178,7 @@ export function CallDetails() {
                     : 'bg-white/5 text-white/40 cursor-not-allowed opacity-50'
                 )}
                 >
-                {isSaving ? 'Enregistrement...' : 'Tout Enregistrer'}
+                {isSaving ? (lang === 'fr' ? 'Enregistrement...' : 'Saving...') : (lang === 'fr' ? 'Tout Enregistrer' : 'Save All')}
                 </button>
             </div>
           </div>
@@ -1125,31 +1191,31 @@ export function CallDetails() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
           <div className="relative w-full max-w-lg rounded-2xl bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-bold text-white">Nouveau Prospect</h2>
+              <h2 className="text-xl font-bold text-white">{lang === 'fr' ? 'Nouveau Prospect' : 'New Prospect'}</h2>
               <button onClick={() => setIsCreateModalOpen(false)} className="text-white/40 hover:text-white"><X className="h-6 w-6" /></button>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Nom & Prenom *</label>
-                <input type="text" value={newProspectForm.name} onChange={e => setNewProspectForm({...newProspectForm, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder="Ex: Jean Dupont" />
+                <label className="block text-xs font-bold uppercase tracking-widest text-white/40 mb-2">{lang === 'fr' ? 'Nom & Prenom' : 'Full Name'} *</label>
+                <input type="text" value={newProspectForm.name} onChange={e => setNewProspectForm({...newProspectForm, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder={lang === 'fr' ? "Ex: Jean Dupont" : "E.g.: John Doe"} />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-white/60 mb-1.5">Email</label>
+                <label className="block text-sm font-medium text-white/60 mb-1.5">{lang === 'fr' ? 'Email' : 'Email'}</label>
                 <input type="email" value={newProspectForm.email} onChange={e => setNewProspectForm({...newProspectForm, email: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder="jean@entreprise.com" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white/60 mb-1.5">Téléphone</label>
+                <label className="block text-sm font-medium text-white/60 mb-1.5">{lang === 'fr' ? 'Téléphone' : 'Phone'}</label>
                 <input type="text" value={newProspectForm.phone} onChange={e => setNewProspectForm({...newProspectForm, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder="+33 6 ..." />
               </div>
 
               {/* Offre */}
               <div>
-                <label className="block text-sm font-medium text-white/60 mb-1.5">Offre</label>
+                <label className="block text-sm font-medium text-white/60 mb-1.5">{lang === 'fr' ? 'Offre' : 'Offer'}</label>
                 <select value={newProspectForm.offerId} onChange={e => setNewProspectForm({...newProspectForm, offerId: e.target.value, formulaId: ''})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none">
-                  <option value="">Sélectionner une offre...</option>
+                  <option value="">{lang === 'fr' ? 'Sélectionner une offre...' : 'Select an offer...'}</option>
                   {offers.filter(o => o.status === 'active').map(offer => (
                     <option key={offer.id} value={offer.id}>{offer.name}</option>
                   ))}
@@ -1159,9 +1225,9 @@ export function CallDetails() {
               {/* Formules */}
               {newProspectForm.offerId && (
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-emerald-400 mb-1.5"><Tag className="h-3 w-3"/> Choix de la formule *</label>
+                  <label className="flex items-center gap-2 text-sm font-medium text-emerald-400 mb-1.5"><Tag className="h-3 w-3"/> {lang === 'fr' ? 'Choix de la formule' : 'Choose formula'} *</label>
                   <select value={newProspectForm.formulaId} onChange={e => setNewProspectForm({...newProspectForm, formulaId: e.target.value})} className="w-full bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none">
-                    <option value="">-- Sélectionner --</option>
+                    <option value="">{lang === 'fr' ? '-- Sélectionner --' : '-- Select --'}</option>
                     {offers.find(o => String(o.id) === newProspectForm.offerId)?.formulas?.map(f => (
                       <option key={f.id} value={f.id}>{f.name} - {f.price}€</option>
                     ))}
@@ -1170,16 +1236,16 @@ export function CallDetails() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-white/60 mb-1.5">Source</label>
+                <label className="block text-sm font-medium text-white/60 mb-1.5">{lang === 'fr' ? 'Source' : 'Source'}</label>
                 <select value={newProspectForm.source} onChange={e => setNewProspectForm({...newProspectForm, source: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none">
                   {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 bg-white/[0.03] border border-white/[0.08] hover:bg-white/10 text-white/80 font-medium py-2.5 rounded-full transition-colors">Annuler</button>
+                <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 bg-white/[0.03] border border-white/[0.08] hover:bg-white/10 text-white/80 font-medium py-2.5 rounded-full transition-colors">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                 <button onClick={handleCreateProspect} disabled={!newProspectForm.name || isCreating} className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-2.5 rounded-full transition-colors disabled:opacity-50">
-                  {isCreating ? 'Création...' : 'Créer le prospect'}
+                  {isCreating ? (lang === 'fr' ? 'Création...' : 'Creating...') : (lang === 'fr' ? 'Créer le prospect' : 'Create prospect')}
                 </button>
               </div>
             </div>
@@ -1192,7 +1258,7 @@ export function CallDetails() {
         <div className="fixed bottom-6 right-6 z-[200] animate-in slide-in-from-bottom-4 fade-in duration-300">
           <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 shadow-2xl backdrop-blur-md">
             <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-            <span className="text-sm font-semibold text-emerald-400">Rappel programmé</span>
+            <span className="text-sm font-semibold text-emerald-400">{lang === 'fr' ? 'Rappel programmé' : 'Reminder scheduled'}</span>
           </div>
         </div>
       )}

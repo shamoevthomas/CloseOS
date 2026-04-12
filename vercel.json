@@ -49,6 +49,10 @@
     {
       "path": "/api/cron/seat-grace",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/subscription-grace",
+      "schedule": "0 8 * * *"
     }
   ],
   "rewrites": [
@@ -121,6 +125,13 @@
     { "source": "/api/business-charges", "destination": "/api/business?action=charges" },
     { "source": "/api/business-payments-summary", "destination": "/api/business?action=payments-summary" },
     { "source": "/api/business-stripe-sync-all", "destination": "/api/business?action=stripe-sync-all" },
+
+    { "source": "/api/business-referral-list", "destination": "/api/business-referral?action=list" },
+    { "source": "/api/business-referral-detail", "destination": "/api/business-referral?action=detail" },
+    { "source": "/api/business-referral-create", "destination": "/api/business-referral?action=create" },
+    { "source": "/api/business-referral-update", "destination": "/api/business-referral?action=update" },
+    { "source": "/api/business-referral-delete", "destination": "/api/business-referral?action=delete" },
+    { "source": "/api/business-referral-track-view", "destination": "/api/business-referral?action=track-view" },
 
     { "source": "/(.*)", "destination": "/index.html" }
   ]

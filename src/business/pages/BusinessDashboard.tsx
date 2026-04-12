@@ -7,6 +7,7 @@ import {
   AlertTriangle, Clock, Search, Plus, X, CheckCircle2, Trash2, GitBranch, User,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { CloserDashboard } from './CloserDashboard'
@@ -85,7 +86,7 @@ interface Reminder {
 // ─── Helpers ───
 
 const formatCurrency = (v: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+  new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 
 const formatCompact = (v: number) => {
   if (v >= 1000) return `${(v / 1000).toFixed(1).replace('.0', '')}k`
@@ -144,6 +145,7 @@ function KpiTooltip({ children, text }: { children: React.ReactNode; text: strin
 
 export function BusinessDashboard() {
   const { user, isTeamMember, teamMember, ownerUserId, businessProfile, userTimezone, businessSettings } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
 
@@ -293,7 +295,7 @@ export function BusinessDashboard() {
     return baseProspects.filter(p => p.created_at && new Date(p.created_at) >= cutoff)
   }, [baseProspects, dashboardPeriod])
 
-  const PERIOD_LABELS: Record<string, string> = { today: "Aujourd'hui", week: 'Cette semaine', month: 'Ce mois', year: 'Cette année', all: 'Depuis toujours' }
+  const PERIOD_LABELS: Record<string, string> = { today: t.common_today, week: t.common_this_week, month: t.common_this_month, year: t.common_this_year, all: t.common_since_forever }
 
   const wonProspects = useMemo(() => periodProspects.filter(p => p.stage === 'won'), [periodProspects])
   const noshowProspects = useMemo(() => periodProspects.filter(p => p.stage === 'noshow'), [periodProspects])
@@ -361,7 +363,7 @@ export function BusinessDashboard() {
     ? Math.min((totalRevenue / revenueObjective.target_value) * 100, 100)
     : null
 
-  const healthLabel = closingRate >= 30 ? 'Optimal' : closingRate >= 15 ? 'Moyen' : 'Faible'
+  const healthLabel = closingRate >= 30 ? t.dashboard_health_optimal : closingRate >= 15 ? t.dashboard_health_medium : t.dashboard_health_low
   const healthOk = closingRate >= 30
   const healthWarn = closingRate >= 15 && closingRate < 30
 
@@ -390,8 +392,8 @@ export function BusinessDashboard() {
   }, [objectives, totalRevenue, wonProspects.length, closingRate, baseProspects.length, totalAppts, noshowRate])
 
   const firstName = isTeamMember
-    ? (teamMember?.first_name || 'Utilisateur')
-    : (businessProfile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Utilisateur')
+    ? (teamMember?.first_name || 'User')
+    : (businessProfile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'User')
   const scrambledName = useScrambleText(firstName)
 
   if (isTeamMember && !isHeadOfSales && !isAdmin) {
@@ -419,10 +421,10 @@ export function BusinessDashboard() {
           </div>
           <div className="space-y-1">
             <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Bonjour, {scrambledName}.
+              {t.dashboard_hello}, {scrambledName}.
             </h2>
             <p className="text-neutral-500 dark:text-neutral-400 text-lg">
-              Voici l'état de votre activité
+              {t.dashboard_subtitle}
               {dashboardPeriod !== 'all' && <span className="ml-1 text-sm font-bold text-neutral-400">· {PERIOD_LABELS[dashboardPeriod]}</span>}
             </p>
           </div>
@@ -438,7 +440,7 @@ export function BusinessDashboard() {
             style={{ fontFamily: 'Manrope, sans-serif' }}
           >
             <FileDown className="h-4 w-4" />
-            Exporter Rapport
+            {t.dashboard_export_report}
           </Link>
         </div>
       </header>
@@ -447,7 +449,7 @@ export function BusinessDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-4">
 
         {/* Revenue */}
-        <KpiTooltip text="Chiffre d'affaires total généré par les prospects gagnés (stage « Gagné »). Calculé en additionnant la valeur de chaque prospect signé.">
+        <KpiTooltip text={t.dashboard_tooltip_revenue}>
           <Link to="/business/report" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="flex justify-between items-start mb-2">
               <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
@@ -465,7 +467,7 @@ export function BusinessDashboard() {
         </KpiTooltip>
 
         {/* Total Pipeline */}
-        <KpiTooltip text="Valeur totale de tous les prospects actifs dans le pipeline (tous statuts confondus). Représente le potentiel commercial global en cours.">
+        <KpiTooltip text={t.dashboard_tooltip_pipeline}>
           <Link to="/business/pipeline-owner" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 w-fit">
               <GitBranch className="h-3.5 w-3.5 text-blue-600" />
@@ -478,7 +480,7 @@ export function BusinessDashboard() {
         </KpiTooltip>
 
         {/* Closing */}
-        <KpiTooltip text="Taux de closing : pourcentage de prospects convertis en vente. Calculé : prospects gagnés ÷ (gagnés + perdus + no-shows ayant eu un rendez-vous).">
+        <KpiTooltip text={t.dashboard_tooltip_closing}>
           <Link to="/business/acquisition" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800 w-fit">
               <TrendingUp className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
@@ -491,20 +493,20 @@ export function BusinessDashboard() {
         </KpiTooltip>
 
         {/* Rendez-vous */}
-        <KpiTooltip text="Nombre total de rendez-vous planifiés à venir (confirmés et en attente) à partir d'aujourd'hui.">
+        <KpiTooltip text={t.dashboard_tooltip_appointments}>
           <Link to="/business/rendez-vous" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800 w-fit">
               <CalendarDays className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div className="mt-2">
-              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Rendez-vous</p>
+              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">{t.sidebar_appointments}</p>
               <p className="text-lg font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{totalAppts.toLocaleString()}</p>
             </div>
           </Link>
         </KpiTooltip>
 
         {/* Objectif */}
-        <KpiTooltip text="Progression vers votre objectif de chiffre d'affaires. Calculé : revenue actuel ÷ objectif défini × 100. « En bonne voie » si ≥ 80%.">
+        <KpiTooltip text={t.dashboard_tooltip_objective}>
           <Link to="/business/objectifs" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="flex justify-between items-start">
               <div className="p-1.5 rounded-lg bg-stone-100 dark:bg-neutral-800">
@@ -515,25 +517,25 @@ export function BusinessDashboard() {
               )}
             </div>
             <div className="mt-2">
-              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Objectif CA</p>
+              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">{t.dashboard_objective_ca}</p>
               {revenueObjective ? (
                 <>
                   <div className="w-full bg-stone-100 dark:bg-neutral-800 h-1 rounded-full mt-1.5 mb-1.5 overflow-hidden">
                     <div className="bg-neutral-900 dark:bg-white h-full rounded-full transition-all" style={{ width: `${objectiveProgress}%` }} />
                   </div>
                   <p className="text-sm font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    {objectiveProgress! >= 80 ? 'En bonne voie' : 'En cours'}
+                    {objectiveProgress! >= 80 ? t.dashboard_on_track : t.dashboard_in_progress}
                   </p>
                 </>
               ) : (
-                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">Aucun objectif</p>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">{t.objectives_no_objectives}</p>
               )}
             </div>
           </Link>
         </KpiTooltip>
 
         {/* No-Show */}
-        <KpiTooltip text="Taux de no-show : pourcentage de prospects absents au rendez-vous. Calculé : no-shows ÷ total des prospects qualifiés ayant eu un rendez-vous.">
+        <KpiTooltip text={t.dashboard_tooltip_noshow}>
           <Link to="/business/crm" className={`${glassCard} rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="flex justify-between items-start">
               <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30">
@@ -553,7 +555,7 @@ export function BusinessDashboard() {
         </KpiTooltip>
 
         {/* KPI Health */}
-        <KpiTooltip text={`Santé globale basée sur le taux de closing (${closingRate.toFixed(1)}%). ≥ 30% → Optimal, 15-30% → Moyen, < 15% → Faible.`}>
+        <KpiTooltip text={`${t.dashboard_tooltip_health} (${closingRate.toFixed(1)}%)`}>
           <Link
             to="/business/report"
             className={`rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform bg-white/60 dark:bg-white/5 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] cursor-pointer h-full ${healthOk ? 'border border-emerald-500/20' : healthWarn ? 'border border-amber-500/20' : 'border border-red-500/20'}`}
@@ -570,7 +572,7 @@ export function BusinessDashboard() {
               </div>
             </div>
             <div className="mt-2">
-              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">Santé KPI</p>
+              <p className="text-[9px] text-neutral-400 dark:text-neutral-500 uppercase font-black tracking-[0.15em] mb-0.5">{t.dashboard_kpi_health}</p>
               <p className="text-base font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{healthLabel}</p>
             </div>
           </Link>
@@ -583,15 +585,15 @@ export function BusinessDashboard() {
         <div className={`col-span-12 lg:col-span-7 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Campagnes actives</h3>
-              <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-0.5">Performance en temps réel des flux actifs.</p>
+              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.dashboard_active_campaigns}</h3>
+              <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-0.5">{t.dashboard_active_campaigns_desc}</p>
             </div>
             <Link to="/business/campagnes" className="text-sm font-bold text-neutral-900 dark:text-white border-b-2 border-neutral-900 dark:border-white pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Voir Tout
+              {t.common_all}
             </Link>
           </div>
           {activeCampaigns.length === 0 ? (
-            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">Aucune campagne</p>
+            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">{t.campaigns_no_campaigns}</p>
           ) : (
             <div className="space-y-4">
               {activeCampaigns.map((c, idx) => {
@@ -628,11 +630,11 @@ export function BusinessDashboard() {
         {/* Objectifs de vente */}
         <Link to="/business/objectifs" className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-8 flex flex-col cursor-pointer hover:scale-[1.01] transition-transform`}>
           <div className="mb-8">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Objectifs de vente</h3>
-            <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-0.5">Progression mensuelle vers les objectifs.</p>
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.dashboard_sales_objectives}</h3>
+            <p className="text-neutral-400 dark:text-neutral-500 text-sm mt-0.5">{t.dashboard_objectives_desc}</p>
           </div>
           {objectivesWithProgress.length === 0 ? (
-            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8 flex-1 flex items-center justify-center">Aucun objectif défini</p>
+            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8 flex-1 flex items-center justify-center">{t.dashboard_no_objectives}</p>
           ) : (
             <div className="flex-1 space-y-8">
               {objectivesWithProgress.map(obj => (
@@ -661,8 +663,8 @@ export function BusinessDashboard() {
                   <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30">
                     <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-sm font-bold text-amber-900 dark:text-amber-300">Alerte Efficacité</h4>
-                      <p className="text-xs text-amber-800/80 dark:text-amber-400/80 mt-0.5">Le taux de closing est en dessous de la moyenne. Pensez à planifier une formation.</p>
+                      <h4 className="text-sm font-bold text-amber-900 dark:text-amber-300">{t.dashboard_alert_efficiency}</h4>
+                      <p className="text-xs text-amber-800/80 dark:text-amber-400/80 mt-0.5">{t.dashboard_alert_efficiency_desc}</p>
                     </div>
                   </div>
                 </div>
@@ -678,26 +680,26 @@ export function BusinessDashboard() {
         <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-6 px-1">
             <div className="flex items-center gap-4">
-              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Équipe</h3>
+              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.sidebar_team}</h3>
               {teams.length > 0 && (
                 <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-full p-0.5">
                   <button
                     onClick={() => setTeamTab('all')}
                     className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${teamTab === 'all' ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}
                   >
-                    Tous
+                    {t.common_all}
                   </button>
                   <button
                     onClick={() => setTeamTab('teams')}
                     className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${teamTab === 'teams' ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}
                   >
-                    Équipes
+                    {t.dashboard_teams}
                   </button>
                 </div>
               )}
             </div>
             <Link to="/business/team" className="px-5 py-2.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-full text-xs font-bold text-neutral-900 dark:text-white transition-colors uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Voir l'équipe
+              {t.dashboard_view_team}
             </Link>
           </div>
 
@@ -705,15 +707,15 @@ export function BusinessDashboard() {
           {teamTab === 'all' && (
             <>
               {visibleMembers.length === 0 ? (
-                <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">Aucun membre</p>
+                <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">{t.dashboard_no_members}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead className="text-[10px] uppercase font-black text-neutral-400 dark:text-neutral-500 tracking-[0.15em]">
                       <tr>
-                        <th className="pb-5 px-3">Membre</th>
-                        <th className="pb-5 px-3">Rôle</th>
-                        <th className="pb-5 px-3">Statut</th>
+                        <th className="pb-5 px-3">{t.sidebar_member}</th>
+                        <th className="pb-5 px-3">{t.common_role}</th>
+                        <th className="pb-5 px-3">{t.common_status}</th>
                         <th className="pb-5 px-3 text-right">Com</th>
                       </tr>
                     </thead>
@@ -800,7 +802,7 @@ export function BusinessDashboard() {
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-black text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamCA)}</p>
-                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase font-bold tracking-wider">CA généré</p>
+                        <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase font-bold tracking-wider">{t.dashboard_revenue_generated}</p>
                       </div>
                     </div>
                     {teamMembersList.length > 0 && (
@@ -825,13 +827,13 @@ export function BusinessDashboard() {
                       </div>
                     )}
                     {teamMembersList.length === 0 && (
-                      <p className="text-xs text-neutral-400 dark:text-neutral-500 text-center py-3">Aucun membre dans cette équipe</p>
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 text-center py-3">{t.dashboard_no_members_in_team}</p>
                     )}
                   </div>
                 )
               })}
               {teams.length === 0 && (
-                <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">Aucune équipe créée</p>
+                <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8">{t.dashboard_no_teams}</p>
               )}
             </div>
           )}
@@ -840,7 +842,7 @@ export function BusinessDashboard() {
         {/* Rappels & Tâches */}
         <div className={`col-span-12 lg:col-span-4 ${glassCard} rounded-2xl p-8 flex flex-col`}>
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Rappels</h3>
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.reminders_title}</h3>
             {reminders.length > 0 && (
               <span className="w-6 h-6 bg-neutral-900 dark:bg-neutral-200 text-white dark:text-neutral-900 text-[10px] flex items-center justify-center rounded-full font-bold">
                 {reminders.length}
@@ -848,7 +850,7 @@ export function BusinessDashboard() {
             )}
           </div>
           {reminders.length === 0 ? (
-            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8 flex-1 flex items-center justify-center">Aucun rappel en attente</p>
+            <p className="text-sm text-neutral-400 dark:text-neutral-500 text-center py-8 flex-1 flex items-center justify-center">{t.reminders_no_reminders}</p>
           ) : (
             <div className="space-y-3 flex-1 overflow-y-auto">
               {reminders.map(r => {
@@ -865,7 +867,7 @@ export function BusinessDashboard() {
                     <div className="flex justify-between items-start mb-1">
                       <h4 className="text-sm font-bold text-neutral-900 dark:text-white">{r.title}</h4>
                       <span className={`text-[10px] font-black uppercase ${isOverdue ? 'text-red-500' : 'text-neutral-400'}`}>
-                        {isOverdue ? 'EN RETARD' : 'À VENIR'}
+                        {isOverdue ? t.reminders_overdue : t.dashboard_upcoming}
                       </span>
                     </div>
                     {r.description && (
@@ -873,7 +875,7 @@ export function BusinessDashboard() {
                     )}
                     <div className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 dark:text-neutral-500">
                       <Clock className="h-3 w-3" />
-                      {rLocalDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}, {rLocal.time}
+                      {rLocalDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}, {rLocal.time}
                     </div>
                   </div>
                 )
@@ -884,7 +886,7 @@ export function BusinessDashboard() {
             to="/business/rappels"
             className="mt-4 w-full py-3 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-2xl text-neutral-400 dark:text-neutral-500 text-sm font-bold hover:border-neutral-900 hover:text-neutral-900 dark:hover:border-neutral-400 dark:hover:text-white transition-all text-center block"
           >
-            + Créer un rappel
+            + {t.reminders_add}
           </Link>
         </div>
       </div>
@@ -892,7 +894,7 @@ export function BusinessDashboard() {
       {/* ─── Loss Reason Pie Chart ─── */}
       {lossReasonData.length > 0 && (
       <div className={`${glassCard} rounded-2xl p-8`}>
-        <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>Raisons de Perte</h3>
+        <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.dashboard_loss_reasons}</h3>
         <div className="flex flex-col lg:flex-row items-center gap-8">
           <div className="w-56 h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -933,7 +935,7 @@ export function BusinessDashboard() {
             <div className="px-8 pt-8 pb-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  Détail du rappel
+                  {t.dashboard_reminder_detail}
                 </h2>
                 <button onClick={() => setSelectedReminder(null)} className="p-2 text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
                   <X className="h-5 w-5" />
@@ -946,14 +948,14 @@ export function BusinessDashboard() {
                 const isOverdue = new Date(selectedReminder.reminder_date) < now
                 return (
                   <span className={`px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] border inline-block ${isOverdue ? 'bg-red-500/10 text-red-600 border-red-500/20' : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'}`}>
-                    {isOverdue ? 'En retard' : 'À venir'}
+                    {isOverdue ? t.reminders_overdue : t.dashboard_upcoming}
                   </span>
                 )
               })()}
 
               {/* Title */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400 mb-1">Titre</label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400 mb-1">{t.dashboard_title_label}</label>
                 <p className="text-lg font-extrabold text-neutral-900 dark:text-white">{selectedReminder.title}</p>
               </div>
 
@@ -971,12 +973,12 @@ export function BusinessDashboard() {
                 const srLocalDate = new Date(srLocal.date + 'T00:00:00')
                 return (
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400 mb-1">Date & Heure</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400 mb-1">{t.dashboard_date_time}</label>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-neutral-400" />
                       <p className={`text-sm font-medium ${new Date(selectedReminder.reminder_date) < now ? 'text-red-600' : 'text-neutral-900 dark:text-white'}`}>
-                        {srLocalDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                        {' à '}
+                        {srLocalDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        {lang === 'en' ? ' at ' : ' à '}
                         {srLocal.time}
                       </p>
                     </div>
@@ -991,14 +993,14 @@ export function BusinessDashboard() {
                   className="flex-1 py-3 bg-emerald-600 text-white rounded-full font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  Marquer comme fait
+                  {t.dashboard_mark_done}
                 </button>
                 <button
                   onClick={() => { handleDeleteReminder(selectedReminder.id); setSelectedReminder(null) }}
                   className="flex-1 py-3 bg-neutral-100 dark:bg-neutral-800 text-red-600 rounded-full font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Supprimer
+                  {t.common_delete}
                 </button>
               </div>
             </div>

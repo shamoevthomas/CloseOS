@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import { useCustomStages } from '../hooks/useCustomStages'
@@ -16,28 +17,28 @@ import { supabase } from '../../lib/supabase'
 import { toUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
 
-const objectionReasons = [
-  'Je dois y réfléchir',
-  'Argent/budget',
-  'Doit en parler',
-  "C'est pas le moment",
-  'Peur',
-  'Ecran de fumée',
-  'Autre'
+const getObjectionReasons = (t: any) => [
+  t.closer_calldetails_objection_think,
+  t.closer_calldetails_objection_budget,
+  t.closer_calldetails_objection_discuss,
+  t.closer_calldetails_objection_timing,
+  t.closer_calldetails_objection_fear,
+  t.closer_calldetails_objection_smokescreen,
+  t.closer_calldetails_objection_other,
 ]
 
-const closerOutcomes = [
-  { id: 'won', label: 'Vente', icon: CheckCircle2, iconClass: 'text-emerald-600' },
-  { id: 'followup', label: 'Follow up', icon: Clock, iconClass: 'text-stone-500' },
-  { id: 'lost', label: 'Perdu', icon: XCircle, iconClass: 'text-stone-500' },
-  { id: 'noshow', label: 'No Show', icon: PhoneMissed, iconClass: 'text-stone-500' },
+const getCloserOutcomes = (t: any) => [
+  { id: 'won', label: t.closer_calldetails_outcome_won, icon: CheckCircle2, iconClass: 'text-emerald-600' },
+  { id: 'followup', label: t.closer_calldetails_outcome_followup, icon: Clock, iconClass: 'text-stone-500' },
+  { id: 'lost', label: t.closer_calldetails_outcome_lost, icon: XCircle, iconClass: 'text-stone-500' },
+  { id: 'noshow', label: t.closer_calldetails_outcome_noshow, icon: PhoneMissed, iconClass: 'text-stone-500' },
 ]
 
-const setterOutcomesForOwner = [
-  { id: 'qualified', label: 'Qualifié', icon: CheckCircle2, iconClass: 'text-emerald-600' },
-  { id: 'booklater', label: 'À booker plus tard', icon: Calendar, iconClass: 'text-stone-500' },
-  { id: 'unqualified', label: 'Non Qualifié', icon: XCircle, iconClass: 'text-stone-500' },
-  { id: 'noanswer', label: 'Pas de Réponse', icon: PhoneMissed, iconClass: 'text-stone-500' },
+const getSetterOutcomesForOwner = (t: any) => [
+  { id: 'qualified', label: t.closer_calldetails_setter_qualified, icon: CheckCircle2, iconClass: 'text-emerald-600' },
+  { id: 'booklater', label: t.closer_calldetails_setter_booklater, icon: Calendar, iconClass: 'text-stone-500' },
+  { id: 'unqualified', label: t.closer_calldetails_setter_unqualified, icon: XCircle, iconClass: 'text-stone-500' },
+  { id: 'noanswer', label: t.closer_calldetails_setter_noanswer, icon: PhoneMissed, iconClass: 'text-stone-500' },
 ]
 
 interface Formula {
@@ -81,6 +82,10 @@ export function CloserCallDetails() {
   const [searchParams] = useSearchParams()
   const isReadonly = searchParams.get('readonly') === '1'
   const { user, teamMember, ownerUserId, isTeamMember, userTimezone } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
+  const objectionReasons = getObjectionReasons(t)
+  const closerOutcomes = getCloserOutcomes(t)
+  const setterOutcomesForOwner = getSetterOutcomesForOwner(t)
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const isSetterCloser = isTeamMember && teamMember?.role === 'Setter-Closer'
   const isSetterCloserSelf = isSetterCloser && teamMember?.setter_scope === 'self'
@@ -274,7 +279,7 @@ export function CloserCallDetails() {
       const data = await res.json()
       if (data.matched) {
         setStripeAutoResult({ status: 'matched', data })
-        toast.success('Abonnement Stripe lie automatiquement')
+        toast.success(t.closer_calldetails_toast_stripe_auto)
       } else {
         setStripeAutoResult({ status: 'not_found' })
       }
@@ -312,13 +317,13 @@ export function CloserCallDetails() {
       })
       const data = await res.json()
       if (data.matched) {
-        toast.success('Abonnement Stripe lie avec succes')
+        toast.success(t.closer_calldetails_toast_stripe_success)
         setStripeAutoResult({ status: 'matched', data })
       } else {
-        toast.error('Impossible de lier l\'abonnement')
+        toast.error(t.closer_calldetails_toast_stripe_fail)
       }
     } catch {
-      toast.error('Erreur de liaison Stripe')
+      toast.error(t.closer_calldetails_toast_stripe_error)
     }
     setStripeMatching(false)
   }, [effectiveOwnerId, prospect])
@@ -335,13 +340,13 @@ export function CloserCallDetails() {
       })
       const data = await res.json()
       if (data.matched) {
-        toast.success('Abonnement Stripe lie manuellement')
+        toast.success(t.closer_calldetails_toast_stripe_manual)
         setStripeAutoResult({ status: 'matched', data })
       } else {
-        toast.error('Impossible de lier l\'abonnement')
+        toast.error(t.closer_calldetails_toast_stripe_fail)
       }
     } catch {
-      toast.error('Erreur de liaison Stripe')
+      toast.error(t.closer_calldetails_toast_stripe_error)
     }
     setStripeMatching(false)
   }, [effectiveOwnerId, prospect, stripeManualCustomerId, stripeManualSubId])
@@ -377,7 +382,7 @@ export function CloserCallDetails() {
       setSelectedCloser(closer)
       loadAvailableSlots(closer.id)
     } else {
-      toast.error('Aucun closer disponible')
+      toast.error(t.closer_calldetails_toast_no_closer)
     }
   }
 
@@ -445,7 +450,7 @@ export function CloserCallDetails() {
             slots.push({
               date: dateStr,
               time: timeStr,
-              dateLabel: date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
+              dateLabel: date.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
               timeLabel: `${timeStr} - ${String(Math.floor((mins + SLOT_DURATION) / 60)).padStart(2, '0')}:${String((mins + SLOT_DURATION) % 60).padStart(2, '0')}`,
             })
           }
@@ -455,7 +460,7 @@ export function CloserCallDetails() {
       setCurrentDateIndex(0)
     } catch (err) {
       console.error('Error loading slots:', err)
-      toast.error('Erreur lors du chargement des créneaux')
+      toast.error(t.closer_calldetails_toast_slots_error)
     } finally {
       setLoadingSlots(false)
     }
@@ -468,7 +473,7 @@ export function CloserCallDetails() {
     if (selectedOutcome === 'won' && (!amount || amount <= 0)) return false
     if (selectedOutcome === 'followup') {
       if (!followupDate || !followupReason) return false
-      if (followupReason === 'Autre' && !followupReasonOther.trim()) return false
+      if (followupReason === t.closer_calldetails_objection_other && !followupReasonOther.trim()) return false
     }
     if (selectedOutcome === 'lost') {
       if (!lostReason) return false
@@ -492,14 +497,14 @@ export function CloserCallDetails() {
       }
 
       // Build technical summary
-      let technicalSummary = `[${new Date().toLocaleDateString('fr-FR')}] Appel: ${selectedOutcome}`
+      let technicalSummary = `[${new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')}] Appel: ${selectedOutcome}`
       if (selectedOutcome === 'won') {
         technicalSummary += `\n- Montant: ${amount}€ (${paymentType === 'comptant' ? 'Comptant' : `${installmentsCount}x`})`
         technicalSummary += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/mois)` : ''}`
       }
       if (selectedOutcome === 'followup') {
-        const reason = followupReason === 'Autre' ? followupReasonOther : followupReason
-        technicalSummary += `\n- Motif: ${reason}\n- Rappel: ${new Date(followupDate).toLocaleDateString('fr-FR')}`
+        const reason = followupReason === t.closer_calldetails_objection_other ? followupReasonOther : followupReason
+        technicalSummary += `\n- Motif: ${reason}\n- Rappel: ${new Date(followupDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')}`
       }
       if (selectedOutcome === 'lost') {
         technicalSummary += `\n- Motif: ${lostReason}`
@@ -575,7 +580,7 @@ export function CloserCallDetails() {
           type: 'call',
           contact: call.contact_name,
           status: 'upcoming',
-          description: `Follow up — Motif: ${followupReason === 'Autre' ? followupReasonOther : followupReason}`,
+          description: `Follow up — Motif: ${followupReason === t.closer_calldetails_objection_other ? followupReasonOther : followupReason}`,
         }])
         if (isGoogleConnected) {
           const [h, m] = timeStr.split(':').map(Number)
@@ -586,7 +591,7 @@ export function CloserCallDetails() {
             date: dateStr,
             startTime: timeStr,
             endTime,
-            description: `Follow up — Motif: ${followupReason === 'Autre' ? followupReasonOther : followupReason}`,
+            description: `Follow up — Motif: ${followupReason === t.closer_calldetails_objection_other ? followupReasonOther : followupReason}`,
             withGoogleMeet: true,
           })
         }
@@ -651,10 +656,10 @@ export function CloserCallDetails() {
         }])
       }
 
-      toast.success('Sauvegardé')
+      toast.success(t.closer_calldetails_toast_saved)
       navigate('/business/appels')
     } catch {
-      toast.error('Erreur lors de la sauvegarde')
+      toast.error(t.closer_calldetails_toast_save_error)
     } finally {
       setSaving(false)
     }
@@ -678,9 +683,9 @@ export function CloserCallDetails() {
       setReminderDescription('')
       setReminderDate('')
       setReminderTime('')
-      toast.success('Rappel programmé')
+      toast.success(t.closer_calldetails_toast_reminder_saved)
     } catch {
-      toast.error('Erreur lors de la création du rappel')
+      toast.error(t.closer_calldetails_toast_reminder_error)
     }
     setIsSavingReminder(false)
   }
@@ -723,9 +728,9 @@ export function CloserCallDetails() {
           .eq('id', call.id)
         setCall((prev: any) => ({ ...prev, contact_id: newProspect.id }))
       }
-      toast.success('Prospect créé et lié à l\'appel')
+      toast.success(t.closer_calldetails_toast_prospect_created)
     } catch {
-      toast.error('Erreur lors de la création du prospect')
+      toast.error(t.closer_calldetails_toast_prospect_error)
     }
     setCreatingProspect(false)
   }
@@ -737,8 +742,8 @@ export function CloserCallDetails() {
   if (!call) {
     return (
       <div className="text-center py-16">
-        <p className="text-stone-500 dark:text-neutral-400">Appel introuvable</p>
-        <button onClick={() => navigate('/business/appels')} className="mt-4 text-stone-900 dark:text-white font-semibold hover:underline">Retour aux appels</button>
+        <p className="text-stone-500 dark:text-neutral-400">{t.closer_calldetails_not_found}</p>
+        <button onClick={() => navigate('/business/appels')} className="mt-4 text-stone-900 dark:text-white font-semibold hover:underline">{t.closer_calldetails_back_to_calls}</button>
       </div>
     )
   }
@@ -838,9 +843,9 @@ export function CloserCallDetails() {
   )
 
   const tabs = [
-    { id: 'qualification' as const, label: 'Qualification' },
-    { id: 'notes' as const, label: "Notes d'appel" },
-    { id: 'reminder' as const, label: 'Programmer un rappel' },
+    { id: 'qualification' as const, label: t.closer_calldetails_tab_qualification },
+    { id: 'notes' as const, label: t.closer_calldetails_tab_notes },
+    { id: 'reminder' as const, label: t.closer_calldetails_tab_reminder },
   ]
 
   return (
@@ -851,26 +856,26 @@ export function CloserCallDetails() {
           onClick={() => navigate('/business/appels')}
           className="mb-6 flex items-center gap-2 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors font-['Manrope'] font-semibold"
         >
-          <ArrowLeft className="h-5 w-5" /> Retour
+          <ArrowLeft className="h-5 w-5" /> {t.closer_calldetails_back}
         </button>
 
         {/* Readonly banner */}
         {isReadonly && (
           <div className="rounded-xl border border-blue-200 bg-blue-50/70 backdrop-blur-md px-5 py-3 flex items-center gap-3 mb-6">
             <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
-            <p className="text-sm font-medium text-blue-700">Mode consultation — Cet appel a déjà été qualifié</p>
+            <p className="text-sm font-medium text-blue-700">{t.closer_calldetails_readonly_banner}</p>
           </div>
         )}
 
         <h1 className="font-['Manrope'] text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">
-          {isReadonly ? "Détails de l'appel avec" : isSetterCloser ? "Résumé d'appel avec" : 'Résumé de Vente avec'} {call.contact_name}
+          {isReadonly ? t.closer_calldetails_title_readonly : isSetterCloser ? t.closer_calldetails_title_settercloser : t.closer_calldetails_title_closer} {call.contact_name}
         </h1>
         <div className="flex items-center gap-2 text-stone-500 dark:text-neutral-400">
           <Clock className="h-4 w-4" />
           <span className="text-sm font-medium">
-            {new Date(call.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            {' à '}
-            {new Date(call.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            {new Date(call.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {` ${t.closer_calldetails_at} `}
+            {new Date(call.date).toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
             {call.duration && call.duration !== 'En cours...' && ` (${call.duration})`}
           </span>
         </div>
@@ -878,14 +883,14 @@ export function CloserCallDetails() {
           <div className="mt-4 inline-flex items-center gap-3 rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-sm px-5 py-3">
             <Award className="h-4 w-4 text-emerald-600" />
             <div>
-              <p className="text-xs text-stone-400 dark:text-neutral-500">Offre liée</p>
+              <p className="text-xs text-stone-400 dark:text-neutral-500">{t.closer_calldetails_linked_offer}</p>
               <p className="text-sm font-bold text-stone-900 dark:text-white font-['Manrope']">{prospectFormula.name} - {prospectFormula.price}€</p>
             </div>
           </div>
         )}
         {prospect && !prospectFormula && (
           <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-stone-50/50 dark:bg-white/5 border border-stone-200/40 dark:border-white/10 px-5 py-3">
-            <p className="text-sm text-stone-500 dark:text-neutral-400">Aucune offre liée à ce prospect</p>
+            <p className="text-sm text-stone-500 dark:text-neutral-400">{t.closer_calldetails_no_linked_offer}</p>
           </div>
         )}
       </div>
@@ -921,14 +926,14 @@ export function CloserCallDetails() {
                     <Lock className="h-5 w-5 text-stone-500 dark:text-neutral-400" />
                   </div>
                   <div>
-                    <h3 className="font-['Manrope'] text-lg font-extrabold text-stone-900 dark:text-white">Aucun prospect lié</h3>
-                    <p className="text-sm text-stone-500 dark:text-neutral-400">Créez un prospect pour qualifier cet appel</p>
+                    <h3 className="font-['Manrope'] text-lg font-extrabold text-stone-900 dark:text-white">{t.closer_calldetails_no_prospect}</h3>
+                    <p className="text-sm text-stone-500 dark:text-neutral-400">{t.closer_calldetails_create_prospect_desc}</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Nom</label>
+                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{t.closer_calldetails_label_name}</label>
                     <input
                       type="text"
                       value={call?.contact_name || ''}
@@ -937,7 +942,7 @@ export function CloserCallDetails() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Email</label>
+                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{t.closer_calldetails_label_email}</label>
                     <input
                       type="email"
                       value={newProspectEmail}
@@ -947,7 +952,7 @@ export function CloserCallDetails() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Téléphone</label>
+                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{t.closer_calldetails_label_phone}</label>
                     <input
                       type="tel"
                       value={newProspectPhone}
@@ -957,12 +962,12 @@ export function CloserCallDetails() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Entreprise</label>
+                    <label className="mb-1.5 block text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{t.closer_calldetails_label_company}</label>
                     <input
                       type="text"
                       value={newProspectCompany}
                       onChange={(e) => setNewProspectCompany(e.target.value)}
-                      placeholder="Nom de l'entreprise"
+                      placeholder={t.closer_calldetails_company_placeholder}
                       className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                     />
                   </div>
@@ -974,9 +979,9 @@ export function CloserCallDetails() {
                   className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-6 py-3.5 font-['Manrope'] font-bold text-sm transition-all hover:bg-stone-800 dark:hover:bg-neutral-100 shadow-lg active:scale-95 disabled:opacity-50"
                 >
                   {creatingProspect ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Création...</>
+                    <><Loader2 className="h-4 w-4 animate-spin" /> {t.closer_calldetails_creating}</>
                   ) : (
-                    <><UserPlus className="h-4 w-4" /> Créer le prospect</>
+                    <><UserPlus className="h-4 w-4" /> {t.closer_calldetails_create_prospect}</>
                   )}
                 </button>
               </div>
@@ -987,16 +992,16 @@ export function CloserCallDetails() {
           {/* Left Column */}
           <div className="lg:col-span-7 space-y-10">
             {/* Closer Outcomes */}
-            {renderOutcomeCards(closerOutcomes, "Résultat de l'appel — Closer", true, closerCustomStages)}
+            {renderOutcomeCards(closerOutcomes, t.closer_calldetails_outcome_label_closer, true, closerCustomStages)}
 
             {/* Won: Payment Terms & Commission */}
             {selectedOutcome === 'won' && (
               <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
                 <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
-                  <DollarSign className="h-5 w-5 text-emerald-600" /> Détails de la vente
+                  <DollarSign className="h-5 w-5 text-emerald-600" /> {t.closer_calldetails_sale_details}
                 </h3>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Montant de la vente <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_sale_amount} <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <input
                       type="number" min="0" step="0.01"
@@ -1009,31 +1014,31 @@ export function CloserCallDetails() {
                   </div>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Mode de paiement</label>
+                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_payment_mode}</label>
                   <div className="flex gap-3">
                     <button onClick={() => setPaymentType('comptant')}
                       className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-[\"Manrope\"]',
                         paymentType === 'comptant' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:hover:border-white/20')}>
-                      Comptant
+                      {t.closer_calldetails_payment_cash}
                     </button>
                     <button onClick={() => setPaymentType('installments')}
                       className={cn('flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all font-[\"Manrope\"]',
                         paymentType === 'installments' ? 'border-emerald-600 bg-white text-emerald-700' : 'border-stone-200/40 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 text-stone-500 dark:text-neutral-400 hover:border-stone-300 dark:hover:border-white/20')}>
-                      Plusieurs fois
+                      {t.closer_calldetails_payment_installments}
                     </button>
                   </div>
                 </div>
                 {paymentType === 'installments' && (
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Nombre de mensualités</label>
+                    <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_installments_count}</label>
                     <select value={installmentsCount} onChange={(e) => setInstallmentsCount(parseInt(e.target.value))}
                       className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
                       {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
-                        <option key={num} value={num}>{num} mois</option>
+                        <option key={num} value={num}>{num} {t.closer_calldetails_months}</option>
                       ))}
                     </select>
                     <p className="mt-2 text-sm text-stone-500 dark:text-neutral-400">
-                      Montant par mois: <span className="text-emerald-600 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
+                      {t.closer_calldetails_amount_per_month} <span className="text-emerald-600 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
                     </p>
                   </div>
                 )}
@@ -1041,15 +1046,15 @@ export function CloserCallDetails() {
                   <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <Award className="h-4 w-4 text-emerald-600" />
-                      <h4 className="text-sm font-bold text-emerald-700 font-['Manrope']">Ta Commission</h4>
+                      <h4 className="text-sm font-bold text-emerald-700 font-['Manrope']">{t.closer_calldetails_your_commission}</h4>
                     </div>
                     <p className="text-2xl font-extrabold text-emerald-600 font-['Manrope']">{totalCommission.toFixed(2)} €</p>
                     {paymentType === 'installments' && (
                       <p className="mt-1 text-sm text-stone-600 dark:text-neutral-300">
-                        Tu recevras: <span className="font-semibold text-emerald-600">{monthlyCommission.toFixed(2)}€/mois</span>
+                        {t.closer_calldetails_you_will_receive} <span className="font-semibold text-emerald-600">{monthlyCommission.toFixed(2)}€/{t.closer_calldetails_stripe_month}</span>
                       </p>
                     )}
-                    <p className="mt-2 text-xs text-stone-400 dark:text-neutral-500">Taux de commission: {commissionRate}%</p>
+                    <p className="mt-2 text-xs text-stone-400 dark:text-neutral-500">{t.closer_calldetails_commission_rate} {commissionRate}%</p>
                   </div>
                 )}
               </section>
@@ -1062,21 +1067,21 @@ export function CloserCallDetails() {
                   <div className="p-2 bg-emerald-500/10 rounded-xl">
                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                   </div>
-                  <h3 className="font-['Manrope'] text-lg font-bold text-emerald-600">Abonnement Stripe lie</h3>
+                  <h3 className="font-['Manrope'] text-lg font-bold text-emerald-600">{t.closer_calldetails_stripe_linked}</h3>
                 </div>
                 <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 p-4 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-xs text-stone-500 dark:text-neutral-400">Montant</span>
-                    <span className="text-sm font-bold text-stone-900 dark:text-white">{(Number((prospect as any).subscription_amount) || 0).toFixed(2)} EUR / {(prospect as any).subscription_interval === 'month' ? 'mois' : 'an'}</span>
+                    <span className="text-xs text-stone-500 dark:text-neutral-400">{t.closer_calldetails_stripe_amount}</span>
+                    <span className="text-sm font-bold text-stone-900 dark:text-white">{(Number((prospect as any).subscription_amount) || 0).toFixed(2)} EUR / {(prospect as any).subscription_interval === 'month' ? t.closer_calldetails_stripe_month : t.closer_calldetails_stripe_year}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-xs text-stone-500 dark:text-neutral-400">Statut</span>
+                    <span className="text-xs text-stone-500 dark:text-neutral-400">{t.closer_calldetails_stripe_status}</span>
                     <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full', {
                       'bg-emerald-500/10 text-emerald-600': (prospect as any).subscription_status === 'active',
                       'bg-amber-500/10 text-amber-600': (prospect as any).subscription_status === 'past_due',
                       'bg-red-500/10 text-red-600': (prospect as any).subscription_status === 'canceled',
                     })}>
-                      {(prospect as any).subscription_status === 'active' ? 'Actif' : (prospect as any).subscription_status === 'past_due' ? 'En retard' : (prospect as any).subscription_status === 'canceled' ? 'Annule' : (prospect as any).subscription_status}
+                      {(prospect as any).subscription_status === 'active' ? t.closer_calldetails_stripe_active : (prospect as any).subscription_status === 'past_due' ? t.closer_calldetails_stripe_late : (prospect as any).subscription_status === 'canceled' ? t.closer_calldetails_stripe_canceled : (prospect as any).subscription_status}
                     </span>
                   </div>
                 </div>
@@ -1087,7 +1092,7 @@ export function CloserCallDetails() {
             {selectedOutcome === 'won' && prospectFormula?.billing_type === 'subscription' && stripeConnected && prospect && !prospect.stripe_subscription_id && stripeAutoResult.status !== 'matched' && (
               <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-[#635BFF]/20 shadow-sm p-7 space-y-5">
                 <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-[#635BFF]">
-                  <CreditCard className="h-5 w-5" /> Lier a Stripe
+                  <CreditCard className="h-5 w-5" /> {t.closer_calldetails_stripe_link}
                 </h3>
 
                 {/* 3 mode tabs */}
@@ -1095,17 +1100,17 @@ export function CloserCallDetails() {
                   <button onClick={() => setStripeLinkMode('auto')}
                     className={cn('flex-1 rounded-lg py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5',
                       stripeLinkMode === 'auto' ? 'bg-[#635BFF] text-white shadow-md' : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white')}>
-                    <Zap className="h-3.5 w-3.5" /> Auto
+                    <Zap className="h-3.5 w-3.5" /> {t.closer_calldetails_stripe_auto}
                   </button>
                   <button onClick={() => setStripeLinkMode('search')}
                     className={cn('flex-1 rounded-lg py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5',
                       stripeLinkMode === 'search' ? 'bg-[#635BFF] text-white shadow-md' : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white')}>
-                    <Search className="h-3.5 w-3.5" /> Recherche
+                    <Search className="h-3.5 w-3.5" /> {t.closer_calldetails_stripe_search}
                   </button>
                   <button onClick={() => setStripeLinkMode('manual')}
                     className={cn('flex-1 rounded-lg py-2.5 text-xs font-bold transition-all flex items-center justify-center gap-1.5',
                       stripeLinkMode === 'manual' ? 'bg-[#635BFF] text-white shadow-md' : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white')}>
-                    <Link2 className="h-3.5 w-3.5" /> Manuel
+                    <Link2 className="h-3.5 w-3.5" /> {t.closer_calldetails_stripe_manual}
                   </button>
                 </div>
 
@@ -1113,11 +1118,11 @@ export function CloserCallDetails() {
                 {stripeLinkMode === 'auto' && (
                   <div className="space-y-3">
                     <p className="text-sm text-stone-500 dark:text-neutral-400">
-                      Recherche automatique d'un abonnement Stripe lie a l'email <span className="font-bold text-stone-700 dark:text-white">{prospect.email || '—'}</span>
+                      {t.closer_calldetails_stripe_auto_desc} <span className="font-bold text-stone-700 dark:text-white">{prospect.email || '—'}</span>
                     </p>
                     {stripeAutoResult.status === 'not_found' && (
                       <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-3">
-                        <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">Aucun abonnement Stripe trouve pour cet email. Essayez la recherche ou la saisie manuelle.</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">{t.closer_calldetails_stripe_not_found}</p>
                       </div>
                     )}
                     <button
@@ -1128,7 +1133,7 @@ export function CloserCallDetails() {
                       {stripeAutoResult.status === 'loading' ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <><Zap className="h-4 w-4" /> Rechercher automatiquement</>
+                        <><Zap className="h-4 w-4" /> {t.closer_calldetails_stripe_search_auto}</>
                       )}
                     </button>
                   </div>
@@ -1143,7 +1148,7 @@ export function CloserCallDetails() {
                         value={stripeSearchEmail || prospect.email || ''}
                         onChange={e => setStripeSearchEmail(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleStripeSearch()}
-                        placeholder="Email du client Stripe"
+                        placeholder={t.closer_calldetails_stripe_email_placeholder}
                         className="flex-1 px-4 py-2.5 bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 rounded-xl text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#635BFF]/30"
                       />
                       <button
@@ -1156,7 +1161,7 @@ export function CloserCallDetails() {
                     </div>
 
                     {stripeSearched && stripeSearchResults.length === 0 && (
-                      <p className="text-sm text-stone-500 dark:text-neutral-400 text-center py-4">Aucun client Stripe trouve.</p>
+                      <p className="text-sm text-stone-500 dark:text-neutral-400 text-center py-4">{t.closer_calldetails_stripe_no_customer}</p>
                     )}
 
                     {stripeSearchResults.map((customer: any) => (
@@ -1166,7 +1171,7 @@ export function CloserCallDetails() {
                           <p className="text-[10px] text-stone-500 dark:text-neutral-500 font-mono">{customer.id}</p>
                         </div>
                         {customer.subscriptions?.length === 0 ? (
-                          <p className="text-xs text-stone-400">Aucun abonnement</p>
+                          <p className="text-xs text-stone-400">{t.closer_calldetails_stripe_no_subscription}</p>
                         ) : (
                           <div className="space-y-2">
                             {customer.subscriptions?.map((sub: any) => (
@@ -1179,7 +1184,7 @@ export function CloserCallDetails() {
                                 <div>
                                   <div className="flex items-center gap-2">
                                     <span className={`inline-block w-2 h-2 rounded-full ${sub.status === 'active' ? 'bg-emerald-500' : sub.status === 'past_due' ? 'bg-amber-500' : 'bg-red-500'}`} />
-                                    <span className="text-sm font-medium text-stone-900 dark:text-white">{sub.amount?.toFixed(2)} EUR / {sub.interval === 'month' ? 'mois' : 'an'}</span>
+                                    <span className="text-sm font-medium text-stone-900 dark:text-white">{sub.amount?.toFixed(2)} EUR / {sub.interval === 'month' ? t.closer_calldetails_stripe_month : t.closer_calldetails_stripe_year}</span>
                                   </div>
                                   <p className="text-[10px] text-stone-500 font-mono mt-0.5">{sub.id}</p>
                                 </div>
@@ -1197,7 +1202,7 @@ export function CloserCallDetails() {
                 {stripeLinkMode === 'manual' && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-stone-700 dark:text-neutral-200 mb-1.5">Customer ID Stripe</label>
+                      <label className="block text-sm font-medium text-stone-700 dark:text-neutral-200 mb-1.5">{t.closer_calldetails_stripe_customer_id}</label>
                       <input
                         type="text"
                         value={stripeManualCustomerId}
@@ -1207,7 +1212,7 @@ export function CloserCallDetails() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-stone-700 dark:text-neutral-200 mb-1.5">Subscription ID Stripe</label>
+                      <label className="block text-sm font-medium text-stone-700 dark:text-neutral-200 mb-1.5">{t.closer_calldetails_stripe_subscription_id}</label>
                       <input
                         type="text"
                         value={stripeManualSubId}
@@ -1221,7 +1226,7 @@ export function CloserCallDetails() {
                       disabled={stripeMatching || !stripeManualCustomerId.trim() || !stripeManualSubId.trim()}
                       className="w-full py-3 bg-[#635BFF] hover:bg-[#5349E0] disabled:opacity-50 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-2"
                     >
-                      {stripeMatching ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Lier cet abonnement'}
+                      {stripeMatching ? <Loader2 className="h-5 w-5 animate-spin" /> : t.closer_calldetails_stripe_link_btn}
                     </button>
                   </div>
                 )}
@@ -1235,16 +1240,16 @@ export function CloserCallDetails() {
                   <div className="p-2 bg-emerald-500/10 rounded-xl">
                     <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                   </div>
-                  <h3 className="font-['Manrope'] text-lg font-bold text-emerald-600">Abonnement Stripe lie</h3>
+                  <h3 className="font-['Manrope'] text-lg font-bold text-emerald-600">{t.closer_calldetails_stripe_linked}</h3>
                 </div>
                 <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 p-4 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-xs text-stone-500 dark:text-neutral-400">Montant</span>
-                    <span className="text-sm font-bold text-stone-900 dark:text-white">{stripeAutoResult.data.subscription_amount?.toFixed(2)} EUR / {stripeAutoResult.data.subscription_interval === 'month' ? 'mois' : 'an'}</span>
+                    <span className="text-xs text-stone-500 dark:text-neutral-400">{t.closer_calldetails_stripe_amount}</span>
+                    <span className="text-sm font-bold text-stone-900 dark:text-white">{stripeAutoResult.data.subscription_amount?.toFixed(2)} EUR / {stripeAutoResult.data.subscription_interval === 'month' ? t.closer_calldetails_stripe_month : t.closer_calldetails_stripe_year}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-xs text-stone-500 dark:text-neutral-400">Statut</span>
-                    <span className="text-xs font-bold text-emerald-600">{stripeAutoResult.data.subscription_status === 'active' ? 'Actif' : stripeAutoResult.data.subscription_status}</span>
+                    <span className="text-xs text-stone-500 dark:text-neutral-400">{t.closer_calldetails_stripe_status}</span>
+                    <span className="text-xs font-bold text-emerald-600">{stripeAutoResult.data.subscription_status === 'active' ? t.closer_calldetails_stripe_active : stripeAutoResult.data.subscription_status}</span>
                   </div>
                 </div>
               </section>
@@ -1254,27 +1259,27 @@ export function CloserCallDetails() {
             {selectedOutcome === 'followup' && (
               <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
                 <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
-                  <Clock className="h-5 w-5 text-stone-500" /> Informations de suivi
+                  <Clock className="h-5 w-5 text-stone-500" /> {t.closer_calldetails_followup_title}
                 </h3>
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
-                    <Calendar className="h-4 w-4" /> Date de reprogrammation <span className="text-red-500">*</span>
+                    <Calendar className="h-4 w-4" /> {t.closer_calldetails_followup_date} <span className="text-red-500">*</span>
                   </label>
                   <input type="datetime-local" value={followupDate} onChange={(e) => setFollowupDate(e.target.value)}
                     className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Motif du report <span className="text-red-500">*</span></label>
-                  <select value={followupReason} onChange={(e) => { setFollowupReason(e.target.value); if (e.target.value !== 'Autre') setFollowupReasonOther('') }}
+                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_followup_reason} <span className="text-red-500">*</span></label>
+                  <select value={followupReason} onChange={(e) => { setFollowupReason(e.target.value); if (e.target.value !== t.closer_calldetails_objection_other) setFollowupReasonOther('') }}
                     className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
-                    <option value="">Sélectionnez un motif</option>
+                    <option value="">{t.closer_calldetails_followup_select}</option>
                     {objectionReasons.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
-                  {followupReason === 'Autre' && (
+                  {followupReason === t.closer_calldetails_objection_other && (
                     <div className="mt-3">
-                      <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Précisez le motif <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_followup_specify} <span className="text-red-500">*</span></label>
                       <input type="text" value={followupReasonOther} onChange={(e) => setFollowupReasonOther(e.target.value)}
-                        placeholder="Ex: Indisponibilité exceptionnelle..."
+                        placeholder={t.closer_calldetails_followup_other_placeholder}
                         className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
                     </div>
                   )}
@@ -1286,20 +1291,20 @@ export function CloserCallDetails() {
             {selectedOutcome === 'lost' && (
               <section className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
                 <h3 className="font-['Manrope'] text-lg font-bold flex items-center gap-2 text-stone-900 dark:text-white">
-                  <XCircle className="h-5 w-5 text-stone-500" /> Raison de la perte
+                  <XCircle className="h-5 w-5 text-stone-500" /> {t.closer_calldetails_lost_title}
                 </h3>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Motif <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_lost_reason} <span className="text-red-500">*</span></label>
                   <select value={lostReason} onChange={(e) => setLostReason(e.target.value)}
                     className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
-                    <option value="">Sélectionnez un motif</option>
+                    <option value="">{t.closer_calldetails_followup_select}</option>
                     {objectionReasons.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                   {lostReason && (
                     <div className="mt-3">
-                      <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Détails</label>
+                      <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_lost_details}</label>
                       <input type="text" value={lostReasonOther} onChange={(e) => setLostReasonOther(e.target.value)}
-                        placeholder="Précisez les détails..."
+                        placeholder={t.closer_calldetails_lost_details_placeholder}
                         className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
                     </div>
                   )}
@@ -1311,7 +1316,7 @@ export function CloserCallDetails() {
             {selectedOutcome === 'qualified' && isSetterCloserSelf && (
               <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-5">
                 <p className="text-sm text-stone-700 dark:text-neutral-200 text-center font-['Manrope'] font-medium">
-                  Le prospect sera automatiquement assigné à vous en tant que Closer.
+                  {t.closer_calldetails_auto_assign_self}
                 </p>
               </div>
             )}
@@ -1319,24 +1324,24 @@ export function CloserCallDetails() {
             {/* Qualified: Closer assignment (setter outcome for owner) */}
             {selectedOutcome === 'qualified' && showSetterOutcomes && !isSetterCloserSelf && (
               <section>
-                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">Étape 1 — Assigner un Closer</h3>
+                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">{t.closer_calldetails_step1_assign}</h3>
                 <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl p-7 rounded-xl border border-white/40 dark:border-white/10 shadow-sm">
                   {closerMembers.length === 0 ? (
                     <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
                       <AlertCircle className="h-4 w-4 text-stone-400" />
-                      Aucun closer dans l'équipe
+                      {t.closer_calldetails_no_closer}
                     </div>
                   ) : (
                     <>
                       {/* Manual closer dropdown */}
                       <div className="mb-5">
-                        <label className="mb-2 block text-xs font-medium text-stone-500 dark:text-neutral-400">Sélectionner manuellement</label>
+                        <label className="mb-2 block text-xs font-medium text-stone-500 dark:text-neutral-400">{t.closer_calldetails_select_manually}</label>
                         <select
                           value={assignmentMode === 'manual' ? selectedCloser?.id || '' : ''}
                           onChange={(e) => e.target.value && handleManualSelect(e.target.value)}
                           className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm text-stone-700 dark:text-neutral-200 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
                         >
-                          <option value="">-- Choisir un closer --</option>
+                          <option value="">{t.closer_calldetails_choose_closer}</option>
                           {closerMembers.map(c => (
                             <option key={c.id} value={c.id}>{c.first_name} {c.last_name}{c.role === 'Owner' ? ' (Owner)' : ''}</option>
                           ))}
@@ -1353,7 +1358,7 @@ export function CloserCallDetails() {
                               : 'border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-white/5'
                           )}
                         >
-                          Suivant (Tournante)
+                          {t.closer_calldetails_round_robin}
                         </button>
                         <button
                           onClick={() => handleAssign('hasard')}
@@ -1364,7 +1369,7 @@ export function CloserCallDetails() {
                               : 'border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 hover:bg-stone-100 dark:hover:bg-white/5'
                           )}
                         >
-                          Hasard
+                          {t.closer_calldetails_random}
                         </button>
                       </div>
 
@@ -1378,7 +1383,7 @@ export function CloserCallDetails() {
                               {selectedCloser.first_name} {selectedCloser.last_name}
                             </h4>
                             <p className="text-emerald-700 font-bold text-xs uppercase tracking-widest">
-                              {selectedCloser.role === 'Owner' ? 'Owner' : 'Closer'} {'\u2022'} Disponible
+                              {selectedCloser.role === 'Owner' ? 'Owner' : 'Closer'} {'\u2022'} {t.closer_calldetails_available}
                             </p>
                           </div>
                           <CheckCircle2 className="h-6 w-6 text-emerald-600 shrink-0" />
@@ -1391,24 +1396,24 @@ export function CloserCallDetails() {
             )}
 
             {/* Setter Outcomes (for owner/HOS/admin/setter-closer) */}
-            {showSetterOutcomes && renderOutcomeCards(setterOutcomesForOwner, "Résultat de l'appel — Setter")}
+            {showSetterOutcomes && renderOutcomeCards(setterOutcomesForOwner, t.closer_calldetails_outcome_label_setter)}
           </div>
 
           {/* Right Column: Step 2 - Scheduling */}
           {selectedOutcome === 'qualified' && selectedCloser && showSetterOutcomes && !isSetterCloserSelf && (
             <div className="lg:col-span-5">
               <section>
-                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">Étape 2 — Programmer le RDV</h3>
+                <h3 className="font-['Manrope'] text-lg font-bold mb-5 text-stone-900 dark:text-white">{t.closer_calldetails_step2_schedule}</h3>
                 <div className="bg-white dark:bg-white/5 p-7 rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   {loadingSlots ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
-                      <span className="ml-2 text-sm text-stone-500">Chargement des créneaux...</span>
+                      <span className="ml-2 text-sm text-stone-500">{t.closer_calldetails_loading_slots}</span>
                     </div>
                   ) : dateKeys.length === 0 ? (
                     <div className="flex items-center gap-2 text-sm text-stone-500 dark:text-neutral-400 bg-stone-50 dark:bg-white/5 rounded-lg p-4 border border-stone-200 dark:border-white/10">
                       <AlertCircle className="h-4 w-4 text-stone-400" />
-                      Aucun créneau disponible pour ce closer dans les 14 prochains jours.
+                      {t.closer_calldetails_no_slots}
                     </div>
                   ) : (
                     <>
@@ -1463,7 +1468,7 @@ export function CloserCallDetails() {
                             onClick={() => setShowAllSlots(true)}
                             className="text-emerald-700 font-['Manrope'] font-bold text-sm hover:underline"
                           >
-                            Voir tous les créneaux
+                            {t.closer_calldetails_see_all_slots}
                           </button>
                         </div>
                       )}
@@ -1474,7 +1479,7 @@ export function CloserCallDetails() {
                           <div className="flex items-center gap-2">
                             <CalendarCheck className="h-4 w-4 text-emerald-600" />
                             <div>
-                              <p className="text-sm font-semibold text-stone-900 dark:text-white">RDV confirmé</p>
+                              <p className="text-sm font-semibold text-stone-900 dark:text-white">{t.closer_calldetails_slot_confirmed}</p>
                               <p className="text-xs text-stone-500 dark:text-neutral-400">
                                 {selectedSlot.dateLabel} — {selectedSlot.timeLabel} avec {selectedCloser.first_name} {selectedCloser.last_name}
                               </p>
@@ -1496,13 +1501,13 @@ export function CloserCallDetails() {
       {activeTab === 'notes' && (
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 h-[500px] flex flex-col">
           <label className="mb-4 flex items-center gap-2 text-sm font-bold text-stone-900 dark:text-white font-['Manrope']">
-            <FileText className="h-4 w-4 text-stone-500" /> Historique et Notes de l'appel
+            <FileText className="h-4 w-4 text-stone-500" /> {t.closer_calldetails_notes_label}
           </label>
           <textarea
             value={notes}
             onChange={(e) => !isReadonly && setNotes(e.target.value)}
             readOnly={isReadonly}
-            placeholder="Prenez vos notes ici. Elles seront enregistrées dans l'historique des appels..."
+            placeholder={t.closer_calldetails_notes_placeholder}
             className={cn(
               "flex-1 w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-3 text-base text-stone-800 dark:text-neutral-100 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none leading-relaxed",
               isReadonly && "cursor-default"
@@ -1510,7 +1515,7 @@ export function CloserCallDetails() {
           />
           <p className="mt-3 text-xs text-stone-400 dark:text-neutral-500 flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3" />
-            Ces notes s'ajouteront a l'historique des appels du prospect.
+            {t.closer_calldetails_notes_info}
           </p>
         </div>
       )}
@@ -1520,34 +1525,34 @@ export function CloserCallDetails() {
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl border border-white/40 dark:border-white/10 shadow-sm p-7 space-y-5">
           <div className="flex items-center gap-2 mb-2">
             <Bell className="h-5 w-5 text-stone-500" />
-            <h3 className="text-lg font-bold text-stone-900 dark:text-white font-['Manrope']">Programmer un rappel</h3>
+            <h3 className="text-lg font-bold text-stone-900 dark:text-white font-['Manrope']">{t.closer_calldetails_reminder_title}</h3>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Titre <span className="text-red-500">*</span></label>
+            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_reminder_label_title} <span className="text-red-500">*</span></label>
             <input type="text" value={reminderTitle} onChange={(e) => setReminderTitle(e.target.value)}
-              placeholder="Ex: Rappeler Jean pour le contrat"
+              placeholder={t.closer_calldetails_reminder_title_placeholder}
               className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">Description <span className="text-stone-400">(optionnel)</span></label>
+            <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_reminder_label_desc} <span className="text-stone-400">{t.closer_calldetails_reminder_optional}</span></label>
             <textarea value={reminderDescription} onChange={(e) => setReminderDescription(e.target.value)}
-              placeholder="Details supplémentaires..." rows={3}
+              placeholder={t.closer_calldetails_reminder_desc_placeholder} rows={3}
               className="w-full rounded-lg border border-stone-200 bg-stone-50/50 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-none" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
-                <Calendar className="h-4 w-4" /> Date <span className="text-red-500">*</span>
+                <Calendar className="h-4 w-4" /> {t.closer_calldetails_reminder_label_date} <span className="text-red-500">*</span>
               </label>
               <input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)}
                 className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
             </div>
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-neutral-200">
-                <Clock className="h-4 w-4" /> Heure <span className="text-red-500">*</span>
+                <Clock className="h-4 w-4" /> {t.closer_calldetails_reminder_label_time} <span className="text-red-500">*</span>
               </label>
               <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)}
                 className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10" />
@@ -1562,8 +1567,8 @@ export function CloserCallDetails() {
                 : 'bg-stone-300 !text-stone-500 cursor-not-allowed'
             )}>
             {isSavingReminder ? (
-              <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement...</span>
-            ) : 'Enregistrer le rappel'}
+              <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> {t.closer_calldetails_reminder_saving}</span>
+            ) : t.closer_calldetails_reminder_save}
           </button>
         </div>
       )}
@@ -1573,7 +1578,7 @@ export function CloserCallDetails() {
         <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-4 md:px-8 py-4 md:py-5 flex items-center justify-end gap-3 md:gap-5 z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
             className="px-8 py-3 rounded-full border border-stone-300 dark:border-white/10 text-stone-700 dark:text-neutral-200 font-['Manrope'] font-bold text-sm hover:bg-stone-50 dark:hover:bg-white/5 transition-all">
-            Annuler
+            {t.closer_calldetails_cancel}
           </button>
           <button onClick={handleSave} disabled={!isFormValid() || saving}
             className={cn(
@@ -1582,7 +1587,7 @@ export function CloserCallDetails() {
                 ? 'bg-stone-900 hover:bg-stone-800'
                 : 'bg-stone-300 !text-stone-500 cursor-not-allowed'
             )}>
-            {saving ? 'Enregistrement...' : 'Tout Enregistrer'}
+            {saving ? t.closer_calldetails_saving : t.closer_calldetails_save_all}
           </button>
         </div>
       )}
@@ -1590,7 +1595,7 @@ export function CloserCallDetails() {
         <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md px-4 md:px-8 py-4 md:py-5 flex items-center justify-center z-40 border-t border-stone-200/40 dark:border-white/10">
           <button onClick={() => navigate('/business/appels')}
             className="px-10 py-3 rounded-full bg-stone-900 text-white font-['Manrope'] font-bold text-sm hover:bg-stone-800 transition-all shadow-xl active:scale-95">
-            Retour aux appels
+            {t.closer_calldetails_back_to_calls}
           </button>
         </div>
       )}

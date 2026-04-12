@@ -37,6 +37,8 @@ import { useOffers } from '../contexts/OffersContext'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { useTags } from '../hooks/useTags'
 import { SharePerformanceButton } from '../components/SharePerformanceButton'
+import { useLanguage } from '../contexts/LanguageContext'
+import { pipelineTranslations } from '../i18n/translations'
 
 // Helper pour nettoyer le prix
 const parsePrice = (priceString: string): number => {
@@ -87,6 +89,9 @@ export function Pipeline() {
   } = useTags()
 
   const { user } = useAuth()
+  const { lang } = useLanguage()
+  const t = pipelineTranslations[lang]
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
   const pipelineDeals = pipelineDealsFromContext || []
 
   // Pipeline dismissals (per-user)
@@ -143,19 +148,19 @@ export function Pipeline() {
         const { data } = await supabase.from('pipeline_reset_config').insert(payload).select().single()
         if (data) setResetConfig(prev => ({ ...prev, id: data.id }))
       }
-      toast.success('Configuration sauvegardée')
+      toast.success(lang === 'fr' ? 'Configuration sauvegardée' : 'Configuration saved')
       setShowResetConfig(false)
     } catch {
-      toast.error('Erreur lors de la sauvegarde')
+      toast.error(lang === 'fr' ? 'Erreur lors de la sauvegarde' : 'Error saving configuration')
     } finally {
       setSavingResetConfig(false)
     }
   }
 
   const FREQUENCY_OPTIONS = [
-    { value: 'weekly' as const, label: 'Toutes les semaines' },
-    { value: 'biweekly' as const, label: 'Toutes les 2 semaines' },
-    { value: 'monthly' as const, label: 'Tous les mois' },
+    { value: 'weekly' as const, label: lang === 'fr' ? 'Toutes les semaines' : 'Every week' },
+    { value: 'biweekly' as const, label: lang === 'fr' ? 'Toutes les 2 semaines' : 'Every 2 weeks' },
+    { value: 'monthly' as const, label: lang === 'fr' ? 'Tous les mois' : 'Every month' },
   ]
 
   const ALL_STAGES_WITH_CUSTOM = useMemo(() => {
@@ -297,7 +302,7 @@ export function Pipeline() {
     if (deal.firstName || deal.lastName) {
       return `${deal.firstName || ''} ${deal.lastName || ''}`.trim()
     }
-    return deal.contact || 'Prospect sans nom'
+    return deal.contact || (lang === 'fr' ? 'Prospect sans nom' : 'Unnamed prospect')
   }
 
   // Helper : extraire le nom de base de l'offre (avant le " - FormulaName")
@@ -374,10 +379,6 @@ export function Pipeline() {
 
   const getAvailableMonths = () => {
     const monthsSet = new Set<string>()
-    const monthNames = [
-      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-    ]
       ; (pipelineDeals || []).forEach(deal => {
         const dateStr = deal.created_at || deal.dateAdded
         if (dateStr) {
@@ -388,7 +389,9 @@ export function Pipeline() {
       })
     return Array.from(monthsSet).sort((a, b) => b.localeCompare(a)).map(value => {
       const [year, month] = value.split('-')
-      return { value, label: `${monthNames[parseInt(month) - 1]} ${year}` }
+      const date = new Date(parseInt(year), parseInt(month) - 1)
+      const monthName = date.toLocaleDateString(locale, { month: 'long' })
+      return { value, label: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}` }
     })
   }
 
@@ -469,7 +472,7 @@ export function Pipeline() {
               )}
             >
               <Briefcase className="h-4 w-4" />
-              Vue Globale
+              {lang === 'fr' ? 'Vue Globale' : 'Overview'}
             </button>
 
             {activeOffers.map((offer: any) => (
@@ -499,7 +502,7 @@ export function Pipeline() {
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
               <input
                 type="text"
-                placeholder="Rechercher..."
+                placeholder={t.search}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-xl bg-white/5 border border-white/10 py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
@@ -509,7 +512,7 @@ export function Pipeline() {
             <div className="flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] p-1">
               <button
                 onClick={() => setViewMode('pipeline')}
-                title="Vue Pipeline"
+                title={lang === 'fr' ? 'Vue Pipeline' : 'Pipeline View'}
                 className={cn(
                   'rounded-full p-1.5 transition-colors',
                   viewMode === 'pipeline' ? 'bg-emerald-500 text-black' : 'text-white/40 hover:text-white'
@@ -520,7 +523,7 @@ export function Pipeline() {
               <div className="mx-1 h-4 w-[1px] bg-white/[0.08]" />
               <button
                 onClick={() => setViewMode('list')}
-                title="Vue Liste"
+                title={lang === 'fr' ? 'Vue Liste' : 'List View'}
                 className={cn(
                   'rounded-full p-1.5 transition-colors',
                   viewMode === 'list' ? 'bg-emerald-500 text-black' : 'text-white/40 hover:text-white'
@@ -532,15 +535,15 @@ export function Pipeline() {
 
             <button
               onClick={() => setIsCustomStagesOpen(true)}
-              title="Personnaliser le pipeline"
+              title={lang === 'fr' ? 'Personnaliser le pipeline' : 'Customize pipeline'}
               className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-white/40 hover:bg-white/10 hover:text-white transition-colors"
             >
               <Settings className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Personnaliser</span>
+              <span className="hidden sm:inline">{lang === 'fr' ? 'Personnaliser' : 'Customize'}</span>
             </button>
             <button
               onClick={() => setShowResetConfig(true)}
-              title="Réinitialisation automatique"
+              title={lang === 'fr' ? 'Réinitialisation automatique' : 'Auto reset'}
               className={cn(
                 "relative flex items-center gap-2 rounded-full border px-3 py-2 text-xs transition-colors",
                 resetConfig.is_active
@@ -549,7 +552,7 @@ export function Pipeline() {
               )}
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Réinitialisation</span>
+              <span className="hidden sm:inline">{lang === 'fr' ? 'Réinitialisation' : 'Reset'}</span>
             </button>
 
             {/* HubSpot Sync Button */}
@@ -569,7 +572,7 @@ export function Pipeline() {
                 {!isSyncingHubspot && (
                   <span className="hidden lg:inline">{Math.floor(nextSyncSeconds / 60)}:{(nextSyncSeconds % 60).toString().padStart(2, '0')}</span>
                 )}
-                <span className="hidden sm:inline">{isSyncingHubspot ? "Synchro..." : "Synchro HubSpot"}</span>
+                <span className="hidden sm:inline">{isSyncingHubspot ? (lang === 'fr' ? 'Synchro...' : 'Syncing...') : (lang === 'fr' ? 'Synchro HubSpot' : 'Sync HubSpot')}</span>
               </button>
             )}
 
@@ -590,7 +593,7 @@ export function Pipeline() {
                 {!isSyncingGhl && (
                   <span className="hidden lg:inline">{Math.floor(nextSyncSeconds / 60)}:{(nextSyncSeconds % 60).toString().padStart(2, '0')}</span>
                 )}
-                <span className="hidden sm:inline">{isSyncingGhl ? "Synchro..." : "Synchro GoHighLevel"}</span>
+                <span className="hidden sm:inline">{isSyncingGhl ? (lang === 'fr' ? 'Synchro...' : 'Syncing...') : (lang === 'fr' ? 'Synchro GoHighLevel' : 'Sync GoHighLevel')}</span>
               </button>
             )}
 
@@ -611,7 +614,7 @@ export function Pipeline() {
               onChange={(e) => setStageFilter(e.target.value)}
               className="appearance-none rounded-xl border border-white/10 bg-white/5 py-2.5 pl-4 pr-9 text-xs text-white/60 focus:border-emerald-500 focus:outline-none transition-all"
             >
-              <option value="all">Toutes les étapes</option>
+              <option value="all">{lang === 'fr' ? 'Toutes les étapes' : 'All stages'}</option>
               {allStages.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
             </select>
             <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-white/30 pointer-events-none" />
@@ -623,7 +626,7 @@ export function Pipeline() {
               onChange={(e) => setFilterDate(e.target.value)}
               className="appearance-none rounded-xl border border-white/10 bg-white/5 py-2.5 pl-4 pr-9 text-xs text-white/60 focus:border-emerald-500 focus:outline-none transition-all"
             >
-              <option value="all">Toutes les dates</option>
+              <option value="all">{lang === 'fr' ? 'Toutes les dates' : 'All dates'}</option>
               {getAvailableMonths().map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
             <Calendar className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-white/30 pointer-events-none" />
@@ -637,8 +640,8 @@ export function Pipeline() {
                 onChange={(e) => setFormulaFilter(e.target.value)}
                 className="appearance-none rounded-xl border border-white/10 bg-white/5 py-2.5 pl-4 pr-9 text-xs text-white/60 focus:border-emerald-500 focus:outline-none transition-all"
               >
-                <option value="all">Toutes les formules</option>
-                <option value="none">Sans formule</option>
+                <option value="all">{lang === 'fr' ? 'Toutes les formules' : 'All offers'}</option>
+                <option value="none">{lang === 'fr' ? 'Sans formule' : 'No offer'}</option>
                 {getAvailableFormulas().map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
               <ChevronDown className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-white/30 pointer-events-none" />
@@ -696,7 +699,7 @@ export function Pipeline() {
                         onClick={() => { setSelectedTagFilters([]); setIsTagDropdownOpen(false) }}
                         className="w-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40 hover:text-white/60 transition-colors rounded-lg"
                       >
-                        Réinitialiser
+                        {lang === 'fr' ? 'Réinitialiser' : 'Reset'}
                       </button>
                     </>
                   )}
@@ -718,9 +721,9 @@ export function Pipeline() {
               {/* FLUX ACTIF */}
               <div>
                 <div className="mb-6 flex items-center justify-between">
-                  <h2 className="text-xs uppercase tracking-widest font-bold text-white/40">Flux Actif</h2>
+                  <h2 className="text-xs uppercase tracking-widest font-bold text-white/40">{lang === 'fr' ? 'Flux Actif' : 'Active Flow'}</h2>
                   <span className="text-xs text-white/40">
-                    {activeStages.reduce((sum, stage) => sum + getDealsForStage(stage.id).length, 0)} prospects
+                    {activeStages.reduce((sum, stage) => sum + getDealsForStage(stage.id).length, 0)} {t.total_prospects}
                   </span>
                 </div>
 
@@ -853,7 +856,7 @@ export function Pipeline() {
                                 {provided.placeholder}
                                 {stageDeals.length === 0 && (
                                   <div className="flex h-20 items-center justify-center rounded border border-dashed border-white/[0.08] bg-white/[0.02]">
-                                    <span className="text-xs text-white/20">Vide</span>
+                                    <span className="text-xs text-white/20">{lang === 'fr' ? 'Vide' : 'Empty'}</span>
                                   </div>
                                 )}
                               </div>
@@ -869,7 +872,7 @@ export function Pipeline() {
               {/* FLUX INACTIF */}
               <div className="pt-8">
                 <div className="mb-6 flex items-center justify-between">
-                  <h2 className="text-xs uppercase tracking-widest font-bold text-white/20">Flux Inactif</h2>
+                  <h2 className="text-xs uppercase tracking-widest font-bold text-white/20">{lang === 'fr' ? 'Flux Inactif' : 'Inactive Flow'}</h2>
                 </div>
                 <div ref={inactiveScrollRef} className="flex gap-6 overflow-x-auto pb-4 no-scrollbar">
                   {inactiveStages.map((stage) => {
@@ -940,12 +943,12 @@ export function Pipeline() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-white/[0.02] sticky top-0 z-10">
                   <tr>
-                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">Prospect</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">{t.prospect}</th>
                     <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">Tags</th>
-                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">Offre</th>
-                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">Montant</th>
-                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">Étape</th>
-                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40 text-right">Actions</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">{lang === 'fr' ? 'Offre' : 'Offer'}</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">{lang === 'fr' ? 'Montant' : 'Amount'}</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40">{t.stage}</th>
+                    <th className="px-8 py-5 text-xs uppercase tracking-widest font-bold text-white/40 text-right">{t.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04] text-white/60">
@@ -997,7 +1000,7 @@ export function Pipeline() {
                         <td className="px-8 py-5 text-right">
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal) }} className="p-2 hover:text-emerald-400 transition-colors"><Pencil className="h-4 w-4" /></button>
-                            <button onClick={(e) => { e.stopPropagation(); if (confirm('Supprimer ?')) handleDelete(deal.id) }} className="p-2 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); if (confirm(lang === 'fr' ? 'Supprimer ?' : 'Delete?')) handleDelete(deal.id) }} className="p-2 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
                           </div>
                         </td>
                       </tr>
@@ -1007,8 +1010,8 @@ export function Pipeline() {
               </table>
               {filteredDeals.length === 0 && (
                 <div className="py-20 text-center text-white/40">
-                  <p className="text-lg font-medium">Aucun prospect</p>
-                  <p className="mt-1 text-sm">Essayez de modifier vos filtres ou effectuez une recherche.</p>
+                  <p className="text-lg font-medium">{t.no_prospects}</p>
+                  <p className="mt-1 text-sm">{lang === 'fr' ? 'Essayez de modifier vos filtres ou effectuez une recherche.' : 'Try changing your filters or searching.'}</p>
                 </div>
               )}
             </div>
@@ -1122,8 +1125,8 @@ export function Pipeline() {
                   <RefreshCw className="h-5 w-5 text-white/60" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-white">Réinitialisation automatique</h3>
-                  <p className="text-xs text-white/40">Vider le pipeline périodiquement</p>
+                  <h3 className="text-lg font-extrabold text-white">{lang === 'fr' ? 'Réinitialisation automatique' : 'Auto reset'}</h3>
+                  <p className="text-xs text-white/40">{lang === 'fr' ? 'Vider le pipeline périodiquement' : 'Periodically clear the pipeline'}</p>
                 </div>
               </div>
               <button onClick={() => setShowResetConfig(false)} className="p-1.5 rounded-full hover:bg-white/5 transition-colors">
@@ -1133,8 +1136,8 @@ export function Pipeline() {
             <div className="px-6 py-5 space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold text-white">Activer la réinitialisation</p>
-                  <p className="text-xs text-white/40 mt-0.5">Les prospects seront retirés du pipeline mais resteront dans vos contacts</p>
+                  <p className="text-sm font-bold text-white">{lang === 'fr' ? 'Activer la réinitialisation' : 'Enable reset'}</p>
+                  <p className="text-xs text-white/40 mt-0.5">{lang === 'fr' ? 'Les prospects seront retirés du pipeline mais resteront dans vos contacts' : 'Prospects will be removed from the pipeline but will remain in your contacts'}</p>
                 </div>
                 <button onClick={() => setResetConfig(prev => ({ ...prev, is_active: !prev.is_active }))} className="text-white">
                   {resetConfig.is_active
@@ -1146,7 +1149,7 @@ export function Pipeline() {
               {resetConfig.is_active && (
                 <>
                   <div>
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2 block">Fréquence</label>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2 block">{lang === 'fr' ? 'Fréquence' : 'Frequency'}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {FREQUENCY_OPTIONS.map(opt => (
                         <button
@@ -1165,8 +1168,8 @@ export function Pipeline() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2 block">Colonnes à vider</label>
-                    <p className="text-xs text-white/40 mb-3">Sélectionnez les statuts dont les prospects seront retirés du pipeline</p>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2 block">{lang === 'fr' ? 'Colonnes à vider' : 'Columns to clear'}</label>
+                    <p className="text-xs text-white/40 mb-3">{lang === 'fr' ? 'Sélectionnez les statuts dont les prospects seront retirés du pipeline' : 'Select the stages whose prospects will be removed from the pipeline'}</p>
                     <div className="space-y-1.5 max-h-[250px] overflow-y-auto">
                       {ALL_STAGES_WITH_CUSTOM.map(stage => {
                         const isSelected = resetConfig.stages_to_clear.includes(stage.id)
@@ -1199,7 +1202,7 @@ export function Pipeline() {
                             </div>
                             <span className={cn('w-3 h-3 rounded-full shrink-0', stage.color)} />
                             <span className="flex-1">{stage.name}</span>
-                            {isWon && <span className="text-[10px] text-white/30 uppercase tracking-widest">par défaut</span>}
+                            {isWon && <span className="text-[10px] text-white/30 uppercase tracking-widest">{lang === 'fr' ? 'par défaut' : 'default'}</span>}
                           </button>
                         )
                       })}
@@ -1208,7 +1211,7 @@ export function Pipeline() {
                   {resetConfig.last_reset_at && (
                     <div className="flex items-center gap-2 text-xs text-white/40">
                       <Calendar className="h-3.5 w-3.5" />
-                      Dernière réinitialisation : {new Date(resetConfig.last_reset_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {lang === 'fr' ? 'Dernière réinitialisation' : 'Last reset'} : {new Date(resetConfig.last_reset_at).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </div>
                   )}
                 </>
@@ -1216,14 +1219,14 @@ export function Pipeline() {
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/[0.06]">
               <button onClick={() => setShowResetConfig(false)} className="px-5 py-2.5 rounded-full text-sm font-bold text-white/60 hover:bg-white/5 transition-all">
-                Annuler
+                {lang === 'fr' ? 'Annuler' : 'Cancel'}
               </button>
               <button
                 onClick={handleSaveResetConfig}
                 disabled={savingResetConfig || (resetConfig.is_active && resetConfig.stages_to_clear.length === 0)}
                 className="px-6 py-2.5 rounded-full text-sm font-bold bg-white text-[#111] hover:opacity-90 disabled:opacity-50 transition-all"
               >
-                {savingResetConfig ? 'Sauvegarde...' : 'Enregistrer'}
+                {savingResetConfig ? (lang === 'fr' ? 'Sauvegarde...' : 'Saving...') : (lang === 'fr' ? 'Enregistrer' : 'Save')}
               </button>
             </div>
           </div>
@@ -1235,8 +1238,8 @@ export function Pipeline() {
           <div className="flex items-center gap-3 px-6 py-4 bg-[#1a1a1a] border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-purple-500/20"><span className="text-2xl">✨</span></div>
             <div>
-              <p className="text-sm font-semibold text-white">Analyse IA en cours...</p>
-              <p className="text-xs text-white/40 mt-0.5">Le CRM sera mis à jour automatiquement.</p>
+              <p className="text-sm font-semibold text-white">{lang === 'fr' ? 'Analyse IA en cours...' : 'AI analysis in progress...'}</p>
+              <p className="text-xs text-white/40 mt-0.5">{lang === 'fr' ? 'Le CRM sera mis à jour automatiquement.' : 'The CRM will be updated automatically.'}</p>
             </div>
           </div>
         </div>

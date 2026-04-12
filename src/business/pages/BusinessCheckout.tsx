@@ -4,9 +4,15 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { ArrowLeft, Loader2, Tag, Check, User, Mail, Lock, Sparkles, CreditCard, ChevronDown, Rocket, Phone } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase';
 
 const stripePromise = loadStripe('pk_live_51SxnxC33xpuYLywqRhYvxhWrChlI3Ckjj1AfJLqRQJQwaXNyVLuLAPaURbnEcrKRAQJTneB3ZjhUHSHuFQ9Xekdt00k1ho4IEt');
+
+function getReferralSlug(): string | null {
+  const match = document.cookie.match(/closeos_ref=([^;]+)/);
+  return match ? match[1] : null;
+}
 
 const PLAN_LABELS: Record<string, string> = {
   solo: 'Solo',
@@ -14,21 +20,40 @@ const PLAN_LABELS: Record<string, string> = {
   business_acquisition: 'Business + Acquisition',
 };
 
-const PLAN_PRICES: Record<string, Record<string, { monthly: number; display: string; total?: string }>> = {
-  solo: {
-    monthly:   { monthly: 39, display: '39€/mois' },
-    quarterly: { monthly: 32, display: '32€/mois', total: '96€/trimestre' },
-    annual:    { monthly: 28, display: '28€/mois', total: '336€/an' },
+const PLAN_PRICES: Record<string, Record<string, Record<string, { monthly: number; display: string; total?: string }>>> = {
+  fr: {
+    solo: {
+      monthly:   { monthly: 39, display: '39\u20ac/mois' },
+      quarterly: { monthly: 32, display: '32\u20ac/mois', total: '96\u20ac/trimestre' },
+      annual:    { monthly: 28, display: '28\u20ac/mois', total: '336\u20ac/an' },
+    },
+    business: {
+      monthly:   { monthly: 59, display: '59\u20ac/mois' },
+      quarterly: { monthly: 48, display: '48\u20ac/mois', total: '144\u20ac/trimestre' },
+      annual:    { monthly: 42, display: '42\u20ac/mois', total: '504\u20ac/an' },
+    },
+    business_acquisition: {
+      monthly:   { monthly: 99, display: '99\u20ac/mois' },
+      quarterly: { monthly: 81, display: '81\u20ac/mois', total: '243\u20ac/trimestre' },
+      annual:    { monthly: 71, display: '71\u20ac/mois', total: '852\u20ac/an' },
+    },
   },
-  business: {
-    monthly:   { monthly: 59, display: '59€/mois' },
-    quarterly: { monthly: 48, display: '48€/mois', total: '144€/trimestre' },
-    annual:    { monthly: 42, display: '42€/mois', total: '504€/an' },
-  },
-  business_acquisition: {
-    monthly:   { monthly: 99, display: '99€/mois' },
-    quarterly: { monthly: 81, display: '81€/mois', total: '243€/trimestre' },
-    annual:    { monthly: 71, display: '71€/mois', total: '852€/an' },
+  en: {
+    solo: {
+      monthly:   { monthly: 39, display: '\u20ac39/mo' },
+      quarterly: { monthly: 32, display: '\u20ac32/mo', total: '\u20ac96/quarter' },
+      annual:    { monthly: 28, display: '\u20ac28/mo', total: '\u20ac336/year' },
+    },
+    business: {
+      monthly:   { monthly: 59, display: '\u20ac59/mo' },
+      quarterly: { monthly: 48, display: '\u20ac48/mo', total: '\u20ac144/quarter' },
+      annual:    { monthly: 42, display: '\u20ac42/mo', total: '\u20ac504/year' },
+    },
+    business_acquisition: {
+      monthly:   { monthly: 99, display: '\u20ac99/mo' },
+      quarterly: { monthly: 81, display: '\u20ac81/mo', total: '\u20ac243/quarter' },
+      annual:    { monthly: 71, display: '\u20ac71/mo', total: '\u20ac852/year' },
+    },
   },
 };
 
@@ -38,50 +63,98 @@ const EXTRAS = [
   { key: 'combo', name: 'Setup + Integration', price: 120, description: 'Les deux combines — economisez 20€.', isSaving: true },
 ];
 
-const PLAN_FEATURES: Record<string, { features: string[]; subFeatures?: string[] }> = {
-  solo: {
-    features: [
-      'CRM & Pipeline visuel',
-      "Système d'acquisition complet (campagnes, embed/iframe, tracking UTM, KPIs par source)",
-      "Cockpit d'appel plein écran (script, notes, offre, ressources)",
-      'Enregistrement vidéo/audio des calls',
-      'Agenda + sync Google Calendar',
-      'Rendez-vous + booking links',
-      'Rappels',
-      'KPIs personnels',
-      'Facturation',
-      'Objectifs personnels',
-      'Rapports',
-    ],
+const PLAN_FEATURES: Record<string, Record<string, { features: string[]; subFeatures?: string[] }>> = {
+  fr: {
+    solo: {
+      features: [
+        'CRM & Pipeline visuel',
+        "Syst\u00e8me d'acquisition complet (campagnes, embed/iframe, tracking UTM, KPIs par source)",
+        "Cockpit d'appel plein \u00e9cran (script, notes, offre, ressources)",
+        'Enregistrement vid\u00e9o/audio des calls',
+        'Agenda + sync Google Calendar',
+        'Rendez-vous + booking links',
+        'Rappels',
+        'KPIs personnels',
+        'Facturation',
+        'Objectifs personnels',
+        'Rapports',
+      ],
+    },
+    business: {
+      features: [
+        "Tout ce que le Solo a, SAUF le syst\u00e8me d'acquisition",
+        "Gestion d'\u00e9quipe compl\u00e8te (6 r\u00f4les : Owner, Admin, HOS, Closer, Setter, Setter-Closer)",
+        "Vue macro Owner en temps r\u00e9el sur toute l'\u00e9quipe",
+        'Invitation des membres par lien magique (expiration 7j)',
+        'Kanban partag\u00e9 avec filtres avanc\u00e9s',
+        'Objectifs assignables par membre',
+        'Monday Morning Reporting automatique',
+        "Factures de toute l'organisation",
+        'KPIs par membre / par offre / global',
+        'Rapport avec export PDF',
+        'Gestion des disponibilit\u00e9s et absences par membre',
+      ],
+    },
+    business_acquisition: {
+      features: [
+        'Tout ce que Business a',
+        "Syst\u00e8me d'acquisition complet en plus :",
+      ],
+      subFeatures: [
+        'Cr\u00e9ation/gestion de campagnes (mode avec RDV ou inscription seule)',
+        'Page de capture configurable (titre, vid\u00e9o, champs custom, redirection)',
+        "G\u00e9n\u00e9ration de code embed (iframe ou popup bloquant)",
+        'Tracking UTM + formule par d\u00e9faut',
+        'KPIs acquisition : vues, leads, taux de conversion par campagne',
+        'Graphiques : camembert (campagnes les plus converties), barres (CA par campagne)',
+      ],
+    },
   },
-  business: {
-    features: [
-      "Tout ce que le Solo a, SAUF le système d'acquisition",
-      'Gestion d\'équipe complète (6 rôles : Owner, Admin, HOS, Closer, Setter, Setter-Closer)',
-      "Vue macro Owner en temps réel sur toute l'équipe",
-      'Invitation des membres par lien magique (expiration 7j)',
-      'Kanban partagé avec filtres avancés',
-      'Objectifs assignables par membre',
-      'Monday Morning Reporting automatique',
-      "Factures de toute l'organisation",
-      'KPIs par membre / par offre / global',
-      'Rapport avec export PDF',
-      'Gestion des disponibilités et absences par membre',
-    ],
-  },
-  business_acquisition: {
-    features: [
-      'Tout ce que Business a',
-      "Système d'acquisition complet en plus :",
-    ],
-    subFeatures: [
-      'Création/gestion de campagnes (mode avec RDV ou inscription seule)',
-      'Page de capture configurable (titre, vidéo, champs custom, redirection)',
-      "Génération de code embed (iframe ou popup bloquant)",
-      'Tracking UTM + formule par défaut',
-      'KPIs acquisition : vues, leads, taux de conversion par campagne',
-      'Graphiques : camembert (campagnes les plus converties), barres (CA par campagne)',
-    ],
+  en: {
+    solo: {
+      features: [
+        'CRM & Visual Pipeline',
+        'Complete acquisition system (campaigns, embed/iframe, UTM tracking, KPIs per source)',
+        'Full-screen call cockpit (script, notes, offer, resources)',
+        'Video/audio call recording',
+        'Agenda + Google Calendar sync',
+        'Appointments + booking links',
+        'Reminders',
+        'Personal KPIs',
+        'Invoicing',
+        'Personal objectives',
+        'Reports',
+      ],
+    },
+    business: {
+      features: [
+        'Everything in Solo, EXCEPT the acquisition system',
+        'Complete team management (6 roles: Owner, Admin, HOS, Closer, Setter, Setter-Closer)',
+        'Real-time Owner macro view of the entire team',
+        'Member invitations via magic link (7-day expiration)',
+        'Shared Kanban with advanced filters',
+        'Assignable objectives per member',
+        'Automatic Monday Morning Reporting',
+        'Organization-wide invoices',
+        'KPIs per member / per offer / global',
+        'Report with PDF export',
+        'Availability and absence management per member',
+      ],
+    },
+    business_acquisition: {
+      features: [
+        'Everything in Business',
+        'Complete acquisition system included:',
+      ],
+      subFeatures: [
+        'Campaign creation/management (appointment or registration-only mode)',
+        'Configurable capture page (title, video, custom fields, redirect)',
+        'Embed code generation (iframe or blocking popup)',
+        'UTM tracking + default plan',
+        'Acquisition KPIs: views, leads, conversion rate per campaign',
+        'Charts: pie chart (top converting campaigns), bars (revenue per campaign)',
+      ],
+    },
   },
 };
 
@@ -113,6 +186,7 @@ function CheckoutForm({
 }) {
   const stripe = useStripe();
   const elements = useElements();
+  const { t } = useBusinessLang()
 
   const [paymentOpen, setPaymentOpen] = useState(true);
   const [paymentReady, setPaymentReady] = useState(false);
@@ -163,7 +237,7 @@ function CheckoutForm({
 
     try {
       // Step 6: API complete-registration
-      setStep('Création de l\'abonnement...');
+      setStep(t.checkout_creating_sub);
       const res = await fetch('/api/business-checkout?action=complete-registration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -176,13 +250,14 @@ function CheckoutForm({
           user_email: email,
           user_name: name,
           user_phone: phone,
+          referral_slug: getReferralSlug(),
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      if (!res.ok) throw new Error(data.error || t.checkout_error_server);
 
       // Step 7: Register Supabase account
-      setStep('Création du compte...');
+      setStep(t.checkout_creating_account);
       const result = await register({ email, password, full_name: name });
       if (result?.error) {
         setError(result.error.message);
@@ -199,6 +274,7 @@ function CheckoutForm({
           stripe_customer_id: data.customer_id,
           trial_ends_at: trialEnd.toISOString(),
           promo_code_used: promoCode.trim().toUpperCase() || null,
+          ...(data.referral_link_id ? { referral_link_id: data.referral_link_id } : {}),
         }).eq('id', result.data.user.id);
 
         await supabase.from('business_settings').upsert(
@@ -211,7 +287,7 @@ function CheckoutForm({
       sessionStorage.removeItem('closeos_checkout_state');
       navigate('/business/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue.');
+      setError(err.message || t.checkout_error_generic);
       setSubmitting(false);
       setStep('');
     }
@@ -223,13 +299,13 @@ function CheckoutForm({
 
     // Step 1: Client-side validation
     if (!regName.trim() || !regEmail.trim() || !regPhone.trim() || !regPassword || regPassword.length < 8) {
-      setError('Veuillez remplir tous les champs (mot de passe : 8 caracteres minimum).');
+      setError(t.checkout_validation_fields);
       return;
     }
 
     if (!paymentReady) {
       setPaymentOpen(true);
-      setError('Veuillez remplir vos informations de paiement.');
+      setError(t.checkout_validation_payment);
       return;
     }
 
@@ -238,7 +314,7 @@ function CheckoutForm({
 
     try {
       // Step 2: Check for existing Sales account
-      setStep('Verification...');
+      setStep(t.checkout_step_verification);
       const { data: salesProfile } = await supabase
         .from('profiles')
         .select('id')
@@ -246,7 +322,7 @@ function CheckoutForm({
         .maybeSingle();
 
       if (salesProfile) {
-        setError('Cet email est deja associe a un compte CloseOS Sales. Utilisez un autre email.');
+        setError(t.checkout_error_sales_email);
         setSubmitting(false);
         setStep('');
         return;
@@ -259,7 +335,7 @@ function CheckoutForm({
       }));
 
       // Step 5: Confirm SetupIntent
-      setStep('Validation du paiement...');
+      setStep(t.checkout_step_payment);
       const { error: stripeError, setupIntent } = await stripe.confirmSetup({
         elements,
         redirect: 'if_required',
@@ -270,7 +346,7 @@ function CheckoutForm({
 
       if (stripeError) {
         setPaymentOpen(true);
-        setError(stripeError.message || 'Le paiement a echoue.');
+        setError(stripeError.message || t.checkout_error_payment_failed);
         setSubmitting(false);
         setStep('');
         return;
@@ -284,7 +360,7 @@ function CheckoutForm({
       // Steps 6-9: Complete flow
       await completeFlow(setupIntent.id, regName, regEmail, regPhone, regPassword);
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue.');
+      setError(err.message || t.checkout_error_generic);
       setSubmitting(false);
       setStep('');
     }
@@ -317,10 +393,10 @@ function CheckoutForm({
               </div>
             )}
             <span className="font-bold text-stone-900 text-sm" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Paiement
+              {t.checkout_payment_section}
             </span>
             {paymentReady && !paymentOpen && (
-              <span className="text-xs text-emerald-600 font-medium">Carte enregistree</span>
+              <span className="text-xs text-emerald-600 font-medium">{t.checkout_card_saved}</span>
             )}
           </div>
           <ChevronDown className={`h-4 w-4 text-stone-400 transition-transform duration-300 ${paymentOpen ? 'rotate-180' : ''}`} />
@@ -341,11 +417,11 @@ function CheckoutForm({
 
       {/* Registration Section */}
       <div className="space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-1">Creer votre compte</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-1">{t.checkout_create_account_section}</p>
 
         <div>
           <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
-            Nom complet
+            {t.checkout_name}
           </label>
           <div className="relative">
             <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
@@ -363,7 +439,7 @@ function CheckoutForm({
 
         <div>
           <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
-            Email
+            {t.checkout_email}
           </label>
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
@@ -381,7 +457,7 @@ function CheckoutForm({
 
         <div>
           <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
-            Telephone
+            {t.checkout_phone}
           </label>
           <div className="relative">
             <Phone className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
@@ -399,7 +475,7 @@ function CheckoutForm({
 
         <div>
           <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
-            Mot de passe
+            {t.checkout_password}
           </label>
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
@@ -408,7 +484,7 @@ function CheckoutForm({
               value={regPassword}
               onChange={(e) => setRegPassword(e.target.value)}
               className="w-full rounded-xl bg-stone-100/50 border-none py-3.5 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
-              placeholder="Minimum 8 caracteres"
+              placeholder={t.return_password_placeholder}
               required
               minLength={8}
               disabled={submitting}
@@ -427,21 +503,21 @@ function CheckoutForm({
         {submitting ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            <span>{step || 'Chargement...'}</span>
+            <span>{step || t.checkout_loading}</span>
           </>
         ) : (
           <>
             <Rocket className="h-5 w-5" />
-            <span>Lancer</span>
+            <span>{t.checkout_launch}</span>
           </>
         )}
       </button>
 
       <p className="mt-5 text-center text-xs text-stone-400">
-        En vous inscrivant, vous acceptez nos{' '}
-        <Link to="/cgu" className="text-stone-600 hover:underline">CGU</Link>
-        {' '}et notre{' '}
-        <Link to="/confidentialite" className="text-stone-600 hover:underline">Politique de Confidentialite</Link>.
+        {t.checkout_terms_text}{' '}
+        <Link to="/cgu" className="text-stone-600 hover:underline">{t.checkout_terms_cgu}</Link>
+        {' '}{t.checkout_terms_and}{' '}
+        <Link to="/confidentialite" className="text-stone-600 hover:underline">{t.checkout_terms_privacy}</Link>.
       </p>
     </form>
   );
@@ -453,6 +529,7 @@ export default function BusinessCheckout() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, register } = useBusinessAuth();
+  const { t, lang } = useBusinessLang()
 
   const plan = searchParams.get('plan') || 'solo';
   const billing = searchParams.get('billing') || 'annual';
@@ -479,7 +556,7 @@ export default function BusinessCheckout() {
   const [regError, setRegError] = useState<string | null>(null);
 
   const planLabel = PLAN_LABELS[plan] || 'Solo';
-  const priceInfo = PLAN_PRICES[plan]?.[billing] || PLAN_PRICES.solo.annual;
+  const priceInfo = PLAN_PRICES[lang]?.[plan]?.[billing] || PLAN_PRICES.fr.solo.annual;
 
   const toggleExtra = (key: string) => {
     setSelectedExtras(prev => {
@@ -567,7 +644,7 @@ export default function BusinessCheckout() {
         .maybeSingle();
 
       if (salesProfile) {
-        setRegError("Cet email est deja associe a un compte CloseOS Sales. Utilisez un autre email.");
+        setRegError(t.checkout_error_sales_email);
         setRegLoading(false);
         return;
       }
@@ -595,7 +672,7 @@ export default function BusinessCheckout() {
 
       navigate('/business/dashboard');
     } catch {
-      setRegError("Une erreur est survenue.");
+      setRegError(t.checkout_error_generic);
       setRegLoading(false);
     }
   };
@@ -611,7 +688,7 @@ export default function BusinessCheckout() {
         </Link>
         <Link to="/business" className="flex items-center gap-2 text-sm text-stone-500 hover:text-stone-800 transition-colors font-medium">
           <ArrowLeft className="h-4 w-4" />
-          Retour
+          {t.checkout_back}
         </Link>
       </header>
 
@@ -620,12 +697,12 @@ export default function BusinessCheckout() {
         <div className="mb-6 rounded-2xl bg-white/70 backdrop-blur-xl p-6 sm:p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-1">Votre formule</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-1">{t.checkout_your_plan}</p>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 {planLabel}
               </h1>
               <p className="text-stone-500 mt-1">
-                {billing === 'annual' ? 'Facturation annuelle' : billing === 'quarterly' ? 'Facturation trimestrielle' : 'Facturation mensuelle'}
+                {billing === 'annual' ? t.checkout_billing_annual_desc : billing === 'quarterly' ? t.checkout_billing_quarterly_desc : t.checkout_billing_monthly_desc}
               </p>
             </div>
             <div className="text-right">
@@ -642,23 +719,23 @@ export default function BusinessCheckout() {
                         : 'text-stone-400 hover:text-stone-600'
                     }`}
                   >
-                    {opt.label}
+                    {opt.key === 'annual' ? t.checkout_annual : opt.key === 'quarterly' ? t.checkout_quarterly : t.checkout_monthly}
                   </button>
                 ))}
               </div>
               <p className="text-3xl sm:text-4xl font-extrabold text-stone-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 {priceInfo.display}
               </p>
-              {priceInfo.total && <p className="text-sm text-stone-400 mt-0.5">soit {priceInfo.total}</p>}
+              {priceInfo.total && <p className="text-sm text-stone-400 mt-0.5">{t.checkout_price_total_prefix} {priceInfo.total}</p>}
               <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                 <Sparkles className="h-3.5 w-3.5" />
-                {trialDays} jours d'essai gratuit
+                {trialDays} {t.checkout_trial_days_free}
               </div>
             </div>
           </div>
 
           {/* Features accordion */}
-          {PLAN_FEATURES[plan] && (
+          {PLAN_FEATURES[lang]?.[plan] && (
             <div className="mt-4">
               <button
                 type="button"
@@ -666,17 +743,17 @@ export default function BusinessCheckout() {
                 className="flex items-center gap-1.5 text-xs font-semibold text-stone-400 hover:text-stone-600 transition-colors"
               >
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${featuresOpen ? 'rotate-180' : ''}`} />
-                {featuresOpen ? 'Masquer les fonctionnalites' : 'Voir les fonctionnalites incluses'}
+                {featuresOpen ? t.checkout_hide_features : t.checkout_show_features}
               </button>
               <div className={`overflow-hidden transition-all duration-300 ${featuresOpen ? 'max-h-[600px] opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
                 <ul className="space-y-1.5 text-sm text-stone-600">
-                  {PLAN_FEATURES[plan].features.map((f, i) => (
+                  {PLAN_FEATURES[lang]?.[plan].features.map((f, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <Check className="h-3.5 w-3.5 text-emerald-500 mt-0.5 flex-shrink-0" />
                       <span>{f}</span>
                     </li>
                   ))}
-                  {PLAN_FEATURES[plan].subFeatures?.map((f, i) => (
+                  {PLAN_FEATURES[lang]?.[plan].subFeatures?.map((f, i) => (
                     <li key={`sub-${i}`} className="flex items-start gap-2 pl-5">
                       <Check className="h-3 w-3 text-emerald-400 mt-0.5 flex-shrink-0" />
                       <span className="text-xs text-stone-500">{f}</span>
@@ -689,39 +766,39 @@ export default function BusinessCheckout() {
 
           {/* Promo code */}
           <div className="mt-6 pt-6 border-t border-stone-100">
-            <label className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-2 block">Code promo</label>
+            <label className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-2 block">{t.checkout_promo}</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
                 <input
                   type="text" value={promoCode}
                   onChange={(e) => { setPromoCode(e.target.value); if (promoResult) setPromoResult(null); }}
-                  placeholder="Entrez votre code"
+                  placeholder={t.checkout_promo_placeholder}
                   className="w-full rounded-xl bg-stone-100/60 border-none py-3 pl-10 pr-4 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all text-sm"
                 />
               </div>
               <button onClick={validatePromo} disabled={promoLoading || !promoCode.trim()}
                 className="rounded-xl bg-stone-900 px-5 py-3 text-sm font-bold text-white hover:bg-stone-800 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
-                {promoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Appliquer'}
+                {promoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t.checkout_apply}
               </button>
             </div>
             {promoResult && (
               <div className={`mt-2 flex items-center gap-2 text-sm ${promoResult.valid ? 'text-emerald-600' : 'text-red-500'}`}>
                 {promoResult.valid ? <Check className="h-4 w-4" /> : null}
                 {promoResult.valid
-                  ? promoResult.type === 'free_trial' ? `Essai gratuit de ${promoResult.trial_days} jours active !`
-                    : promoResult.type === 'lifetime_free' ? 'Acces gratuit a vie active !'
-                    : promoResult.type === 'trial_extended' ? `Essai etendu a ${promoResult.trial_days} jours !`
-                    : promoResult.type === 'discount' ? `Reduction de ${promoResult.discount_percent}% appliquee !`
-                    : 'Code applique !'
-                  : 'Code invalide ou expire'}
+                  ? promoResult.type === 'free_trial' ? `${promoResult.trial_days}j — ${t.checkout_promo_free_trial}`
+                    : promoResult.type === 'lifetime_free' ? t.checkout_promo_lifetime
+                    : promoResult.type === 'trial_extended' ? `${promoResult.trial_days}j — ${t.checkout_promo_extended}`
+                    : promoResult.type === 'discount' ? `${promoResult.discount_percent}% — ${t.checkout_promo_discount}`
+                    : t.checkout_promo_applied
+                  : t.checkout_promo_invalid}
               </div>
             )}
           </div>
 
           {/* Extras */}
           <div className="mt-6 pt-6 border-t border-stone-100">
-            <label className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3 block">Services supplementaires (optionnel)</label>
+            <label className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3 block">{t.checkout_extras_label}</label>
             <div className="space-y-2.5">
               {EXTRAS.map((extra) => {
                 const isChecked = selectedExtras.has(extra.key);
@@ -733,17 +810,17 @@ export default function BusinessCheckout() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-stone-900">{extra.name}</span>
+                        <span className="font-bold text-sm text-stone-900">{t[`checkout_extra_${extra.key}_name` as keyof typeof t]}</span>
                         {extra.isSaving && <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">-20€</span>}
                       </div>
-                      <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">{extra.description}</p>
+                      <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">{t[`checkout_extra_${extra.key}_desc` as keyof typeof t]}</p>
                     </div>
                     <span className="font-extrabold text-sm text-stone-900 flex-shrink-0 mt-0.5">{extra.price}€</span>
                   </button>
                 );
               })}
             </div>
-            {extrasTotal > 0 && <p className="mt-3 text-sm font-semibold text-stone-700 text-right">+ {extrasTotal}€ (paiement unique)</p>}
+            {extrasTotal > 0 && <p className="mt-3 text-sm font-semibold text-stone-700 text-right">+ {extrasTotal}€ {t.checkout_extras_total}</p>}
           </div>
         </div>
 
@@ -755,46 +832,46 @@ export default function BusinessCheckout() {
                 <Sparkles className="h-7 w-7 text-emerald-600" />
               </div>
               <h2 className="text-2xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                {promoResult?.type === 'lifetime_free' ? 'Acces gratuit a vie' : `${promoResult?.trial_days || 31} jours offerts`}
+                {promoResult?.type === 'lifetime_free' ? t.checkout_lifetime_free_title : `${promoResult?.trial_days || 31} ${t.checkout_days_offered}`}
               </h2>
-              <p className="text-stone-500 mt-1">Creez votre compte pour demarrer immediatement</p>
+              <p className="text-stone-500 mt-1">{t.checkout_create_start}</p>
             </div>
             {regError && <div className="mb-6 rounded-xl bg-red-50/80 p-4 text-sm text-red-600 border border-red-200/40">{regError}</div>}
             <form onSubmit={handleDirectRegister} className="space-y-5 max-w-md mx-auto">
               <div>
-                <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">Nom complet</label>
+                <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_name}</label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
                   <input type="text" value={regName} onChange={(e) => setRegName(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder="John Doe" required />
                 </div>
               </div>
               <div>
-                <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">Email</label>
+                <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_email}</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
                   <input type="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder="votre@email.com" required />
                 </div>
               </div>
               <div>
-                <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">Telephone</label>
+                <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_phone}</label>
                 <div className="relative">
                   <Phone className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
                   <input type="tel" value={regPhone} onChange={(e) => setRegPhone(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder="+33 6 12 34 56 78" required />
                 </div>
               </div>
               <div>
-                <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">Mot de passe</label>
+                <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_password}</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
-                  <input type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder="Minimum 8 caracteres" required minLength={8} />
+                  <input type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder={t.return_password_placeholder} required minLength={8} />
                 </div>
               </div>
               <button type="submit" disabled={regLoading} className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-5 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-95 disabled:opacity-50" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                {regLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Rocket className="h-5 w-5" /> Lancer</>}
+                {regLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Rocket className="h-5 w-5" /> {t.checkout_launch}</>}
               </button>
             </form>
             <p className="mt-6 text-center text-xs text-stone-400">
-              En vous inscrivant, vous acceptez nos{' '}<Link to="/cgu" className="text-stone-600 hover:underline">CGU</Link>{' '}et notre{' '}<Link to="/confidentialite" className="text-stone-600 hover:underline">Politique de Confidentialite</Link>.
+              {t.checkout_terms_text}{' '}<Link to="/cgu" className="text-stone-600 hover:underline">{t.checkout_terms_cgu}</Link>{' '}{t.checkout_terms_and}{' '}<Link to="/confidentialite" className="text-stone-600 hover:underline">{t.checkout_terms_privacy}</Link>.
             </p>
           </div>
         ) : clientSecret ? (
@@ -809,15 +886,15 @@ export default function BusinessCheckout() {
           <div className="flex items-center justify-center py-20">
             <div className="flex flex-col items-center gap-4">
               <Loader2 className="h-8 w-8 animate-spin text-stone-400" />
-              <p className="text-sm text-stone-400">Preparation du paiement...</p>
+              <p className="text-sm text-stone-400">{t.checkout_preparing_payment}</p>
             </div>
           </div>
         )}
 
         <div className="mt-8 text-center">
           <p className="text-sm text-stone-400">
-            Deja un compte ?{' '}
-            <Link to="/business/login" className="font-semibold text-stone-700 hover:text-stone-900 transition-colors">Se connecter</Link>
+            {t.checkout_already_account}{' '}
+            <Link to="/business/login" className="font-semibold text-stone-700 hover:text-stone-900 transition-colors">{t.checkout_login}</Link>
           </p>
         </div>
       </div>

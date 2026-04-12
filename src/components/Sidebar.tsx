@@ -27,20 +27,22 @@ import { cn } from '../lib/utils'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useOrganization } from '../contexts/OrganizationContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { sidebarTranslations } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
 
-// Mise à jour de la navigation
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Pipeline', href: '/pipeline', icon: GitBranch },
-  { name: 'Contacts', href: '/contacts', icon: Users },
-  { name: 'Offres', href: '/offers', icon: Briefcase },
-  { name: 'Agenda', href: '/agenda', icon: Calendar },
-  { name: 'Rendez-vous', href: '/rendez-vous', icon: CalendarCheck },
-  { name: 'Appels', href: '/appels', icon: Video },
-  { name: 'Factures', href: '/factures', icon: CreditCard },
-  { name: 'KPI', href: '/kpi', icon: BarChart3 },
-  { name: 'Rappels', href: '/reminders', icon: Bell },
+// Navigation keys — labels resolved from translations
+const navigationKeys = [
+  { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { key: 'pipeline', href: '/pipeline', icon: GitBranch },
+  { key: 'contacts', href: '/contacts', icon: Users },
+  { key: 'offers', href: '/offers', icon: Briefcase },
+  { key: 'agenda', href: '/agenda', icon: Calendar },
+  { key: 'appointments', href: '/rendez-vous', icon: CalendarCheck },
+  { key: 'calls', href: '/appels', icon: Video },
+  { key: 'invoices', href: '/factures', icon: CreditCard },
+  { key: 'kpi', href: '/kpi', icon: BarChart3 },
+  { key: 'reminders', href: '/reminders', icon: Bell },
 ]
 
 interface SidebarProps {
@@ -53,6 +55,9 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
   const { isInOrganization, organizations, switchOrganization } = useOrganization()
+  const { lang } = useLanguage()
+  const t = sidebarTranslations[lang]
+  const navigation = navigationKeys.map(n => ({ ...n, name: t[n.key] }))
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLogoDropdownOpen, setIsLogoDropdownOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -92,8 +97,8 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
     fetchAvatar()
   }, [user?.id]) // Se rafraîchit si l'ID change
 
-  const fullName = user?.user_metadata?.full_name || 'Utilisateur';
-  const userRole = user?.user_metadata?.role || 'Membre';
+  const fullName = user?.user_metadata?.full_name || t.user_default;
+  const userRole = user?.user_metadata?.role || t.role_default;
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
   // On utilise l'URL de la base de données en priorité, puis les métadonnées auth
@@ -139,8 +144,8 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
                   >
                     <User className="h-4 w-4 text-emerald-400" />
                     <div className="text-left">
-                      <p className="text-sm font-bold text-white">Personnel</p>
-                      <p className="text-[10px] text-white/40">Votre espace Sales</p>
+                      <p className="text-sm font-bold text-white">{t.personal}</p>
+                      <p className="text-[10px] text-white/40">{t.your_space}</p>
                     </div>
                   </button>
                   {organizations.map((org) => (
@@ -212,8 +217,8 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-emerald-400">Votre avis compte</p>
-              <p className="text-xs text-emerald-400/70">Laissez-nous un retour 🙌</p>
+              <p className="text-sm font-bold text-emerald-400">{t.feedback_title}</p>
+              <p className="text-xs text-emerald-400/70">{t.feedback_sub}</p>
             </div>
           </a>
         </div>
@@ -230,8 +235,8 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
               <Coffee className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#F01A74]">Soutenir le projet</p>
-              <p className="text-xs text-[#F01A74]/70">Offrez-moi un café ☕️</p>
+              <p className="text-sm font-bold text-[#F01A74]">{t.support_title}</p>
+              <p className="text-xs text-[#F01A74]/70">{t.support_sub}</p>
             </div>
           </a>
         </div>
@@ -251,7 +256,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
                   className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
                 >
                   <Settings className="h-4 w-4" />
-                  Paramètres
+                  {t.settings}
                 </button>
                 <div className="h-px bg-white/[0.06]" />
                 <button
@@ -259,7 +264,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
                   className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-red-400"
                 >
                   <LogOut className="h-4 w-4" />
-                  Déconnexion
+                  {t.logout}
                 </button>
               </div>
             </>
@@ -301,7 +306,7 @@ export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
       {isLoggingOut && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#111111] animate-in fade-in duration-300">
           <Loader2 className="h-10 w-10 text-emerald-500 animate-spin mb-4" />
-          <p className="text-white font-medium text-lg animate-pulse">Déconnexion sécurisée...</p>
+          <p className="text-white font-medium text-lg animate-pulse">{t.logging_out}</p>
         </div>
       )}
     </>

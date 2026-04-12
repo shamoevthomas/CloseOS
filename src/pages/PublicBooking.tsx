@@ -48,6 +48,7 @@ const formatDateKey = (d: Date) =>
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
 export function PublicBooking() {
+  const lang = (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
   const { slug } = useParams<{ slug: string }>()
   const [info, setInfo] = useState<BookingInfo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -245,7 +246,7 @@ export function PublicBooking() {
         return reqStart < apptEnd && reqEnd > apptStart
       })
       if (hasConflict) {
-        alert('Ce créneau vient d\'être réservé. Veuillez en choisir un autre.')
+        alert(lang === 'fr' ? 'Ce créneau vient d\'être réservé. Veuillez en choisir un autre.' : 'This slot has just been booked. Please choose another.')
         setSubmitting(false)
         return
       }
@@ -276,7 +277,7 @@ export function PublicBooking() {
 
       if (apptErr) {
         console.error('Appointment creation error:', apptErr)
-        alert('Erreur lors de la création du rendez-vous')
+        alert(lang === 'fr' ? 'Erreur lors de la création du rendez-vous' : 'Error creating appointment')
         setSubmitting(false)
         return
       }
@@ -332,7 +333,7 @@ export function PublicBooking() {
       setDone(true)
     } catch (err) {
       console.error('Booking error:', err)
-      alert('Erreur de connexion')
+      alert(lang === 'fr' ? 'Erreur de connexion' : 'Connection error')
     } finally {
       setSubmitting(false)
     }

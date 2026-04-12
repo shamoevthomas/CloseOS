@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Plus, Trash2, Clock, Calendar, Link2, Copy, Check, ExternalLink, Save, ArrowLeft, Pencil } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { bookingSettingsTranslations } from '../i18n/translations'
 import { cn } from '../lib/utils'
 
 interface BookingType {
@@ -24,7 +26,7 @@ const DEFAULT_AVAILABILITY = {
   sunday: { enabled: false, slots: [] },
 }
 
-const DAYS = [
+const DAYS_FR = [
   { id: 'monday', label: 'Lundi' },
   { id: 'tuesday', label: 'Mardi' },
   { id: 'wednesday', label: 'Mercredi' },
@@ -34,8 +36,20 @@ const DAYS = [
   { id: 'sunday', label: 'Dimanche' },
 ]
 
+const DAYS_EN = [
+  { id: 'monday', label: 'Monday' },
+  { id: 'tuesday', label: 'Tuesday' },
+  { id: 'wednesday', label: 'Wednesday' },
+  { id: 'thursday', label: 'Thursday' },
+  { id: 'friday', label: 'Friday' },
+  { id: 'saturday', label: 'Saturday' },
+  { id: 'sunday', label: 'Sunday' },
+]
+
 export function BookingSettings() {
   const { user } = useAuth()
+  const { lang } = useLanguage()
+  const DAYS = lang === 'fr' ? DAYS_FR : DAYS_EN
   const [activeTab, setActiveTab] = useState<'types' | 'availability'>('types')
   const [loading, setLoading] = useState(true)
 
@@ -97,7 +111,7 @@ export function BookingSettings() {
 
   const handleSaveType = async () => {
     if (!currentType.title || !currentType.slug || !currentType.duration) {
-      alert("Veuillez remplir le titre, l'URL et la durée.")
+      alert(lang === 'fr' ? "Veuillez remplir le titre, l'URL et la durée." : "Please fill in the title, URL and duration.")
       return
     }
 
@@ -135,16 +149,16 @@ export function BookingSettings() {
       setCurrentType({ title: '', slug: '', duration: 30, description: '' })
     } catch (error: any) {
       if (error.code === '23505') {
-        alert("Ce lien (URL) existe déjà. Veuillez en choisir un autre.")
+        alert(lang === 'fr' ? "Ce lien (URL) existe déjà. Veuillez en choisir un autre." : "This link (URL) already exists. Please choose another.")
       } else {
-        alert("Erreur lors de la sauvegarde.")
+        alert(lang === 'fr' ? "Erreur lors de la sauvegarde." : "Error saving.")
         console.error(error)
       }
     }
   }
 
   const handleDeleteType = async (id: number) => {
-    if (!confirm('Supprimer définitivement ce type de rendez-vous ?')) return
+    if (!confirm(lang === 'fr' ? 'Supprimer définitivement ce type de rendez-vous ?' : 'Permanently delete this appointment type?')) return
     await supabase.from('booking_types').delete().eq('id', id)
     loadData()
   }
@@ -163,10 +177,10 @@ export function BookingSettings() {
         }, { onConflict: 'user_id' })
 
       if (error) throw error
-      alert('Disponibilités mises à jour !')
+      alert(lang === 'fr' ? 'Disponibilités mises à jour !' : 'Availability updated!')
     } catch (err) {
       console.error(err)
-      alert('Erreur sauvegarde disponibilités')
+      alert(lang === 'fr' ? 'Erreur sauvegarde disponibilités' : 'Error saving availability')
     }
   }
 
@@ -197,8 +211,8 @@ export function BookingSettings() {
   return (
     <div className="h-full overflow-y-auto bg-[#111111] p-8 md:p-12 text-white/80">
       <div className="mx-auto max-w-5xl">
-        <h1 className="mb-2 text-3xl md:text-5xl font-extrabold tracking-tighter text-white">Réglages de Réservation</h1>
-        <p className="mb-10 text-white/40 text-sm font-medium">Gérez vos différents types de rendez-vous et vos horaires globaux.</p>
+        <h1 className="mb-2 text-3xl md:text-5xl font-extrabold tracking-tighter text-white">{lang === 'fr' ? 'Réglages de Réservation' : 'Booking Settings'}</h1>
+        <p className="mb-10 text-white/40 text-sm font-medium">{lang === 'fr' ? 'Gérez vos différents types de rendez-vous et vos horaires globaux.' : 'Manage your appointment types and global schedules.'}</p>
 
         {/* TABS */}
         <div className="mb-10 inline-flex bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] rounded-full p-1.5 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
@@ -207,14 +221,14 @@ export function BookingSettings() {
             className={`px-8 py-3 text-sm font-bold transition-all rounded-full ${activeTab === 'types' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
               }`}
           >
-            Types d'événements
+            {lang === 'fr' ? "Types d'événements" : 'Event Types'}
           </button>
           <button
             onClick={() => setActiveTab('availability')}
             className={`px-8 py-3 text-sm font-bold transition-all rounded-full ${activeTab === 'availability' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
               }`}
           >
-            Disponibilités & Horaires
+            {lang === 'fr' ? 'Disponibilités & Horaires' : 'Availability & Hours'}
           </button>
         </div>
 
@@ -234,8 +248,8 @@ export function BookingSettings() {
                   <div className="mb-4 rounded-full bg-emerald-500/10 p-5 transition-transform group-hover:scale-110 group-hover:bg-emerald-500/20">
                     <Plus className="h-8 w-8 text-emerald-500" />
                   </div>
-                  <span className="font-bold text-white text-lg">Nouveau Type de RDV</span>
-                  <span className="text-sm text-white/40 mt-1">Créer un lien de booking</span>
+                  <span className="font-bold text-white text-lg">{lang === 'fr' ? 'Nouveau Type de RDV' : 'New Appointment Type'}</span>
+                  <span className="text-sm text-white/40 mt-1">{lang === 'fr' ? 'Créer un lien de booking' : 'Create a booking link'}</span>
                 </button>
 
                 {/* LISTE DES TYPES */}
@@ -254,7 +268,7 @@ export function BookingSettings() {
                         <span className="font-medium">Tel / Visio</span>
                       </div>
                       <p className="text-sm text-white/40 line-clamp-3 leading-relaxed">
-                        {type.description || "Pas de description."}
+                        {type.description || (lang === 'fr' ? "Pas de description." : "No description.")}
                       </p>
                     </div>
 
@@ -264,20 +278,20 @@ export function BookingSettings() {
                         className={`flex items-center gap-2 text-xs font-bold transition-colors ${copiedSlug === type.slug ? 'text-emerald-400' : 'text-emerald-400 hover:text-emerald-300'}`}
                       >
                         {copiedSlug === type.slug ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        {copiedSlug === type.slug ? 'Lien copié !' : 'Copier le lien'}
+                        {copiedSlug === type.slug ? (lang === 'fr' ? 'Lien copié !' : 'Link copied!') : (lang === 'fr' ? 'Copier le lien' : 'Copy link')}
                       </button>
                       <div className="flex gap-1">
                         <button
                           onClick={() => { setCurrentType(type); setIsEditingType(true); }}
                           className="p-2.5 text-white/40 hover:text-white hover:bg-white/[0.06] rounded-xl transition-all"
-                          title="Modifier"
+                          title={lang === 'fr' ? 'Modifier' : 'Edit'}
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteType(type.id)}
                           className="p-2.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-                          title="Supprimer"
+                          title={lang === 'fr' ? 'Supprimer' : 'Delete'}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -293,21 +307,21 @@ export function BookingSettings() {
                   onClick={() => setIsEditingType(false)}
                   className="mb-8 flex items-center gap-2 text-sm font-bold text-white/40 hover:text-white transition-colors"
                 >
-                  <ArrowLeft className="h-4 w-4" /> Retour à la liste
+                  <ArrowLeft className="h-4 w-4" /> {lang === 'fr' ? 'Retour à la liste' : 'Back to list'}
                 </button>
 
                 <div className="flex items-start justify-between mb-10">
                   <div>
                     <h3 className="text-2xl font-extrabold text-white">
-                      {currentType.id ? 'Modifier le type de RDV' : 'Créer un nouveau type'}
+                      {currentType.id ? (lang === 'fr' ? 'Modifier le type de RDV' : 'Edit appointment type') : (lang === 'fr' ? 'Créer un nouveau type' : 'Create a new type')}
                     </h3>
-                    <p className="text-white/40 text-sm mt-1">Remplissez les détails de ce type de rendez-vous.</p>
+                    <p className="text-white/40 text-sm mt-1">{lang === 'fr' ? 'Remplissez les détails de ce type de rendez-vous.' : 'Fill in the details for this appointment type.'}</p>
                   </div>
                 </div>
 
                 <div className="space-y-8">
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Titre (ex: Appel Découverte)</label>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Titre (ex: Appel Découverte)' : 'Title (e.g.: Discovery Call)'}</label>
                     <input
                       type="text"
                       value={currentType.title}
@@ -319,7 +333,7 @@ export function BookingSettings() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-1">
-                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">URL du lien (Slug)</label>
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'URL du lien (Slug)' : 'Link URL (Slug)'}</label>
                       <div className="flex items-center border-b border-white/10 focus-within:border-emerald-500 transition-colors">
                         <span className="text-white/40 text-xs whitespace-nowrap">/book/</span>
                         <input
@@ -332,7 +346,7 @@ export function BookingSettings() {
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Durée (minutes)</label>
+                      <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Durée (minutes)' : 'Duration (minutes)'}</label>
                       <input
                         type="number"
                         value={currentType.duration}
@@ -343,12 +357,12 @@ export function BookingSettings() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Description (Optionnel)</label>
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Description (Optionnel)' : 'Description (Optional)'}</label>
                     <textarea
                       value={currentType.description || ''}
                       onChange={(e) => setCurrentType({ ...currentType, description: e.target.value })}
                       rows={4}
-                      placeholder="Ce que nous allons voir durant cet appel..."
+                      placeholder={lang === 'fr' ? "Ce que nous allons voir durant cet appel..." : "What we'll cover during this call..."}
                       className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-3 text-white font-medium focus:ring-0 focus:outline-none resize-none placeholder:text-white/20"
                     />
                   </div>
@@ -358,7 +372,7 @@ export function BookingSettings() {
                       onClick={handleSaveType}
                       className="w-full rounded-full bg-emerald-500 px-8 py-3.5 font-bold text-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30"
                     >
-                      Enregistrer le type
+                      {lang === 'fr' ? 'Enregistrer le type' : 'Save type'}
                     </button>
                   </div>
                 </div>
@@ -373,14 +387,14 @@ export function BookingSettings() {
             <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] p-10 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
               <div className="flex items-start justify-between mb-10">
                 <div>
-                  <h3 className="text-2xl font-extrabold text-white">Semaine type</h3>
-                  <p className="text-white/40 text-sm mt-1">Ces horaires s'appliquent à tous vos types de rendez-vous.</p>
+                  <h3 className="text-2xl font-extrabold text-white">{lang === 'fr' ? 'Semaine type' : 'Typical week'}</h3>
+                  <p className="text-white/40 text-sm mt-1">{lang === 'fr' ? "Ces horaires s'appliquent à tous vos types de rendez-vous." : 'These hours apply to all your appointment types.'}</p>
                 </div>
                 <button
                   onClick={handleSaveAvailability}
                   className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-full font-bold text-sm hover:bg-white/90 transition-colors shadow-lg"
                 >
-                  <Save className="h-4 w-4" /> Sauvegarder
+                  <Save className="h-4 w-4" /> {lang === 'fr' ? 'Sauvegarder' : 'Save'}
                 </button>
               </div>
 
@@ -389,8 +403,8 @@ export function BookingSettings() {
                 <div className="flex items-center gap-4">
                   <Clock className="h-5 w-5 text-emerald-400" />
                   <div>
-                    <p className="text-white font-bold text-sm">Délai minimum avant réservation</p>
-                    <p className="text-white/40 text-xs mt-0.5">Empêche les réservations de dernière minute</p>
+                    <p className="text-white font-bold text-sm">{lang === 'fr' ? 'Délai minimum avant réservation' : 'Minimum lead time before booking'}</p>
+                    <p className="text-white/40 text-xs mt-0.5">{lang === 'fr' ? 'Empêche les réservations de dernière minute' : 'Prevents last-minute bookings'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -401,7 +415,7 @@ export function BookingSettings() {
                     onChange={(e) => setMinLeadTime(parseInt(e.target.value))}
                     className="w-16 bg-transparent border-b border-white/10 focus:border-emerald-500 px-2 py-1 text-center text-white font-bold outline-none transition-colors"
                   />
-                  <span className="text-sm text-white/40">heures</span>
+                  <span className="text-sm text-white/40">{lang === 'fr' ? 'heures' : 'hours'}</span>
                 </div>
               </div>
 

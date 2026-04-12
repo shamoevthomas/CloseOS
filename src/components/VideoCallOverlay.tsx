@@ -14,6 +14,8 @@ import {
   ChevronLeft
 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { useLanguage } from '../contexts/LanguageContext'
+import { videoCallTranslations } from '../i18n/translations'
 
 interface VideoCallOverlayProps {
   isOpen: boolean
@@ -34,6 +36,8 @@ export function VideoCallOverlay({
   initialAiEnabled = false,
   meetLink = "https://meet.google.com/new"
 }: VideoCallOverlayProps) {
+  const { lang } = useLanguage()
+  const t = videoCallTranslations[lang]
   const [isMinimized, setIsMinimized] = useState(false)
   const [showScript, setShowScript] = useState(true)
   const [duration, setDuration] = useState(0)
@@ -80,7 +84,7 @@ export function VideoCallOverlay({
       stream.getVideoTracks()[0].onended = () => stopRecording()
     } catch (err) {
       console.error("Erreur enregistrement:", err)
-      alert("Enregistrement annulé.")
+      alert(lang === 'fr' ? "Enregistrement annulé." : "Recording cancelled.")
     }
   }
 

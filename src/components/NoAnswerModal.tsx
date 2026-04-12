@@ -1,4 +1,5 @@
 import { X, PhoneOff } from 'lucide-react'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface NoAnswerModalProps {
   isOpen: boolean
@@ -8,6 +9,7 @@ interface NoAnswerModalProps {
 }
 
 export function NoAnswerModal({ isOpen, onClose, onMarkAsNoShow, prospectName }: NoAnswerModalProps) {
+  const { lang } = useLanguage()
   if (!isOpen) return null
 
   return (
@@ -29,7 +31,7 @@ export function NoAnswerModal({ isOpen, onClose, onMarkAsNoShow, prospectName }:
                   <PhoneOff className="h-5 w-5 text-orange-400" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white">Pas de réponse ?</h2>
+                  <h2 className="text-lg font-bold text-white">{lang === 'fr' ? 'Pas de réponse ?' : 'No answer?'}</h2>
                   <p className="text-sm text-white/40 mt-0.5">
                     {prospectName}
                   </p>
@@ -47,7 +49,9 @@ export function NoAnswerModal({ isOpen, onClose, onMarkAsNoShow, prospectName }:
           {/* Content */}
           <div className="px-6 py-5">
             <p className="text-sm text-white/60">
-              Le prospect n'a pas décroché. Voulez-vous passer son statut en <span className="font-semibold text-white">"No Show"</span> ?
+              {lang === 'fr'
+                ? <>Le prospect n'a pas décroché. Voulez-vous passer son statut en <span className="font-semibold text-white">"No Show"</span> ?</>
+                : <>The prospect didn't pick up. Do you want to change their status to <span className="font-semibold text-white">"No Show"</span>?</>}
             </p>
           </div>
 
@@ -58,7 +62,7 @@ export function NoAnswerModal({ isOpen, onClose, onMarkAsNoShow, prospectName }:
                 onClick={onClose}
                 className="rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-sm font-semibold text-white/80 transition-all hover:bg-white/10"
               >
-                Non, fermer
+                {lang === 'fr' ? 'Non, fermer' : 'No, close'}
               </button>
               <button
                 onClick={() => {
@@ -67,7 +71,7 @@ export function NoAnswerModal({ isOpen, onClose, onMarkAsNoShow, prospectName }:
                 }}
                 className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-orange-600 shadow-lg shadow-orange-500/20"
               >
-                Oui, passer en No Show
+                {lang === 'fr' ? 'Oui, passer en No Show' : 'Yes, mark as No Show'}
               </button>
             </div>
           </div>

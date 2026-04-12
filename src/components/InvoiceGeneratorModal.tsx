@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { useLanguage } from '../contexts/LanguageContext'
 import { X, ChevronLeft, Download, Loader2, Mail, Plus, Trash2, Pencil, CheckCircle2 } from 'lucide-react'
 import type { Offer } from './OfferDetailModal'
 import type { Prospect } from '../contexts/ProspectsContext'
@@ -39,6 +40,7 @@ export function InvoiceGeneratorModal({
   endDate,
   onClose,
 }: InvoiceGeneratorModalProps) {
+  const { lang } = useLanguage()
   const invoiceRef = useRef<HTMLDivElement>(null)
 
   // Step
@@ -100,10 +102,10 @@ export function InvoiceGeneratorModal({
   // ---------- EDITABLE LINE ITEMS (Step 2) ----------
 
   const [editableItems, setEditableItems] = useState<EditableLineItem[]>([])
-  const [editableInvoiceTitle, setEditableInvoiceTitle] = useState('FACTURE')
-  const [editableEcheance, setEditableEcheance] = useState('A reception')
+  const [editableInvoiceTitle, setEditableInvoiceTitle] = useState(lang === 'fr' ? 'FACTURE' : 'INVOICE')
+  const [editableEcheance, setEditableEcheance] = useState(lang === 'fr' ? 'A reception' : 'Upon receipt')
   const [editableFooterNote, setEditableFooterNote] = useState('')
-  const [editableCustomSectionTitle, setEditableCustomSectionTitle] = useState('Autres')
+  const [editableCustomSectionTitle, setEditableCustomSectionTitle] = useState(lang === 'fr' ? 'Autres' : 'Other')
   const [editablePenaltyText, setEditablePenaltyText] = useState('')
 
   // ---------- LINE ITEMS COMPUTATION ----------
@@ -115,8 +117,8 @@ export function InvoiceGeneratorModal({
       const isInstallment = deal.payment_type === 'installments' || (deal.installments && deal.installments > 1)
       const formulaName = deal.offer || offer.name
       const paymentLabel = isInstallment
-        ? `Mensualite (Paiement en ${deal.installments}x)`
-        : 'Paiement Comptant'
+        ? (lang === 'fr' ? `Mensualite (Paiement en ${deal.installments}x)` : `Installment (Payment in ${deal.installments}x)`)
+        : (lang === 'fr' ? 'Paiement Comptant' : 'Full Payment')
 
       const key = `${formulaName}-${paymentLabel}`
       const fullValue = deal.value || 0
@@ -143,7 +145,7 @@ export function InvoiceGeneratorModal({
     })
 
     return Object.values(groups)
-  }, [deals, offer])
+  }, [deals, offer, lang])
 
   const fixedFeeAmount = offer.hasFixedFee ? parseFloat(offer.fixedFeeAmount || '0') || 0 : 0
   const commissionHT = lineItems.reduce((acc, item) => acc + item.total, 0) + fixedFeeAmount
@@ -158,7 +160,7 @@ export function InvoiceGeneratorModal({
       items.push({
         id: `commission-${i}`,
         description: item.description,
-        subtitle: `Commission sur ${item.count} vente(s)`,
+        subtitle: lang === 'fr' ? `Commission sur ${item.count} vente(s)` : `Commission on ${item.count} sale(s)`,
         count: item.count,
         unitPrice: item.total / item.count,
         section: 'commission',
@@ -168,8 +170,8 @@ export function InvoiceGeneratorModal({
     if (fixedFeeAmount > 0) {
       items.push({
         id: 'fixed-fee',
-        description: 'Fixe',
-        subtitle: 'Remuneration fixe mensuelle',
+        description: lang === 'fr' ? 'Fixe' : 'Fixed',
+        subtitle: lang === 'fr' ? 'Remuneration fixe mensuelle' : 'Monthly fixed compensation',
         count: 1,
         unitPrice: fixedFeeAmount,
         section: 'commission',
@@ -177,7 +179,7 @@ export function InvoiceGeneratorModal({
     }
 
     setEditableItems(items)
-  }, [lineItems, fixedFeeAmount])
+  }, [lineItems, fixedFeeAmount, lang])
 
   const updateItem = (id: string, field: keyof EditableLineItem, value: any) => {
     setEditableItems(prev => prev.map(item =>
@@ -192,7 +194,7 @@ export function InvoiceGeneratorModal({
   const addItem = (section: 'commission' | 'custom') => {
     setEditableItems(prev => [...prev, {
       id: `custom-${Date.now()}`,
-      description: 'Nouvelle ligne',
+      description: lang === 'fr' ? 'Nouvelle ligne' : 'New line',
       subtitle: '',
       count: 1,
       unitPrice: 0,
@@ -210,8 +212,9 @@ export function InvoiceGeneratorModal({
 
   // ---------- FORMAT ----------
 
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
+    new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }).format(amount)
 
   // ---------- DATA LOADING ----------
 
@@ -413,7 +416,7 @@ export function InvoiceGeneratorModal({
   const getPaymentMethodLabel = () => {
     const labels: Record<PaymentMethodType, string> = {
       paypal: 'PayPal',
-      virement: 'Virement Bancaire',
+      virement: lang === 'fr' ? 'Virement Bancaire' : 'Bank Transfer',
       revolut: 'Revolut',
       stripe: 'Stripe',
     }
@@ -424,23 +427,23 @@ export function InvoiceGeneratorModal({
 
   const validateForm = (): boolean => {
     if (commissionHT <= 0) {
-      toast.error('Aucune commission a facturer sur cette periode')
+      toast.error(lang === 'fr' ? 'Aucune commission a facturer sur cette periode' : 'No commission to invoice for this period')
       return false
     }
     if (paymentMethod === 'virement' && (!iban || !bic || !accountHolder) && selectedMethodId === 'custom') {
-      toast.error('Veuillez renseigner tous les champs du virement bancaire')
+      toast.error(lang === 'fr' ? 'Veuillez renseigner tous les champs du virement bancaire' : 'Please fill in all bank transfer fields')
       return false
     }
     if (paymentMethod === 'paypal' && !paypalEmail && selectedMethodId === 'custom') {
-      toast.error('Veuillez renseigner votre email PayPal')
+      toast.error(lang === 'fr' ? 'Veuillez renseigner votre email PayPal' : 'Please enter your PayPal email')
       return false
     }
     if (paymentMethod === 'revolut' && !revtag && selectedMethodId === 'custom') {
-      toast.error('Veuillez renseigner votre Revtag')
+      toast.error(lang === 'fr' ? 'Veuillez renseigner votre Revtag' : 'Please enter your Revtag')
       return false
     }
     if (paymentMethod === 'stripe' && !stripeLink && !useStripePayment && selectedMethodId === 'custom') {
-      toast.error('Veuillez renseigner votre lien de paiement Stripe')
+      toast.error(lang === 'fr' ? 'Veuillez renseigner votre lien de paiement Stripe' : 'Please enter your Stripe payment link')
       return false
     }
     return true
@@ -461,7 +464,7 @@ export function InvoiceGeneratorModal({
           body: JSON.stringify({
             amount: totalTTC,
             currency: 'eur',
-            title: `Facture ${invoiceNumber}`,
+            title: `${lang === 'fr' ? 'Facture' : 'Invoice'} ${invoiceNumber}`,
             connectedAccountId: stripeAccountId,
             clientEmail: offer.billingEmail || undefined,
           }),
@@ -478,18 +481,20 @@ export function InvoiceGeneratorModal({
           setQrCodeUrl(qrDataUrl)
         } else {
           console.error('Erreur Link:', data)
-          toast.error('Erreur lors de la creation du lien Stripe. La facture sera generee sans.')
+          toast.error(lang === 'fr' ? 'Erreur lors de la creation du lien Stripe. La facture sera generee sans.' : 'Error creating Stripe link. The invoice will be generated without it.')
         }
       } catch (e) {
         console.error('Erreur API:', e)
-        toast.error('Impossible de joindre le serveur de paiement.')
+        toast.error(lang === 'fr' ? 'Impossible de joindre le serveur de paiement.' : 'Unable to reach the payment server.')
       } finally {
         setIsGeneratingLink(false)
       }
     }
 
     initEditableItems()
-    setEditablePenaltyText(`En cas de retard de paiement, penalites de retard au taux annuel de ${latePenaltyRate}%.\nIndemnite forfaitaire pour frais de recouvrement : ${formatCurrency(latePenaltyFixed)}.`)
+    setEditablePenaltyText(lang === 'fr'
+      ? `En cas de retard de paiement, penalites de retard au taux annuel de ${latePenaltyRate}%.\nIndemnite forfaitaire pour frais de recouvrement : ${formatCurrency(latePenaltyFixed)}.`
+      : `In case of late payment, late penalties at an annual rate of ${latePenaltyRate}%.\nFixed compensation for recovery costs: ${formatCurrency(latePenaltyFixed)}.`)
     setStep(2)
   }
 
@@ -497,7 +502,7 @@ export function InvoiceGeneratorModal({
 
   const generatePdfBlob = async (): Promise<Blob> => {
     const element = document.getElementById('invoice-preview-content')
-    if (!element) throw new Error('Element de preview introuvable')
+    if (!element) throw new Error(lang === 'fr' ? 'Element de preview introuvable' : 'Preview element not found')
 
     // Temporarily reset zoom and set A4 padding for PDF export
     const prevZoom = element.style.zoom
@@ -557,11 +562,11 @@ export function InvoiceGeneratorModal({
       link.download = `${invoiceNumber}.pdf`
       link.click()
 
-      toast.success('Facture validee et telechargee !')
+      toast.success(lang === 'fr' ? 'Facture validee et telechargee !' : 'Invoice validated and downloaded!')
       onClose()
     } catch (err) {
       console.error('Erreur validation facture:', err)
-      toast.error("Une erreur est survenue lors de la validation.")
+      toast.error(lang === 'fr' ? "Une erreur est survenue lors de la validation." : "An error occurred during validation.")
     } finally {
       setIsValidating(false)
     }
@@ -581,26 +586,31 @@ export function InvoiceGeneratorModal({
         sender: { name: "CloseOS Notification", email: "support@closeos.fr" },
         replyTo: { email: issuerEmail || "support@closeos.fr", name: issuerCompanyName || "CloseOS" },
         to: [{ email: offer.billingEmail, name: offer.billingName || offer.company }],
-        subject: `Votre facture ${invoiceNumber} est disponible`,
+        subject: lang === 'fr' ? `Votre facture ${invoiceNumber} est disponible` : `Your invoice ${invoiceNumber} is available`,
         htmlContent: `
           <html>
             <body>
-              <h1>Bonjour,</h1>
-              <p>Veuillez trouver ci-joint votre facture n&deg; <strong>${invoiceNumber}</strong> correspondant a la periode du ${new Date(startDate).toLocaleDateString('fr-FR')} au ${new Date(endDate).toLocaleDateString('fr-FR')}.</p>
+              <h1>${lang === 'fr' ? 'Bonjour,' : 'Hello,'}</h1>
+              <p>${lang === 'fr'
+                ? `Veuillez trouver ci-joint votre facture n&deg; <strong>${invoiceNumber}</strong> correspondant a la periode du ${new Date(startDate).toLocaleDateString('fr-FR')} au ${new Date(endDate).toLocaleDateString('fr-FR')}.`
+                : `Please find attached your invoice no. <strong>${invoiceNumber}</strong> for the period from ${new Date(startDate).toLocaleDateString('en-US')} to ${new Date(endDate).toLocaleDateString('en-US')}.`
+              }</p>
 
-              <p>Vous pouvez la telecharger directement via ce lien : <br>
-              <a href="${publicUrl}">Telecharger ma facture (PDF)</a></p>
+              <p>${lang === 'fr'
+                ? `Vous pouvez la telecharger directement via ce lien : <br><a href="${publicUrl}">Telecharger ma facture (PDF)</a>`
+                : `You can download it directly via this link: <br><a href="${publicUrl}">Download my invoice (PDF)</a>`
+              }</p>
 
               ${generatedLink ? `
                 <br>
                 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb;">
-                  <p style="margin: 0 0 10px 0;"><strong>Reglement en ligne :</strong></p>
-                  <a href="${generatedLink}" style="background-color: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Payer par Carte Bancaire</a>
+                  <p style="margin: 0 0 10px 0;"><strong>${lang === 'fr' ? 'Reglement en ligne :' : 'Online payment:'}</strong></p>
+                  <a href="${generatedLink}" style="background-color: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">${lang === 'fr' ? 'Payer par Carte Bancaire' : 'Pay by Credit Card'}</a>
                 </div>
               ` : ''}
 
               <br>
-              <p>Cordialement,<br>${issuerCompanyName || "L'equipe"}</p>
+              <p>${lang === 'fr' ? 'Cordialement' : 'Best regards'},<br>${issuerCompanyName || (lang === 'fr' ? "L'equipe" : "The team")}</p>
             </body>
           </html>
         `,
@@ -613,13 +623,13 @@ export function InvoiceGeneratorModal({
         body: JSON.stringify(emailPayload)
       })
 
-      if (!response.ok) throw new Error("Erreur lors de l'envoi de l'email")
+      if (!response.ok) throw new Error(lang === 'fr' ? "Erreur lors de l'envoi de l'email" : "Error sending the email")
 
-      toast.success(`Facture envoyee a ${offer.billingEmail} !`)
+      toast.success(lang === 'fr' ? `Facture envoyee a ${offer.billingEmail} !` : `Invoice sent to ${offer.billingEmail}!`)
       onClose()
     } catch (err) {
       console.error("Erreur envoi email:", err)
-      toast.error("Une erreur est survenue lors de l'envoi de l'email.")
+      toast.error(lang === 'fr' ? "Une erreur est survenue lors de l'envoi de l'email." : "An error occurred while sending the email.")
     } finally {
       setIsSendingEmail(false)
     }
@@ -634,9 +644,9 @@ export function InvoiceGeneratorModal({
     setLatePenaltyFixed(40)
     setEditableItems([])
     setEditableFooterNote('')
-    setEditableInvoiceTitle('FACTURE')
-    setEditableEcheance('A reception')
-    setEditableCustomSectionTitle('Autres')
+    setEditableInvoiceTitle(lang === 'fr' ? 'FACTURE' : 'INVOICE')
+    setEditableEcheance(lang === 'fr' ? 'A reception' : 'Upon receipt')
+    setEditableCustomSectionTitle(lang === 'fr' ? 'Autres' : 'Other')
     setEditablePenaltyText('')
     setGeneratedLink('')
     setQrCodeUrl('')
@@ -672,12 +682,12 @@ export function InvoiceGeneratorModal({
         {/* ==================== STEP 1: CONFIGURATION ==================== */}
         {step === 1 && (
           <div className="p-4 md:p-8">
-            <h2 className="mb-6 text-2xl font-bold text-white">Configuration de la Facture</h2>
+            <h2 className="mb-6 text-2xl font-bold text-white">{lang === 'fr' ? 'Configuration de la Facture' : 'Invoice Configuration'}</h2>
 
             <div className="space-y-6">
               {/* Invoice Number */}
               <div>
-                <label className={labelCls}>Numero de Facture</label>
+                <label className={labelCls}>{lang === 'fr' ? 'Numero de Facture' : 'Invoice Number'}</label>
                 <input
                   type="text"
                   value={invoiceNumber}
@@ -690,13 +700,13 @@ export function InvoiceGeneratorModal({
               {/* Saved Issuer Profiles */}
               {savedProfiles.length > 0 && (
                 <div>
-                  <label className={labelCls}>Profil Emetteur Enregistre</label>
+                  <label className={labelCls}>{lang === 'fr' ? 'Profil Emetteur Enregistre' : 'Saved Issuer Profile'}</label>
                   <select
                     value={selectedProfileId}
                     onChange={(e) => handleProfileSelect(e.target.value)}
                     className={inputCls}
                   >
-                    <option value="custom">Saisie manuelle...</option>
+                    <option value="custom">{lang === 'fr' ? 'Saisie manuelle...' : 'Manual entry...'}</option>
                     {savedProfiles.map(profile => (
                       <option key={profile.id} value={profile.id}>
                         {profile.name} - {profile.companyName}
@@ -710,26 +720,26 @@ export function InvoiceGeneratorModal({
               {selectedProfileId === 'custom' && (
                 <div className="space-y-3">
                   <div>
-                    <label className={labelCls}>Nom / Raison Sociale de l'Emetteur</label>
-                    <input type="text" value={issuerCompanyName} onChange={(e) => setIssuerCompanyName(e.target.value)} className={inputCls} placeholder="Ex: ACME SARL, Jean Dupont EI..." />
+                    <label className={labelCls}>{lang === 'fr' ? "Nom / Raison Sociale de l'Emetteur" : 'Issuer Name / Company Name'}</label>
+                    <input type="text" value={issuerCompanyName} onChange={(e) => setIssuerCompanyName(e.target.value)} className={inputCls} placeholder={lang === 'fr' ? "Ex: ACME SARL, Jean Dupont EI..." : "E.g.: ACME Ltd, John Doe..."} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={labelCls}>Adresse</label>
-                      <input type="text" value={issuerAddress} onChange={(e) => setIssuerAddress(e.target.value)} className={inputCls} placeholder="123 Rue de la Paix" />
+                      <label className={labelCls}>{lang === 'fr' ? 'Adresse' : 'Address'}</label>
+                      <input type="text" value={issuerAddress} onChange={(e) => setIssuerAddress(e.target.value)} className={inputCls} placeholder={lang === 'fr' ? "123 Rue de la Paix" : "123 Main Street"} />
                     </div>
                     <div>
-                      <label className={labelCls}>Ville</label>
+                      <label className={labelCls}>{lang === 'fr' ? 'Ville' : 'City'}</label>
                       <input type="text" value={issuerCity} onChange={(e) => setIssuerCity(e.target.value)} className={inputCls} placeholder="Paris" />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className={labelCls}>Code Postal</label>
+                      <label className={labelCls}>{lang === 'fr' ? 'Code Postal' : 'Zip Code'}</label>
                       <input type="text" value={issuerZip} onChange={(e) => setIssuerZip(e.target.value)} className={inputCls} placeholder="75001" />
                     </div>
                     <div>
-                      <label className={labelCls}>Pays</label>
+                      <label className={labelCls}>{lang === 'fr' ? 'Pays' : 'Country'}</label>
                       <input type="text" value={issuerCountry} onChange={(e) => setIssuerCountry(e.target.value)} className={inputCls} placeholder="France" />
                     </div>
                     <div>
@@ -743,7 +753,7 @@ export function InvoiceGeneratorModal({
                       <input type="email" value={issuerEmail} onChange={(e) => setIssuerEmail(e.target.value)} className={inputCls} placeholder="contact@entreprise.com" />
                     </div>
                     <div>
-                      <label className={labelCls}>Telephone</label>
+                      <label className={labelCls}>{lang === 'fr' ? 'Telephone' : 'Phone'}</label>
                       <input type="tel" value={issuerPhone} onChange={(e) => setIssuerPhone(e.target.value)} className={inputCls} placeholder="+33 1 23 45 67 89" />
                     </div>
                   </div>
@@ -754,22 +764,22 @@ export function InvoiceGeneratorModal({
               <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Download className="h-4 w-4 text-purple-400" />
-                  Moyen de paiement principal
+                  {lang === 'fr' ? 'Moyen de paiement principal' : 'Primary payment method'}
                 </h3>
 
                 {savedMethods.length > 0 && (
                   <select value={selectedMethodId} onChange={(e) => handleMethodSelect(e.target.value)} className={inputCls}>
-                    <option value="custom">Saisie manuelle...</option>
+                    <option value="custom">{lang === 'fr' ? 'Saisie manuelle...' : 'Manual entry...'}</option>
                     {savedMethods.map(m => <option key={m.id} value={m.id}>{m.name} ({m.type})</option>)}
                   </select>
                 )}
 
                 {selectedMethodId === 'custom' && (
                   <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethodType)} className={inputCls}>
-                    <option value="virement">Virement Bancaire</option>
+                    <option value="virement">{lang === 'fr' ? 'Virement Bancaire' : 'Bank Transfer'}</option>
                     <option value="paypal">PayPal</option>
                     <option value="revolut">Revolut</option>
-                    <option value="stripe">Autre lien manuel</option>
+                    <option value="stripe">{lang === 'fr' ? 'Autre lien manuel' : 'Other manual link'}</option>
                   </select>
                 )}
 
@@ -778,12 +788,12 @@ export function InvoiceGeneratorModal({
                   <div className="grid grid-cols-2 gap-3">
                     <input type="text" value={iban} onChange={(e) => setIban(e.target.value)} placeholder="IBAN" className={cn(inputCls, 'col-span-2')} />
                     <input type="text" value={bic} onChange={(e) => setBic(e.target.value)} placeholder="BIC" className={inputCls} />
-                    <input type="text" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} placeholder="Titulaire" className={inputCls} />
+                    <input type="text" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} placeholder={lang === 'fr' ? "Titulaire" : "Account Holder"} className={inputCls} />
                   </div>
                 )}
                 {paymentMethod === 'paypal' && <input type="email" value={paypalEmail} onChange={(e) => setPaypalEmail(e.target.value)} placeholder="Email PayPal" className={inputCls} />}
                 {paymentMethod === 'revolut' && <input type="text" value={revtag} onChange={(e) => setRevtag(e.target.value)} placeholder="Revtag" className={inputCls} />}
-                {paymentMethod === 'stripe' && <input type="text" value={stripeLink} onChange={(e) => setStripeLink(e.target.value)} placeholder="Lien Stripe" className={inputCls} />}
+                {paymentMethod === 'stripe' && <input type="text" value={stripeLink} onChange={(e) => setStripeLink(e.target.value)} placeholder={lang === 'fr' ? "Lien Stripe" : "Stripe Link"} className={inputCls} />}
               </div>
 
               {/* Stripe Connect Toggle */}
@@ -802,11 +812,11 @@ export function InvoiceGeneratorModal({
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 text-sm font-bold text-white">
-                        Service de reglement en ligne (Stripe)
-                        <span className="rounded bg-indigo-500 px-1.5 py-0.5 text-[10px] uppercase text-white font-bold">Recommande</span>
+                        {lang === 'fr' ? 'Service de reglement en ligne (Stripe)' : 'Online payment service (Stripe)'}
+                        <span className="rounded bg-indigo-500 px-1.5 py-0.5 text-[10px] uppercase text-white font-bold">{lang === 'fr' ? 'Recommande' : 'Recommended'}</span>
                       </div>
                       <p className="mt-1 text-xs text-indigo-200">
-                        Ajoute un bouton de paiement securise + QR Code sur la facture pour se faire payer par CB instantanement.
+                        {lang === 'fr' ? 'Ajoute un bouton de paiement securise + QR Code sur la facture pour se faire payer par CB instantanement.' : 'Adds a secure payment button + QR Code on the invoice to get paid by card instantly.'}
                       </p>
                     </div>
                   </label>
@@ -827,9 +837,9 @@ export function InvoiceGeneratorModal({
                     <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-semibold text-white">TVA Applicable ?</div>
+                    <div className="text-sm font-semibold text-white">{lang === 'fr' ? 'TVA Applicable ?' : 'VAT Applicable?'}</div>
                     <div className="mt-1 text-xs text-white/40">
-                      Ajouter 20% de TVA au montant de la commission
+                      {lang === 'fr' ? 'Ajouter 20% de TVA au montant de la commission' : 'Add 20% VAT to the commission amount'}
                     </div>
                   </div>
                 </label>
@@ -838,11 +848,11 @@ export function InvoiceGeneratorModal({
               {/* Late Payment Penalties */}
               <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">
-                  Penalites de retard
+                  {lang === 'fr' ? 'Penalites de retard' : 'Late payment penalties'}
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelCls}>Taux annuel (%)</label>
+                    <label className={labelCls}>{lang === 'fr' ? 'Taux annuel (%)' : 'Annual rate (%)'}</label>
                     <input
                       type="number"
                       step="0.1"
@@ -853,7 +863,7 @@ export function InvoiceGeneratorModal({
                     />
                   </div>
                   <div>
-                    <label className={labelCls}>Indemnite forfaitaire (EUR)</label>
+                    <label className={labelCls}>{lang === 'fr' ? 'Indemnite forfaitaire (EUR)' : 'Fixed compensation (EUR)'}</label>
                     <input
                       type="number"
                       step="1"
@@ -876,10 +886,10 @@ export function InvoiceGeneratorModal({
                 {isGeneratingLink ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Generation du lien Stripe...
+                    {lang === 'fr' ? 'Generation du lien Stripe...' : 'Generating Stripe link...'}
                   </>
                 ) : (
-                  'Previsualiser la facture'
+                  lang === 'fr' ? 'Previsualiser la facture' : 'Preview invoice'
                 )}
               </button>
             </div>
@@ -896,7 +906,7 @@ export function InvoiceGeneratorModal({
                 className="flex items-center gap-2 rounded-full border border-white/[0.08] px-4 py-2 text-sm font-semibold text-white/60 hover:bg-white/10 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Retour
+                {lang === 'fr' ? 'Retour' : 'Back'}
               </button>
 
               <div className="flex items-center gap-3">
@@ -910,10 +920,10 @@ export function InvoiceGeneratorModal({
                       ? 'bg-white/[0.03] border-white/[0.08] text-white/40 cursor-not-allowed'
                       : 'bg-indigo-500 border-indigo-500 hover:bg-indigo-600'
                   )}
-                  title={!offer.billingEmail ? "Aucun email client renseigne" : "Envoyer la facture par mail"}
+                  title={!offer.billingEmail ? (lang === 'fr' ? "Aucun email client renseigne" : "No client email provided") : (lang === 'fr' ? "Envoyer la facture par mail" : "Send invoice by email")}
                 >
                   {isSendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                  {isSendingEmail ? 'Envoi...' : 'Envoyer par mail'}
+                  {isSendingEmail ? (lang === 'fr' ? 'Envoi...' : 'Sending...') : (lang === 'fr' ? 'Envoyer par mail' : 'Send by email')}
                 </button>
 
                 {/* Validate button */}
@@ -923,7 +933,7 @@ export function InvoiceGeneratorModal({
                   className="flex items-center gap-2 bg-emerald-500 text-black rounded-full px-8 py-2.5 font-bold hover:bg-emerald-400 transition-colors disabled:opacity-50"
                 >
                   {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  {isValidating ? 'Validation...' : 'Valider la facture'}
+                  {isValidating ? (lang === 'fr' ? 'Validation...' : 'Validating...') : (lang === 'fr' ? 'Valider la facture' : 'Validate invoice')}
                 </button>
               </div>
             </div>
@@ -934,22 +944,22 @@ export function InvoiceGeneratorModal({
               <div className="w-full md:w-[340px] shrink-0 md:border-r border-b md:border-b-0 border-white/[0.08] overflow-y-auto p-4 space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
                   <Pencil className="h-3.5 w-3.5" />
-                  Modifier la facture
+                  {lang === 'fr' ? 'Modifier la facture' : 'Edit invoice'}
                 </h3>
 
                 {/* Title & Invoice number */}
                 <div className="space-y-3">
                   <div>
-                    <label className={labelCls}>Titre du document</label>
+                    <label className={labelCls}>{lang === 'fr' ? 'Titre du document' : 'Document title'}</label>
                     <input type="text" value={editableInvoiceTitle} onChange={e => setEditableInvoiceTitle(e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className={labelCls}>Numero de facture</label>
+                    <label className={labelCls}>{lang === 'fr' ? 'Numero de facture' : 'Invoice number'}</label>
                     <input type="text" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className={inputCls} />
                   </div>
                   <div>
-                    <label className={labelCls}>Echeance</label>
-                    <input type="text" value={editableEcheance} onChange={e => setEditableEcheance(e.target.value)} className={inputCls} placeholder="A reception" />
+                    <label className={labelCls}>{lang === 'fr' ? 'Echeance' : 'Due date'}</label>
+                    <input type="text" value={editableEcheance} onChange={e => setEditableEcheance(e.target.value)} className={inputCls} placeholder={lang === 'fr' ? "A reception" : "Upon receipt"} />
                   </div>
                 </div>
 
@@ -957,7 +967,7 @@ export function InvoiceGeneratorModal({
                 {editableCommissionItems.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-bold uppercase tracking-widest text-purple-400">
-                      Lignes Commission
+                      {lang === 'fr' ? 'Lignes Commission' : 'Commission Lines'}
                     </p>
                     {editableCommissionItems.map(item => (
                       <div key={item.id} className="rounded-lg border border-white/[0.08] bg-white/[0.03] p-3 space-y-2">
@@ -978,11 +988,11 @@ export function InvoiceGeneratorModal({
                           value={item.subtitle}
                           onChange={e => updateItem(item.id, 'subtitle', e.target.value)}
                           className={cn(inputCls, 'text-xs')}
-                          placeholder="Sous-titre / description (optionnel)"
+                          placeholder={lang === 'fr' ? "Sous-titre / description (optionnel)" : "Subtitle / description (optional)"}
                         />
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-[10px] text-white/40">Qte</label>
+                            <label className="text-[10px] text-white/40">{lang === 'fr' ? 'Qte' : 'Qty'}</label>
                             <input
                               type="number"
                               min={1}
@@ -992,7 +1002,7 @@ export function InvoiceGeneratorModal({
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-white/40">Prix unitaire (EUR)</label>
+                            <label className="text-[10px] text-white/40">{lang === 'fr' ? 'Prix unitaire (EUR)' : 'Unit price (EUR)'}</label>
                             <input
                               type="number"
                               step="0.01"
@@ -1004,7 +1014,7 @@ export function InvoiceGeneratorModal({
                           </div>
                         </div>
                         <p className="text-[10px] text-right text-white/40 font-medium">
-                          Total: {formatCurrency(item.count * item.unitPrice)}
+                          {lang === 'fr' ? 'Total' : 'Total'}: {formatCurrency(item.count * item.unitPrice)}
                         </p>
                       </div>
                     ))}
@@ -1012,7 +1022,7 @@ export function InvoiceGeneratorModal({
                       onClick={() => addItem('commission')}
                       className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-purple-500/30 text-purple-400 text-xs font-medium py-2 hover:bg-purple-500/5 transition-colors"
                     >
-                      <Plus className="h-3.5 w-3.5" /> Ajouter une ligne
+                      <Plus className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Ajouter une ligne' : 'Add a line'}
                     </button>
                   </div>
                 )}
@@ -1025,7 +1035,7 @@ export function InvoiceGeneratorModal({
                       value={editableCustomSectionTitle}
                       onChange={e => setEditableCustomSectionTitle(e.target.value)}
                       className="text-xs font-bold uppercase tracking-widest text-white/40 bg-transparent border-b border-dashed border-white/[0.08] focus:border-emerald-500 outline-none pb-1 w-full"
-                      placeholder="Titre de la section"
+                      placeholder={lang === 'fr' ? "Titre de la section" : "Section title"}
                     />
                   )}
                   {editableCustomItems.map(item => (
@@ -1047,11 +1057,11 @@ export function InvoiceGeneratorModal({
                         value={item.subtitle}
                         onChange={e => updateItem(item.id, 'subtitle', e.target.value)}
                         className={cn(inputCls, 'text-xs')}
-                        placeholder="Sous-titre / description (optionnel)"
+                        placeholder={lang === 'fr' ? "Sous-titre / description (optionnel)" : "Subtitle / description (optional)"}
                       />
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[10px] text-white/40">Qte</label>
+                          <label className="text-[10px] text-white/40">{lang === 'fr' ? 'Qte' : 'Qty'}</label>
                           <input
                             type="number"
                             min={1}
@@ -1061,7 +1071,7 @@ export function InvoiceGeneratorModal({
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-white/40">Prix unitaire (EUR)</label>
+                          <label className="text-[10px] text-white/40">{lang === 'fr' ? 'Prix unitaire (EUR)' : 'Unit price (EUR)'}</label>
                           <input
                             type="number"
                             step="0.01"
@@ -1073,7 +1083,7 @@ export function InvoiceGeneratorModal({
                         </div>
                       </div>
                       <p className="text-[10px] text-right text-white/40 font-medium">
-                        Total: {formatCurrency(item.count * item.unitPrice)}
+                        {lang === 'fr' ? 'Total' : 'Total'}: {formatCurrency(item.count * item.unitPrice)}
                       </p>
                     </div>
                   ))}
@@ -1081,7 +1091,7 @@ export function InvoiceGeneratorModal({
                     onClick={() => addItem('custom')}
                     className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/[0.08] text-white/40 text-xs font-medium py-2 hover:bg-white/10 transition-colors"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Ajouter un produit
+                    <Plus className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Ajouter un produit' : 'Add a product'}
                   </button>
                 </div>
 
@@ -1100,7 +1110,7 @@ export function InvoiceGeneratorModal({
                         <div className="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition-transform peer-checked:translate-x-4"></div>
                       </div>
                       <span className="text-xs font-medium text-white">
-                        Afficher le paiement Stripe sur la facture
+                        {lang === 'fr' ? 'Afficher le paiement Stripe sur la facture' : 'Show Stripe payment on invoice'}
                       </span>
                     </label>
                   </div>
@@ -1108,42 +1118,42 @@ export function InvoiceGeneratorModal({
 
                 {/* Late penalty text */}
                 <div>
-                  <label className={labelCls}>Mentions penalites de retard</label>
+                  <label className={labelCls}>{lang === 'fr' ? 'Mentions penalites de retard' : 'Late penalty terms'}</label>
                   <textarea
                     value={editablePenaltyText}
                     onChange={e => setEditablePenaltyText(e.target.value)}
                     rows={3}
                     className={cn(inputCls, 'resize-none text-xs')}
-                    placeholder="Ex: En cas de retard de paiement..."
+                    placeholder={lang === 'fr' ? "Ex: En cas de retard de paiement..." : "E.g.: In case of late payment..."}
                   />
                 </div>
 
                 {/* Note / Footer */}
                 <div>
-                  <label className={labelCls}>Note libre (bas de facture)</label>
+                  <label className={labelCls}>{lang === 'fr' ? 'Note libre (bas de facture)' : 'Free note (invoice footer)'}</label>
                   <textarea
                     value={editableFooterNote}
                     onChange={e => setEditableFooterNote(e.target.value)}
                     rows={3}
                     className={cn(inputCls, 'resize-none')}
-                    placeholder="Ajouter une note, un commentaire..."
+                    placeholder={lang === 'fr' ? "Ajouter une note, un commentaire..." : "Add a note, a comment..."}
                   />
                 </div>
 
                 {/* Totals summary */}
                 <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4 space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/40">Total HT</span>
+                    <span className="text-white/40">{lang === 'fr' ? 'Total HT' : 'Total excl. tax'}</span>
                     <span className="font-bold text-white">{formatCurrency(editableTotalHT)}</span>
                   </div>
                   {tvaApplicable && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-white/40">TVA (20%)</span>
+                      <span className="text-white/40">{lang === 'fr' ? 'TVA (20%)' : 'VAT (20%)'}</span>
                       <span className="font-bold text-white">{formatCurrency(editableTvaAmount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-base pt-1 border-t border-purple-500/20">
-                    <span className="font-bold text-white">Total {tvaApplicable ? 'TTC' : ''}</span>
+                    <span className="font-bold text-white">{lang === 'fr' ? `Total ${tvaApplicable ? 'TTC' : ''}` : `Total ${tvaApplicable ? 'incl. tax' : ''}`}</span>
                     <span className="font-bold text-purple-400">{formatCurrency(editableTotalTTC)}</span>
                   </div>
                 </div>
@@ -1172,7 +1182,7 @@ export function InvoiceGeneratorModal({
                       <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>{editableInvoiceTitle}</h1>
                       <div style={{ textAlign: 'right' }}>
                         <p style={{ fontSize: '0.875rem', color: '#475569', margin: 0 }}>
-                          {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          {new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })}
                         </p>
                       </div>
                     </div>
@@ -1180,16 +1190,16 @@ export function InvoiceGeneratorModal({
                     {/* Invoice Number */}
                     <div style={{ fontSize: '0.875rem', color: '#334155', marginTop: '0.5rem', marginBottom: '2rem' }}>
                       <p style={{ margin: 0 }}>
-                        <span style={{ fontWeight: 600 }}>Numero de facture:</span> {invoiceNumber}
+                        <span style={{ fontWeight: 600 }}>{lang === 'fr' ? 'Numero de facture:' : 'Invoice number:'}</span> {invoiceNumber}
                       </p>
                     </div>
 
                     {/* Emetteur / Destinataire */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                       <div>
-                        <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>Emetteur</p>
+                        <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>{lang === 'fr' ? 'Emetteur' : 'Issuer'}</p>
                         <div style={{ fontSize: '0.875rem', color: '#0f172a' }}>
-                          <p style={{ fontWeight: 700, margin: '0 0 0.25rem 0' }}>{issuerCompanyName || issuerName || 'Emetteur'}</p>
+                          <p style={{ fontWeight: 700, margin: '0 0 0.25rem 0' }}>{issuerCompanyName || issuerName || (lang === 'fr' ? 'Emetteur' : 'Issuer')}</p>
                           {(issuerAddress || issuerCity || issuerZip || issuerCountry) && (
                             <div style={{ color: '#334155', marginBottom: '0.25rem' }}>
                               {issuerAddress && <p style={{ margin: 0 }}>{issuerAddress}</p>}
@@ -1203,7 +1213,7 @@ export function InvoiceGeneratorModal({
                         </div>
                       </div>
                       <div>
-                        <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>Destinataire</p>
+                        <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '0.5rem' }}>{lang === 'fr' ? 'Destinataire' : 'Recipient'}</p>
                         <div style={{ fontSize: '0.875rem', color: '#0f172a' }}>
                           <p style={{ fontWeight: 700, margin: '0 0 0.25rem 0' }}>{offer.billingName || offer.company}</p>
                           <p style={{ fontWeight: 500, color: '#334155', margin: '0 0 0.25rem 0' }}>{offer.name}</p>
@@ -1224,8 +1234,10 @@ export function InvoiceGeneratorModal({
                     {/* Period */}
                     <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem', marginBottom: '2rem' }}>
                       <p style={{ fontSize: '0.875rem', color: '#334155', margin: 0 }}>
-                        <span style={{ fontWeight: 600 }}>Periode:</span>{' '}
-                        Du {new Date(startDate).toLocaleDateString('fr-FR')} au {new Date(endDate).toLocaleDateString('fr-FR')}
+                        <span style={{ fontWeight: 600 }}>{lang === 'fr' ? 'Periode:' : 'Period:'}</span>{' '}
+                        {lang === 'fr'
+                          ? `Du ${new Date(startDate).toLocaleDateString('fr-FR')} au ${new Date(endDate).toLocaleDateString('fr-FR')}`
+                          : `From ${new Date(startDate).toLocaleDateString('en-US')} to ${new Date(endDate).toLocaleDateString('en-US')}`}
                       </p>
                     </div>
 
@@ -1239,9 +1251,9 @@ export function InvoiceGeneratorModal({
                           <thead>
                             <tr style={{ borderBottom: '2px solid #0f172a', backgroundColor: '#f8fafc' }}>
                               <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Description</th>
-                              <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Qte</th>
-                              <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Prix Unitaire</th>
-                              <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Total HT</th>
+                              <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{lang === 'fr' ? 'Qte' : 'Qty'}</th>
+                              <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{lang === 'fr' ? 'Prix Unitaire' : 'Unit Price'}</th>
+                              <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{lang === 'fr' ? 'Total HT' : 'Total excl. tax'}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1271,9 +1283,9 @@ export function InvoiceGeneratorModal({
                           <thead>
                             <tr style={{ borderBottom: '2px solid #0f172a', backgroundColor: '#f8fafc' }}>
                               <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Description</th>
-                              <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Qte</th>
-                              <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Prix Unitaire</th>
-                              <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>Total HT</th>
+                              <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{lang === 'fr' ? 'Qte' : 'Qty'}</th>
+                              <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{lang === 'fr' ? 'Prix Unitaire' : 'Unit Price'}</th>
+                              <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600, color: '#334155' }}>{lang === 'fr' ? 'Total HT' : 'Total excl. tax'}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1297,17 +1309,17 @@ export function InvoiceGeneratorModal({
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
                       <div style={{ width: '20rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-                          <span style={{ color: '#334155' }}>Total HT</span>
+                          <span style={{ color: '#334155' }}>{lang === 'fr' ? 'Total HT' : 'Total excl. tax'}</span>
                           <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatCurrency(editableTotalHT)}</span>
                         </div>
                         {tvaApplicable && (
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-                            <span style={{ color: '#334155' }}>TVA (20%)</span>
+                            <span style={{ color: '#334155' }}>{lang === 'fr' ? 'TVA (20%)' : 'VAT (20%)'}</span>
                             <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatCurrency(editableTvaAmount)}</span>
                           </div>
                         )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid #0f172a', paddingTop: '0.5rem', fontSize: '1.125rem' }}>
-                          <span style={{ fontWeight: 700, color: '#0f172a' }}>Total {tvaApplicable ? 'TTC' : ''}</span>
+                          <span style={{ fontWeight: 700, color: '#0f172a' }}>{lang === 'fr' ? `Total ${tvaApplicable ? 'TTC' : ''}` : `Total ${tvaApplicable ? 'incl. tax' : ''}`}</span>
                           <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatCurrency(editableTotalTTC)}</span>
                         </div>
                       </div>
@@ -1320,23 +1332,23 @@ export function InvoiceGeneratorModal({
                       {/* Left - Payment info */}
                       <div style={{ maxWidth: '50%' }}>
                         <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a', marginBottom: '0.75rem' }}>
-                          Conditions de reglement
+                          {lang === 'fr' ? 'Conditions de reglement' : 'Payment terms'}
                         </p>
                         <div style={{ fontSize: '0.875rem', color: '#334155' }}>
                           <p style={{ margin: '0.25rem 0' }}>
-                            <span style={{ fontWeight: 500 }}>Echeance:</span> {editableEcheance}
+                            <span style={{ fontWeight: 500 }}>{lang === 'fr' ? 'Echeance:' : 'Due date:'}</span> {editableEcheance}
                           </p>
                           <p style={{ margin: '0.25rem 0' }}>
-                            <span style={{ fontWeight: 500 }}>Mode de reglement:</span> {getPaymentMethodLabel()}
+                            <span style={{ fontWeight: 500 }}>{lang === 'fr' ? 'Mode de reglement:' : 'Payment method:'}</span> {getPaymentMethodLabel()}
                           </p>
 
                           {paymentMethod === 'virement' && (
                             <div style={{ marginTop: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '0.375rem', backgroundColor: '#f8fafc', padding: '0.75rem' }}>
-                              <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#475569', marginBottom: '0.5rem' }}>Coordonnees bancaires</p>
+                              <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: '#475569', marginBottom: '0.5rem' }}>{lang === 'fr' ? 'Coordonnees bancaires' : 'Bank details'}</p>
                               <div style={{ fontSize: '0.75rem' }}>
                                 <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>IBAN:</span> {iban}</p>
                                 <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>BIC:</span> {bic}</p>
-                                <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>Titulaire:</span> {accountHolder}</p>
+                                <p style={{ margin: '0.125rem 0' }}><span style={{ fontWeight: 500 }}>{lang === 'fr' ? 'Titulaire:' : 'Account holder:'}</span> {accountHolder}</p>
                               </div>
                             </div>
                           )}
@@ -1344,7 +1356,7 @@ export function InvoiceGeneratorModal({
                           {paymentMethod === 'revolut' && <p style={{ margin: '0.25rem 0' }}><span style={{ fontWeight: 500 }}>Revolut:</span> {revtag}</p>}
                           {paymentMethod === 'stripe' && stripeLink && (
                             <p style={{ margin: '0.25rem 0', wordBreak: 'break-all' }}>
-                              <span style={{ fontWeight: 500 }}>Lien Stripe:</span>{' '}
+                              <span style={{ fontWeight: 500 }}>{lang === 'fr' ? 'Lien Stripe:' : 'Stripe Link:'}</span>{' '}
                               <a href={stripeLink} style={{ color: '#2563eb', textDecoration: 'underline' }}>{stripeLink}</a>
                             </p>
                           )}
@@ -1352,7 +1364,7 @@ export function InvoiceGeneratorModal({
                           {!tvaApplicable && (
                             <div style={{ marginTop: '1rem', borderLeft: '4px solid #a855f7', backgroundColor: '#faf5ff', padding: '0.75rem', borderRadius: '0.25rem' }}>
                               <p style={{ fontSize: '0.75rem', fontWeight: 600, fontStyle: 'italic', color: '#0f172a', margin: 0 }}>
-                                TVA non applicable, art. 293 B du CGI
+                                {lang === 'fr' ? 'TVA non applicable, art. 293 B du CGI' : 'VAT not applicable, art. 293 B of the French Tax Code'}
                               </p>
                             </div>
                           )}
@@ -1369,9 +1381,9 @@ export function InvoiceGeneratorModal({
                       {showStripeOnInvoice && generatedLink && qrCodeUrl && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
                           <div style={{ textAlign: 'right' }}>
-                            <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.25rem' }}>Payer en ligne</p>
+                            <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.25rem' }}>{lang === 'fr' ? 'Payer en ligne' : 'Pay online'}</p>
                             <p style={{ fontSize: '0.625rem', color: '#94a3b8', marginBottom: '0.5rem', maxWidth: '120px' }}>
-                              Scannez pour regler par CB instantanement
+                              {lang === 'fr' ? 'Scannez pour regler par CB instantanement' : 'Scan to pay by card instantly'}
                             </p>
                             <a
                               href={generatedLink}
@@ -1388,10 +1400,10 @@ export function InvoiceGeneratorModal({
                                 textDecoration: 'none',
                               }}
                             >
-                              Payer maintenant &rarr;
+                              {lang === 'fr' ? 'Payer maintenant' : 'Pay now'} &rarr;
                             </a>
                           </div>
-                          <img src={qrCodeUrl} alt="QR Code Paiement" style={{ width: '80px', height: '80px' }} />
+                          <img src={qrCodeUrl} alt={lang === 'fr' ? "QR Code Paiement" : "Payment QR Code"} style={{ width: '80px', height: '80px' }} />
                         </div>
                       )}
                     </div>
@@ -1405,7 +1417,7 @@ export function InvoiceGeneratorModal({
 
                     <div style={{ marginTop: '2rem', textAlign: 'center' }}>
                       <p style={{ fontSize: '0.625rem', color: '#94a3b8', margin: 0 }}>
-                        Facture generee automatiquement par CloseOS
+                        {lang === 'fr' ? 'Facture generee automatiquement par CloseOS' : 'Invoice automatically generated by CloseOS'}
                       </p>
                     </div>
                   </div>

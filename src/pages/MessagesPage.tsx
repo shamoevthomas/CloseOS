@@ -10,10 +10,15 @@ import {
 import { cn } from '../lib/utils'
 import { useMessages } from '../contexts/MessagesContext'
 import { useInternalContacts } from '../contexts/InternalContactsContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { messagesTranslations } from '../i18n/translations'
 
 export function MessagesPage() {
   const { threads, sendMessage, createThread, markAsRead } = useMessages()
   const { contacts } = useInternalContacts()
+  const { lang } = useLanguage()
+  const t = messagesTranslations[lang]
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null)
@@ -94,17 +99,17 @@ export function MessagesPage() {
     const diffHours = Math.floor(diffMins / 60)
     const diffDays = Math.floor(diffHours / 24)
 
-    if (diffMins < 1) return 'À l\'instant'
+    if (diffMins < 1) return lang === 'fr' ? 'À l\'instant' : 'Just now'
     if (diffMins < 60) return `${diffMins}m`
     if (diffHours < 24) return `${diffHours}h`
-    if (diffDays === 1) return 'Hier'
-    if (diffDays < 7) return `${diffDays}j`
-    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    if (diffDays === 1) return t.yesterday
+    if (diffDays < 7) return `${diffDays}${lang === 'fr' ? 'j' : 'd'}`
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
   }
 
   const formatMessageTime = (timestamp: string) => {
     const date = new Date(timestamp)
-    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   }
 
   return (
@@ -118,7 +123,7 @@ export function MessagesPage() {
         {/* Header */}
         <div className="p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-extrabold tracking-tight text-white">Messages</h2>
+            <h2 className="text-xl font-extrabold tracking-tight text-white">{t.title}</h2>
             <button
               onClick={() => setIsNewChatModalOpen(true)}
               className="rounded-full bg-emerald-500 p-2 text-black transition-all duration-300 hover:bg-emerald-400"
@@ -134,7 +139,7 @@ export function MessagesPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher..."
+              placeholder={t.search}
               className="w-full rounded-xl border-[0.5px] border-white/[0.08] bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all duration-300"
             />
           </div>
@@ -182,7 +187,7 @@ export function MessagesPage() {
                       </div>
                       <div className="mt-1 flex items-center justify-between gap-2">
                         <p className="text-xs text-white/40 truncate">
-                          {thread.lastMessage || 'Nouvelle conversation'}
+                          {thread.lastMessage || t.new_conversation}
                         </p>
                         {thread.unreadCount > 0 && (
                           <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-black">
@@ -198,7 +203,7 @@ export function MessagesPage() {
           ) : (
             <div className="py-12 text-center">
               <MessageSquare className="mx-auto h-12 w-12 text-white/10" />
-              <p className="mt-4 text-sm font-medium text-white/40">Aucune conversation</p>
+              <p className="mt-4 text-sm font-medium text-white/40">{t.no_messages}</p>
             </div>
           )}
         </div>
@@ -268,7 +273,7 @@ export function MessagesPage() {
                   <div className="text-center">
                     <MessageSquare className="mx-auto h-12 w-12 text-white/10" />
                     <p className="mt-4 text-sm font-medium text-white/40">
-                      Commencez une conversation
+                      {lang === 'fr' ? 'Commencez une conversation' : 'Start a conversation'}
                     </p>
                   </div>
                 </div>
@@ -291,7 +296,7 @@ export function MessagesPage() {
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Ecrivez votre message..."
+                  placeholder={t.type_message}
                   className="flex-1 bg-transparent px-2 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none"
                 />
 
@@ -314,10 +319,10 @@ export function MessagesPage() {
                 <MessageSquare className="h-10 w-10 text-white/10" />
               </div>
               <h3 className="text-lg font-extrabold tracking-tight text-white">
-                Selectionnez une conversation
+                {lang === 'fr' ? 'Selectionnez une conversation' : 'Select a conversation'}
               </h3>
               <p className="mt-2 text-sm text-white/40">
-                Choisissez un contact pour commencer a discuter
+                {lang === 'fr' ? 'Choisissez un contact pour commencer a discuter' : 'Choose a contact to start chatting'}
               </p>
             </div>
           </div>
@@ -338,8 +343,8 @@ export function MessagesPage() {
             {/* Header */}
             <div className="bg-white/5 px-8 py-4 border-b border-white/5 flex items-start justify-between">
               <div>
-                <h2 className="text-sm font-bold uppercase tracking-wider text-white/60">Nouvelle conversation</h2>
-                <p className="mt-1 text-xs text-white/30">Selectionnez un contact</p>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-white/60">{t.new_conversation}</h2>
+                <p className="mt-1 text-xs text-white/30">{lang === 'fr' ? 'Selectionnez un contact' : 'Select a contact'}</p>
               </div>
               <button
                 onClick={() => setIsNewChatModalOpen(false)}
@@ -357,7 +362,7 @@ export function MessagesPage() {
                   type="text"
                   value={newChatSearch}
                   onChange={(e) => setNewChatSearch(e.target.value)}
-                  placeholder="Rechercher un contact..."
+                  placeholder={lang === 'fr' ? 'Rechercher un contact...' : 'Search a contact...'}
                   className="w-full rounded-xl border-[0.5px] border-white/[0.08] bg-white/[0.03] py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all duration-300"
                 />
               </div>
@@ -390,7 +395,7 @@ export function MessagesPage() {
                     </button>
                   ))
                 ) : (
-                  <p className="py-8 text-center text-sm text-white/40">Aucun contact trouve</p>
+                  <p className="py-8 text-center text-sm text-white/40">{lang === 'fr' ? 'Aucun contact trouve' : 'No contact found'}</p>
                 )}
               </div>
             </div>

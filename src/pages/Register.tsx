@@ -4,10 +4,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useLanguage } from '../contexts/LanguageContext';
+import { registerTranslations } from '../i18n/translations';
 
 export default function Register() {
   const navigate = useNavigate();
   const { register, loginWithGoogle } = useAuth(); // On récupère register et loginWithGoogle
+  const { lang } = useLanguage();
+  const t = registerTranslations[lang];
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,16 +38,19 @@ export default function Register() {
         .maybeSingle();
 
       if (businessUser || businessTeam) {
-        setError("Cet email est déjà associé à un compte CloseOS Business. Veuillez utiliser un autre email.");
+        setError(t.error_business_email);
         setLoading(false);
         return;
       }
+
+      // Detect language from landing page preference
+      const landingLang = localStorage.getItem('closeos_lang') || 'fr';
 
       const result = await register({
         email,
         password,
         options: {
-          data: { full_name: name }
+          data: { full_name: name, preferred_language: landingLang }
         }
       });
 
@@ -77,6 +84,15 @@ export default function Register() {
             }
           }
         }
+        // Save preferred language to profile
+        const { data: { user: langUser } } = await supabase.auth.getUser();
+        if (langUser) {
+          await supabase
+            .from('profiles')
+            .update({ preferred_language: landingLang })
+            .eq('id', langUser.id);
+        }
+
         // Envoyer le mail de bienvenue (fire & forget)
         fetch('/api/welcome-email', {
           method: 'POST',
@@ -86,7 +102,7 @@ export default function Register() {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError("Une erreur est survenue.");
+      setError(t.error_generic);
       setLoading(false);
     }
   };
@@ -97,7 +113,7 @@ export default function Register() {
       const { error } = await loginWithGoogle();
       if (error) setError(error.message);
     } catch (err) {
-      setError("Impossible de lancer la connexion Google.");
+      setError(t.error_google);
     } finally {
       setGoogleLoading(false);
     }
@@ -117,11 +133,11 @@ export default function Register() {
 
         <div className="rounded-2xl border border-slate-800 bg-[#0B1121] p-8 shadow-2xl shadow-blue-900/10">
           <div className="mb-8 text-center">
-            <h2 className="mb-3 text-2xl font-bold text-white">Créer un compte</h2>
+            <h2 className="mb-3 text-2xl font-bold text-white">{t.title}</h2>
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/20 bg-blue-500/10 text-xs font-bold text-blue-300 mb-4">
-              10 jours gratuits — Aucune CB requise
+              {t.trial_badge}
             </span>
-            <p className="text-slate-400">Commencez à closer comme un pro</p>
+            <p className="text-slate-400">{t.subtitle}</p>
           </div>
 
           {error && (
@@ -141,17 +157,17 @@ export default function Register() {
             ) : (
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="Google" />
             )}
-            S'inscrire avec Google
+            {t.google}
           </button>
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0B1121] px-2 text-slate-500">Ou avec email</span></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0B1121] px-2 text-slate-500">{t.or_email}</span></div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">Nom complet</label>
+              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">{t.full_name}</label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
                 <input
@@ -166,7 +182,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">Email</label>
+              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">{t.email}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
                 <input
@@ -181,7 +197,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">Mot de passe</label>
+              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">{t.password}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
                 <input
@@ -201,23 +217,23 @@ export default function Register() {
               disabled={loading}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 font-semibold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50"
             >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Créer mon compte"}
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t.submit}
               {!loading && <ArrowRight className="h-5 w-5" />}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-slate-400">
-              Déjà inscrit ?{' '}
-              <Link to="/login" className="font-semibold text-blue-400 hover:text-blue-300">Se connecter</Link>
+              {t.already_registered}{' '}
+              <Link to="/login" className="font-semibold text-blue-400 hover:text-blue-300">{t.login}</Link>
             </p>
           </div>
 
           <p className="mt-6 text-center text-xs text-slate-600">
-            En créant un compte, vous acceptez nos{' '}
-            <Link to="/cgu" className="text-blue-400 hover:underline">CGU</Link>
-            {' '}et notre{' '}
-            <Link to="/confidentialite" className="text-blue-400 hover:underline">Politique de Confidentialité</Link>.
+            {t.tos_prefix}{' '}
+            <Link to="/cgu" className="text-blue-400 hover:underline">{t.tos_cgu}</Link>
+            {' '}{t.tos_and}{' '}
+            <Link to="/confidentialite" className="text-blue-400 hover:underline">{t.tos_privacy}</Link>.
           </p>
         </div>
       </div>

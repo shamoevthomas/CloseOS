@@ -38,8 +38,11 @@ export class AgendaErrorBoundary extends Component<Props, State> {
     })
   }
 
+  getLang = () => (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
+
   handleReset = () => {
-    if (confirm('⚠️ Ceci supprimera tous les événements pour réparer l\'agenda. Continuer?')) {
+    const lang = this.getLang()
+    if (confirm(lang === 'fr' ? '⚠️ Ceci supprimera tous les événements pour réparer l\'agenda. Continuer?' : '⚠️ This will delete all events to repair the calendar. Continue?')) {
       console.log('🧹 Emergency reset: clearing closeros_events')
       localStorage.removeItem('closeros_events')
       window.location.reload()
@@ -52,6 +55,7 @@ export class AgendaErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const lang = this.getLang()
       return (
         <div className="flex h-screen items-center justify-center bg-gray-950 p-8">
           <div className="w-full max-w-2xl rounded-2xl border border-red-900/50 bg-gray-900 p-8 shadow-2xl">
@@ -64,23 +68,23 @@ export class AgendaErrorBoundary extends Component<Props, State> {
 
             {/* Title */}
             <h1 className="mb-2 text-center text-3xl font-bold text-white">
-              Mode de Récupération
+              {lang === 'fr' ? 'Mode de Récupération' : 'Recovery Mode'}
             </h1>
 
             {/* Description */}
             <p className="mb-8 text-center text-gray-400">
-              L'agenda a rencontré une erreur et ne peut pas s'afficher. Utilisez les options ci-dessous pour réparer le problème.
+              {lang === 'fr' ? "L'agenda a rencontré une erreur et ne peut pas s'afficher. Utilisez les options ci-dessous pour réparer le problème." : "The calendar encountered an error and cannot be displayed. Use the options below to fix the issue."}
             </p>
 
             {/* Error Details (Collapsible) */}
             <details className="mb-8 rounded-lg border border-gray-800 bg-gray-800/50 p-4">
               <summary className="cursor-pointer font-semibold text-gray-300">
-                Détails techniques de l'erreur
+                {lang === 'fr' ? "Détails techniques de l'erreur" : 'Technical error details'}
               </summary>
               <div className="mt-4 space-y-2">
                 <div className="rounded bg-gray-950 p-3">
                   <p className="text-xs text-red-400">
-                    <strong>Erreur:</strong> {this.state.error?.toString()}
+                    <strong>{lang === 'fr' ? 'Erreur:' : 'Error:'}</strong> {this.state.error?.toString()}
                   </p>
                 </div>
                 {this.state.errorInfo && (
@@ -101,7 +105,7 @@ export class AgendaErrorBoundary extends Component<Props, State> {
                 className="flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 px-6 py-4 font-bold text-white transition-all hover:bg-blue-700"
               >
                 <RefreshCw size={20} />
-                Recharger la page
+                {lang === 'fr' ? 'Recharger la page' : 'Reload page'}
               </button>
 
               {/* Option 2: Emergency Reset */}
@@ -110,15 +114,14 @@ export class AgendaErrorBoundary extends Component<Props, State> {
                 className="flex w-full items-center justify-center gap-3 rounded-xl border border-red-700 bg-red-600 px-6 py-4 font-bold text-white transition-all hover:bg-red-700"
               >
                 <Trash2 size={20} />
-                Purger les données et réparer
+                {lang === 'fr' ? 'Purger les données et réparer' : 'Purge data and repair'}
               </button>
             </div>
 
             {/* Warning */}
             <div className="mt-6 rounded-lg border border-yellow-900/50 bg-yellow-500/10 p-4">
               <p className="text-center text-xs text-yellow-400">
-                <strong>⚠️ Attention:</strong> L'option "Purger" supprimera tous vos événements mais
-                réparera l'agenda.
+                <strong>⚠️ {lang === 'fr' ? 'Attention:' : 'Warning:'}</strong> {lang === 'fr' ? "L'option \"Purger\" supprimera tous vos événements mais réparera l'agenda." : "The \"Purge\" option will delete all your events but will repair the calendar."}
               </p>
             </div>
           </div>

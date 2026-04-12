@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { X, CheckCircle2, XCircle, Clock, FileText, Calendar } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { useLanguage } from '../contexts/LanguageContext'
+import { callSummaryTranslations } from '../i18n/translations'
 
 interface CallSummaryModalProps {
   isOpen: boolean
@@ -24,19 +26,15 @@ export interface CallSummaryData {
   commissionSpread?: boolean
 }
 
-const followupReasons = [
-  'Pas le bon moment',
-  'Doit consulter un décideur',
-  'Budget à valider',
-  'Besoin de plus d\'informations',
-  'Autre'
-]
+const getFollowupReasons = (lang: 'fr' | 'en') => lang === 'fr'
+  ? ['Pas le bon moment', 'Doit consulter un décideur', 'Budget à valider', 'Besoin de plus d\'informations', 'Autre']
+  : ['Bad timing', 'Needs to consult a decision-maker', 'Budget to validate', 'Needs more information', 'Other']
 
-const outcomes = [
+const getOutcomes = (lang: 'fr' | 'en') => [
   {
     id: 'won' as const,
-    label: 'Vente Gagnée',
-    description: 'Le prospect a accepté l\'offre',
+    label: lang === 'fr' ? 'Vente Gagnee' : 'Won',
+    description: lang === 'fr' ? 'Le prospect a accepté l\'offre' : 'The prospect accepted the offer',
     icon: CheckCircle2,
     color: 'emerald',
     bgColor: 'bg-emerald-500/10',
@@ -47,7 +45,7 @@ const outcomes = [
   {
     id: 'followup' as const,
     label: 'Follow Up',
-    description: 'Nécessite un suivi ultérieur',
+    description: lang === 'fr' ? 'Nécessite un suivi ultérieur' : 'Requires further follow-up',
     icon: Clock,
     color: 'orange',
     bgColor: 'bg-orange-500/10',
@@ -57,8 +55,8 @@ const outcomes = [
   },
   {
     id: 'lost' as const,
-    label: 'Perdu',
-    description: 'Le prospect a refusé l\'offre',
+    label: lang === 'fr' ? 'Perdu' : 'Lost',
+    description: lang === 'fr' ? 'Le prospect a refusé l\'offre' : 'The prospect declined the offer',
     icon: XCircle,
     color: 'red',
     bgColor: 'bg-red-500/10',
@@ -69,6 +67,11 @@ const outcomes = [
 ]
 
 export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offerPrice = 0 }: CallSummaryModalProps) {
+  const { lang } = useLanguage()
+  const t = callSummaryTranslations[lang]
+  const outcomes = getOutcomes(lang)
+  const followupReasons = getFollowupReasons(lang)
+  const otherLabel = lang === 'fr' ? 'Autre' : 'Other'
   const [selectedOutcome, setSelectedOutcome] = useState<'won' | 'lost' | 'followup' | null>(null)
   const [notes, setNotes] = useState('')
   const [followupReason, setFollowupReason] = useState('')
@@ -100,7 +103,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
     if (selectedOutcome === 'followup') {
       const hasReason = followupReason !== ''
       const hasDate = followupDate !== ''
-      const hasOtherDetails = followupReason === 'Autre' ? followupReasonOther.trim() !== '' : true
+      const hasOtherDetails = followupReason === otherLabel ? followupReasonOther.trim() !== '' : true
       return hasReason && hasDate && hasOtherDetails
     }
     if (selectedOutcome === 'won') {
@@ -115,7 +118,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
         outcome: selectedOutcome,
         notes,
         followupReason: selectedOutcome === 'followup' ? followupReason : undefined,
-        followupReasonOther: selectedOutcome === 'followup' && followupReason === 'Autre' ? followupReasonOther : undefined,
+        followupReasonOther: selectedOutcome === 'followup' && followupReason === otherLabel ? followupReasonOther : undefined,
         followupDate: selectedOutcome === 'followup' ? followupDate : undefined,
         // Données financières si vente gagnée
         paymentType: selectedOutcome === 'won' ? paymentType : undefined,
@@ -184,9 +187,9 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
           <div className="flex-shrink-0 border-b border-white/[0.08] px-6 py-5">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Résumé de l'appel</h2>
+                <h2 className="text-xl font-bold text-white">{t.title}</h2>
                 <p className="mt-1 text-sm text-white/40">
-                  Qualifiez votre appel avec <span className="font-semibold text-white">{prospectName}</span>
+                  {lang === 'fr' ? 'Qualifiez votre appel avec' : 'Qualify your call with'} <span className="font-semibold text-white">{prospectName}</span>
                 </p>
               </div>
               <button
@@ -203,7 +206,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
             {/* Outcome Selection */}
             <div>
               <label className="mb-3 block text-sm font-semibold text-white">
-                Résultat de l'appel <span className="text-red-400">*</span>
+                {t.outcome} <span className="text-red-400">*</span>
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {outcomes.map((outcome) => {
@@ -264,13 +267,13 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
             {selectedOutcome === 'won' && (
               <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
                 <p className="text-sm font-semibold text-emerald-400">
-                  Plan de Financement
+                  {lang === 'fr' ? 'Plan de Financement' : 'Payment Plan'}
                 </p>
 
                 {/* Prix de l'offre (read-only) */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white">
-                    Prix de l'offre
+                    {lang === 'fr' ? 'Prix de l\'offre' : 'Offer price'}
                   </label>
                   <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/40">
                     {offerPrice.toFixed(2)} €
@@ -280,15 +283,15 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                 {/* Type de paiement */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white">
-                    Mode de paiement <span className="text-red-400">*</span>
+                    {lang === 'fr' ? 'Mode de paiement' : 'Payment method'} <span className="text-red-400">*</span>
                   </label>
                   <select
                     value={paymentType}
                     onChange={(e) => setPaymentType(e.target.value as 'comptant' | 'installments')}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                   >
-                    <option value="comptant">Comptant</option>
-                    <option value="installments">En plusieurs fois</option>
+                    <option value="comptant">{lang === 'fr' ? 'Comptant' : 'Upfront'}</option>
+                    <option value="installments">{lang === 'fr' ? 'En plusieurs fois' : 'Installments'}</option>
                   </select>
                 </div>
 
@@ -299,7 +302,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                       {/* Nombre de mensualités */}
                       <div>
                         <label className="mb-2 block text-sm font-medium text-white">
-                          Nombre d'échéances
+                          {lang === 'fr' ? 'Nombre d\'échéances' : 'Number of installments'}
                         </label>
                         <input
                           type="number"
@@ -314,15 +317,15 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                       {/* Fréquence */}
                       <div>
                         <label className="mb-2 block text-sm font-medium text-white">
-                          Fréquence
+                          {lang === 'fr' ? 'Fréquence' : 'Frequency'}
                         </label>
                         <select
                           value={installmentsFrequency}
                           onChange={(e) => setInstallmentsFrequency(e.target.value as 'mensuel' | 'trimestriel')}
                           className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                         >
-                          <option value="mensuel">Mensuel</option>
-                          <option value="trimestriel">Trimestriel</option>
+                          <option value="mensuel">{lang === 'fr' ? 'Mensuel' : 'Monthly'}</option>
+                          <option value="trimestriel">{lang === 'fr' ? 'Trimestriel' : 'Quarterly'}</option>
                         </select>
                       </div>
                     </div>
@@ -330,7 +333,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                     {/* Calcul affiché */}
                     <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
                       <p className="text-sm font-medium text-emerald-400">
-                        💰 Montant par échéance : {amountPerInstallment.toFixed(2)} €
+                        {lang === 'fr' ? `💰 Montant par échéance : ${amountPerInstallment.toFixed(2)} €` : `💰 Amount per installment: ${amountPerInstallment.toFixed(2)} €`}
                       </p>
                     </div>
                   </div>
@@ -339,13 +342,13 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                 {/* Section Commission */}
                 <div className="mt-4 pt-4 border-t border-emerald-500/20">
                   <p className="text-sm font-semibold text-emerald-400 mb-3">
-                    Votre Commission
+                    {lang === 'fr' ? 'Votre Commission' : 'Your Commission'}
                   </p>
 
                   {/* Taux de commission */}
                   <div>
                     <label className="mb-2 block text-sm font-medium text-white">
-                      Taux de commission (%) <span className="text-red-400">*</span>
+                      {lang === 'fr' ? 'Taux de commission (%)' : 'Commission rate (%)'} <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="number"
@@ -373,7 +376,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                           <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                         </div>
                         <span className="text-sm font-medium text-white">
-                          Commission étalée sur les échéances
+                          {lang === 'fr' ? 'Commission étalée sur les échéances' : 'Commission spread across installments'}
                         </span>
                       </label>
                     </div>
@@ -383,11 +386,11 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                   <div className="mt-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
                     {commissionSpread && paymentType === 'installments' ? (
                       <p className="text-sm font-medium text-emerald-400">
-                        💵 Commission par échéance : {commissionPerInstallment.toFixed(2)} € / {installmentsFrequency === 'mensuel' ? 'mois' : 'trimestre'}
+                        {lang === 'fr' ? `💵 Commission par échéance : ${commissionPerInstallment.toFixed(2)} € / ${installmentsFrequency === 'mensuel' ? 'mois' : 'trimestre'}` : `💵 Commission per installment: ${commissionPerInstallment.toFixed(2)} € / ${installmentsFrequency === 'mensuel' ? 'month' : 'quarter'}`}
                       </p>
                     ) : (
                       <p className="text-sm font-medium text-emerald-400">
-                        💵 Commission totale à percevoir : {totalCommission.toFixed(2)} €
+                        {lang === 'fr' ? `💵 Commission totale à percevoir : ${totalCommission.toFixed(2)} €` : `💵 Total commission: ${totalCommission.toFixed(2)} €`}
                       </p>
                     )}
                   </div>
@@ -399,26 +402,26 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
             {selectedOutcome === 'followup' && (
               <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4">
                 <p className="text-sm font-semibold text-orange-400">
-                  Informations de suivi
+                  {lang === 'fr' ? 'Informations de suivi' : 'Follow-up information'}
                 </p>
 
                 {/* Motif du Follow Up */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white">
-                    Motif du report <span className="text-red-400">*</span>
+                    {lang === 'fr' ? 'Motif du report' : 'Postponement reason'} <span className="text-red-400">*</span>
                   </label>
                   <select
                     value={followupReason}
                     onChange={(e) => {
                       setFollowupReason(e.target.value)
                       // Reset le champ "Autre" si on change de motif
-                      if (e.target.value !== 'Autre') {
+                      if (e.target.value !== otherLabel) {
                         setFollowupReasonOther('')
                       }
                     }}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
                   >
-                    <option value="">Sélectionnez un motif</option>
+                    <option value="">{lang === 'fr' ? 'Sélectionnez un motif' : 'Select a reason'}</option>
                     {followupReasons.map((reason) => (
                       <option key={reason} value={reason}>
                         {reason}
@@ -427,16 +430,16 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                   </select>
 
                   {/* Champ conditionnel "Précisez" si motif == "Autre" */}
-                  {followupReason === 'Autre' && (
+                  {followupReason === otherLabel && (
                     <div className="mt-3">
                       <label className="mb-2 block text-sm font-medium text-white">
-                        Précisez le motif <span className="text-red-400">*</span>
+                        {lang === 'fr' ? 'Précisez le motif' : 'Specify the reason'} <span className="text-red-400">*</span>
                       </label>
                       <input
                         type="text"
                         value={followupReasonOther}
                         onChange={(e) => setFollowupReasonOther(e.target.value)}
-                        placeholder="Ex: Indisponibilité exceptionnelle..."
+                        placeholder={lang === 'fr' ? 'Ex: Indisponibilité exceptionnelle...' : 'E.g.: Exceptional unavailability...'}
                         className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
                       />
                     </div>
@@ -447,7 +450,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
                     <Calendar className="h-4 w-4" />
-                    Date de reprogrammation <span className="text-red-400">*</span>
+                    {lang === 'fr' ? 'Date de reprogrammation' : 'Reschedule date'} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="datetime-local"
@@ -463,17 +466,17 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
             <div>
               <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
                 <FileText className="h-4 w-4" />
-                Notes de l'appel
+                {t.notes}
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Résumez les points clés de votre conversation, les objections, les prochaines étapes..."
+                placeholder={t.notes_placeholder}
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all resize-none"
                 rows={6}
               />
               <p className="mt-2 text-xs text-white/40">
-                Ces notes seront ajoutées à la fiche prospect
+                {lang === 'fr' ? 'Ces notes seront ajoutées à la fiche prospect' : 'These notes will be added to the prospect record'}
               </p>
             </div>
           </div>
@@ -485,7 +488,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                 onClick={handleClose}
                 className="rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10"
               >
-                Annuler
+                {t.skip}
               </button>
               <button
                 onClick={handleSubmit}
@@ -497,7 +500,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                     : 'bg-white/5 text-white/40 cursor-not-allowed opacity-50'
                 )}
               >
-                Valider et enregistrer
+                {t.submit}
               </button>
             </div>
           </div>

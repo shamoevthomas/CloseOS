@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessReminderBell } from '../components/BusinessReminderBell'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { supabase } from '../../lib/supabase'
@@ -33,8 +34,8 @@ interface Reminder {
   is_done: boolean
 }
 
-const formatCurrency = (v: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+const mkFormatCurrency = (locale: string) => (v: number) =>
+  new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 
 const formatPct = (v: number) => `${v.toFixed(1)}%`
 
@@ -69,7 +70,10 @@ function KpiTooltip({ children, text }: { children: React.ReactNode; text: strin
 export function CloserDashboard() {
   const { user, teamMember, ownerUserId, businessSettings, userTimezone } = useBusinessAuth()
   const { prospects } = useBusinessProspects()
+  const { t, lang } = useBusinessLang()
   const navigate = useNavigate()
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
+  const formatCurrency = mkFormatCurrency(locale)
   const [loading, setLoading] = useState(true)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
@@ -238,14 +242,14 @@ export function CloserDashboard() {
       const { error } = await supabase.from('reminders').update({ is_done: true }).eq('id', id).eq('user_id', user!.id)
       if (error) throw error
       setReminders(prev => prev.filter(r => r.id !== id))
-      toast.success('Rappel terminé')
-    } catch { toast.error('Erreur') }
+      toast.success(t.dashboard_reminder_done)
+    } catch { toast.error(t.common_error) }
     finally { setActionLoading(null) }
   }
 
   const isOverdue = (dateStr: string) => new Date(dateStr) < now
 
-  const firstName = teamMember?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'Membre'
+  const firstName = teamMember?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || t.closer_dashboard_member_fallback
   const scrambledName = useScrambleText(firstName)
   const kpiLink = teamMember?.role === 'Setter' ? '/business/setter-kpi' : '/business/closer-kpi'
 
@@ -255,9 +259,9 @@ export function CloserDashboard() {
     today.setHours(0, 0, 0, 0)
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
-    if (d.getTime() === today.getTime()) return 'AUJ'
-    if (d.getTime() === tomorrow.getTime()) return 'DEM'
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).toUpperCase()
+    if (d.getTime() === today.getTime()) return t.dashboard_appt_today
+    if (d.getTime() === tomorrow.getTime()) return t.dashboard_appt_tomorrow
+    return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' }).toUpperCase()
   }
 
   if (loading) {
@@ -281,9 +285,9 @@ export function CloserDashboard() {
           </div>
           <div className="space-y-1">
             <h2 className="text-3xl md:text-4xl font-black tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Bonjour, {scrambledName}.
+              {t.dashboard_hello}, {scrambledName}.
             </h2>
-            <p className="text-neutral-500 dark:text-neutral-400 text-lg">Voici l'état de votre activité aujourd'hui.</p>
+            <p className="text-neutral-500 dark:text-neutral-400 text-lg">{t.closer_dashboard_activity_status}</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -297,7 +301,7 @@ export function CloserDashboard() {
             style={{ fontFamily: 'Manrope, sans-serif' }}
           >
             <FileDown className="h-4 w-4" />
-            Voir mes KPIs
+            {t.closer_dashboard_view_kpis}
           </Link>
         </div>
       </header>
@@ -306,7 +310,7 @@ export function CloserDashboard() {
       <div className={`grid grid-cols-2 ${isSetter ? 'xl:grid-cols-4' : 'xl:grid-cols-5'} gap-6`}>
 
         {/* Commission / CA Généré */}
-        <KpiTooltip text={teamMember?.compensation_type === 'fixed' ? "Chiffre d'affaires total généré par vos prospects gagnés (stage « Gagné »). Somme de la valeur de chaque prospect signé." : `Commission totale calculée sur vos ventes signées. Inclut vos commissions closer et setter si applicable.`}>
+        <KpiTooltip text={teamMember?.compensation_type === 'fixed' ? t.closer_dashboard_tooltip_ca : t.closer_dashboard_tooltip_commission}>
           <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="flex justify-between items-start mb-3">
               <div className="p-2 rounded-lg bg-emerald-50">
@@ -314,7 +318,7 @@ export function CloserDashboard() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{teamMember?.compensation_type === 'fixed' ? 'CA Généré' : 'Commission'}</p>
+              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{teamMember?.compensation_type === 'fixed' ? t.closer_dashboard_ca_generated : t.closer_dashboard_commission}</p>
               <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatCurrency(teamMember?.compensation_type === 'fixed' ? closerRevenue + setterRevenue : totalCommission)}</p>
               {teamMember?.compensation_type !== 'fixed' && closerCommission > 0 && setterCommission > 0 && (
                 <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">Closer {formatCurrency(closerCommission)} + Setter {formatCurrency(setterCommission)}</p>
@@ -325,50 +329,50 @@ export function CloserDashboard() {
 
         {/* Closing Rate (Closers only) */}
         {!isSetter && (
-          <KpiTooltip text="Taux de closing : pourcentage de prospects convertis en vente. Calculé : prospects gagnés ÷ (gagnés + perdus + no-shows ayant eu un rendez-vous).">
+          <KpiTooltip text={t.closer_dashboard_tooltip_closing}>
             <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
               <div className="p-2 rounded-lg bg-stone-100 w-fit">
                 <TrendingUp className="h-4 w-4 text-neutral-600" />
               </div>
               <div className="mt-3">
-                <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Closing</p>
+                <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{t.closer_dashboard_closing}</p>
                 <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(closingRate)}</p>
-                <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{wonProspects.length} signés / {totalDecided} décidés</p>
+                <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{wonProspects.length} {t.closer_dashboard_signed_decided.replace('{decided}', String(totalDecided))}</p>
               </div>
             </Link>
           </KpiTooltip>
         )}
 
         {/* Booking Rate */}
-        <KpiTooltip text="Taux de booking : pourcentage de prospects contactés qui ont été bookés (passés au-delà du stade prospect). Calculé : bookés ÷ total prospects assignés en tant que setter.">
+        <KpiTooltip text={t.closer_dashboard_tooltip_booking}>
           <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="p-2 rounded-lg bg-blue-50 w-fit">
               <CalendarDays className="h-4 w-4 text-blue-600" />
             </div>
             <div className="mt-3">
-              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Booking</p>
+              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{t.closer_dashboard_booking}</p>
               <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(bookingRate)}</p>
-              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{bookedProspects.length} bookés / {mySetterProspects.length} prospects</p>
+              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{bookedProspects.length} {t.closer_dashboard_booked_prospects.replace('{total}', String(mySetterProspects.length))}</p>
             </div>
           </Link>
         </KpiTooltip>
 
         {/* Appointments */}
-        <KpiTooltip text="Nombre total de rendez-vous planifiés à venir (confirmés et en attente) à partir d'aujourd'hui.">
+        <KpiTooltip text={t.closer_dashboard_tooltip_appointments}>
           <Link to="/business/rendez-vous" className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="p-2 rounded-lg bg-stone-100 w-fit">
               <CalendarDays className="h-4 w-4 text-neutral-600" />
             </div>
             <div className="mt-3">
-              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">Rendez-vous</p>
+              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{t.closer_dashboard_appointments_label}</p>
               <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{upcomingAppts.length}</p>
-              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">À venir</p>
+              <p className="text-neutral-400 text-[11px] mt-0.5 font-medium">{t.closer_dashboard_upcoming}</p>
             </div>
           </Link>
         </KpiTooltip>
 
         {/* No-Show Rate */}
-        <KpiTooltip text="Taux de no-show : pourcentage de prospects absents au rendez-vous. Calculé : no-shows ÷ total des prospects qualifiés ayant eu un rendez-vous (exclut prospect, non-qualifié, pas de réponse).">
+        <KpiTooltip text={t.closer_dashboard_tooltip_noshow}>
           <Link to={kpiLink} className={`${glassCard} rounded-2xl p-5 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer h-full`}>
             <div className="flex justify-between items-start">
               <div className="p-2 rounded-lg bg-amber-50">
@@ -379,7 +383,7 @@ export function CloserDashboard() {
               )}
             </div>
             <div className="mt-3">
-              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">No-Show</p>
+              <p className="text-[10px] text-neutral-400 uppercase font-black tracking-[0.15em] mb-1">{t.closer_dashboard_noshow}</p>
               <p className="text-xl font-black text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>{formatPct(noshowRate)}</p>
             </div>
           </Link>
@@ -393,17 +397,17 @@ export function CloserDashboard() {
         <div className={`col-span-12 lg:col-span-7 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Prochains rendez-vous</h3>
-              <p className="text-neutral-400 text-sm mt-0.5">Vos prochaines consultations planifiées.</p>
+              <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.closer_dashboard_upcoming_appointments}</h3>
+              <p className="text-neutral-400 text-sm mt-0.5">{t.closer_dashboard_upcoming_desc}</p>
             </div>
             <Link to="/business/rendez-vous" className="text-sm font-bold text-neutral-900 dark:text-white border-b-2 border-neutral-900 dark:border-white pb-0.5 hover:opacity-70 transition-opacity uppercase tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Voir tout
+              {t.closer_dashboard_view_all}
             </Link>
           </div>
           {upcomingAppts.length === 0 ? (
             <div className="text-center py-12">
               <CalendarDays className="h-8 w-8 text-neutral-300 mx-auto mb-3" />
-              <p className="text-sm text-neutral-400">Aucun rendez-vous à venir</p>
+              <p className="text-sm text-neutral-400">{t.closer_dashboard_no_appointments}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -422,7 +426,7 @@ export function CloserDashboard() {
                       </div>
                       <div className="h-10 w-px bg-neutral-200 dark:bg-white/10" />
                       <div>
-                        <p className="font-bold text-neutral-900 dark:text-white">{a.prospect?.contact || 'Rendez-vous'}</p>
+                        <p className="font-bold text-neutral-900 dark:text-white">{a.prospect?.contact || t.closer_dashboard_appointment_fallback}</p>
                         <p className="text-sm text-neutral-400 dark:text-neutral-500">{a.campaign?.name || `${a.duration}min`}</p>
                       </div>
                     </div>
@@ -436,7 +440,7 @@ export function CloserDashboard() {
         {/* Rappels & Tâches */}
         <div className={`col-span-12 lg:col-span-5 ${glassCard} rounded-2xl p-8 flex flex-col`}>
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Rappels</h3>
+            <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.closer_dashboard_reminders}</h3>
             {reminders.length > 0 && (
               <span className="w-6 h-6 bg-neutral-900 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
                 {reminders.length}
@@ -444,7 +448,7 @@ export function CloserDashboard() {
             )}
           </div>
           {reminders.length === 0 ? (
-            <p className="text-sm text-neutral-400 text-center py-8 flex-1 flex items-center justify-center">Aucun rappel en attente</p>
+            <p className="text-sm text-neutral-400 text-center py-8 flex-1 flex items-center justify-center">{t.closer_dashboard_no_reminders}</p>
           ) : (
             <div className="space-y-3 flex-1 overflow-y-auto">
               {reminders.map(r => {
@@ -474,7 +478,7 @@ export function CloserDashboard() {
                         <div className="flex justify-between items-start mb-1">
                           <h4 className="text-sm font-bold text-neutral-900 dark:text-white">{r.title}</h4>
                           <span className={`text-[10px] font-black uppercase ${overdue ? 'text-red-500' : 'text-neutral-400'}`}>
-                            {overdue ? 'EN RETARD' : 'À VENIR'}
+                            {overdue ? t.closer_dashboard_overdue : t.closer_dashboard_upcoming_tag}
                           </span>
                         </div>
                         <div className="flex items-center gap-1 text-[10px] font-bold text-neutral-400">
@@ -483,8 +487,8 @@ export function CloserDashboard() {
                             const rLocal = fromUTC(r.reminder_date, userTimezone)
                             const localDate = new Date(rLocal.date + 'T00:00:00')
                             return overdue
-                              ? `Retard : ${Math.max(1, Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24)))}j`
-                              : `${localDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ${rLocal.time}`
+                              ? `${t.closer_dashboard_overdue_prefix}${Math.max(1, Math.ceil((now.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24)))}${lang === 'en' ? 'd' : 'j'}`
+                              : `${localDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} ${rLocal.time}`
                           })()}
                         </div>
                       </div>
@@ -492,7 +496,7 @@ export function CloserDashboard() {
                         <button
                           onClick={(e) => { e.stopPropagation(); handleMarkDone(r.id) }}
                           className="shrink-0 p-2 rounded-full text-emerald-600 hover:bg-emerald-50 transition-colors"
-                          title="Marquer comme fait"
+                          title={t.closer_dashboard_mark_done_title}
                         >
                           <Check className="h-4 w-4" />
                         </button>
@@ -507,7 +511,7 @@ export function CloserDashboard() {
             to="/business/rappels"
             className="mt-4 w-full py-3 border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-2xl text-neutral-400 text-sm font-bold hover:border-neutral-900 dark:hover:border-white hover:text-neutral-900 dark:hover:text-white transition-all text-center block"
           >
-            + Créer un rappel
+            {t.closer_dashboard_create_reminder}
           </Link>
         </div>
       </div>

@@ -8,20 +8,32 @@ import { PhoneInput } from '../components/PhoneInput'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import toast from 'react-hot-toast'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { supabase } from '../../lib/supabase'
 import { useCustomStages } from '../hooks/useCustomStages'
 
 const ALL_STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50', borderColor: 'border-purple-200' },
-  { id: 'unqualified', name: 'Non-Qualifié', color: 'bg-yellow-500', textColor: 'text-yellow-700', bgLight: 'bg-yellow-50', borderColor: 'border-yellow-200' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgLight: 'bg-emerald-50', borderColor: 'border-emerald-200' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700', bgLight: 'bg-orange-50', borderColor: 'border-orange-200' },
-  { id: 'noanswer', name: 'Pas de Réponse', color: 'bg-cyan-500', textColor: 'text-cyan-700', bgLight: 'bg-cyan-50', borderColor: 'border-cyan-200' },
-  { id: 'noshow', name: 'No Show', color: 'bg-stone-500', textColor: 'text-stone-700', bgLight: 'bg-stone-50', borderColor: 'border-stone-200' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50', borderColor: 'border-red-200' },
+  { id: 'prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
+  { id: 'qualified', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50', borderColor: 'border-purple-200' },
+  { id: 'unqualified', color: 'bg-yellow-500', textColor: 'text-yellow-700', bgLight: 'bg-yellow-50', borderColor: 'border-yellow-200' },
+  { id: 'won', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgLight: 'bg-emerald-50', borderColor: 'border-emerald-200' },
+  { id: 'followup', color: 'bg-orange-500', textColor: 'text-orange-700', bgLight: 'bg-orange-50', borderColor: 'border-orange-200' },
+  { id: 'noanswer', color: 'bg-cyan-500', textColor: 'text-cyan-700', bgLight: 'bg-cyan-50', borderColor: 'border-cyan-200' },
+  { id: 'noshow', color: 'bg-stone-500', textColor: 'text-stone-700', bgLight: 'bg-stone-50', borderColor: 'border-stone-200' },
+  { id: 'lost', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50', borderColor: 'border-red-200' },
 ]
+
+const CRM_STAGE_NAME_KEYS: Record<string, string> = {
+  prospect: 'pipeline_stage_prospect',
+  qualified: 'pipeline_stage_qualified',
+  unqualified: 'pipeline_stage_unqualified',
+  won: 'pipeline_stage_won',
+  followup: 'pipeline_stage_followup',
+  noanswer: 'pipeline_stage_noanswer',
+  noshow: 'pipeline_stage_noshow',
+  lost: 'pipeline_stage_lost',
+}
 
 interface TeamMember {
   id: string
@@ -44,15 +56,21 @@ function getStageConfig(stageId: string) {
   return ALL_STAGES.find(s => s.id === stageId) || ALL_STAGES[0]
 }
 
-function getDisplayName(p: BusinessProspect) {
+function getDisplayName(p: BusinessProspect, fallback = 'Prospect sans nom') {
   if (p.firstName || p.lastName) return `${p.firstName || ''} ${p.lastName || ''}`.trim()
-  return p.contact || 'Prospect sans nom'
+  return p.contact || fallback
 }
 
 export function CloserCRM() {
   const { prospects, addProspect, updateProspect, deleteProspect, loading } = useBusinessProspects()
   const { user, teamMember, ownerUserId } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const { customStages } = useCustomStages()
+
+  const getStageName = (stageId: string) => {
+    const key = CRM_STAGE_NAME_KEYS[stageId]
+    return key ? (t as any)[key] : stageId
+  }
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -114,12 +132,12 @@ export function CloserCRM() {
         setNewProspectForm(f => ({ ...f, source: data.source.name }))
         setNewSourceName('')
         setIsNewSourceModalOpen(false)
-        toast.success('Source créée')
+        toast.success(t.closer_crm_source_created)
       } else {
-        toast.error(data.error || 'Erreur lors de la création')
+        toast.error(data.error || t.common_creation_error)
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error(t.common_network_error)
     } finally {
       setSavingSource(false)
     }
@@ -229,9 +247,9 @@ export function CloserCRM() {
 
       setIsCreateModalOpen(false)
       setNewProspectForm({ firstName: '', lastName: '', email: '', phone: '', company: '', formulaId: '', source: 'LinkedIn Ads' })
-      toast.success('Prospect créé')
+      toast.success(t.closer_crm_prospect_created)
     } catch {
-      toast.error('Erreur lors de la création')
+      toast.error(t.common_creation_error)
     } finally {
       setIsCreating(false)
     }
@@ -264,11 +282,11 @@ export function CloserCRM() {
       <div className="mb-6 shrink-0">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">GESTION DES PROSPECTS</p>
-            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">CRM</h1>
+            <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-1">{t.closer_crm_subtitle}</p>
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.crm_title}</h1>
             <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1">
               {filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}
-              {hasActiveFilters && ' (filtré)'}
+              {hasActiveFilters && ` (${t.closer_crm_filtered})`}
             </p>
           </div>
 
@@ -278,7 +296,7 @@ export function CloserCRM() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
               <input
                 type="text"
-                placeholder="Rechercher..."
+                placeholder={t.closer_crm_search_placeholder}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 text-sm rounded-full border-none bg-stone-100 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-stone-900/20 w-full md:w-64"
@@ -291,7 +309,7 @@ export function CloserCRM() {
               className="flex items-center gap-2 px-4 py-2 text-sm rounded-full bg-stone-900 text-white hover:opacity-90 shadow-lg shadow-stone-900/10 font-extrabold tracking-tight"
             >
               <UserPlus className="h-4 w-4" />
-              Nouveau prospect
+              {t.closer_crm_new_prospect}
             </button>
 
             {/* Filter toggle */}
@@ -305,7 +323,7 @@ export function CloserCRM() {
               )}
             >
               <Filter className="h-4 w-4" />
-              Filtres
+              {t.closer_crm_filters}
               {hasActiveFilters && (
                 <span className="bg-stone-900 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {[filterStage, filterAssigned, filterOffer, filterDateFrom, filterDateTo].filter(Boolean).length}
@@ -321,7 +339,7 @@ export function CloserCRM() {
             <div className="flex flex-wrap gap-3 md:gap-4 items-end">
               {/* Date range */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">Période</label>
+                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.closer_crm_period}</label>
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
@@ -347,14 +365,14 @@ export function CloserCRM() {
 
               {/* Assigned */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">Assigné à</label>
+                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.closer_crm_assigned_to}</label>
                 <div className="relative">
                   <select
                     value={filterAssigned}
                     onChange={e => setFilterAssigned(e.target.value)}
                     className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[160px]"
                   >
-                    <option value="">Tous</option>
+                    <option value="">{t.common_all}</option>
                     {teamMembers.map(m => (
                       <option key={m.id} value={m.id}>
                         {m.first_name} {m.last_name}
@@ -367,16 +385,16 @@ export function CloserCRM() {
 
               {/* Stage */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">Statut</label>
+                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.common_status}</label>
                 <div className="relative">
                   <select
                     value={filterStage}
                     onChange={e => setFilterStage(e.target.value)}
                     className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[140px]"
                   >
-                    <option value="">Tous</option>
+                    <option value="">{t.common_all}</option>
                     {ALL_STAGES.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>{getStageName(s.id)}</option>
                     ))}
                     {customStages.map(cs => (
                       <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>{cs.name}</option>
@@ -388,14 +406,14 @@ export function CloserCRM() {
 
               {/* Offer */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">Offre</label>
+                <label className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.closer_crm_offer}</label>
                 <div className="relative">
                   <select
                     value={filterOffer}
                     onChange={e => setFilterOffer(e.target.value)}
                     className="appearance-none pl-3 pr-8 py-1.5 text-sm rounded-lg border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 min-w-[160px]"
                   >
-                    <option value="">Toutes</option>
+                    <option value="">{t.common_all}</option>
                     {formulas.map(f => (
                       <option key={f.id} value={f.id}>{f.name}</option>
                     ))}
@@ -411,7 +429,7 @@ export function CloserCRM() {
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <X className="h-3.5 w-3.5" />
-                  Effacer
+                  {t.closer_crm_clear}
                 </button>
               )}
             </div>
@@ -424,15 +442,15 @@ export function CloserCRM() {
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
             <tr className="bg-stone-50/50 dark:bg-neutral-900/50 border-b border-stone-100 dark:border-neutral-700">
-              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Contact</th>
-              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden md:table-cell">Entreprise</th>
-              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden lg:table-cell">Email</th>
-              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden lg:table-cell">Téléphone</th>
-              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Statut</th>
-              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden md:table-cell">Assigné à</th>
-              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden xl:table-cell">Offre</th>
-              <th className="text-right px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">Valeur</th>
-              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden xl:table-cell">Date</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">{t.closer_crm_th_contact}</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden md:table-cell">{t.closer_crm_th_company}</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden lg:table-cell">{t.common_email}</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden lg:table-cell">{t.common_phone}</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">{t.common_status}</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden md:table-cell">{t.closer_crm_assigned_to}</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden xl:table-cell">{t.closer_crm_offer}</th>
+              <th className="text-right px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest">{t.closer_crm_th_value}</th>
+              <th className="text-left px-3 md:px-4 py-3 text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest hidden xl:table-cell">{t.common_date}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
@@ -440,8 +458,8 @@ export function CloserCRM() {
               <tr>
                 <td colSpan={9} className="px-4 py-16 text-center text-stone-400 dark:text-neutral-500">
                   {searchQuery || hasActiveFilters
-                    ? 'Aucun prospect ne correspond aux filtres.'
-                    : 'Aucun prospect pour le moment.'}
+                    ? t.closer_crm_no_match
+                    : t.closer_crm_no_prospects}
                 </td>
               </tr>
             ) : (
@@ -460,7 +478,7 @@ export function CloserCRM() {
                           <User className="h-4 w-4 text-stone-400 dark:text-neutral-500" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-stone-900 dark:text-white truncate max-w-[120px] md:max-w-[180px]">{getDisplayName(p)}</p>
+                          <p className="font-bold text-stone-900 dark:text-white truncate max-w-[120px] md:max-w-[180px]">{getDisplayName(p, t.closer_crm_no_name)}</p>
                           <p className="text-xs text-stone-400 dark:text-neutral-500 md:hidden truncate">{p.company || ''}</p>
                         </div>
                       </div>
@@ -500,7 +518,7 @@ export function CloserCRM() {
                         stage.borderColor,
                       )}>
                         <span className={cn('h-1.5 w-1.5 rounded-full', stage.color)} />
-                        {stage.name}
+                        {getStageName(stage.id)}
                       </span>
                     </td>
 
@@ -532,7 +550,7 @@ export function CloserCRM() {
                     <td className="px-4 py-3 hidden xl:table-cell">
                       <span className="text-stone-500 dark:text-neutral-400 text-xs">
                         {p.created_at
-                          ? new Date(p.created_at).toLocaleDateString('fr-FR', {
+                          ? new Date(p.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
                               day: '2-digit',
                               month: '2-digit',
                               year: 'numeric',
@@ -564,57 +582,57 @@ export function CloserCRM() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
           <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.12)] p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-extrabold text-stone-900 dark:text-white">Nouveau Prospect</h2>
+              <h2 className="text-xl font-extrabold text-stone-900 dark:text-white">{t.closer_crm_new_prospect}</h2>
               <button onClick={() => setIsCreateModalOpen(false)} className="text-stone-400 hover:text-stone-600"><X className="h-6 w-6" /></button>
             </div>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">Prénom *</label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">{t.closer_crm_first_name} *</label>
                   <input type="text" value={newProspectForm.firstName}
                     onChange={e => setNewProspectForm({ ...newProspectForm, firstName: e.target.value })}
                     className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl p-2.5 text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
-                    placeholder="Jean" />
+                    placeholder={t.closer_crm_first_name_placeholder} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">Nom *</label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">{t.closer_crm_last_name} *</label>
                   <input type="text" value={newProspectForm.lastName}
                     onChange={e => setNewProspectForm({ ...newProspectForm, lastName: e.target.value })}
                     className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl p-2.5 text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
-                    placeholder="Dupont" />
+                    placeholder={t.closer_crm_last_name_placeholder} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">Email</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">{t.common_email}</label>
                 <input type="email" value={newProspectForm.email}
                   onChange={e => setNewProspectForm({ ...newProspectForm, email: e.target.value })}
                   className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl p-2.5 text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
-                  placeholder="jean@entreprise.com" />
+                  placeholder={t.closer_crm_email_placeholder} />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">Téléphone</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">{t.common_phone}</label>
                 <PhoneInput value={newProspectForm.phone} onChange={(v) => setNewProspectForm({ ...newProspectForm, phone: v })} />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">Entreprise</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">{t.closer_crm_company}</label>
                 <input type="text" value={newProspectForm.company}
                   onChange={e => setNewProspectForm({ ...newProspectForm, company: e.target.value })}
                   className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl p-2.5 text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
-                  placeholder="Nom de l'entreprise" />
+                  placeholder={t.closer_crm_company_placeholder} />
               </div>
 
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-stone-900 dark:text-white mb-1.5">
-                  <Tag className="h-3 w-3" /> Offre / Formule
+                  <Tag className="h-3 w-3" /> {t.closer_crm_offer_formula}
                 </label>
                 <select value={newProspectForm.formulaId}
                   onChange={e => setNewProspectForm({ ...newProspectForm, formulaId: e.target.value })}
                   className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl p-2.5 text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none">
-                  <option value="">Aucune</option>
+                  <option value="">{t.common_none}</option>
                   {formulas.map(f => (
                     <option key={f.id} value={f.id}>{f.name} - {formatCurrency(f.price)}</option>
                   ))}
@@ -622,7 +640,7 @@ export function CloserCRM() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">Source</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1.5">{t.closer_crm_source}</label>
                 <select value={newProspectForm.source}
                   onChange={e => {
                     if (e.target.value === '__new__') {
@@ -633,19 +651,19 @@ export function CloserCRM() {
                   }}
                   className="w-full bg-stone-100 dark:bg-neutral-800 border-none rounded-xl p-2.5 text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none">
                   {allSources.map(s => <option key={s} value={s}>{s}</option>)}
-                  <option value="__new__">+ Nouvelle source</option>
+                  <option value="__new__">+ {t.closer_crm_new_source}</option>
                 </select>
               </div>
 
               <div className="flex gap-3 pt-4">
                 <button onClick={() => setIsCreateModalOpen(false)}
                   className="flex-1 bg-stone-100 dark:bg-neutral-800 hover:bg-stone-200 dark:hover:bg-neutral-700 text-stone-700 dark:text-neutral-200 font-medium py-2.5 rounded-full transition-colors">
-                  Annuler
+                  {t.common_cancel}
                 </button>
                 <button onClick={handleCreateProspect}
                   disabled={(!newProspectForm.firstName && !newProspectForm.lastName) || isCreating}
                   className="flex-1 bg-stone-900 hover:opacity-90 text-white font-extrabold py-2.5 rounded-full transition-colors disabled:opacity-50">
-                  {isCreating ? 'Création...' : 'Créer le prospect'}
+                  {isCreating ? t.common_creating : t.closer_crm_create_prospect}
                 </button>
               </div>
             </div>

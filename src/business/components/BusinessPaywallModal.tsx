@@ -1,7 +1,9 @@
 import { Lock, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useBusinessLang } from '../i18n/BusinessLangContext';
 
 export function BusinessPaywallModal() {
+  const { t, lang } = useBusinessLang();
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 sm:p-10 shadow-2xl text-center">
@@ -13,11 +15,11 @@ export function BusinessPaywallModal() {
           className="text-2xl font-extrabold text-stone-900 tracking-tight mb-3"
           style={{ fontFamily: 'Manrope, sans-serif' }}
         >
-          Votre essai gratuit est termine
+          {t.paywall_trial_ended}
         </h2>
 
         <p className="text-stone-500 mb-8 leading-relaxed">
-          Pour continuer a utiliser CloseOS Business, choisissez une formule adaptee a vos besoins.
+          {t.paywall_trial_ended_desc}
         </p>
 
         <Link
@@ -25,12 +27,12 @@ export function BusinessPaywallModal() {
           className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-4 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-95"
           style={{ fontFamily: 'Manrope, sans-serif' }}
         >
-          Choisir une formule
+          {t.paywall_choose_plan}
           <ArrowRight className="h-5 w-5" />
         </Link>
 
         <p className="mt-4 text-xs text-stone-400">
-          Des questions ? Contactez-nous a{' '}
+          {t.paywall_contact_question}{' '}
           <a href="mailto:support@closeos.fr" className="text-stone-600 hover:underline">
             support@closeos.fr
           </a>

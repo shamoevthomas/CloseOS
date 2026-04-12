@@ -6,6 +6,7 @@ import {
   Target, MousePointerClick, Info, CircleDot,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface SubStep {
   text: string
@@ -26,22 +27,17 @@ interface Step {
   support?: { email: string; guideUrl: string }
 }
 
-const STEPS: Step[] = [
+const STEPS_FR: Step[] = [
   {
-    icon: Sparkles,
-    iconColor: 'text-emerald-400',
-    iconBg: 'bg-emerald-500/10',
+    icon: Sparkles, iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10',
     title: 'Bienvenue sur CloseOS Sales !',
     description: 'Votre cockpit de closer indépendant. Ce guide vous accompagne pour configurer votre espace en quelques minutes.',
     subSteps: [],
     tip: 'CloseOS vous fait gagner jusqu\'à 1h30 par jour en éliminant les tâches admin.',
-    targetPage: null,
-    actionLabel: null,
+    targetPage: null, actionLabel: null,
   },
   {
-    icon: Briefcase,
-    iconColor: 'text-amber-400',
-    iconBg: 'bg-amber-500/10',
+    icon: Briefcase, iconColor: 'text-amber-400', iconBg: 'bg-amber-500/10',
     title: 'Créez votre première offre',
     description: 'Sans offre, impossible d\'assigner des prospects, calculer vos commissions ou générer des factures.',
     subSteps: [
@@ -51,13 +47,10 @@ const STEPS: Step[] = [
       { text: 'Ajoutez le nom de l\'infopreneur (client)' },
     ],
     tip: 'Une offre = un produit que vous vendez pour un infopreneur. Créez-en une par client.',
-    targetPage: '/offers',
-    actionLabel: 'Aller dans Offres',
+    targetPage: '/offers', actionLabel: 'Aller dans Offres',
   },
   {
-    icon: Calendar,
-    iconColor: 'text-emerald-400',
-    iconBg: 'bg-emerald-500/10',
+    icon: Calendar, iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10',
     title: 'Connectez Google Calendar',
     description: 'Synchronisez votre agenda pour voir vos événements et créer des RDV avec lien Google Meet automatique.',
     subSteps: [
@@ -66,13 +59,10 @@ const STEPS: Step[] = [
       { text: 'Vos événements se synchronisent automatiquement' },
     ],
     tip: 'La synchronisation couvre 1 mois passé et 3 mois dans le futur.',
-    targetPage: '/agenda',
-    actionLabel: 'Aller dans Agenda',
+    targetPage: '/agenda', actionLabel: 'Aller dans Agenda',
   },
   {
-    icon: CalendarCheck,
-    iconColor: 'text-purple-400',
-    iconBg: 'bg-purple-500/10',
+    icon: CalendarCheck, iconColor: 'text-purple-400', iconBg: 'bg-purple-500/10',
     title: 'Configurez vos Rendez-vous',
     description: 'Connectez Cal.com pour gérer vos créneaux et permettre à vos prospects de réserver directement.',
     subSteps: [
@@ -82,13 +72,10 @@ const STEPS: Step[] = [
       { text: 'Partagez votre lien de booking Cal.com à vos prospects' },
     ],
     tip: 'Cal.com gère automatiquement les créneaux, les rappels et la synchronisation avec votre agenda.',
-    targetPage: '/rendez-vous',
-    actionLabel: 'Aller dans Rendez-vous',
+    targetPage: '/rendez-vous', actionLabel: 'Aller dans Rendez-vous',
   },
   {
-    icon: CreditCard,
-    iconColor: 'text-emerald-400',
-    iconBg: 'bg-emerald-500/10',
+    icon: CreditCard, iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10',
     title: 'Configurez la Facturation',
     description: 'Connectez Stripe Connect pour recevoir vos paiements et ajoutez vos moyens de paiement.',
     subSteps: [
@@ -97,13 +84,10 @@ const STEPS: Step[] = [
       { text: 'Renseignez vos informations de facturation (SIRET, adresse...)' },
     ],
     tip: 'Avec Stripe Connect actif, chaque facture inclut un lien de paiement automatique.',
-    targetPage: '/factures',
-    actionLabel: 'Aller dans Factures',
+    targetPage: '/factures', actionLabel: 'Aller dans Factures',
   },
   {
-    icon: BarChart3,
-    iconColor: 'text-violet-400',
-    iconBg: 'bg-violet-500/10',
+    icon: BarChart3, iconColor: 'text-violet-400', iconBg: 'bg-violet-500/10',
     title: 'Configurez vos KPI',
     description: 'Importez vos KPI pour suivre votre performance et piloter votre activité au quotidien.',
     subSteps: [
@@ -111,19 +95,14 @@ const STEPS: Step[] = [
       { text: 'Importez vos KPI depuis la configuration' },
     ],
     tip: 'Une fois vos KPI importés, vous pourrez suivre votre progression en temps réel.',
-    targetPage: '/kpi',
-    actionLabel: 'Aller dans KPI',
+    targetPage: '/kpi', actionLabel: 'Aller dans KPI',
   },
   {
-    icon: Rocket,
-    iconColor: 'text-emerald-400',
-    iconBg: 'bg-emerald-500/10',
+    icon: Rocket, iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10',
     title: 'Vous êtes prêt !',
     description: 'Votre espace est configuré. Voici votre routine quotidienne recommandée :',
-    subSteps: [],
-    tip: null,
-    targetPage: '/dashboard',
-    actionLabel: 'Commencer',
+    subSteps: [], tip: null,
+    targetPage: '/dashboard', actionLabel: 'Commencer',
     routine: [
       'Matin — Dashboard pour voir vos RDV et KPIs du jour',
       'Préparation — Pipeline pour relire les fiches prospects',
@@ -131,10 +110,94 @@ const STEPS: Step[] = [
       'Après chaque call — Mise à jour automatique : stage + notes + facture + KPI en temps réel',
       'Fin de journée — KPI pour suivre votre progression',
     ],
-    support: {
-      email: 'support@closeos.fr',
-      guideUrl: 'https://www.notion.so/Guide-d-onboarding-CloseOS-Sales-334aef2e488f8172bbdffcfeedf88fad',
-    },
+    support: { email: 'support@closeos.fr', guideUrl: 'https://www.notion.so/Guide-d-onboarding-CloseOS-Sales-334aef2e488f8172bbdffcfeedf88fad' },
+  },
+]
+
+const STEPS_EN: Step[] = [
+  {
+    icon: Sparkles, iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10',
+    title: 'Welcome to CloseOS Sales!',
+    description: 'Your independent closer cockpit. This guide will help you set up your workspace in a few minutes.',
+    subSteps: [],
+    tip: 'CloseOS saves you up to 1.5 hours per day by eliminating admin tasks.',
+    targetPage: null, actionLabel: null,
+  },
+  {
+    icon: Briefcase, iconColor: 'text-amber-400', iconBg: 'bg-amber-500/10',
+    title: 'Create your first offer',
+    description: 'Without an offer, you cannot assign prospects, calculate commissions, or generate invoices.',
+    subSteps: [
+      { text: 'Click on "+ New offer"' },
+      { text: 'Enter the product/service name' },
+      { text: 'Set the price and your commission rate' },
+      { text: 'Add the client\'s name' },
+    ],
+    tip: 'An offer = a product you sell for a client. Create one per client.',
+    targetPage: '/offers', actionLabel: 'Go to Offers',
+  },
+  {
+    icon: Calendar, iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10',
+    title: 'Connect Google Calendar',
+    description: 'Sync your calendar to see events and create appointments with automatic Google Meet links.',
+    subSteps: [
+      { text: 'Click "Sync Google" at the top of the page' },
+      { text: 'Authorize access to your Google Calendar' },
+      { text: 'Your events sync automatically' },
+    ],
+    tip: 'Sync covers 1 month in the past and 3 months in the future.',
+    targetPage: '/agenda', actionLabel: 'Go to Calendar',
+  },
+  {
+    icon: CalendarCheck, iconColor: 'text-purple-400', iconBg: 'bg-purple-500/10',
+    title: 'Set up your Appointments',
+    description: 'Connect Cal.com to manage your slots and let prospects book directly.',
+    subSteps: [
+      { text: 'Go to the Appointments page' },
+      { text: 'Connect your Cal.com account' },
+      { text: 'Configure your appointment types and availability on Cal.com' },
+      { text: 'Share your Cal.com booking link with prospects' },
+    ],
+    tip: 'Cal.com automatically manages slots, reminders, and calendar sync.',
+    targetPage: '/rendez-vous', actionLabel: 'Go to Appointments',
+  },
+  {
+    icon: CreditCard, iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10',
+    title: 'Set up Invoicing',
+    description: 'Connect Stripe Connect to receive payments and add your payment methods.',
+    subSteps: [
+      { text: 'Click "Connect Stripe" to receive payments' },
+      { text: 'Add your bank details (IBAN, PayPal, Revolut...)' },
+      { text: 'Enter your billing information (SIRET, address...)' },
+    ],
+    tip: 'With Stripe Connect active, each invoice includes an automatic payment link.',
+    targetPage: '/factures', actionLabel: 'Go to Invoices',
+  },
+  {
+    icon: BarChart3, iconColor: 'text-violet-400', iconBg: 'bg-violet-500/10',
+    title: 'Set up your KPIs',
+    description: 'Import your KPIs to track your performance and manage your activity daily.',
+    subSteps: [
+      { text: 'Click the "Configure" button at the top of the page' },
+      { text: 'Import your KPIs from the configuration' },
+    ],
+    tip: 'Once your KPIs are imported, you can track your progress in real time.',
+    targetPage: '/kpi', actionLabel: 'Go to KPIs',
+  },
+  {
+    icon: Rocket, iconColor: 'text-emerald-400', iconBg: 'bg-emerald-500/10',
+    title: "You're all set!",
+    description: 'Your workspace is configured. Here is your recommended daily routine:',
+    subSteps: [], tip: null,
+    targetPage: '/dashboard', actionLabel: 'Get started',
+    routine: [
+      'Morning — Dashboard to see your appointments and daily KPIs',
+      'Preparation — Pipeline to review prospect profiles',
+      'Calls — Cockpit with auto-displayed scripts and resources',
+      'After each call — Auto update: stage + notes + invoice + KPI in real time',
+      'End of day — KPIs to track your progress',
+    ],
+    support: { email: 'support@closeos.fr', guideUrl: 'https://www.notion.so/Guide-d-onboarding-CloseOS-Sales-334aef2e488f8172bbdffcfeedf88fad' },
   },
 ]
 
@@ -145,9 +208,11 @@ interface OnboardingTutorialProps {
 export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { lang } = useLanguage()
   const [step, setStep] = useState(0)
   const [minimized, setMinimized] = useState(false)
 
+  const STEPS = lang === 'fr' ? STEPS_FR : STEPS_EN
   const current = STEPS[step]
   const isFirst = step === 0
   const isLast = step === STEPS.length - 1
@@ -195,7 +260,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
           </div>
           <div className="text-left">
             <p className="text-xs font-bold text-white">{current.title}</p>
-            <p className="text-[10px] text-white/40">Cliquez pour reprendre le guide</p>
+            <p className="text-[10px] text-white/40">{lang === 'fr' ? 'Cliquez pour reprendre le guide' : 'Click to resume the guide'}</p>
           </div>
           <ChevronRight className="h-4 w-4 text-white/40 group-hover:text-white transition-colors" />
         </button>
@@ -222,13 +287,13 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
               onClick={() => setMinimized(true)}
               className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-white/40 hover:text-white hover:bg-white/5 transition-colors uppercase tracking-wider"
             >
-              Minimiser
+              {lang === 'fr' ? 'Minimiser' : 'Minimize'}
             </button>
           )}
           <button
             onClick={onComplete}
             className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
-            title="Fermer le guide"
+            title={lang === 'fr' ? "Fermer le guide" : "Close guide"}
           >
             <X className="h-5 w-5" />
           </button>
@@ -239,12 +304,12 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
           {/* Step counter */}
           <div className="flex items-center gap-2 mb-6">
             <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">
-              Étape {step + 1} sur {STEPS.length}
+              {lang === 'fr' ? `Étape ${step + 1} sur ${STEPS.length}` : `Step ${step + 1} of ${STEPS.length}`}
             </p>
             {current.targetPage && location.pathname === current.targetPage && (
               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-[10px] font-bold text-emerald-400">
                 <CircleDot className="h-3 w-3" />
-                Vous y êtes
+                {lang === 'fr' ? 'Vous y êtes' : "You're here"}
               </span>
             )}
           </div>
@@ -265,7 +330,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
             <div className="rounded-xl bg-white/5 border border-white/[0.08] p-4 mb-5">
               <div className="flex items-center gap-2 mb-3">
                 <MousePointerClick className="h-3.5 w-3.5 text-emerald-400" />
-                <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">À faire sur cette page</p>
+                <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">{lang === 'fr' ? 'À faire sur cette page' : 'To do on this page'}</p>
               </div>
               <div className="space-y-2.5">
                 {current.subSteps.map((sub, i) => (
@@ -297,11 +362,11 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
             <div className="rounded-xl bg-white/5 border border-white/[0.08] p-4 mb-5 space-y-2.5">
               <div className="flex items-center gap-2.5">
                 <Info className="h-4 w-4 text-white/40 shrink-0" />
-                <p className="text-xs text-white/60">Besoin d'aide ? Contactez-nous : <a href={`mailto:${current.support.email}`} className="text-emerald-400 hover:text-emerald-300 font-bold">{current.support.email}</a></p>
+                <p className="text-xs text-white/60">{lang === 'fr' ? "Besoin d'aide ? Contactez-nous : " : 'Need help? Contact us: '}<a href={`mailto:${current.support.email}`} className="text-emerald-400 hover:text-emerald-300 font-bold">{current.support.email}</a></p>
               </div>
               <div className="flex items-center gap-2.5">
                 <ArrowRight className="h-4 w-4 text-white/40 shrink-0" />
-                <a href={current.support.guideUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:text-emerald-300 font-bold">Consultez le guide d'onboarding complet</a>
+                <a href={current.support.guideUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:text-emerald-300 font-bold">{lang === 'fr' ? "Consultez le guide d'onboarding complet" : 'View the complete onboarding guide'}</a>
               </div>
             </div>
           )}
@@ -347,7 +412,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
                   : 'flex-1 bg-emerald-500 hover:bg-emerald-400 text-black'
               )}
             >
-              {isLast ? 'Terminer' : current.targetPage ? 'Passer' : 'Suivant'}
+              {isLast ? (lang === 'fr' ? 'Terminer' : 'Finish') : current.targetPage ? (lang === 'fr' ? 'Passer' : 'Skip') : (lang === 'fr' ? 'Suivant' : 'Next')}
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
@@ -358,7 +423,7 @@ export function OnboardingTutorial({ onComplete }: OnboardingTutorialProps) {
               onClick={onComplete}
               className="w-full mt-4 text-center text-[11px] text-white/30 hover:text-white/60 transition-colors"
             >
-              Passer tout le guide
+              {lang === 'fr' ? 'Passer tout le guide' : 'Skip entire guide'}
             </button>
           )}
         </div>

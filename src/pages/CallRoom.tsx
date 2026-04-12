@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useProspects } from '../contexts/ProspectsContext';
 import { ProspectView } from '../components/ProspectView';
 import { cn } from '../lib/utils';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Interfaces pour les données
 interface Script {
@@ -30,11 +31,12 @@ interface Offer {
 
 export default function CallRoom() {
     const { user } = useAuth();
+    const { lang } = useLanguage();
     const { prospects, updateProspect, deleteProspect } = useProspects();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const callIdFromParams = searchParams.get('id');
-    const contactName = searchParams.get('name') || 'Appel';
+    const contactName = searchParams.get('name') || (lang === 'fr' ? 'Appel' : 'Call');
     const prospectIdFromParams = searchParams.get('prospectId');
     const fromPage = searchParams.get('from') || '/';
 
@@ -57,7 +59,7 @@ export default function CallRoom() {
     // --- STATE SCRIPTS ---
     const [scripts, setScripts] = useState<Script[]>([]);
     const [selectedScriptId, setSelectedScriptId] = useState<string | number>('');
-    const [currentScriptContent, setCurrentScriptContent] = useState("Chargement...");
+    const [currentScriptContent, setCurrentScriptContent] = useState(lang === 'fr' ? "Chargement..." : "Loading...");
 
     // --- STATE OFFRES ---
     const [offers, setOffers] = useState<Offer[]>([]);
@@ -118,7 +120,7 @@ export default function CallRoom() {
                 setSelectedScriptId(scriptsData[0].id);
                 setCurrentScriptContent(scriptsData[0].content);
             } else {
-                setCurrentScriptContent("Aucun script trouvé.");
+                setCurrentScriptContent(lang === 'fr' ? "Aucun script trouvé." : "No script found.");
             }
 
             // B. Charger les offres actives
@@ -207,7 +209,7 @@ export default function CallRoom() {
             mediaRecorderRef.current = recorder;
             setIsRecording(true);
         } catch (err) {
-            alert("Impossible de lancer l'enregistrement.");
+            alert(lang === 'fr' ? "Impossible de lancer l'enregistrement." : "Unable to start recording.");
         }
     };
 
@@ -263,7 +265,7 @@ export default function CallRoom() {
                         <div className="flex items-center gap-2 text-xs text-white/40 mt-0.5">
                             <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                <span className="font-medium text-emerald-400">En ligne</span>
+                                <span className="font-medium text-emerald-400">{lang === 'fr' ? 'En ligne' : 'Online'}</span>
                             </div>
                             <span className="text-white/10">•</span>
                             <span className="font-mono text-white/60 font-medium tracking-wide">
@@ -280,7 +282,7 @@ export default function CallRoom() {
                             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-sm font-medium transition-colors"
                         >
                             <User className="h-4 w-4" />
-                            Fiche Prospect
+                            {lang === 'fr' ? 'Fiche Prospect' : 'Prospect Sheet'}
                         </button>
                     )}
 
@@ -307,7 +309,7 @@ export default function CallRoom() {
                         ) : (
                             <>
                                 <div className="h-3 w-3 rounded-full bg-white/40"></div>
-                                Enregistrer
+                                {lang === 'fr' ? 'Enregistrer' : 'Record'}
                             </>
                         )}
                     </button>
@@ -317,7 +319,7 @@ export default function CallRoom() {
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${isPanelOpen ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-white/[0.08] hover:bg-white/5'}`}
                     >
                         <FileText className="h-4 w-4" />
-                        PANNEAU GAUCHE
+                        {lang === 'fr' ? 'PANNEAU GAUCHE' : 'LEFT PANEL'}
                     </button>
 
                     <div className="h-8 w-px bg-white/[0.08] mx-2"></div>
@@ -327,7 +329,7 @@ export default function CallRoom() {
                         className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-bold shadow-lg transition-colors"
                     >
                         <PhoneOff className="h-4 w-4" />
-                        Fin
+                        {lang === 'fr' ? 'Fin' : 'End'}
                     </button>
                 </div>
             </div>
@@ -353,7 +355,7 @@ export default function CallRoom() {
                                     className="appearance-none bg-white/5 border border-white/[0.08] hover:border-white/20 text-white text-xs rounded-md px-3 py-1.5 pr-8 focus:outline-none focus:border-emerald-500 cursor-pointer min-w-[150px]"
                                 >
                                     {scripts.map(s => (
-                                        <option key={s.id} value={s.id}>{s.title || 'Sans titre'}</option>
+                                        <option key={s.id} value={s.id}>{s.title || (lang === 'fr' ? 'Sans titre' : 'Untitled')}</option>
                                     ))}
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40 pointer-events-none" />
@@ -374,7 +376,7 @@ export default function CallRoom() {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Briefcase className="h-4 w-4 text-purple-400" />
-                                    <span className="text-xs font-bold text-purple-400 tracking-wider">OFFRE & RESSOURCES</span>
+                                    <span className="text-xs font-bold text-purple-400 tracking-wider">{lang === 'fr' ? 'OFFRE & RESSOURCES' : 'OFFER & RESOURCES'}</span>
                                 </div>
                                 {/* Sélecteur d'Offre */}
                                 <div className="relative group">
@@ -397,13 +399,13 @@ export default function CallRoom() {
                                     onClick={() => setActiveOfferTab('notes')}
                                     className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5", activeOfferTab === 'notes' ? "bg-purple-600 text-white shadow" : "text-white/40 hover:text-white hover:bg-white/5")}
                                 >
-                                    <ScrollText className="h-3 w-3" /> Notes Closing
+                                    <ScrollText className="h-3 w-3" /> {lang === 'fr' ? 'Notes Closing' : 'Closing Notes'}
                                 </button>
                                 <button
                                     onClick={() => setActiveOfferTab('formulas')}
                                     className={cn("flex-1 py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5", activeOfferTab === 'formulas' ? "bg-purple-600 text-white shadow" : "text-white/40 hover:text-white hover:bg-white/5")}
                                 >
-                                    <Tag className="h-3 w-3" /> Formules
+                                    <Tag className="h-3 w-3" /> {lang === 'fr' ? 'Formules' : 'Formulas'}
                                 </button>
                                 <button
                                     onClick={() => setActiveOfferTab('resources')}
@@ -417,13 +419,13 @@ export default function CallRoom() {
                         {/* Contenu Offre */}
                         <div className="flex-1 overflow-y-auto p-4 bg-[#1a1a1a]">
                             {!currentOffer ? (
-                                <p className="text-sm text-white/40 text-center mt-10">Sélectionnez une offre pour voir les détails.</p>
+                                <p className="text-sm text-white/40 text-center mt-10">{lang === 'fr' ? 'Sélectionnez une offre pour voir les détails.' : 'Select an offer to see details.'}</p>
                             ) : (
                                 <>
                                     {/* Onglet: Notes de Closing */}
                                     {activeOfferTab === 'notes' && (
                                         <div className="prose prose-invert prose-sm max-w-none">
-                                            <p className="text-white/60 whitespace-pre-wrap">{currentOffer.notes || "Aucune note de closing."}</p>
+                                            <p className="text-white/60 whitespace-pre-wrap">{currentOffer.notes || (lang === 'fr' ? "Aucune note de closing." : "No closing notes.")}</p>
                                         </div>
                                     )}
 
@@ -441,7 +443,7 @@ export default function CallRoom() {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <p className="text-sm text-white/40">Aucune formule configurée.</p>
+                                                <p className="text-sm text-white/40">{lang === 'fr' ? 'Aucune formule configurée.' : 'No formulas configured.'}</p>
                                             )}
                                         </div>
                                     )}
@@ -464,7 +466,7 @@ export default function CallRoom() {
                                                     </li>
                                                 ))
                                             ) : (
-                                                <p className="text-sm text-white/40">Aucune ressource disponible.</p>
+                                                <p className="text-sm text-white/40">{lang === 'fr' ? 'Aucune ressource disponible.' : 'No resources available.'}</p>
                                             )}
                                         </ul>
                                     )}
@@ -478,7 +480,7 @@ export default function CallRoom() {
                 <div className="flex-1 flex flex-col bg-[#1a1a1a] relative border-l border-white/[0.08]">
                     <div className="p-4 border-b border-white/[0.08] flex items-center gap-4 bg-[#1a1a1a]/30">
                         <h3 className="font-bold text-white/40 text-sm tracking-wider flex items-center gap-2">
-                            <FileText className="h-4 w-4" /> PRISE DE NOTES
+                            <FileText className="h-4 w-4" /> {lang === 'fr' ? 'PRISE DE NOTES' : 'NOTES'}
                         </h3>
 
                         {/* Previous notes tabs */}
@@ -493,7 +495,7 @@ export default function CallRoom() {
                                             : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"
                                     )}
                                 >
-                                    Actuelles
+                                    {lang === 'fr' ? 'Actuelles' : 'Current'}
                                 </button>
                                 {previousNotes.map((n: any) => (
                                     <button
@@ -506,7 +508,7 @@ export default function CallRoom() {
                                                 : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"
                                         )}
                                     >
-                                        {new Date(n.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                                        {new Date(n.date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: '2-digit', month: 'short' })}
                                     </button>
                                 ))}
                             </div>
@@ -514,19 +516,19 @@ export default function CallRoom() {
 
                         <div className="flex items-center gap-2 ml-auto">
                             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                            <span className="text-xs text-white/40">Sauvegarde auto</span>
+                            <span className="text-xs text-white/40">{lang === 'fr' ? 'Sauvegarde auto' : 'Auto-save'}</span>
                         </div>
                     </div>
 
                     {selectedPreviousNote ? (
                         <div className="flex-1 w-full p-8 text-white/60 text-lg leading-relaxed font-light whitespace-pre-wrap overflow-y-auto">
-                            {previousNotes.find((n: any) => n.id === selectedPreviousNote)?.content || 'Aucune note'}
+                            {previousNotes.find((n: any) => n.id === selectedPreviousNote)?.content || (lang === 'fr' ? 'Aucune note' : 'No notes')}
                         </div>
                     ) : (
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)"
+                            placeholder={lang === 'fr' ? "Commencez à écrire vos notes ici... (Situation actuelle, Douleurs, Objectifs, Budget...)" : "Start writing your notes here... (Current situation, Pain points, Goals, Budget...)"}
                             className="flex-1 w-full bg-transparent p-8 text-white placeholder-white/10 resize-none focus:outline-none text-lg leading-relaxed font-light"
                             autoFocus
                         />

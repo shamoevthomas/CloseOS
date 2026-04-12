@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { CheckSquare, Square, Download, Loader2 } from 'lucide-react'
+import { useLanguage } from '../contexts/LanguageContext'
 // @ts-ignore - html2pdf.js doesn't have types
 import html2pdf from 'html2pdf.js'
 import { useProspects } from '../contexts/ProspectsContext'
@@ -11,7 +12,7 @@ import { supabase } from '../lib/supabase'
 
 type ExportSection = 'kpi' | 'pipeline' | 'contacts' | 'factures' | 'rappels'
 
-const SECTIONS: { id: ExportSection; label: string }[] = [
+const SECTIONS_FR: { id: ExportSection; label: string }[] = [
   { id: 'kpi', label: 'KPI (CA, Ventes, Conversion)' },
   { id: 'pipeline', label: 'Pipeline (Prospects par étape)' },
   { id: 'contacts', label: 'Contacts (Nom, Email, Tél)' },
@@ -19,13 +20,30 @@ const SECTIONS: { id: ExportSection; label: string }[] = [
   { id: 'rappels', label: 'Rappels' },
 ]
 
-const STAGE_LABELS: Record<string, string> = {
+const SECTIONS_EN: { id: ExportSection; label: string }[] = [
+  { id: 'kpi', label: 'KPI (Revenue, Sales, Conversion)' },
+  { id: 'pipeline', label: 'Pipeline (Prospects by stage)' },
+  { id: 'contacts', label: 'Contacts (Name, Email, Phone)' },
+  { id: 'factures', label: 'Invoices' },
+  { id: 'rappels', label: 'Reminders' },
+]
+
+const STAGE_LABELS_FR: Record<string, string> = {
   prospect: 'Prospect',
   qualified: 'Qualifié',
   won: 'Gagné',
   followup: 'Follow Up',
   noshow: 'No Show',
   lost: 'Perdu',
+}
+
+const STAGE_LABELS_EN: Record<string, string> = {
+  prospect: 'Prospect',
+  qualified: 'Qualified',
+  won: 'Won',
+  followup: 'Follow Up',
+  noshow: 'No Show',
+  lost: 'Lost',
 }
 
 const parsePrice = (v: string | undefined): number => {
@@ -56,7 +74,11 @@ export function DataExportContent() {
   const { user, profile } = useAuth()
   const { allStages } = useCustomStages()
   const { getProspectTagObjects } = useTags()
+  const { lang } = useLanguage()
   const pdfRef = useRef<HTMLDivElement>(null)
+
+  const SECTIONS = lang === 'fr' ? SECTIONS_FR : SECTIONS_EN
+  const STAGE_LABELS = lang === 'fr' ? STAGE_LABELS_FR : STAGE_LABELS_EN
 
   const [selected, setSelected] = useState<Set<ExportSection>>(new Set(SECTIONS.map(s => s.id)))
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -100,8 +122,8 @@ export function DataExportContent() {
     return sum + (p.value || 0) * (parsePrice(offer.commission) / 100)
   }, 0)
 
-  const userName = profile?.full_name || 'Utilisateur'
-  const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+  const userName = profile?.full_name || (lang === 'fr' ? 'Utilisateur' : 'User')
+  const dateStr = new Date().toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: '2-digit', month: 'long', year: 'numeric' })
   const stages = allStages.map(s => s.id)
   const now = new Date()
 
@@ -166,12 +188,12 @@ export function DataExportContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-white/40">Sélectionnez les données à exporter :</p>
+        <p className="text-sm text-white/40">{lang === 'fr' ? 'Sélectionnez les données à exporter :' : 'Select data to export:'}</p>
         <button
           onClick={toggleAll}
           className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
         >
-          {selected.size === SECTIONS.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+          {selected.size === SECTIONS.length ? (lang === 'fr' ? 'Tout désélectionner' : 'Deselect all') : (lang === 'fr' ? 'Tout sélectionner' : 'Select all')}
         </button>
       </div>
 
@@ -197,7 +219,7 @@ export function DataExportContent() {
         className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold transition-colors shadow-lg shadow-emerald-500/25"
       >
         {generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
-        {generating ? 'Génération en cours…' : 'Exporter en PDF'}
+        {generating ? (lang === 'fr' ? 'Génération en cours…' : 'Generating...') : (lang === 'fr' ? 'Exporter en PDF' : 'Export to PDF')}
       </button>
 
       {/* Hidden PDF content - rendered in DOM for html2canvas to capture */}
@@ -216,7 +238,7 @@ export function DataExportContent() {
           >
             {/* Header */}
             <div style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', padding: '28px 32px', borderRadius: '12px', marginBottom: '32px' }}>
-              <h1 style={{ color: '#ffffff', fontSize: '22px', fontWeight: 800, margin: '0 0 4px 0' }}>CloseOS — Export de données</h1>
+              <h1 style={{ color: '#ffffff', fontSize: '22px', fontWeight: 800, margin: '0 0 4px 0' }}>{lang === 'fr' ? 'CloseOS — Export de données' : 'CloseOS — Data Export'}</h1>
               <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', margin: 0 }}>{userName} • {dateStr}</p>
             </div>
 
@@ -227,15 +249,15 @@ export function DataExportContent() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={thStyle}>Métrique</th>
-                      <th style={thStyle}>Valeur</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Métrique' : 'Metric'}</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Valeur' : 'Value'}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr><td style={tdStyle}>CA Total</td><td style={tdStyle}>{totalCA.toLocaleString('fr-FR')} €</td></tr>
-                    <tr><td style={tdStyle}>Ventes (Won)</td><td style={tdStyle}>{totalVentes}</td></tr>
-                    <tr><td style={tdStyle}>Taux de conversion</td><td style={tdStyle}>{tauxConversion}%</td></tr>
-                    <tr><td style={tdStyle}>Commissions estimées</td><td style={tdStyle}>{totalCommissions.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</td></tr>
+                    <tr><td style={tdStyle}>{lang === 'fr' ? 'CA Total' : 'Total Revenue'}</td><td style={tdStyle}>{totalCA.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US')} €</td></tr>
+                    <tr><td style={tdStyle}>{lang === 'fr' ? 'Ventes (Won)' : 'Sales (Won)'}</td><td style={tdStyle}>{totalVentes}</td></tr>
+                    <tr><td style={tdStyle}>{lang === 'fr' ? 'Taux de conversion' : 'Conversion rate'}</td><td style={tdStyle}>{tauxConversion}%</td></tr>
+                    <tr><td style={tdStyle}>{lang === 'fr' ? 'Commissions estimées' : 'Estimated commissions'}</td><td style={tdStyle}>{totalCommissions.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -248,10 +270,10 @@ export function DataExportContent() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={thStyle}>Contact</th>
-                      <th style={thStyle}>Entreprise</th>
-                      <th style={thStyle}>Étape</th>
-                      <th style={thStyle}>Montant</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Contact' : 'Contact'}</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Entreprise' : 'Company'}</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Étape' : 'Stage'}</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Montant' : 'Amount'}</th>
                       <th style={thStyle}>Date</th>
                     </tr>
                   </thead>
@@ -265,11 +287,11 @@ export function DataExportContent() {
                               <td style={tdStyle}>{p.contact || p.name || '-'}</td>
                               <td style={tdStyle}>{p.company || '-'}</td>
                               <td style={tdStyle}>{allStages.find(s => s.id === p.stage)?.name || STAGE_LABELS[p.stage] || p.stage}</td>
-                              <td style={tdStyle}>{p.value ? p.value.toLocaleString('fr-FR') + ' €' : '-'}</td>
-                              <td style={tdStyle}>{p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '-'}</td>
+                              <td style={tdStyle}>{p.value ? p.value.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US') + ' €' : '-'}</td>
+                              <td style={tdStyle}>{p.created_at ? new Date(p.created_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US') : '-'}</td>
                             </tr>
                           ))
-                      : <tr><td style={tdStyle} colSpan={5}>Aucun prospect</td></tr>
+                      : <tr><td style={tdStyle} colSpan={5}>{lang === 'fr' ? 'Aucun prospect' : 'No prospects'}</td></tr>
                     }
                   </tbody>
                 </table>
@@ -283,10 +305,10 @@ export function DataExportContent() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={thStyle}>Nom</th>
-                      <th style={thStyle}>Entreprise</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Nom' : 'Name'}</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Entreprise' : 'Company'}</th>
                       <th style={thStyle}>Email</th>
-                      <th style={thStyle}>Téléphone</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Téléphone' : 'Phone'}</th>
                       <th style={thStyle}>Tags</th>
                     </tr>
                   </thead>
@@ -301,7 +323,7 @@ export function DataExportContent() {
                             <td style={tdStyle}>{getProspectTagObjects(p.id).map(t => t.name).join(', ') || '-'}</td>
                           </tr>
                         ))
-                      : <tr><td style={tdStyle} colSpan={5}>Aucun contact</td></tr>
+                      : <tr><td style={tdStyle} colSpan={5}>{lang === 'fr' ? 'Aucun contact' : 'No contacts'}</td></tr>
                     }
                   </tbody>
                 </table>
@@ -311,14 +333,14 @@ export function DataExportContent() {
             {/* Factures */}
             {selected.has('factures') && (
               <div style={{ marginBottom: '32px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6' }}>Factures</h2>
+                <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6' }}>{lang === 'fr' ? 'Factures' : 'Invoices'}</h2>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={thStyle}>N°</th>
-                      <th style={thStyle}>Montant</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'N°' : '#'}</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Montant' : 'Amount'}</th>
                       <th style={thStyle}>Date</th>
-                      <th style={thStyle}>Statut</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Statut' : 'Status'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -326,12 +348,12 @@ export function DataExportContent() {
                       ? invoices.map((inv, i) => (
                           <tr key={i}>
                             <td style={tdStyle}>{inv.invoice_number || '-'}</td>
-                            <td style={tdStyle}>{inv.amount_ttc ? inv.amount_ttc.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €' : '-'}</td>
-                            <td style={tdStyle}>{inv.created_at ? new Date(inv.created_at).toLocaleDateString('fr-FR') : '-'}</td>
+                            <td style={tdStyle}>{inv.amount_ttc ? inv.amount_ttc.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US', { minimumFractionDigits: 2 }) + ' €' : '-'}</td>
+                            <td style={tdStyle}>{inv.created_at ? new Date(inv.created_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US') : '-'}</td>
                             <td style={tdStyle}>{inv.status || '-'}</td>
                           </tr>
                         ))
-                      : <tr><td style={tdStyle} colSpan={4}>Aucune facture</td></tr>
+                      : <tr><td style={tdStyle} colSpan={4}>{lang === 'fr' ? 'Aucune facture' : 'No invoices'}</td></tr>
                     }
                   </tbody>
                 </table>
@@ -341,30 +363,30 @@ export function DataExportContent() {
             {/* Rappels */}
             {selected.has('rappels') && (
               <div style={{ marginBottom: '32px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6' }}>Rappels</h2>
+                <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6' }}>{lang === 'fr' ? 'Rappels' : 'Reminders'}</h2>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={thStyle}>Titre</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Titre' : 'Title'}</th>
                       <th style={thStyle}>Date</th>
-                      <th style={thStyle}>Statut</th>
+                      <th style={thStyle}>{lang === 'fr' ? 'Statut' : 'Status'}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {reminders.length > 0
                       ? reminders.map((r, i) => {
                           const due = new Date(r.due_date)
-                          const statut = r.done ? 'Fait' : due < now ? 'En retard' : 'À venir'
+                          const statut = r.done ? (lang === 'fr' ? 'Fait' : 'Done') : due < now ? (lang === 'fr' ? 'En retard' : 'Overdue') : (lang === 'fr' ? 'À venir' : 'Upcoming')
                           const statutColor = r.done ? '#10b981' : due < now ? '#ef4444' : '#3b82f6'
                           return (
                             <tr key={i}>
                               <td style={tdStyle}>{r.title || '-'}</td>
-                              <td style={tdStyle}>{due.toLocaleDateString('fr-FR')}</td>
+                              <td style={tdStyle}>{due.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}</td>
                               <td style={{ ...tdStyle, color: statutColor, fontWeight: 600 }}>{statut}</td>
                             </tr>
                           )
                         })
-                      : <tr><td style={tdStyle} colSpan={3}>Aucun rappel</td></tr>
+                      : <tr><td style={tdStyle} colSpan={3}>{lang === 'fr' ? 'Aucun rappel' : 'No reminders'}</td></tr>
                     }
                   </tbody>
                 </table>
@@ -373,7 +395,7 @@ export function DataExportContent() {
 
             {/* Footer */}
             <div style={{ marginTop: '40px', paddingTop: '16px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
-              <p style={{ color: '#94a3b8', fontSize: '11px', margin: 0 }}>Généré par CloseOS — closeos.fr</p>
+              <p style={{ color: '#94a3b8', fontSize: '11px', margin: 0 }}>{lang === 'fr' ? 'Généré par CloseOS — closeos.fr' : 'Generated by CloseOS — closeos.fr'}</p>
             </div>
           </div>
         </div>

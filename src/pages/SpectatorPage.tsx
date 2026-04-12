@@ -27,6 +27,7 @@ import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { CloseOSBadge } from '../components/CloseOSBadge'
 import { EmailCapturePopup } from '../components/EmailCapturePopup'
+import { useLanguage } from '../contexts/LanguageContext'
 
 // ============================================================================
 // TYPES
@@ -72,13 +73,22 @@ type PageStatus = 'checking' | 'needsPassword' | 'loading' | 'ready' | 'error'
 // HELPERS
 // ============================================================================
 
-const STAGES = [
+const STAGES_FR = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-400' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-400' },
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-400' },
   { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-400' },
   { id: 'noshow', name: 'No Show', color: 'bg-slate-600', textColor: 'text-slate-400' },
   { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-400' },
+]
+
+const STAGES_EN = [
+  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-400' },
+  { id: 'qualified', name: 'Qualified', color: 'bg-purple-500', textColor: 'text-purple-400' },
+  { id: 'won', name: 'Won', color: 'bg-emerald-500', textColor: 'text-emerald-400' },
+  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-400' },
+  { id: 'noshow', name: 'No Show', color: 'bg-slate-600', textColor: 'text-slate-400' },
+  { id: 'lost', name: 'Lost', color: 'bg-red-500', textColor: 'text-red-400' },
 ]
 
 const parsePrice = (priceString: string): number => {
@@ -108,6 +118,8 @@ const getDisplayName = (p: SpectatorProspect) => {
 // ============================================================================
 
 export function SpectatorPage() {
+  const { lang } = useLanguage()
+  const STAGES = lang === 'fr' ? STAGES_FR : STAGES_EN
   const { token } = useParams<{ token: string }>()
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -122,7 +134,7 @@ export function SpectatorPage() {
   // ====== Single useEffect for initial load ======
   useEffect(() => {
     if (!token) {
-      setError('Lien invalide.')
+      setError(lang === 'fr' ? 'Lien invalide.' : 'Invalid link.')
       setStatus('error')
       return
     }
@@ -146,7 +158,7 @@ export function SpectatorPage() {
         }
 
         if (checkError || checkResult?.error === 'invalid_token') {
-          setError('Ce lien n\'est plus actif ou n\'existe pas.')
+          setError(lang === 'fr' ? 'Ce lien n\'est plus actif ou n\'existe pas.' : 'This link is no longer active or does not exist.')
           setStatus('error')
           return
         }
@@ -168,13 +180,13 @@ export function SpectatorPage() {
 
         if (spectatorError) {
           console.error('get_spectator_data error:', spectatorError)
-          setError('Erreur de chargement. Veuillez réessayer.')
+          setError(lang === 'fr' ? 'Erreur de chargement. Veuillez réessayer.' : 'Loading error. Please try again.')
           setStatus('error')
           return
         }
 
         if (spectatorResult?.error || !spectatorResult) {
-          setError('Ce lien n\'est plus actif ou n\'existe pas.')
+          setError(lang === 'fr' ? 'Ce lien n\'est plus actif ou n\'existe pas.' : 'This link is no longer active or does not exist.')
           setStatus('error')
           return
         }
@@ -188,7 +200,7 @@ export function SpectatorPage() {
       } catch (err) {
         if (cancelled) return
         console.error('Init error:', err)
-        setError('Erreur de chargement. Veuillez réessayer.')
+        setError(lang === 'fr' ? 'Erreur de chargement. Veuillez réessayer.' : 'Loading error. Please try again.')
         setStatus('error')
       }
     }
@@ -228,23 +240,23 @@ export function SpectatorPage() {
       })
 
       if (rpcError) {
-        setError('Erreur de chargement. Veuillez réessayer.')
+        setError(lang === 'fr' ? 'Erreur de chargement. Veuillez réessayer.' : 'Loading error. Please try again.')
         setStatus('needsPassword')
         return
       }
 
       if (result?.error === 'invalid_password') {
-        setError('Mot de passe incorrect.')
+        setError(lang === 'fr' ? 'Mot de passe incorrect.' : 'Incorrect password.')
         setStatus('needsPassword')
         return
       }
       if (result?.error === 'password_required') {
-        setError('Mot de passe requis.')
+        setError(lang === 'fr' ? 'Mot de passe requis.' : 'Password required.')
         setStatus('needsPassword')
         return
       }
       if (result?.error) {
-        setError('Ce lien n\'est plus actif ou n\'existe pas.')
+        setError(lang === 'fr' ? 'Ce lien n\'est plus actif ou n\'existe pas.' : 'This link is no longer active or does not exist.')
         setStatus('error')
         return
       }
@@ -257,7 +269,7 @@ export function SpectatorPage() {
       setStatus('ready')
     } catch (err) {
       console.error('Login error:', err)
-      setError('Erreur de chargement. Veuillez réessayer.')
+      setError(lang === 'fr' ? 'Erreur de chargement. Veuillez réessayer.' : 'Loading error. Please try again.')
       setStatus('needsPassword')
     }
   }
@@ -331,7 +343,9 @@ export function SpectatorPage() {
       }
     })
 
-    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+    const monthNames = lang === 'fr'
+      ? ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     return Object.entries(grouped)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([, val]) => ({
@@ -374,7 +388,7 @@ export function SpectatorPage() {
               <div className="h-full bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600 rounded-full animate-loading-bar" />
             </div>
             <p className="text-sm text-slate-400 animate-pulse">
-              {status === 'checking' ? 'Vérification du lien...' : 'Chargement des performances...'}
+              {status === 'checking' ? (lang === 'fr' ? 'Vérification du lien...' : 'Verifying link...') : (lang === 'fr' ? 'Chargement des performances...' : 'Loading performance data...')}
             </p>
           </div>
           <div className="w-72 mx-auto space-y-3 opacity-30">
@@ -410,7 +424,7 @@ export function SpectatorPage() {
             </div>
             <p className="text-sm text-red-400 font-medium">{error}</p>
           </div>
-          <p className="text-xs text-slate-600">Performances partagées via CloseOS</p>
+          <p className="text-xs text-slate-600">{lang === 'fr' ? 'Performances partagées via CloseOS' : 'Performance shared via CloseOS'}</p>
         </div>
         <CloseOSBadge />
       </div>
@@ -430,9 +444,9 @@ export function SpectatorPage() {
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-500/10">
                 <Lock className="h-7 w-7 text-blue-400" />
               </div>
-              <h1 className="text-lg font-bold text-white">Page Spectateur</h1>
+              <h1 className="text-lg font-bold text-white">{lang === 'fr' ? 'Page Spectateur' : 'Spectator Page'}</h1>
               <p className="text-sm text-slate-400 mt-1">
-                Entrez le mot de passe pour accéder aux performances
+                {lang === 'fr' ? 'Entrez le mot de passe pour accéder aux performances' : 'Enter the password to access performance data'}
               </p>
             </div>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -441,7 +455,7 @@ export function SpectatorPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mot de passe"
+                  placeholder={lang === 'fr' ? 'Mot de passe' : 'Password'}
                   className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 pr-10 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none transition-colors"
                   autoFocus
                 />
@@ -459,11 +473,11 @@ export function SpectatorPage() {
                 disabled={!password}
                 className="w-full rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                Accéder
+                {lang === 'fr' ? 'Accéder' : 'Access'}
               </button>
             </form>
           </div>
-          <p className="mt-6 text-center text-xs text-slate-600">Performances partagées via CloseOS</p>
+          <p className="mt-6 text-center text-xs text-slate-600">{lang === 'fr' ? 'Performances partagées via CloseOS' : 'Performance shared via CloseOS'}</p>
         </div>
         <CloseOSBadge />
       </div>
@@ -491,7 +505,7 @@ export function SpectatorPage() {
                 {profile?.full_name || 'Closer'}
               </h1>
               <p className="text-[10px] text-slate-500">
-                {data.shared_offer ? `Offre : ${data.shared_offer}` : 'Performances en temps réel'}
+                {data.shared_offer ? (lang === 'fr' ? `Offre : ${data.shared_offer}` : `Offer: ${data.shared_offer}`) : (lang === 'fr' ? 'Performances en temps réel' : 'Real-time performance')}
               </p>
             </div>
           </div>
@@ -545,6 +559,8 @@ export function SpectatorPage() {
           <PipelineView
             prospects={data.prospects}
             pipelineByStage={pipelineByStage}
+            stages={STAGES}
+            lang={lang}
           />
         )}
 
@@ -553,6 +569,7 @@ export function SpectatorPage() {
           <KpiView
             kpis={kpis}
             chartData={chartData}
+            lang={lang}
           />
         )}
       </main>
@@ -563,13 +580,13 @@ export function SpectatorPage() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setKpiDrawerOpen(false)} />
           <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl overflow-y-auto animate-slide-in-right">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-800 bg-slate-900/95 backdrop-blur-sm px-6 py-4">
-              <h2 className="text-lg font-bold text-white">Statistiques</h2>
+              <h2 className="text-lg font-bold text-white">{lang === 'fr' ? 'Statistiques' : 'Statistics'}</h2>
               <button onClick={() => setKpiDrawerOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6">
-              <KpiView kpis={kpis} chartData={chartData} />
+              <KpiView kpis={kpis} chartData={chartData} lang={lang} />
             </div>
           </div>
         </div>
@@ -593,15 +610,16 @@ export function SpectatorPage() {
 // PIPELINE VIEW
 // ============================================================================
 
-function PipelineView({ prospects, pipelineByStage }: {
+function PipelineView({ prospects, pipelineByStage, stages, lang }: {
   prospects: SpectatorProspect[]
   pipelineByStage: Record<string, SpectatorProspect[]>
+  stages: typeof STAGES_FR
+  lang: string
 }) {
-  // First row: Prospect, Qualifié, Gagné — Second row: Follow Up, No Show, Perdu
-  const topRow = STAGES.filter(s => ['prospect', 'qualified', 'won'].includes(s.id))
-  const bottomRow = STAGES.filter(s => ['followup', 'noshow', 'lost'].includes(s.id))
+  const topRow = stages.filter(s => ['prospect', 'qualified', 'won'].includes(s.id))
+  const bottomRow = stages.filter(s => ['followup', 'noshow', 'lost'].includes(s.id))
 
-  const renderColumn = (stage: typeof STAGES[number]) => {
+  const renderColumn = (stage: typeof stages[number]) => {
     const deals = pipelineByStage[stage.id] || []
     return (
       <div key={stage.id} className="flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 min-w-0">
@@ -622,7 +640,7 @@ function PipelineView({ prospects, pipelineByStage }: {
         <div className="space-y-2 p-3 max-h-[300px] overflow-y-auto custom-scrollbar">
           {deals.length === 0 && (
             <div className="flex h-20 items-center justify-center rounded-lg border border-dashed border-slate-800/50 bg-slate-900/20">
-              <span className="text-xs text-slate-600">Vide</span>
+              <span className="text-xs text-slate-600">{lang === 'fr' ? 'Vide' : 'Empty'}</span>
             </div>
           )}
           {deals.map(deal => {
@@ -659,7 +677,7 @@ function PipelineView({ prospects, pipelineByStage }: {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base font-bold text-white">Pipeline</h2>
-        <span className="text-xs text-slate-500">{prospects.length} prospects au total</span>
+        <span className="text-xs text-slate-500">{prospects.length} {lang === 'fr' ? 'prospects au total' : 'total prospects'}</span>
       </div>
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -677,17 +695,18 @@ function PipelineView({ prospects, pipelineByStage }: {
 // KPI VIEW
 // ============================================================================
 
-function KpiView({ kpis, chartData }: {
+function KpiView({ kpis, chartData, lang }: {
   kpis: { revenue: number; commissions: number; sales: number; leads: number; active: number; conversion: number; noShowRate: number }
   chartData: { name: string; revenue: number; ventes: number }[]
+  lang: string
 }) {
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard label="Cash encaissé" value={`${formatCurrency(kpis.revenue)}€`} icon={DollarSign} color="text-emerald-400" bgColor="bg-emerald-500/10" />
-        <KpiCard label="Ventes" value={String(kpis.sales)} icon={Award} color="text-blue-400" bgColor="bg-blue-500/10" />
-        <KpiCard label="Taux de closing" value={`${kpis.conversion.toFixed(1)}%`} icon={Target} color="text-purple-400" bgColor="bg-purple-500/10" />
+        <KpiCard label={lang === 'fr' ? 'Cash encaissé' : 'Revenue'} value={`${formatCurrency(kpis.revenue)}€`} icon={DollarSign} color="text-emerald-400" bgColor="bg-emerald-500/10" />
+        <KpiCard label={lang === 'fr' ? 'Ventes' : 'Sales'} value={String(kpis.sales)} icon={Award} color="text-blue-400" bgColor="bg-blue-500/10" />
+        <KpiCard label={lang === 'fr' ? 'Taux de closing' : 'Close rate'} value={`${kpis.conversion.toFixed(1)}%`} icon={Target} color="text-purple-400" bgColor="bg-purple-500/10" />
         <KpiCard label="Commissions" value={`${formatCurrency(kpis.commissions)}€`} icon={TrendingUp} color="text-orange-400" bgColor="bg-orange-500/10" />
       </div>
 
@@ -699,18 +718,18 @@ function KpiView({ kpis, chartData }: {
         </div>
         <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-center">
           <p className="text-2xl font-bold text-white">{kpis.active}</p>
-          <p className="text-xs text-slate-500 mt-1">Deals en cours</p>
+          <p className="text-xs text-slate-500 mt-1">{lang === 'fr' ? 'Deals en cours' : 'Active deals'}</p>
         </div>
         <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-center">
           <p className="text-2xl font-bold text-white">{kpis.noShowRate.toFixed(1)}%</p>
-          <p className="text-xs text-slate-500 mt-1">Taux no show</p>
+          <p className="text-xs text-slate-500 mt-1">{lang === 'fr' ? 'Taux no show' : 'No show rate'}</p>
         </div>
       </div>
 
       {/* Chart */}
       {chartData.length > 0 && (
         <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-          <h3 className="text-sm font-bold text-white mb-4">Évolution du CA</h3>
+          <h3 className="text-sm font-bold text-white mb-4">{lang === 'fr' ? 'Évolution du CA' : 'Revenue trend'}</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
@@ -725,7 +744,7 @@ function KpiView({ kpis, chartData }: {
                 <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', color: '#fff' }}
-                  formatter={(value: any) => [`${formatCurrency(Number(value))}€`, 'CA']}
+                  formatter={(value: any) => [`${formatCurrency(Number(value))}€`, lang === 'fr' ? 'CA' : 'Revenue']}
                 />
                 <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenueSpec)" />
               </AreaChart>

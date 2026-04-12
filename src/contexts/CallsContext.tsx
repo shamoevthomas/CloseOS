@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext'
 import { withRetry } from '../lib/supabaseHelpers'
 import toast from 'react-hot-toast'
 
+const getLang = () => (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
+
 export interface CallLog {
   id: number
   user_id: string
@@ -48,7 +50,7 @@ export function CallsProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) {
-        toast.error('Impossible de charger l\'historique des appels', { id: 'load-calls' })
+        toast.error(getLang() === 'fr' ? 'Impossible de charger l\'historique des appels' : 'Unable to load call history', { id: 'load-calls' })
         return
       }
       setCallHistory(data || [])
@@ -74,7 +76,7 @@ export function CallsProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) {
-        toast.error('Impossible d\'enregistrer l\'appel.')
+        toast.error(getLang() === 'fr' ? 'Impossible d\'enregistrer l\'appel.' : 'Unable to save call.')
         return { data: null, error }
       }
       if (data) setCallHistory((prev) => [data[0], ...prev])
@@ -95,7 +97,7 @@ export function CallsProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) {
-        toast.error('Impossible de vider l\'historique.')
+        toast.error(getLang() === 'fr' ? 'Impossible de vider l\'historique.' : 'Unable to clear history.')
         return { error }
       }
       setCallHistory([])

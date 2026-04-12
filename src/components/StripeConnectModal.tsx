@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { X, CreditCard, CheckCircle2, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { stripeConnectTranslations } from '../i18n/translations';
 
 interface StripeConnectModalProps {
   isOpen: boolean;
@@ -10,6 +12,8 @@ interface StripeConnectModalProps {
 
 export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps) {
   const { user } = useAuth();
+  const { lang } = useLanguage();
+  const t = stripeConnectTranslations[lang];
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [stripeConnected, setStripeConnected] = useState(false);
@@ -62,20 +66,20 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
         window.location.href = data.url;
       } else {
         console.error("Erreur API:", data);
-        alert("Erreur lors de l'initialisation de Stripe. Veuillez réessayer.");
+        alert(lang === 'fr' ? "Erreur lors de l'initialisation de Stripe. Veuillez réessayer." : "Error initializing Stripe. Please try again.");
         setConnecting(false);
       }
 
     } catch (error) {
       console.error("Erreur connexion:", error);
-      alert("Impossible de contacter le serveur de paiement.");
+      alert(lang === 'fr' ? "Impossible de contacter le serveur de paiement." : "Unable to contact payment server.");
       setConnecting(false);
     }
   };
   // ---------------------------------------------
 
   const handleDisconnect = async () => {
-    if (!confirm("Voulez-vous vraiment déconnecter votre compte Stripe ?")) return;
+    if (!confirm(lang === 'fr' ? "Voulez-vous vraiment déconnecter votre compte Stripe ?" : "Do you really want to disconnect your Stripe account?")) return;
 
     setConnecting(true);
     if (user) {
@@ -104,7 +108,7 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
             <div className="p-2 bg-[#635BFF]/20 rounded-lg">
               <CreditCard className="h-6 w-6 text-[#635BFF]" />
             </div>
-            <h2 className="text-lg font-bold text-white">Connexion Stripe</h2>
+            <h2 className="text-lg font-bold text-white">{lang === 'fr' ? 'Connexion Stripe' : 'Stripe Connection'}</h2>
           </div>
           <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
             <X className="h-5 w-5" />
@@ -116,7 +120,7 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
-              <p className="text-sm text-white/40">Vérification du statut...</p>
+              <p className="text-sm text-white/40">{lang === 'fr' ? 'Vérification du statut...' : 'Checking status...'}</p>
             </div>
           ) : stripeConnected ? (
             // MODE CONNECTÉ
@@ -124,14 +128,14 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4">
                 <CheckCircle2 className="h-8 w-8 text-emerald-500" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Compte actif</h3>
+              <h3 className="text-lg font-bold text-white mb-2">{lang === 'fr' ? 'Compte actif' : 'Active account'}</h3>
               <p className="text-sm text-white/40 mb-6 px-4">
-                Votre compte Stripe est correctement relié. Vous pouvez recevoir des paiements directement sur vos factures.
+                {lang === 'fr' ? 'Votre compte Stripe est correctement relié. Vous pouvez recevoir des paiements directement sur vos factures.' : 'Your Stripe account is properly connected. You can receive payments directly on your invoices.'}
               </p>
 
               <div className="bg-[#111111] rounded-2xl p-3 border border-white/[0.08] mb-6 text-left flex items-center justify-between">
                 <span className="text-xs text-white/40 font-mono">ID: {stripeAccountId}</span>
-                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Connecté</span>
+                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">{t.connected}</span>
               </div>
 
               <div className="flex gap-3">
@@ -139,7 +143,7 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
                   onClick={onClose}
                   className="flex-1 py-2.5 rounded-full bg-white/[0.03] text-white font-medium hover:bg-white/10 transition-colors border border-white/[0.08]"
                 >
-                  Fermer
+                  {lang === 'fr' ? 'Fermer' : 'Close'}
                 </button>
                 <button
                   onClick={handleDisconnect}

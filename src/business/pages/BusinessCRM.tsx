@@ -24,6 +24,7 @@ import {
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { ExportProspectsModal } from '../components/ExportProspectsModal'
 import { BusinessCRMIntegrationModal } from '../components/BusinessCRMIntegrationModal'
 import { BusinessProspectView } from '../components/BusinessProspectView'
@@ -63,13 +64,7 @@ const ALL_STAGES = [
   { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50', borderColor: 'border-red-200' },
 ]
 
-const PERIOD_OPTIONS = [
-  { label: 'Tout', days: 0 },
-  { label: "Aujourd'hui", days: 1 },
-  { label: '7 jours', days: 7 },
-  { label: '30 jours', days: 30 },
-  { label: '90 jours', days: 90 },
-]
+// PERIOD_OPTIONS moved inside component (needs `t`)
 
 export function BusinessCRM() {
   const {
@@ -80,8 +75,28 @@ export function BusinessCRM() {
     nextSyncSeconds,
   } = useBusinessProspects()
   const { businessSettings, user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const { customStages } = useCustomStages()
   const isReadOnly = false
+
+  const PERIOD_OPTIONS = useMemo(() => [
+    { label: t.common_all, days: 0 },
+    { label: t.common_today, days: 1 },
+    { label: t.crm_7_days, days: 7 },
+    { label: t.crm_30_days, days: 30 },
+    { label: t.crm_90_days, days: 90 },
+  ], [t])
+
+  const stageNameMap: Record<string, string> = useMemo(() => ({
+    prospect: t.crm_stage_prospect,
+    qualified: t.crm_stage_qualified,
+    unqualified: t.crm_stage_unqualified,
+    won: t.crm_stage_won,
+    followup: t.crm_stage_followup,
+    noanswer: t.crm_stage_noanswer,
+    noshow: t.crm_stage_noshow,
+    lost: t.crm_stage_lost,
+  }), [t])
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -203,19 +218,19 @@ export function BusinessCRM() {
       .insert({ owner_id: effectiveUserId, name: newTagName.trim(), color: newTagColor })
       .select().single()
     if (error) {
-      toast.error(error.message.includes('duplicate') ? 'Ce tag existe déjà' : 'Erreur')
+      toast.error(error.message.includes('duplicate') ? t.crm_tag_exists : t.common_error)
       return
     }
     setTags(prev => [...prev, data])
     setNewTagName('')
     setNewTagColor(TAG_COLORS[0])
-    toast.success('Tag créé')
+    toast.success(t.crm_tag_created)
   }
 
   const handleDeleteTag = async (tagId: string) => {
     const tag = tags.find(t => t.id === tagId)
     if (tag?.is_system) return
-    if (!confirm('Supprimer ce tag ?')) return
+    if (!confirm(t.crm_delete_tag_confirm)) return
     await supabase.from('business_tags').delete().eq('id', tagId)
     setTags(prev => prev.filter(t => t.id !== tagId))
     setProspectTags(prev => {
@@ -226,7 +241,7 @@ export function BusinessCRM() {
       return next
     })
     setSelectedTags(prev => prev.filter(id => id !== tagId))
-    toast.success('Tag supprimé')
+    toast.success(t.crm_tag_deleted)
   }
 
   // Round-robin for setters: find next setter after the last assigned
@@ -343,7 +358,7 @@ export function BusinessCRM() {
     if (deal.firstName || deal.lastName) {
       return `${deal.firstName || ''} ${deal.lastName || ''}`.trim()
     }
-    return deal.contact || 'Prospect sans nom'
+    return deal.contact || t.crm_prospect_no_name
   }
 
   const handleAddProspect = async () => {
@@ -442,14 +457,14 @@ export function BusinessCRM() {
               <p className="text-sm font-semibold text-stone-900 dark:text-white">CRM : {crmLabel}</p>
               {((crmProvider === 'hubspot' && hubspotConnected) || (crmProvider === 'pipedrive' && pipedriveConnected) || (crmProvider === 'ghl' && ghlConnected)) && (
                 <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
-                  <Check className="h-2.5 w-2.5" /> Connecté
+                  <Check className="h-2.5 w-2.5" /> {t.crm_connected}
                 </span>
               )}
             </div>
             <p className="text-xs text-stone-500 dark:text-neutral-400">
               {(crmProvider === 'hubspot' && hubspotConnected) || (crmProvider === 'ghl' && ghlConnected)
-                ? `Auto-sync dans ${Math.floor(nextSyncSeconds / 60)}:${String(nextSyncSeconds % 60).padStart(2, '0')}`
-                : 'Votre pipeline de prospection'
+                ? t.crm_auto_sync_in.replace('{time}', `${Math.floor(nextSyncSeconds / 60)}:${String(nextSyncSeconds % 60).padStart(2, '0')}`)
+                : t.crm_your_pipeline
               }
             </p>
           </div>
@@ -491,7 +506,7 @@ export function BusinessCRM() {
               className="flex items-center gap-2 rounded-full bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-all"
             >
               <Settings2 className="h-3.5 w-3.5" />
-              Intégration
+              {t.crm_integration}
             </button>
           )}
         </div>
@@ -505,7 +520,7 @@ export function BusinessCRM() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher un prospect..."
+            placeholder={t.crm_search_placeholder}
             className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
         </div>
@@ -521,7 +536,7 @@ export function BusinessCRM() {
           )}
         >
           <Filter className="h-4 w-4" />
-          Filtres
+          {t.crm_filters}
           {hasActiveFilters && (
             <span className="ml-1 bg-stone-900 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
               {(selectedPeriod > 0 ? 1 : 0) + (selectedMembers.length > 0 ? 1 : 0) + (selectedStages.length > 0 ? 1 : 0) + (selectedOffers.length > 0 ? 1 : 0) + (selectedTags.length > 0 ? 1 : 0)}
@@ -544,7 +559,7 @@ export function BusinessCRM() {
           className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
         >
           <Download className="h-4 w-4" />
-          <span className="hidden sm:inline">Exporter</span>
+          <span className="hidden sm:inline">{t.crm_export}</span>
         </button>
 
         {!isReadOnly && (
@@ -553,7 +568,7 @@ export function BusinessCRM() {
             className="flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-extrabold tracking-tight text-white hover:opacity-90 shadow-lg shadow-stone-900/10 transition-all"
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Nouveau prospect</span>
+            <span className="hidden sm:inline">{t.crm_new_prospect}</span>
           </button>
         )}
       </div>
@@ -562,10 +577,10 @@ export function BusinessCRM() {
       {showFilters && (
         <div className="mb-4 rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-extrabold text-stone-900 dark:text-white">Filtres</h3>
+            <h3 className="text-sm font-extrabold text-stone-900 dark:text-white">{t.crm_filters}</h3>
             {hasActiveFilters && (
               <button onClick={clearFilters} className="text-xs text-stone-600 dark:text-neutral-300 hover:text-stone-900 dark:hover:text-white font-medium">
-                Réinitialiser tout
+                {t.crm_reset_all}
               </button>
             )}
           </div>
@@ -574,7 +589,7 @@ export function BusinessCRM() {
             {/* Period */}
             <div>
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">
-                <Calendar className="h-3 w-3 inline mr-1" />Période
+                <Calendar className="h-3 w-3 inline mr-1" />{t.crm_period}
               </label>
               <div className="flex flex-wrap gap-1">
                 {PERIOD_OPTIONS.map(p => (
@@ -597,7 +612,7 @@ export function BusinessCRM() {
             {/* Teams */}
             {teams.length > 0 && (
               <div>
-                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Équipe</label>
+                <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.crm_team}</label>
                 <div className="flex flex-wrap gap-1">
                   {teams.map(t => (
                     <button
@@ -619,7 +634,7 @@ export function BusinessCRM() {
 
             {/* Members */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Closer / Setter</label>
+              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.crm_closer_setter}</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {allTeamMembers.map(m => (
                   <button
@@ -635,13 +650,13 @@ export function BusinessCRM() {
                     {m.first_name} {m.last_name} <span className="opacity-60">({filterCounts.byMember[m.id] || 0})</span>
                   </button>
                 ))}
-                {allTeamMembers.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun membre</span>}
+                {allTeamMembers.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">{t.crm_no_members}</span>}
               </div>
             </div>
 
             {/* Stages */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Statut</label>
+              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.crm_stage}</label>
               <div className="flex flex-wrap gap-1">
                 {ALL_STAGES.map(s => (
                   <button
@@ -655,7 +670,7 @@ export function BusinessCRM() {
                     )}
                   >
                     <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
-                    {s.name} <span className="opacity-60">({filterCounts.byStage[s.id] || 0})</span>
+                    {stageNameMap[s.id] || s.name} <span className="opacity-60">({filterCounts.byStage[s.id] || 0})</span>
                   </button>
                 ))}
                 {customStages.map(cs => (
@@ -678,7 +693,7 @@ export function BusinessCRM() {
 
             {/* Offers */}
             <div>
-              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">Offre / Formule</label>
+              <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.crm_offer_formula}</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                 {formulas.map(f => (
                   <button
@@ -694,7 +709,7 @@ export function BusinessCRM() {
                     {f.name} <span className="opacity-60">({filterCounts.byOffer[f.id] || 0})</span>
                   </button>
                 ))}
-                {formulas.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucune formule</span>}
+                {formulas.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">{t.crm_no_formulas}</span>}
               </div>
             </div>
 
@@ -720,7 +735,7 @@ export function BusinessCRM() {
                     {t.name} <span className="opacity-60">({filterCounts.byTag[t.id] || 0})</span>
                   </button>
                 ))}
-                {tags.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">Aucun tag</span>}
+                {tags.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">{t.crm_no_tags}</span>}
               </div>
             </div>
           </div>
@@ -729,14 +744,14 @@ export function BusinessCRM() {
 
       {/* Stats */}
       <div className="mb-3 flex flex-wrap items-center gap-2 md:gap-4 text-xs text-stone-500 dark:text-neutral-400">
-        <span className="font-medium text-stone-700 dark:text-neutral-200">{filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''}</span>
+        <span className="font-medium text-stone-700 dark:text-neutral-200">{filteredProspects.length} {filteredProspects.length !== 1 ? t.crm_prospects_plural : t.crm_prospect_singular}</span>
         {ALL_STAGES.map(s => {
           const count = filteredProspects.filter(p => p.stage === s.id).length
           if (!count) return null
           return (
             <span key={s.id} className="flex items-center gap-1">
               <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
-              {count} {s.name}
+              {count} {stageNameMap[s.id] || s.name}
             </span>
           )
         })}
@@ -747,16 +762,16 @@ export function BusinessCRM() {
         <table className="w-full min-w-[800px]">
           <thead className="sticky top-0 z-10 bg-stone-50/50 dark:bg-neutral-800/50 border-b border-stone-100 dark:border-neutral-700">
             <tr>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Contact</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Entreprise</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Email</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Téléphone</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Étape</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Tags</th>
-              <th className="text-right text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Valeur</th>
-              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">Date</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">{t.crm_contact_header}</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">{t.crm_company_header}</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">{t.crm_email_header}</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">{t.crm_phone_header}</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">{t.crm_stage_header}</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">{t.crm_tags_header}</th>
+              <th className="text-right text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">{t.crm_value_header}</th>
+              <th className="text-left text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-3 md:px-4 py-3">{t.crm_date_header}</th>
               {!isReadOnly && (
-                <th className="text-right text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">Actions</th>
+                <th className="text-right text-[10px] font-extrabold text-stone-400 dark:text-neutral-500 uppercase tracking-widest px-4 py-3">{t.crm_actions_header}</th>
               )}
             </tr>
           </thead>
@@ -764,7 +779,7 @@ export function BusinessCRM() {
             {filteredProspects.length === 0 ? (
               <tr>
                 <td colSpan={isReadOnly ? 8 : 9} className="text-center py-12 text-sm text-stone-400 dark:text-neutral-500">
-                  Aucun prospect trouvé
+                  {t.crm_no_prospect_found}
                 </td>
               </tr>
             ) : (
@@ -818,7 +833,7 @@ export function BusinessCRM() {
                       {stage ? (
                         <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full", stage.bgLight, stage.textColor)}>
                           <span className={cn("h-2 w-2 rounded-full", stage.color)} />
-                          {stage.name}
+                          {stageNameMap[stage.id] || stage.name}
                         </span>
                       ) : (
                         <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
@@ -847,7 +862,7 @@ export function BusinessCRM() {
                     <td className="px-4 py-3">
                       {deal.created_at ? (
                         <span className="text-xs text-stone-500 dark:text-neutral-400">
-                          {new Date(deal.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          {new Date(deal.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
                         </span>
                       ) : (
                         <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>
@@ -916,22 +931,22 @@ export function BusinessCRM() {
               <X className="h-5 w-5" />
             </button>
 
-            <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-4">Nouveau prospect</h2>
+            <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-4">{t.crm_new_prospect}</h2>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Nom du contact *</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_contact_name} *</label>
                 <input
                   type="text"
                   value={newContact}
                   onChange={(e) => setNewContact(e.target.value)}
                   className="w-full rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
-                  placeholder="Jean Dupont"
+                  placeholder={t.crm_contact_name_placeholder}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Email</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_email_label}</label>
                 <input
                   type="email"
                   value={newEmail}
@@ -941,11 +956,11 @@ export function BusinessCRM() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Téléphone</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_phone_label}</label>
                 <PhoneInput value={newPhone} onChange={setNewPhone} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Entreprise</label>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_company_label}</label>
                 <input
                   type="text"
                   value={newCompany}
@@ -956,13 +971,13 @@ export function BusinessCRM() {
               </div>
               {formulas.length > 0 && (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Offre / Formule</label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_offer_label}</label>
                   <select
                     value={newFormulaId}
                     onChange={(e) => setNewFormulaId(e.target.value)}
                     className="w-full rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   >
-                    <option value="">Aucune offre</option>
+                    <option value="">{t.crm_no_offer}</option>
                     {formulas.map(f => (
                       <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>
                     ))}
@@ -974,26 +989,26 @@ export function BusinessCRM() {
               {isPureSetter ? (
                 <div className="rounded-xl bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 px-4 py-2.5">
                   <p className="text-xs font-medium text-stone-700 dark:text-neutral-200">
-                    Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
+                    Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> ({t.crm_you})
                   </p>
                 </div>
               ) : isSetterCloser ? (
                 <div className="rounded-xl bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 px-4 py-2.5">
                   <p className="text-xs font-medium text-stone-700 dark:text-neutral-200">
-                    Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
-                    <span className="ml-1">• Closer assigné automatiquement</span>
+                    Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> ({t.crm_you})
+                    <span className="ml-1">• {t.crm_closer_auto_assigned}</span>
                   </p>
                 </div>
               ) : isPureCloser ? (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Setter <span className="text-stone-400 dark:text-neutral-500 font-normal">(facultatif)</span></label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_setter_label} <span className="text-stone-400 dark:text-neutral-500 font-normal">({t.crm_optional})</span></label>
                   <div className="flex gap-2">
                     <select
                       value={newSetterId}
                       onChange={(e) => setNewSetterId(e.target.value)}
                       className="flex-1 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     >
-                      <option value="">Aucun setter</option>
+                      <option value="">{t.crm_no_setter}</option>
                       {teamSetters.map(s => (
                         <option key={s.id} value={s.id}>{s.first_name} {s.last_name} {s.role === 'Owner' ? '(Owner)' : `(${s.role})`}</option>
                       ))}
@@ -1005,10 +1020,10 @@ export function BusinessCRM() {
                         if (next) setNewSetterId(next.id)
                       }}
                       className="flex items-center gap-1 rounded-xl border border-stone-200 dark:border-neutral-700 bg-stone-100 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
-                      title="Tournante (round-robin)"
+                      title={t.crm_round_robin}
                     >
                       <ArrowRightCircle className="h-3.5 w-3.5" />
-                      Tournante
+                      {t.crm_round_robin}
                     </button>
                     <button
                       type="button"
@@ -1017,23 +1032,23 @@ export function BusinessCRM() {
                         if (rnd) setNewSetterId(rnd.id)
                       }}
                       className="flex items-center gap-1 rounded-xl border border-stone-300 dark:border-neutral-600 bg-stone-50 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
-                      title="Hasard (aléatoire)"
+                      title={t.crm_random}
                     >
                       <Shuffle className="h-3.5 w-3.5" />
-                      Hasard
+                      {t.crm_random}
                     </button>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Setter *</label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_setter_label} *</label>
                   <div className="flex gap-2">
                     <select
                       value={newSetterId}
                       onChange={(e) => setNewSetterId(e.target.value)}
                       className="flex-1 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     >
-                      <option value="">Choisir un setter</option>
+                      <option value="">{t.crm_choose_setter}</option>
                       {teamSetters.map(s => (
                         <option key={s.id} value={s.id}>{s.first_name} {s.last_name} {s.role === 'Owner' ? '(Owner)' : `(${s.role})`}</option>
                       ))}
@@ -1045,10 +1060,10 @@ export function BusinessCRM() {
                         if (next) setNewSetterId(next.id)
                       }}
                       className="flex items-center gap-1 rounded-xl border border-stone-200 dark:border-neutral-700 bg-stone-100 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
-                      title="Tournante (round-robin)"
+                      title={t.crm_round_robin}
                     >
                       <ArrowRightCircle className="h-3.5 w-3.5" />
-                      Tournante
+                      {t.crm_round_robin}
                     </button>
                     <button
                       type="button"
@@ -1057,10 +1072,10 @@ export function BusinessCRM() {
                         if (rnd) setNewSetterId(rnd.id)
                       }}
                       className="flex items-center gap-1 rounded-xl border border-stone-300 dark:border-neutral-600 bg-stone-50 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
-                      title="Hasard (aléatoire)"
+                      title={t.crm_random}
                     >
                       <Shuffle className="h-3.5 w-3.5" />
-                      Hasard
+                      {t.crm_random}
                     </button>
                   </div>
                 </div>
@@ -1070,18 +1085,18 @@ export function BusinessCRM() {
               {isPureCloser ? (
                 <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-2.5">
                   <p className="text-xs font-medium text-blue-700">
-                    Closer : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> (vous)
+                    Closer : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> ({t.crm_you})
                   </p>
                 </div>
               ) : needsCloserPicker && (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">Closer <span className="text-stone-400 dark:text-neutral-500 font-normal">(facultatif)</span></label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_closer_label} <span className="text-stone-400 dark:text-neutral-500 font-normal">({t.crm_optional})</span></label>
                   <select
                     value={newCloserId}
                     onChange={(e) => setNewCloserId(e.target.value)}
                     className="w-full rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                   >
-                    <option value="">Aucun closer</option>
+                    <option value="">{t.crm_no_closer}</option>
                     {teamClosers.map(c => (
                       <option key={c.id} value={c.id}>{c.first_name} {c.last_name} {c.role === 'Owner' ? '(Owner)' : `(${c.role})`}</option>
                     ))}
@@ -1094,14 +1109,14 @@ export function BusinessCRM() {
                   onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
                   className="flex-1 rounded-full bg-stone-100 dark:bg-neutral-800 border-none py-2.5 font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all"
                 >
-                  Annuler
+                  {t.common_cancel}
                 </button>
                 <button
                   onClick={handleAddProspect}
                   disabled={addLoading || !newContact || (isOwnerView && !newSetterId)}
                   className="flex-1 rounded-full bg-stone-900 py-2.5 font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
                 >
-                  {addLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Ajouter'}
+                  {addLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : t.common_add}
                 </button>
               </div>
             </div>
@@ -1120,8 +1135,8 @@ export function BusinessCRM() {
               <X className="h-5 w-5" />
             </button>
 
-            <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-1">Gérer les tags</h2>
-            <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">Créez et gérez vos tags pour organiser vos prospects.</p>
+            <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-1">{t.crm_manage_tags}</h2>
+            <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">{t.crm_manage_tags_desc}</p>
 
             {/* Create new tag */}
             <div className="flex gap-2 mb-5">
@@ -1130,7 +1145,7 @@ export function BusinessCRM() {
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
-                placeholder="Nom du tag..."
+                placeholder={t.crm_tag_name_placeholder}
                 className="flex-1 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
               />
               <button
@@ -1160,14 +1175,14 @@ export function BusinessCRM() {
             {/* Existing tags */}
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {tags.length === 0 ? (
-                <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-4">Aucun tag créé</p>
+                <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-4">{t.crm_no_tags_created}</p>
               ) : (
                 tags.map(tag => (
                   <div key={tag.id} className="flex items-center justify-between rounded-xl bg-stone-50 dark:bg-neutral-800 px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-3 rounded-full" style={{ backgroundColor: tag.color }} />
                       <span className="text-sm font-semibold text-stone-900 dark:text-white">{tag.name}</span>
-                      {tag.is_system && <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400 dark:text-neutral-500">Système</span>}
+                      {tag.is_system && <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400 dark:text-neutral-500">{t.crm_system_tag}</span>}
                     </div>
                     {!tag.is_system && (
                       <button

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Mail, Phone, User as UserIcon, Briefcase, Pencil, Trash2, Save } from 'lucide-react'
 import { type InternalContact } from '../contexts/InternalContactsContext'
 import { useOffers } from '../contexts/OffersContext'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface InternalContactModalProps {
   contact: InternalContact
@@ -11,8 +12,8 @@ interface InternalContactModalProps {
 }
 
 export function InternalContactModal({ contact, onClose, onEdit, onDelete }: InternalContactModalProps) {
-  // Get offers from context
   const { offers } = useOffers()
+  const { lang } = useLanguage()
 
   // Editing state
   const [isEditing, setIsEditing] = useState(false)
@@ -33,7 +34,7 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
   }
 
   const handleDelete = () => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer ${contact.name} ?`)) {
+    if (confirm(lang === 'fr' ? `Êtes-vous sûr de vouloir supprimer ${contact.name} ?` : `Are you sure you want to delete ${contact.name}?`)) {
       onDelete(contact.id)
       onClose()
     }
@@ -41,7 +42,7 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
 
   const handleSave = () => {
     if (!editedContact.name || !editedContact.role || !editedContact.email || !editedContact.phone) {
-      alert('Veuillez remplir tous les champs obligatoires')
+      alert(lang === 'fr' ? 'Veuillez remplir tous les champs obligatoires' : 'Please fill in all required fields')
       return
     }
     onEdit(editedContact)
@@ -91,28 +92,28 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
                 {/* Editing Mode - Name */}
                 <div>
                   <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-white/40">
-                    Nom complet
+                    {lang === 'fr' ? 'Nom complet' : 'Full name'}
                   </label>
                   <input
                     type="text"
                     value={editedContact.name}
                     onChange={(e) => setEditedContact({ ...editedContact, name: e.target.value })}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
-                    placeholder="Ex: Jean Dupont"
+                    placeholder={lang === 'fr' ? "Ex: Jean Dupont" : "E.g.: John Doe"}
                   />
                 </div>
 
                 {/* Editing Mode - Role */}
                 <div>
                   <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-white/40">
-                    Rôle/Poste
+                    {lang === 'fr' ? 'Rôle/Poste' : 'Role/Position'}
                   </label>
                   <input
                     type="text"
                     value={editedContact.role}
                     onChange={(e) => setEditedContact({ ...editedContact, role: e.target.value })}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
-                    placeholder="Ex: Directeur Commercial"
+                    placeholder={lang === 'fr' ? "Ex: Directeur Commercial" : "E.g.: Sales Director"}
                   />
                 </div>
 
@@ -133,28 +134,28 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
                 {/* Editing Mode - Phone */}
                 <div>
                   <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-white/40">
-                    Téléphone
+                    {lang === 'fr' ? 'Téléphone' : 'Phone'}
                   </label>
                   <input
                     type="tel"
                     value={editedContact.phone}
                     onChange={(e) => setEditedContact({ ...editedContact, phone: e.target.value })}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
-                    placeholder="Ex: +33 6 12 34 56 78"
+                    placeholder={lang === 'fr' ? "Ex: +33 6 12 34 56 78" : "E.g.: +1 555 123 4567"}
                   />
                 </div>
 
                 {/* Editing Mode - Notes */}
                 <div>
                   <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-white/40">
-                    Notes (optionnel)
+                    {lang === 'fr' ? 'Notes (optionnel)' : 'Notes (optional)'}
                   </label>
                   <textarea
                     value={editedContact.notes || ''}
                     onChange={(e) => setEditedContact({ ...editedContact, notes: e.target.value })}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
                     rows={3}
-                    placeholder="Ajouter des notes..."
+                    placeholder={lang === 'fr' ? "Ajouter des notes..." : "Add notes..."}
                   />
                 </div>
 
@@ -180,7 +181,7 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
                 <div className="group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-all hover:border-emerald-500/50 hover:bg-white/[0.03]">
                   <div className="mb-1 flex items-center gap-2">
                     <Phone className="h-4 w-4 text-white/40 group-hover:text-emerald-400" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-white/40">Téléphone</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'Téléphone' : 'Phone'}</span>
                   </div>
                   <a
                     href={`tel:${contact.phone}`}
@@ -213,14 +214,14 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
                 className="flex flex-1 items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
               >
                 <Save className="h-4 w-4" />
-                Sauvegarder
+                {lang === 'fr' ? 'Sauvegarder' : 'Save'}
               </button>
               <button
                 onClick={handleCancel}
                 className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10"
               >
                 <X className="h-4 w-4" />
-                Annuler
+                {lang === 'fr' ? 'Annuler' : 'Cancel'}
               </button>
             </div>
           ) : (
@@ -230,14 +231,14 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
                 className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10"
               >
                 <Pencil className="h-4 w-4" />
-                Modifier
+                {lang === 'fr' ? 'Modifier' : 'Edit'}
               </button>
               <button
                 onClick={handleDelete}
                 className="flex flex-1 items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20"
               >
                 <Trash2 className="h-4 w-4" />
-                Supprimer
+                {lang === 'fr' ? 'Supprimer' : 'Delete'}
               </button>
             </div>
           )}

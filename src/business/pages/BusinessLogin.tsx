@@ -3,12 +3,14 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Loader2, Check, AlertCircle } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase';
 import BusinessVerification, { getDeviceFingerprint } from './BusinessVerification';
 
 export default function BusinessLogin() {
   const navigate = useNavigate();
   const { login, user, loading: authLoading, businessProfile, isTeamMember, refreshProfile, needsVerification, isSalesUser } = useBusinessAuth();
+  const { t, lang } = useBusinessLang()
 
   useEffect(() => {
     if (!authLoading && user && !needsVerification) {
@@ -42,8 +44,8 @@ export default function BusinessLogin() {
   // Resend countdown timer
   useEffect(() => {
     if (resendCountdown <= 0) return;
-    const t = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
+    return () => clearTimeout(timer);
   }, [resendCountdown]);
 
   const resetCodeModal = () => {
@@ -70,13 +72,13 @@ export default function BusinessLogin() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Erreur lors de l'envoi");
+      if (!response.ok) throw new Error(data.error || t.login_code_send_error);
 
       setCodeStep('code');
       setResendCountdown(60);
-      setCodeMessage({ type: 'success', text: `Code envoyé à ${codeEmail}` });
+      setCodeMessage({ type: 'success', text: t.login_code_sent.replace('{email}', codeEmail) });
     } catch (err: any) {
-      setCodeMessage({ type: 'error', text: err.message || "Une erreur est survenue." });
+      setCodeMessage({ type: 'error', text: err.message || t.login_error_generic });
     } finally {
       setCodeLoading(false);
     }
@@ -97,7 +99,7 @@ export default function BusinessLogin() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Code invalide");
+      if (!response.ok) throw new Error(data.error || t.login_code_invalid);
 
       // Use the token_hash to verify the OTP and create a session
       const { error: otpError } = await supabase.auth.verifyOtp({
@@ -105,12 +107,12 @@ export default function BusinessLogin() {
         type: 'magiclink',
       });
 
-      if (otpError) throw new Error("Erreur de connexion. Veuillez réessayer.");
+      if (otpError) throw new Error(t.login_code_connection_error);
 
       await refreshProfile();
       navigate('/business/dashboard');
     } catch (err: any) {
-      setCodeMessage({ type: 'error', text: err.message || "Code invalide ou expiré." });
+      setCodeMessage({ type: 'error', text: err.message || t.login_code_invalid });
     } finally {
       setCodeLoading(false);
     }
@@ -144,7 +146,7 @@ export default function BusinessLogin() {
     try {
       const result = await login({ email: loginEmail, password });
       if (result?.error) {
-        setError(result.error.message || "Email ou mot de passe incorrect");
+        setError(result.error.message || t.login_error_credentials);
         setLoading(false);
       } else {
         const userId = result.data?.user?.id;
@@ -166,7 +168,7 @@ export default function BusinessLogin() {
         }
       }
     } catch (err) {
-      setError("Une erreur est survenue.");
+      setError(t.login_error_generic);
       setLoading(false);
     }
   };
@@ -183,7 +185,7 @@ export default function BusinessLogin() {
 
       if (error) setError(error.message);
     } catch (err) {
-      setError("Impossible de lancer la connexion Google.");
+      setError(t.login_error_google);
     } finally {
       setGoogleLoading(false);
     }
@@ -227,10 +229,10 @@ export default function BusinessLogin() {
         {/* Headline */}
         <div className="text-center mb-9">
           <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
-            Se connecter
+            {t.login_title}
           </h1>
           <p className="text-stone-500 dark:text-neutral-400 mt-3 text-sm">
-            Gérez vos campagnes et actifs avec CloseOS Business.
+            {t.login_subtitle}
           </p>
         </div>
 
@@ -247,7 +249,7 @@ export default function BusinessLogin() {
           {/* Email */}
           <div className="space-y-2">
             <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 ml-1" htmlFor="login-email">
-              Adresse Email
+              {t.login_email_label}
             </label>
             <div className="relative group">
               <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400 group-focus-within:text-emerald-600 transition-colors" />
@@ -257,7 +259,7 @@ export default function BusinessLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 pl-12 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 transition-all placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none"
-                placeholder="Pseudo ou email"
+                placeholder={t.login_email_placeholder}
                 required
               />
             </div>
@@ -267,10 +269,10 @@ export default function BusinessLogin() {
           <div className="space-y-2">
             <div className="flex justify-between items-center ml-1">
               <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400" htmlFor="login-password">
-                Mot de passe
+                {t.login_password}
               </label>
               <button type="button" onClick={() => setIsCodeModalOpen(true)} className="text-xs font-semibold text-emerald-700 hover:underline transition-colors">
-                Oublié ?
+                {t.login_forgot}
               </button>
             </div>
             <div className="relative group">
@@ -293,7 +295,7 @@ export default function BusinessLogin() {
             disabled={loading}
             className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Se connecter'}
+            {loading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : t.login_submit}
           </button>
         </form>
 
@@ -304,7 +306,7 @@ export default function BusinessLogin() {
           </div>
           <div className="relative flex justify-center">
             <span className="px-4 bg-white/70 dark:bg-transparent text-[0.65rem] font-semibold tracking-widest uppercase text-stone-400 dark:text-neutral-500">
-              Ou continuer avec
+              {t.login_or_continue}
             </span>
           </div>
         </div>
@@ -325,15 +327,15 @@ export default function BusinessLogin() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
           )}
-          <span className="text-sm font-semibold text-stone-700 dark:text-neutral-200">Continuer avec Google</span>
+          <span className="text-sm font-semibold text-stone-700 dark:text-neutral-200">{t.login_google}</span>
         </button>
 
         {/* Bottom link */}
         <div className="mt-9 pt-7 border-t border-stone-200/20 dark:border-neutral-800 text-center">
           <p className="text-sm text-stone-500 dark:text-neutral-400">
-            Vous n'avez pas de compte ?{' '}
+            {t.login_no_account}{' '}
             <Link to="/business/register" className="font-bold text-stone-900 dark:text-white ml-1 hover:underline transition-all">
-              Cr&eacute;er un compte
+              {t.login_create_account}
             </Link>
           </p>
         </div>
@@ -342,12 +344,12 @@ export default function BusinessLogin() {
       {/* Bottom footer */}
       <div className="mt-8 flex flex-col items-center gap-3 pb-8">
         <div className="flex gap-6 text-xs font-medium text-stone-400 dark:text-neutral-500">
-          <a className="hover:text-emerald-700 transition-colors" href="#">Aide</a>
-          <a className="hover:text-emerald-700 transition-colors" href="#">Confidentialit&eacute;</a>
-          <a className="hover:text-emerald-700 transition-colors" href="#">CGV</a>
+          <a className="hover:text-emerald-700 transition-colors" href="#">{t.login_help}</a>
+          <a className="hover:text-emerald-700 transition-colors" href="#">{t.login_privacy}</a>
+          <a className="hover:text-emerald-700 transition-colors" href="#">{t.login_terms}</a>
         </div>
         <div className="text-[0.65rem] text-stone-400/60 tracking-widest uppercase font-semibold">
-          &copy; {new Date().getFullYear()} CloseOS Business. Tous droits r&eacute;serv&eacute;s.
+          &copy; {new Date().getFullYear()} CloseOS Business. {t.login_all_rights}
         </div>
       </div>
 
@@ -364,10 +366,10 @@ export default function BusinessLogin() {
               {codeStep === 'email' ? (
                 <>
                   <h3 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
-                    Connexion par code
+                    {t.login_code_title}
                   </h3>
                   <p className="text-sm text-stone-500 dark:text-neutral-400 mb-7">
-                    Entrez votre email pour recevoir un code de connexion.
+                    {t.login_code_subtitle}
                   </p>
 
                   {codeMessage && (
@@ -391,7 +393,7 @@ export default function BusinessLogin() {
                         value={codeEmail}
                         onChange={(e) => setCodeEmail(e.target.value)}
                         className="w-full bg-stone-100/50 dark:bg-neutral-800 border-none rounded-full py-4 px-5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 outline-none placeholder:text-stone-400"
-                        placeholder="Votre email"
+                        placeholder={t.login_your_email}
                         required
                         autoFocus
                       />
@@ -401,20 +403,20 @@ export default function BusinessLogin() {
                       disabled={codeLoading || !codeEmail}
                       className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {codeLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Envoyer le code'}
+                      {codeLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : t.login_code_send}
                     </button>
                     <button type="button" onClick={resetCodeModal} className="text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors mt-2">
-                      Retour
+                      {t.login_code_back}
                     </button>
                   </form>
                 </>
               ) : (
                 <>
                   <h3 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>
-                    Entrez le code
+                    {t.login_code_enter_title}
                   </h3>
                   <p className="text-sm text-stone-500 dark:text-neutral-400 mb-7">
-                    Un code à 6 chiffres a été envoyé à <span className="font-semibold text-stone-700 dark:text-neutral-200">{codeEmail}</span>
+                    {t.login_code_enter_subtitle} <span className="font-semibold text-stone-700 dark:text-neutral-200">{codeEmail}</span>
                   </p>
 
                   {codeMessage && codeMessage.type === 'error' && (
@@ -450,7 +452,7 @@ export default function BusinessLogin() {
                       disabled={codeLoading || loginCode.replace(/\s/g, '').length !== 6}
                       className="w-full bg-stone-900 dark:bg-white dark:text-black text-white font-bold py-5 rounded-full shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {codeLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'Se connecter'}
+                      {codeLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : t.login_submit}
                     </button>
                     <div className="flex items-center justify-center gap-4 mt-3">
                       <button
@@ -468,20 +470,20 @@ export default function BusinessLogin() {
                             if (!res.ok) throw new Error();
                             setResendCountdown(60);
                             setLoginCode('');
-                            setCodeMessage({ type: 'success', text: 'Nouveau code envoyé !' });
+                            setCodeMessage({ type: 'success', text: t.login_code_new_sent });
                           } catch {
-                            setCodeMessage({ type: 'error', text: 'Erreur lors du renvoi.' });
+                            setCodeMessage({ type: 'error', text: t.login_code_resend_error });
                           } finally {
                             setCodeLoading(false);
                           }
                         }}
                         className="text-xs font-bold text-emerald-700 hover:underline transition-colors disabled:opacity-40 disabled:no-underline"
                       >
-                        {resendCountdown > 0 ? `Renvoyer (${resendCountdown}s)` : 'Renvoyer le code'}
+                        {resendCountdown > 0 ? t.login_code_resend_countdown.replace('{seconds}', String(resendCountdown)) : t.login_code_resend}
                       </button>
                       <span className="text-stone-300 dark:text-neutral-600">|</span>
                       <button type="button" onClick={() => { setCodeStep('email'); setLoginCode(''); setCodeMessage(null); }} className="text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">
-                        Changer d'email
+                        {t.login_code_change_email}
                       </button>
                     </div>
                   </form>

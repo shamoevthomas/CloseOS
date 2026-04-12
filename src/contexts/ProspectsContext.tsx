@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext'
 import { withRetry } from '../lib/supabaseHelpers'
 import toast from 'react-hot-toast'
 
+const getLang = () => (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
+
 export interface Prospect {
   id: number
   user_id: string
@@ -105,7 +107,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) {
-        toast.error('Impossible de charger les prospects', { id: 'load-prospects' })
+        toast.error(getLang() === 'fr' ? 'Impossible de charger les prospects' : 'Unable to load prospects', { id: 'load-prospects' })
         return
       }
       setProspects(data || [])
@@ -602,7 +604,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     )
 
     if (error) {
-      toast.error('Impossible de creer le prospect. Veuillez reessayer.')
+      toast.error(getLang() === 'fr' ? 'Impossible de créer le prospect. Veuillez réessayer.' : 'Unable to create prospect. Please try again.')
       throw error
     }
     if (data) {
@@ -633,7 +635,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     if (error) {
       // Rollback avec notification
       setProspects(previousProspects)
-      toast.error('Impossible de modifier le prospect. Veuillez reessayer.')
+      toast.error(getLang() === 'fr' ? 'Impossible de modifier le prospect. Veuillez réessayer.' : 'Unable to update prospect. Please try again.')
       return
     }
 
@@ -658,7 +660,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       setProspects(previousProspects)
-      toast.error('Impossible de supprimer le prospect. Veuillez reessayer.')
+      toast.error(getLang() === 'fr' ? 'Impossible de supprimer le prospect. Veuillez réessayer.' : 'Unable to delete prospect. Please try again.')
     }
   }
 

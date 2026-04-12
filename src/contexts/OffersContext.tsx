@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext'
 import { withRetry } from '../lib/supabaseHelpers'
 import toast from 'react-hot-toast'
 
+const getLang = () => (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
+
 export interface OfferResource {
   id: string | number
   name: string
@@ -164,7 +166,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) {
-        toast.error('Impossible de charger les offres', { id: 'load-offers' })
+        toast.error(getLang() === 'fr' ? 'Impossible de charger les offres' : 'Unable to load offers', { id: 'load-offers' })
         return
       }
       setOffers(mapFromDb(data || []))
@@ -240,7 +242,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) {
-        toast.error('Impossible de creer l\'offre. Veuillez reessayer.')
+        toast.error(getLang() === 'fr' ? 'Impossible de créer l\'offre. Veuillez réessayer.' : 'Unable to create offer. Please try again.')
         return { data: null, error }
       }
 
@@ -251,7 +253,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       }
       return { data: null, error: null }
     } catch (error) {
-      toast.error('Erreur lors de la creation de l\'offre.')
+      toast.error(getLang() === 'fr' ? 'Erreur lors de la création de l\'offre.' : 'Error creating offer.')
       return { data: null, error }
     }
   }
@@ -277,14 +279,14 @@ export function OffersProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         setOffers(previousOffers)
-        toast.error('Impossible de modifier l\'offre. Veuillez reessayer.')
+        toast.error(getLang() === 'fr' ? 'Impossible de modifier l\'offre. Veuillez réessayer.' : 'Unable to update offer. Please try again.')
         return { error }
       }
 
       return { error: null }
     } catch (error) {
       setOffers(previousOffers)
-      toast.error('Erreur lors de la modification de l\'offre.')
+      toast.error(getLang() === 'fr' ? 'Erreur lors de la modification de l\'offre.' : 'Error updating offer.')
       return { error }
     }
   }
@@ -303,7 +305,7 @@ export function OffersProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         setOffers(previousOffers)
-        toast.error('Impossible de supprimer l\'offre. Veuillez reessayer.')
+        toast.error(getLang() === 'fr' ? 'Impossible de supprimer l\'offre. Veuillez réessayer.' : 'Unable to delete offer. Please try again.')
         return { error }
       }
 

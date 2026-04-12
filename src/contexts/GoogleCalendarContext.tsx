@@ -123,7 +123,7 @@ export function GoogleCalendarProvider({ children }: { children: ReactNode }) {
         await fetchEvents(token)
       }
     },
-    onError: () => alert('Erreur lors de la connexion à Google Calendar'),
+    onError: () => alert((localStorage.getItem('closeos_lang') || 'fr') === 'fr' ? 'Erreur lors de la connexion à Google Calendar' : 'Error connecting to Google Calendar'),
     scope: 'https://www.googleapis.com/auth/calendar.events',
   })
 

@@ -30,6 +30,7 @@ import {
 } from 'recharts'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import { useEffect } from 'react'
 import { getProspectCA } from '../lib/getProspectCA'
@@ -38,19 +39,7 @@ import { getProspectCA } from '../lib/getProspectCA'
 // HELPERS
 // ============================================================================
 
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-const MONTH_NAMES = [
-  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
-]
+// formatCurrency and MONTH_NAMES are now derived from t/lang inside the component
 
 interface TeamMember {
   id: string
@@ -186,11 +175,7 @@ function computeLossReasonData(prospects: any[]) {
 
 type Tab = 'global' | 'period' | 'team' | 'equipe'
 
-const BASE_TABS: { key: Tab; label: string }[] = [
-  { key: 'global', label: 'Global' },
-  { key: 'period', label: 'Par Période' },
-  { key: 'team', label: 'Par Membre' },
-]
+// BASE_TABS is now derived from t inside the component
 
 // ============================================================================
 // MAIN COMPONENT
@@ -199,6 +184,19 @@ const BASE_TABS: { key: Tab; label: string }[] = [
 export function BusinessKPI() {
   const { prospects } = useBusinessProspects()
   const { user, ownerUserId, teamMember, isTeamMember } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
+  const MONTH_NAMES = useMemo(() => [
+    t.kpi_month_jan, t.kpi_month_feb, t.kpi_month_mar, t.kpi_month_apr, t.kpi_month_may, t.kpi_month_jun,
+    t.kpi_month_jul, t.kpi_month_aug, t.kpi_month_sep, t.kpi_month_oct, t.kpi_month_nov, t.kpi_month_dec,
+  ], [t])
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value)
+  }
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const [activeTab, setActiveTab] = useState<Tab>('global')
@@ -243,10 +241,14 @@ export function BusinessKPI() {
   }, [effectiveUserId])
 
   const TABS = useMemo(() => {
-    const tabs = [...BASE_TABS]
-    if (teams.length > 0) tabs.push({ key: 'equipe', label: 'Par Équipe' })
+    const tabs: { key: Tab; label: string }[] = [
+      { key: 'global', label: t.kpi_tab_global },
+      { key: 'period', label: t.kpi_tab_period },
+      { key: 'team', label: t.kpi_tab_member },
+    ]
+    if (teams.length > 0) tabs.push({ key: 'equipe', label: t.kpi_tab_team })
     return tabs
-  }, [teams])
+  }, [teams, t])
 
   // ---- FILTERED PROSPECTS (by global member selector) ----
   const filteredProspects = useMemo(() => {
@@ -336,7 +338,7 @@ export function BusinessKPI() {
       if (stages[p.stage] !== undefined) stages[p.stage]++
     })
     return Object.entries(stages).map(([stage, count]) => ({
-      stage: stage === 'followup' ? 'Follow-up' : stage === 'noshow' ? 'No Show' : stage === 'unqualified' ? 'Non-Qualifié' : stage === 'noanswer' ? 'Pas de Réponse' : stage.charAt(0).toUpperCase() + stage.slice(1),
+      stage: stage === 'followup' ? t.kpi_stage_followup : stage === 'noshow' ? t.kpi_stage_noshow : stage === 'unqualified' ? t.kpi_stage_unqualified : stage === 'noanswer' ? t.kpi_stage_noanswer : stage.charAt(0).toUpperCase() + stage.slice(1),
       count,
     }))
   }, [periodProspects])
@@ -360,42 +362,42 @@ export function BusinessKPI() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <KpiCard
-          title="CA Généré"
+          title={t.kpi_ca_generated}
           value={formatCurrency(kpis.caGenere)}
           icon={DollarSign}
           color="emerald"
           badge={badges?.ca}
         />
         <KpiCard
-          title="Ventes Totales"
+          title={t.kpi_total_sales}
           value={kpis.ventesTotales}
           icon={ShoppingCart}
           color="blue"
           badge={badges?.ventes}
         />
         <KpiCard
-          title="Taux de Conversion"
+          title={t.kpi_conversion_rate}
           value={`${kpis.tauxConversion.toFixed(1)}%`}
           icon={Target}
           color="purple"
           badge={badges?.conversion}
         />
         <KpiCard
-          title="Prospects Actifs"
+          title={t.kpi_active_prospects}
           value={kpis.prospectsActifs}
           icon={Activity}
           color="cyan"
           badge={badges?.actifs}
         />
         <KpiCard
-          title="Taux de No Show"
+          title={t.kpi_noshow_rate}
           value={`${kpis.tauxNoShow.toFixed(1)}%`}
           icon={UserX}
           color="rose"
           badge={badges?.noshow}
         />
         <KpiCard
-          title="Deals Perdus"
+          title={t.kpi_deals_lost}
           value={kpis.dealsPerdu}
           icon={XCircle}
           color="slate"
@@ -432,7 +434,7 @@ export function BusinessKPI() {
               onChange={(e) => setGlobalMemberId(e.target.value || null)}
               className="bg-transparent text-sm font-semibold text-stone-900 dark:text-white pr-6 py-1.5 focus:outline-none appearance-none cursor-pointer"
             >
-              <option value="">Tous les membres</option>
+              <option value="">{t.kpi_all_members}</option>
               {teamMembers.map(m => (
                 <option key={m.id} value={m.id}>{m.full_name} ({m.role})</option>
               ))}
@@ -453,7 +455,7 @@ export function BusinessKPI() {
                 <Users className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Total Leads</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">{t.kpi_total_leads}</p>
                 <p className="text-2xl font-extrabold text-white">{globalKpis.totalLeads}</p>
               </div>
             </div>
@@ -462,7 +464,7 @@ export function BusinessKPI() {
                 <Briefcase className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Deals en Cours</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">{t.kpi_deals_in_progress}</p>
                 <p className="text-2xl font-extrabold text-white">{globalKpis.dealsEnCours}</p>
               </div>
             </div>
@@ -471,7 +473,7 @@ export function BusinessKPI() {
                 <Award className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Valeur Moyenne</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">{t.kpi_average_value}</p>
                 <p className="text-2xl font-extrabold text-white">{formatCurrency(globalKpis.valeurMoyenne)}</p>
               </div>
             </div>
@@ -481,7 +483,7 @@ export function BusinessKPI() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Closing Rate Chart */}
             <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Historique Taux de Closing</h3>
+              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">{t.kpi_closing_rate_history}</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData}>
@@ -496,7 +498,7 @@ export function BusinessKPI() {
                     <YAxis tick={{ fontSize: 11, fill: '#78716c' }} unit="%" />
                     <Tooltip
                       contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }}
-                      formatter={(v: number) => [`${v}%`, 'Taux de closing']}
+                      formatter={(v: number) => [`${v}%`, t.kpi_closing_rate_tooltip]}
                     />
                     <Area
                       type="monotone"
@@ -512,7 +514,7 @@ export function BusinessKPI() {
 
             {/* CA Chart */}
             <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Historique CA par Mois</h3>
+              <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">{t.kpi_ca_history}</h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData}>
@@ -545,7 +547,7 @@ export function BusinessKPI() {
           {/* Loss Reason Pie Chart */}
           {lossReasonData.length > 0 && (
           <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-            <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Raisons de Perte</h3>
+            <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">{t.kpi_loss_reasons}</h3>
             <div className="flex flex-col lg:flex-row items-center gap-8">
               <div className="w-64 h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -618,7 +620,7 @@ export function BusinessKPI() {
           {/* Period Bar Chart */}
           <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
             <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">
-              Répartition par Stage — {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
+              {t.kpi_stage_distribution} — {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -642,7 +644,7 @@ export function BusinessKPI() {
             const total = periodLossData.reduce((s, r) => s + r.value, 0)
             return (
               <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Raisons de Perte — {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}</h3>
+                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">{t.kpi_loss_reasons} — {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}</h3>
                 <div className="flex flex-col lg:flex-row items-center gap-8">
                   <div className="w-64 h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -682,10 +684,10 @@ export function BusinessKPI() {
             <div className="px-5 py-4 border-b border-stone-100 dark:border-neutral-700">
               <h3 className="text-sm font-semibold text-stone-900 dark:text-white flex items-center gap-2">
                 <Users className="h-4 w-4 text-stone-600 dark:text-neutral-300" />
-                Performance par Membre
+                {t.kpi_performance_by_member}
               </h3>
               <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">
-                Cliquez sur un membre pour voir ses KPIs détaillés.
+                {t.kpi_click_member_detail}
               </p>
             </div>
 
@@ -693,19 +695,19 @@ export function BusinessKPI() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-stone-50/50 dark:bg-neutral-800/50">
-                    <th className="text-left px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">Nom</th>
-                    <th className="text-left px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">Rôle</th>
-                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">Prospects</th>
-                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">Ventes</th>
-                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">CA</th>
-                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">Taux Conv.</th>
+                    <th className="text-left px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">{t.kpi_col_name}</th>
+                    <th className="text-left px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">{t.kpi_col_role}</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">{t.kpi_col_prospects}</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">{t.kpi_col_sales}</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">{t.kpi_col_ca}</th>
+                    <th className="text-center px-5 py-3 font-medium text-stone-500 dark:text-neutral-400">{t.kpi_col_conv_rate}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
                   {/* Owner row */}
                   <tr className="hover:bg-stone-50 dark:hover:bg-neutral-700 transition-colors">
                     <td className="px-5 py-3 font-medium text-stone-900 dark:text-white">
-                      Vous (Owner)
+                      {t.kpi_you_owner}
                     </td>
                     <td className="px-5 py-3 text-stone-400 dark:text-neutral-500">Owner</td>
                     <td className="px-5 py-3 text-center text-stone-900 dark:text-white">{globalKpis.totalLeads}</td>
@@ -745,7 +747,7 @@ export function BusinessKPI() {
                   {teamMembers.length === 0 && (
                     <tr>
                       <td colSpan={6} className="px-5 py-8 text-center text-stone-900/40 dark:text-neutral-500 text-sm">
-                        Aucun membre dans l'équipe. Invitez des membres depuis la page Équipe.
+                        {t.kpi_no_team_members}
                       </td>
                     </tr>
                   )}
@@ -804,7 +806,7 @@ export function BusinessKPI() {
               className="flex items-center gap-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:text-stone-900 dark:hover:text-white transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              Retour à la liste
+              {t.kpi_back_to_list}
             </button>
 
             {/* Member header */}
@@ -820,21 +822,21 @@ export function BusinessKPI() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <KpiCard title="CA Généré" value={formatCurrency(mRevenue)} icon={DollarSign} color="emerald" />
-              <KpiCard title="Ventes Totales" value={mWon.length} icon={ShoppingCart} color="blue" />
-              <KpiCard title="Taux de Conversion" value={`${mConversion.toFixed(1)}%`} icon={Target} color="purple" />
-              <KpiCard title="Commission (10%)" value={formatCurrency(mCommission)} icon={Award} color="cyan" />
-              <KpiCard title="Taux de No Show" value={`${mNoShowRate.toFixed(1)}%`} icon={UserX} color="rose" />
-              <KpiCard title="Deals Perdus" value={mLost.length} icon={XCircle} color="slate" />
+              <KpiCard title={t.kpi_ca_generated} value={formatCurrency(mRevenue)} icon={DollarSign} color="emerald" />
+              <KpiCard title={t.kpi_total_sales} value={mWon.length} icon={ShoppingCart} color="blue" />
+              <KpiCard title={t.kpi_conversion_rate} value={`${mConversion.toFixed(1)}%`} icon={Target} color="purple" />
+              <KpiCard title={t.kpi_commission_10} value={formatCurrency(mCommission)} icon={Award} color="cyan" />
+              <KpiCard title={t.kpi_noshow_rate} value={`${mNoShowRate.toFixed(1)}%`} icon={UserX} color="rose" />
+              <KpiCard title={t.kpi_deals_lost} value={mLost.length} icon={XCircle} color="slate" />
             </div>
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Historique Taux de Closing</h3>
+                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">{t.kpi_closing_rate_history}</h3>
                 <div className="h-64">
                   {mChartData.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-sm text-slate-400">Pas encore de données</div>
+                    <div className="flex items-center justify-center h-full text-sm text-slate-400">{t.kpi_no_data_yet}</div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={mChartData}>
@@ -856,10 +858,10 @@ export function BusinessKPI() {
               </div>
 
               <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Historique Commissions</h3>
+                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">{t.kpi_commission_history}</h3>
                 <div className="h-64">
                   {mChartData.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-sm text-slate-400">Pas encore de données</div>
+                    <div className="flex items-center justify-center h-full text-sm text-slate-400">{t.kpi_no_data_yet}</div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={mChartData}>
@@ -888,7 +890,7 @@ export function BusinessKPI() {
               const total = memberLossData.reduce((s, r) => s + r.value, 0)
               return (
                 <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
-                  <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">Raisons de Perte</h3>
+                  <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">{t.kpi_loss_reasons}</h3>
                   <div className="flex flex-col lg:flex-row items-center gap-8">
                     <div className="w-64 h-64">
                       <ResponsiveContainer width="100%" height="100%">
@@ -926,7 +928,7 @@ export function BusinessKPI() {
                   <Users className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Total Leads</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">{t.kpi_total_leads}</p>
                   <p className="text-2xl font-extrabold text-white">{memberProspects.length}</p>
                 </div>
               </div>
@@ -935,7 +937,7 @@ export function BusinessKPI() {
                   <Briefcase className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Deals en Cours</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">{t.kpi_deals_in_progress}</p>
                   <p className="text-2xl font-extrabold text-white">{mActive.length}</p>
                 </div>
               </div>
@@ -944,7 +946,7 @@ export function BusinessKPI() {
                   <Award className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Com. Moyenne</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">{t.kpi_avg_commission}</p>
                   <p className="text-2xl font-extrabold text-white">{formatCurrency(mAvgCommission)}</p>
                 </div>
               </div>
@@ -975,20 +977,20 @@ export function BusinessKPI() {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-stone-900 dark:text-white">{team.name}</h3>
-                      <p className="text-[10px] text-stone-400 dark:text-neutral-500">{teamMembersList.length} membre{teamMembersList.length !== 1 ? 's' : ''}</p>
+                      <p className="text-[10px] text-stone-400 dark:text-neutral-500">{teamMembersList.length} {teamMembersList.length !== 1 ? t.kpi_members_count_plural : t.kpi_members_count}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-6 text-right">
                     <div>
-                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 uppercase font-bold tracking-wider">CA</p>
+                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 uppercase font-bold tracking-wider">{t.kpi_col_ca}</p>
                       <p className="text-lg font-extrabold text-emerald-700">{formatCurrency(teamCA)}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 uppercase font-bold tracking-wider">Ventes</p>
+                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 uppercase font-bold tracking-wider">{t.kpi_col_sales}</p>
                       <p className="text-lg font-extrabold text-stone-900 dark:text-white">{teamWon.length}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 uppercase font-bold tracking-wider">Conv.</p>
+                      <p className="text-[10px] text-stone-400 dark:text-neutral-500 uppercase font-bold tracking-wider">{t.kpi_col_conv_rate}</p>
                       <p className="text-lg font-extrabold text-purple-700">{teamConv.toFixed(1)}%</p>
                     </div>
                   </div>
@@ -998,11 +1000,11 @@ export function BusinessKPI() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-stone-50/50 dark:bg-neutral-800/50">
-                          <th className="text-left px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">Nom</th>
-                          <th className="text-left px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">Rôle</th>
-                          <th className="text-center px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">Prospects</th>
-                          <th className="text-center px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">Ventes</th>
-                          <th className="text-center px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">CA</th>
+                          <th className="text-left px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">{t.kpi_col_name}</th>
+                          <th className="text-left px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">{t.kpi_col_role}</th>
+                          <th className="text-center px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">{t.kpi_col_prospects}</th>
+                          <th className="text-center px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">{t.kpi_col_sales}</th>
+                          <th className="text-center px-5 py-2.5 font-medium text-stone-500 dark:text-neutral-400 text-xs">{t.kpi_col_ca}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-100 dark:divide-neutral-700">
@@ -1028,7 +1030,7 @@ export function BusinessKPI() {
                     </table>
                   </div>
                 ) : (
-                  <p className="text-xs text-stone-400 dark:text-neutral-500 text-center py-6">Aucun membre dans cette équipe</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 text-center py-6">{t.kpi_no_members_in_team}</p>
                 )}
               </div>
             )

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import { fromUTC, getTimezoneLabel } from '../../lib/timezone'
 import {
@@ -32,17 +33,18 @@ interface TeamMember {
   timezone?: string
 }
 
-const STATUS_CONFIG: Record<string, { label: string; badgeBg: string; badgeText: string }> = {
-  pending: { label: 'En attente', badgeBg: 'bg-amber-100/80', badgeText: 'text-amber-700' },
-  confirmed: { label: 'Confirme', badgeBg: 'bg-emerald-100/80', badgeText: 'text-emerald-700' },
-  cancelled: { label: 'Annule', badgeBg: 'bg-red-100/80', badgeText: 'text-red-600' },
-  done: { label: 'Termine', badgeBg: 'bg-stone-100', badgeText: 'text-stone-600' },
+const STATUS_CONFIG: Record<string, { key: string; badgeBg: string; badgeText: string }> = {
+  pending: { key: 'appointments_status_pending', badgeBg: 'bg-amber-100/80', badgeText: 'text-amber-700' },
+  confirmed: { key: 'appointments_status_confirmed', badgeBg: 'bg-emerald-100/80', badgeText: 'text-emerald-700' },
+  cancelled: { key: 'appointments_status_cancelled', badgeBg: 'bg-red-100/80', badgeText: 'text-red-600' },
+  done: { key: 'appointments_status_done', badgeBg: 'bg-stone-100', badgeText: 'text-stone-600' },
 }
 
 const API_URL = '/api/business'
 
 export function CloserRendezVous() {
   const { user, isTeamMember, ownerUserId, teamMember, userTimezone } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -137,7 +139,7 @@ export function CloserRendezVous() {
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr + 'T00:00:00')
-    return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
+    return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
   }
 
   const updateStatus = async (id: string, status: string) => {
@@ -147,10 +149,10 @@ export function CloserRendezVous() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user?.id, id, status }),
       })
-      toast.success('Statut mis a jour')
+      toast.success(t.appointments_status_updated)
       fetchAppointments()
     } catch {
-      toast.error('Erreur')
+      toast.error(t.common_error)
     }
   }
 
@@ -168,12 +170,12 @@ export function CloserRendezVous() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: effectiveUserId, id: reassigningApptId, assigned_to: selectedMemberId }),
       })
-      toast.success('Rendez-vous reassigne')
+      toast.success(t.appointments_reassigned)
       setReassignModalOpen(false)
       setReassigningApptId(null)
       fetchAppointments()
     } catch {
-      toast.error('Erreur lors de la reassignation')
+      toast.error(t.appointments_reassign_error)
     }
   }
 
@@ -194,8 +196,8 @@ export function CloserRendezVous() {
             <Calendar className="h-5 w-5 text-stone-600 dark:text-neutral-300" />
           </div>
           <div>
-            <h2 className="font-['Manrope'] text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">Mes Rendez-vous</h2>
-            <p className="text-sm text-stone-500 dark:text-neutral-400">{myAppointments.length} rendez-vous assignes</p>
+            <h2 className="font-['Manrope'] text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.appointments_my_title}</h2>
+            <p className="text-sm text-stone-500 dark:text-neutral-400">{t.appointments_assigned_count.replace('{n}', String(myAppointments.length))}</p>
           </div>
         </div>
 
@@ -206,11 +208,11 @@ export function CloserRendezVous() {
               value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
               className="appearance-none rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 pl-8 pr-8 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
             >
-              <option value="all">Tous les statuts</option>
-              <option value="pending">En attente</option>
-              <option value="confirmed">Confirme</option>
-              <option value="cancelled">Annule</option>
-              <option value="done">Termine</option>
+              <option value="all">{t.appointments_all_statuses}</option>
+              <option value="pending">{t.appointments_status_pending}</option>
+              <option value="confirmed">{t.appointments_status_confirmed}</option>
+              <option value="cancelled">{t.appointments_status_cancelled}</option>
+              <option value="done">{t.appointments_status_done}</option>
             </select>
             <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
@@ -221,7 +223,7 @@ export function CloserRendezVous() {
               className="rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-2 sm:px-3 py-2 text-xs text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
               placeholder="Du"
             />
-            <span className="text-xs text-stone-400">au</span>
+            <span className="text-xs text-stone-400">{t.appointments_date_to}</span>
             <input
               type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)}
               className="rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-2 sm:px-3 py-2 text-xs text-stone-600 dark:text-neutral-300 focus:border-stone-900 dark:focus:border-neutral-500 focus:outline-none"
@@ -230,7 +232,7 @@ export function CloserRendezVous() {
           </div>
           {(filterStatus !== 'all' || filterStartDate || filterEndDate) && (
             <button onClick={() => { setFilterStatus('all'); setFilterStartDate(''); setFilterEndDate('') }} className="text-xs text-stone-900 dark:text-white hover:text-stone-700 dark:hover:text-neutral-200 font-medium underline underline-offset-2">
-              Reinitialiser
+              {t.appointments_reset_filters}
             </button>
           )}
         </div>
@@ -240,9 +242,9 @@ export function CloserRendezVous() {
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-stone-200 dark:border-white/10 bg-white/70 dark:bg-white/5 backdrop-blur-xl py-16">
           <Calendar className="h-12 w-12 text-stone-300 dark:text-neutral-600 mb-4" />
-          <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">Aucun rendez-vous</h3>
+          <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">{t.appointments_no_appointments_title}</h3>
           <p className="text-sm text-stone-500 dark:text-neutral-400">
-            {myAppointments.length === 0 ? 'Aucun rendez-vous ne vous est assigne' : 'Aucun rendez-vous ne correspond a vos filtres'}
+            {myAppointments.length === 0 ? t.appointments_no_assigned : t.appointments_no_matching_filters}
           </p>
         </div>
       )}
@@ -252,13 +254,13 @@ export function CloserRendezVous() {
         <div className="rounded-xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-sm overflow-hidden">
           {/* Desktop header */}
           <div className="hidden md:grid grid-cols-12 gap-4 border-b border-stone-100 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 px-6 py-3 text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-neutral-400">
-            <div className="col-span-2">Date & Heure</div>
-            <div className="col-span-2">Contact</div>
-            <div className="col-span-2">Email</div>
-            <div className="col-span-2">Campagne</div>
-            <div className="col-span-1">Duree</div>
-            <div className="col-span-1">Statut</div>
-            <div className="col-span-2 text-right">Actions</div>
+            <div className="col-span-2">{t.appointments_date_time}</div>
+            <div className="col-span-2">{t.appointments_contact}</div>
+            <div className="col-span-2">{t.appointments_email}</div>
+            <div className="col-span-2">{t.appointments_campaign}</div>
+            <div className="col-span-1">{t.appointments_duration}</div>
+            <div className="col-span-1">{t.appointments_status}</div>
+            <div className="col-span-2 text-right">{t.common_actions}</div>
           </div>
 
           <div className="divide-y divide-stone-100 dark:divide-white/10">
@@ -272,13 +274,13 @@ export function CloserRendezVous() {
               const todayStr = new Date().toISOString().split('T')[0]
               let timeTag: { label: string; bg: string; text: string }
               if (apptEnd.getTime() < nowMs) {
-                timeTag = { label: 'Passé', bg: 'bg-stone-100', text: 'text-stone-500' }
+                timeTag = { label: t.appointments_time_past, bg: 'bg-stone-100', text: 'text-stone-500' }
               } else if (localDt.date === todayStr && apptStart.getTime() > nowMs) {
-                timeTag = { label: 'Bientôt', bg: 'bg-amber-100/80', text: 'text-amber-700' }
+                timeTag = { label: t.appointments_time_soon, bg: 'bg-amber-100/80', text: 'text-amber-700' }
               } else if (localDt.date === todayStr && apptStart.getTime() <= nowMs) {
-                timeTag = { label: 'En cours', bg: 'bg-emerald-100/80', text: 'text-emerald-700' }
+                timeTag = { label: t.appointments_time_ongoing, bg: 'bg-emerald-100/80', text: 'text-emerald-700' }
               } else {
-                timeTag = { label: 'Futur', bg: 'bg-blue-50', text: 'text-blue-600' }
+                timeTag = { label: t.appointments_time_future, bg: 'bg-blue-50', text: 'text-blue-600' }
               }
               return (
                 <div key={appt.id} className="px-6 py-4 hover:bg-stone-50/40 dark:hover:bg-white/5 transition-colors">
@@ -291,7 +293,7 @@ export function CloserRendezVous() {
                         {(() => {
                           const mt = getMemberLocalTime(appt)
                           if (!mt) return null
-                          return <span className="text-xs text-stone-400 ml-1">({mt.time} chez {mt.name})</span>
+                          return <span className="text-xs text-stone-400 ml-1">({mt.time} {t.appointments_at_member} {mt.name})</span>
                         })()}
                       </p>
                     </div>
@@ -322,7 +324,7 @@ export function CloserRendezVous() {
                         {appt.status === 'confirmed' && <CheckCircle2 className="h-3 w-3" />}
                         {appt.status === 'cancelled' && <XCircle className="h-3 w-3" />}
                         {appt.status === 'done' && <CheckCircle2 className="h-3 w-3" />}
-                        {statusConf.label}
+                        {t[statusConf.key]}
                       </span>
                       <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider', timeTag.bg, timeTag.text)}>
                         {timeTag.label}
@@ -332,13 +334,13 @@ export function CloserRendezVous() {
                       <button
                         onClick={() => openReassignModal(appt.id)}
                         className="flex items-center gap-1 rounded-full border border-stone-200 dark:border-white/10 px-3 py-1.5 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors"
-                        title="Reassigner"
+                        title={t.appointments_reassign}
                       >
-                        <UserCheck className="h-3.5 w-3.5" /> Reassigner
+                        <UserCheck className="h-3.5 w-3.5" /> {t.appointments_reassign}
                       </button>
                       {appt.status === 'confirmed' && (
                         <button onClick={() => updateStatus(appt.id, 'done')} className="rounded-full bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-800 transition-colors">
-                          Termine
+                          {t.appointments_mark_done}
                         </button>
                       )}
                     </div>
@@ -350,17 +352,17 @@ export function CloserRendezVous() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium', statusConf.badgeBg, statusConf.badgeText)}>
-                            {statusConf.label}
+                            {t[statusConf.key]}
                           </span>
                           <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider', timeTag.bg, timeTag.text)}>
                             {timeTag.label}
                           </span>
                           <span className="text-sm font-semibold text-stone-900">
-                            {formatDate(localDt.date)} a {localDt.time}
+                            {formatDate(localDt.date)} {t.appointments_at_time} {localDt.time}
                             {(() => {
                               const mt = getMemberLocalTime(appt)
                               if (!mt) return null
-                              return <span className="text-xs text-stone-400 ml-1">({mt.time} chez {mt.name})</span>
+                              return <span className="text-xs text-stone-400 ml-1">({mt.time} {t.appointments_at_member} {mt.name})</span>
                             })()}
                           </span>
                           <span className="text-xs text-stone-400">{appt.duration}min</span>
@@ -409,9 +411,9 @@ export function CloserRendezVous() {
             </button>
             <h2 className="text-lg font-bold text-stone-900 dark:text-white mb-4 flex items-center gap-2">
               <UserCheck className="h-5 w-5 text-stone-600 dark:text-neutral-300" />
-              Reassigner le rendez-vous
+              {t.appointments_reassign_title}
             </h2>
-            <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4">Selectionnez un membre de l'equipe a qui assigner ce rendez-vous.</p>
+            <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4">{t.appointments_reassign_desc}</p>
             <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
               {teamMembers.filter(m => m.id !== teamMember?.id).map(m => (
                 <button
@@ -429,7 +431,7 @@ export function CloserRendezVous() {
                 </button>
               ))}
               {teamMembers.filter(m => m.id !== teamMember?.id).length === 0 && (
-                <p className="text-center text-stone-400 dark:text-neutral-500 text-sm py-4">Aucun autre membre disponible</p>
+                <p className="text-center text-stone-400 dark:text-neutral-500 text-sm py-4">{t.appointments_no_member_available}</p>
               )}
             </div>
             <button
@@ -437,7 +439,7 @@ export function CloserRendezVous() {
               disabled={!selectedMemberId}
               className="w-full rounded-full bg-stone-900 py-2.5 font-bold text-white hover:bg-stone-800 disabled:opacity-50 transition-all"
             >
-              Confirmer la reassignation
+              {t.appointments_confirm_reassign}
             </button>
           </div>
         </div>

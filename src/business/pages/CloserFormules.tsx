@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import {
   Package, Loader2, FileText, Video, Link2, File, ExternalLink, X,
 } from 'lucide-react'
@@ -27,6 +28,7 @@ const API_URL = '/api/business'
 
 export function CloserFormules() {
   const { ownerUserId } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const [formulas, setFormulas] = useState<Formula[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null)
@@ -64,11 +66,11 @@ export function CloserFormules() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-          <span className="text-xs uppercase tracking-[0.2em] text-stone-400 dark:text-neutral-500 font-bold">Gestion Commerciale</span>
+          <span className="text-xs uppercase tracking-[0.2em] text-stone-400 dark:text-neutral-500 font-bold">{t.formulas_management}</span>
           <h1 className="font-['Manrope'] text-3xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
-            {formulas.length} formule{formulas.length !== 1 ? 's' : ''}
+            {t.formulas_count.replace('{n}', String(formulas.length)).replace('{s}', formulas.length !== 1 ? 's' : '')}
           </h1>
-          <p className="text-sm text-stone-500 dark:text-neutral-400">Formules tarifaires de l'organisation (lecture seule)</p>
+          <p className="text-sm text-stone-500 dark:text-neutral-400">{t.formulas_readonly}</p>
         </div>
       </div>
 
@@ -76,8 +78,8 @@ export function CloserFormules() {
       {formulas.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 py-16">
           <Package className="h-12 w-12 text-stone-300 dark:text-neutral-600 mb-4" />
-          <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">Aucune formule</h3>
-          <p className="text-sm text-stone-500 dark:text-neutral-400">Votre manager n'a pas encore cree de formules.</p>
+          <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">{t.formulas_no_formulas_title}</h3>
+          <p className="text-sm text-stone-500 dark:text-neutral-400">{t.formulas_no_formulas_desc}</p>
         </div>
       )}
 
@@ -95,7 +97,7 @@ export function CloserFormules() {
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-stone-100 text-stone-500'
                 )}>
-                  {formula.is_active ? 'Active' : 'Inactive'}
+                  {formula.is_active ? t.formulas_active : t.formulas_inactive}
                 </span>
               </div>
 
@@ -109,19 +111,19 @@ export function CloserFormules() {
               {/* Price */}
               <div className="mb-8">
                 {formula.billing_type === 'quote' ? (
-                  <span className="font-['Manrope'] text-2xl font-extrabold text-stone-900 dark:text-white">Sur devis</span>
+                  <span className="font-['Manrope'] text-2xl font-extrabold text-stone-900 dark:text-white">{t.formulas_on_quote}</span>
                 ) : (
                   <>
                     <span className="font-['Manrope'] text-4xl font-extrabold text-stone-900 dark:text-white">
                       {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                     </span>
-                    <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ {formula.billing_type === 'subscription' ? 'mois' : 'unique'}</span>
+                    <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ {formula.billing_type === 'subscription' ? t.formulas_per_month : t.formulas_one_time}</span>
                     {formula.billing_type === 'subscription' && formula.yearly_price != null && (
                       <div className="mt-1">
                         <span className="text-lg font-bold text-stone-600 dark:text-neutral-300">
                           {formula.yearly_price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                         </span>
-                        <span className="text-stone-400 dark:text-neutral-500 text-xs ml-1">/ an</span>
+                        <span className="text-stone-400 dark:text-neutral-500 text-xs ml-1">/ {t.formulas_per_year}</span>
                       </div>
                     )}
                   </>
@@ -133,7 +135,7 @@ export function CloserFormules() {
                 {resources.length > 0 ? (
                   <div className="space-y-2.5">
                     <p className="text-xs font-semibold text-stone-500 dark:text-neutral-400 uppercase tracking-wide">
-                      {resources.length} Ressource{resources.length !== 1 ? 's' : ''}
+                      {t.formulas_resources_count.replace('{n}', String(resources.length)).replace('{s}', resources.length !== 1 ? 's' : '')}
                     </p>
                     {resources.map((r, i) => (
                       <div key={i} className="flex items-center gap-2.5 rounded-xl bg-stone-50 dark:bg-white/5 px-3 py-2">
@@ -149,7 +151,7 @@ export function CloserFormules() {
                             onClick={(e) => e.stopPropagation()}
                             className="flex items-center gap-1 text-xs font-semibold text-stone-900 dark:text-white hover:text-stone-600 dark:hover:text-neutral-300 ml-auto transition-colors"
                           >
-                            <ExternalLink className="h-3 w-3" /> Ouvrir
+                            <ExternalLink className="h-3 w-3" /> {t.formulas_open}
                           </a>
                         )}
                       </div>
@@ -157,7 +159,7 @@ export function CloserFormules() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-400 dark:text-neutral-500">
-                    <File className="h-3.5 w-3.5" /> Aucune ressource
+                    <File className="h-3.5 w-3.5" /> {t.formulas_no_resources}
                   </div>
                 )}
               </div>
@@ -172,7 +174,7 @@ export function CloserFormules() {
           <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between border-b border-stone-100 dark:border-white/10 px-8 py-5 flex-shrink-0">
-              <h3 className="font-['Manrope'] text-xl font-extrabold text-stone-900 dark:text-white">Détails de la formule</h3>
+              <h3 className="font-['Manrope'] text-xl font-extrabold text-stone-900 dark:text-white">{t.formulas_detail_title}</h3>
               <button onClick={() => setSelectedFormula(null)} className="p-2 hover:bg-stone-100 dark:hover:bg-white/10 rounded-full text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white transition-colors">
                 <X className="h-5 w-5" />
               </button>
@@ -187,18 +189,18 @@ export function CloserFormules() {
                   ? 'bg-emerald-100 text-emerald-700'
                   : 'bg-stone-100 text-stone-500'
               )}>
-                {selectedFormula.is_active ? 'Active' : 'Inactive'}
+                {selectedFormula.is_active ? t.formulas_active : t.formulas_inactive}
               </span>
 
               {/* Name */}
               <div>
-                <label className="block text-xs font-semibold text-stone-500 dark:text-neutral-400 uppercase tracking-wide mb-1">Nom</label>
+                <label className="block text-xs font-semibold text-stone-500 dark:text-neutral-400 uppercase tracking-wide mb-1">{t.formulas_label_name}</label>
                 <p className="font-['Manrope'] text-lg font-extrabold text-stone-900 dark:text-white">{selectedFormula.name}</p>
               </div>
 
               {/* Price */}
               <div>
-                <label className="block text-xs font-semibold text-stone-500 dark:text-neutral-400 uppercase tracking-wide mb-1">Prix</label>
+                <label className="block text-xs font-semibold text-stone-500 dark:text-neutral-400 uppercase tracking-wide mb-1">{t.formulas_label_price}</label>
                 <p className="font-['Manrope'] text-3xl font-extrabold text-stone-900 dark:text-white">
                   {selectedFormula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                 </p>
@@ -207,7 +209,7 @@ export function CloserFormules() {
               {/* Description */}
               {selectedFormula.description && (
                 <div>
-                  <label className="block text-xs font-semibold text-stone-500 dark:text-neutral-400 uppercase tracking-wide mb-1">Description</label>
+                  <label className="block text-xs font-semibold text-stone-500 dark:text-neutral-400 uppercase tracking-wide mb-1">{t.formulas_label_description}</label>
                   <p className="text-sm text-stone-700 dark:text-neutral-300 leading-relaxed">{selectedFormula.description}</p>
                 </div>
               )}
@@ -215,7 +217,7 @@ export function CloserFormules() {
               {/* Resources */}
               <div>
                 <label className="block text-xs font-semibold text-stone-500 dark:text-neutral-400 uppercase tracking-wide mb-3">
-                  {(selectedFormula.resources || []).length} Ressource{(selectedFormula.resources || []).length !== 1 ? 's' : ''}
+                  {t.formulas_resources_count.replace('{n}', String((selectedFormula.resources || []).length)).replace('{s}', (selectedFormula.resources || []).length !== 1 ? 's' : '')}
                 </label>
                 {(selectedFormula.resources || []).length > 0 ? (
                   <div className="space-y-2.5">
@@ -232,7 +234,7 @@ export function CloserFormules() {
                             rel="noopener noreferrer"
                             className="flex items-center gap-1.5 ml-auto rounded-full bg-stone-900 dark:bg-white text-white dark:text-stone-900 px-4 py-1.5 text-xs font-semibold hover:opacity-80 active:scale-95 transition-all"
                           >
-                            <ExternalLink className="h-3 w-3" /> Ouvrir
+                            <ExternalLink className="h-3 w-3" /> {t.formulas_open}
                           </a>
                         )}
                       </div>
@@ -240,7 +242,7 @@ export function CloserFormules() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-400 dark:text-neutral-500">
-                    <File className="h-3.5 w-3.5" /> Aucune ressource
+                    <File className="h-3.5 w-3.5" /> {t.formulas_no_resources}
                   </div>
                 )}
               </div>
@@ -249,7 +251,7 @@ export function CloserFormules() {
             {/* Footer */}
             <div className="flex justify-end border-t border-stone-100 dark:border-white/10 px-8 py-5 flex-shrink-0">
               <button onClick={() => setSelectedFormula(null)} className="rounded-full border border-stone-200 dark:border-white/10 px-6 py-2.5 text-sm font-semibold text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/10 transition-colors">
-                Fermer
+                {t.common_close}
               </button>
             </div>
           </div>

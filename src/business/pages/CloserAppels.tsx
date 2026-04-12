@@ -7,6 +7,7 @@ import {
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -33,6 +34,7 @@ const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#
 export function CloserAppels() {
   const navigate = useNavigate()
   const { user, teamMember, ownerUserId, isTeamMember } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const { prospects } = useBusinessProspects()
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const effectiveOwnerId = ownerUserId || user?.id
@@ -98,7 +100,7 @@ export function CloserAppels() {
       setScripts([])
       setSelectedScriptId('new')
       setScriptContent('')
-      setScriptTitle('Mon Script')
+      setScriptTitle(t.calls_my_script)
     }
   }
 
@@ -122,13 +124,13 @@ export function CloserAppels() {
         await supabase.from('business_user_scripts').update({ title: scriptTitle, content: scriptContent }).eq('id', selectedScriptId)
         setScripts(scripts.map(s => s.id === selectedScriptId ? { ...s, title: scriptTitle, content: scriptContent } : s))
       }
-      toast.success('Script sauvegardé')
-    } catch { toast.error('Erreur') }
+      toast.success(t.calls_script_saved)
+    } catch { toast.error(t.common_error) }
     finally { setIsSavingScript(false) }
   }
 
   const handleDeleteScript = async () => {
-    if (selectedScriptId === 'new' || !confirm('Supprimer ce script ?')) return
+    if (selectedScriptId === 'new' || !confirm(t.calls_delete_script_confirm)) return
     await supabase.from('business_user_scripts').delete().eq('id', selectedScriptId)
     const remaining = scripts.filter(s => s.id !== selectedScriptId)
     setScripts(remaining)
@@ -157,21 +159,21 @@ export function CloserAppels() {
       team_member_id: teamMember?.id || null,
       business_owner_id: effectiveOwnerId,
       contact_id: 0,
-      contact_name: 'Call Rapide',
+      contact_name: t.calls_quick_call,
       contact_type: 'internal',
       date: new Date().toISOString(),
-      duration: 'En cours...',
+      duration: t.closer_appels_in_progress,
       is_ai: false,
       answered: true,
     }]).select().single()
     const callDbId = newCall?.id || Date.now()
     setIsMeetModalOpen(false)
-    navigate(`/business/cockpit?id=${callDbId}&name=${encodeURIComponent('Call Rapide')}`)
+    navigate(`/business/cockpit?id=${callDbId}&name=${encodeURIComponent(t.calls_quick_call)}`)
   }
 
   const startCockpit = async () => {
     if (!effectiveOwnerId) return
-    let contactName = 'Appel Vidéo'
+    let contactName = t.closer_appels_video_call
     let contactId = 0
     if (selectedProspectId) {
       const p = myProspects.find(x => x.id === selectedProspectId)
@@ -185,7 +187,7 @@ export function CloserAppels() {
       contact_name: contactName,
       contact_type: 'prospect',
       date: new Date().toISOString(),
-      duration: 'En cours...',
+      duration: t.closer_appels_in_progress,
       is_ai: false,
       answered: true,
     }]).select().single()
@@ -210,11 +212,11 @@ export function CloserAppels() {
     const diffMins = Math.floor(diffMs / 60000)
     const diffHours = Math.floor(diffMins / 60)
     const diffDays = Math.floor(diffHours / 24)
-    if (diffMins < 60) return `il y a ${diffMins} min`
-    if (diffHours < 24) return `il y a ${diffHours}h`
-    if (diffDays === 1) return 'Hier'
-    if (diffDays < 7) return `il y a ${diffDays}j`
-    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    if (diffMins < 60) return t.calls_ago_min.replace('{n}', String(diffMins))
+    if (diffHours < 24) return t.calls_ago_hours.replace('{n}', String(diffHours))
+    if (diffDays === 1) return t.calls_yesterday
+    if (diffDays < 7) return t.calls_ago_days.replace('{n}', String(diffDays))
+    return date.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })
   }
 
   const filteredHistory = callHistory.filter(c => !searchQuery || c.contact_name?.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -232,8 +234,8 @@ export function CloserAppels() {
           <span className="h-px w-10 bg-[#c4c7c7]/30" />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Workspace</span>
         </div>
-        <h1 className="text-2xl md:text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Appels</h1>
-        <p className="text-stone-500 dark:text-neutral-400 text-base max-w-2xl font-light italic opacity-80">Gérez vos appels, scripts et suivez vos prospects.</p>
+        <h1 className="text-2xl md:text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.calls_title}</h1>
+        <p className="text-stone-500 dark:text-neutral-400 text-base max-w-2xl font-light italic opacity-80">{t.calls_subtitle}</p>
       </header>
 
       {/* Toolbar */}
@@ -244,7 +246,7 @@ export function CloserAppels() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher un prospect ou un appel..."
+            placeholder={t.calls_search_placeholder}
             className="w-full pl-14 pr-6 py-5 bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 rounded-[2rem] shadow-sm group-hover:shadow-md transition-shadow focus:ring-2 focus:ring-[#006c49]/10 focus:border-[#006c49] outline-none font-medium text-stone-900 dark:text-white dark:placeholder-neutral-500"
           />
         </div>
@@ -261,21 +263,21 @@ export function CloserAppels() {
             className="px-4 md:px-8 py-3 md:py-5 bg-[#006c49] text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-[#006c49]/10"
           >
             <Video className="h-5 w-5" strokeWidth={1.5} />
-            <span className="hidden sm:inline">Call Rapide</span>
+            <span className="hidden sm:inline">{t.calls_quick_call}</span>
           </button>
           <button
             onClick={() => setIsNewCallModalOpen(true)}
             className="px-4 md:px-8 py-3 md:py-5 bg-stone-900 text-white rounded-full font-bold font-business-display tracking-tight hover:opacity-90 transition-all flex items-center gap-2 md:gap-3 shadow-lg shadow-stone-900/10"
           >
             <Phone className="h-5 w-5" strokeWidth={1.5} />
-            <span className="hidden sm:inline">Nouvel Appel</span>
+            <span className="hidden sm:inline">{t.calls_new_call}</span>
           </button>
         </div>
       </div>
 
       {/* Title bar */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Appels Récents</h2>
+        <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.calls_recent}</h2>
       </div>
 
       {/* Call Cards List */}
@@ -329,7 +331,7 @@ export function CloserAppels() {
                   )}
                   <span className="flex items-center gap-1.5 px-2.5 py-0.5 bg-[#006c49]/10 text-[#006c49] rounded-full text-xs font-bold">
                     <span className="w-2 h-2 rounded-full bg-[#006c49]" />
-                    Terminé
+                    {t.calls_finished}
                   </span>
                 </div>
               </div>
@@ -340,7 +342,7 @@ export function CloserAppels() {
                 className="flex items-center gap-2 px-3 md:px-6 py-2 md:py-3 bg-[#eae8e7] dark:bg-white/5 hover:bg-[#dbdad9] dark:hover:bg-white/10 text-stone-900 dark:text-white rounded-full font-bold text-sm transition-all"
               >
                 <Eye className="h-4 w-4" strokeWidth={1.5} />
-                <span className="hidden sm:inline">Détails</span>
+                <span className="hidden sm:inline">{t.calls_details}</span>
               </button>
               <div className="relative">
                 <button
@@ -356,16 +358,16 @@ export function CloserAppels() {
                       <button
                         onClick={async (e) => {
                           e.stopPropagation()
-                          if (!confirm('Supprimer cet appel ?')) return
+                          if (!confirm(t.calls_delete_confirm)) return
                           await supabase.from('business_call_history').delete().eq('id', call.id)
                           setCallHistory(prev => prev.filter(c => c.id !== call.id))
                           setOpenMenuCallId(null)
-                          toast.success('Appel supprimé')
+                          toast.success(t.calls_deleted)
                         }}
                         className="flex items-center gap-2 w-full px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
-                        Supprimer
+                        {t.common_delete}
                       </button>
                     </div>
                   </>
@@ -377,8 +379,8 @@ export function CloserAppels() {
         {filteredHistory.length === 0 && (
           <div className={cn(GLASS_PANEL, 'rounded-2xl py-16 text-center')}>
             <Video className="h-12 w-12 mx-auto mb-4 text-stone-300 dark:text-neutral-600" strokeWidth={1} />
-            <p className="text-stone-400 dark:text-neutral-500 font-medium">Aucun appel récent.</p>
-            <p className="text-stone-400/60 dark:text-neutral-500/60 text-sm mt-1">Lancez un appel pour commencer.</p>
+            <p className="text-stone-400 dark:text-neutral-500 font-medium">{t.calls_no_calls}</p>
+            <p className="text-stone-400/60 dark:text-neutral-500/60 text-sm mt-1">{t.calls_no_calls_desc}</p>
           </div>
         )}
       </div>
@@ -389,12 +391,12 @@ export function CloserAppels() {
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsNewCallModalOpen(false)} />
           <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl p-8 animate-in zoom-in-95">
             <button onClick={() => setIsNewCallModalOpen(false)} className="absolute top-5 right-5 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
-            <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-6">Sélectionner un prospect</h2>
+            <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-6">{t.calls_select_prospect}</h2>
             <div className="relative mb-4">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
               <input
                 type="text"
-                placeholder="Rechercher..."
+                placeholder={t.common_search + '...'}
                 value={prospectSearch}
                 onChange={e => setProspectSearch(e.target.value)}
                 className="w-full pl-11 pr-4 py-3.5 bg-[#f5f3f2] dark:bg-neutral-800 border-none rounded-2xl text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none"
@@ -408,11 +410,11 @@ export function CloserAppels() {
                   {p.contact} {p.company && <span className="text-stone-400 ml-1">({p.company})</span>}
                 </button>
               ))}
-              {myProspects.length === 0 && <p className="text-center text-stone-400 text-sm py-6">Aucun prospect assigné</p>}
+              {myProspects.length === 0 && <p className="text-center text-stone-400 text-sm py-6">{t.calls_no_assigned_prospect}</p>}
             </div>
             <button onClick={() => prepareCall(selectedProspectId)} disabled={!selectedProspectId}
               className="w-full rounded-full bg-stone-900 py-4 font-business-display font-extrabold text-white text-sm hover:opacity-90 disabled:opacity-50 transition-all">
-              Préparer l'appel
+              {t.calls_prepare_call}
             </button>
           </div>
         </div>
@@ -424,25 +426,25 @@ export function CloserAppels() {
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsMeetModalOpen(false)} />
           <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl p-8 animate-in zoom-in-95">
             <button onClick={() => setIsMeetModalOpen(false)} className="absolute top-5 right-5 text-stone-300 hover:text-stone-700 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
-            <h3 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-8">Préparer l'appel</h3>
+            <h3 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white mb-8">{t.calls_prepare_title}</h3>
             <div className="space-y-5">
               <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
-                <p className="font-bold text-stone-900 dark:text-white mb-3 text-sm">1. Ouvrir Google Meet</p>
+                <p className="font-bold text-stone-900 dark:text-white mb-3 text-sm">{t.closer_appels_step1_open_meet}</p>
                 <button onClick={() => window.open('https://meet.google.com/new', '_blank')}
                   className="w-full flex items-center justify-center gap-2 rounded-full bg-[#006c49] px-4 py-3.5 text-sm font-bold text-white hover:opacity-90 transition-all">
-                  <ExternalLink className="h-4 w-4" strokeWidth={1.5} /> Ouvrir Meet
+                  <ExternalLink className="h-4 w-4" strokeWidth={1.5} /> {t.calls_open_meet}
                 </button>
               </div>
               <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-6">
-                <p className="font-bold text-stone-900 dark:text-white mb-3 text-sm">2. Lancer le Cockpit</p>
+                <p className="font-bold text-stone-900 dark:text-white mb-3 text-sm">{t.closer_appels_step2_launch_cockpit}</p>
                 <div className="relative mb-3">
                   <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" strokeWidth={1.5} />
-                  <input type="text" value={meetLinkInput} onChange={(e) => setMeetLinkInput(e.target.value)} placeholder="Lien Meet (optionnel)"
+                  <input type="text" value={meetLinkInput} onChange={(e) => setMeetLinkInput(e.target.value)} placeholder={t.calls_meet_link_placeholder}
                     className="w-full rounded-full bg-white dark:bg-neutral-700 border-none pl-11 pr-4 py-3 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 outline-none" />
                 </div>
                 <button onClick={isQuickCall ? startQuickCockpit : startCockpit}
                   className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 px-4 py-3.5 text-sm font-bold text-white hover:opacity-90 transition-all">
-                  <Video className="h-4 w-4" strokeWidth={1.5} /> Lancer le Cockpit
+                  <Video className="h-4 w-4" strokeWidth={1.5} /> {t.calls_launch_cockpit}
                 </button>
               </div>
             </div>
@@ -461,7 +463,7 @@ export function CloserAppels() {
                 <div className="relative flex-1 max-w-xs">
                   <select value={selectedScriptId} onChange={(e) => handleScriptChange(e.target.value)}
                     className="w-full appearance-none bg-[#f5f3f2] dark:bg-neutral-800 border-none text-sm font-medium rounded-full px-5 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20 text-stone-900 dark:text-white">
-                    <option value="new">+ Nouveau Script</option>
+                    <option value="new">{t.calls_new_script}</option>
                     {scripts.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
@@ -473,19 +475,19 @@ export function CloserAppels() {
               <button onClick={() => setIsScriptModalOpen(false)} className="text-stone-300 hover:text-stone-700 p-2 transition-colors"><X className="h-5 w-5" strokeWidth={1.5} /></button>
             </div>
             <div className="px-8 pt-6">
-              <input type="text" value={scriptTitle} onChange={(e) => setScriptTitle(e.target.value)} placeholder="Titre du script"
+              <input type="text" value={scriptTitle} onChange={(e) => setScriptTitle(e.target.value)} placeholder={t.calls_script_title_placeholder}
                 className="w-full bg-transparent text-2xl font-business-display font-extrabold text-stone-900 dark:text-white placeholder-stone-300 dark:placeholder-neutral-600 focus:outline-none tracking-tight" />
             </div>
             <div className="flex-1 px-8 py-4">
               <textarea value={scriptContent} onChange={(e) => setScriptContent(e.target.value)}
                 className="w-full h-full rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border-none p-6 text-stone-700 dark:text-neutral-200 font-medium leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#006c49]/10 resize-none"
-                placeholder="Rédigez votre script ici..." />
+                placeholder={t.calls_script_write_placeholder} />
             </div>
             <div className="p-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-end gap-4">
-              <button onClick={() => setIsScriptModalOpen(false)} className="px-6 py-3 rounded-full font-bold text-sm text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">Fermer</button>
+              <button onClick={() => setIsScriptModalOpen(false)} className="px-6 py-3 rounded-full font-bold text-sm text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">{t.common_close}</button>
               <button onClick={handleSaveScript} disabled={isSavingScript}
                 className="flex items-center gap-2 rounded-full bg-stone-900 px-8 py-3 text-sm font-bold text-white hover:opacity-90 transition-all">
-                <Save className="h-4 w-4" strokeWidth={1.5} /> {isSavingScript ? 'Sauvegarde...' : 'Sauvegarder'}
+                <Save className="h-4 w-4" strokeWidth={1.5} /> {isSavingScript ? t.calls_saving : t.common_save}
               </button>
             </div>
           </div>

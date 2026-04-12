@@ -7,6 +7,8 @@ import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 import { useInternalContacts } from '../contexts/InternalContactsContext'
 import { CreateProspectModal } from './CreateProspectModal'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../contexts/LanguageContext'
+import { createEventTranslations } from '../i18n/translations'
 
 interface CreateEventModalProps {
   isOpen: boolean
@@ -21,6 +23,8 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
   const { prospects } = useProspects()
   const { isConnected: isGoogleConnected, createEvent: createGoogleEvent } = useGoogleCalendar()
   const { addContact: addInternalContact } = useInternalContacts()
+  const { lang } = useLanguage()
+  const t = createEventTranslations[lang]
 
   const [isInternal, setIsInternal] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<'call_video' | 'event' | 'other'>('call_video')
@@ -151,7 +155,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
   const handleAddInternalContact = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newInternalContact.name || !newInternalContact.role || !newInternalContact.email || !newInternalContact.phone) {
-      return alert('Veuillez remplir tous les champs')
+      return alert(lang === 'fr' ? 'Veuillez remplir tous les champs' : 'Please fill in all fields')
     }
     await addInternalContact(newInternalContact)
     // Refresh internal contacts list
@@ -170,12 +174,12 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
 
     // VALIDATION : Titre et Dates obligatoires
     if (!title || !date || !startTime || !endTime) {
-      return alert('Veuillez remplir le titre, la date et les heures.')
+      return alert(lang === 'fr' ? 'Veuillez remplir le titre, la date et les heures.' : 'Please fill in the title, date and times.')
     }
 
     // VALIDATION : Contact obligatoire si linkContact est activé
     if (linkContact && !searchQuery) {
-      return alert('Veuillez sélectionner un contact ou prospect.')
+      return alert(lang === 'fr' ? 'Veuillez sélectionner un contact ou prospect.' : 'Please select a contact or prospect.')
     }
 
     setIsSubmitting(true)
@@ -226,7 +230,7 @@ export function CreateEventModal({ isOpen, onClose, prospectId, prospectName, ed
       }
       onClose()
     } catch (error: any) {
-      alert(`Erreur : ${error.message || 'Impossible d\'enregistrer'}`)
+      alert(lang === 'fr' ? `Erreur : ${error.message || 'Impossible d\'enregistrer'}` : `Error: ${error.message || 'Unable to save'}`)
     } finally {
       setIsSubmitting(false)
     }

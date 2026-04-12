@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { useCalls } from '../contexts/CallsContext'
 import { useProspects } from '../contexts/ProspectsContext'
 import { ProspectView } from '../components/ProspectView'
+import { useLanguage } from '../contexts/LanguageContext'
+import { remindersTranslations } from '../i18n/translations'
 import toast from 'react-hot-toast'
 
 interface Reminder {
@@ -41,6 +43,9 @@ export function RemindersPage() {
   const { user, loading: authLoading } = useAuth()
   const { callHistory } = useCalls()
   const { prospects } = useProspects()
+  const { lang } = useLanguage()
+  const t = remindersTranslations[lang]
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
@@ -133,10 +138,10 @@ export function RemindersPage() {
       if (error) throw error
       setReminders(prev => [...prev, newReminder])
       setShowCreateModal(false)
-      toast.success('Rappel créé')
+      toast.success(lang === 'fr' ? 'Rappel créé' : 'Reminder created')
     } catch (error) {
       console.error('Erreur création rappel:', error)
-      toast.error('Impossible de créer le rappel')
+      toast.error(lang === 'fr' ? 'Impossible de créer le rappel' : 'Unable to create reminder')
     }
   }
 
@@ -154,17 +159,17 @@ export function RemindersPage() {
 
   const statusConfig: Record<ReminderStatus, { label: string; badge: string; icon: typeof Clock }> = {
     upcoming: {
-      label: 'À venir',
+      label: t.upcoming,
       badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
       icon: Clock,
     },
     overdue: {
-      label: 'Passé',
+      label: lang === 'fr' ? 'Passé' : 'Overdue',
       badge: 'bg-red-500/10 text-red-400 border-red-500/30',
       icon: AlertTriangle,
     },
     done: {
-      label: 'Fait',
+      label: lang === 'fr' ? 'Fait' : 'Done',
       badge: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
       icon: CheckCircle2,
     },
@@ -191,12 +196,12 @@ export function RemindersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white">Rappels</h1>
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white">{t.title}</h1>
           <p className="text-white/40 text-sm font-medium mt-1">
-            {reminders.length} rappel{reminders.length !== 1 ? 's' : ''}
+            {reminders.length} {lang === 'fr' ? `rappel${reminders.length !== 1 ? 's' : ''}` : `reminder${reminders.length !== 1 ? 's' : ''}`}
             {overdueCount > 0 && (
               <span className="ml-2 text-red-400 font-semibold">
-                ({overdueCount} en retard)
+                ({overdueCount} {t.overdue})
               </span>
             )}
           </p>
@@ -206,7 +211,7 @@ export function RemindersPage() {
           className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-black hover:bg-emerald-400 transition-all duration-300"
         >
           <Plus className="h-4 w-4" />
-          Nouveau rappel
+          {t.new_reminder}
         </button>
       </div>
 
@@ -217,7 +222,11 @@ export function RemindersPage() {
             <AlertTriangle className="h-5 w-5 text-red-400" />
           </div>
           <p className="text-sm text-red-400">
-            <span className="font-bold">{overdueCount} rappel{overdueCount > 1 ? 's' : ''}</span> non traite{overdueCount > 1 ? 's' : ''} — pensez a les marquer comme faits ou a les supprimer.
+            {lang === 'fr' ? (
+              <><span className="font-bold">{overdueCount} rappel{overdueCount > 1 ? 's' : ''}</span> non traite{overdueCount > 1 ? 's' : ''} — pensez a les marquer comme faits ou a les supprimer.</>
+            ) : (
+              <><span className="font-bold">{overdueCount} reminder{overdueCount > 1 ? 's' : ''}</span> not handled — consider marking them as done or deleting them.</>
+            )}
           </p>
         </div>
       )}
@@ -226,16 +235,16 @@ export function RemindersPage() {
       {sorted.length === 0 ? (
         <div className="rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] p-12 text-center shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
           <Bell className="h-12 w-12 text-white/10 mx-auto mb-4" />
-          <p className="text-white/40 font-medium">Aucun rappel programme</p>
+          <p className="text-white/40 font-medium">{lang === 'fr' ? 'Aucun rappel programmé' : 'No reminders scheduled'}</p>
           <p className="text-sm text-white/20 mt-1">
-            Cliquez sur "+ Nouveau rappel" pour en creer un.
+            {lang === 'fr' ? 'Cliquez sur "+ Nouveau rappel" pour en creer un.' : 'Click "+ New reminder" to create one.'}
           </p>
         </div>
       ) : (
         <div className="rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
           {/* Header bar */}
           <div className="bg-white/5 px-8 py-4 border-b border-white/5">
-            <h4 className="text-sm font-bold uppercase tracking-wider text-white/60">Tous les rappels</h4>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-white/60">{t.all}</h4>
           </div>
 
           {/* Rows as mini glass cards */}
@@ -275,14 +284,14 @@ export function RemindersPage() {
                     </div>
                     <div className="col-span-2">
                       <p className="text-sm text-white/60">
-                        {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
+                        {new Date(reminder.reminder_date).toLocaleDateString(locale, {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
                         })}
                       </p>
                       <p className="text-xs text-white/40 mt-0.5">
-                        {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                        {new Date(reminder.reminder_date).toLocaleTimeString(locale, {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
@@ -352,12 +361,12 @@ export function RemindersPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="text-xs text-white/40">
-                        {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
+                        {new Date(reminder.reminder_date).toLocaleDateString(locale, {
                           day: 'numeric',
                           month: 'short',
                         })}{' '}
                         a{' '}
-                        {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                        {new Date(reminder.reminder_date).toLocaleTimeString(locale, {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
@@ -477,12 +486,12 @@ function ReminderDetailAndProspectModal({
                 <div>
                   <p className="text-xs text-white/40 font-medium uppercase tracking-widest">Date et heure</p>
                   <p className="text-sm font-semibold text-white mt-0.5">
-                    {new Date(reminder.reminder_date).toLocaleDateString('fr-FR', {
+                    {new Date(reminder.reminder_date).toLocaleDateString(locale, {
                       weekday: 'long',
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',
-                    })} a {new Date(reminder.reminder_date).toLocaleTimeString('fr-FR', {
+                    })} a {new Date(reminder.reminder_date).toLocaleTimeString(locale, {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
@@ -643,7 +652,7 @@ function CreateReminderModal({
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Détails optionnels..."
+              placeholder={lang === 'fr' ? "Détails optionnels..." : "Optional details..."}
               rows={2}
               className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none resize-none"
             />

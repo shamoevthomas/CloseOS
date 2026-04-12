@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { X, Building2, Tag } from 'lucide-react'
 import { useOffers, type Offer } from '../contexts/OffersContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { prospectTranslations } from '../i18n/translations'
 
 // Helper to parse price
 const parsePrice = (priceString: string): number => {
@@ -32,6 +34,8 @@ interface CreateProspectModalProps {
 
 export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspectModalProps) {
   const { offers } = useOffers()
+  const { lang } = useLanguage()
+  const t = prospectTranslations[lang]
 
   // Filtre offres actives
   const isExpired = (offer: Offer) => {
@@ -97,17 +101,17 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
     e.preventDefault()
 
     if (!formData.lastName) {
-      alert('Le nom est requis')
+      alert(lang === 'fr' ? 'Le nom est requis' : 'Name is required')
       return
     }
 
     if (isB2B && !formData.company) {
-      alert("Le nom de l'entreprise est requis pour les offres B2B")
+      alert(lang === 'fr' ? "Le nom de l'entreprise est requis pour les offres B2B" : "Company name is required for B2B offers")
       return
     }
 
     if (hasFormulas && !selectedFormulaId) {
-      alert('Veuillez sélectionner une formule')
+      alert(lang === 'fr' ? 'Veuillez sélectionner une formule' : 'Please select a formula')
       return
     }
 

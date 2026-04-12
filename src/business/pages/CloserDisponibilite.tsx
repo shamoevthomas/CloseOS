@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import {
   Calendar, Clock, Plus, Trash2, Loader2, X, CalendarOff, Copy, ChevronDown, Settings2, Shield,
@@ -22,13 +23,18 @@ interface Absence {
   created_at: string
 }
 
-const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
-const DAYS_SHORT = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.']
+const DAYS_FR = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+const DAYS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const DAYS_SHORT_FR = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.']
+const DAYS_SHORT_EN = ['Mon.', 'Tue.', 'Wed.', 'Thu.', 'Fri.', 'Sat.', 'Sun.']
 
 const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/5 dark:ring-white/10 shadow-sm'
 
 export function CloserDisponibilite() {
   const { teamMember, ownerUserId, isTeamMember, user } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
+  const DAYS = lang === 'en' ? DAYS_EN : DAYS_FR
+  const DAYS_SHORT = lang === 'en' ? DAYS_SHORT_EN : DAYS_SHORT_FR
 
   // Owner mode: owner uses their own user.id as business_owner_id, no team_member_id
   const isOwner = !isTeamMember
@@ -182,12 +188,12 @@ export function CloserDisponibilite() {
     }
     if (effectiveTeamMemberId) insertData.team_member_id = effectiveTeamMemberId
     const { error } = await supabase.from('business_availability_slots').insert([insertData])
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.common_error); return }
     await notifyOwnerAndHoS(
       `Disponibilité modifiée — ${memberName}`,
       `Nouveau créneau ${DAYS[dayOfWeek]} ${newStart}–${newEnd}`
     )
-    toast.success('Créneau ajouté')
+    toast.success(t.availability_slot_added)
     setAddingDay(null)
     setNewStart('09:00')
     setNewEnd('12:00')
@@ -197,7 +203,7 @@ export function CloserDisponibilite() {
   const handleDeleteSlot = async (id: number) => {
     const slot = slots.find(s => s.id === id)
     const { error } = await supabase.from('business_availability_slots').delete().eq('id', id)
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.common_error); return }
     if (slot) {
       await notifyOwnerAndHoS(
         `Disponibilité modifiée — ${memberName}`,
@@ -210,7 +216,7 @@ export function CloserDisponibilite() {
   const handleCopySlots = async (fromDay: number, targetDays: number[]) => {
     if ((!effectiveOwnerId && !effectiveTeamMemberId) || targetDays.length === 0) return
     const sourceSlots = slots.filter(s => s.day_of_week === fromDay)
-    if (sourceSlots.length === 0) { toast.error('Aucun créneau à copier'); return }
+    if (sourceSlots.length === 0) { toast.error(t.calls_no_slots_to_copy); return }
     for (const toDay of targetDays) {
       for (const slot of sourceSlots) {
         const insertData: any = {
@@ -228,7 +234,7 @@ export function CloserDisponibilite() {
       `Disponibilité modifiée — ${memberName}`,
       `Créneaux copiés de ${DAYS[fromDay]} vers ${names}`
     )
-    toast.success(`Créneaux copiés vers ${names}`)
+    toast.success(t.availability_slots_copied.replace('{names}', names))
     setCopyingDay(null)
     setSelectedCopyTargets([])
     fetchData()
@@ -276,14 +282,14 @@ export function CloserDisponibilite() {
     }
     if (effectiveTeamMemberId) insertData.team_member_id = effectiveTeamMemberId
     const { error } = await supabase.from('business_absences').insert([insertData])
-    if (error) { toast.error('Erreur'); return }
-    const fmtStart = new Date(absStartDate).toLocaleDateString('fr-FR')
-    const fmtEnd = new Date(absEndDate).toLocaleDateString('fr-FR')
+    if (error) { toast.error(t.common_error); return }
+    const fmtStart = new Date(absStartDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')
+    const fmtEnd = new Date(absEndDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')
     await notifyOwnerAndHoS(
       `Absence programmée — ${memberName}`,
       `Du ${fmtStart} au ${fmtEnd}${absReason ? ` (${absReason})` : ''}`
     )
-    toast.success('Absence ajoutée')
+    toast.success(t.availability_absence_added)
     setShowAbsenceForm(false)
     setAbsStartDate(''); setAbsEndDate(''); setAbsReason('')
     fetchData()
@@ -302,14 +308,14 @@ export function CloserDisponibilite() {
       } else {
         await supabase.from('business_team_members').update(updates).eq('id', effectiveTeamMemberId!)
       }
-      toast.success('Paramètres enregistrés')
-    } catch { toast.error('Erreur') }
+      toast.success(t.availability_settings_saved)
+    } catch { toast.error(t.common_error) }
     finally { setSavingConstraints(false) }
   }
 
   const handleDeleteAbsence = async (id: number) => {
     const { error } = await supabase.from('business_absences').delete().eq('id', id)
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.common_error); return }
     setAbsences(prev => prev.filter(a => a.id !== id))
   }
 
@@ -330,8 +336,8 @@ export function CloserDisponibilite() {
           <span className="h-px w-10 bg-[#c4c7c7]/30" />
           <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Workspace</span>
         </div>
-        <h1 className="text-2xl md:text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Disponibilité</h1>
-        <p className="text-stone-500 dark:text-neutral-400 text-base max-w-2xl font-light italic opacity-80">Gérez vos créneaux et absences pour optimiser votre tunnel de vente.</p>
+        <h1 className="text-2xl md:text-4xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.sidebar_availability}</h1>
+        <p className="text-stone-500 dark:text-neutral-400 text-base max-w-2xl font-light italic opacity-80">{t.availability_subtitle}</p>
       </header>
 
       {/* Bento Grid */}
@@ -339,7 +345,7 @@ export function CloserDisponibilite() {
         {/* ─── Left: Weekly Slots ─── */}
         <section className="col-span-12 xl:col-span-8 space-y-6">
           <h3 className="font-business-display font-extrabold text-lg md:text-2xl tracking-tight flex items-center gap-3 text-stone-900 dark:text-white">
-            Créneaux hebdomadaires
+            {t.availability_weekly_slots}
           </h3>
 
           <div className="space-y-4">
@@ -375,16 +381,16 @@ export function CloserDisponibilite() {
                       </div>
                     ))}
                     {!hasSlots && !addingDay && (
-                      <span className="text-sm text-stone-400/50 dark:text-neutral-500/50 italic py-2">Indisponible</span>
+                      <span className="text-sm text-stone-400/50 dark:text-neutral-500/50 italic py-2">{t.availability_unavailable}</span>
                     )}
 
                     {addingDay === idx ? (
                       <div className="flex flex-wrap items-center gap-2">
                         <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 min-h-[44px]" />
-                        <span className="text-xs text-stone-400 dark:text-neutral-500">à</span>
+                        <span className="text-xs text-stone-400 dark:text-neutral-500">{t.availability_to_time}</span>
                         <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-2 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 min-h-[44px]" />
                         <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition-all min-h-[44px]">OK</button>
-                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 min-h-[44px]">Annuler</button>
+                        <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 min-h-[44px]">{t.availability_cancel}</button>
                       </div>
                     ) : (
                       <button
@@ -392,7 +398,7 @@ export function CloserDisponibilite() {
                         className="flex items-center gap-2 border border-dashed border-[#c4c7c7] dark:border-neutral-700/50 px-4 py-2 rounded-full text-xs md:text-sm text-stone-500 dark:text-neutral-400 hover:bg-stone-50 dark:hover:bg-white/5 hover:border-stone-400 transition-all min-h-[44px]"
                       >
                         <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
-                        Ajouter un créneau
+                        {t.availability_add_slot_btn}
                       </button>
                     )}
                   </div>
@@ -438,7 +444,7 @@ export function CloserDisponibilite() {
                                   onClick={() => handleCopySlots(idx, selectedCopyTargets)}
                                   className="w-full rounded-full bg-stone-900 px-4 py-2.5 text-xs font-bold text-white hover:opacity-90 transition-all"
                                 >
-                                  Copier vers {selectedCopyTargets.length} jour{selectedCopyTargets.length > 1 ? 's' : ''}
+                                  {t.availability_copy_to.replace('{n}', String(selectedCopyTargets.length)).replace('{s}', selectedCopyTargets.length > 1 ? 's' : '')}
                                 </button>
                               </div>
                             )}
@@ -454,7 +460,7 @@ export function CloserDisponibilite() {
             {/* Weekend separator */}
             <div className="flex items-center gap-4 py-2 text-stone-300 dark:text-neutral-500">
               <div className="h-px flex-grow bg-[#c4c7c7]/20 dark:bg-white/10" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Weekend</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">{t.availability_weekend}</span>
               <div className="h-px flex-grow bg-[#c4c7c7]/20 dark:bg-white/10" />
             </div>
 
@@ -487,13 +493,13 @@ export function CloserDisponibilite() {
                         </div>
                       ))}
                       {!hasSlots && (
-                        <span className="text-[10px] italic text-stone-400 dark:text-neutral-500">Indisponible</span>
+                        <span className="text-[10px] italic text-stone-400 dark:text-neutral-500">{t.availability_unavailable}</span>
                       )}
                     </div>
                     {addingDay === idx ? (
                       <div className="flex items-center gap-2 mt-3">
                         <input type="time" value={newStart} onChange={e => handleStartChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
-                        <span className="text-xs text-stone-400 dark:text-neutral-500">à</span>
+                        <span className="text-xs text-stone-400 dark:text-neutral-500">{t.availability_to_time}</span>
                         <input type="time" value={newEnd} onChange={e => handleEndChange(e.target.value)} className="rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-3 py-1.5 text-xs font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                         <button onClick={() => handleAddSlot(idx)} className="rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:opacity-90">OK</button>
                         <button onClick={() => setAddingDay(null)} className="text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300">
@@ -506,7 +512,7 @@ export function CloserDisponibilite() {
                         className="mt-3 flex items-center gap-1.5 text-xs text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 transition-colors"
                       >
                         <Plus className="h-3 w-3" strokeWidth={1.5} />
-                        Ajouter
+                        {t.availability_add_short}
                       </button>
                     )}
                   </div>
@@ -521,11 +527,11 @@ export function CloserDisponibilite() {
           {/* Absences Card */}
           <div className={cn(GLASS_PANEL, 'rounded-2xl p-5 md:p-8 shadow-lg relative overflow-hidden')}>
             <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
-            <h3 className="font-business-display font-extrabold text-lg md:text-2xl mb-6 relative z-10 text-stone-900 dark:text-white">Absences</h3>
+            <h3 className="font-business-display font-extrabold text-lg md:text-2xl mb-6 relative z-10 text-stone-900 dark:text-white">{t.availability_absences_title}</h3>
 
             <div className="space-y-4 mb-6 relative z-10">
               {absences.length === 0 ? (
-                <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-6">Aucune absence programmée</p>
+                <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-6">{t.availability_no_absences}</p>
               ) : (
                 absences.map(abs => (
                   <div key={abs.id} className="flex items-center justify-between p-4 bg-[#efedec] dark:bg-white/5 rounded-2xl ring-1 ring-[#c4c7c7]/10 dark:ring-white/10">
@@ -535,7 +541,7 @@ export function CloserDisponibilite() {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-stone-900 dark:text-white">
-                          {new Date(abs.start_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} — {new Date(abs.end_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          {new Date(abs.start_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} — {new Date(abs.end_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
                         </p>
                         {abs.reason && (
                           <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{abs.reason}</p>
@@ -555,21 +561,21 @@ export function CloserDisponibilite() {
               <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-5 mb-4 space-y-4 relative z-10">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">Date début</label>
+                    <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">{t.availability_start_date}</label>
                     <input type="date" value={absStartDate} onChange={e => setAbsStartDate(e.target.value)} className="w-full rounded-full bg-white dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">Date fin</label>
+                    <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">{t.availability_end_date}</label>
                     <input type="date" value={absEndDate} onChange={e => setAbsEndDate(e.target.value)} className="w-full rounded-full bg-white dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">Motif (optionnel)</label>
-                  <input type="text" value={absReason} onChange={e => setAbsReason(e.target.value)} placeholder="Ex: Vacances, Formation..." className="w-full rounded-full bg-white dark:bg-neutral-800 border-none px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
+                  <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">{t.availability_reason_optional}</label>
+                  <input type="text" value={absReason} onChange={e => setAbsReason(e.target.value)} placeholder={t.availability_reason_placeholder} className="w-full rounded-full bg-white dark:bg-neutral-800 border-none px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20" />
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={handleAddAbsence} disabled={!absStartDate || !absEndDate} className="flex-1 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50">Confirmer</button>
-                  <button onClick={() => setShowAbsenceForm(false)} className="px-4 py-3 text-sm font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">Annuler</button>
+                  <button onClick={handleAddAbsence} disabled={!absStartDate || !absEndDate} className="flex-1 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50">{t.availability_confirm}</button>
+                  <button onClick={() => setShowAbsenceForm(false)} className="px-4 py-3 text-sm font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">{t.availability_cancel}</button>
                 </div>
               </div>
             )}
@@ -581,7 +587,7 @@ export function CloserDisponibilite() {
                 className="w-full py-4 border-2 border-dashed border-[#c4c7c7] dark:border-neutral-700/50 hover:border-[#006c49] hover:text-[#006c49] hover:bg-[#006c49]/5 rounded-2xl transition-all flex items-center justify-center gap-2 text-stone-500 dark:text-neutral-400 relative z-10"
               >
                 <Plus className="h-4 w-4" strokeWidth={1.5} />
-                <span className="text-sm font-bold">Nouvelle absence</span>
+                <span className="text-sm font-bold">{t.availability_new_absence}</span>
               </button>
             )}
           </div>
@@ -591,15 +597,15 @@ export function CloserDisponibilite() {
             <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
             <h3 className="font-business-display font-extrabold text-lg md:text-2xl mb-2 relative z-10 flex items-center gap-3 text-stone-900 dark:text-white">
               <Settings2 className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
-              Paramètres de booking
+              {t.availability_booking_settings}
             </h3>
-            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-6 relative z-10">Ces règles s'appliquent à vos liens de réservation</p>
+            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-6 relative z-10">{t.availability_booking_rules_desc}</p>
 
             <div className="space-y-6 relative z-10">
               {/* Max calls per day */}
               <div>
                 <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">
-                  Max de RDV par jour
+                  {t.availability_max_per_day}
                 </label>
                 <div className="flex items-center gap-3">
                   <select
@@ -607,9 +613,9 @@ export function CloserDisponibilite() {
                     onChange={e => setMaxCallsPerDay(e.target.value ? Number(e.target.value) : null)}
                     className="flex-1 rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
                   >
-                    <option value="">Illimité</option>
+                    <option value="">{t.availability_unlimited}</option>
                     {[1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15].map(n => (
-                      <option key={n} value={n}>{n} RDV / jour</option>
+                      <option key={n} value={n}>{t.availability_per_day.replace('{n}', String(n))}</option>
                     ))}
                   </select>
                 </div>
@@ -618,41 +624,41 @@ export function CloserDisponibilite() {
               {/* Buffer before booking */}
               <div>
                 <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">
-                  Temps libre avant un RDV
+                  {t.availability_buffer_before}
                 </label>
-                <p className="text-[10px] text-stone-400/70 dark:text-neutral-500/70 mb-2">Empêche les bookings trop proches d'un autre RDV</p>
+                <p className="text-[10px] text-stone-400/70 dark:text-neutral-500/70 mb-2">{t.availability_buffer_desc}</p>
                 <select
                   value={bufferBeforeBooking}
                   onChange={e => setBufferBeforeBooking(Number(e.target.value))}
                   className="w-full rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
                 >
-                  <option value={0}>Pas de buffer</option>
-                  <option value={10}>10 minutes</option>
-                  <option value={15}>15 minutes</option>
-                  <option value={20}>20 minutes</option>
-                  <option value={30}>30 minutes</option>
-                  <option value={45}>45 minutes</option>
-                  <option value={60}>1 heure</option>
+                  <option value={0}>{t.availability_no_buffer}</option>
+                  <option value={10}>{t.availability_minutes.replace('{n}', '10')}</option>
+                  <option value={15}>{t.availability_minutes.replace('{n}', '15')}</option>
+                  <option value={20}>{t.availability_minutes.replace('{n}', '20')}</option>
+                  <option value={30}>{t.availability_minutes.replace('{n}', '30')}</option>
+                  <option value={45}>{t.availability_minutes.replace('{n}', '45')}</option>
+                  <option value={60}>{t.availability_hour.replace('{n}', '1')}</option>
                 </select>
               </div>
 
               {/* Min booking notice */}
               <div>
                 <label className="block text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold mb-2">
-                  Délai minimum avant un booking
+                  {t.availability_min_notice}
                 </label>
-                <p className="text-[10px] text-stone-400/70 dark:text-neutral-500/70 mb-2">Impossible de réserver un créneau avant ce délai</p>
+                <p className="text-[10px] text-stone-400/70 dark:text-neutral-500/70 mb-2">{t.availability_min_notice_desc}</p>
                 <select
                   value={minBookingNotice}
                   onChange={e => setMinBookingNotice(Number(e.target.value))}
                   className="w-full rounded-full bg-stone-50 dark:bg-neutral-800 border-none px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
                 >
-                  <option value={0}>Pas de délai</option>
-                  <option value={1}>1 heure avant</option>
-                  <option value={3}>3 heures avant</option>
-                  <option value={5}>5 heures avant</option>
-                  <option value={10}>10 heures avant</option>
-                  <option value={24}>24 heures avant</option>
+                  <option value={0}>{t.availability_no_delay}</option>
+                  <option value={1}>{t.availability_hours_before.replace('{n}', '1').replace('{s}', '')}</option>
+                  <option value={3}>{t.availability_hours_before.replace('{n}', '3').replace('{s}', 's')}</option>
+                  <option value={5}>{t.availability_hours_before.replace('{n}', '5').replace('{s}', 's')}</option>
+                  <option value={10}>{t.availability_hours_before.replace('{n}', '10').replace('{s}', 's')}</option>
+                  <option value={24}>{t.availability_hours_before.replace('{n}', '24').replace('{s}', 's')}</option>
                 </select>
               </div>
 
@@ -663,7 +669,7 @@ export function CloserDisponibilite() {
                 className="w-full py-3.5 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 text-white text-sm font-business-display font-extrabold hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {savingConstraints ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" strokeWidth={1.5} />}
-                Enregistrer
+                {t.availability_save_settings}
               </button>
             </div>
           </div>
@@ -682,28 +688,27 @@ export function CloserDisponibilite() {
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#006c49]/10 mx-auto mb-5">
                 <Calendar className="h-8 w-8 text-[#006c49]" strokeWidth={1.5} />
               </div>
-              <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">Configurez vos disponibilités</h2>
+              <h2 className="text-2xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white">{t.availability_onboarding_title}</h2>
               <p className="text-sm text-stone-500 dark:text-neutral-400 mt-3 leading-relaxed">
-                Avant de commencer, indiquez vos créneaux de disponibilité hebdomadaires.
-                Cela permettra à votre manager de vous assigner des rendez-vous aux bons moments.
+                {t.availability_onboarding_desc}
               </p>
             </div>
             <div className="space-y-3">
               <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4">
-                <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">1. Ajoutez vos créneaux pour chaque jour</p>
+                <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">{t.availability_onboarding_step1}</p>
               </div>
               <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4">
-                <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">2. Indiquez vos périodes d'absence si nécessaire</p>
+                <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">{t.availability_onboarding_step2}</p>
               </div>
               <div className="rounded-2xl bg-[#f5f3f2] dark:bg-white/5 p-4">
-                <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">3. Modifiez ces informations à tout moment</p>
+                <p className="text-sm text-stone-700 dark:text-neutral-200 font-medium">{t.availability_onboarding_step3}</p>
               </div>
             </div>
             <button
               onClick={dismissOnboarding}
               className="w-full mt-8 rounded-full bg-stone-900 dark:bg-white dark:text-neutral-900 py-4 text-sm font-business-display font-extrabold text-white hover:opacity-90 transition-all"
             >
-              C'est parti !
+              {t.availability_onboarding_go}
             </button>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useUpgrade } from '../contexts/UpgradeContext'
 import { useOffers } from '../contexts/OffersContext'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface ShareLink {
   id: string
@@ -25,16 +26,24 @@ interface SpectatorLead {
 
 type SharedView = 'kpi' | 'pipeline' | 'both'
 
-const VIEW_OPTIONS: { value: SharedView; label: string; icon: React.ComponentType<{ className?: string }>; desc: string }[] = [
+const VIEW_OPTIONS_FR: { value: SharedView; label: string; icon: React.ComponentType<{ className?: string }>; desc: string }[] = [
   { value: 'both', label: 'Les deux', icon: Layers, desc: 'Pipeline + KPIs' },
   { value: 'pipeline', label: 'Pipeline', icon: Kanban, desc: 'Le pipeline' },
   { value: 'kpi', label: 'KPIs', icon: BarChart3, desc: 'Les statistiques' },
+]
+
+const VIEW_OPTIONS_EN: { value: SharedView; label: string; icon: React.ComponentType<{ className?: string }>; desc: string }[] = [
+  { value: 'both', label: 'Both', icon: Layers, desc: 'Pipeline + KPIs' },
+  { value: 'pipeline', label: 'Pipeline', icon: Kanban, desc: 'Pipeline' },
+  { value: 'kpi', label: 'KPIs', icon: BarChart3, desc: 'Statistics' },
 ]
 
 export function SharePerformanceButton() {
   const { user, isFounder, isAdmin, isInTrial } = useAuth()
   const { showUpgrade } = useUpgrade()
   const { offers } = useOffers()
+  const { lang } = useLanguage()
+  const VIEW_OPTIONS = lang === 'fr' ? VIEW_OPTIONS_FR : VIEW_OPTIONS_EN
   const hasFullAccess = isFounder || isAdmin || isInTrial
   const [isOpen, setIsOpen] = useState(false)
   const [activeLinks, setActiveLinks] = useState<ShareLink[]>([])
@@ -104,7 +113,7 @@ export function SharePerformanceButton() {
       })
       if (error) throw error
       if (data?.error === 'max_links_reached') {
-        setErrorMsg('Maximum 2 liens actifs. Révoquez un lien pour en créer un nouveau.')
+        setErrorMsg(lang === 'fr' ? 'Maximum 2 liens actifs. Révoquez un lien pour en créer un nouveau.' : 'Maximum 2 active links. Revoke a link to create a new one.')
         return
       }
       const newLink: ShareLink = {
@@ -159,7 +168,7 @@ export function SharePerformanceButton() {
 
   const getViewLabel = (view?: string) => {
     const opt = VIEW_OPTIONS.find(o => o.value === view)
-    return opt?.label || 'Les deux'
+    return opt?.label || (lang === 'fr' ? 'Les deux' : 'Both')
   }
 
   const canCreate = activeLinks.length < 2
@@ -178,8 +187,8 @@ export function SharePerformanceButton() {
               <Share2 className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Partager ma performance</h2>
-              <p className="text-xs text-white/40 mt-0.5">Partagez vos KPIs et votre pipeline en lecture seule</p>
+              <h2 className="text-xl font-bold text-white">{lang === 'fr' ? 'Partager ma performance' : 'Share my performance'}</h2>
+              <p className="text-xs text-white/40 mt-0.5">{lang === 'fr' ? 'Partagez vos KPIs et votre pipeline en lecture seule' : 'Share your KPIs and pipeline as read-only'}</p>
             </div>
           </div>
           <button onClick={() => setIsOpen(false)} className="p-2 rounded-lg text-white/40 hover:bg-white/5 hover:text-white transition-colors">
@@ -197,7 +206,7 @@ export function SharePerformanceButton() {
             )}
           >
             <Link2 className="h-4 w-4" />
-            Lien de partage
+            {lang === 'fr' ? 'Lien de partage' : 'Share link'}
           </button>
           <button
             onClick={() => setTab('leads')}
@@ -218,7 +227,7 @@ export function SharePerformanceButton() {
               {/* Active links */}
               {activeLinks.length > 0 && (
                 <div className="space-y-4">
-                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">Liens actifs ({activeLinks.length}/2)</h3>
+                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? `Liens actifs (${activeLinks.length}/2)` : `Active links (${activeLinks.length}/2)`}</h3>
                   {activeLinks.map(link => (
                     <div key={link.id} className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
                       <div className="flex items-center gap-3 mb-3">
@@ -250,12 +259,12 @@ export function SharePerformanceButton() {
                           className="flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 active:scale-95 shrink-0"
                         >
                           {copied === link.token ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                          {copied === link.token ? 'Copié' : 'Copier'}
+                          {copied === link.token ? (lang === 'fr' ? 'Copié' : 'Copied') : (lang === 'fr' ? 'Copier' : 'Copy')}
                         </button>
                       </div>
                       <div className="mt-3 flex items-center justify-between">
                         <p className="text-xs text-white/40 font-medium">
-                          Créé le {new Date(link.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                          {lang === 'fr' ? 'Créé le' : 'Created on'} {new Date(link.created_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long' })}
                         </p>
                         <button
                           onClick={() => handleRevoke(link.id)}
@@ -263,7 +272,7 @@ export function SharePerformanceButton() {
                           className="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                          Révoquer le lien
+                          {lang === 'fr' ? 'Révoquer le lien' : 'Revoke link'}
                         </button>
                       </div>
                     </div>
@@ -276,18 +285,18 @@ export function SharePerformanceButton() {
                 <div className="space-y-5">
                   <div className="relative py-2">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5"></span></div>
-                    <div className="relative flex justify-center"><span className="bg-[#1a1a1a] px-4 text-xs font-bold text-white/40 uppercase tracking-widest">Nouveau lien</span></div>
+                    <div className="relative flex justify-center"><span className="bg-[#1a1a1a] px-4 text-xs font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? 'Nouveau lien' : 'New link'}</span></div>
                   </div>
 
                   <p className="text-sm text-white/40 leading-relaxed">
-                    Générez un lien d'accès en lecture seule pour montrer vos résultats à vos partenaires.
+                    {lang === 'fr' ? "Générez un lien d'accès en lecture seule pour montrer vos résultats à vos partenaires." : 'Generate a read-only access link to show your results to your partners.'}
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {/* Offer selection */}
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-white/40 uppercase tracking-wider ml-1">
-                        Offre à partager
+                        {lang === 'fr' ? 'Offre à partager' : 'Offer to share'}
                       </label>
                       <div className="relative group">
                         <select
@@ -295,7 +304,7 @@ export function SharePerformanceButton() {
                           onChange={(e) => setSharedOffer(e.target.value === 'global' ? null : e.target.value)}
                           className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all cursor-pointer"
                         >
-                          <option value="global">🌐 Toutes les offres (Global)</option>
+                          <option value="global">{lang === 'fr' ? '🌐 Toutes les offres (Global)' : '🌐 All offers (Global)'}</option>
                           {activeOffers.map(offer => (
                             <option key={offer.name} value={offer.name}>
                               📦 {offer.name}
@@ -309,7 +318,7 @@ export function SharePerformanceButton() {
                     {/* Password toggle */}
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-white/40 uppercase tracking-wider ml-1">
-                        Sécurité
+                        {lang === 'fr' ? 'Sécurité' : 'Security'}
                       </label>
                       <button
                         type="button"
@@ -324,7 +333,7 @@ export function SharePerformanceButton() {
                       >
                         <div className="flex items-center gap-2">
                           <Shield className={cn("h-4 w-4", passwordRequired ? "text-emerald-400" : "text-white/40")} />
-                          <span className={cn("text-sm font-bold", passwordRequired ? "text-emerald-400" : "text-white/40")}>Mot de passe</span>
+                          <span className={cn("text-sm font-bold", passwordRequired ? "text-emerald-400" : "text-white/40")}>{lang === 'fr' ? 'Mot de passe' : 'Password'}</span>
                         </div>
                         <div className={cn(
                           "h-5 w-9 rounded-full transition-colors relative",
@@ -347,7 +356,7 @@ export function SharePerformanceButton() {
                           type={showPassword ? 'text' : 'password'}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Définir un mot de passe (min. 4)"
+                          placeholder={lang === 'fr' ? 'Définir un mot de passe (min. 4)' : 'Set a password (min. 4)'}
                           className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
                         />
                         <button
@@ -359,7 +368,7 @@ export function SharePerformanceButton() {
                         </button>
                       </div>
                       {password.length > 0 && password.length < 4 && (
-                        <p className="mt-2 text-[10px] text-red-400 font-bold ml-1 uppercase">Minimum 4 caractères requis</p>
+                        <p className="mt-2 text-[10px] text-red-400 font-bold ml-1 uppercase">{lang === 'fr' ? 'Minimum 4 caractères requis' : 'Minimum 4 characters required'}</p>
                       )}
                     </div>
                   )}
@@ -367,7 +376,7 @@ export function SharePerformanceButton() {
                   {/* View selection */}
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-white/40 uppercase tracking-wider ml-1 text-center block">
-                      Sections visibles par le spectateur
+                      {lang === 'fr' ? 'Sections visibles par le spectateur' : 'Sections visible to spectator'}
                     </label>
                     <div className="grid grid-cols-3 gap-3">
                       {VIEW_OPTIONS.map(opt => {
@@ -405,15 +414,15 @@ export function SharePerformanceButton() {
                     className="w-full flex items-center justify-center gap-3 rounded-full bg-emerald-500 py-4 text-base font-bold text-black hover:bg-emerald-400 transition-all shadow-xl shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
                   >
                     <Share2 className="h-5 w-5 group-hover:rotate-12 transition-transform" />
-                    {loading ? 'Création en cours...' : 'Créer mon lien de partage'}
+                    {loading ? (lang === 'fr' ? 'Création en cours...' : 'Creating...') : (lang === 'fr' ? 'Créer mon lien de partage' : 'Create my share link')}
                   </button>
                 </div>
               ) : (
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6 text-center">
                   <Shield className="mx-auto h-10 w-10 text-amber-500/50 mb-4" />
-                  <h4 className="text-lg font-bold text-amber-400">Limite atteinte</h4>
+                  <h4 className="text-lg font-bold text-amber-400">{lang === 'fr' ? 'Limite atteinte' : 'Limit reached'}</h4>
                   <p className="text-sm text-white/40 mt-2 leading-relaxed">
-                    Vous avez déjà 2 liens de partage actifs. Révoquez un lien existant pour en générer un nouveau.
+                    {lang === 'fr' ? 'Vous avez déjà 2 liens de partage actifs. Révoquez un lien existant pour en générer un nouveau.' : 'You already have 2 active share links. Revoke an existing link to generate a new one.'}
                   </p>
                 </div>
               )}
@@ -426,14 +435,14 @@ export function SharePerformanceButton() {
                   <div className="mx-auto w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/[0.08]">
                     <Mail className="h-8 w-8 text-white/30" />
                   </div>
-                  <h4 className="text-base font-bold text-white">Aucun lead collecté</h4>
+                  <h4 className="text-base font-bold text-white">{lang === 'fr' ? 'Aucun lead collecté' : 'No leads collected'}</h4>
                   <p className="text-sm text-white/40 mt-2 max-w-xs mx-auto">
-                    Activez la collecte d'emails sur votre page spectateur pour voir vos leads apparaître ici.
+                    {lang === 'fr' ? "Activez la collecte d'emails sur votre page spectateur pour voir vos leads apparaître ici." : 'Enable email capture on your spectator page to see your leads appear here.'}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">Derniers leads ({leads.length})</h3>
+                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">{lang === 'fr' ? `Derniers leads (${leads.length})` : `Latest leads (${leads.length})`}</h3>
                   <div className="grid grid-cols-1 gap-2">
                     {leads.map(lead => (
                       <div key={lead.id} className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 group hover:bg-white/5 transition-colors">
@@ -444,7 +453,7 @@ export function SharePerformanceButton() {
                           <div>
                             <p className="text-sm font-bold text-white">{lead.email}</p>
                             <p className="text-[10px] text-white/40 font-medium">
-                              Capté le {new Date(lead.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              {lang === 'fr' ? 'Capté le' : 'Captured on'} {new Date(lead.created_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </p>
                           </div>
                         </div>
@@ -462,7 +471,7 @@ export function SharePerformanceButton() {
 
         {/* Footer */}
         <div className="p-4 bg-white/[0.03] border-t border-white/[0.08] text-center">
-          <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.2em]">Sécurisé par CloseOS</p>
+          <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.2em]">{lang === 'fr' ? 'Sécurisé par CloseOS' : 'Secured by CloseOS'}</p>
         </div>
       </div>
     </div>
@@ -475,7 +484,7 @@ export function SharePerformanceButton() {
         className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl px-5 py-2.5 text-sm font-bold text-white/80 transition-all hover:bg-white/10 hover:border-emerald-500/50 hover:text-white shadow-lg active:scale-95 group"
       >
         <Share2 className="h-4 w-4 group-hover:rotate-12 transition-transform" />
-        <span>Partager</span>
+        <span>{lang === 'fr' ? 'Partager' : 'Share'}</span>
       </button>
 
       {isOpen && createPortal(modalContent, document.body)}

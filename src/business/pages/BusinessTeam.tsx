@@ -11,6 +11,7 @@ import { cn } from '../../lib/utils'
 import { PhoneInput } from '../components/PhoneInput'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { fromUTC, getTimezoneLabel } from '../../lib/timezone'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { InviteMemberModal } from '../components/InviteMemberModal'
@@ -119,15 +120,13 @@ const ROLE_COLORS: Record<string, { bg: string; text: string; surface: string }>
 const getRoleColor = (role: string) =>
   ROLE_COLORS[role] || { bg: 'bg-slate-50/80 dark:bg-neutral-700/50', text: 'text-slate-700 dark:text-neutral-200', surface: 'bg-slate-50/20' }
 
-const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
-
-const PIPELINE_STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgLight: 'bg-blue-50/60' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700 dark:text-purple-400', bgLight: 'bg-purple-50/60' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700 dark:text-orange-400', bgLight: 'bg-orange-50/60' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-[#006c49] dark:text-[#6ffbbe]', bgLight: 'bg-[#6cf8bb]/15' },
-  { id: 'noshow', name: 'No Show', color: 'bg-slate-500', textColor: 'text-slate-700 dark:text-neutral-300', bgLight: 'bg-slate-50/60' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700 dark:text-red-400', bgLight: 'bg-red-50/60' },
+const PIPELINE_STAGE_DEFS = [
+  { id: 'prospect', tKey: 'team_pipeline_stages_prospect' as const, color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgLight: 'bg-blue-50/60' },
+  { id: 'qualified', tKey: 'team_pipeline_stages_qualified' as const, color: 'bg-purple-500', textColor: 'text-purple-700 dark:text-purple-400', bgLight: 'bg-purple-50/60' },
+  { id: 'followup', tKey: 'team_pipeline_stages_followup' as const, color: 'bg-orange-500', textColor: 'text-orange-700 dark:text-orange-400', bgLight: 'bg-orange-50/60' },
+  { id: 'won', tKey: 'team_pipeline_stages_won' as const, color: 'bg-emerald-500', textColor: 'text-[#006c49] dark:text-[#6ffbbe]', bgLight: 'bg-[#6cf8bb]/15' },
+  { id: 'noshow', tKey: 'team_pipeline_stages_noshow' as const, color: 'bg-slate-500', textColor: 'text-slate-700 dark:text-neutral-300', bgLight: 'bg-slate-50/60' },
+  { id: 'lost', tKey: 'team_pipeline_stages_lost' as const, color: 'bg-red-500', textColor: 'text-red-700 dark:text-red-400', bgLight: 'bg-red-50/60' },
 ]
 
 function calculateAge(dob: string): number {
@@ -139,25 +138,28 @@ function calculateAge(dob: string): number {
   return age
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('fr-FR', {
+function formatDateLocalized(dateStr: string, lang: string): string {
+  return new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
 }
 
-function formatAnciennete(joinedAt: string): string {
+function formatAncienneteLocalized(joinedAt: string, t: any): string {
   const joined = new Date(joinedAt)
   const now = new Date()
   const diffDays = Math.floor((now.getTime() - joined.getTime()) / (1000 * 60 * 60 * 24))
-  if (diffDays < 1) return "Aujourd'hui"
-  if (diffDays < 30) return `${diffDays} jour${diffDays > 1 ? 's' : ''}`
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} mois`
+  if (diffDays < 1) return t.team_today
+  if (diffDays < 30) return `${diffDays} ${t.team_days}${diffDays > 1 ? 's' : ''}`
+  if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30)
+    return `${months} ${t.team_months}${months > 1 ? 's' : ''}`
+  }
   const years = (diffDays / 365).toFixed(1)
-  return `${years} an${parseFloat(years) >= 2 ? 's' : ''}`
+  return `${years} ${t.team_years}${parseFloat(years) >= 2 ? 's' : ''}`
 }
 
-const formatCurrency = (v: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+const formatCurrencyLocalized = (v: number, lang: string) =>
+  new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 
 function Avatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
   const sizeClasses = { sm: 'h-9 w-9', md: 'h-12 w-12', lg: 'h-20 w-20', xl: 'h-32 w-32' }
@@ -177,6 +179,7 @@ function Avatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md
 
 function ContactInfo({ member }: { member: TeamMember }) {
   const { user, isTeamMember, teamMember } = useBusinessAuth()
+  const { t } = useBusinessLang()
   const [editing, setEditing] = useState(false)
   const [phone, setPhone] = useState(member.phone || '')
   const [saving, setSaving] = useState(false)
@@ -198,10 +201,10 @@ function ContactInfo({ member }: { member: TeamMember }) {
         await supabase.from('business_team_members').update({ phone }).eq('id', member.id)
       }
       member.phone = phone
-      toast.success('Numéro mis à jour')
+      toast.success(t.team_phone_updated)
       setEditing(false)
     } catch {
-      toast.error('Erreur')
+      toast.error(t.team_error)
     } finally {
       setSaving(false)
     }
@@ -238,7 +241,7 @@ function ContactInfo({ member }: { member: TeamMember }) {
                 {member.phone}
               </a>
             ) : (
-              <span className="text-stone-300 dark:text-neutral-600 italic">Non renseigné</span>
+              <span className="text-stone-300 dark:text-neutral-600 italic">{t.team_not_provided}</span>
             )}
             {isOwnCard && (
               <button onClick={e => { e.stopPropagation(); setEditing(true) }} className="text-stone-300 dark:text-neutral-600 hover:text-stone-600 dark:hover:text-neutral-300 ml-auto shrink-0">
@@ -254,6 +257,7 @@ function ContactInfo({ member }: { member: TeamMember }) {
 
 export function BusinessTeam() {
   const { user, ownerUserId, isTeamMember, teamMember, businessProfile, userTimezone, businessSettings, refreshProfile } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const { prospects } = useBusinessProspects()
@@ -348,7 +352,7 @@ export function BusinessTeam() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ owner_id: effectiveUserId, member_id: memberId })
       })
-      if (!res.ok) throw new Error('Erreur lors de la suppression')
+      if (!res.ok) throw new Error(t.team_delete_error)
       setMembers(prev => prev.filter(m => m.id !== memberId))
       if (selectedMemberId === memberId) setSelectedMemberId(null)
     } catch (err) {
@@ -368,7 +372,7 @@ export function BusinessTeam() {
 
   const roleGroups = useMemo(() => {
     return members.reduce<Record<string, TeamMember[]>>((acc, member) => {
-      const role = member.role || 'Sans rôle'
+      const role = member.role || t.team_no_role
       if (!acc[role]) acc[role] = []
       acc[role].push(member)
       return acc
@@ -390,7 +394,7 @@ export function BusinessTeam() {
             className="group flex items-center gap-2 text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors"
           >
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" strokeWidth={1.5} />
-            <span className="font-business-display font-bold text-sm tracking-tight">Retour à l'équipe</span>
+            <span className="font-business-display font-bold text-sm tracking-tight">{t.team_back_to_team}</span>
           </button>
           {isOwnerView && (
             <button
@@ -398,7 +402,7 @@ export function BusinessTeam() {
               className="px-5 py-2.5 rounded-full bg-stone-900 text-white font-business-display font-bold text-sm hover:opacity-90 transition-all flex items-center gap-2"
             >
               <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
-              Supprimer
+              {t.team_delete}
             </button>
           )}
         </header>
@@ -422,8 +426,8 @@ export function BusinessTeam() {
               .from('business_team_members')
               .update(updates)
               .eq('id', selectedMember.id)
-            if (error) { toast.error('Erreur lors du changement de rôle'); return }
-            toast.success('Rôle mis à jour')
+            if (error) { toast.error(t.team_role_change_error); return }
+            toast.success(t.team_role_updated)
             setMembers(prev => prev.map(m => m.id === selectedMember.id ? { ...m, role, setter_scope: updates.setter_scope } : m))
           }}
           onPayDayChange={async (day: number) => {
@@ -431,8 +435,8 @@ export function BusinessTeam() {
               .from('business_team_members')
               .update({ pay_day: day })
               .eq('id', selectedMember.id)
-            if (error) { toast.error('Erreur'); return }
-            toast.success('Date de paiement mise à jour')
+            if (error) { toast.error(t.team_error); return }
+            toast.success(t.team_pay_date_updated)
             setMembers(prev => prev.map(m => m.id === selectedMember.id ? { ...m, pay_day: day } : m))
           }}
           onDelete={isOwnerView ? () => handleDeleteMember(selectedMember.id) : undefined}
@@ -451,9 +455,9 @@ export function BusinessTeam() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="font-business-display text-2xl md:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white">
-            {members.length + 1} membre{members.length > 0 ? 's' : ''}
+            {members.length + 1} {members.length > 0 ? t.team_member_count_plural : t.team_member_count}
           </h2>
-          <p className="text-sm text-stone-400 dark:text-neutral-500 mt-1">Gérez votre équipe et consultez les fiches détaillées</p>
+          <p className="text-sm text-stone-400 dark:text-neutral-500 mt-1">{t.team_manage_subtitle}</p>
         </div>
         {isOwnerView && (
           <button
@@ -461,7 +465,7 @@ export function BusinessTeam() {
             className="flex items-center gap-2.5 rounded-full bg-stone-900 px-6 py-3 text-sm font-bold text-white font-business-display hover:opacity-90 transition-all"
           >
             <Plus className="h-4 w-4" strokeWidth={1.5} />
-            Inviter
+            {t.team_invite}
           </button>
         )}
       </div>
@@ -565,23 +569,23 @@ export function BusinessTeam() {
                             <div className="mt-2.5 space-y-1.5 text-xs text-stone-500 dark:text-neutral-400">
                               <div className="flex items-center gap-2">
                                 <CalendarDays className="h-3 w-3" strokeWidth={1.5} />
-                                <span>{formatAnciennete(member.joined_at)}</span>
+                                <span>{formatAncienneteLocalized(member.joined_at, t)}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Users className="h-3 w-3" strokeWidth={1.5} />
-                                <span>{memberProspects.length} prospect{memberProspects.length !== 1 ? 's' : ''}</span>
+                                <span>{memberProspects.length} {t.team_prospect_count}{memberProspects.length !== 1 ? 's' : ''}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <DollarSign className="h-3 w-3" strokeWidth={1.5} />
-                                <span>{memberWon.length} vente{memberWon.length !== 1 ? 's' : ''} · {formatCurrency(memberCA)}</span>
+                                <span>{memberWon.length} {t.team_sale_count}{memberWon.length !== 1 ? 's' : ''} · {formatCurrencyLocalized(memberCA, lang)}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="h-3 w-3" strokeWidth={1.5} />
-                                <span>{memberSlotsCount} créneau{memberSlotsCount !== 1 ? 'x' : ''}</span>
+                                <span>{memberSlotsCount} {t.team_slot_count}{memberSlotsCount !== 1 ? 's' : ''}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className={cn('h-2 w-2 rounded-full', isMemberAbsent(member.id) ? 'bg-[#ffb95f]' : isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600')} />
-                                <span>{isMemberAbsent(member.id) ? 'Absent' : isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}</span>
+                                <span>{isMemberAbsent(member.id) ? t.team_status_absent : isReallyOnline(member) ? t.team_status_online : t.team_status_offline}</span>
                               </div>
                               {member.timezone && (
                                 <div className="flex items-center gap-2">
@@ -593,7 +597,7 @@ export function BusinessTeam() {
                             <ContactInfo member={member} />
                             {memberAbsCount > 0 && (
                               <div className="mt-3 pt-3 text-xs text-[#ffb95f] font-bold">
-                                {memberAbsCount} absence{memberAbsCount > 1 ? 's' : ''}
+                                {memberAbsCount} {t.team_absence_count}{memberAbsCount > 1 ? 's' : ''}
                               </div>
                             )}
                           </div>
@@ -640,6 +644,7 @@ export function BusinessTeam() {
 /* ─── Individual View (Detail Page) ─── */
 
 function BookingLinksSection({ memberId }: { memberId: string }) {
+  const { t } = useBusinessLang()
   const [links, setLinks] = useState<{ id: string; label: string; duration: number; link: string; slug?: string; created_at: string }[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -659,14 +664,14 @@ function BookingLinksSection({ memberId }: { memberId: string }) {
 
   const handleCopy = (url: string) => {
     navigator.clipboard.writeText(url)
-    toast.success('Lien copié')
+    toast.success(t.team_link_copied)
   }
 
   return (
     <div className={cn(WHITE_CARD, 'p-8')}>
       <h3 className={cn(SECTION_TITLE, 'mb-8')}>
         <Link2 className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-        Liens de Booking
+        {t.team_booking_links}
       </h3>
       {loading ? (
         <div className="flex items-center justify-center py-8">
@@ -675,7 +680,7 @@ function BookingLinksSection({ memberId }: { memberId: string }) {
       ) : links.length === 0 ? (
         <div className="text-center py-8">
           <Link2 className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
-          <p className="text-sm text-stone-400 dark:text-neutral-500">Aucun lien de booking</p>
+          <p className="text-sm text-stone-400 dark:text-neutral-500">{t.team_no_booking_links}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -691,7 +696,7 @@ function BookingLinksSection({ memberId }: { memberId: string }) {
                   <button
                     onClick={() => handleCopy(bookingUrl)}
                     className="p-2 rounded-full hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all text-stone-500 dark:text-neutral-400"
-                    title="Copier le lien"
+                    title={t.team_copy_link}
                   >
                     <Copy className="h-3.5 w-3.5" />
                   </button>
@@ -700,7 +705,7 @@ function BookingLinksSection({ memberId }: { memberId: string }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 rounded-full hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all text-stone-500 dark:text-neutral-400"
-                    title="Ouvrir"
+                    title={t.team_open}
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
@@ -740,6 +745,7 @@ function IndividualView({
   onMemberUpdate: (updates: Partial<TeamMember>) => void
 }) {
   const { userTimezone, ownerUserId, user } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const color = getRoleColor(member.role)
 
   const isMemberAbsent = (memberId: string) => {
@@ -1198,8 +1204,8 @@ function IndividualView({
               {member.pay_day && (
                 <p className="text-xs text-stone-400 dark:text-neutral-500 mt-3">
                   Prochain paiement le {member.pay_day} {new Date().getDate() >= member.pay_day
-                    ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
-                    : new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+                    ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { month: 'long', year: 'numeric' })
+                    : new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { month: 'long', year: 'numeric' })
                   }
                 </p>
               )}
@@ -1313,7 +1319,7 @@ function IndividualView({
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <p className="text-xs text-stone-400 dark:text-neutral-500">
-                              {new Date(bonus.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {new Date(bonus.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                             {linkedInvoice && (
                               <p className="text-xs text-stone-400 dark:text-neutral-500 flex items-center gap-1">
@@ -1385,7 +1391,7 @@ function IndividualView({
                       <div key={log.id} className={cn('flex items-center justify-between py-3', !isLast && 'border-b border-stone-100 dark:border-neutral-800')}>
                         <div>
                           <p className="text-sm font-bold text-stone-900 dark:text-white">
-                            {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                            {date.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
                           </p>
                           <p className="text-[10px] text-stone-500 dark:text-neutral-400">{isConnect ? 'Log In' : 'Log Out'}</p>
                         </div>
@@ -1539,7 +1545,7 @@ function IndividualView({
                               return (
                                 <>
                                   <p className="text-sm font-semibold text-stone-900 dark:text-white">
-                                    {new Date(localDt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                    {new Date(localDt.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
                                     {`, ${localDt.time}`}
                                   </p>
                                   {memberLocal && (

@@ -4,6 +4,7 @@ import { Plus, X, GripVertical, Users, ChevronDown, Trash2, Pencil, Check, Layou
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import toast from 'react-hot-toast'
 
 interface TeamMember {
@@ -55,6 +56,7 @@ interface Props {
 
 export function TeamKanban({ members, onMemberTeamChange }: Props) {
   const { user, ownerUserId, isTeamMember, teamMember } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
 
   const isOwner = !isTeamMember
@@ -106,11 +108,11 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
       .insert({ business_owner_id: effectiveUserId, name: newTeamName.trim(), position: teams.length })
       .select()
       .single()
-    if (error) { toast.error('Erreur lors de la création'); return }
+    if (error) { toast.error(t.kanban_create_error); return }
     setTeams(prev => [...prev, data])
     setNewTeamName('')
     setCreatingTeam(false)
-    toast.success('Équipe créée')
+    toast.success(t.kanban_team_created)
   }
 
   const handleDeleteTeam = async (teamId: string) => {
@@ -121,30 +123,30 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
       onMemberTeamChange(m.id, null)
     }
     const { error } = await supabase.from('business_teams').delete().eq('id', teamId)
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.kanban_error); return }
     setTeams(prev => prev.filter(t => t.id !== teamId))
-    toast.success('Équipe supprimée')
+    toast.success(t.kanban_team_deleted)
   }
 
   const handleRenameTeam = async (teamId: string) => {
     if (!editTeamName.trim()) return
     const { error } = await supabase.from('business_teams').update({ name: editTeamName.trim() }).eq('id', teamId)
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.kanban_error); return }
     setTeams(prev => prev.map(t => t.id === teamId ? { ...t, name: editTeamName.trim() } : t))
     setEditingTeamId(null)
-    toast.success('Nom mis à jour')
+    toast.success(t.kanban_name_updated)
   }
 
   const handleAddMember = async (memberId: string, teamId: string) => {
     const { error } = await supabase.from('business_team_members').update({ team_id: teamId }).eq('id', memberId)
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.kanban_error); return }
     onMemberTeamChange(memberId, teamId)
     setAddMemberDropdown(null)
   }
 
   const handleRemoveMember = async (memberId: string) => {
     const { error } = await supabase.from('business_team_members').update({ team_id: null }).eq('id', memberId)
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.kanban_error); return }
     onMemberTeamChange(memberId, null)
   }
 
@@ -159,7 +161,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
     if (member.team_id === destTeamId) return
 
     const { error } = await supabase.from('business_team_members').update({ team_id: destTeamId }).eq('id', memberId)
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.kanban_error); return }
     onMemberTeamChange(memberId, destTeamId)
   }
 
@@ -177,7 +179,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
   const groupByRole = (list: TeamMember[]) => {
     const groups: Record<string, TeamMember[]> = {}
     for (const m of list) {
-      const r = m.role || 'Sans rôle'
+      const r = m.role || t.kanban_no_role
       if (!groups[r]) groups[r] = []
       groups[r].push(m)
     }
@@ -201,7 +203,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
         <div className="flex items-center gap-2.5">
           <LayoutGrid className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
           <h3 className="font-business-display text-lg font-extrabold tracking-tight text-stone-900 dark:text-white">
-            Organisation des équipes
+            {t.kanban_title}
           </h3>
         </div>
         {canEdit && !creatingTeam && (
@@ -210,7 +212,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
             className="flex items-center gap-2 rounded-full bg-stone-900 dark:bg-white/10 px-5 py-2.5 text-sm font-bold text-white font-business-display hover:opacity-90 transition-all"
           >
             <Plus className="h-4 w-4" strokeWidth={1.5} />
-            Nouvelle équipe
+            {t.kanban_new_team}
           </button>
         )}
       </div>
@@ -222,7 +224,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
             value={newTeamName}
             onChange={e => setNewTeamName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleCreateTeam(); if (e.key === 'Escape') setCreatingTeam(false) }}
-            placeholder="Nom de l'équipe..."
+            placeholder={t.kanban_team_name_placeholder}
             className="flex-1 bg-transparent text-sm font-bold text-stone-900 dark:text-white placeholder:text-stone-300 dark:placeholder:text-neutral-600 outline-none"
           />
           <button onClick={handleCreateTeam} className="p-2 rounded-full bg-[#006c49] text-white hover:opacity-90 transition-all">
@@ -251,7 +253,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
                 <div className="flex items-center gap-2 mb-4">
                   <Users className="h-4 w-4 text-stone-400" strokeWidth={1.5} />
                   <span className="font-business-display text-sm font-extrabold tracking-tight text-stone-500 dark:text-neutral-400">
-                    Non assignés
+                    {t.kanban_unassigned}
                   </span>
                   <span className="ml-auto text-xs font-bold text-stone-400 dark:text-neutral-500 bg-stone-200/60 dark:bg-neutral-700/60 px-2 py-0.5 rounded-full">
                     {unassigned.length}
@@ -349,7 +351,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
                           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-stone-200 dark:border-neutral-700 text-stone-400 dark:text-neutral-500 hover:border-[#006c49]/40 hover:text-[#006c49] dark:hover:border-[#6ffbbe]/30 dark:hover:text-[#6ffbbe] transition-all text-xs font-bold"
                         >
                           <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-                          Ajouter
+                          {t.kanban_add}
                         </button>
                         {addMemberDropdown === team.id && availableToAdd.length > 0 && (
                           <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-800 rounded-xl shadow-xl ring-1 ring-stone-200/50 dark:ring-neutral-700 z-50 max-h-60 overflow-y-auto">
@@ -377,7 +379,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
                         )}
                         {addMemberDropdown === team.id && availableToAdd.length === 0 && (
                           <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-800 rounded-xl shadow-xl ring-1 ring-stone-200/50 dark:ring-neutral-700 z-50 p-4 text-center text-xs text-stone-400 dark:text-neutral-500">
-                            Tous les membres sont assignés
+                            {t.kanban_all_assigned}
                           </div>
                         )}
                       </div>
@@ -396,7 +398,7 @@ export function TeamKanban({ members, onMemberTeamChange }: Props) {
               <div className="text-center">
                 <LayoutGrid className="h-8 w-8 text-stone-200 dark:text-neutral-700 mx-auto mb-3" strokeWidth={1.5} />
                 <p className="text-sm text-stone-400 dark:text-neutral-500 font-bold">
-                  {canEdit ? 'Créez votre première équipe' : 'Aucune équipe créée'}
+                  {canEdit ? t.kanban_create_first_team : t.kanban_no_teams}
                 </p>
               </div>
             </div>
@@ -419,10 +421,11 @@ function RoleGroupedMembers({
   canDragRole: (role: string) => boolean
   onRemove?: (id: string) => void
 }) {
+  const { t } = useBusinessLang()
   const grouped = useMemo(() => {
     const groups: Record<string, TeamMember[]> = {}
     for (const m of members) {
-      const r = m.role || 'Sans rôle'
+      const r = m.role || t.kanban_no_role
       if (!groups[r]) groups[r] = []
       groups[r].push(m)
     }
@@ -434,12 +437,12 @@ function RoleGroupedMembers({
       if (!ROLE_ORDER.includes(role)) sorted.push([role, list])
     }
     return sorted
-  }, [members])
+  }, [members, t])
 
   if (members.length === 0) {
     return (
       <div className="py-6 text-center text-xs text-stone-300 dark:text-neutral-600 font-bold">
-        Aucun membre
+        {t.kanban_no_members}
       </div>
     )
   }

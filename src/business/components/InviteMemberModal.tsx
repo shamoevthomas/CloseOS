@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Copy, Check, Loader2, Link as LinkIcon, Send, Mail } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 
 const DEFAULT_ROLES = ['Closer', 'Setter', 'Setter-Closer', 'Admin', 'Head of Sales'];
 
@@ -12,6 +13,7 @@ interface Props {
 
 export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props) {
   const { user, businessProfile, businessSettings } = useBusinessAuth();
+  const { t, lang } = useBusinessLang()
   const [selectedRole, setSelectedRole] = useState('Closer');
   const [loading, setLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
@@ -81,7 +83,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
           email: inviteEmail,
           role: selectedRole,
           link: generatedLink,
-          inviter_name: businessProfile?.full_name || user?.user_metadata?.full_name || 'Votre manager',
+          inviter_name: businessProfile?.full_name || user?.user_metadata?.full_name || t.invite_fallback_name,
           organization_name: businessSettings?.company_name || '',
         }),
       });
@@ -89,7 +91,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
       if (!res.ok) throw new Error(data.error || 'Erreur');
       setEmailSent(true);
     } catch (err: any) {
-      setEmailError(err.message || "Impossible d'envoyer l'email");
+      setEmailError(err.message || t.invite_email_error);
     } finally {
       setEmailSending(false);
     }
@@ -118,13 +120,13 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
           <X className="h-5 w-5" />
         </button>
 
-        <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">Inviter un membre</h2>
-        <p className="text-stone-500 dark:text-neutral-400 text-sm mb-6">Générez un lien d'invitation pour un nouveau membre de votre équipe.</p>
+        <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">{t.invite_title}</h2>
+        <p className="text-stone-500 dark:text-neutral-400 text-sm mb-6">{t.invite_desc}</p>
 
         {!generatedLink ? (
           <>
             <div className="mb-4">
-              <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">Rôle</label>
+              <label className="block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 mb-2">{t.invite_role_label}</label>
               <div className="flex flex-wrap gap-2">
                 {DEFAULT_ROLES.map((role) => (
                   <button
@@ -145,8 +147,8 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
             {/* Admin info */}
             {selectedRole === 'Admin' && (
               <div className="mb-4 rounded-xl border border-red-200/60 bg-red-50/50 p-4">
-                <p className="text-sm font-semibold text-red-800">Accès complet</p>
-                <p className="text-xs text-red-600 mt-0.5">Un Admin a exactement les mêmes droits que le Owner sur toute la plateforme.</p>
+                <p className="text-sm font-semibold text-red-800">{t.invite_admin_full_access}</p>
+                <p className="text-xs text-red-600 mt-0.5">{t.invite_admin_same_rights}</p>
               </div>
             )}
 
@@ -154,8 +156,8 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
               <div className="mb-4 rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-stone-100/50 dark:bg-neutral-800/50 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-stone-900 dark:text-white">Gestion des campagnes</p>
-                    <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">Lui donner accès à la page Campagnes</p>
+                    <p className="text-sm font-semibold text-stone-900 dark:text-white">{t.invite_hos_campaign_mgmt}</p>
+                    <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5">{t.invite_hos_campaign_desc}</p>
                   </div>
                   <button
                     type="button"
@@ -176,7 +178,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
 
             {selectedRole === 'Setter-Closer' && (
               <div className="mb-4 rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-stone-100/50 dark:bg-neutral-800/50 p-4">
-                <p className="text-sm font-semibold text-stone-900 dark:text-white mb-3">Mode de setting</p>
+                <p className="text-sm font-semibold text-stone-900 dark:text-white mb-3">{t.invite_setter_mode}</p>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -187,7 +189,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
                         : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-700'
                     }`}
                   >
-                    Set pour lui-même
+                    {t.invite_setter_self}
                   </button>
                   <button
                     type="button"
@@ -198,13 +200,13 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
                         : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-700'
                     }`}
                   >
-                    Set pour tout le monde
+                    {t.invite_setter_all}
                   </button>
                 </div>
                 <p className="text-xs text-stone-500 dark:text-neutral-400 mt-2">
                   {setterScope === 'self'
-                    ? "Ne peut booker que pour lui-même et ne peut pas assigner de prospects à d'autres closers."
-                    : "Peut booker des RDV pour les autres membres et assigner des prospects aux closers."
+                    ? t.invite_setter_self_desc
+                    : t.invite_setter_all_desc
                   }
                 </p>
               </div>
@@ -220,7 +222,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
               ) : (
                 <>
                   <LinkIcon className="h-4 w-4" />
-                  Générer le lien
+                  {t.invite_generate}
                 </>
               )}
             </button>
@@ -228,7 +230,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
         ) : (
           <div className="space-y-4">
             <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-4">
-              <p className="text-sm font-semibold text-emerald-700 mb-2">Lien d'invitation généré !</p>
+              <p className="text-sm font-semibold text-emerald-700 mb-2">{t.invite_link_generated}</p>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -243,19 +245,19 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </button>
               </div>
-              <p className="text-xs text-emerald-600 mt-2">Ce lien expire dans 7 jours.</p>
+              <p className="text-xs text-emerald-600 mt-2">{t.invite_expires}</p>
             </div>
 
             {/* Send invitation by email */}
             <div className="rounded-xl border border-stone-200/20 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 p-4">
               <p className="text-sm font-semibold text-stone-900 dark:text-white mb-3">
                 <Mail className="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
-                Envoyer par email
+                {t.invite_send_by_email}
               </p>
               {emailSent ? (
                 <div className="flex items-center gap-2 text-emerald-600">
                   <Check className="h-4 w-4" />
-                  <p className="text-sm font-medium">Invitation envoyée à {inviteEmail}</p>
+                  <p className="text-sm font-medium">{t.invite_email_sent.replace('{email}', inviteEmail)}</p>
                 </div>
               ) : (
                 <>
@@ -264,7 +266,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
                       type="email"
                       value={inviteEmail}
                       onChange={(e) => { setInviteEmail(e.target.value); setEmailError(null); }}
-                      placeholder="email@exemple.com"
+                      placeholder={t.invite_email_placeholder}
                       className="flex-1 rounded-full bg-white dark:bg-neutral-800 border border-stone-300 dark:border-neutral-600 py-2.5 px-4 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-neutral-500 outline-none focus:ring-2 focus:ring-stone-900/10"
                     />
                     <button
@@ -286,7 +288,7 @@ export function InviteMemberModal({ isOpen, onClose, onSeatLimitReached }: Props
               onClick={handleClose}
               className="w-full rounded-full border border-stone-300 dark:border-neutral-600 py-3 font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 active:scale-95 transition-all"
             >
-              Fermer
+              {t.invite_close}
             </button>
           </div>
         )}

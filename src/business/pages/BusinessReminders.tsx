@@ -3,6 +3,7 @@ import { Bell, Trash2, Check, Clock, AlertTriangle, CheckCircle2, Loader2, Plus,
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { fromUTC, toUTC } from '../../lib/timezone'
@@ -55,14 +56,15 @@ function formatReminderDate(dateStr: string, timezone: string): { date: string; 
   const diffMs = d.getTime() - now.getTime()
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffDays === 0 && d.getDate() === now.getDate()) return { date: "Aujourd'hui", time: local.time, isOverdue }
-  if (diffDays === 1 || (diffDays === 0 && d.getDate() === now.getDate() + 1)) return { date: 'Demain', time: local.time, isOverdue }
-  if (diffDays === -1 || (diffDays === 0 && d.getDate() === now.getDate() - 1)) return { date: 'Hier', time: local.time, isOverdue }
-  return { date: d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), time: local.time, isOverdue }
+  if (diffDays === 0 && d.getDate() === now.getDate()) return { date: t.common_today, time: local.time, isOverdue }
+  if (diffDays === 1 || (diffDays === 0 && d.getDate() === now.getDate() + 1)) return { date: t.reminders_tomorrow, time: local.time, isOverdue }
+  if (diffDays === -1 || (diffDays === 0 && d.getDate() === now.getDate() - 1)) return { date: t.reminders_yesterday, time: local.time, isOverdue }
+  return { date: d.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' }), time: local.time, isOverdue }
 }
 
 export function BusinessReminders() {
   const { user, isTeamMember, teamMember, ownerUserId, userTimezone } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const { prospects } = useBusinessProspects()
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const canAssign = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Setter'
@@ -151,16 +153,16 @@ export function BusinessReminders() {
       if (error) throw error
       setReminders(prev => [...prev, newReminder])
       setShowCreateModal(false)
-      toast.success('Rappel créé')
+      toast.success(t.reminders_toast_created)
     } catch {
-      toast.error('Impossible de créer le rappel')
+      toast.error(t.reminders_toast_create_error)
     }
   }
 
   const getProspectName = (prospectId: number | null): string | null => {
     if (!prospectId) return null
     const p = prospects.find(pr => pr.id === prospectId)
-    return p ? (p.contact || p.company || 'Prospect') : null
+    return p ? (p.contact || p.company || t.reminders_prospect_fallback) : null
   }
 
   const getMemberName = (memberId?: string): string | null => {
@@ -176,9 +178,9 @@ export function BusinessReminders() {
   }
 
   const statusConfig: Record<ReminderStatus, { label: string; cls: string }> = {
-    upcoming: { label: 'Upcoming', cls: 'bg-[#006c49]/10 text-[#006c49] border-[#006c49]/20' },
-    overdue: { label: 'Passé', cls: 'bg-red-500/10 text-red-600 border-red-500/20' },
-    done: { label: 'Fait', cls: 'bg-stone-200/50 dark:bg-neutral-800/50 text-stone-500 dark:text-neutral-400 border-stone-300/30 dark:border-neutral-700/30' },
+    upcoming: { label: t.reminders_status_upcoming, cls: 'bg-[#006c49]/10 text-[#006c49] border-[#006c49]/20' },
+    overdue: { label: t.reminders_status_overdue, cls: 'bg-red-500/10 text-red-600 border-red-500/20' },
+    done: { label: t.reminders_status_done, cls: 'bg-stone-200/50 dark:bg-neutral-800/50 text-stone-500 dark:text-neutral-400 border-stone-300/30 dark:border-neutral-700/30' },
   }
 
   const sorted = sortReminders(reminders)
@@ -211,12 +213,12 @@ export function BusinessReminders() {
         </div>
         <div>
           <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Rappels
+            {t.reminders_title}
           </h1>
           <div className="flex gap-4 mt-2.5 font-medium">
-            <span className="text-stone-500 dark:text-neutral-400">{reminders.length} rappel{reminders.length !== 1 ? 's' : ''} au total</span>
+            <span className="text-stone-500 dark:text-neutral-400">{reminders.length} {reminders.length !== 1 ? t.reminders_reminders : t.reminders_reminder} {t.reminders_total}</span>
             {overdueCount > 0 && (
-              <span className="text-red-600 font-bold underline underline-offset-4 decoration-2">{overdueCount} en retard</span>
+              <span className="text-red-600 font-bold underline underline-offset-4 decoration-2">{overdueCount} {t.reminders_overdue_count}</span>
             )}
           </div>
         </div>
@@ -234,11 +236,11 @@ export function BusinessReminders() {
           <div className="flex items-center gap-4">
             <AlertTriangle className="h-5 w-5 text-red-800 shrink-0" strokeWidth={1.5} />
             <p className="font-bold text-red-900 text-sm">
-              Attention : Vous avez des rappels critiques qui n'ont pas été traités depuis plus de 24h.
+              {t.reminders_overdue_alert}
             </p>
           </div>
           <button className="px-6 py-2.5 bg-red-800 text-white rounded-full text-xs font-bold hover:bg-red-900 transition-colors shrink-0 ml-4">
-            Voir les urgences
+            {t.reminders_view_urgent}
           </button>
         </div>
       )}
@@ -260,7 +262,7 @@ export function BusinessReminders() {
                     onChange={(e) => setFilterMember(e.target.value)}
                     className="appearance-none bg-transparent dark:bg-neutral-900 border-none focus:ring-0 font-semibold text-stone-900 dark:text-white pr-6 text-sm cursor-pointer"
                   >
-                    <option value="all">Équipe : Tous</option>
+                    <option value="all">{t.reminders_filter_team_all}</option>
                     {teamMembers.map(m => (
                       <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>
                     ))}
@@ -287,7 +289,7 @@ export function BusinessReminders() {
                 onClick={() => { setFilterMember('all'); setFilterDate('') }}
                 className="text-xs text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white font-semibold transition-colors"
               >
-                Réinitialiser
+                {t.reminders_filter_reset}
               </button>
             </>
           )}
@@ -297,7 +299,7 @@ export function BusinessReminders() {
           className="bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-95 text-sm"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
-          Nouveau rappel
+          {t.reminders_new}
         </button>
       </div>
 
@@ -307,13 +309,13 @@ export function BusinessReminders() {
           <div className="w-32 h-32 bg-stone-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-8">
             <Bell className="h-14 w-14 text-stone-300 dark:text-neutral-600" strokeWidth={1} />
           </div>
-          <h3 className="text-2xl font-extrabold text-stone-900 dark:text-white mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>Tout est à jour</h3>
-          <p className="text-stone-500 dark:text-neutral-400 max-w-xs">Vous n'avez aucun rappel prévu pour le moment. Détendez-vous ou créez-en un nouveau.</p>
+          <h3 className="text-2xl font-extrabold text-stone-900 dark:text-white mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.reminders_all_clear_title}</h3>
+          <p className="text-stone-500 dark:text-neutral-400 max-w-xs">{t.reminders_all_clear_desc}</p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="mt-8 px-8 py-3 bg-stone-900 dark:bg-white dark:text-stone-900 text-white rounded-full font-bold hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-95"
           >
-            Ajouter un rappel
+            {t.reminders_add}
           </button>
         </div>
       ) : (
@@ -323,7 +325,7 @@ export function BusinessReminders() {
         >
           {/* Table header — desktop */}
           <div className="hidden md:grid grid-cols-12 gap-4 bg-stone-50 dark:bg-neutral-800 px-8 py-5">
-            {['Titre', 'Description', 'Date & heure', 'Assigné', 'Lié à', 'Statut'].map((h, i) => (
+            {[t.reminders_col_title, t.reminders_col_description, t.reminders_col_datetime, t.reminders_col_assigned, t.reminders_col_linked, t.reminders_col_status].map((h, i) => (
               <div key={h} className={cn(
                 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400',
                 i === 0 ? 'col-span-3' : i === 1 ? 'col-span-2' : i === 2 ? 'col-span-2' : 'col-span-1'
@@ -331,7 +333,7 @@ export function BusinessReminders() {
                 {h}
               </div>
             ))}
-            <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 text-right">Actions</div>
+            <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 text-right">{t.reminders_col_actions}</div>
           </div>
 
           <div>
@@ -384,7 +386,7 @@ export function BusinessReminders() {
                       ) : (
                         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full">
                           <div className="w-5 h-5 rounded-full bg-stone-300 dark:bg-neutral-600" />
-                          <span className="text-xs font-bold text-stone-500 dark:text-neutral-400">Moi</span>
+                          <span className="text-xs font-bold text-stone-500 dark:text-neutral-400">{t.reminders_me}</span>
                         </div>
                       )}
                     </div>
@@ -487,7 +489,7 @@ export function BusinessReminders() {
             <div className="px-8 pt-8 pb-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-extrabold text-stone-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  Détail du rappel
+                  {t.reminders_detail_title}
                 </h2>
                 <button onClick={() => setSelectedReminder(null)} className="p-2 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
                   <X className="h-5 w-5" strokeWidth={1.5} />
@@ -508,14 +510,14 @@ export function BusinessReminders() {
 
               {/* Title */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">Titre</label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">{t.reminders_label_title}</label>
                 <p className="text-lg font-extrabold text-stone-900 dark:text-white">{selectedReminder.title}</p>
               </div>
 
               {/* Description */}
               {selectedReminder.description && (
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">Description</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">{t.reminders_label_description}</label>
                   <p className="text-sm text-stone-700 dark:text-neutral-200 leading-relaxed">{selectedReminder.description}</p>
                 </div>
               )}
@@ -526,12 +528,12 @@ export function BusinessReminders() {
                 const detailDate = new Date(`${detailLocal.date}T${detailLocal.time}:00`)
                 return (
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">Date & Heure</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">{t.reminders_label_datetime}</label>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                       <p className={cn('text-sm font-medium', getStatus(selectedReminder) === 'overdue' ? 'text-red-600' : 'text-stone-900 dark:text-white')}>
-                        {detailDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                        {' à '}
+                        {detailDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        {t.reminders_time_separator}
                         {detailLocal.time}
                       </p>
                     </div>
@@ -541,13 +543,13 @@ export function BusinessReminders() {
 
               {/* Assigned to */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">Assigné à</label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">{t.reminders_label_assigned_to}</label>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-stone-200 dark:bg-neutral-800 flex items-center justify-center text-[10px] font-bold text-stone-600 dark:text-neutral-300">
                     {getMemberInitials(selectedReminder.assigned_to || undefined)}
                   </div>
                   <p className="text-sm font-medium text-stone-900 dark:text-white">
-                    {selectedReminder.assigned_to ? (getMemberName(selectedReminder.assigned_to) || 'Membre') : 'Moi-même'}
+                    {selectedReminder.assigned_to ? (getMemberName(selectedReminder.assigned_to) || t.reminders_member_fallback) : t.reminders_myself}
                   </p>
                 </div>
               </div>
@@ -555,23 +557,23 @@ export function BusinessReminders() {
               {/* Linked prospect */}
               {selectedReminder.prospect_id && (
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">Prospect lié</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">{t.reminders_label_linked_prospect}</label>
                   <button
                     onClick={() => { setViewProspect(selectedReminder.prospect_id) }}
                     className="flex items-center gap-2 px-4 py-2.5 bg-stone-50 dark:bg-neutral-800 hover:bg-stone-100 dark:hover:bg-neutral-700 rounded-xl transition-colors w-full text-left"
                   >
                     <User className="h-4 w-4 text-stone-500 dark:text-neutral-400" strokeWidth={1.5} />
-                    <span className="text-sm font-semibold text-stone-900 dark:text-white">{getProspectName(selectedReminder.prospect_id) || 'Prospect'}</span>
-                    <span className="ml-auto text-xs text-stone-400 dark:text-neutral-500">Voir la fiche →</span>
+                    <span className="text-sm font-semibold text-stone-900 dark:text-white">{getProspectName(selectedReminder.prospect_id) || t.reminders_prospect_fallback}</span>
+                    <span className="ml-auto text-xs text-stone-400 dark:text-neutral-500">{t.reminders_view_prospect}</span>
                   </button>
                 </div>
               )}
 
               {/* Created at */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">Créé le</label>
+                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">{t.reminders_label_created_at}</label>
                 <p className="text-sm text-stone-500 dark:text-neutral-400">
-                  {new Date(selectedReminder.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {new Date(selectedReminder.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
               </div>
 
@@ -583,7 +585,7 @@ export function BusinessReminders() {
                     className="flex-1 py-3 bg-[#006c49] text-white rounded-full font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="h-4 w-4" strokeWidth={1.5} />
-                    Marquer comme fait
+                    {t.reminders_mark_done}
                   </button>
                 )}
                 <button
@@ -591,7 +593,7 @@ export function BusinessReminders() {
                   className="flex-1 py-3 bg-stone-100 dark:bg-neutral-800 text-red-600 rounded-full font-bold text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                  Supprimer
+                  {t.reminders_delete}
                 </button>
               </div>
             </div>
@@ -642,6 +644,7 @@ function CreateReminderModal({
   onClose: () => void
   onSubmit: (data: { title: string; description: string; reminder_date: string; prospect_id: number | null; assigned_to: string | null }) => Promise<void>
 }) {
+  const { t } = useBusinessLang()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')
@@ -689,45 +692,45 @@ function CreateReminderModal({
         <div className="px-8 pt-8 pb-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-extrabold text-stone-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Nouveau rappel
+              {t.reminders_new}
             </h2>
             <button onClick={onClose} className="p-2 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
               <X className="h-5 w-5" strokeWidth={1.5} />
             </button>
           </div>
-          <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1">Planifiez une tâche ou un suivi</p>
+          <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1">{t.reminders_modal_subtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-5">
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Titre *</label>
-            <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Rappeler le prospect" className={inputCls} autoFocus required />
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_title}</label>
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t.reminders_form_title_placeholder} className={inputCls} autoFocus required />
           </div>
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Description</label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Détails optionnels..." rows={2} className={`${inputCls} resize-none`} />
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_description}</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t.reminders_form_desc_placeholder} rows={2} className={`${inputCls} resize-none`} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Date *</label>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_date}</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} required />
             </div>
             <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Heure *</label>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_time}</label>
               <input type="time" value={time} onChange={e => setTime(e.target.value)} className={inputCls} required />
             </div>
           </div>
 
           {teamMembers.length > 0 && (
             <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Assigner à</label>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_assign_to}</label>
               <div className="relative">
                 <select
                   value={assignedTo}
                   onChange={e => setAssignedTo(e.target.value)}
                   className="w-full appearance-none rounded-xl bg-stone-50 dark:bg-neutral-800 border-0 pl-10 pr-8 py-3 text-sm text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
                 >
-                  <option value="">— Moi-même —</option>
+                  <option value="">{t.reminders_form_myself}</option>
                   {teamMembers.map(m => (
                     <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                   ))}
@@ -739,21 +742,21 @@ function CreateReminderModal({
           )}
 
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Lier à</label>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_link_to}</label>
             <div className="bg-stone-100 dark:bg-neutral-800 p-1 rounded-xl flex text-xs font-bold">
               <button
                 type="button"
                 onClick={() => { setLinkType('none'); setSelectedProspectId(null) }}
                 className={cn('flex-1 py-2 rounded-lg transition-all', linkType === 'none' ? 'bg-white dark:bg-neutral-700 shadow-sm text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400')}
               >
-                Aucun
+                {t.reminders_form_link_none}
               </button>
               <button
                 type="button"
                 onClick={() => setLinkType('prospect')}
                 className={cn('flex-1 py-2 rounded-lg transition-all', linkType === 'prospect' ? 'bg-white dark:bg-neutral-700 shadow-sm text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400')}
               >
-                Un prospect
+                {t.reminders_form_link_prospect}
               </button>
             </div>
           </div>

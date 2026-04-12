@@ -28,7 +28,9 @@ import { cn } from '../../lib/utils'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useTheme } from '../contexts/BusinessThemeContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
+import type { BusinessTranslations } from '../i18n/translations'
 
 interface NavItem {
   name: string
@@ -36,74 +38,74 @@ interface NavItem {
   icon: any
 }
 
-const ownerNavigation: NavItem[] = [
-  { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
-  { name: 'CRM', href: '/business/crm', icon: GitBranch },
-  { name: 'Pipeline', href: '/business/pipeline-owner', icon: Target },
-  { name: 'Campagnes', href: '/business/campagnes', icon: Megaphone },
-  { name: 'Acquisition', href: '/business/acquisition', icon: BarChart3 },
-  { name: 'Objectifs', href: '/business/objectifs', icon: Target },
-  { name: 'Formules', href: '/business/formules', icon: Package },
-  { name: 'Appels', href: '/business/appels', icon: Phone },
-  { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
-  { name: 'Agenda', href: '/business/agenda', icon: Calendar },
-  { name: 'Rappels', href: '/business/rappels', icon: Bell },
-  { name: 'Factures', href: '/business/factures', icon: Receipt },
-  { name: "Chiffre d'affaires", href: '/business/revenue', icon: DollarSign },
-  { name: 'Rapport', href: '/business/report', icon: FileText },
-  { name: 'KPI Setter', href: '/business/setter-kpi', icon: TrendingUp },
-  { name: 'KPI Closer', href: '/business/closer-kpi', icon: TrendingUp },
-  { name: 'Disponibilité', href: '/business/disponibilite', icon: Clock },
-  { name: 'Équipe', href: '/business/team', icon: Users },
+const getOwnerNavigation = (t: BusinessTranslations): NavItem[] => [
+  { name: t.sidebar_dashboard, href: '/business/dashboard', icon: LayoutDashboard },
+  { name: t.sidebar_crm, href: '/business/crm', icon: GitBranch },
+  { name: t.sidebar_pipeline, href: '/business/pipeline-owner', icon: Target },
+  { name: t.sidebar_campaigns, href: '/business/campagnes', icon: Megaphone },
+  { name: t.sidebar_acquisition, href: '/business/acquisition', icon: BarChart3 },
+  { name: t.sidebar_objectives, href: '/business/objectifs', icon: Target },
+  { name: t.sidebar_formulas, href: '/business/formules', icon: Package },
+  { name: t.sidebar_calls, href: '/business/appels', icon: Phone },
+  { name: t.sidebar_appointments, href: '/business/rendez-vous', icon: Calendar },
+  { name: t.sidebar_agenda, href: '/business/agenda', icon: Calendar },
+  { name: t.sidebar_reminders, href: '/business/rappels', icon: Bell },
+  { name: t.sidebar_invoices, href: '/business/factures', icon: Receipt },
+  { name: t.sidebar_revenue, href: '/business/revenue', icon: DollarSign },
+  { name: t.sidebar_report, href: '/business/report', icon: FileText },
+  { name: t.sidebar_setter_kpi, href: '/business/setter-kpi', icon: TrendingUp },
+  { name: t.sidebar_closer_kpi, href: '/business/closer-kpi', icon: TrendingUp },
+  { name: t.sidebar_availability, href: '/business/disponibilite', icon: Clock },
+  { name: t.sidebar_team, href: '/business/team', icon: Users },
 ]
 
-const getHeadOfSalesNavigation = (canManageCampaigns?: boolean): NavItem[] => {
+const getHeadOfSalesNavigation = (t: BusinessTranslations, canManageCampaigns?: boolean): NavItem[] => {
   const nav: NavItem[] = [
-    { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
-    { name: 'CRM', href: '/business/crm', icon: GitBranch },
-    { name: 'Pipeline', href: '/business/pipeline-owner', icon: Target },
-    ...(canManageCampaigns ? [{ name: 'Campagnes', href: '/business/campagnes', icon: Megaphone }] : []),
-    { name: 'Acquisition', href: '/business/acquisition', icon: BarChart3 },
-    { name: 'Objectifs', href: '/business/objectifs', icon: Target },
-    { name: 'Formules', href: '/business/formules', icon: Package },
-    { name: 'Appels', href: '/business/appels', icon: Phone },
-    { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
-    { name: 'Agenda', href: '/business/agenda', icon: Calendar },
-    { name: 'Rappels', href: '/business/rappels', icon: Bell },
-    { name: 'Factures', href: '/business/factures', icon: Receipt },
-    { name: "Chiffre d'affaires", href: '/business/revenue', icon: DollarSign },
-    { name: 'Rapport', href: '/business/report', icon: FileText },
-    { name: 'KPI Setter', href: '/business/setter-kpi', icon: TrendingUp },
-    { name: 'KPI Closer', href: '/business/closer-kpi', icon: TrendingUp },
-    { name: 'Disponibilité', href: '/business/disponibilite', icon: Clock },
-    { name: 'Équipe', href: '/business/team', icon: Users },
+    { name: t.sidebar_dashboard, href: '/business/dashboard', icon: LayoutDashboard },
+    { name: t.sidebar_crm, href: '/business/crm', icon: GitBranch },
+    { name: t.sidebar_pipeline, href: '/business/pipeline-owner', icon: Target },
+    ...(canManageCampaigns ? [{ name: t.sidebar_campaigns, href: '/business/campagnes', icon: Megaphone }] : []),
+    { name: t.sidebar_acquisition, href: '/business/acquisition', icon: BarChart3 },
+    { name: t.sidebar_objectives, href: '/business/objectifs', icon: Target },
+    { name: t.sidebar_formulas, href: '/business/formules', icon: Package },
+    { name: t.sidebar_calls, href: '/business/appels', icon: Phone },
+    { name: t.sidebar_appointments, href: '/business/rendez-vous', icon: Calendar },
+    { name: t.sidebar_agenda, href: '/business/agenda', icon: Calendar },
+    { name: t.sidebar_reminders, href: '/business/rappels', icon: Bell },
+    { name: t.sidebar_invoices, href: '/business/factures', icon: Receipt },
+    { name: t.sidebar_revenue, href: '/business/revenue', icon: DollarSign },
+    { name: t.sidebar_report, href: '/business/report', icon: FileText },
+    { name: t.sidebar_setter_kpi, href: '/business/setter-kpi', icon: TrendingUp },
+    { name: t.sidebar_closer_kpi, href: '/business/closer-kpi', icon: TrendingUp },
+    { name: t.sidebar_availability, href: '/business/disponibilite', icon: Clock },
+    { name: t.sidebar_team, href: '/business/team', icon: Users },
   ]
   return nav
 }
 
-const getTeamMemberNavigation = (role?: string): NavItem[] => {
+const getTeamMemberNavigation = (t: BusinessTranslations, role?: string): NavItem[] => {
   const isSetter = role === 'Setter' || role === 'Setter-Closer'
   const isSetterCloser = role === 'Setter-Closer'
   return [
-    { name: 'Dashboard', href: '/business/dashboard', icon: LayoutDashboard },
-    { name: 'CRM', href: '/business/crm', icon: GitBranch },
-    { name: 'Pipeline', href: '/business/pipeline', icon: Target },
-    { name: 'Objectifs', href: '/business/closer-objectifs', icon: Target },
-    { name: 'Disponibilité', href: '/business/disponibilite', icon: Calendar },
+    { name: t.sidebar_dashboard, href: '/business/dashboard', icon: LayoutDashboard },
+    { name: t.sidebar_crm, href: '/business/crm', icon: GitBranch },
+    { name: t.sidebar_pipeline, href: '/business/pipeline', icon: Target },
+    { name: t.sidebar_objectives, href: '/business/closer-objectifs', icon: Target },
+    { name: t.sidebar_availability, href: '/business/disponibilite', icon: Calendar },
     ...(isSetterCloser
       ? [
-          { name: 'KPI Setter', href: '/business/setter-kpi', icon: TrendingUp },
-          { name: 'KPI Closer', href: '/business/closer-kpi', icon: TrendingUp },
+          { name: t.sidebar_setter_kpi, href: '/business/setter-kpi', icon: TrendingUp },
+          { name: t.sidebar_closer_kpi, href: '/business/closer-kpi', icon: TrendingUp },
         ]
-      : [{ name: 'KPI', href: isSetter ? '/business/setter-kpi' : '/business/closer-kpi', icon: TrendingUp }]
+      : [{ name: t.kpi_title, href: isSetter ? '/business/setter-kpi' : '/business/closer-kpi', icon: TrendingUp }]
     ),
-    { name: 'Formules', href: '/business/formules', icon: Package },
-    { name: 'Rendez-vous', href: '/business/rendez-vous', icon: Calendar },
-    { name: 'Appels', href: '/business/appels', icon: Headphones },
-    { name: 'Agenda', href: '/business/agenda', icon: Calendar },
-    { name: 'Factures', href: '/business/factures', icon: FileText },
-    { name: 'Rappels', href: '/business/rappels', icon: Bell },
-    { name: 'Équipe', href: '/business/team', icon: Users },
+    { name: t.sidebar_formulas, href: '/business/formules', icon: Package },
+    { name: t.sidebar_appointments, href: '/business/rendez-vous', icon: Calendar },
+    { name: t.sidebar_calls, href: '/business/appels', icon: Headphones },
+    { name: t.sidebar_agenda, href: '/business/agenda', icon: Calendar },
+    { name: t.sidebar_invoices, href: '/business/factures', icon: FileText },
+    { name: t.sidebar_reminders, href: '/business/rappels', icon: Bell },
+    { name: t.sidebar_team, href: '/business/team', icon: Users },
   ]
 }
 
@@ -118,6 +120,7 @@ interface BusinessSidebarProps {
 export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, onCollapseChange }: BusinessSidebarProps) {
   const navigate = useNavigate()
   const { dark } = useTheme()
+  const { t } = useBusinessLang()
   const { logout, user, businessProfile, businessSettings, isTeamMember, teamMember, hasSalesAccount, isSolo, hasAcquisition } = useBusinessAuth()
   const hasAcknowledgedOnboarding = !isTeamMember || !!teamMember?.onboarding_acknowledged
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
@@ -128,10 +131,10 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
 
   const navigation = useMemo(() => {
     let baseNav: NavItem[]
-    if (!isTeamMember) baseNav = ownerNavigation
-    else if (isAdmin) baseNav = ownerNavigation
-    else if (isHeadOfSales) baseNav = getHeadOfSalesNavigation(!!teamMember?.can_manage_campaigns)
-    else baseNav = getTeamMemberNavigation(teamMember?.role)
+    if (!isTeamMember) baseNav = getOwnerNavigation(t)
+    else if (isAdmin) baseNav = getOwnerNavigation(t)
+    else if (isHeadOfSales) baseNav = getHeadOfSalesNavigation(t, !!teamMember?.can_manage_campaigns)
+    else baseNav = getTeamMemberNavigation(t, teamMember?.role)
 
     // Solo plan: hide team, factures, rapport
     if (isSolo && !isTeamMember) {
@@ -158,7 +161,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
       return ordered
     }
     return baseNav
-  }, [isTeamMember, isAdmin, isHeadOfSales, teamMember?.role, teamMember?.can_manage_campaigns, teamMember?.sidebar_order, businessProfile?.sidebar_order, isSolo, hasAcquisition])
+  }, [t, isTeamMember, isAdmin, isHeadOfSales, teamMember?.role, teamMember?.can_manage_campaigns, teamMember?.sidebar_order, businessProfile?.sidebar_order, isSolo, hasAcquisition])
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -216,9 +219,9 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
   }, [onCollapseChange])
 
   const fullName = isTeamMember
-    ? `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Membre'
-    : businessProfile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Utilisateur';
-  const userRole = isTeamMember ? (teamMember?.role || 'Membre') : (businessProfile?.role || 'Business Owner');
+    ? `${teamMember?.first_name || ''} ${teamMember?.last_name || ''}`.trim() || user?.user_metadata?.full_name || user?.user_metadata?.name || t.sidebar_member
+    : businessProfile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
+  const userRole = isTeamMember ? (teamMember?.role || t.sidebar_member) : (businessProfile?.role || 'Business Owner');
   const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   const avatarUrl = isTeamMember
     ? (teamMember?.avatar_url || user?.user_metadata?.avatar_url)
@@ -300,10 +303,10 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
             </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">
-                {businessSettings?.company_name || (isTeamMember ? 'Organisation' : 'Mon organisation')}
+                {businessSettings?.company_name || (isTeamMember ? t.sidebar_organization : t.sidebar_my_org)}
               </p>
               <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium truncate uppercase tracking-widest">
-                {isTeamMember ? (teamMember?.role || 'Membre') : 'Organisation'}
+                {isTeamMember ? (teamMember?.role || t.sidebar_member) : t.sidebar_organization}
               </p>
             </div>
           </button>
@@ -317,8 +320,8 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
           {hasAcknowledgedOnboarding ? (
             (collapsed
               ? navigation.filter((item) => {
-                  const cutoff = ['Rapport', 'KPI Setter', 'KPI Closer', 'Disponibilité', 'Équipe', 'Organisation']
-                  return !cutoff.includes(item.name)
+                  const hiddenInCollapsed = ['/business/report', '/business/setter-kpi', '/business/closer-kpi', '/business/disponibilite', '/business/team', '/business/organisation']
+                  return !hiddenInCollapsed.includes(item.href)
                 })
               : navigation
             ).map((item) => (
@@ -360,7 +363,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
             <div className="px-3 py-6 text-center space-y-3">
               {!collapsed && (
                 <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-                  <p className="text-xs font-medium text-amber-700">Veuillez compléter l'onboarding pour accéder à la plateforme.</p>
+                  <p className="text-xs font-medium text-amber-700">{t.sidebar_onboarding_required}</p>
                 </div>
               )}
             </div>
@@ -380,11 +383,11 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
                 'flex items-center text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-500/5 transition-all',
                 collapsed ? 'w-12 h-12 justify-center rounded-xl' : 'gap-3 py-3 pl-4 rounded-r-lg w-full'
               )}
-              title={collapsed ? 'Retour Personnel' : undefined}
+              title={collapsed ? t.sidebar_personal : undefined}
             >
               <ChevronUp className="h-5 w-5 shrink-0 -rotate-90" />
               {!collapsed && (
-                <span className="text-sm font-extrabold tracking-tight uppercase" style={{ fontFamily: 'Manrope, sans-serif' }}>Personnel</span>
+                <span className="text-sm font-extrabold tracking-tight uppercase" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.sidebar_personal}</span>
               )}
             </button>
           )}
@@ -396,11 +399,11 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
               'flex items-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 transition-all',
               collapsed ? 'w-12 h-12 justify-center rounded-xl' : 'gap-3 py-3 pl-4 rounded-r-lg w-full'
             )}
-            title={collapsed ? 'Settings' : undefined}
+            title={collapsed ? t.sidebar_settings : undefined}
           >
             <Settings className="h-5 w-5 shrink-0" />
             {!collapsed && (
-              <span className="text-sm font-extrabold tracking-tight uppercase" style={{ fontFamily: 'Manrope, sans-serif' }}>Settings</span>
+              <span className="text-sm font-extrabold tracking-tight uppercase" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.sidebar_settings}</span>
             )}
           </button>
 
@@ -415,7 +418,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
                     className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-600 dark:text-neutral-300 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700 hover:text-red-500"
                   >
                     <LogOut className="h-4 w-4" />
-                    Déconnexion
+                    {t.sidebar_logout}
                   </button>
                 </div>
               </>
@@ -470,7 +473,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
       {isLoggingOut && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#fbf9f8] dark:bg-[#141211] animate-in fade-in duration-300">
           <Loader2 className="h-10 w-10 text-neutral-900 dark:text-white animate-spin mb-4" />
-          <p className="text-neutral-900 dark:text-white font-bold text-lg animate-pulse" style={{ fontFamily: 'Manrope, sans-serif' }}>Déconnexion sécurisée...</p>
+          <p className="text-neutral-900 dark:text-white font-bold text-lg animate-pulse" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.sidebar_secure_logout}</p>
         </div>
       )}
     </>

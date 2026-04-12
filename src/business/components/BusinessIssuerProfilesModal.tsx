@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Plus, Pencil, Trash2, Building2, Check, Loader2, Star } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 
 export interface IssuerProfile {
   id: string
@@ -24,6 +25,7 @@ interface BusinessIssuerProfilesModalProps {
 
 export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerProfilesModalProps) {
   const { ownerUserId, user } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
 
   const [profiles, setProfiles] = useState<IssuerProfile[]>([])
@@ -85,7 +87,7 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
 
   const saveProfile = async (profileData: any) => {
     if (!effectiveUserId) {
-      alert("Session expirée, veuillez vous reconnecter.")
+      alert(t.issuer_session_expired)
       return
     }
     setIsLoading(true)
@@ -116,7 +118,7 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
       resetForm()
     } catch (err) {
       console.error('Erreur sauvegarde profil:', err)
-      alert("Erreur lors de la sauvegarde. Vérifiez votre connexion.")
+      alert(t.issuer_save_error)
     } finally {
       setIsLoading(false)
     }
@@ -180,7 +182,7 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formName.trim() || !formCompanyName.trim()) {
-      alert('Veuillez entrer au moins un nom de profil et un nom de société')
+      alert(t.issuer_validation_error)
       return
     }
 
@@ -209,8 +211,8 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#c4c7c7]/10 dark:border-neutral-800 p-6 flex-shrink-0">
           <div>
-            <h2 className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">Profils Émetteur</h2>
-            <p className="mt-1 text-sm text-[#444748] dark:text-neutral-400">Gérez vos informations d'entreprise</p>
+            <h2 className="text-2xl font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{t.issuer_title}</h2>
+            <p className="mt-1 text-sm text-[#444748] dark:text-neutral-400">{t.issuer_subtitle}</p>
           </div>
           <button onClick={onClose} className="rounded-lg p-2 text-[#444748] hover:bg-[#eae8e7] dark:hover:bg-neutral-800 dark:text-neutral-400">
             <X className="h-5 w-5" />
@@ -225,61 +227,61 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
               onClick={() => setIsAdding(true)}
               className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 px-4 py-4 text-sm font-semibold text-[#444748] dark:text-neutral-400 transition-all hover:bg-[#eae8e7] dark:hover:bg-neutral-800"
             >
-              <Plus className="h-4 w-4" /> Ajouter un profil émetteur
+              <Plus className="h-4 w-4" /> {t.issuer_add_profile}
             </button>
           )}
 
           {/* Form */}
           {isAdding && (
             <div className="mb-6 rounded-xl border border-[#c4c7c7]/10 dark:border-neutral-800 bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-6 animate-in fade-in slide-in-from-bottom-2">
-              <h3 className="mb-4 text-lg font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{editingId ? 'Modifier' : 'Nouveau'} profil</h3>
+              <h3 className="mb-4 text-lg font-extrabold font-['Manrope'] text-[#1b1c1b] dark:text-white">{editingId ? t.issuer_form_title_edit : t.issuer_form_title_new}</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">Nom du profil (ex: Ma Boîte)</label>
+                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_profile_name_label}</label>
                   <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" required />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">Raison sociale</label>
+                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_company_name_label}</label>
                   <input type="text" value={formCompanyName} onChange={(e) => setFormCompanyName(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" required />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">Adresse</label>
+                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_address_label}</label>
                   <input type="text" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">Ville</label>
+                    <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_city_label}</label>
                     <input type="text" value={formCity} onChange={(e) => setFormCity(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">Code Postal</label>
+                    <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_zip_label}</label>
                     <input type="text" value={formZip} onChange={(e) => setFormZip(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">Pays</label>
+                    <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_country_label}</label>
                     <input type="text" value={formCountry} onChange={(e) => setFormCountry(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                   </div>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">SIRET</label>
+                  <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_siret_label}</label>
                   <input type="text" value={formSiret} onChange={(e) => setFormSiret(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">Email</label>
+                    <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_email_label}</label>
                     <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">Téléphone</label>
+                    <label className="mb-2 block text-sm font-medium text-[#444748] dark:text-neutral-400">{t.issuer_phone_label}</label>
                     <input type="tel" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} className="w-full rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:ring-1 focus:ring-[#006c49] outline-none" />
                   </div>
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button type="button" onClick={resetForm} className="flex-1 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-2.5 text-sm font-semibold text-[#444748] dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700">
-                    Annuler
+                    {t.common_cancel}
                   </button>
                   <button type="submit" disabled={isLoading} className="flex-1 rounded-xl bg-[#1b1c1b] dark:bg-white px-4 py-2.5 text-sm font-semibold text-white dark:text-neutral-900 hover:bg-[#1b1c1b]/80 dark:hover:bg-neutral-200 flex justify-center items-center">
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingId ? 'Enregistrer' : 'Ajouter')}
+                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingId ? t.common_save : t.issuer_add_profile)}
                   </button>
                 </div>
               </form>
@@ -290,7 +292,7 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
           {profiles.length === 0 && !isAdding ? (
             <div className="bg-[#f5f3f2] dark:bg-neutral-800 rounded-xl p-12 text-center">
               <Building2 className="mx-auto mb-4 h-12 w-12 text-[#c4c7c7] dark:text-neutral-600" />
-              <p className="text-[#444748] dark:text-neutral-400">Aucun profil enregistré.</p>
+              <p className="text-[#444748] dark:text-neutral-400">{t.issuer_no_profiles}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -305,7 +307,7 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
                         <h4 className="font-semibold text-[#1b1c1b] dark:text-white">{profile.name}</h4>
                         {profile.isDefault && (
                           <span className="inline-flex items-center gap-1 bg-[#006c49]/10 text-[#006c49] px-2 py-0.5 rounded-full text-xs font-bold">
-                            <Check className="h-3 w-3" /> Défaut
+                            <Check className="h-3 w-3" /> {t.issuer_default}
                           </span>
                         )}
                       </div>
@@ -323,7 +325,7 @@ export function BusinessIssuerProfilesModal({ isOpen, onClose }: BusinessIssuerP
                       <button onClick={() => handleEdit(profile)} className="p-2 text-[#444748] dark:text-neutral-400 hover:text-[#006c49]">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => confirm('Supprimer ?') && deleteProfile(profile.id)} className="p-2 text-[#444748] dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400">
+                      <button onClick={() => confirm(t.issuer_delete_confirm) && deleteProfile(profile.id)} className="p-2 text-[#444748] dark:text-neutral-400 hover:text-red-500 dark:hover:text-red-400">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>

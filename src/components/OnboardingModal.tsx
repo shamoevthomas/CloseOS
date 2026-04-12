@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../lib/image-crop';
 import { countries } from '../lib/countries';
+import { useLanguage } from '../contexts/LanguageContext';
+import { onboardingTranslations } from '../i18n/translations';
 
 interface OnboardingModalProps {
   onComplete?: () => void;
@@ -12,6 +14,8 @@ interface OnboardingModalProps {
 
 export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
   const { user, updateProfile } = useAuth();
+  const { lang } = useLanguage();
+  const t = onboardingTranslations[lang];
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });

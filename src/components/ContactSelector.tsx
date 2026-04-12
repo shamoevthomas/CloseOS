@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Search, X } from 'lucide-react'
 import { useInternalContacts } from '../contexts/InternalContactsContext'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface ContactSelectorProps {
   selectedContactIds: number[]
@@ -10,6 +11,7 @@ interface ContactSelectorProps {
 
 export function ContactSelector({ selectedContactIds, onAdd, onRemove }: ContactSelectorProps) {
   const { contacts, searchContacts } = useInternalContacts()
+  const { lang } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
@@ -68,7 +70,7 @@ export function ContactSelector({ selectedContactIds, onAdd, onRemove }: Contact
               setIsDropdownOpen(true)
             }}
             onFocus={() => setIsDropdownOpen(true)}
-            placeholder="Rechercher ou ajouter un contact..."
+            placeholder={lang === 'fr' ? "Rechercher ou ajouter un contact..." : "Search or add a contact..."}
             className="w-full rounded-lg border border-white/[0.08] bg-white/5 py-2 pl-10 pr-4 text-sm text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none"
           />
         </div>
@@ -110,7 +112,7 @@ export function ContactSelector({ selectedContactIds, onAdd, onRemove }: Contact
                 ))
               ) : (
                 <div className="px-4 py-3 text-center text-sm text-white/40">
-                  Aucun contact trouvé
+                  {lang === 'fr' ? 'Aucun contact trouvé' : 'No contacts found'}
                 </div>
               )}
             </div>

@@ -7,6 +7,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 
 interface CampaignStat {
   id: string
@@ -28,7 +29,7 @@ const API_URL = '/api/business'
 const COLORS = ['#111111', '#006c49', '#9ca3af', '#d97706', '#2563eb', '#7c3aed', '#e11d48', '#0891b2']
 
 const formatCurrency = (value: number): string =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value)
+  new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value)
 
 const formatCompact = (value: number): string => {
   if (value >= 1000) return `${(value / 1000).toFixed(1).replace('.0', '')}k`
@@ -37,6 +38,7 @@ const formatCompact = (value: number): string => {
 
 export function BusinessAcquisition() {
   const { user, ownerUserId } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
   const [stats, setStats] = useState<CampaignStat[]>([])
   const [loading, setLoading] = useState(true)
@@ -130,10 +132,10 @@ export function BusinessAcquisition() {
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-3">
           <h2 className="text-5xl md:text-7xl font-extrabold tracking-tighter text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Acquisition.
+            {t.acquisition_title}.
           </h2>
           <p className="text-stone-500 dark:text-neutral-400 max-w-md font-medium leading-relaxed">
-            Pilotage stratégique des flux d'acquisition et conversion en temps réel pour le trimestre en cours.
+            {t.acquisition_subtitle}
           </p>
         </div>
       </section>
@@ -143,7 +145,7 @@ export function BusinessAcquisition() {
         {/* Campagnes Actives */}
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-7 flex flex-col justify-between gap-5">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Campagnes Actives</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.acquisition_active_campaigns}</span>
             <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center">
               <Megaphone className="h-4 w-4 text-emerald-600" />
             </div>
@@ -158,7 +160,7 @@ export function BusinessAcquisition() {
         {/* Vues Totales */}
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-7 flex flex-col justify-between gap-5">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Vues Totales</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.acquisition_total_views_label}</span>
             <div className="w-9 h-9 rounded-full bg-amber-500/10 flex items-center justify-center">
               <Eye className="h-4 w-4 text-amber-600" />
             </div>
@@ -173,7 +175,7 @@ export function BusinessAcquisition() {
         {/* Taux Inscription */}
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-7 flex flex-col justify-between gap-5">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">Taux Inscription</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.acquisition_registration_rate}</span>
             <div className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center">
               <UserCheck className="h-4 w-4 text-blue-600" />
             </div>
@@ -182,7 +184,7 @@ export function BusinessAcquisition() {
             <div className="text-4xl font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {globalConversion}%
             </div>
-            <div className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{totalLeads} leads / {totalViews} vues</div>
+            <div className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{totalLeads} {t.acquisition_leads_views.replace('{views}', String(totalViews))}</div>
           </div>
         </div>
 
@@ -190,7 +192,7 @@ export function BusinessAcquisition() {
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-7 flex flex-col justify-between gap-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-br from-purple-500/10 to-pink-500/10 blur-3xl -z-10" />
           <div className="flex justify-between items-start">
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">CA Généré</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.acquisition_ca_generated}</span>
             <div className="w-9 h-9 rounded-full bg-purple-500/10 flex items-center justify-center">
               <TrendingUp className="h-4 w-4 text-purple-600" />
             </div>
@@ -199,7 +201,7 @@ export function BusinessAcquisition() {
             <div className="text-4xl font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {formatCompact(totalCA)}€
             </div>
-            <div className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{totalWon} client{totalWon !== 1 ? 's' : ''} gagné{totalWon !== 1 ? 's' : ''}</div>
+            <div className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{totalWon} {totalWon !== 1 ? t.acquisition_clients_won_plural : t.acquisition_clients_won}</div>
           </div>
         </div>
       </section>
@@ -209,9 +211,9 @@ export function BusinessAcquisition() {
         <section className="space-y-6">
           <div>
             <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Performance par Campagne
+              {t.acquisition_performance_by_campaign}
             </h3>
-            <p className="text-stone-500 dark:text-neutral-400 mt-1.5 text-sm">Détails granulaires des flux actifs</p>
+            <p className="text-stone-500 dark:text-neutral-400 mt-1.5 text-sm">{t.acquisition_granular_details}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {stats.map(c => (
@@ -227,21 +229,21 @@ export function BusinessAcquisition() {
                   <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-wide rounded-full ${
                     c.is_active ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-stone-200/50 dark:bg-neutral-700/50 text-stone-500 dark:text-neutral-400'
                   }`}>
-                    {c.is_active ? 'Active' : 'Inactive'}
+                    {c.is_active ? t.acquisition_active : t.acquisition_inactive}
                   </span>
                 </div>
                 <h4 className="text-xl font-extrabold text-stone-900 dark:text-white mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.name}</h4>
                 <div className="grid grid-cols-2 gap-y-5">
                   <div>
-                    <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase font-bold tracking-[0.15em] mb-1">Vues</p>
+                    <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase font-bold tracking-[0.15em] mb-1">{t.acquisition_views_label}</p>
                     <p className="text-lg font-bold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.views.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase font-bold tracking-[0.15em] mb-1">Leads</p>
+                    <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase font-bold tracking-[0.15em] mb-1">{t.acquisition_leads_label}</p>
                     <p className="text-lg font-bold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{c.totalLeads.toLocaleString()}</p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase font-bold tracking-[0.15em] mb-2">Taux de Conversion</p>
+                    <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase font-bold tracking-[0.15em] mb-2">{t.acquisition_conversion_rate_label}</p>
                     <div className="flex items-center gap-3">
                       <div className="flex-grow h-2 bg-stone-100 dark:bg-neutral-800 rounded-full overflow-hidden">
                         <div
@@ -266,26 +268,26 @@ export function BusinessAcquisition() {
           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-8 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h4 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                Répartition par campagne
+                {t.acquisition_distribution_by_campaign}
               </h4>
               <div className="bg-stone-100 dark:bg-neutral-800 p-1 rounded-lg flex text-[10px] font-bold uppercase tracking-tight">
                 <button
                   onClick={() => setPieView('views')}
                   className={`px-3 py-1.5 rounded-md transition-all ${pieView === 'views' ? 'bg-white dark:bg-neutral-700 shadow-sm text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400'}`}
                 >
-                  Plus ouverte
+                  {t.acquisition_most_viewed}
                 </button>
                 <button
                   onClick={() => setPieView('conversion')}
                   className={`px-3 py-1.5 rounded-md transition-all ${pieView === 'conversion' ? 'bg-white dark:bg-neutral-700 shadow-sm text-stone-900 dark:text-white' : 'text-stone-500 dark:text-neutral-400'}`}
                 >
-                  Plus convertie
+                  {t.acquisition_most_converted}
                 </button>
               </div>
             </div>
             <div className="flex flex-col md:flex-row items-center gap-10">
               {pieData.length === 0 ? (
-                <div className="flex items-center justify-center h-48 w-full text-sm text-stone-400 dark:text-neutral-500">Aucune donnée</div>
+                <div className="flex items-center justify-center h-48 w-full text-sm text-stone-400 dark:text-neutral-500">{t.acquisition_no_data}</div>
               ) : (
                 <>
                   <div className="relative w-44 h-44 flex items-center justify-center shrink-0">
@@ -306,7 +308,7 @@ export function BusinessAcquisition() {
                           ))}
                         </Pie>
                         <Tooltip
-                          formatter={(value: number) => [pieView === 'views' ? `${value} vues` : `${value}%`, '']}
+                          formatter={(value: number) => [pieView === 'views' ? `${value} ${t.acquisition_views_tooltip}` : `${value}%`, '']}
                           contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', fontSize: 12, backgroundColor: 'var(--tooltip-bg, #fff)', color: 'var(--tooltip-text, #1c1917)' }}
                         />
                       </PieChart>
@@ -338,7 +340,7 @@ export function BusinessAcquisition() {
           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-8 space-y-6">
             <div className="flex justify-between items-center">
               <h4 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                Conversion Client (%)
+                {t.acquisition_client_conversion}
               </h4>
               {topPerformer && (
                 <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1 rounded-full">
@@ -348,7 +350,7 @@ export function BusinessAcquisition() {
             </div>
             <div className="space-y-5">
               {wonBarData.length === 0 ? (
-                <div className="flex items-center justify-center h-48 text-sm text-stone-400 dark:text-neutral-500">Aucune donnée</div>
+                <div className="flex items-center justify-center h-48 text-sm text-stone-400 dark:text-neutral-500">{t.acquisition_no_data}</div>
               ) : (
                 wonBarData.map((d, idx) => (
                   <div key={d.name} className="space-y-2">
@@ -376,14 +378,14 @@ export function BusinessAcquisition() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h4 className="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                Chiffre d'affaires par campagne
+                {t.acquisition_ca_by_campaign}
               </h4>
-              <p className="text-stone-500 dark:text-neutral-400 mt-1 text-sm">Projection brute vs réalisé par canal</p>
+              <p className="text-stone-500 dark:text-neutral-400 mt-1 text-sm">{t.acquisition_projection_vs_actual}</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-stone-900 dark:bg-neutral-300" />
-                <span className="text-xs font-bold text-stone-700 dark:text-neutral-200">Réalisé</span>
+                <span className="text-xs font-bold text-stone-700 dark:text-neutral-200">{t.acquisition_actual}</span>
               </div>
             </div>
           </div>
@@ -420,13 +422,13 @@ export function BusinessAcquisition() {
           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-8 space-y-8">
             <div>
               <h4 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                Taux d'implication (%)
+                {t.acquisition_implication_rate}
               </h4>
-              <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1.5 font-medium">Réduction des no-shows et no-answers</p>
+              <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1.5 font-medium">{t.acquisition_implication_desc}</p>
             </div>
             <div className="space-y-5">
               {implicationData.length === 0 ? (
-                <div className="flex items-center justify-center h-32 text-sm text-stone-400 dark:text-neutral-500">Aucune donnée</div>
+                <div className="flex items-center justify-center h-32 text-sm text-stone-400 dark:text-neutral-500">{t.acquisition_no_data}</div>
               ) : (
                 implicationData.map(d => (
                   <div key={d.name} className="flex items-center gap-5">
@@ -445,9 +447,9 @@ export function BusinessAcquisition() {
           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-8 space-y-8">
             <div>
               <h4 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                Taux d'éducation (%)
+                {t.acquisition_education_rate}
               </h4>
-              <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1.5 font-medium">Qualité des leads (lowest unqualified)</p>
+              <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1.5 font-medium">{t.acquisition_education_desc}</p>
             </div>
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <button
@@ -456,11 +458,11 @@ export function BusinessAcquisition() {
               >
                 <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform shadow-sm ${countAsUneducated ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
               </button>
-              <span className="text-xs text-stone-500 dark:text-neutral-400">Inclure "Pas de réponse" et "No Show"</span>
+              <span className="text-xs text-stone-500 dark:text-neutral-400">{t.acquisition_include_noanswer_noshow}</span>
             </label>
             <div className="space-y-5">
               {educationData.length === 0 ? (
-                <div className="flex items-center justify-center h-32 text-sm text-stone-400 dark:text-neutral-500">Aucune donnée</div>
+                <div className="flex items-center justify-center h-32 text-sm text-stone-400 dark:text-neutral-500">{t.acquisition_no_data}</div>
               ) : (
                 educationData.map(d => (
                   <div key={d.name} className="flex items-center gap-5">
@@ -481,8 +483,8 @@ export function BusinessAcquisition() {
       {stats.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-300 dark:border-neutral-600 bg-stone-50/50 dark:bg-neutral-800/50 py-16">
           <Megaphone className="h-12 w-12 text-stone-300 dark:text-neutral-600 mb-4" />
-          <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">Aucune donnée d'acquisition</h3>
-          <p className="text-sm text-stone-500 dark:text-neutral-400">Créez des campagnes et partagez vos pages de capture pour voir les statistiques ici.</p>
+          <h3 className="text-lg font-semibold text-stone-700 dark:text-neutral-200 mb-1">{t.acquisition_empty_title}</h3>
+          <p className="text-sm text-stone-500 dark:text-neutral-400">{t.acquisition_empty_desc}</p>
         </div>
       )}
     </div>

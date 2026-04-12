@@ -6,6 +6,7 @@ import {
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
@@ -42,11 +43,7 @@ interface Reminder {
 type ViewMode = 'day' | 'week' | 'month'
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
-const DAY_NAMES_SHORT = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'En attente', confirmed: 'Confirmé', cancelled: 'Annulé', done: 'Terminé',
-}
+// DAY_NAMES_SHORT & STATUS_LABELS moved inside component (need t)
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-orange-100 text-orange-700',
@@ -60,10 +57,7 @@ const isSameDay = (a: Date, b: Date) =>
 
 const isToday = (d: Date) => isSameDay(d, new Date())
 
-const formatDate = (d: Date) =>
-  d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-
-const formatShortDay = (d: Date) => d.toLocaleDateString('fr-FR', { weekday: 'short' })
+// formatDate & formatShortDay moved inside component (need lang)
 
 const getWeekDates = (date: Date): Date[] => {
   const d = new Date(date)
@@ -213,6 +207,19 @@ interface TeamMemberOption {
 
 export function CloserAgenda() {
   const { user, teamMember, ownerUserId, isTeamMember, userTimezone } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
+
+  const DAY_NAMES_SHORT = [t.closer_agenda_day_mon, t.closer_agenda_day_tue, t.closer_agenda_day_wed, t.closer_agenda_day_thu, t.closer_agenda_day_fri, t.closer_agenda_day_sat, t.closer_agenda_day_sun]
+
+  const STATUS_LABELS: Record<string, string> = {
+    pending: t.closer_agenda_status_pending, confirmed: t.closer_agenda_status_confirmed, cancelled: t.closer_agenda_status_cancelled, done: t.closer_agenda_status_done,
+  }
+
+  const formatDate = (d: Date) =>
+    d.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  const formatShortDay = (d: Date) => d.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short' })
+
   const { googleEvents, isConnected, login, isLoading: gLoading, deleteEvent: deleteGoogleEvent, createEvent: createGoogleCalendarEvent } = useBusinessGoogleCalendar()
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
@@ -469,7 +476,7 @@ export function CloserAgenda() {
       if (apptDate === key && a.status !== 'cancelled') {
         events.push({
           id: a.id,
-          title: a.prospect?.contact || (a.notes?.startsWith('Booking: ') ? a.notes.slice(9).split(' — ')[0] : null) || a.title || 'Rendez-vous',
+          title: a.prospect?.contact || (a.notes?.startsWith('Booking: ') ? a.notes.slice(9).split(' — ')[0] : null) || a.title || t.closer_agenda_appointment_default,
           date: apptDate,
           time: apptTime,
           type: 'appointment',
@@ -550,10 +557,10 @@ export function CloserAgenda() {
     if (view === 'week') {
       const w = getWeekDates(currentDate)
       if (w[0].getMonth() === w[6].getMonth())
-        return `${w[0].getDate()} - ${w[6].getDate()} ${w[0].toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`
-      return `${w[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} - ${w[6].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
+        return `${w[0].getDate()} - ${w[6].getDate()} ${w[0].toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { month: 'long', year: 'numeric' })}`
+      return `${w[0].toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} - ${w[6].toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
     }
-    return currentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    return currentDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { month: 'long', year: 'numeric' })
   }
 
   const currentTimePos = useMemo(() => {
@@ -650,7 +657,7 @@ export function CloserAgenda() {
           })())
 
           const gcalResult = await createGoogleCalendarEvent({
-            title: createTitle || 'Rendez-vous',
+            title: createTitle || t.closer_agenda_appointment_default,
             date: createDate,
             startTime: createAllDay ? '00:00' : createStartTime,
             endTime,
@@ -667,7 +674,7 @@ export function CloserAgenda() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ user_id: effectiveUserId, id: appt.id, google_meet_link: gcalResult.hangoutLink }),
             })
-            toast.success('Événement créé avec Google Meet')
+            toast.success(t.closer_agenda_event_created_meet)
           }
         }
 
@@ -697,38 +704,38 @@ export function CloserAgenda() {
   const handleDeleteEvent = async (event: CalendarEvent) => {
     if (!effectiveUserId) return
     if (event.type === 'appointment') {
-      if (!confirm('Supprimer cet événement ?')) return
+      if (!confirm(t.closer_agenda_confirm_delete_event)) return
       try {
         const res = await fetch(`${API_URL}?action=appointments-delete&user_id=${effectiveUserId}&id=${event.id}`, { method: 'DELETE' })
         if (res.ok) {
-          toast.success('Événement supprimé')
+          toast.success(t.closer_agenda_event_deleted)
           setSelectedEvent(null)
           fetchAppointments()
         } else {
-          toast.error('Erreur lors de la suppression')
+          toast.error(t.closer_agenda_delete_error)
         }
       } catch {
-        toast.error('Erreur lors de la suppression')
+        toast.error(t.closer_agenda_delete_error)
       }
     } else if (event.type === 'reminder') {
-      if (!confirm('Supprimer ce rappel ?')) return
+      if (!confirm(t.closer_agenda_confirm_delete_reminder)) return
       const reminderId = event.id.replace('rem-', '')
       const { error } = await supabase.from('reminders').delete().eq('id', Number(reminderId))
       if (error) {
-        toast.error('Erreur lors de la suppression')
+        toast.error(t.closer_agenda_delete_error)
       } else {
-        toast.success('Rappel supprimé')
+        toast.success(t.closer_agenda_reminder_deleted)
         setSelectedEvent(null)
         fetchReminders()
       }
     } else if (event.type === 'google') {
-      if (!confirm('Supprimer cet événement de Google Calendar ?')) return
+      if (!confirm(t.closer_agenda_confirm_delete_google)) return
       const success = await deleteGoogleEvent(event.id)
       if (success) {
-        toast.success('Événement supprimé de Google Calendar')
+        toast.success(t.closer_agenda_google_deleted)
         setSelectedEvent(null)
       } else {
-        toast.error('Erreur lors de la suppression')
+        toast.error(t.closer_agenda_delete_error)
       }
     }
   }
@@ -752,7 +759,7 @@ export function CloserAgenda() {
       <div className="flex flex-col flex-1 rounded-[2rem] border border-stone-200/60 dark:border-white/10 bg-white dark:bg-neutral-900 overflow-hidden shadow-[0_40px_80px_rgba(27,28,27,0.03)]" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         {allDay.length > 0 && (
           <div className="border-b border-stone-100 dark:border-white/10 bg-stone-50/50 dark:bg-white/5 backdrop-blur-md p-3">
-            <div className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1.5">Toute la journée</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-1.5">{t.closer_agenda_all_day}</div>
             {allDay.map(e => (
               <div key={e.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-400 mb-1">
                 <Calendar className="h-3.5 w-3.5 text-blue-500" />
@@ -849,7 +856,7 @@ export function CloserAgenda() {
           {weekDates.some(d => getAllDayGoogleEvents(d).length > 0) && (
             <div className="sticky top-[80px] z-10 grid grid-cols-[80px_1fr] border-b border-stone-100 dark:border-white/10 bg-stone-50/80 dark:bg-white/5 backdrop-blur-md">
               <div className="border-r border-stone-100 dark:border-white/10 p-1.5 flex items-center justify-end pr-2">
-                <span className="text-[10px] font-bold text-neutral-400">Journée</span>
+                <span className="text-[10px] font-bold text-neutral-400">{t.closer_agenda_day_label}</span>
               </div>
               <div className="grid grid-cols-7">
                 {weekDates.map((d, i) => {
@@ -945,7 +952,7 @@ export function CloserAgenda() {
                             )}
                             {ev.type === 'reminder' && height >= 60 && (
                               <p className="text-[11px] opacity-70 mt-0.5 flex items-center gap-1 truncate">
-                                <Bell className="h-3 w-3 flex-shrink-0" /> Rappel
+                                <Bell className="h-3 w-3 flex-shrink-0" /> {t.closer_agenda_reminder_label}
                               </p>
                             )}
                           </div>
@@ -1038,7 +1045,7 @@ export function CloserAgenda() {
               <ChevronLeft className="h-4 w-4 text-neutral-600" />
             </button>
             <button onClick={goToToday} className="px-4 py-2 text-sm font-bold uppercase tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              Aujourd'hui
+              {t.closer_agenda_today}
             </button>
             <button onClick={goToNext} className="p-2 hover:bg-stone-50 dark:hover:bg-white/5 rounded-full transition-colors">
               <ChevronRight className="h-4 w-4 text-neutral-600" />
@@ -1054,7 +1061,7 @@ export function CloserAgenda() {
               <button
                 onClick={() => dateInputRef.current?.showPicker()}
                 className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
-                title="Choisir une date"
+                title={t.closer_agenda_choose_date}
               >
                 <Calendar className="h-5 w-5" />
               </button>
@@ -1077,8 +1084,8 @@ export function CloserAgenda() {
               onChange={e => setSelectedMemberId(e.target.value)}
               className="rounded-full border border-stone-200/60 dark:border-white/10 bg-white dark:bg-neutral-800 px-4 py-2.5 text-xs font-bold text-neutral-700 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-neutral-500"
             >
-              <option value="perso">Mon agenda</option>
-              <option value="all">Tous les membres</option>
+              <option value="perso">{t.closer_agenda_my_agenda}</option>
+              <option value="all">{t.closer_agenda_all_members}</option>
               {teamMembers.map(m => (
                 <option key={m.id} value={m.id}>
                   {m.first_name} {m.last_name} ({m.role})
@@ -1100,7 +1107,7 @@ export function CloserAgenda() {
                     : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'
                 )}
               >
-                {v === 'day' ? 'Jour' : v === 'week' ? 'Semaine' : 'Mois'}
+                {v === 'day' ? t.closer_agenda_view_day : v === 'week' ? t.closer_agenda_view_week : t.closer_agenda_view_month}
               </button>
             ))}
           </div>
@@ -1111,7 +1118,7 @@ export function CloserAgenda() {
             className="flex items-center gap-2 rounded-full bg-neutral-900 px-6 py-3 text-sm font-bold text-white shadow-lg hover:scale-105 active:scale-95 transition-all"
           >
             <Plus className="h-4 w-4" />
-            Nouveau
+            {t.closer_agenda_new}
           </button>
 
           {/* Google Calendar sync */}
@@ -1126,7 +1133,7 @@ export function CloserAgenda() {
             )}
           >
             <RefreshCw className={cn('h-4 w-4', gLoading && 'animate-spin')} />
-            {gLoading ? 'Chargement...' : isConnected ? 'Google connecté' : 'Synchroniser Google'}
+            {gLoading ? t.closer_agenda_loading : isConnected ? t.closer_agenda_google_connected : t.closer_agenda_google_sync}
           </button>
         </div>
       </div>
@@ -1144,7 +1151,7 @@ export function CloserAgenda() {
           <div className="mt-2">
             <h3 className="mb-3 text-sm font-extrabold text-neutral-900 dark:text-white flex items-center gap-2 tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
               <span className="w-2 h-2 rounded-full bg-stone-900 dark:bg-white animate-pulse" />
-              Aujourd'hui
+              {t.closer_agenda_today}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {todayEvents.map(ev => (
@@ -1218,7 +1225,7 @@ export function CloserAgenda() {
                 <Clock className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-bold text-neutral-900 dark:text-white capitalize">
-                    {new Date(selectedEvent.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {new Date(selectedEvent.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                   </p>
                   {selectedEvent.time && (
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -1261,7 +1268,7 @@ export function CloserAgenda() {
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-bold text-neutral-900 dark:text-white">{bName}</p>
-                              <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">Booking</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">{t.closer_agenda_booking_badge}</span>
                             </div>
                             {(bEmail || bPhone) && (
                               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -1288,7 +1295,7 @@ export function CloserAgenda() {
                       <div className="flex items-start gap-4 min-w-0">
                         <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
                         <div className="flex-1 min-w-0 bg-neutral-100 dark:bg-white/5 rounded-2xl p-4">
-                          <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
+                          <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">{t.closer_agenda_notes_section}</p>
                           <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed break-words overflow-hidden">{a.notes}</p>
                         </div>
                       </div>
@@ -1310,7 +1317,7 @@ export function CloserAgenda() {
                     <div className="flex items-start gap-4 min-w-0">
                       <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
                       <div className="flex-1 min-w-0 bg-neutral-100 rounded-2xl p-4">
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">{t.closer_agenda_notes_section}</p>
                         <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed break-words overflow-hidden">{selectedEvent.description}</p>
                       </div>
                     </div>
@@ -1327,7 +1334,7 @@ export function CloserAgenda() {
                       <div className="flex items-start gap-4 min-w-0">
                         <FileText className="h-5 w-5 text-neutral-400 shrink-0 mt-1" />
                         <div className="flex-1 min-w-0 bg-neutral-100 dark:bg-white/5 rounded-2xl p-4">
-                          <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">Notes</p>
+                          <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-2">{t.closer_agenda_notes_section}</p>
                           <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed break-words overflow-hidden">{r.description}</p>
                         </div>
                       </div>
@@ -1338,7 +1345,7 @@ export function CloserAgenda() {
                         'text-xs font-bold px-3 py-1.5 rounded-full',
                         r.is_done ? 'bg-green-100 text-green-700' : new Date(r.reminder_date) < new Date() ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
                       )}>
-                        {r.is_done ? 'Terminé' : new Date(r.reminder_date) < new Date() ? 'En retard' : 'À venir'}
+                        {r.is_done ? t.closer_agenda_reminder_done : new Date(r.reminder_date) < new Date() ? t.closer_agenda_reminder_overdue : t.closer_agenda_reminder_upcoming}
                       </span>
                     </div>
                   </>
@@ -1358,24 +1365,24 @@ export function CloserAgenda() {
                         window.open(meetLink, '_blank')
                         const prospect = selectedEvent.data?.prospect
                         if (prospect?.id) {
-                          window.location.href = `/business/cockpit?name=${encodeURIComponent(prospect.contact || 'Appel')}&prospectId=${prospect.id}`
+                          window.location.href = `/business/cockpit?name=${encodeURIComponent(prospect.contact || t.closer_agenda_call_fallback)}&prospectId=${prospect.id}`
                         } else {
-                          const title = selectedEvent.title || 'Appel'
+                          const title = selectedEvent.title || t.closer_agenda_call_fallback
                           window.location.href = `/business/cockpit?name=${encodeURIComponent(title)}`
                         }
                       }}
                       className="flex items-center justify-center gap-3 rounded-full bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-neutral-800 transition-colors shadow-lg w-full"
                     >
                       <Video className="h-4 w-4" />
-                      Rejoindre Google Meet
+                      {t.closer_agenda_join_meet}
                       <ExternalLink className="h-3.5 w-3.5 ml-auto" />
                     </button>
                     <div className="flex items-center gap-2 bg-neutral-100 dark:bg-white/5 rounded-xl px-4 py-2.5">
                       <p className="flex-1 min-w-0 text-xs text-neutral-500 dark:text-neutral-400 truncate font-mono select-all">{meetLink}</p>
                       <button
-                        onClick={() => { navigator.clipboard.writeText(meetLink); toast.success('Lien copié') }}
+                        onClick={() => { navigator.clipboard.writeText(meetLink); toast.success(t.closer_agenda_link_copied) }}
                         className="shrink-0 p-1.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors text-neutral-500 dark:text-neutral-400"
-                        title="Copier le lien"
+                        title={t.closer_agenda_copy_link}
                       >
                         <Copy className="h-3.5 w-3.5" />
                       </button>
@@ -1390,7 +1397,7 @@ export function CloserAgenda() {
                   className="flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-auto"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Supprimer
+                  {t.closer_agenda_delete}
                 </button>
               )}
               </div>
@@ -1411,7 +1418,7 @@ export function CloserAgenda() {
                     .eq('id', id)
                   if (!error) {
                     setProspectForView(prev => prev ? { ...prev, ...updates } : null)
-                    toast.success('Prospect mis à jour')
+                    toast.success(t.closer_agenda_prospect_updated)
                   }
                 }}
                 onDelete={async (id) => {
@@ -1421,7 +1428,7 @@ export function CloserAgenda() {
                     .eq('id', id)
                   if (!error) {
                     setProspectForView(null)
-                    toast.success('Prospect supprimé')
+                    toast.success(t.closer_agenda_prospect_deleted)
                   }
                 }}
               />
@@ -1451,7 +1458,7 @@ export function CloserAgenda() {
                   <Calendar className="h-5 w-5 text-[#1b1c1b] dark:text-white" />
                 </div>
                 <h3 className="text-lg font-extrabold text-[#1b1c1b] dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  Nouvel événement
+                  {t.closer_agenda_new_event}
                 </h3>
               </div>
               <button onClick={() => setIsCreateModalOpen(false)} className="p-2 rounded-full text-[#444748]/40 dark:text-neutral-500 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors">
@@ -1463,12 +1470,12 @@ export function CloserAgenda() {
             <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-5">
               {/* Title */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-2">Titre</label>
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-2">{t.closer_agenda_label_title}</label>
                 <input
                   type="text"
                   value={createTitle}
                   onChange={e => setCreateTitle(e.target.value)}
-                  placeholder="Ex: Appel découverte, Point hebdo..."
+                  placeholder={t.closer_agenda_title_placeholder}
                   className="w-full border-b border-[#c4c7c7]/30 dark:border-neutral-700 bg-transparent px-0 py-2.5 text-sm text-[#1b1c1b] dark:text-white placeholder-[#c4c7c7] dark:placeholder-neutral-600 focus:border-[#006c49] focus:outline-none transition-colors"
                   autoFocus
                 />
@@ -1478,7 +1485,7 @@ export function CloserAgenda() {
               <div className="rounded-2xl bg-[#f5f3f2]/50 dark:bg-white/5 p-5 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Clock className="h-3.5 w-3.5 text-[#747878]" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400">Date & Horaire</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400">{t.closer_agenda_date_time}</span>
                 </div>
                 <input
                   type="date"
@@ -1488,7 +1495,7 @@ export function CloserAgenda() {
                 />
                 {/* All day switch */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#1b1c1b] dark:text-white">Toute la journée</span>
+                  <span className="text-xs font-bold text-[#1b1c1b] dark:text-white">{t.closer_agenda_all_day_toggle}</span>
                   <button
                     type="button"
                     onClick={() => setCreateAllDay(!createAllDay)}
@@ -1509,7 +1516,7 @@ export function CloserAgenda() {
                       onChange={e => setCreateStartTime(e.target.value)}
                       className="flex-1 rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none transition-colors"
                     />
-                    <span className="text-xs font-bold text-[#747878] dark:text-neutral-400">à</span>
+                    <span className="text-xs font-bold text-[#747878] dark:text-neutral-400">{t.closer_agenda_time_to}</span>
                     <input
                       type="time"
                       value={createEndTime}
@@ -1520,7 +1527,7 @@ export function CloserAgenda() {
                 )}
                 {createDate && (createAllDay || createStartTime) && (
                   <p className="text-[10px] text-[#747878] dark:text-neutral-400">
-                    {new Date(createDate + 'T00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}{createAllDay ? ', toute la journée' : `, de ${createStartTime} à ${createEndTime || '...'}`}
+                    {new Date(createDate + 'T00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}{createAllDay ? t.closer_agenda_all_day_suffix : t.closer_agenda_from_to.replace('{start}', createStartTime).replace('{end}', createEndTime || '...')}
                   </p>
                 )}
               </div>
@@ -1528,14 +1535,14 @@ export function CloserAgenda() {
               {/* Assign to (Setter, Owner, HOS) */}
               {canAssign && teamMembers.length > 0 && (
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-2">Assigner à</label>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-2">{t.closer_agenda_assign_to}</label>
                   <div className="relative">
                     <select
                       value={createAssignedTo}
                       onChange={e => setCreateAssignedTo(e.target.value)}
                       className="w-full appearance-none rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-0 px-4 py-2.5 text-sm font-medium text-[#1b1c1b] dark:text-white focus:ring-2 focus:ring-[#1b1c1b] dark:focus:ring-neutral-500 focus:outline-none transition-colors"
                     >
-                      <option value="">Non assigné</option>
+                      <option value="">{t.closer_agenda_not_assigned}</option>
                       {teamMembers.map(m => (
                         <option key={m.id} value={m.id}>
                           {m.first_name} {m.last_name} ({m.role})
@@ -1544,14 +1551,14 @@ export function CloserAgenda() {
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
                   </div>
-                  <p className="text-[10px] text-[#747878] dark:text-neutral-500 mt-1.5">Choisissez un membre de l'équipe pour ce rendez-vous</p>
+                  <p className="text-[10px] text-[#747878] dark:text-neutral-500 mt-1.5">{t.closer_agenda_assign_desc}</p>
                 </div>
               )}
 
               {/* Link prospect */}
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400">Assigné à un prospect</label>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400">{t.closer_agenda_link_prospect}</label>
                   <button
                     type="button"
                     onClick={() => { setCreateLinkProspect(!createLinkProspect); if (createLinkProspect) { setCreateProspectId(null); setProspectSearchQuery('') } }}
@@ -1574,7 +1581,7 @@ export function CloserAgenda() {
                         type="text"
                         value={prospectSearchQuery}
                         onChange={e => { setProspectSearchQuery(e.target.value); setCreateProspectId(null) }}
-                        placeholder="Rechercher un prospect..."
+                        placeholder={t.closer_agenda_search_prospect}
                         className="w-full appearance-none rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-0 pl-10 pr-4 py-2.5 text-sm font-medium text-[#1b1c1b] dark:text-white placeholder-[#c4c7c7] dark:placeholder-neutral-600 focus:ring-2 focus:ring-[#006c49]/30 focus:outline-none transition-colors"
                       />
                     </div>
@@ -1598,7 +1605,7 @@ export function CloserAgenda() {
                                 {(p.contact || '?')[0]?.toUpperCase()}
                               </div>
                               <div className="min-w-0">
-                                <p className="font-bold text-[#1b1c1b] dark:text-white truncate">{p.contact || 'Sans nom'}</p>
+                                <p className="font-bold text-[#1b1c1b] dark:text-white truncate">{p.contact || t.closer_agenda_no_name}</p>
                                 {p.company && <p className="text-[11px] text-[#747878] dark:text-neutral-500 truncate">{p.company}</p>}
                               </div>
                             </button>
@@ -1609,7 +1616,7 @@ export function CloserAgenda() {
                           const q = prospectSearchQuery.toLowerCase()
                           return (p.contact || '').toLowerCase().includes(q) || (p.company || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q)
                         }).length === 0 && (
-                          <p className="text-xs text-[#747878] dark:text-neutral-500 text-center py-4">Aucun prospect trouvé</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500 text-center py-4">{t.closer_agenda_no_prospect_found}</p>
                         )}
                       </div>
                     )}
@@ -1630,7 +1637,7 @@ export function CloserAgenda() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Video className="h-4 w-4 text-[#747878] dark:text-neutral-400" strokeWidth={1.5} />
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400">Créer un Google Meet</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400">{t.closer_agenda_create_meet}</label>
                 </div>
                 <button
                   type="button"
@@ -1649,12 +1656,12 @@ export function CloserAgenda() {
 
               {/* Notes */}
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-2">Notes (optionnel)</label>
+                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-400 mb-2">{t.closer_agenda_notes_optional}</label>
                 <textarea
                   value={createNotes}
                   onChange={e => setCreateNotes(e.target.value)}
                   rows={3}
-                  placeholder="Ajouter des notes..."
+                  placeholder={t.closer_agenda_notes_placeholder}
                   className="w-full border-b border-[#c4c7c7]/30 dark:border-neutral-700 bg-transparent px-0 py-2.5 text-sm text-[#1b1c1b] dark:text-white placeholder-[#c4c7c7] dark:placeholder-neutral-600 focus:border-[#006c49] focus:outline-none resize-none transition-colors"
                 />
               </div>
@@ -1666,7 +1673,7 @@ export function CloserAgenda() {
                 onClick={() => setIsCreateModalOpen(false)}
                 className="rounded-full border border-[#c4c7c7]/30 dark:border-neutral-600 px-5 py-2.5 text-sm font-bold text-[#444748] dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-700 transition-colors"
               >
-                Annuler
+                {t.closer_agenda_cancel}
               </button>
               <button
                 onClick={handleCreateEvent}
@@ -1674,7 +1681,7 @@ export function CloserAgenda() {
                 className="flex items-center gap-2 rounded-full bg-[#1b1c1b] px-6 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
               >
                 {createSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-                Créer
+                {t.closer_agenda_create}
               </button>
             </div>
           </div>

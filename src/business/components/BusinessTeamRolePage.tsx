@@ -26,6 +26,7 @@ import {
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import toast from 'react-hot-toast'
 
@@ -104,15 +105,13 @@ const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> 
 const getRoleColor = (role: string) =>
   ROLE_COLORS[role] || { bg: 'bg-stone-50/80 dark:bg-neutral-700/50', text: 'text-stone-700 dark:text-neutral-200', border: 'border-stone-200 dark:border-neutral-700' }
 
-const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
-
-const PIPELINE_STAGES = [
-  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgLight: 'bg-blue-50/60' },
-  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700 dark:text-purple-400', bgLight: 'bg-purple-50/60' },
-  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', textColor: 'text-orange-700 dark:text-orange-400', bgLight: 'bg-orange-50/60' },
-  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-[#006c49] dark:text-[#6ffbbe]', bgLight: 'bg-[#6cf8bb]/15' },
-  { id: 'noshow', name: 'No Show', color: 'bg-stone-500', textColor: 'text-stone-700 dark:text-neutral-300', bgLight: 'bg-stone-50/60' },
-  { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700 dark:text-red-400', bgLight: 'bg-red-50/60' },
+const PIPELINE_STAGES_STATIC = [
+  { id: 'prospect', nameKey: 'team_role_stage_prospect' as const, color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgLight: 'bg-blue-50/60' },
+  { id: 'qualified', nameKey: 'team_role_stage_qualified' as const, color: 'bg-purple-500', textColor: 'text-purple-700 dark:text-purple-400', bgLight: 'bg-purple-50/60' },
+  { id: 'followup', nameKey: 'team_role_stage_followup' as const, color: 'bg-orange-500', textColor: 'text-orange-700 dark:text-orange-400', bgLight: 'bg-orange-50/60' },
+  { id: 'won', nameKey: 'team_role_stage_won' as const, color: 'bg-emerald-500', textColor: 'text-[#006c49] dark:text-[#6ffbbe]', bgLight: 'bg-[#6cf8bb]/15' },
+  { id: 'noshow', nameKey: 'team_role_stage_noshow' as const, color: 'bg-stone-500', textColor: 'text-stone-700 dark:text-neutral-300', bgLight: 'bg-stone-50/60' },
+  { id: 'lost', nameKey: 'team_role_stage_lost' as const, color: 'bg-red-500', textColor: 'text-red-700 dark:text-red-400', bgLight: 'bg-red-50/60' },
 ]
 
 function calculateAge(dob: string): number {
@@ -125,7 +124,7 @@ function calculateAge(dob: string): number {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('fr-FR', {
+  return new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -137,7 +136,7 @@ function formatAnciennete(joinedAt: string): string {
   const now = new Date()
   const diffMs = now.getTime() - joined.getTime()
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  if (diffDays < 1) return "Aujourd'hui"
+  if (diffDays < 1) return t.common_today
   if (diffDays < 30) return `${diffDays} jour${diffDays > 1 ? 's' : ''}`
   if (diffDays < 365) return `${Math.floor(diffDays / 30)} mois`
   const years = (diffDays / 365).toFixed(1)
@@ -145,7 +144,7 @@ function formatAnciennete(joinedAt: string): string {
 }
 
 const formatCurrency = (v: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+  new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 
 interface BusinessTeamRolePageProps {
   roleFilter: string[]
@@ -155,6 +154,7 @@ interface BusinessTeamRolePageProps {
 
 export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon }: BusinessTeamRolePageProps) {
   const { user, ownerUserId } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
   const { prospects } = useBusinessProspects()
   const [members, setMembers] = useState<TeamMember[]>([])
@@ -252,7 +252,7 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
           )}
         >
           <PageIcon className="h-4 w-4" />
-          Vue globale
+          {t.team_role_global_view}
         </button>
         {members.map(member => (
           <button
@@ -306,8 +306,8 @@ export function BusinessTeamRolePage({ roleFilter, pageLabel, pageIcon: PageIcon
               .from('business_team_members')
               .update({ pay_day: day })
               .eq('id', activeMember.id)
-            if (error) { toast.error('Erreur'); return }
-            toast.success('Date de paiement mise à jour')
+            if (error) { toast.error(t.common_error); return }
+            toast.success(t.team_pay_date_updated)
             setMembers(prev => prev.map(m => m.id === activeMember.id ? { ...m, pay_day: day } : m))
           }}
         />
@@ -331,15 +331,19 @@ function GlobalView({
   prospects: any[]
   onSelectMember: (id: string) => void
 }) {
+  const { t, lang } = useBusinessLang()
+  const formatCurrencyLocal = (v: number) =>
+    new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+
   if (members.length === 0) {
     return (
       <div className={cn('rounded-2xl p-12 text-center', GLASS_PANEL)}>
         <div className="mx-auto w-16 h-16 rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
           <User className="h-8 w-8 text-stone-400 dark:text-neutral-500" />
         </div>
-        <h3 className="text-lg font-['Manrope'] font-bold text-stone-900 dark:text-white mb-2">Aucun membre trouvé</h3>
+        <h3 className="text-lg font-['Manrope'] font-bold text-stone-900 dark:text-white mb-2">{t.team_role_no_member_found}</h3>
         <p className="text-sm text-stone-500 dark:text-neutral-400">
-          Aucun membre avec ce rôle dans votre équipe. Invitez des membres depuis la page Équipe.
+          {t.team_role_no_member_desc}
         </p>
       </div>
     )
@@ -389,29 +393,29 @@ function GlobalView({
               <div className="mt-3 space-y-1.5 text-xs text-stone-500 dark:text-neutral-400">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="h-3 w-3" />
-                  <span>Dans l'équipe depuis {formatAnciennete(member.joined_at)}</span>
+                  <span>{t.team_role_in_team_since} {formatAnciennete(member.joined_at)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-3 w-3" />
-                  <span>{memberProspects.length} prospect{memberProspects.length !== 1 ? 's' : ''} assigné{memberProspects.length !== 1 ? 's' : ''}</span>
+                  <span>{memberProspects.length} {memberProspects.length !== 1 ? t.team_role_prospects_assigned_plural : t.team_role_prospects_assigned}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-3 w-3" />
-                  <span>{memberWon.length} vente{memberWon.length !== 1 ? 's' : ''} · {formatCurrency(memberCA)}</span>
+                  <span>{memberWon.length} {memberWon.length !== 1 ? t.team_role_sales_count_plural : t.team_role_sales_count} · {formatCurrencyLocal(memberCA)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-3 w-3" />
-                  <span>{memberSlots.length} créneau{memberSlots.length !== 1 ? 'x' : ''}</span>
+                  <span>{memberSlots.length} {memberSlots.length !== 1 ? t.team_role_slots_count_plural : t.team_role_slots_count}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Circle className={cn('h-2.5 w-2.5 fill-current', isReallyOnline(member) ? 'text-emerald-500' : 'text-stone-300')} />
-                  <span>{isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}</span>
+                  <span>{isReallyOnline(member) ? t.common_online : t.common_offline}</span>
                 </div>
               </div>
 
               {memberAbsences.length > 0 && (
                 <div className="mt-3 pt-2 border-t border-stone-100 dark:border-neutral-800 text-xs text-stone-600 dark:text-neutral-300 font-medium">
-                  {memberAbsences.length} absence{memberAbsences.length > 1 ? 's' : ''} enregistrée{memberAbsences.length > 1 ? 's' : ''}
+                  {memberAbsences.length} {memberAbsences.length > 1 ? t.team_role_absences_recorded_plural : t.team_role_absences_recorded}
                 </div>
               )}
             </button>
@@ -422,7 +426,7 @@ function GlobalView({
       {/* Global KPI summary */}
       <div className={cn('rounded-xl p-5', GLASS_PANEL)}>
         <h3 className={SECTION_TITLE}>
-          <BarChart3 className="h-4 w-4 text-stone-900 dark:text-white" /> Résumé global
+          <BarChart3 className="h-4 w-4 text-stone-900 dark:text-white" /> {t.team_role_global_summary}
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
           {(() => {
@@ -438,19 +442,19 @@ function GlobalView({
               <>
                 <div className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   <p className="text-lg font-bold text-stone-900 dark:text-white">{allAssigned.length}</p>
-                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">Prospects assignés</p>
+                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{t.team_role_assigned_prospects}</p>
                 </div>
                 <div className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   <p className="text-lg font-bold text-emerald-600">{allWon.length}</p>
-                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">Ventes</p>
+                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{t.team_role_sales_label}</p>
                 </div>
                 <div className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
-                  <p className="text-lg font-bold text-emerald-600">{formatCurrency(totalCA)}</p>
-                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">CA généré</p>
+                  <p className="text-lg font-bold text-emerald-600">{formatCurrencyLocal(totalCA)}</p>
+                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{t.team_role_ca_generated}</p>
                 </div>
                 <div className="rounded-xl bg-white dark:bg-neutral-800 p-3 text-center shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                   <p className="text-lg font-bold text-purple-600">{convRate.toFixed(1)}%</p>
-                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">Taux de conversion</p>
+                  <p className="text-xs text-stone-500 dark:text-neutral-400 mt-1">{t.team_role_conversion_rate}</p>
                 </div>
               </>
             )
@@ -480,6 +484,13 @@ function IndividualView({
   connectionLogs: ConnectionLog[]
   onPayDayChange: (day: number) => Promise<void>
 }) {
+  const { t, lang } = useBusinessLang()
+  const DAYS = [t.team_role_day_mon, t.team_role_day_tue, t.team_role_day_wed, t.team_role_day_thu, t.team_role_day_fri, t.team_role_day_sat, t.team_role_day_sun]
+  const PIPELINE_STAGES = PIPELINE_STAGES_STATIC.map(s => ({ ...s, name: t[s.nameKey] }))
+  const formatCurrencyLocal = (v: number) =>
+    new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+  const formatDateLocal = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
   const color = getRoleColor(member.role)
   const [payDay, setPayDay] = useState<number>(member.pay_day || 1)
   const [savingPayDay, setSavingPayDay] = useState(false)
@@ -542,16 +553,16 @@ function IndividualView({
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-stone-400 dark:text-neutral-500" />
                 {member.date_of_birth
-                  ? `${formatDate(member.date_of_birth)} (${calculateAge(member.date_of_birth)} ans)`
-                  : 'Date de naissance non renseignée'}
+                  ? `${formatDateLocal(member.date_of_birth)} (${calculateAge(member.date_of_birth)} ${lang === 'en' ? 'years old' : 'ans'})`
+                  : t.team_role_no_birthdate}
               </div>
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-stone-400 dark:text-neutral-500" />
-                Arrivée le {formatDate(member.joined_at)} ({formatAnciennete(member.joined_at)})
+                {t.team_role_arrival_on} {formatDateLocal(member.joined_at)} ({formatAnciennete(member.joined_at)})
               </div>
               <div className="flex items-center gap-2">
                 <Circle className={cn('h-3 w-3 fill-current', isReallyOnline(member) ? 'text-emerald-500' : 'text-stone-300')} />
-                {isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}
+                {isReallyOnline(member) ? t.common_online : t.common_offline}
               </div>
             </div>
           </div>
@@ -562,14 +573,14 @@ function IndividualView({
       <div className={cn('rounded-xl', GLASS_PANEL)}>
         <div className="flex items-center gap-2 px-5 py-3 border-b border-white/30 dark:border-neutral-800">
           <History className="h-4 w-4 text-stone-900 dark:text-white" />
-          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Historique de connexion</h4>
-          <span className="text-xs text-stone-400 dark:text-neutral-500 ml-auto">7 derniers jours</span>
+          <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">{t.team_role_connection_history}</h4>
+          <span className="text-xs text-stone-400 dark:text-neutral-500 ml-auto">{t.team_role_last_7_days}</span>
         </div>
         <div className="p-5">
           {connectionLogs.length === 0 ? (
             <div className="text-center py-4">
               <History className="h-6 w-6 text-stone-300 mx-auto mb-2" />
-              <p className="text-sm text-stone-500 dark:text-neutral-400">Aucun historique de connexion</p>
+              <p className="text-sm text-stone-500 dark:text-neutral-400">{t.team_role_no_connection_history}</p>
             </div>
           ) : (
             <div className="space-y-1.5 max-h-64 overflow-y-auto">
@@ -589,11 +600,11 @@ function IndividualView({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={cn('text-sm font-medium', isConnect ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                        {isConnect ? 'Connexion' : 'Déconnexion'}
+                        {isConnect ? t.team_role_connection : t.team_role_disconnection}
                       </p>
                     </div>
                     <span className="text-xs text-stone-400 dark:text-neutral-500 shrink-0">
-                      {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      {date.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} {t.team_role_at} {date.toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 )
@@ -608,10 +619,10 @@ function IndividualView({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-stone-900 dark:text-white" />
-            <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">Date de paiement mensuel</h4>
+            <h4 className="text-sm font-['Manrope'] font-semibold text-stone-900 dark:text-white">{t.team_role_monthly_pay_date}</h4>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-stone-500 dark:text-neutral-400">Le</span>
+            <span className="text-xs text-stone-500 dark:text-neutral-400">{t.team_role_the_day}</span>
             <select
               value={payDay}
               onChange={e => setPayDay(Number(e.target.value))}
@@ -621,7 +632,7 @@ function IndividualView({
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
-            <span className="text-xs text-stone-500 dark:text-neutral-400">de chaque mois</span>
+            <span className="text-xs text-stone-500 dark:text-neutral-400">{t.team_role_each_month}</span>
             {payDay !== (member.pay_day || 1) && (
               <button
                 onClick={handleSavePayDay}
@@ -629,16 +640,16 @@ function IndividualView({
                 className="flex items-center gap-1 rounded-full bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-all disabled:opacity-50"
               >
                 {savingPayDay ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-                Enregistrer
+                {t.common_save}
               </button>
             )}
           </div>
         </div>
         {member.pay_day && (
           <p className="text-xs text-stone-400 dark:text-neutral-500 mt-2">
-            Prochain paiement le {member.pay_day} {new Date().getDate() >= member.pay_day
-              ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
-              : new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+            {t.team_role_next_payment_on} {member.pay_day} {new Date().getDate() >= member.pay_day
+              ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { month: 'long', year: 'numeric' })
+              : new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { month: 'long', year: 'numeric' })
             }
           </p>
         )}
@@ -653,11 +664,11 @@ function IndividualView({
         <div className="p-5">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <KpiMini icon={Users} label="Prospects" value={memberProspects.length} color="blue" />
-            <KpiMini icon={ShoppingCart} label="Ventes" value={won.length} color="emerald" />
-            <KpiMini icon={DollarSign} label="CA" value={formatCurrency(revenue)} color="emerald" isText />
-            <KpiMini icon={Target} label="Conversion" value={`${convRate.toFixed(1)}%`} color="purple" isText />
+            <KpiMini icon={ShoppingCart} label={t.team_role_sales_label} value={won.length} color="emerald" />
+            <KpiMini icon={DollarSign} label={lang === 'en' ? 'Revenue' : 'CA'} value={formatCurrencyLocal(revenue)} color="emerald" isText />
+            <KpiMini icon={Target} label={t.team_role_conversion} value={`${convRate.toFixed(1)}%`} color="purple" isText />
             <KpiMini icon={UserX} label="No Show" value={`${noshowRate.toFixed(1)}%`} color="rose" isText />
-            <KpiMini icon={Ban} label="Perdus" value={lost.length} color="stone" />
+            <KpiMini icon={Ban} label={t.team_role_lost} value={lost.length} color="stone" />
           </div>
         </div>
       </div>
@@ -781,7 +792,7 @@ function IndividualView({
                   <div key={appt.id} className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-3 shadow-[0_20px_40px_rgba(27,28,27,0.04)]">
                     <div>
                       <p className="text-sm font-medium text-stone-900 dark:text-white">
-                        {new Date(appt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {new Date(appt.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
                         {appt.time && ` à ${appt.time.slice(0, 5)}`}
                       </p>
                       {prospect && (

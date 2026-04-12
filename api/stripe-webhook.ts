@@ -469,7 +469,7 @@ export default async function handler(req: Request) {
                 })
                 .eq('stripe_customer_id', customerId);
 
-            // Clear seat grace period if payment succeeded (Business side)
+            // Clear ALL grace periods if payment succeeded (Business side)
             const { data: bizUser } = await supabaseAdmin
                 .from('business_users')
                 .select('id')
@@ -478,9 +478,41 @@ export default async function handler(req: Request) {
             if (bizUser) {
                 await supabaseAdmin
                     .from('business_settings')
-                    .update({ seat_grace_deadline: null })
-                    .eq('user_id', bizUser.id)
-                    .not('seat_grace_deadline', 'is', null);
+                    .update({
+                        seat_grace_deadline: null,
+                        subscription_grace_deadline: null,
+                        subscription_deletion_deadline: null,
+                    })
+                    .eq('user_id', bizUser.id);
+
+                // ─── Referral: track payment ───
+                const { data: refConversion } = await supabaseAdmin
+                    .from('business_referral_conversions')
+                    .select('id, status')
+                    .eq('stripe_customer_id', customerId)
+                    .maybeSingle();
+
+                if (refConversion) {
+                    const amount = (invoice as any).amount_paid ? Number((invoice as any).amount_paid) / 100 : 0;
+                    if (amount > 0) {
+                        await supabaseAdmin.rpc('increment_referral_total_paid', {
+                            conversion_id: refConversion.id,
+                            amount,
+                        });
+                    }
+                    // Trial → Active on first real payment
+                    if (refConversion.status === 'trial') {
+                        await supabaseAdmin
+                            .from('business_referral_conversions')
+                            .update({ status: 'active', last_payment_at: new Date().toISOString() })
+                            .eq('id', refConversion.id);
+                    } else {
+                        await supabaseAdmin
+                            .from('business_referral_conversions')
+                            .update({ last_payment_at: new Date().toISOString() })
+                            .eq('id', refConversion.id);
+                    }
+                }
             }
             break;
         }
@@ -588,6 +620,52 @@ export default async function handler(req: Request) {
                                     <p style="margin:0 0 8px;font-weight:600;color:#111;">\u26a0\ufe0f Ce qu'il se passe :</p>
                                     <p style="margin:0 0 4px;">\u2022 Vos membres suppl\u00e9mentaires restent actifs pendant 5 jours</p>
                                     <p style="margin:0 0 4px;">\u2022 Sans paiement, ils seront supprim\u00e9s automatiquement</p>
+                                    <p style="margin:0;">\u2022 Mettez \u00e0 jour votre paiement pour \u00e9viter toute interruption</p>
+                                </div>`,
+                                'Mettre \u00e0 jour le paiement',
+                                'https://closeos.app/business/organisation'
+                            ));
+                        }
+                    }
+                }
+            }
+
+            // ─── Business subscription payment failed → Start subscription grace period ───
+            {
+                const { data: subBizOwner } = await supabaseAdmin
+                    .from('business_users')
+                    .select('id, full_name, is_lifetime_free')
+                    .eq('stripe_customer_id', customerId)
+                    .maybeSingle();
+
+                if (subBizOwner && !subBizOwner.is_lifetime_free) {
+                    const { data: subBizSettings } = await supabaseAdmin
+                        .from('business_settings')
+                        .select('subscription_grace_deadline')
+                        .eq('user_id', subBizOwner.id)
+                        .single();
+
+                    if (!subBizSettings?.subscription_grace_deadline) {
+                        const subDeadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+                        await supabaseAdmin
+                            .from('business_settings')
+                            .update({ subscription_grace_deadline: subDeadline })
+                            .eq('user_id', subBizOwner.id);
+
+                        console.log(`⏳ Subscription grace period set for ${subBizOwner.id} until ${subDeadline}`);
+
+                        const { data: { user: subAuthUser } } = await supabaseAdmin.auth.admin.getUserById(subBizOwner.id);
+                        if (subAuthUser?.email) {
+                            const subName = subBizOwner.full_name?.split(' ')[0] || 'Bonjour';
+                            await sendBrevoEmail(subAuthUser.email, '\u00c9chec de paiement \u2014 Action requise', businessEmailWrap(
+                                'Action requise',
+                                `${subName}, le paiement de votre abonnement a \u00e9chou\u00e9.`,
+                                `<p>Le renouvellement de votre abonnement CloseOS Business n'a pas pu \u00eatre effectu\u00e9.</p>
+                                <p>Vous avez <strong>5 jours</strong> pour mettre \u00e0 jour votre moyen de paiement. Pass\u00e9 ce d\u00e9lai, l'acc\u00e8s \u00e0 CloseOS sera bloqu\u00e9 pour vous et toute votre \u00e9quipe.</p>
+                                <div style="background-color:#f5f3f2;border-radius:24px;padding:24px 20px;margin-top:20px;">
+                                    <p style="margin:0 0 8px;font-weight:600;color:#111;">\u26a0\ufe0f Ce qu'il va se passer :</p>
+                                    <p style="margin:0 0 4px;">\u2022 Apr\u00e8s 5 jours : acc\u00e8s bloqu\u00e9 pour toute l'\u00e9quipe</p>
+                                    <p style="margin:0 0 4px;">\u2022 Apr\u00e8s 19 jours : suppression d\u00e9finitive de l'organisation</p>
                                     <p style="margin:0;">\u2022 Mettez \u00e0 jour votre paiement pour \u00e9viter toute interruption</p>
                                 </div>`,
                                 'Mettre \u00e0 jour le paiement',
@@ -755,6 +833,13 @@ export default async function handler(req: Request) {
                     })
                     .eq('stripe_customer_id', customerId);
             }
+
+            // ─── Referral: mark as churned ───
+            await supabaseAdmin
+                .from('business_referral_conversions')
+                .update({ status: 'churned' })
+                .eq('stripe_customer_id', customerId);
+
             break;
         }
     }

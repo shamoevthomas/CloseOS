@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext'
 import { withRetry } from '../lib/supabaseHelpers'
 import toast from 'react-hot-toast'
 
+const getLang = () => (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
+
 export interface InternalContact {
   id: number
   user_id: string
@@ -51,7 +53,7 @@ export function InternalContactsProvider({ children }: { children: ReactNode }) 
       )
 
       if (error) {
-        toast.error('Impossible de charger les contacts internes', { id: 'load-contacts' })
+        toast.error(getLang() === 'fr' ? 'Impossible de charger les contacts internes' : 'Unable to load internal contacts', { id: 'load-contacts' })
         return
       }
       setContacts(data || [])
@@ -74,7 +76,7 @@ export function InternalContactsProvider({ children }: { children: ReactNode }) 
     )
 
     if (error) {
-      toast.error('Impossible de creer le contact.')
+      toast.error(getLang() === 'fr' ? 'Impossible de créer le contact.' : 'Unable to create contact.')
       return { data: null, error }
     }
     if (data) {
@@ -92,7 +94,7 @@ export function InternalContactsProvider({ children }: { children: ReactNode }) 
     )
 
     if (error) {
-      toast.error('Impossible de modifier le contact.')
+      toast.error(getLang() === 'fr' ? 'Impossible de modifier le contact.' : 'Unable to update contact.')
       return { error }
     }
     setContacts((prev) =>
@@ -114,7 +116,7 @@ export function InternalContactsProvider({ children }: { children: ReactNode }) 
 
     if (error) {
       setContacts(previousContacts)
-      toast.error('Impossible de supprimer le contact.')
+      toast.error(getLang() === 'fr' ? 'Impossible de supprimer le contact.' : 'Unable to delete contact.')
       return { error }
     }
     return { error: null }

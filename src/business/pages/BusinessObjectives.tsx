@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import {
   Plus, Target, Pencil, Trash2, X, Loader2, ChevronDown, CalendarDays, User, Users, Building2, ArrowRight, TrendingUp, Clock, Eye
@@ -29,22 +30,7 @@ interface TeamMember {
   role: string
 }
 
-const METRICS = [
-  { value: 'revenue', label: 'CA généré' },
-  { value: 'sales_count', label: 'Nombre de ventes' },
-  { value: 'conversion_rate', label: 'Taux de conversion (%)' },
-  { value: 'leads', label: 'Nombre de leads' },
-  { value: 'appointments', label: 'Nombre de RDV' },
-  { value: 'noshow_rate', label: 'Taux de no-show (%)' },
-  { value: 'custom', label: 'Personnalisé' },
-]
-
-const PERIODS = [
-  { value: 'weekly', label: 'Hebdomadaire' },
-  { value: 'monthly', label: 'Mensuel' },
-  { value: 'quarterly', label: 'Trimestriel' },
-  { value: 'yearly', label: 'Annuel' },
-]
+// METRICS and PERIODS moved inside component for i18n access
 
 const PERIOD_DAYS: Record<string, number> = {
   weekly: 7,
@@ -63,12 +49,7 @@ const METRIC_BADGE: Record<string, { bg: string; text: string }> = {
   custom: { bg: 'bg-[#e4e2e1]', text: 'text-[#444748] dark:text-neutral-300' },
 }
 
-const PERIOD_LABELS: Record<string, string> = {
-  weekly: 'Hebdo',
-  monthly: 'Mensuel',
-  quarterly: 'Trimestriel',
-  yearly: 'Annuel',
-}
+// PERIOD_LABELS moved inside component for i18n access
 
 const ROLE_COLORS: Record<string, string> = {
   Closer: 'bg-blue-100 text-blue-700',
@@ -82,6 +63,32 @@ const API_URL = '/api/business'
 
 export function BusinessObjectives() {
   const { user, isTeamMember, ownerUserId, teamMember, isSolo } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
+
+  const METRICS = [
+    { value: 'revenue', label: t.objectives_metric_revenue },
+    { value: 'sales_count', label: t.objectives_metric_sales_count },
+    { value: 'conversion_rate', label: t.objectives_metric_conversion_rate },
+    { value: 'leads', label: t.objectives_metric_leads },
+    { value: 'appointments', label: t.objectives_metric_appointments },
+    { value: 'noshow_rate', label: t.objectives_metric_noshow_rate },
+    { value: 'custom', label: t.objectives_metric_custom },
+  ]
+
+  const PERIODS = [
+    { value: 'weekly', label: t.objectives_period_weekly },
+    { value: 'monthly', label: t.objectives_period_monthly },
+    { value: 'quarterly', label: t.objectives_period_quarterly },
+    { value: 'yearly', label: t.objectives_period_yearly },
+  ]
+
+  const PERIOD_LABELS: Record<string, string> = {
+    weekly: t.objectives_period_short_weekly,
+    monthly: t.objectives_period_short_monthly,
+    quarterly: t.objectives_period_short_quarterly,
+    yearly: t.objectives_period_short_yearly,
+  }
+
   const { prospects } = useBusinessProspects()
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const [objectives, setObjectives] = useState<Objective[]>([])
@@ -200,10 +207,10 @@ export function BusinessObjectives() {
       }
 
       const memberName = getMemberName(obj.assigned_to)
-      const title = `Objectif atteint : ${obj.label}`
+      const title = `${t.objectives_reached_title}: ${obj.label}`
       const description = memberName
-        ? `${memberName} a atteint l'objectif "${obj.label}" (${formatValue(obj.metric, currentValue)} / ${formatValue(obj.metric, obj.target_value)})`
-        : `L'objectif "${obj.label}" a ete atteint (${formatValue(obj.metric, currentValue)} / ${formatValue(obj.metric, obj.target_value)})`
+        ? `${memberName} ${t.objectives_reached_member} "${obj.label}" (${formatValue(obj.metric, currentValue)} / ${formatValue(obj.metric, obj.target_value)})`
+        : `${t.objectives_reached_generic} "${obj.label}" (${formatValue(obj.metric, currentValue)} / ${formatValue(obj.metric, obj.target_value)})`
 
       for (const uid of notifyUserIds) {
         supabase.from('reminders').insert({
@@ -262,8 +269,8 @@ export function BusinessObjectives() {
   }
 
   const handleSave = async () => {
-    if (!formLabel.trim()) return toast.error('Le label est requis')
-    if (!formTargetValue || Number(formTargetValue) < 0) return toast.error('La valeur cible doit être >= 0')
+    if (!formLabel.trim()) return toast.error(t.objectives_label_required)
+    if (!formTargetValue || Number(formTargetValue) < 0) return toast.error(t.objectives_target_required)
     setSaving(true)
     try {
       const scope = formScope === 'global'
@@ -289,28 +296,28 @@ export function BusinessObjectives() {
           body: JSON.stringify({ ...payload, id: editingObjective.id }),
         })
         const data = await res.json()
-        if (data.objective) toast.success('Objectif modifié')
-        else toast.error(data.error || 'Erreur')
+        if (data.objective) toast.success(t.objectives_modified)
+        else toast.error(data.error || t.revenue_error)
       } else {
         const res = await fetch(`${API_URL}?action=objectives-create`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
         const data = await res.json()
-        if (data.objective) toast.success('Objectif créé')
-        else toast.error(data.error || 'Erreur')
+        if (data.objective) toast.success(t.objectives_created)
+        else toast.error(data.error || t.revenue_error)
       }
       setIsModalOpen(false); resetForm(); fetchObjectives()
-    } catch { toast.error('Erreur réseau') }
+    } catch { toast.error(t.objectives_network_error) }
     finally { setSaving(false) }
   }
 
   const deleteObjective = async (obj: Objective) => {
-    if (!confirm(`Supprimer l'objectif "${obj.label}" ?`)) return
+    if (!confirm(t.objectives_delete_confirm.replace('{label}', obj.label))) return
     try {
       await fetch(`${API_URL}?action=objectives-delete&id=${obj.id}&user_id=${user?.id}`, { method: 'DELETE' })
-      toast.success('Objectif supprimé'); fetchObjectives()
-    } catch { toast.error('Erreur') }
+      toast.success(t.objectives_deleted); fetchObjectives()
+    } catch { toast.error(t.revenue_error) }
   }
 
   // Calculate current value for a given metric — uses ALL data (no date cutoff)
@@ -371,7 +378,7 @@ export function BusinessObjectives() {
 
   const formatDeadline = (deadline: string | null) => {
     if (!deadline) return null
-    return new Date(deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+    return new Date(deadline).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   const isOverdue = (deadline: string | null) => {
@@ -405,9 +412,9 @@ export function BusinessObjectives() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Objectifs
+            {t.objectives_title}
           </h1>
-          <p className="text-[#444748] dark:text-neutral-300 max-w-lg">Définissez vos objectifs, suivez votre progression et alignez votre équipe.</p>
+          <p className="text-[#444748] dark:text-neutral-300 max-w-lg">{t.objectives_subtitle}</p>
         </div>
         {!isTeamMember && (
           <div className="flex items-center gap-3">
@@ -416,7 +423,7 @@ export function BusinessObjectives() {
               className="px-8 py-3 bg-gradient-to-r from-[#ff6b6b] to-[#a239ca] text-white rounded-full font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
               style={{ fontFamily: 'Manrope, sans-serif' }}
             >
-              + Nouvel objectif
+              + {t.objectives_new_objective}
             </button>
           </div>
         )}
@@ -431,9 +438,9 @@ export function BusinessObjectives() {
               <Target className="h-6 w-6 text-[#006c49]" />
             </div>
           </div>
-          <h2 className="text-3xl font-extrabold mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Aucun objectif pour le moment</h2>
+          <h2 className="text-3xl font-extrabold mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.objectives_no_objectives}</h2>
           <p className="text-[#444748] dark:text-neutral-300 max-w-sm mx-auto mb-10">
-            {isTeamMember ? "Aucun objectif ne vous a été assigné." : "Commencez dès maintenant à définir vos objectifs et suivre votre progression."}
+            {isTeamMember ? t.objectives_no_assigned_desc : t.objectives_no_personal_desc}
           </p>
           {!isTeamMember && (
             <button
@@ -441,7 +448,7 @@ export function BusinessObjectives() {
               className="px-10 py-4 bg-[#1b1c1b] text-white rounded-full font-extrabold text-sm shadow-xl hover:scale-105 transition-transform"
               style={{ fontFamily: 'Manrope, sans-serif' }}
             >
-              Lancer mon premier objectif
+              {t.objectives_create_first}
             </button>
           )}
         </div>
@@ -548,17 +555,17 @@ export function BusinessObjectives() {
                     {overdue && deadlineStr ? (
                       <div className="flex items-center gap-2 text-[#ba1a1a] text-xs font-bold">
                         <CalendarDays className="h-3.5 w-3.5" />
-                        En retard ({deadlineStr})
+                        {t.objectives_overdue} ({deadlineStr})
                       </div>
                     ) : isComplete ? (
                       <div className="flex items-center gap-2 text-[#006c49] text-xs font-bold">
                         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-                        Terminé
+                        {t.objectives_completed}
                       </div>
                     ) : deadlineStr ? (
                       <div className="flex items-center gap-2 text-[#444748] dark:text-neutral-300 text-xs font-medium">
                         <CalendarDays className="h-3.5 w-3.5" />
-                        Échéance: {deadlineStr}
+                        {t.objectives_deadline}: {deadlineStr}
                       </div>
                     ) : null}
                   </div>
@@ -604,8 +611,8 @@ export function BusinessObjectives() {
                 <Plus className="h-8 w-8 text-[#1b1c1b] dark:text-white" />
               </div>
               <div className="text-center">
-                <p className="font-extrabold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Créer un objectif</p>
-                <p className="text-xs text-[#444748] dark:text-neutral-300">Définissez vos prochains succès</p>
+                <p className="font-extrabold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.objectives_add}</p>
+                <p className="text-xs text-[#444748] dark:text-neutral-300">{t.objectives_define_next}</p>
               </div>
             </button>
           )}
@@ -761,7 +768,7 @@ export function BusinessObjectives() {
                   {/* Info */}
                   <div className="flex items-center gap-3 text-xs text-[#444748] dark:text-neutral-300/60">
                     <CalendarDays className="h-3.5 w-3.5" />
-                    Créé le {new Date(obj.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    Créé le {new Date(obj.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </div>
                 </div>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import {
   Plus, Megaphone, Code, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, Link, Users, ChevronDown, Video,
@@ -96,6 +97,7 @@ const API_URL = '/api/business'
 
 export function BusinessCampaigns() {
   const { user, ownerUserId } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
@@ -214,12 +216,12 @@ export function BusinessCampaigns() {
         setFormSource(data.source.name)
         setNewSourceName('')
         setIsNewSourceModalOpen(false)
-        toast.success('Source créée')
+        toast.success(t.campaigns_source_created)
       } else {
-        toast.error(data.error || 'Erreur lors de la création')
+        toast.error(data.error || t.campaigns_creation_error)
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error(t.campaigns_network_error)
     } finally {
       setSavingSource(false)
     }
@@ -347,7 +349,7 @@ export function BusinessCampaigns() {
   })
 
   const handleSave = async () => {
-    if (!formName.trim()) return toast.error('Le nom est requis')
+    if (!formName.trim()) return toast.error(t.campaigns_name_required)
     setSaving(true)
     try {
       const payload = getPayload()
@@ -358,16 +360,16 @@ export function BusinessCampaigns() {
           body: JSON.stringify({ ...payload, id: editingCampaign.id }),
         })
         const data = await res.json()
-        if (data.campaign) { campaignId = data.campaign.id; toast.success('Campagne modifiée') }
-        else { toast.error(data.error || 'Erreur'); setSaving(false); return }
+        if (data.campaign) { campaignId = data.campaign.id; toast.success(t.campaigns_modified) }
+        else { toast.error(data.error || t.common_error); setSaving(false); return }
       } else {
         const res = await fetch(`${API_URL}?action=campaigns-create`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
         const data = await res.json()
-        if (data.campaign) { campaignId = data.campaign.id; toast.success('Campagne créée') }
-        else { toast.error(data.error || 'Erreur'); setSaving(false); return }
+        if (data.campaign) { campaignId = data.campaign.id; toast.success(t.campaigns_created) }
+        else { toast.error(data.error || t.common_error); setSaving(false); return }
       }
       // Save questionnaire if any data exists
       if (campaignId && (formQuestionnaireEnabled || formQuestions.length > 0 || questionnaireId)) {
@@ -387,7 +389,7 @@ export function BusinessCampaigns() {
         } catch { /* questionnaire save failed silently */ }
       }
       setIsModalOpen(false); resetForm(); fetchCampaigns()
-    } catch { toast.error('Erreur réseau') }
+    } catch { toast.error(t.campaigns_network_error) }
     finally { setSaving(false) }
   }
 
@@ -398,16 +400,16 @@ export function BusinessCampaigns() {
         body: JSON.stringify({ user_id: effectiveUserId, id: campaign.id, is_active: !campaign.is_active }),
       })
       fetchCampaigns()
-      toast.success(campaign.is_active ? 'Campagne désactivée' : 'Campagne activée')
-    } catch { toast.error('Erreur') }
+      toast.success(campaign.is_active ? t.campaigns_deactivated : t.campaigns_activated)
+    } catch { toast.error(t.common_error) }
   }
 
   const deleteCampaign = async (campaign: Campaign) => {
-    if (!confirm(`Supprimer la campagne "${campaign.name}" ?`)) return
+    if (!confirm(`${t.campaigns_delete_confirm} "${campaign.name}" ?`)) return
     try {
       await fetch(`${API_URL}?action=campaigns-delete&id=${campaign.id}&user_id=${effectiveUserId}`, { method: 'DELETE' })
-      toast.success('Campagne supprimée'); fetchCampaigns()
-    } catch { toast.error('Erreur') }
+      toast.success(t.campaigns_deleted); fetchCampaigns()
+    } catch { toast.error(t.common_error) }
   }
 
   // Embed code modal
@@ -425,7 +427,7 @@ export function BusinessCampaigns() {
   const [embedLayout] = useState<'vertical' | 'horizontal'>('horizontal')
 
   const FONTS = [
-    { label: 'Inter (défaut)', value: 'Inter, system-ui, sans-serif' },
+    { label: 'Inter', value: 'Inter, system-ui, sans-serif' },
     { label: 'Poppins', value: 'Poppins, sans-serif' },
     { label: 'Roboto', value: 'Roboto, sans-serif' },
     { label: 'Open Sans', value: 'Open Sans, sans-serif' },
@@ -513,7 +515,7 @@ window.addEventListener('message',function(e){
   }, [embedModalCampaign, stylePrimaryColor, styleBgColor, styleTextColor, styleRadius, styleFont, embedLayout])
 
   const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text); toast.success(`${label} copié !`)
+    navigator.clipboard.writeText(text); toast.success(`${label} ${t.campaigns_copied}`)
   }
 
   const addCustomField = () => {
@@ -557,11 +559,11 @@ window.addEventListener('message',function(e){
       {/* Header */}
       <header className="flex justify-between items-end">
         <div>
-          <h2 className="text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">Campagnes</h2>
-          <p className="text-[#444748] dark:text-neutral-400 mt-2 max-w-md">Gérez vos tunnels de conversion et pages de capture depuis un tableau de bord centralisé.</p>
+          <h2 className="text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">{t.campaigns_title}</h2>
+          <p className="text-[#444748] dark:text-neutral-400 mt-2 max-w-md">{t.campaigns_subtitle}</p>
         </div>
         <button onClick={openCreate} className="bg-[#000000] text-white px-8 py-4 rounded-full font-['Manrope'] font-bold flex items-center gap-3 hover:bg-[#1b1c1b] transition-all active:scale-95" style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
-          <Plus className="h-4 w-4" /> Nouvelle campagne
+          <Plus className="h-4 w-4" /> {t.campaigns_new}
         </button>
       </header>
 
@@ -571,10 +573,10 @@ window.addEventListener('message',function(e){
           <div className="w-24 h-24 bg-[#efedec] dark:bg-neutral-800 rounded-full flex items-center justify-center mb-6">
             <Megaphone className="h-10 w-10 text-[#444748]/30" />
           </div>
-          <h3 className="text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white mb-2">Aucune campagne</h3>
-          <p className="text-[#444748] dark:text-neutral-400 max-w-xs mb-6">Créez votre première campagne pour capturer des leads</p>
+          <h3 className="text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white mb-2">{t.campaigns_no_campaigns}</h3>
+          <p className="text-[#444748] dark:text-neutral-400 max-w-xs mb-6">{t.campaigns_empty_desc}</p>
           <button onClick={openCreate} className="bg-[#000000] text-white px-8 py-3 rounded-full font-['Manrope'] font-bold active:scale-95 transition-all">
-            Créer une campagne
+            {t.campaigns_create_first}
           </button>
         </div>
       )}
@@ -597,7 +599,7 @@ window.addEventListener('message',function(e){
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-[10px] font-bold uppercase tracking-tighter ${campaign.is_active ? 'text-[#006c49]' : 'text-[#444748]'}`}>
-                    {campaign.is_active ? 'Active' : 'Inactive'}
+                    {campaign.is_active ? t.campaigns_active : t.campaigns_inactive}
                   </span>
                   <button onClick={() => toggleActive(campaign)} className="relative">
                     <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${campaign.is_active ? 'bg-[#006c49]/20' : 'bg-[#eae8e7] dark:bg-neutral-700'}`}>
@@ -610,7 +612,7 @@ window.addEventListener('message',function(e){
               <div className="flex gap-3 mb-6">
                 <div className="bg-[#eae8e7] dark:bg-neutral-800 px-4 py-2 rounded-full flex items-center gap-2">
                   {campaign.capture_type === 'without_rdv' ? <UserPlus className="h-3.5 w-3.5 text-[#444748]" /> : <CalendarCheck className="h-3.5 w-3.5 text-[#444748]" />}
-                  <span className="text-xs font-bold text-[#444748] dark:text-neutral-300">Capture: {campaign.capture_type === 'without_rdv' ? 'Inscription' : 'RDV'}</span>
+                  <span className="text-xs font-bold text-[#444748] dark:text-neutral-300">Capture: {campaign.capture_type === 'without_rdv' ? t.campaigns_registration : t.campaigns_rdv}</span>
                 </div>
                 <div className="bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2 rounded-full flex items-center gap-2">
                   <span className="text-xs font-bold text-[#1b1c1b] dark:text-white">{leadCount} Lead{leadCount !== 1 ? 's' : ''}</span>
@@ -620,10 +622,10 @@ window.addEventListener('message',function(e){
                 <button onClick={() => openEmbedModal(campaign, 'page')} className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] transition-colors">Page</button>
                 <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 text-[#1b1c1b] dark:text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors">Iframe</button>
                 <button onClick={() => openEmbedModal(campaign, 'popup')} className="flex-1 bg-[#006c49]/10 text-[#006c49] py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#006c49]/20 transition-colors" style={{ border: '1px solid rgba(0,108,73,0.2)' }}>Popup</button>
-                <button onClick={() => openEdit(campaign)} className="p-3 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-xl transition-colors" title="Modifier">
+                <button onClick={() => openEdit(campaign)} className="p-3 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-xl transition-colors" title={t.campaigns_edit}>
                   <Pencil className="h-4 w-4" />
                 </button>
-                <button onClick={() => deleteCampaign(campaign)} className="p-3 text-[#444748] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded-xl transition-colors" title="Supprimer">
+                <button onClick={() => deleteCampaign(campaign)} className="p-3 text-[#444748] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 rounded-xl transition-colors" title={t.campaigns_delete}>
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -639,7 +641,7 @@ window.addEventListener('message',function(e){
             {/* Modal header */}
             <div className="flex items-center justify-between px-8 py-5 flex-shrink-0">
               <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white">
-                {editingCampaign ? 'Configuration de Campagne' : 'Nouvelle Campagne'}
+                {editingCampaign ? t.campaigns_config_title : t.campaigns_new_title}
               </h3>
               <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5" />
@@ -649,11 +651,11 @@ window.addEventListener('message',function(e){
             {/* Tabs */}
             <div className="flex bg-[#f5f3f2] dark:bg-neutral-800 px-8 pt-5 gap-8 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex-shrink-0 overflow-x-auto">
               {([
-                { key: 'general' as const, label: 'Général' },
-                { key: 'landing' as const, label: 'Page de capture' },
-                { key: 'fields' as const, label: 'Champs & Options' },
-                { key: 'questionnaire' as const, label: 'Qualification' },
-                { key: 'booking' as const, label: formCaptureType === 'with_rdv' ? 'Booking' : 'Assignation' },
+                { key: 'general' as const, label: t.campaigns_tab_general },
+                { key: 'landing' as const, label: t.campaigns_tab_landing },
+                { key: 'fields' as const, label: t.campaigns_tab_fields },
+                { key: 'questionnaire' as const, label: t.campaigns_tab_qualification },
+                { key: 'booking' as const, label: formCaptureType === 'with_rdv' ? t.campaigns_tab_booking : t.campaigns_tab_assignation },
               ]).map(tab => (
                 <button
                   key={tab.key}
@@ -675,32 +677,32 @@ window.addEventListener('message',function(e){
               {modalTab === 'general' && (
                 <div className="space-y-8">
                   <div className="space-y-6">
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">Identification</label>
-                    <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nom de la campagne" className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/30 dark:border-neutral-700 focus:ring-0 focus:border-[#006c49] transition-all text-xl font-['Manrope'] font-bold py-3 px-0 text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/30 dark:placeholder:text-neutral-500" />
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">{t.campaigns_identification}</label>
+                    <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t.campaigns_name} className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/30 dark:border-neutral-700 focus:ring-0 focus:border-[#006c49] transition-all text-xl font-['Manrope'] font-bold py-3 px-0 text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/30 dark:placeholder:text-neutral-500" />
                   </div>
 
                   {/* Team assignment */}
                   {teams.length > 0 && (
                     <div>
-                      <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Équipe assignée</label>
+                      <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_assigned_team}</label>
                       <div className="relative">
                         <select
                           value={formTeamId || ''}
                           onChange={(e) => { setFormTeamId(e.target.value || null); setFormBookingAssignedMembers([]) }}
                           className={selectCls}
                         >
-                          <option value="">Toute l'équipe</option>
-                          {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                          <option value="">{t.campaigns_all_team}</option>
+                          {teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
                       </div>
-                      <p className="text-[10px] text-[#444748]/60 dark:text-neutral-500 mt-1">Les bookings et assignations seront limités aux membres de cette équipe.</p>
+                      <p className="text-[10px] text-[#444748]/60 dark:text-neutral-500 mt-1">{t.campaigns_team_hint}</p>
                     </div>
                   )}
 
                   {/* Capture type switch */}
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">Type de Capture</label>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">{t.campaigns_capture_type}</label>
                     <div className="grid grid-cols-2 gap-4">
                       <button
                         onClick={() => setFormCaptureType('with_rdv')}
@@ -711,8 +713,8 @@ window.addEventListener('message',function(e){
                         }`}
                       >
                         <CalendarCheck className={`h-7 w-7 mb-3 ${formCaptureType === 'with_rdv' ? 'text-[#006c49]' : 'text-[#747878]'}`} />
-                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b] dark:text-white">Rendez-vous</h4>
-                        <p className="text-[10px] text-[#444748] mt-1">Planification directe</p>
+                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_appointment}</h4>
+                        <p className="text-[10px] text-[#444748] mt-1">{t.campaigns_direct_planning}</p>
                       </button>
                       <button
                         onClick={() => setFormCaptureType('without_rdv')}
@@ -723,14 +725,14 @@ window.addEventListener('message',function(e){
                         }`}
                       >
                         <UserPlus className={`h-7 w-7 mb-3 ${formCaptureType === 'without_rdv' ? 'text-[#006c49]' : 'text-[#747878]'}`} />
-                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b] dark:text-white">Inscription</h4>
-                        <p className="text-[10px] text-[#444748] mt-1">Formulaire classique</p>
+                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_registration}</h4>
+                        <p className="text-[10px] text-[#444748] mt-1">{t.campaigns_classic_form}</p>
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Source</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_source}</label>
                     <div className="relative">
                       <select value={formSource} onChange={(e) => {
                         if (e.target.value === '__new__') {
@@ -740,17 +742,17 @@ window.addEventListener('message',function(e){
                         }
                       }} className={selectCls}>
                         {allSources.map(s => <option key={s} value={s}>{s}</option>)}
-                        <option value="__new__">+ Nouvelle source</option>
+                        <option value="__new__">+ {t.campaigns_new_source}</option>
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Description interne</label>
-                    <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} placeholder="Note interne..." className={`${inputCls} resize-none`} />
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_internal_desc}</label>
+                    <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} placeholder={t.campaigns_internal_note} className={`${inputCls} resize-none`} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Paramètres UTM</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_utm_params}</label>
                     <div className="grid grid-cols-3 gap-2">
                       <input type="text" value={formUtmSource} onChange={(e) => setFormUtmSource(e.target.value)} placeholder="utm_source" className={smallInputCls} />
                       <input type="text" value={formUtmMedium} onChange={(e) => setFormUtmMedium(e.target.value)} placeholder="utm_medium" className={smallInputCls} />
@@ -758,21 +760,21 @@ window.addEventListener('message',function(e){
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Formule associée</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_associated_formula}</label>
                     <div className="relative">
                       <select value={formFormulaId || ''} onChange={(e) => setFormFormulaId(e.target.value || null)} className={selectCls}>
-                        <option value="">Aucune formule</option>
+                        <option value="">{t.campaigns_no_formula}</option>
                         {formulas.map(f => <option key={f.id} value={f.id}>{f.name} — {f.price?.toFixed(2)} €</option>)}
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
                     </div>
-                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">Les prospects capturés via cette campagne seront associés à cette formule</p>
+                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">{t.campaigns_formula_hint}</p>
                   </div>
 
                   {/* RDV with Closer or Setter switch (only with_rdv) */}
                   {formCaptureType === 'with_rdv' && (
                     <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
-                      <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">Rendez-vous avec</label>
+                      <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">{t.campaigns_booking_with}</label>
                       <div className="flex gap-3">
                         <button
                           type="button"
@@ -803,15 +805,15 @@ window.addEventListener('message',function(e){
                   {/* Info banner for without_rdv */}
                   {formCaptureType === 'without_rdv' && (
                     <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
-                      <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Campagne sans rendez-vous</p>
-                      <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">Les leads capturés seront assignés à un Setter pour le traitement.</p>
+                      <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_no_rdv}</p>
+                      <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">{t.campaigns_no_rdv_desc}</p>
                     </div>
                   )}
 
                   {/* Assignment mode */}
                   <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
                     <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">
-                      Mode d'assignation des {formCaptureType === 'without_rdv' ? 'Setters' : (formBookingWith === 'closer' ? 'Closers' : 'Setters')}
+                      {t.campaigns_assign_mode} {formCaptureType === 'without_rdv' ? 'Setters' : (formBookingWith === 'closer' ? 'Closers' : 'Setters')}
                     </label>
                     <div className="flex gap-2 flex-wrap">
                       <button
@@ -823,7 +825,7 @@ window.addEventListener('message',function(e){
                             : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                         }`}
                       >
-                        <UserCheck className="h-3.5 w-3.5" /> Un membre précis
+                        <UserCheck className="h-3.5 w-3.5" /> {t.campaigns_specific_member}
                       </button>
                       <button
                         type="button"
@@ -834,7 +836,7 @@ window.addEventListener('message',function(e){
                             : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                         }`}
                       >
-                        <UsersRound className="h-3.5 w-3.5" /> Tout le rôle
+                        <UsersRound className="h-3.5 w-3.5" /> {t.campaigns_all_role}
                       </button>
                       <button
                         type="button"
@@ -845,7 +847,7 @@ window.addEventListener('message',function(e){
                             : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                         }`}
                       >
-                        <Users className="h-3.5 w-3.5" /> Plusieurs membres
+                        <Users className="h-3.5 w-3.5" /> {t.campaigns_multiple_members}
                       </button>
                     </div>
 
@@ -858,7 +860,7 @@ window.addEventListener('message',function(e){
                             onChange={(e) => setFormBookingAssignedMembers(e.target.value ? [e.target.value] : [])}
                             className={selectCls}
                           >
-                            <option value="">Choisir un membre</option>
+                            <option value="">{t.campaigns_choose_member}</option>
                             {filteredTeamMembers
                               .filter(m => {
                                 const assignRole = formCaptureType === 'without_rdv' ? 'setter' : formBookingWith
@@ -877,7 +879,7 @@ window.addEventListener('message',function(e){
                     {/* Multiple members selector */}
                     {formBookingAssignMode === 'multiple' && (
                       <div className="mt-3 space-y-2">
-                        <p className="text-xs text-[#444748]/60 dark:text-neutral-500">Sélectionnez les membres à inclure :</p>
+                        <p className="text-xs text-[#444748]/60 dark:text-neutral-500">{t.campaigns_select_members}</p>
                         <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2">
                           {filteredTeamMembers
                             .filter(m => {
@@ -909,7 +911,7 @@ window.addEventListener('message',function(e){
                     {/* Distribution mode (for all_role and multiple) */}
                     {(formBookingAssignMode === 'all_role' || formBookingAssignMode === 'multiple') && (
                       <div className="mt-4 pt-3 border-t border-[#c4c7c7]/15 dark:border-neutral-700">
-                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Distribution des rendez-vous</label>
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_distribution}</label>
                         <div className="flex gap-3">
                           <button
                             type="button"
@@ -920,7 +922,7 @@ window.addEventListener('message',function(e){
                                 : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                             }`}
                           >
-                            <ArrowRightCircle className="h-4 w-4" /> Tournante
+                            <ArrowRightCircle className="h-4 w-4" /> {t.campaigns_round_robin}
                           </button>
                           <button
                             type="button"
@@ -931,13 +933,13 @@ window.addEventListener('message',function(e){
                                 : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                             }`}
                           >
-                            <Shuffle className="h-4 w-4" /> Hasard
+                            <Shuffle className="h-4 w-4" /> {t.campaigns_random}
                           </button>
                         </div>
                         <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-2">
                           {formBookingDistribution === 'round_robin'
-                            ? 'Les rendez-vous sont distribués à tour de rôle entre les membres.'
-                            : 'Les rendez-vous sont assignés aléatoirement.'}
+                            ? t.campaigns_round_robin_desc
+                            : t.campaigns_random_desc}
                         </p>
                       </div>
                     )}
@@ -948,34 +950,34 @@ window.addEventListener('message',function(e){
               {/* Landing page tab */}
               {modalTab === 'landing' && (
                 <div className="space-y-4">
-                  <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mb-2">Configurez le contenu affiché à gauche de la page de capture (côté marketing)</p>
+                  <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mb-2">{t.campaigns_landing_desc}</p>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Titre principal</label>
-                    <input type="text" value={formLandingTitle} onChange={(e) => setFormLandingTitle(e.target.value)} placeholder="Ex: Transformez chaque lead en client." className={inputCls} />
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_main_title}</label>
+                    <input type="text" value={formLandingTitle} onChange={(e) => setFormLandingTitle(e.target.value)} placeholder={t.campaigns_main_title_placeholder} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Sous-titre</label>
-                    <input type="text" value={formLandingSubtitle} onChange={(e) => setFormLandingSubtitle(e.target.value)} placeholder="Ex: THE SALES OPERATING SYSTEM" className={inputCls} />
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_subtitle_label}</label>
+                    <input type="text" value={formLandingSubtitle} onChange={(e) => setFormLandingSubtitle(e.target.value)} placeholder={t.campaigns_subtitle_placeholder} className={inputCls} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Texte descriptif</label>
-                    <textarea value={formLandingText} onChange={(e) => setFormLandingText(e.target.value)} rows={3} placeholder="Décrivez votre offre, votre proposition de valeur..." className={`${inputCls} resize-none`} />
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_desc_text}</label>
+                    <textarea value={formLandingText} onChange={(e) => setFormLandingText(e.target.value)} rows={3} placeholder={t.campaigns_desc_text_placeholder} className={`${inputCls} resize-none`} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">URL Vidéo (YouTube, Loom...)</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_video_url}</label>
                     <input type="url" value={formLandingVideoUrl} onChange={(e) => setFormLandingVideoUrl(e.target.value)} placeholder="https://www.youtube.com/embed/..." className={inputCls} />
-                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">Utilisez l'URL d'intégration (embed). Ex: https://www.youtube.com/embed/VIDEO_ID</p>
+                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">{t.campaigns_video_hint}</p>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Lien de redirection post-capture</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_redirect_url}</label>
                     <input type="url" value={formRedirectUrl} onChange={(e) => setFormRedirectUrl(e.target.value)} placeholder="https://www.example.com/merci" className={inputCls} />
-                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">Optionnel — Redirige le prospect vers cette URL après soumission du formulaire</p>
+                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">{t.campaigns_redirect_hint}</p>
                   </div>
 
                   {/* Popup delay config */}
                   <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
                     <label className="flex items-center gap-2 text-sm font-bold text-[#1b1c1b] dark:text-white mb-2">
-                      <Clock className="h-4 w-4" /> Configuration du Popup
+                      <Clock className="h-4 w-4" /> {t.campaigns_popup_config}
                     </label>
                     <div className="flex items-center gap-3">
                       <select
@@ -983,16 +985,16 @@ window.addEventListener('message',function(e){
                         onChange={(e) => setFormPopupDelay(Number(e.target.value))}
                         className={selectCls}
                       >
-                        <option value={0}>Apparaît instantanément</option>
-                        <option value={3}>Après 3 secondes</option>
-                        <option value={5}>Après 5 secondes</option>
-                        <option value={10}>Après 10 secondes</option>
-                        <option value={15}>Après 15 secondes</option>
-                        <option value={30}>Après 30 secondes</option>
-                        <option value={60}>Après 1 minute</option>
+                        <option value={0}>{t.campaigns_popup_instant}</option>
+                        <option value={3}>{t.campaigns_popup_after_3s}</option>
+                        <option value={5}>{t.campaigns_popup_after_5s}</option>
+                        <option value={10}>{t.campaigns_popup_after_10s}</option>
+                        <option value={15}>{t.campaigns_popup_after_15s}</option>
+                        <option value={30}>{t.campaigns_popup_after_30s}</option>
+                        <option value={60}>{t.campaigns_popup_after_1m}</option>
                       </select>
                     </div>
-                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-2">S'applique quand le format Popup est utilisé. Le site est bloqué tant que le formulaire n'est pas rempli.</p>
+                    <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-2">{t.campaigns_popup_hint}</p>
                   </div>
                 </div>
               )}
@@ -1002,37 +1004,37 @@ window.addEventListener('message',function(e){
                 <div className="space-y-5">
                   {/* Required fields config */}
                   <div>
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">Champs obligatoires du formulaire</label>
+                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">{t.campaigns_required_fields}</label>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
                         <div>
-                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Nom</p>
-                          <p className="text-xs text-[#747878] dark:text-neutral-500">Toujours requis</p>
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.common_name}</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">{t.campaigns_always_required}</p>
                         </div>
-                        <span className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 bg-[#f5f3f2] dark:bg-neutral-800 px-2 py-1 rounded-lg">Obligatoire</span>
+                        <span className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 bg-[#f5f3f2] dark:bg-neutral-800 px-2 py-1 rounded-lg">{t.campaigns_required}</span>
                       </div>
                       <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
                         <div>
-                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Email</p>
-                          <p className="text-xs text-[#747878] dark:text-neutral-500">Adresse email du lead</p>
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.common_email}</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">{t.campaigns_lead_email}</p>
                         </div>
                         <button
                           onClick={() => setFormEmailRequired(!formEmailRequired)}
                           className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors ${formEmailRequired ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
                         >
-                          {formEmailRequired ? 'Obligatoire' : 'Optionnel'}
+                          {formEmailRequired ? t.campaigns_required : t.campaigns_optional}
                         </button>
                       </div>
                       <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
                         <div>
-                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Téléphone</p>
-                          <p className="text-xs text-[#747878] dark:text-neutral-500">Numéro de téléphone du lead</p>
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.common_phone}</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">{t.campaigns_lead_phone}</p>
                         </div>
                         <button
                           onClick={() => setFormPhoneRequired(!formPhoneRequired)}
                           className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors ${formPhoneRequired ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
                         >
-                          {formPhoneRequired ? 'Obligatoire' : 'Optionnel'}
+                          {formPhoneRequired ? t.campaigns_required : t.campaigns_optional}
                         </button>
                       </div>
                     </div>
@@ -1041,37 +1043,37 @@ window.addEventListener('message',function(e){
                   {/* Custom Fields */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-bold text-[#1b1c1b] dark:text-white">Champs personnalisés</label>
+                      <label className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_custom_fields}</label>
                       <button onClick={addCustomField} className="flex items-center gap-1 text-xs font-bold text-[#1b1c1b] dark:text-white hover:text-[#444748] dark:hover:text-neutral-300">
-                        <Plus className="h-3.5 w-3.5" /> Ajouter un champ
+                        <Plus className="h-3.5 w-3.5" /> {t.campaigns_add_field}
                       </button>
                     </div>
                     {formCustomFields.length === 0 && (
-                      <p className="text-xs text-[#747878] dark:text-neutral-500 italic">Aucun champ personnalisé. Cliquez sur "Ajouter un champ" pour en créer.</p>
+                      <p className="text-xs text-[#747878] dark:text-neutral-500 italic">{t.campaigns_no_custom_fields}</p>
                     )}
                     {formCustomFields.map((field, idx) => (
                       <div key={idx} className="mb-2">
                         <div className="flex items-center gap-2">
-                          <input type="text" value={field.label} onChange={(e) => updateCustomField(idx, { label: e.target.value })} placeholder="Nom du champ" className={`flex-1 ${smallInputCls}`} />
+                          <input type="text" value={field.label} onChange={(e) => updateCustomField(idx, { label: e.target.value })} placeholder={t.campaigns_field_name} className={`flex-1 ${smallInputCls}`} />
                           <select value={field.type} onChange={(e) => updateCustomField(idx, { type: e.target.value as CustomField['type'], ...(e.target.value === 'select' ? { options: field.options || [''] } : { options: undefined }) })} className={`${smallInputCls} text-[#1b1c1b]`}>
-                            <option value="text">Texte</option>
-                            <option value="email">Email</option>
-                            <option value="phone">Téléphone</option>
-                            <option value="number">Numéro</option>
-                            <option value="select">Sélection</option>
+                            <option value="text">{t.campaigns_type_text}</option>
+                            <option value="email">{t.common_email}</option>
+                            <option value="phone">{t.common_phone}</option>
+                            <option value="number">{t.campaigns_type_number}</option>
+                            <option value="select">{t.campaigns_type_select}</option>
                           </select>
                           <button
                             type="button"
                             onClick={() => updateCustomField(idx, { required: !field.required })}
                             className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${field.required ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
                           >
-                            {field.required ? 'Obligatoire' : 'Optionnel'}
+                            {field.required ? t.campaigns_required : t.campaigns_optional}
                           </button>
                           <button onClick={() => removeCustomField(idx)} className="text-red-400 hover:text-red-600"><X className="h-4 w-4" /></button>
                         </div>
                         {field.type === 'select' && (
                           <div className="ml-2 mt-2 pl-3 border-l-2 border-[#c4c7c7]/30 dark:border-neutral-700 space-y-1.5">
-                            <p className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">Options de sélection</p>
+                            <p className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">{t.campaigns_select_options}</p>
                             {(field.options || ['']).map((opt, optIdx) => (
                               <div key={optIdx} className="flex items-center gap-1.5">
                                 <input
@@ -1104,7 +1106,7 @@ window.addEventListener('message',function(e){
                               onClick={() => updateCustomField(idx, { options: [...(field.options || ['']), ''] })}
                               className="flex items-center gap-1 text-[10px] font-bold text-[#747878] dark:text-neutral-500 hover:text-[#1b1c1b] dark:hover:text-white"
                             >
-                              <Plus className="h-3 w-3" /> Ajouter une option
+                              <Plus className="h-3 w-3" /> {t.campaigns_add_option}
                             </button>
                           </div>
                         )}
@@ -1120,8 +1122,8 @@ window.addEventListener('message',function(e){
                   {/* Enable toggle */}
                   <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
                     <div>
-                      <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Activer le questionnaire</p>
-                      <p className="text-xs text-[#747878] dark:text-neutral-500">Les prospects répondront à des questions après avoir rempli leurs informations</p>
+                      <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_enable_questionnaire}</p>
+                      <p className="text-xs text-[#747878] dark:text-neutral-500">{t.campaigns_enable_questionnaire_desc}</p>
                     </div>
                     <button onClick={() => setFormQuestionnaireEnabled(!formQuestionnaireEnabled)}>
                       {formQuestionnaireEnabled
@@ -1135,8 +1137,8 @@ window.addEventListener('message',function(e){
                       {/* Required toggle */}
                       <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
                         <div>
-                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Questionnaire obligatoire</p>
-                          <p className="text-xs text-[#747878] dark:text-neutral-500">Le prospect doit répondre avant de pouvoir réserver</p>
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_questionnaire_required}</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">{t.campaigns_questionnaire_required_desc}</p>
                         </div>
                         <button onClick={() => setFormQuestionnaireRequired(!formQuestionnaireRequired)}>
                           {formQuestionnaireRequired
@@ -1148,8 +1150,8 @@ window.addEventListener('message',function(e){
                       {/* Qualifying toggle */}
                       <div className="flex items-center justify-between rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-3">
                         <div>
-                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Qualification automatique</p>
-                          <p className="text-xs text-[#747878] dark:text-neutral-500">Les réponses sont scorées et les prospects disqualifiés automatiquement</p>
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_auto_qualification}</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">{t.campaigns_auto_qualification_desc}</p>
                         </div>
                         <button onClick={() => setFormQuestionnaireQualifying(!formQuestionnaireQualifying)}>
                           {formQuestionnaireQualifying
@@ -1161,8 +1163,8 @@ window.addEventListener('message',function(e){
                       {/* Max eliminatory */}
                       {formQuestionnaireQualifying && (
                       <div>
-                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-1">Réponses éliminatoires tolérées</label>
-                        <p className="text-[10px] text-[#747878] dark:text-neutral-500 mb-2">Si le prospect dépasse ce nombre de réponses éliminatoires, il est automatiquement classé Non-Qualifié. (0 = aucune tolérance)</p>
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-1">{t.campaigns_max_eliminatory}</label>
+                        <p className="text-[10px] text-[#747878] dark:text-neutral-500 mb-2">{t.campaigns_max_eliminatory_desc}</p>
                         <input type="number" min={0} value={formMaxEliminatory} onChange={(e) => setFormMaxEliminatory(Math.max(0, parseInt(e.target.value) || 0))} className={`w-24 ${smallInputCls}`} />
                       </div>
                       )}
@@ -1174,12 +1176,12 @@ window.addEventListener('message',function(e){
                             <ClipboardList className="h-4 w-4" /> Questions ({formQuestions.length})
                           </label>
                           <button onClick={addQuestion} className="flex items-center gap-1 text-xs font-bold text-[#1b1c1b] dark:text-white hover:text-[#006c49]">
-                            <Plus className="h-3.5 w-3.5" /> Ajouter une question
+                            <Plus className="h-3.5 w-3.5" /> {t.campaigns_add_question}
                           </button>
                         </div>
 
                         {formQuestions.length === 0 && (
-                          <p className="text-xs text-[#747878] dark:text-neutral-500 italic">Aucune question configurée. Cliquez sur "Ajouter une question" pour commencer.</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500 italic">{t.campaigns_no_questions}</p>
                         )}
 
                         <div className="space-y-3">
@@ -1192,14 +1194,14 @@ window.addEventListener('message',function(e){
                                   type="text"
                                   value={question.question_text}
                                   onChange={(e) => updateQuestion(idx, { question_text: e.target.value })}
-                                  placeholder="Votre question..."
+                                  placeholder={t.campaigns_your_question}
                                   className={`flex-1 ${inputCls}`}
                                 />
                                 <button
                                   onClick={() => updateQuestion(idx, { is_required: !question.is_required })}
                                   className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap mt-1 ${question.is_required ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
                                 >
-                                  {question.is_required ? 'Obligatoire' : 'Optionnel'}
+                                  {question.is_required ? t.campaigns_required : t.campaigns_optional}
                                 </button>
                               </div>
 
@@ -1212,7 +1214,7 @@ window.addEventListener('message',function(e){
                                       : <ToggleLeft className="h-5 w-5 text-[#c4c7c7] dark:text-neutral-600" />}
                                   </button>
                                   <span className={`text-[10px] font-bold ${question.counts_in_scoring ? 'text-[#006c49]' : 'text-[#747878] dark:text-neutral-500'}`}>
-                                    {question.counts_in_scoring ? 'Compte dans le scoring' : 'Hors scoring'}
+                                    {question.counts_in_scoring ? t.campaigns_counts_in_scoring : t.campaigns_out_of_scoring}
                                   </span>
                                 </div>
                               )}
@@ -1232,10 +1234,10 @@ window.addEventListener('message',function(e){
                                   }}
                                   className={`${smallInputCls} text-[#1b1c1b] dark:text-white`}
                                 >
-                                  <option value="text">Texte libre</option>
-                                  <option value="select">Sélection unique</option>
-                                  <option value="multiple_choice">Choix multiple</option>
-                                  <option value="number">Nombre</option>
+                                  <option value="text">{t.campaigns_free_text}</option>
+                                  <option value="select">{t.campaigns_single_select}</option>
+                                  <option value="multiple_choice">{t.campaigns_multiple_choice}</option>
+                                  <option value="number">{t.campaigns_number}</option>
                                 </select>
                               </div>
 
@@ -1244,7 +1246,7 @@ window.addEventListener('message',function(e){
                                 {question.question_type === 'text' && (
                                   <div className="flex items-center gap-2 text-xs text-[#b87500] bg-[#ffb95f]/10 rounded-lg px-3 py-2">
                                     <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                                    <span>Les réponses textuelles ne peuvent pas être évaluées automatiquement</span>
+                                    <span>{t.campaigns_text_no_auto_eval}</span>
                                   </div>
                                 )}
 
@@ -1252,7 +1254,7 @@ window.addEventListener('message',function(e){
                                   <div className="space-y-3">
                                     {/* Options builder */}
                                     <div className="border-l-2 border-[#c4c7c7]/30 dark:border-neutral-700 pl-3 space-y-1.5">
-                                      <p className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">Options de réponse</p>
+                                      <p className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">{t.campaigns_answer_options}</p>
                                       {(question.options.length > 0 ? question.options : ['']).map((opt, optIdx) => (
                                         <div key={optIdx} className="flex items-center gap-1.5">
                                           <input
@@ -1276,14 +1278,14 @@ window.addEventListener('message',function(e){
                                         onClick={() => updateQuestion(idx, { options: [...question.options, ''] })}
                                         className="flex items-center gap-1 text-[10px] font-bold text-[#747878] dark:text-neutral-500 hover:text-[#1b1c1b] dark:hover:text-white"
                                       >
-                                        <Plus className="h-3 w-3" /> Ajouter une option
+                                        <Plus className="h-3 w-3" /> {t.campaigns_add_option}
                                       </button>
                                     </div>
 
                                     {/* Expected answers */}
                                     {formQuestionnaireQualifying && question.options.filter(o => o.trim()).length > 0 && (
                                       <div className="border-l-2 border-emerald-300/50 pl-3 space-y-1">
-                                        <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Réponse(s) attendue(s)</p>
+                                        <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">{t.campaigns_expected_answers}</p>
                                         <div className="flex flex-wrap gap-1.5">
                                           {question.options.filter(o => o.trim()).map((opt, optIdx) => {
                                             const expected = Array.isArray(question.expected_answer) ? question.expected_answer : []
@@ -1308,7 +1310,7 @@ window.addEventListener('message',function(e){
                                     {/* Eliminatory answers */}
                                     {formQuestionnaireQualifying && question.options.filter(o => o.trim()).length > 0 && (
                                       <div className="border-l-2 border-red-300/50 pl-3 space-y-1">
-                                        <p className="text-[10px] font-bold text-red-500 dark:text-red-400 uppercase tracking-wide">Réponse(s) éliminatoire(s)</p>
+                                        <p className="text-[10px] font-bold text-red-500 dark:text-red-400 uppercase tracking-wide">{t.campaigns_eliminatory_answers}</p>
                                         <div className="flex flex-wrap gap-1.5">
                                           {question.options.filter(o => o.trim()).map((opt, optIdx) => {
                                             const elim = Array.isArray(question.eliminatory_answers) ? question.eliminatory_answers : []
@@ -1335,7 +1337,7 @@ window.addEventListener('message',function(e){
                                 {formQuestionnaireQualifying && question.question_type === 'number' && (
                                   <div className="space-y-3">
                                     <div className="border-l-2 border-emerald-300/50 pl-3 space-y-1.5">
-                                      <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Valeur attendue (ou range min-max)</p>
+                                      <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">{t.campaigns_expected_value}</p>
                                       <div className="flex items-center gap-2">
                                         <input
                                           type="number"
@@ -1349,7 +1351,7 @@ window.addEventListener('message',function(e){
                                               updateQuestion(idx, { expected_answer: val ? parseFloat(val) : null })
                                             }
                                           }}
-                                          placeholder="Valeur ou Min"
+                                          placeholder={t.campaigns_value_or_min}
                                           className={`w-28 ${smallInputCls}`}
                                         />
                                         <span className="text-xs text-[#747878]">—</span>
@@ -1367,13 +1369,13 @@ window.addEventListener('message',function(e){
                                               updateQuestion(idx, { expected_answer: min ?? null })
                                             }
                                           }}
-                                          placeholder="Max (optionnel)"
+                                          placeholder={t.campaigns_max_optional}
                                           className={`w-28 ${smallInputCls}`}
                                         />
                                       </div>
                                     </div>
                                     <div className="border-l-2 border-red-300/50 pl-3 space-y-1.5">
-                                      <p className="text-[10px] font-bold text-red-500 dark:text-red-400 uppercase tracking-wide">Valeur éliminatoire (ou range)</p>
+                                      <p className="text-[10px] font-bold text-red-500 dark:text-red-400 uppercase tracking-wide">{t.campaigns_eliminatory_value}</p>
                                       <div className="flex items-center gap-2">
                                         <input
                                           type="number"
@@ -1388,7 +1390,7 @@ window.addEventListener('message',function(e){
                                               updateQuestion(idx, { eliminatory_answers: [parseFloat(val)] })
                                             }
                                           }}
-                                          placeholder="Valeur ou Min"
+                                          placeholder={t.campaigns_value_or_min}
                                           className={`w-28 ${smallInputCls}`}
                                         />
                                         <span className="text-xs text-[#747878]">—</span>
@@ -1406,7 +1408,7 @@ window.addEventListener('message',function(e){
                                               updateQuestion(idx, { eliminatory_answers: min !== undefined && min !== null ? [min] : [] })
                                             }
                                           }}
-                                          placeholder="Max (optionnel)"
+                                          placeholder={t.campaigns_max_optional}
                                           className={`w-28 ${smallInputCls}`}
                                         />
                                       </div>
@@ -1454,7 +1456,7 @@ window.addEventListener('message',function(e){
                     <>
                       {/* Duration */}
                       <div>
-                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Durée du rendez-vous</label>
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_booking_duration}</label>
                         <div className="flex gap-2 flex-wrap">
                           {BOOKING_DURATIONS.map(d => (
                             <button
@@ -1475,7 +1477,7 @@ window.addEventListener('message',function(e){
 
                       {/* Title */}
                       <div>
-                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Titre du rendez-vous</label>
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_booking_title_label}</label>
                         <input
                           type="text"
                           value={formBookingTitle}
@@ -1485,10 +1487,10 @@ window.addEventListener('message',function(e){
                         />
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {[
-                            { var: '{{lead_name}}', label: 'Nom du lead' },
-                            { var: '{{assignee_name}}', label: 'Nom du closer/setter' },
-                            { var: '{{formula_name}}', label: "Nom de l'offre" },
-                            { var: '{{campaign_name}}', label: 'Nom de la campagne' },
+                            { var: '{{lead_name}}', label: t.campaigns_var_lead_name },
+                            { var: '{{assignee_name}}', label: t.campaigns_var_assignee_name },
+                            { var: '{{formula_name}}', label: t.campaigns_var_formula_name },
+                            { var: '{{campaign_name}}', label: t.campaigns_var_campaign_name },
                           ].map(v => (
                             <button
                               key={v.var}
@@ -1505,7 +1507,7 @@ window.addEventListener('message',function(e){
 
                       {/* Description */}
                       <div>
-                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Description du rendez-vous</label>
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_booking_desc_label}</label>
                         <textarea
                           value={formBookingDescription}
                           onChange={(e) => setFormBookingDescription(e.target.value)}
@@ -1515,12 +1517,12 @@ window.addEventListener('message',function(e){
                         />
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {[
-                            { var: '{{lead_name}}', label: 'Nom du lead' },
-                            { var: '{{lead_email}}', label: 'Email du lead' },
-                            { var: '{{lead_phone}}', label: 'Téléphone du lead' },
-                            { var: '{{assignee_name}}', label: 'Nom du closer/setter' },
-                            { var: '{{formula_name}}', label: "Nom de l'offre" },
-                            { var: '{{campaign_name}}', label: 'Nom de la campagne' },
+                            { var: '{{lead_name}}', label: t.campaigns_var_lead_name },
+                            { var: '{{lead_email}}', label: t.campaigns_var_lead_email },
+                            { var: '{{lead_phone}}', label: t.campaigns_var_lead_phone },
+                            { var: '{{assignee_name}}', label: t.campaigns_var_assignee_name },
+                            { var: '{{formula_name}}', label: t.campaigns_var_formula_name },
+                            { var: '{{campaign_name}}', label: t.campaigns_var_campaign_name },
                           ].map(v => (
                             <button
                               key={v.var}
@@ -1543,11 +1545,11 @@ window.addEventListener('message',function(e){
             {/* Footer */}
             <div className="flex justify-end gap-3 bg-[#f5f3f2] dark:bg-neutral-800 px-6 py-4 flex-shrink-0 rounded-b-2xl">
               <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700 px-5 py-2.5 text-sm font-bold text-[#444748] dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 transition-colors">
-                Annuler
+                {t.common_cancel}
               </button>
               <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-full bg-[#1b1c1b] px-5 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                {editingCampaign ? 'Enregistrer' : 'Créer'}
+                {editingCampaign ? t.campaigns_save : t.campaigns_create}
               </button>
             </div>
           </div>
@@ -1562,7 +1564,7 @@ window.addEventListener('message',function(e){
               <div className="flex items-center gap-5">
                 <div>
                   <h3 className="text-xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{embedModalCampaign.name}</h3>
-                  <p className="text-xs text-[#444748] dark:text-neutral-400 mt-0.5">{embedModalFormat === 'page' ? 'Personnalisez et partagez votre page de capture' : 'Intégrez le formulaire sur votre site'}</p>
+                  <p className="text-xs text-[#444748] dark:text-neutral-400 mt-0.5">{embedModalFormat === 'page' ? t.campaigns_embed_page_desc : t.campaigns_embed_integrate_desc}</p>
                 </div>
                 {/* Format toggle */}
                 <div className="flex rounded-full bg-[#f5f3f2] dark:bg-neutral-800 p-1 ml-4">
@@ -1606,7 +1608,7 @@ window.addEventListener('message',function(e){
                     embedTab === 'code' ? 'bg-[#1b1c1b] text-white' : 'text-[#444748] dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800'
                   }`}
                 >
-                  <Code className="h-4 w-4" /> Code & Tuto
+                  <Code className="h-4 w-4" /> {t.campaigns_code_tuto}
                 </button>
                 <button
                   onClick={() => setEmbedTab('style')}
@@ -1614,7 +1616,7 @@ window.addEventListener('message',function(e){
                     embedTab === 'style' ? 'bg-[#1b1c1b] text-white' : 'text-[#444748] dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800'
                   }`}
                 >
-                  <Paintbrush className="h-4 w-4" /> Personnaliser
+                  <Paintbrush className="h-4 w-4" /> {t.campaigns_customize}
                 </button>
               </div>
             )}
@@ -1627,16 +1629,16 @@ window.addEventListener('message',function(e){
                 <div className="p-8 space-y-6">
                   {/* Link + Copy */}
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2.5 block ml-1">Lien de la page de capture</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2.5 block ml-1">{t.campaigns_capture_page_link}</label>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 flex items-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3 text-sm text-[#444748] dark:text-neutral-300 font-mono truncate">
                         {getCaptureUrl(embedModalCampaign.slug)}
                       </div>
                       <button
-                        onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), 'Lien')}
+                        onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), t.campaigns_link)}
                         className="flex items-center gap-1.5 rounded-full bg-[#1b1c1b] px-5 py-3 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all flex-shrink-0"
                       >
-                        <Copy className="h-4 w-4" /> Copier
+                        <Copy className="h-4 w-4" /> {t.common_copy}
                       </button>
                       <a
                         href={getCaptureUrl(embedModalCampaign.slug)}
@@ -1644,7 +1646,7 @@ window.addEventListener('message',function(e){
                         rel="noopener noreferrer"
                         className="flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors flex-shrink-0"
                       >
-                        <ExternalLink className="h-4 w-4" /> Ouvrir
+                        <ExternalLink className="h-4 w-4" /> {t.campaigns_open}
                       </a>
                     </div>
                   </div>
@@ -1654,13 +1656,13 @@ window.addEventListener('message',function(e){
                     {/* Left: Controls */}
                     <div className="w-[260px] flex-shrink-0 p-6 space-y-5 overflow-y-auto bg-white dark:bg-neutral-900 rounded-2xl m-1">
                       <h4 className="text-sm font-extrabold text-[#1b1c1b] dark:text-white flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                        <Palette className="h-4 w-4 text-[#006c49]" /> Personnaliser
+                        <Palette className="h-4 w-4 text-[#006c49]" /> {t.campaigns_customize}
                       </h4>
 
                       {/* Font */}
                       <div>
                         <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2">
-                          <Type className="h-3.5 w-3.5" /> Police
+                          <Type className="h-3.5 w-3.5" /> {t.campaigns_font}
                         </label>
                         <select
                           value={styleFont}
@@ -1673,7 +1675,7 @@ window.addEventListener('message',function(e){
 
                       {/* Primary color */}
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Couleur principale</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">{t.campaigns_primary_color}</label>
                         <div className="flex items-center gap-2">
                           <input type="color" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="h-8 w-8 rounded-full border-0 cursor-pointer" />
                           <input type="text" value={stylePrimaryColor} onChange={(e) => setStylePrimaryColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-1.5 text-xs text-[#1b1c1b] dark:text-white font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
@@ -1682,7 +1684,7 @@ window.addEventListener('message',function(e){
 
                       {/* Background color */}
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Fond</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">{t.campaigns_background}</label>
                         <div className="flex items-center gap-2">
                           <input type="color" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="h-8 w-8 rounded-full border-0 cursor-pointer" />
                           <input type="text" value={styleBgColor} onChange={(e) => setStyleBgColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-1.5 text-xs text-[#1b1c1b] dark:text-white font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
@@ -1691,7 +1693,7 @@ window.addEventListener('message',function(e){
 
                       {/* Text color */}
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Texte</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">{t.campaigns_text_color}</label>
                         <div className="flex items-center gap-2">
                           <input type="color" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="h-8 w-8 rounded-full border-0 cursor-pointer" />
                           <input type="text" value={styleTextColor} onChange={(e) => setStyleTextColor(e.target.value)} className="flex-1 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-1.5 text-xs text-[#1b1c1b] dark:text-white font-mono focus:ring-1 focus:ring-[#006c49] focus:outline-none" />
@@ -1700,16 +1702,16 @@ window.addEventListener('message',function(e){
 
                       {/* Border radius */}
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Arrondi — {styleRadius}px</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">{t.campaigns_border_radius} — {styleRadius}px</label>
                         <input type="range" min={0} max={24} value={styleRadius} onChange={(e) => setStyleRadius(Number(e.target.value))} className="w-full accent-[#006c49]" />
                         <div className="flex justify-between text-[10px] text-[#444748]/40 dark:text-neutral-600 font-bold">
-                          <span>Carré</span><span>Arrondi</span>
+                          <span>{t.campaigns_square}</span><span>{t.campaigns_rounded}</span>
                         </div>
                       </div>
 
                       {/* Layout */}
                       <div>
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Disposition</label>
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">{t.campaigns_layout}</label>
                         <div className="grid grid-cols-2 gap-1.5">
                           <button
                             onClick={() => setStyleLayout('vertical')}
@@ -1721,7 +1723,7 @@ window.addEventListener('message',function(e){
                               <div className={`h-3 rounded-sm ${styleLayout === 'vertical' ? 'bg-white/40' : 'bg-[#444748]/20'}`} />
                               <div className={`h-5 rounded-sm ${styleLayout === 'vertical' ? 'bg-white/40' : 'bg-[#444748]/20'}`} />
                             </div>
-                            Vertical
+                            {t.campaigns_vertical}
                           </button>
                           <button
                             onClick={() => setStyleLayout('horizontal')}
@@ -1733,7 +1735,7 @@ window.addEventListener('message',function(e){
                               <div className={`h-5 flex-1 rounded-sm ${styleLayout === 'horizontal' ? 'bg-white/40' : 'bg-[#444748]/20'}`} />
                               <div className={`h-5 flex-1 rounded-sm ${styleLayout === 'horizontal' ? 'bg-white/40' : 'bg-[#444748]/20'}`} />
                             </div>
-                            Horizontal
+                            {t.campaigns_horizontal}
                           </button>
                         </div>
                       </div>
@@ -1749,18 +1751,18 @@ window.addEventListener('message',function(e){
                           if (styleFont !== 'Inter, system-ui, sans-serif') params.set('font', styleFont.split(',')[0].trim())
                           if (styleLayout === 'horizontal') params.set('layout', 'horizontal')
                           const url = params.toString() ? `${getCaptureUrl(embedModalCampaign.slug)}?${params.toString()}` : getCaptureUrl(embedModalCampaign.slug)
-                          copyToClipboard(url, 'Lien personnalisé')
+                          copyToClipboard(url, t.campaigns_custom_link)
                         }}
                         className="w-full flex items-center justify-center gap-2 rounded-full bg-[#1b1c1b] px-4 py-3 text-sm font-bold text-white hover:scale-[1.02] active:scale-95 transition-all"
                       >
-                        <Copy className="h-4 w-4" /> Copier le lien personnalisé
+                        <Copy className="h-4 w-4" /> {t.campaigns_copy_custom_link}
                       </button>
                     </div>
 
                     {/* Right: Preview */}
                     <div className="flex-1 p-5 flex flex-col">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/40 mb-3 flex items-center gap-1.5">
-                        <Eye className="h-3.5 w-3.5" /> Aperçu en temps réel
+                        <Eye className="h-3.5 w-3.5" /> {t.campaigns_live_preview}
                       </p>
                       <div className="flex-1 rounded-2xl overflow-hidden shadow-[0_20px_40px_rgba(27,28,27,0.04)] bg-white">
                         <iframe
@@ -1788,15 +1790,15 @@ window.addEventListener('message',function(e){
                   {/* Tutorial */}
                   <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 p-6">
                     <h4 className="text-sm font-extrabold text-[#1b1c1b] dark:text-white mb-3 flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                      <Eye className="h-4 w-4 text-[#006c49]" /> Comment ça marche
+                      <Eye className="h-4 w-4 text-[#006c49]" /> {t.campaigns_how_it_works}
                     </h4>
                     {embedModalFormat === 'popup' ? (
                       <ol className="text-xs text-[#444748] dark:text-neutral-400 space-y-2.5">
                         {[
-                          `Le popup s'affiche ${embedModalCampaign.popup_delay ? `après ${embedModalCampaign.popup_delay} secondes` : 'instantanément'} au chargement de la page`,
-                          'Le site est bloqué (scroll désactivé, overlay sombre) tant que le formulaire n\'est pas rempli',
-                          'Une fois le formulaire soumis, le popup disparaît et le visiteur peut naviguer normalement',
-                          'Le visiteur ne reverra plus le popup grâce au localStorage',
+                          `${t.campaigns_popup_step1_prefix}${embedModalCampaign.popup_delay ? `${t.campaigns_popup_step1_after} ${embedModalCampaign.popup_delay} ${t.campaigns_popup_step1_seconds}` : t.campaigns_popup_step1_instant}${t.campaigns_popup_step1_suffix}`,
+                          t.campaigns_popup_step2,
+                          t.campaigns_popup_step3,
+                          t.campaigns_popup_step4,
                         ].map((step, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <span className="w-6 h-6 rounded-full bg-[#1b1c1b] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
@@ -1805,16 +1807,16 @@ window.addEventListener('message',function(e){
                         ))}
                         <li className="flex items-start gap-3">
                           <span className="w-6 h-6 rounded-full bg-[#1b1c1b] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">5</span>
-                          <span>Collez le code juste avant la balise <code className="bg-white px-1.5 py-0.5 rounded-full text-[#006c49] font-mono text-[10px]">{'</body>'}</code> de votre site</span>
+                          <span>{t.campaigns_popup_step5_prefix} <code className="bg-white px-1.5 py-0.5 rounded-full text-[#006c49] font-mono text-[10px]">{'</body>'}</code> {t.campaigns_popup_step5_suffix}</span>
                         </li>
                       </ol>
                     ) : (
                       <ol className="text-xs text-[#444748] dark:text-neutral-400 space-y-2.5">
                         {[
-                          'Copiez le code iframe ci-dessous',
-                          'Collez-le dans le HTML de votre page, à l\'endroit où vous souhaitez afficher le formulaire',
-                          'Ajustez la hauteur (height) si nécessaire',
-                          'Le formulaire s\'adapte automatiquement à la largeur du conteneur',
+                          t.campaigns_iframe_step1,
+                          t.campaigns_iframe_step2,
+                          t.campaigns_iframe_step3,
+                          t.campaigns_iframe_step4,
                         ].map((step, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <span className="w-6 h-6 rounded-full bg-[#1b1c1b] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
@@ -1828,12 +1830,12 @@ window.addEventListener('message',function(e){
                   {/* Code block */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500">Code à intégrer</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500">{t.campaigns_code_to_embed}</label>
                       <button
                         onClick={() => copyToClipboard(embedModalFormat === 'popup' ? getPopupCode : getIframeCode, `Code ${embedModalFormat}`)}
                         className="flex items-center gap-1.5 rounded-full bg-[#1b1c1b] px-4 py-2 text-xs font-bold text-white hover:scale-105 active:scale-95 transition-all"
                       >
-                        <Copy className="h-3.5 w-3.5" /> Copier le code
+                        <Copy className="h-3.5 w-3.5" /> {t.campaigns_copy_code}
                       </button>
                     </div>
                     <pre className="rounded-2xl bg-[#1b1c1b] p-5 text-xs text-[#006c49] overflow-x-auto max-h-[250px] overflow-y-auto whitespace-pre-wrap break-all font-mono">
@@ -1844,10 +1846,10 @@ window.addEventListener('message',function(e){
                   {/* Quick copy other format */}
                   <div className="flex gap-3">
                     <button
-                      onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), 'Lien page entière')}
+                      onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), t.campaigns_full_page_link)}
                       className="flex-1 flex items-center justify-center gap-2 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors"
                     >
-                      <Monitor className="h-4 w-4" /> Copier lien page entière
+                      <Monitor className="h-4 w-4" /> {t.campaigns_copy_full_page_link}
                     </button>
                   </div>
                 </div>
@@ -1858,13 +1860,13 @@ window.addEventListener('message',function(e){
                   {/* Left: Controls */}
                   <div className="w-[280px] flex-shrink-0 p-6 space-y-5 overflow-y-auto bg-white dark:bg-neutral-900">
                     <h4 className="text-sm font-extrabold text-[#1b1c1b] dark:text-white flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                      <Palette className="h-4 w-4 text-[#006c49]" /> Style
+                      <Palette className="h-4 w-4 text-[#006c49]" /> {t.campaigns_style}
                     </h4>
 
                     {/* Font */}
                     <div>
                       <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2">
-                        <Type className="h-3.5 w-3.5" /> Police
+                        <Type className="h-3.5 w-3.5" /> {t.campaigns_font}
                       </label>
                       <select
                         value={styleFont}
@@ -1877,7 +1879,7 @@ window.addEventListener('message',function(e){
 
                     {/* Primary color */}
                     <div>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Couleur principale</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">{t.campaigns_primary_color}</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -1896,7 +1898,7 @@ window.addEventListener('message',function(e){
 
                     {/* Background color */}
                     <div>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Fond</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">{t.campaigns_background}</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -1915,7 +1917,7 @@ window.addEventListener('message',function(e){
 
                     {/* Text color */}
                     <div>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Texte</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">{t.campaigns_text_color}</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -1934,7 +1936,7 @@ window.addEventListener('message',function(e){
 
                     {/* Border radius */}
                     <div>
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">Arrondi des coins — {styleRadius}px</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2 block">{t.campaigns_border_radius_corners} — {styleRadius}px</label>
                       <input
                         type="range"
                         min={0}
@@ -1944,7 +1946,7 @@ window.addEventListener('message',function(e){
                         className="w-full accent-[#006c49]"
                       />
                       <div className="flex justify-between text-[10px] text-[#444748]/40 dark:text-neutral-600 font-bold">
-                        <span>Carré</span><span>Arrondi</span>
+                        <span>{t.campaigns_square}</span><span>{t.campaigns_rounded}</span>
                       </div>
                     </div>
 
@@ -1953,14 +1955,14 @@ window.addEventListener('message',function(e){
                       onClick={() => copyToClipboard(embedModalFormat === 'popup' ? getPopupCode : getIframeCode, `Code ${embedModalFormat}`)}
                       className="w-full flex items-center justify-center gap-2 rounded-full bg-[#1b1c1b] px-4 py-3 text-sm font-bold text-white hover:scale-[1.02] active:scale-95 transition-all"
                     >
-                      <Copy className="h-4 w-4" /> Copier le code
+                      <Copy className="h-4 w-4" /> {t.campaigns_copy_code}
                     </button>
                   </div>
 
                   {/* Right: Live preview */}
                   <div className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 p-5 flex flex-col">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/40 mb-3 flex items-center gap-1.5">
-                      <Eye className="h-3.5 w-3.5" /> Aperçu en temps réel
+                      <Eye className="h-3.5 w-3.5" /> {t.campaigns_live_preview}
                     </p>
                     <div className="flex-1 rounded-2xl overflow-hidden shadow-[0_20px_40px_rgba(27,28,27,0.04)] bg-white">
                       <iframe
@@ -1977,7 +1979,7 @@ window.addEventListener('message',function(e){
             {/* Footer */}
             <div className="flex justify-end bg-[#f5f3f2] dark:bg-neutral-800 px-8 py-4 flex-shrink-0 rounded-b-2xl">
               <button onClick={() => setEmbedModalCampaign(null)} className="rounded-full bg-[#1b1c1b] px-6 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all">
-                Fermer
+                {t.common_close}
               </button>
             </div>
           </div>
@@ -1987,12 +1989,12 @@ window.addEventListener('message',function(e){
       {isNewSourceModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40">
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <h3 className="text-lg font-extrabold text-[#1b1c1b] dark:text-white mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>Nouvelle source</h3>
+            <h3 className="text-lg font-extrabold text-[#1b1c1b] dark:text-white mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.campaigns_new_source}</h3>
             <input
               type="text"
               value={newSourceName}
               onChange={(e) => setNewSourceName(e.target.value)}
-              placeholder="Nom de la source"
+              placeholder={t.campaigns_source_name}
               className="w-full bg-transparent border-b border-[#c4c7c7]/30 dark:border-neutral-700 px-0 py-2.5 text-[#1b1c1b] dark:text-white focus:border-[#006c49] focus:outline-none mb-4 transition-colors"
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleCreateSource()}
@@ -2002,14 +2004,14 @@ window.addEventListener('message',function(e){
                 onClick={() => { setIsNewSourceModalOpen(false); setNewSourceName('') }}
                 className="flex-1 border border-[#c4c7c7]/30 dark:border-neutral-700 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 text-[#444748] dark:text-neutral-300 font-bold py-2.5 rounded-full transition-colors"
               >
-                Annuler
+                {t.common_cancel}
               </button>
               <button
                 onClick={handleCreateSource}
                 disabled={!newSourceName.trim() || savingSource}
                 className="flex-1 bg-[#1b1c1b] hover:scale-105 active:scale-95 disabled:opacity-50 text-white font-bold py-2.5 rounded-full transition-all"
               >
-                {savingSource ? 'Création...' : 'Créer'}
+                {savingSource ? t.campaigns_creating : t.campaigns_create}
               </button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { ShieldCheck, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 
 interface BusinessVerificationProps {
   userId: string;
@@ -20,6 +21,7 @@ function getDeviceFingerprint(): string {
 }
 
 export default function BusinessVerification({ userId, email, authMethod = 'classic', onVerified, onCancel }: BusinessVerificationProps) {
+  const { t } = useBusinessLang()
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -36,8 +38,8 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
   // Countdown timer
   useEffect(() => {
     if (resendCountdown <= 0) return;
-    const t = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
+    return () => clearTimeout(timer);
   }, [resendCountdown]);
 
   const sendCode = async () => {
@@ -50,11 +52,11 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
         body: JSON.stringify({ user_id: userId, email })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur');
+      if (!res.ok) throw new Error(data.error || t.checkout_error_server);
       setCodeSent(true);
       setResendCountdown(60);
     } catch (err: any) {
-      setError(err.message || 'Impossible d\'envoyer le code');
+      setError(err.message || t.verification_error_send);
     } finally {
       setSending(false);
     }
@@ -109,12 +111,12 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Code invalide');
+      if (!res.ok) throw new Error(data.error || t.verification_error_invalid);
       // Save device token
       localStorage.setItem('closeos_device_token', data.token);
       onVerified(data.token);
     } catch (err: any) {
-      setError(err.message || 'Code invalide ou expiré');
+      setError(err.message || t.verification_error_invalid);
       setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } finally {
@@ -152,12 +154,12 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
         {/* Title */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-2">
-            V&eacute;rification requise
+            {t.verification_required}
           </h1>
           <p className="text-stone-500 dark:text-neutral-400 text-sm leading-relaxed">
             {codeSent
-              ? <>Un code a &eacute;t&eacute; envoy&eacute; &agrave; <strong className="text-stone-700 dark:text-neutral-300">{maskedEmail}</strong></>
-              : 'Envoi du code en cours...'
+              ? <>{t.verification_code_sent_to} <strong className="text-stone-700 dark:text-neutral-300">{maskedEmail}</strong></>
+              : t.verification_sending
             }
           </p>
         </div>
@@ -203,7 +205,7 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
         <div className="text-center mb-6">
           {resendCountdown > 0 ? (
             <p className="text-xs text-stone-400 dark:text-neutral-500">
-              Renvoyer dans {resendCountdown}s
+              {t.verification_resend_in} {resendCountdown}s
             </p>
           ) : (
             <button
@@ -212,7 +214,7 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50"
             >
               <RotateCcw className="h-3 w-3" />
-              Renvoyer le code
+              {t.verification_resend}
             </button>
           )}
         </div>
@@ -222,7 +224,7 @@ export default function BusinessVerification({ userId, email, authMethod = 'clas
           onClick={onCancel}
           className="w-full text-center text-xs font-bold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors"
         >
-          Retour &agrave; la connexion
+          {t.verification_back_login}
         </button>
       </div>
 

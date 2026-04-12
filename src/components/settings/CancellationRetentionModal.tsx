@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { getCalApi } from "@calcom/embed-react";
 
 interface CancellationRetentionModalProps {
@@ -10,6 +11,7 @@ interface CancellationRetentionModalProps {
 
 export function CancellationRetentionModal({ isOpen, onClose }: CancellationRetentionModalProps) {
     const { user } = useAuth();
+    const { lang } = useLanguage();
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -35,16 +37,16 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Erreur lors de l\'annulation');
+                throw new Error(data.error || (lang === 'fr' ? 'Erreur lors de l\'annulation' : 'Error during cancellation'));
             }
 
             // Show success message and close
-            alert('Votre abonnement sera annulé à la fin de votre période de facturation.');
+            alert(lang === 'fr' ? 'Votre abonnement sera annulé à la fin de votre période de facturation.' : 'Your subscription will be cancelled at the end of your billing period.');
             onClose();
             window.location.reload(); // Refresh to update UI
         } catch (error: any) {
             console.error('Cancellation error:', error);
-            alert(error.message || 'Erreur lors de l\'annulation');
+            alert(error.message || (lang === 'fr' ? 'Erreur lors de l\'annulation' : 'Error during cancellation'));
         } finally {
             setLoading(false);
         }
@@ -67,9 +69,9 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-orange-500 text-white shadow-lg shadow-red-500/20">
                             <LogOut className="h-8 w-8" />
                         </div>
-                        <h2 className="text-3xl font-bold text-white mb-3">Avant de partir...</h2>
+                        <h2 className="text-3xl font-bold text-white mb-3">{lang === 'fr' ? 'Avant de partir...' : 'Before you go...'}</h2>
                         <p className="text-white/40 text-lg">
-                            Nous aimerions comprendre ce qui ne vous convient pas.
+                            {lang === 'fr' ? 'Nous aimerions comprendre ce qui ne vous convient pas.' : "We'd like to understand what didn't work for you."}
                         </p>
                     </div>
 
@@ -77,11 +79,10 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
                     <div className="space-y-6 mb-8">
                         <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
                             <p className="text-white font-medium mb-2">
-                                💬 Discutons-en ensemble
+                                {lang === 'fr' ? '💬 Discutons-en ensemble' : "💬 Let's discuss it together"}
                             </p>
                             <p className="text-white/40 text-sm">
-                                Prenez 15 minutes avec notre équipe pour nous expliquer vos besoins.
-                                Nous trouverons peut-être une solution ensemble !
+                                {lang === 'fr' ? 'Prenez 15 minutes avec notre équipe pour nous expliquer vos besoins. Nous trouverons peut-être une solution ensemble !' : 'Take 15 minutes with our team to explain your needs. We might find a solution together!'}
                             </p>
                         </div>
 
@@ -94,7 +95,7 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
                                 className="w-full px-6 py-4 bg-emerald-500 hover:bg-emerald-400 text-black rounded-full font-bold transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-3 disabled:opacity-50"
                             >
                                 <Calendar className="h-5 w-5" />
-                                Je prends rendez-vous avant de partir
+                                {lang === 'fr' ? 'Je prends rendez-vous avant de partir' : 'I\'ll book an appointment before leaving'}
                             </button>
 
                             <button
@@ -105,12 +106,12 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
                                 {loading ? (
                                     <>
                                         <Loader2 className="h-5 w-5 animate-spin" />
-                                        Annulation en cours...
+                                        {lang === 'fr' ? 'Annulation en cours...' : 'Cancelling...'}
                                     </>
                                 ) : (
                                     <>
                                         <LogOut className="h-5 w-5" />
-                                        Je préfère partir
+                                        {lang === 'fr' ? 'Je préfère partir' : 'I prefer to leave'}
                                     </>
                                 )}
                             </button>
@@ -119,7 +120,7 @@ export function CancellationRetentionModal({ isOpen, onClose }: CancellationRete
 
                     {/* Footer note */}
                     <p className="text-center text-sm text-white/40">
-                        Votre abonnement restera actif jusqu'à la fin de votre période de facturation
+                        {lang === 'fr' ? "Votre abonnement restera actif jusqu'à la fin de votre période de facturation" : 'Your subscription will remain active until the end of your billing period'}
                     </p>
                 </div>
             </div>

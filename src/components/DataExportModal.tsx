@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { DataExportContent } from './DataExportContent'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface DataExportModalProps {
   isOpen: boolean
@@ -7,6 +8,7 @@ interface DataExportModalProps {
 }
 
 export function DataExportModal({ isOpen, onClose }: DataExportModalProps) {
+  const { lang } = useLanguage()
   if (!isOpen) return null
 
   return (
@@ -19,8 +21,8 @@ export function DataExportModal({ isOpen, onClose }: DataExportModalProps) {
           <X className="h-5 w-5" />
         </button>
 
-        <h2 className="text-xl font-bold text-white mb-2">Exporter mes données</h2>
-        <p className="text-white/40 text-sm mb-6">Téléchargez vos données au format PDF.</p>
+        <h2 className="text-xl font-bold text-white mb-2">{lang === 'fr' ? 'Exporter mes données' : 'Export my data'}</h2>
+        <p className="text-white/40 text-sm mb-6">{lang === 'fr' ? 'Téléchargez vos données au format PDF.' : 'Download your data in PDF format.'}</p>
 
         <DataExportContent />
       </div>

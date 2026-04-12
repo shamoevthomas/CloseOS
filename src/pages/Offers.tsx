@@ -4,8 +4,12 @@ import { OfferDetailModal, type Offer } from '../components/OfferDetailModal'
 import { useOffers } from '../contexts/OffersContext'
 import { useProspects } from '../contexts/ProspectsContext'
 import { cn } from '../lib/utils'
+import { useLanguage } from '../contexts/LanguageContext'
+import { offersTranslations } from '../i18n/translations'
 
 export function Offers() {
+  const { lang } = useLanguage()
+  const t = offersTranslations[lang]
   const { offers, addOffer, updateOffer, deleteOffer } = useOffers()
   const {
     syncHubspot,
@@ -78,10 +82,10 @@ export function Offers() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white">
-              Catalogue <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-300">d'Offres</span>
+              {lang === 'fr' ? 'Catalogue' : 'Offers'} <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-300">{lang === 'fr' ? "d'Offres" : 'Catalog'}</span>
             </h2>
             <p className="mt-2 text-white/40 text-sm font-medium">
-              {activeOffers.length} {activeOffers.length > 1 ? 'offres actives' : 'offre active'} au total
+              {activeOffers.length} {lang === 'fr' ? (activeOffers.length > 1 ? 'offres actives' : 'offre active') : (activeOffers.length > 1 ? 'active offers' : 'active offer')} {lang === 'fr' ? 'au total' : 'total'}
             </p>
           </div>
 
@@ -103,7 +107,7 @@ export function Offers() {
                 {!isSyncingHubspot && (
                   <span className="hidden lg:inline">{Math.floor(nextSyncSeconds / 60)}:{(nextSyncSeconds % 60).toString().padStart(2, '0')}</span>
                 )}
-                <span>{isSyncingHubspot ? "Synchro..." : "Synchro HubSpot"}</span>
+                <span>{isSyncingHubspot ? (lang === 'fr' ? "Synchro..." : "Syncing...") : (lang === 'fr' ? "Synchro HubSpot" : "Sync HubSpot")}</span>
               </button>
             )}
 
@@ -124,7 +128,7 @@ export function Offers() {
                 {!isSyncingGhl && (
                   <span className="hidden lg:inline">{Math.floor(nextSyncSeconds / 60)}:{(nextSyncSeconds % 60).toString().padStart(2, '0')}</span>
                 )}
-                <span>{isSyncingGhl ? "Synchro..." : "Synchro GHL"}</span>
+                <span>{isSyncingGhl ? (lang === 'fr' ? "Synchro..." : "Syncing...") : (lang === 'fr' ? "Synchro GHL" : "Sync GHL")}</span>
               </button>
             )}
 
@@ -133,7 +137,7 @@ export function Offers() {
               className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-600/20 active:scale-95"
             >
               <Plus className="h-5 w-5" />
-              Nouvelle Offre
+              {t.add_offer}
             </button>
           </div>
         </div>
@@ -144,7 +148,7 @@ export function Offers() {
             <span className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
               <Briefcase className="h-5 w-5 text-emerald-400" />
             </span>
-            Offres Actuelles
+            {lang === 'fr' ? 'Offres Actuelles' : 'Current Offers'}
           </h3>
           {activeOffers.length > 0 ? (
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -181,14 +185,14 @@ export function Offers() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-1.5 rounded-full bg-white/40" />
-                          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Valeur Offre</span>
+                          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? 'Valeur Offre' : 'Offer Value'}</span>
                         </div>
                         <span className="text-lg font-black text-white">{offer.price}€</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Votre Commission</span>
+                          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? 'Votre Commission' : 'Your Commission'}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-base font-black text-emerald-400">{offer.commission}%</span>
@@ -207,9 +211,9 @@ export function Offers() {
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/5 border border-white/[0.08]">
                 <Briefcase className="h-8 w-8 text-white/40" />
               </div>
-              <p className="text-lg font-bold text-white">Aucune offre active</p>
+              <p className="text-lg font-bold text-white">{lang === 'fr' ? 'Aucune offre active' : 'No active offers'}</p>
               <p className="mt-2 text-sm text-white/40">
-                Créez votre première offre pour commencer à closer.
+                {lang === 'fr' ? 'Créez votre première offre pour commencer à closer.' : 'Create your first offer to start closing.'}
               </p>
             </div>
           )}
@@ -227,10 +231,10 @@ export function Offers() {
               </div>
               <div className="text-left">
                 <h3 className="text-lg font-bold text-white">
-                  Historique / Anciennes Offres
+                  {lang === 'fr' ? 'Historique / Anciennes Offres' : 'History / Past Offers'}
                 </h3>
                 <p className="text-xs text-white/40 font-medium uppercase tracking-wider">
-                  {archivedOffers.length} archivée{archivedOffers.length > 1 ? 's' : ''}
+                  {archivedOffers.length} {lang === 'fr' ? `archivée${archivedOffers.length > 1 ? 's' : ''}` : 'archived'}
                 </p>
               </div>
             </div>
@@ -264,7 +268,7 @@ export function Offers() {
                               </h4>
                               {expired && (
                                 <span className="rounded-md px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 uppercase tracking-wide">
-                                  Expirée
+                                  {lang === 'fr' ? 'Expirée' : 'Expired'}
                                 </span>
                               )}
                             </div>
@@ -285,7 +289,7 @@ export function Offers() {
                 })
               ) : (
                 <div className="py-12 text-center">
-                  <p className="text-sm text-white/40 italic">Aucune offre archivée ou expirée.</p>
+                  <p className="text-sm text-white/40 italic">{lang === 'fr' ? 'Aucune offre archivée ou expirée.' : 'No archived or expired offers.'}</p>
                 </div>
               )}
             </div>

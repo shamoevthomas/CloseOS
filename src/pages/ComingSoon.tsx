@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { LogOut, MessageCircle, Linkedin, Rocket, Clock, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function ComingSoon() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { lang } = useLanguage();
 
   const handleLogout = async () => {
     try {
@@ -39,28 +41,31 @@ export function ComingSoon() {
         </div>
 
         <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
-          Lancement Imminent
+          {lang === 'fr' ? 'Lancement Imminent' : 'Launching Soon'}
         </h1>
 
         <p className="text-lg text-slate-400 mb-8 leading-relaxed">
-          Nous peaufinons les derniers détails de la plateforme. <br className="hidden md:block" />
-          Votre espace Pro est sécurisé et vous attend.
+          {lang === 'fr' ? 'Nous peaufinons les derniers détails de la plateforme.' : "We're putting the finishing touches on the platform."} <br className="hidden md:block" />
+          {lang === 'fr' ? 'Votre espace Pro est sécurisé et vous attend.' : 'Your Pro workspace is secured and waiting for you.'}
         </p>
 
         {/* BOITE D'INFO ESSAI GRATUIT */}
         <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 mb-8 text-left flex gap-4 items-start">
           <ShieldCheck className="w-6 h-6 text-emerald-500 shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-bold text-emerald-400 text-sm mb-1">Aucune inquiétude pour votre essai</h3>
+            <h3 className="font-bold text-emerald-400 text-sm mb-1">{lang === 'fr' ? 'Aucune inquiétude pour votre essai' : "Don't worry about your trial"}</h3>
             <p className="text-xs text-emerald-500/80 leading-snug">
-              Le décompte de vos 10 jours d'essai gratuit ne commencera <strong>que le jour officiel de l'ouverture</strong> du logiciel. Vous ne perdez aucun jour en attendant.
+              {lang === 'fr'
+                ? <>Le décompte de vos 10 jours d'essai gratuit ne commencera <strong>que le jour officiel de l'ouverture</strong> du logiciel. Vous ne perdez aucun jour en attendant.</>
+                : <>Your 10-day free trial countdown will only start <strong>on the official launch day</strong>. You won't lose any days while waiting.</>
+              }
             </p>
           </div>
         </div>
 
         {/* ACTIONS & RÉSEAUX */}
         <div className="space-y-4">
-          <p className="text-sm text-slate-500 font-medium uppercase tracking-wider mb-4">Restez connectés</p>
+          <p className="text-sm text-slate-500 font-medium uppercase tracking-wider mb-4">{lang === 'fr' ? 'Restez connectés' : 'Stay connected'}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <a
@@ -70,7 +75,7 @@ export function ComingSoon() {
               className="flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20 hover:bg-[#25D366]/20 transition-all font-bold"
             >
               <MessageCircle className="w-5 h-5" />
-              Canal WhatsApp
+              {lang === 'fr' ? 'Canal WhatsApp' : 'WhatsApp Channel'}
             </a>
 
             <a
@@ -80,7 +85,7 @@ export function ComingSoon() {
               className="flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-[#0A66C2]/10 text-[#0A66C2] border border-[#0A66C2]/20 hover:bg-[#0A66C2]/20 transition-all font-bold"
             >
               <Linkedin className="w-5 h-5" />
-              Suivre sur LinkedIn
+              {lang === 'fr' ? 'Suivre sur LinkedIn' : 'Follow on LinkedIn'}
             </a>
           </div>
         </div>
@@ -92,7 +97,7 @@ export function ComingSoon() {
             className="text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-2 text-sm mx-auto hover:underline"
           >
             <LogOut className="h-4 w-4" />
-            Se déconnecter et revenir à l'accueil
+            {lang === 'fr' ? "Se déconnecter et revenir à l'accueil" : 'Log out and return to home'}
           </button>
         </div>
 

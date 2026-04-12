@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle2, Loader2, Lock, User, Mail, ArrowRight } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase';
 
 export default function BusinessReturn() {
@@ -18,6 +19,7 @@ export default function BusinessReturn() {
   const billing = searchParams.get('billing') || 'annual';
 
   const { register } = useBusinessAuth();
+  const { t, lang } = useBusinessLang()
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
@@ -66,7 +68,7 @@ export default function BusinessReturn() {
         .maybeSingle();
 
       if (salesProfile) {
-        setError("Cet email est deja associe a un compte CloseOS Sales. Veuillez utiliser un autre email.");
+        setError(t.return_error_sales_email);
         setAuthLoading(false);
         return;
       }
@@ -108,7 +110,7 @@ export default function BusinessReturn() {
 
       navigate('/business/dashboard');
     } catch {
-      setError("Une erreur est survenue lors de la creation du compte.");
+      setError(t.return_error_generic);
       setAuthLoading(false);
     }
   };
@@ -128,7 +130,7 @@ export default function BusinessReturn() {
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-stone-400" />
-          <p className="text-stone-400 text-sm">Verification du paiement...</p>
+          <p className="text-stone-400 text-sm">{t.return_payment_checking}</p>
         </div>
       </div>
     );
@@ -156,10 +158,10 @@ export default function BusinessReturn() {
               <CheckCircle2 className="w-8 h-8 text-emerald-600" />
             </div>
             <h1 className="text-2xl font-extrabold text-stone-900 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Paiement confirme !
+              {t.return_payment_confirmed}
             </h1>
             <p className="text-stone-500 mt-2">
-              Finalisez votre compte pour acceder a votre espace {PLAN_LABELS[planFromSession || plan] || 'Business'}.
+              {t.return_finalize_account} {PLAN_LABELS[planFromSession || plan] || 'Business'}.
             </p>
           </div>
 
@@ -174,7 +176,7 @@ export default function BusinessReturn() {
             {/* Email (locked to Stripe session email) */}
             <div>
               <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
-                Email (lie au paiement)
+                {t.return_email_label}
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
@@ -190,7 +192,7 @@ export default function BusinessReturn() {
 
             <div>
               <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
-                Nom complet
+                {t.return_name}
               </label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
@@ -207,7 +209,7 @@ export default function BusinessReturn() {
 
             <div>
               <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
-                Choisir un mot de passe
+                {t.return_password_label}
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
@@ -217,7 +219,7 @@ export default function BusinessReturn() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
-                  placeholder="Minimum 8 caracteres"
+                  placeholder={t.return_password_placeholder}
                   className="w-full rounded-full bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
                 />
               </div>
@@ -229,21 +231,21 @@ export default function BusinessReturn() {
               className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-5 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-95 disabled:opacity-50"
               style={{ fontFamily: 'Manrope, sans-serif' }}
             >
-              {authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Activer mon compte'}
+              {authLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : t.return_activate}
               {!authLoading && <ArrowRight className="h-5 w-5" />}
             </button>
           </form>
 
           <p className="mt-6 text-center text-xs text-stone-400">
-            En vous inscrivant, vous acceptez nos{' '}
-            <Link to="/cgu" className="text-stone-600 hover:underline">CGU</Link>
-            {' '}et notre{' '}
-            <Link to="/confidentialite" className="text-stone-600 hover:underline">Politique de Confidentialite</Link>.
+            {t.return_terms_text}{' '}
+            <Link to="/cgu" className="text-stone-600 hover:underline">{t.return_terms_cgu}</Link>
+            {' '}{t.return_terms_and}{' '}
+            <Link to="/confidentialite" className="text-stone-600 hover:underline">{t.return_terms_privacy}</Link>.
           </p>
         </div>
 
         <p className="mt-8 text-center text-xs text-stone-400">
-          &copy; {new Date().getFullYear()} CloseOS. Tous droits reserves.
+          &copy; {new Date().getFullYear()} CloseOS. {t.return_copyright}
         </p>
       </div>
     </div>

@@ -3,11 +3,13 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase';
 
 export default function BusinessRegister() {
   const navigate = useNavigate();
   const { register, loginWithGoogle } = useBusinessAuth();
+  const { t, lang } = useBusinessLang()
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +31,7 @@ export default function BusinessRegister() {
         .maybeSingle();
 
       if (salesProfile) {
-        setError("Cet email est déjà associé à un compte CloseOS Sales. Veuillez utiliser un autre email.");
+        setError(t.register_error_sales_email);
         setLoading(false);
         return;
       }
@@ -43,7 +45,7 @@ export default function BusinessRegister() {
         navigate('/business/dashboard');
       }
     } catch (err: any) {
-      setError("Une erreur est survenue.");
+      setError(t.register_error_generic);
       setLoading(false);
     }
   };
@@ -54,7 +56,7 @@ export default function BusinessRegister() {
       const { error } = await loginWithGoogle();
       if (error) setError(error.message);
     } catch (err) {
-      setError("Impossible de lancer la connexion Google.");
+      setError(t.register_error_google);
     } finally {
       setGoogleLoading(false);
     }
@@ -80,9 +82,9 @@ export default function BusinessRegister() {
           {/* Headline */}
           <div className="mb-10 text-center">
             <h2 className="text-4xl font-extrabold text-stone-900 dark:text-white font-['Manrope'] tracking-tight mb-3">
-              Démarrez votre expansion
+              {t.register_title}
             </h2>
-            <p className="text-stone-500 dark:text-neutral-400 text-base">Créez un compte et pilotez votre équipe de closers</p>
+            <p className="text-stone-500 dark:text-neutral-400 text-base">{t.register_subtitle}</p>
           </div>
 
           {/* Error */}
@@ -103,7 +105,7 @@ export default function BusinessRegister() {
             ) : (
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="Google" />
             )}
-            S'inscrire avec Google
+            {t.register_google}
           </button>
 
           {/* Divider */}
@@ -111,7 +113,7 @@ export default function BusinessRegister() {
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-stone-200/40 dark:border-neutral-700"></div></div>
             <div className="relative flex justify-center">
               <span className="bg-white/70 dark:bg-transparent px-4 text-[0.65rem] font-semibold uppercase tracking-widest text-stone-400 dark:text-neutral-500">
-                Ou continuer avec
+                {t.register_or_continue}
               </span>
             </div>
           </div>
@@ -120,7 +122,7 @@ export default function BusinessRegister() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 text-left">
-                Nom complet
+                {t.register_name}
               </label>
               <div className="relative">
                 <UserIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
@@ -154,7 +156,7 @@ export default function BusinessRegister() {
 
             <div>
               <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400 text-left">
-                Mot de passe
+                {t.login_password}
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
@@ -175,7 +177,7 @@ export default function BusinessRegister() {
               disabled={loading}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-black py-5 font-bold text-white font-['Manrope'] shadow-lg transition-all hover:bg-stone-800 dark:hover:bg-neutral-200 active:scale-95 disabled:opacity-50"
             >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Créer mon compte Business"}
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t.register_submit}
               {!loading && <ArrowRight className="h-5 w-5" />}
             </button>
           </form>
@@ -183,24 +185,24 @@ export default function BusinessRegister() {
           {/* Footer link */}
           <div className="mt-8 text-center">
             <p className="text-stone-500 dark:text-neutral-400">
-              Vous avez déjà un compte ?{' '}
+              {t.register_has_account}{' '}
               <Link to="/business/login" className="font-semibold text-stone-900 dark:text-white hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
-                Se connecter
+                {t.register_login}
               </Link>
             </p>
           </div>
 
           <p className="mt-6 text-center text-xs text-stone-400 dark:text-neutral-500">
-            En créant un compte, vous acceptez nos{' '}
-            <Link to="/cgu" className="text-stone-600 dark:text-neutral-300 hover:underline">CGU</Link>
-            {' '}et notre{' '}
-            <Link to="/confidentialite" className="text-stone-600 dark:text-neutral-300 hover:underline">Politique de Confidentialité</Link>.
+            {t.register_terms_text}{' '}
+            <Link to="/cgu" className="text-stone-600 dark:text-neutral-300 hover:underline">{t.register_cgu}</Link>
+            {' '}{t.register_and}{' '}
+            <Link to="/confidentialite" className="text-stone-600 dark:text-neutral-300 hover:underline">{t.register_privacy_policy}</Link>.
           </p>
         </div>
 
         {/* Bottom copyright */}
         <p className="mt-8 text-center text-xs text-stone-400 dark:text-neutral-500">
-          &copy; {new Date().getFullYear()} CloseOS. Tous droits réservés.
+          &copy; {new Date().getFullYear()} CloseOS. {t.register_all_rights}
         </p>
       </div>
     </div>

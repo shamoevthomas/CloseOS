@@ -20,6 +20,8 @@ import { useOffers } from '../contexts/OffersContext'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 import { useOrganization } from '../contexts/OrganizationContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { dashboardTranslations } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
 
 // Helper to parse commission percentage (Ex: "10%" -> 10)
@@ -30,7 +32,7 @@ const parseCommission = (commissionString: string): number => {
 }
 
 // Helper to format relative time
-const formatRelativeTime = (dateStr: string, timeStr: string): string => {
+const formatRelativeTime = (dateStr: string, timeStr: string, locale: string = 'fr-FR', labels: Record<string, string> = { in_min: 'Dans {n} min', tomorrow: 'Demain' }): string => {
   try {
     const [datePart] = dateStr.split('T')
     const [hours, minutes] = timeStr.split(' - ')[0].split(':')
@@ -49,23 +51,23 @@ const formatRelativeTime = (dateStr: string, timeStr: string): string => {
       const diffMinutes = Math.floor(diffMs / 60000)
 
       if (diffMinutes < 60 && diffMinutes > 0) {
-        return `Dans ${diffMinutes} min`
+        return labels.in_min.replace('{n}', String(diffMinutes))
       }
       return `${hours}:${minutes}`
     }
 
     if (eventDay.getTime() === tomorrow.getTime()) {
-      return `Demain ${hours}:${minutes}`
+      return `${labels.tomorrow} ${hours}:${minutes}`
     }
 
-    return eventDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+    return eventDate.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })
   } catch {
     return timeStr
   }
 }
 
 // Helper to get status text
-const getEventStatus = (dateStr: string, timeStr: string): string => {
+const getEventStatus = (dateStr: string, timeStr: string, labels: Record<string, string> = { imminent: 'Imminent', today: "Aujourd'hui", tomorrow: 'Demain', scheduled: 'Planifié', upcoming: 'À venir' }): string => {
   try {
     const [datePart] = dateStr.split('T')
     const [hours, minutes] = timeStr.split(' - ')[0].split(':')
@@ -78,26 +80,26 @@ const getEventStatus = (dateStr: string, timeStr: string): string => {
     const diffMinutes = Math.floor(diffMs / 60000)
 
     if (diffMinutes < 60 && diffMinutes > 0) {
-      return 'Imminent'
+      return labels.imminent
     }
 
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
 
     if (eventDay.getTime() === today.getTime()) {
-      return "Aujourd'hui"
+      return labels.today
     }
 
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
     if (eventDay.getTime() === tomorrow.getTime()) {
-      return 'Demain'
+      return labels.tomorrow
     }
 
-    return 'Planifié'
+    return labels.scheduled
   } catch {
-    return 'À venir'
+    return labels.upcoming
   }
 }
 
@@ -108,6 +110,9 @@ export function Dashboard() {
   const { meetings } = useMeetings()
   const { googleEvents } = useGoogleCalendar()
   const { isInOrganization, organization } = useOrganization()
+  const { lang } = useLanguage()
+  const t = dashboardTranslations[lang]
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
 
   // Business hybrid data
   const [bizProspects, setBizProspects] = useState<any[]>([])
@@ -209,10 +214,10 @@ export function Dashboard() {
   // Calculate pipeline stages distribution (Sales + Business)
   const pipelineStages = useMemo(() => {
     const stages = [
-      { name: 'Prospect', key: 'prospect', color: 'from-blue-600 to-blue-400' },
-      { name: 'Qualifié', key: 'qualified', color: 'from-purple-600 to-purple-400' },
-      { name: 'Follow up', key: 'followup', color: 'from-orange-500 to-orange-400' },
-      { name: 'Gagné', key: 'won', color: 'from-emerald-600 to-emerald-400' },
+      { name: t.stage_prospect, key: 'prospect', color: 'from-blue-600 to-blue-400' },
+      { name: t.stage_qualified, key: 'qualified', color: 'from-purple-600 to-purple-400' },
+      { name: t.stage_followup, key: 'followup', color: 'from-orange-500 to-orange-400' },
+      { name: t.stage_won, key: 'won', color: 'from-emerald-600 to-emerald-400' },
     ]
 
     const allProspects = [...prospects, ...bizProspects]
@@ -250,7 +255,7 @@ export function Dashboard() {
           contact: ge.title,
           time: `${ge.start!.getHours().toString().padStart(2, '0')}:${ge.start!.getMinutes().toString().padStart(2, '0')} - ${ge.end!.getHours().toString().padStart(2, '0')}:${ge.end!.getMinutes().toString().padStart(2, '0')}`,
           type: 'meeting' as const,
-          status: 'Planifié',
+          status: t.scheduled,
           date: ge.start!.toISOString().split('T')[0],
           isGoogleEvent: true
         }))
@@ -258,11 +263,11 @@ export function Dashboard() {
       // Transform business appointments
       const transformedBiz = bizAppointments.map((a: any) => ({
         id: `biz-${a.id}`,
-        title: a.prospect?.contact || a.prospect?.company || 'RDV Business',
-        contact: a.prospect?.contact || a.prospect?.company || 'Prospect',
+        title: a.prospect?.contact || a.prospect?.company || t.biz_appointment,
+        contact: a.prospect?.contact || a.prospect?.company || t.prospect,
         time: a.time ? `${a.time.slice(0, 5)}` : '00:00',
         type: (a.type === 'visio' ? 'video' : 'meeting') as 'video' | 'meeting',
-        status: a.status === 'confirmed' ? 'Confirmé' : 'Planifié',
+        status: a.status === 'confirmed' ? t.confirmed : t.scheduled,
         date: a.date,
         isBusinessEvent: true,
       }))
@@ -310,19 +315,19 @@ export function Dashboard() {
 
   const kpis = [
     {
-      name: 'Cash Généré',
-      value: `${metrics.cashGenere.toLocaleString('fr-FR')}€`,
+      name: t.cash_generated,
+      value: `${metrics.cashGenere.toLocaleString(locale)}€`,
       icon: DollarSign,
       color: 'text-emerald-400',
     },
     {
-      name: 'Commissions',
-      value: `${metrics.totalCommissions.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}€`,
+      name: t.commissions,
+      value: `${metrics.totalCommissions.toLocaleString(locale, { maximumFractionDigits: 0 })}€`,
       icon: TrendingUp,
       color: 'text-amber-400',
     },
     {
-      name: 'Taux de Conversion',
+      name: t.conversion_rate,
       value: `${metrics.tauxConversion.toFixed(1)}%`,
       icon: Target,
       color: 'text-emerald-400',
@@ -378,10 +383,10 @@ export function Dashboard() {
         {/* Header */}
         <header className="flex items-center justify-between pt-4 md:pt-12 pb-12 md:pb-16">
           <div>
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter">Tableau de bord</h1>
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter">{t.title}</h1>
             <div className="flex items-center gap-2 mt-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-white/40 text-sm font-medium tracking-wide">Système opérationnel</p>
+              <p className="text-white/40 text-sm font-medium tracking-wide">{t.system_ok}</p>
             </div>
           </div>
         </header>
@@ -413,7 +418,7 @@ export function Dashboard() {
           {/* Left: Pipeline Distribution */}
           <div className="lg:col-span-7 rounded-2xl p-8 md:p-10 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
             <div className="flex justify-between items-center mb-10">
-              <h2 className="text-xl md:text-2xl font-bold">Répartition de vos opportunités</h2>
+              <h2 className="text-xl md:text-2xl font-bold">{t.pipeline_title}</h2>
             </div>
 
             <div className="space-y-8">
@@ -439,13 +444,13 @@ export function Dashboard() {
 
             <div className="mt-12 pt-8 border-t border-white/5 flex gap-x-10">
               <div>
-                <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">Valeur Totale</p>
+                <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">{t.total_value}</p>
                 <p className="text-xl font-bold">
-                  <MaskedText value={`${totalPipelineValue.toLocaleString('fr-FR')}€`} type="number" />
+                  <MaskedText value={`${totalPipelineValue.toLocaleString(locale)}€`} type="number" />
                 </p>
               </div>
               <div>
-                <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">Total Leads</p>
+                <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">{t.total_leads}</p>
                 <p className="text-xl font-bold">{totalPipelineCount}</p>
               </div>
             </div>
@@ -456,15 +461,15 @@ export function Dashboard() {
 
             {/* Events Section */}
             <div className="rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
-              <h4 className="text-lg font-bold mb-6">Événements à venir</h4>
+              <h4 className="text-lg font-bold mb-6">{t.upcoming_events}</h4>
 
               {upcomingEvents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/5">
                     <Sparkles className="h-7 w-7 text-white/20" />
                   </div>
-                  <p className="text-sm font-semibold text-white/60">Aucun événement prévu</p>
-                  <p className="mt-1 text-xs text-white/30">C'est le moment idéal pour prospecter !</p>
+                  <p className="text-sm font-semibold text-white/60">{t.no_events}</p>
+                  <p className="mt-1 text-xs text-white/30">{t.no_events_sub}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -493,7 +498,7 @@ export function Dashboard() {
                             <p className="text-sm font-bold truncate">
                               <MaskedText value={event.title} type="name" />
                             </p>
-                            <p className="text-xs text-white/40">{formatRelativeTime(event.date, event.time)}</p>
+                            <p className="text-xs text-white/40">{formatRelativeTime(event.date, event.time, locale, { in_min: lang === 'fr' ? 'Dans {n} min' : 'In {n} min', tomorrow: t.tomorrow })}</p>
                           </div>
                         </div>
                         <ArrowUpRight className="h-4 w-4 text-white/20 group-hover:text-emerald-400 transition-colors shrink-0 ml-3" />
@@ -508,7 +513,7 @@ export function Dashboard() {
                   onClick={() => navigate('/agenda')}
                   className="w-full mt-6 py-2 text-xs font-bold tracking-widest uppercase text-white/40 hover:text-white transition-colors"
                 >
-                  Voir tout l'agenda
+                  {t.see_all_agenda}
                 </button>
               )}
             </div>
@@ -548,8 +553,8 @@ export function Dashboard() {
               <Sparkles className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Analyse IA en cours...</p>
-              <p className="text-xs text-white/40 mt-0.5">Le CRM sera mis à jour automatiquement.</p>
+              <p className="text-sm font-bold text-white">{t.ai_analysis}</p>
+              <p className="text-xs text-white/40 mt-0.5">{t.ai_crm_update}</p>
             </div>
           </div>
         </div>

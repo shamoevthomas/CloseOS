@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, X, Check, ZoomIn, ZoomOut, Search, Calendar } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { countries } from '../../lib/countries';
 import { PhoneInput } from './PhoneInput';
 import { supabase } from '../../lib/supabase';
@@ -78,6 +79,7 @@ async function registerDeviceAfterOnboarding(userId: string) {
 
 export function BusinessOnboardingModal() {
   const { user, businessProfile, businessSettings, hasOnboarded, loading: authLoading, updateBusinessProfile, updateBusinessSettings, isTeamMember, teamMember, refreshProfile, setNeedsVerification } = useBusinessAuth();
+  const { t, lang } = useBusinessLang()
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -276,11 +278,11 @@ export function BusinessOnboardingModal() {
               </div>
               <div className="flex gap-4 justify-center">
                 <button onClick={() => { setImageSrc(null); setZoom(1); }} disabled={uploading} className="px-6 py-3 rounded-full border border-stone-700 text-stone-300 font-bold hover:bg-stone-800 transition-colors flex items-center gap-2">
-                  <X className="h-4 w-4" /> Annuler
+                  <X className="h-4 w-4" /> {t.onboarding_tm_cancel_crop}
                 </button>
                 <button onClick={saveTmCroppedImage} disabled={uploading} className="px-6 py-3 rounded-full bg-stone-900 text-white font-bold hover:bg-stone-800 transition-colors shadow-lg flex items-center gap-2 active:scale-95">
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                  Valider la photo
+                  {t.onboarding_tm_validate_photo}
                 </button>
               </div>
             </div>
@@ -300,8 +302,8 @@ export function BusinessOnboardingModal() {
               )}
             </div>
             <div>
-              <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">Bienvenue chez {settings.company_name || 'votre organisation'} !</h2>
-              <p className="text-stone-500 dark:text-neutral-400 text-sm">Complétez votre profil pour commencer</p>
+              <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">{t.onboarding_tm_welcome.replace('{company}', settings.company_name || t.onboarding_tm_welcome_fallback)}</h2>
+              <p className="text-stone-500 dark:text-neutral-400 text-sm">{t.onboarding_tm_subtitle}</p>
             </div>
           </div>
 
@@ -328,7 +330,7 @@ export function BusinessOnboardingModal() {
             {/* Prénom + Nom */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Prénom</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.onboarding_tm_first_name}</label>
                 <input
                   type="text"
                   value={tmFirstName}
@@ -339,7 +341,7 @@ export function BusinessOnboardingModal() {
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Nom</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.onboarding_tm_last_name}</label>
                 <input
                   type="text"
                   value={tmLastName}
@@ -353,7 +355,7 @@ export function BusinessOnboardingModal() {
 
             {/* Date de naissance */}
             <div>
-              <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Date de naissance</label>
+              <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.onboarding_tm_dob}</label>
               <div className="relative">
                 <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
                 <input
@@ -364,13 +366,13 @@ export function BusinessOnboardingModal() {
                 />
               </div>
               {tmAge !== null && tmAge >= 0 && (
-                <p className="text-xs text-stone-500 mt-1.5">{tmAge} ans</p>
+                <p className="text-xs text-stone-500 mt-1.5">{t.onboarding_tm_years_old.replace('{age}', String(tmAge))}</p>
               )}
             </div>
 
             {/* Téléphone */}
             <div>
-              <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Téléphone</label>
+              <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.onboarding_tm_phone}</label>
               <PhoneInput
                 value={tmPhone}
                 onChange={setTmPhone}
@@ -385,7 +387,7 @@ export function BusinessOnboardingModal() {
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
                 <>
-                  Terminer
+                  {t.onboarding_tm_finish}
                   <ArrowRight className="h-5 w-5" />
                 </>
               )}
@@ -522,7 +524,7 @@ export function BusinessOnboardingModal() {
                 className="px-6 py-3 rounded-full border border-stone-700 text-stone-300 font-bold hover:bg-stone-800 transition-colors flex items-center gap-2"
               >
                 <X className="h-4 w-4" />
-                Annuler
+                {t.onboarding_owner_cancel_crop}
               </button>
               <button
                 onClick={showCroppedImage}
@@ -530,7 +532,7 @@ export function BusinessOnboardingModal() {
                 className="px-6 py-3 rounded-full bg-stone-900 text-white font-bold hover:bg-stone-800 transition-colors shadow-lg flex items-center gap-2 active:scale-95"
               >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Valider la photo
+                {t.onboarding_owner_validate_photo}
               </button>
             </div>
           </div>
@@ -551,9 +553,9 @@ export function BusinessOnboardingModal() {
                 <div className="p-2 rounded-lg bg-stone-100/50 dark:bg-neutral-800">
                   <Briefcase className="h-5 w-5 text-stone-900 dark:text-white" />
                 </div>
-                <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">Votre profil</h2>
+                <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">{t.onboarding_owner_profile_title}</h2>
               </div>
-              <p className="text-stone-500 dark:text-neutral-400 text-sm">Présentez-vous en quelques secondes</p>
+              <p className="text-stone-500 dark:text-neutral-400 text-sm">{t.onboarding_owner_profile_subtitle}</p>
             </div>
 
             <div className="space-y-4">
@@ -583,7 +585,7 @@ export function BusinessOnboardingModal() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Nom complet</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.onboarding_owner_full_name}</label>
                 <input
                   type="text"
                   value={fullName}
@@ -595,7 +597,7 @@ export function BusinessOnboardingModal() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Téléphone</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.onboarding_owner_phone}</label>
                 <PhoneInput
                   value={phone}
                   onChange={setPhone}
@@ -604,7 +606,7 @@ export function BusinessOnboardingModal() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Votre rôle</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.onboarding_owner_role}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {['CEO / Fondateur', 'Sales Manager', 'Business Developer', 'Autre'].map((r) => (
                     <button
@@ -628,7 +630,7 @@ export function BusinessOnboardingModal() {
                 disabled={!fullName || !role}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-3.5 font-bold text-white transition-all hover:bg-stone-800 shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
               >
-                Continuer
+                {t.onboarding_owner_continue}
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
@@ -642,26 +644,26 @@ export function BusinessOnboardingModal() {
                 <div className="p-2 rounded-lg bg-stone-100/50 dark:bg-neutral-800">
                   <Building2 className="h-5 w-5 text-stone-900 dark:text-white" />
                 </div>
-                <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">Votre entreprise</h2>
+                <h2 className="text-xl font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">{t.onboarding_owner_company_title}</h2>
               </div>
-              <p className="text-stone-500 dark:text-neutral-400 text-sm">Configurez votre espace Business</p>
+              <p className="text-stone-500 dark:text-neutral-400 text-sm">{t.onboarding_owner_company_subtitle}</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Nom de l'entreprise</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.onboarding_owner_company_name}</label>
                 <input
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   className="w-full rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
-                  placeholder="Mon entreprise"
+                  placeholder={t.onboarding_owner_company_placeholder}
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Taille de l'équipe</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.onboarding_owner_team_size}</label>
                 <div className="flex flex-wrap gap-2">
                   {TEAM_SIZES.map((size) => (
                     <button
@@ -681,7 +683,7 @@ export function BusinessOnboardingModal() {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">Niche / Secteur</label>
+                <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.onboarding_owner_niche_sector}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {NICHES.map((n) => (
                     <button
@@ -704,7 +706,7 @@ export function BusinessOnboardingModal() {
                     value={nicheCustom}
                     onChange={(e) => setNicheCustom(e.target.value)}
                     className="mt-2 w-full rounded-xl bg-stone-100/50 dark:bg-neutral-800 border-none py-3 px-4 text-stone-900 dark:text-white focus:ring-2 focus:ring-emerald-600/20 focus:outline-none"
-                    placeholder="Précisez votre secteur..."
+                    placeholder={t.onboarding_owner_niche_custom_placeholder}
                   />
                 )}
               </div>
@@ -714,7 +716,7 @@ export function BusinessOnboardingModal() {
                   onClick={() => setStep(1)}
                   className="flex-1 rounded-full border border-stone-300 dark:border-neutral-600 py-3 font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
                 >
-                  Retour
+                  {t.onboarding_owner_back}
                 </button>
                 <button
                   onClick={handleStep2}
@@ -723,7 +725,7 @@ export function BusinessOnboardingModal() {
                 >
                   {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
                     <>
-                      Terminer
+                      {t.onboarding_tm_finish}
                       <ArrowRight className="h-5 w-5" />
                     </>
                   )}

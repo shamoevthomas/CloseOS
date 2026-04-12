@@ -2,9 +2,13 @@ import { useState, useEffect, useRef } from 'react'
 import { Bell, Calendar, Sparkles, Mail, Video } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useNotifications } from '../contexts/NotificationsContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { notificationTranslations } from '../i18n/translations'
 
 export function NotificationBell() {
   const { notifications, markAllAsRead } = useNotifications()
+  const { lang } = useLanguage()
+  const t = notificationTranslations[lang]
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -50,12 +54,12 @@ export function NotificationBell() {
     const diffHours = Math.floor(diffMins / 60)
     const diffDays = Math.floor(diffHours / 24)
 
-    if (diffMins < 1) return 'À l\'instant'
-    if (diffMins < 60) return `il y a ${diffMins} min`
-    if (diffHours < 24) return `il y a ${diffHours}h`
-    if (diffDays === 1) return 'Hier'
-    if (diffDays < 7) return `il y a ${diffDays}j`
-    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    if (diffMins < 1) return t.just_now
+    if (diffMins < 60) return t.minutes_ago.replace('{n}', String(diffMins))
+    if (diffHours < 24) return t.hours_ago.replace('{n}', String(diffHours))
+    if (diffDays === 1) return t.yesterday
+    if (diffDays < 7) return t.days_ago.replace('{n}', String(diffDays))
+    return date.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })
   }
 
   const handleMarkAllAsRead = () => {
@@ -85,13 +89,13 @@ export function NotificationBell() {
         <div className="absolute right-0 top-full mt-2 w-96 z-50 overflow-hidden rounded-xl border border-white/[0.08] bg-[#1a1a1a] shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/[0.08] p-4">
-            <h3 className="text-lg font-bold text-white">Notifications</h3>
+            <h3 className="text-lg font-bold text-white">{t.title}</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
                 className="text-xs font-medium text-emerald-400 transition-colors hover:text-emerald-300"
               >
-                Tout marquer comme lu
+                {t.mark_all_read}
               </button>
             )}
           </div>
@@ -143,7 +147,7 @@ export function NotificationBell() {
             ) : (
               <div className="py-12 text-center">
                 <Bell className="mx-auto h-12 w-12 text-white/10" />
-                <p className="mt-4 text-sm font-medium text-white/40">Aucune notification</p>
+                <p className="mt-4 text-sm font-medium text-white/40">{t.no_notifications}</p>
               </div>
             )}
           </div>
@@ -152,7 +156,7 @@ export function NotificationBell() {
           {notifications.length > 0 && (
             <div className="border-t border-white/[0.08] p-3 text-center">
               <button className="text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300">
-                Voir toutes les notifications
+                {t.view_all}
               </button>
             </div>
           )}

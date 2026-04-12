@@ -7,6 +7,7 @@ import {
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
@@ -15,22 +16,34 @@ const GLASS_CARD = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c
 const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold'
 
 const ACTIVE_STAGES = [
-  { id: 'prospect', name: 'Prospect', dot: 'bg-[#ffb95f]', border: 'border-l-[#ffb95f]' },
-  { id: 'qualified', name: 'Qualifié', dot: 'bg-purple-400', border: 'border-l-purple-400' },
-  { id: 'won', name: 'Gagné', dot: 'bg-[#006c49]', border: 'border-l-[#006c49]' },
-  { id: 'followup', name: 'Follow Up', dot: 'bg-orange-400', border: 'border-l-orange-400' },
+  { id: 'prospect', dot: 'bg-[#ffb95f]', border: 'border-l-[#ffb95f]' },
+  { id: 'qualified', dot: 'bg-purple-400', border: 'border-l-purple-400' },
+  { id: 'won', dot: 'bg-[#006c49]', border: 'border-l-[#006c49]' },
+  { id: 'followup', dot: 'bg-orange-400', border: 'border-l-orange-400' },
 ]
 
 const INACTIVE_STAGES = [
-  { id: 'unqualified', name: 'Non-Qualifié' },
-  { id: 'noanswer', name: 'Pas de Réponse' },
-  { id: 'noshow', name: 'No Show' },
-  { id: 'lost', name: 'Perdu' },
+  { id: 'unqualified' },
+  { id: 'noanswer' },
+  { id: 'noshow' },
+  { id: 'lost' },
 ]
+
+const STAGE_NAME_KEYS: Record<string, string> = {
+  prospect: 'pipeline_stage_prospect',
+  qualified: 'pipeline_stage_qualified',
+  won: 'pipeline_stage_won',
+  followup: 'pipeline_stage_followup',
+  unqualified: 'pipeline_stage_unqualified',
+  noanswer: 'pipeline_stage_noanswer',
+  noshow: 'pipeline_stage_noshow',
+  lost: 'pipeline_stage_lost',
+}
 
 export function CloserPipeline() {
   const { prospects, updateProspect, loading } = useBusinessProspects()
   const { teamMember, user } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const { customStages } = useCustomStages()
 
   // Next appointments per prospect
@@ -141,9 +154,14 @@ export function CloserPipeline() {
     setCollapsedColumns(newCollapsed)
   }
 
+  const getStageName = (stageId: string) => {
+    const key = STAGE_NAME_KEYS[stageId]
+    return key ? (t as any)[key] : stageId
+  }
+
   const getDisplayName = (deal: BusinessProspect) => {
     if (deal.firstName || deal.lastName) return `${deal.firstName || ''} ${deal.lastName || ''}`.trim()
-    return deal.contact || 'Prospect sans nom'
+    return deal.contact || t.closer_pipeline_no_name
   }
 
   const formatTotal = (value: number) => {
@@ -165,8 +183,8 @@ export function CloserPipeline() {
       <div className="mb-6 shrink-0">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Mon Pipeline</h1>
-            <p className={cn(LABEL_STYLE, 'mt-1')}>{myProspects.length} prospects assignés</p>
+            <h1 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.closer_pipeline_title}</h1>
+            <p className={cn(LABEL_STYLE, 'mt-1')}>{myProspects.length} {t.closer_pipeline_assigned_prospects}</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -176,7 +194,7 @@ export function CloserPipeline() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher un prospect..."
+                placeholder={t.closer_pipeline_search_placeholder}
                 className="w-64 rounded-full bg-stone-100/50 dark:bg-neutral-800/50 border border-stone-200/20 dark:border-neutral-700/30 py-2 pl-10 pr-4 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 font-medium focus:outline-none focus:ring-1 focus:ring-[#006c49]/30"
               />
             </div>
@@ -187,8 +205,8 @@ export function CloserPipeline() {
       {myProspects.length === 0 ? (
         <div className={cn(GLASS_CARD, 'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200/30 py-16 flex-1')}>
           <User className="h-12 w-12 text-stone-300 dark:text-neutral-600 mb-4" strokeWidth={1.5} />
-          <h3 className="font-business-display text-lg font-extrabold text-stone-700 dark:text-neutral-200 mb-1">Aucun prospect assigné</h3>
-          <p className="text-sm text-stone-500 dark:text-neutral-400">Votre manager doit vous assigner des prospects depuis le CRM.</p>
+          <h3 className="font-business-display text-lg font-extrabold text-stone-700 dark:text-neutral-200 mb-1">{t.closer_pipeline_no_assigned}</h3>
+          <p className="text-sm text-stone-500 dark:text-neutral-400">{t.closer_pipeline_no_assigned_desc}</p>
         </div>
       ) : (
         <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -196,9 +214,9 @@ export function CloserPipeline() {
             {/* FLUX ACTIF */}
             <section>
               <div className="flex items-baseline space-x-3 mb-8">
-                <h2 className="font-business-display text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">Flux Actif</h2>
+                <h2 className="font-business-display text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.pipeline_active_flow}</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
-                <span className={LABEL_STYLE}>Opérations Prioritaires</span>
+                <span className={LABEL_STYLE}>{t.pipeline_priority_ops}</span>
               </div>
 
               <div className="flex overflow-x-auto gap-6 pb-2">
@@ -212,7 +230,7 @@ export function CloserPipeline() {
                       <div className="flex justify-between items-center px-2">
                         <div className="flex items-center space-x-2">
                           <span className={cn('w-2 h-2 rounded-full', stage.dot)} />
-                          <h4 className="font-bold text-sm text-stone-900 dark:text-white">{stage.name}</h4>
+                          <h4 className="font-bold text-sm text-stone-900 dark:text-white">{getStageName(stage.id)}</h4>
                           <span className="bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
                             {stageDeals.length}
                           </span>
@@ -263,7 +281,7 @@ export function CloserPipeline() {
                                               }
                                             </div>
                                             <span className="font-bold text-sm tracking-tight text-stone-900 dark:text-white truncate max-w-[140px]">
-                                              {mainTitle || 'Sans nom'}
+                                              {mainTitle || t.closer_pipeline_no_name}
                                             </span>
                                           </div>
                                         </div>
@@ -281,7 +299,7 @@ export function CloserPipeline() {
                                           <div className="flex items-center gap-1.5 mt-3 px-2.5 py-1.5 rounded-lg bg-[#006c49]/8 dark:bg-emerald-900/20">
                                             <Calendar className="h-3 w-3 text-[#006c49] dark:text-emerald-400 shrink-0" strokeWidth={2} />
                                             <span className="text-[11px] font-bold text-[#006c49] dark:text-emerald-400">
-                                              {new Date(nextAppointments[deal.id].date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {nextAppointments[deal.id].time?.slice(0, 5)}
+                                              {new Date(nextAppointments[deal.id].date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} {t.pipeline_at} {nextAppointments[deal.id].time?.slice(0, 5)}
                                             </span>
                                           </div>
                                         )}
@@ -305,9 +323,9 @@ export function CloserPipeline() {
             {/* FLUX INACTIF */}
             <section className="opacity-60 hover:opacity-100 transition-opacity">
               <div className="flex items-baseline space-x-3 mb-8">
-                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-600 dark:text-neutral-300">Flux Inactif</h2>
+                <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-600 dark:text-neutral-300">{t.pipeline_inactive_flow}</h2>
                 <div className="h-1 w-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
-                <span className={LABEL_STYLE}>Archives & Rejets</span>
+                <span className={LABEL_STYLE}>{t.pipeline_archives}</span>
               </div>
 
               <div className="flex overflow-x-auto gap-6 pb-2">
@@ -322,7 +340,7 @@ export function CloserPipeline() {
                         onClick={() => toggleColumn(stage.id)}
                       >
                         <span className={cn('w-2 h-2 rounded-full', stage.id === 'lost' ? 'bg-[#ba1a1a]/40' : 'bg-stone-300')} />
-                        <h4 className="font-bold text-xs text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{stage.name}</h4>
+                        <h4 className="font-bold text-xs text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{getStageName(stage.id)}</h4>
                         <ChevronDown className={cn('h-3 w-3 text-stone-400 transition-transform', !isCollapsed && 'rotate-180')} strokeWidth={1.5} />
                       </div>
 
@@ -331,7 +349,7 @@ export function CloserPipeline() {
                           className="h-24 rounded-xl border border-stone-200/50 dark:border-neutral-700/30 flex items-center justify-center bg-stone-50/50 dark:bg-neutral-800/50 cursor-pointer hover:bg-stone-100/50 dark:hover:bg-neutral-800 transition-colors"
                           onClick={() => toggleColumn(stage.id)}
                         >
-                          <span className="text-xs font-medium text-stone-400 dark:text-neutral-500">{stageDeals.length} éléments</span>
+                          <span className="text-xs font-medium text-stone-400 dark:text-neutral-500">{stageDeals.length} {t.pipeline_elements}</span>
                         </div>
                       ) : (
                         <Droppable droppableId={stage.id}>
@@ -384,9 +402,9 @@ export function CloserPipeline() {
             {customStages.length > 0 && (
               <section>
                 <div className="flex items-baseline space-x-3 mb-8">
-                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">Statuts Personnalisés</h2>
+                  <h2 className="font-business-display text-2xl font-extrabold tracking-tight text-stone-900 dark:text-white">{t.pipeline_custom_stages}</h2>
                   <div className="h-1 w-1 rounded-full bg-stone-300 dark:bg-neutral-600" />
-                  <span className={LABEL_STYLE}>Créés par votre équipe</span>
+                  <span className={LABEL_STYLE}>{t.pipeline_created_by_team}</span>
                 </div>
 
                 <div className="flex overflow-x-auto gap-6 pb-2">
@@ -450,7 +468,7 @@ export function CloserPipeline() {
                                                 }
                                               </div>
                                               <span className="font-bold text-sm tracking-tight text-stone-900 dark:text-white truncate max-w-[140px]">
-                                                {mainTitle || 'Sans nom'}
+                                                {mainTitle || t.closer_pipeline_no_name}
                                               </span>
                                             </div>
                                           </div>
@@ -469,7 +487,7 @@ export function CloserPipeline() {
                               })}
                               {stageDeals.length === 0 && (
                                 <div className="flex items-center justify-center h-20">
-                                  <span className="text-xs text-stone-400 dark:text-neutral-500 italic">Aucun prospect</span>
+                                  <span className="text-xs text-stone-400 dark:text-neutral-500 italic">{t.pipeline_no_prospect}</span>
                                 </div>
                               )}
                               {provided.placeholder}

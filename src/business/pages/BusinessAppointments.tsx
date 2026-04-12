@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
@@ -64,56 +65,13 @@ interface ReminderConfig {
   is_manual: boolean
 }
 
-const TIMING_OPTIONS = [
-  { value: '1d', label: '1 jour avant' },
-  { value: '10h_same_day', label: '10H le jour même' },
-  { value: '5h', label: '5 heures avant' },
-  { value: '3h', label: '3 heures avant' },
-  { value: '1h', label: '1 heure avant' },
-  { value: '30m', label: '30 minutes avant' },
-  { value: '15m', label: '15 minutes avant' },
-  { value: '0m', label: 'Au moment de l\'appel' },
+// These constants are now inside the component to access `t`
+
+const TEMPLATE_VARIABLES_KEYS = [
+  '{{lead_name}}', '{{assignee_name}}', '{{appointment_title}}',
+  '{{appointment_date}}', '{{appointment_time}}', '{{google_meet_link}}',
+  '{{reschedule_link}}', '{{cancel_link}}',
 ]
-
-const TEMPLATE_VARIABLES = [
-  { key: '{{lead_name}}', label: 'Nom du lead' },
-  { key: '{{assignee_name}}', label: 'Nom de l\'interlocuteur' },
-  { key: '{{appointment_title}}', label: 'Titre du RDV' },
-  { key: '{{appointment_date}}', label: 'Date du RDV' },
-  { key: '{{appointment_time}}', label: 'Heure du RDV' },
-  { key: '{{google_meet_link}}', label: 'Lien Google Meet' },
-  { key: '{{reschedule_link}}', label: 'Lien de report' },
-  { key: '{{cancel_link}}', label: 'Lien d\'annulation' },
-]
-
-const DEFAULT_REMINDER: ReminderConfig = {
-  name: 'Nouveau rappel',
-  template_type: 'default',
-  timing: '1h',
-  sender_name: 'CloseOS',
-  subject: 'CloseOS - Rappel de votre rendez-vous',
-  custom_html: '',
-  is_active: true,
-  is_manual: false,
-}
-
-const DEFAULT_MANUAL_REMINDER: ReminderConfig = {
-  name: 'Rappel manuel',
-  template_type: 'default',
-  timing: 'manual',
-  sender_name: 'CloseOS',
-  subject: 'CloseOS - Rappel de votre rendez-vous',
-  custom_html: '',
-  is_active: true,
-  is_manual: true,
-}
-
-const STATUS_CONFIG: Record<string, { label: string; badgeBg: string; badgeText: string }> = {
-  pending: { label: 'En attente', badgeBg: 'bg-amber-100/80', badgeText: 'text-amber-700' },
-  confirmed: { label: 'Confirmé', badgeBg: 'bg-[#006c49]/10', badgeText: 'text-[#006c49]' },
-  cancelled: { label: 'Annulé', badgeBg: 'bg-red-100/80', badgeText: 'text-red-600' },
-  done: { label: 'Terminé', badgeBg: 'bg-[#006c49]/10', badgeText: 'text-[#006c49]' },
-}
 
 function parseBookingNotes(notes: string | null): { name: string; email?: string; phone?: string } | null {
   if (!notes?.startsWith('Booking: ')) return null
@@ -125,7 +83,63 @@ const API_URL = '/api/business'
 
 export function BusinessAppointments() {
   const { user, isTeamMember, ownerUserId, teamMember, userTimezone } = useBusinessAuth()
+  const { t, lang } = useBusinessLang()
   const { isConnected: isGoogleConnected, createEvent: createGoogleEvent } = useBusinessGoogleCalendar()
+
+  const TIMING_OPTIONS = [
+    { value: '1d', label: t.appointments_timing_1d },
+    { value: '10h_same_day', label: t.appointments_timing_10h },
+    { value: '5h', label: t.appointments_timing_5h },
+    { value: '3h', label: t.appointments_timing_3h },
+    { value: '1h', label: t.appointments_timing_1h },
+    { value: '30m', label: t.appointments_timing_30m },
+    { value: '15m', label: t.appointments_timing_15m },
+    { value: '0m', label: t.appointments_timing_now },
+  ]
+
+  const TEMPLATE_VARIABLES = TEMPLATE_VARIABLES_KEYS.map(key => {
+    const labelMap: Record<string, string> = {
+      '{{lead_name}}': t.appointments_var_lead_name,
+      '{{assignee_name}}': t.appointments_var_assignee_name,
+      '{{appointment_title}}': t.appointments_var_title,
+      '{{appointment_date}}': t.appointments_var_date,
+      '{{appointment_time}}': t.appointments_var_time,
+      '{{google_meet_link}}': t.appointments_var_meet_link,
+      '{{reschedule_link}}': t.appointments_var_reschedule_link,
+      '{{cancel_link}}': t.appointments_var_cancel_link,
+    }
+    return { key, label: labelMap[key] || key }
+  })
+
+  const DEFAULT_REMINDER: ReminderConfig = {
+    name: t.appointments_new_reminder,
+    template_type: 'default',
+    timing: '1h',
+    sender_name: 'CloseOS',
+    subject: t.appointments_reminder_subject,
+    custom_html: '',
+    is_active: true,
+    is_manual: false,
+  }
+
+  const DEFAULT_MANUAL_REMINDER: ReminderConfig = {
+    name: t.appointments_manual_reminder,
+    template_type: 'default',
+    timing: 'manual',
+    sender_name: 'CloseOS',
+    subject: t.appointments_reminder_subject,
+    custom_html: '',
+    is_active: true,
+    is_manual: true,
+  }
+
+  const STATUS_CONFIG: Record<string, { label: string; badgeBg: string; badgeText: string }> = {
+    pending: { label: t.appointments_status_pending, badgeBg: 'bg-amber-100/80', badgeText: 'text-amber-700' },
+    confirmed: { label: t.appointments_status_confirmed, badgeBg: 'bg-[#006c49]/10', badgeText: 'text-[#006c49]' },
+    cancelled: { label: t.appointments_status_cancelled, badgeBg: 'bg-red-100/80', badgeText: 'text-red-600' },
+    done: { label: t.appointments_status_done, badgeBg: 'bg-[#006c49]/10', badgeText: 'text-[#006c49]' },
+  }
+
   const effectiveUserId = isTeamMember ? ownerUserId : user?.id
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
@@ -214,7 +228,7 @@ export function BusinessAppointments() {
           .eq('id', reminder.id)
         if (error) throw error
         setReminders(prev => prev.map(r => r.id === reminder.id ? reminder : r))
-        toast.success('Rappel mis à jour')
+        toast.success(t.appointments_reminder_updated)
       } else {
         const { data, error } = await supabase
           .from('business_appointment_reminders')
@@ -233,12 +247,12 @@ export function BusinessAppointments() {
           .single()
         if (error) throw error
         if (data) setReminders(prev => [...prev, data])
-        toast.success('Rappel créé')
+        toast.success(t.appointments_reminder_created)
       }
       setEditingReminder(null)
     } catch (err) {
       console.error('Error saving reminder:', err)
-      toast.error('Erreur lors de la sauvegarde')
+      toast.error(t.appointments_save_error)
     } finally {
       setSavingReminder(false)
     }
@@ -246,10 +260,10 @@ export function BusinessAppointments() {
 
   const handleDeleteReminder = async (id: string) => {
     const { error } = await supabase.from('business_appointment_reminders').delete().eq('id', id)
-    if (error) { toast.error('Erreur'); return }
+    if (error) { toast.error(t.common_error); return }
     setReminders(prev => prev.filter(r => r.id !== id))
     if (editingReminder?.id === id) setEditingReminder(null)
-    toast.success('Rappel supprimé')
+    toast.success(t.appointments_reminder_deleted)
   }
 
   const handleToggleReminder = async (reminder: ReminderConfig) => {
@@ -259,7 +273,7 @@ export function BusinessAppointments() {
       .update({ is_active: updated.is_active, updated_at: new Date().toISOString() })
       .eq('id', reminder.id)
     setReminders(prev => prev.map(r => r.id === reminder.id ? updated : r))
-    toast.success(updated.is_active ? 'Rappel activé' : 'Rappel désactivé')
+    toast.success(updated.is_active ? t.appointments_reminder_enabled : t.appointments_reminder_disabled)
   }
 
   const manualReminder = reminders.find(r => r.is_manual)
@@ -278,10 +292,10 @@ export function BusinessAppointments() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { toast.error(data.error || 'Erreur envoi rappel'); return }
-      toast.success(`Rappel envoyé à ${data.sent_to}`)
+      if (!res.ok) { toast.error(data.error || t.appointments_send_reminder_error); return }
+      toast.success(`${t.appointments_reminder_sent_to} ${data.sent_to}`)
     } catch {
-      toast.error('Erreur lors de l\'envoi')
+      toast.error(t.appointments_send_error)
     } finally {
       setSendingManualReminder(null)
     }
@@ -351,7 +365,7 @@ export function BusinessAppointments() {
       .select()
       .single()
     setSavingLink(false)
-    if (error) { toast.error('Erreur lors de la création'); return }
+    if (error) { toast.error(t.appointments_create_error); return }
     if (data) setBookingLinks(prev => [data, ...prev])
     setShowCreateLink(false)
     setNewLinkLabel('')
@@ -364,13 +378,13 @@ export function BusinessAppointments() {
     setNewLinkPhoneEnabled(true)
     setNewLinkPhoneRequired(false)
     setNewLinkGoogleMeetEnabled(true)
-    toast.success('Lien de booking créé')
+    toast.success(t.appointments_booking_link_created)
   }
 
   const handleDeleteBookingLink = async (id: string) => {
     await supabase.from('business_booking_links').delete().eq('id', id)
     setBookingLinks(prev => prev.filter(l => l.id !== id))
-    toast.success('Lien supprimé')
+    toast.success(t.appointments_link_deleted)
   }
 
   // Edit booking link
@@ -420,7 +434,7 @@ export function BusinessAppointments() {
       })
       .eq('id', editingLink.id)
     setSavingEdit(false)
-    if (error) { toast.error('Erreur lors de la mise à jour'); return }
+    if (error) { toast.error(t.appointments_update_error); return }
     setBookingLinks(prev => prev.map(l => l.id === editingLink.id ? {
       ...l,
       label: editLabel.trim(),
@@ -435,12 +449,12 @@ export function BusinessAppointments() {
       google_meet_enabled: editGoogleMeetEnabled,
     } : l))
     setEditingLink(null)
-    toast.success('Lien mis à jour')
+    toast.success(t.appointments_link_updated)
   }
 
   const handleCopyLink = (link: string) => {
     navigator.clipboard.writeText(link)
-    toast.success('Lien copié !')
+    toast.success(t.appointments_link_copied)
   }
 
   const fetchAppointments = useCallback(async () => {
@@ -489,10 +503,10 @@ export function BusinessAppointments() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user?.id, id, status }),
       })
-      toast.success(`Statut mis à jour`)
+      toast.success(t.appointments_status_updated)
       fetchAppointments()
     } catch {
-      toast.error('Erreur')
+      toast.error(t.common_error)
     }
   }
 
@@ -502,17 +516,17 @@ export function BusinessAppointments() {
       await fetch(`${API_URL}?action=appointments-delete&user_id=${effectiveUserId}&id=${id}`, {
         method: 'DELETE',
       })
-      toast.success('Rendez-vous supprimé')
+      toast.success(t.appointments_deleted)
       setSelectedAppointment(null)
       fetchAppointments()
     } catch {
-      toast.error('Erreur lors de la suppression')
+      toast.error(t.appointments_delete_error)
     }
   }
 
   // ─── Book a RDV ───
   const handleBookAppointment = async () => {
-    if (!bookDate || !bookTime) { toast.error('Date et heure requises'); return }
+    if (!bookDate || !bookTime) { toast.error(t.appointments_date_time_required); return }
     if (!effectiveUserId) return
     setBookSaving(true)
 
@@ -565,15 +579,15 @@ export function BusinessAppointments() {
       })
 
       const data = await res.json()
-      if (!res.ok) { toast.error(data.error || 'Erreur'); setBookSaving(false); return }
+      if (!res.ok) { toast.error(data.error || t.common_error); setBookSaving(false); return }
 
-      toast.success(googleMeetLink ? 'RDV créé avec Google Meet' : 'RDV créé')
+      toast.success(googleMeetLink ? t.appointments_created_with_meet : t.appointments_created)
       setShowBookModal(false)
       resetBookForm()
       fetchAppointments()
     } catch (err) {
       console.error('Error booking appointment:', err)
-      toast.error('Erreur lors de la création')
+      toast.error(t.appointments_create_error)
     } finally {
       setBookSaving(false)
     }
@@ -626,7 +640,7 @@ export function BusinessAppointments() {
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr + 'T00:00:00')
-    return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   }
 
   const getMemberName = (assignedTo?: string) => {
@@ -684,13 +698,13 @@ export function BusinessAppointments() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                Mes Rendez-vous
+                {t.appointments_my_title}
               </h1>
               {isOwnerOrHoS && (
                 <button
                   onClick={() => setShowReminderConfig(true)}
                   className="p-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-all group relative"
-                  title="Configurer les rappels email"
+                  title={t.appointments_configure_reminders}
                 >
                   <Settings className="h-5 w-5 text-[#444748] dark:text-neutral-300 group-hover:rotate-90 transition-transform duration-300" />
                   {reminders.filter(r => r.is_active).length > 0 && (
@@ -702,7 +716,7 @@ export function BusinessAppointments() {
               )}
             </div>
             <p className="text-[#444748] dark:text-neutral-300 mt-2">
-              {showTabs && activeTab === 'personnel' ? 'Gérez vos rendez-vous personnels.' : showTabs && activeTab === 'membre' ? 'Tous les rendez-vous de l\'équipe.' : 'Gérez vos rendez-vous et votre calendrier.'}
+              {showTabs && activeTab === 'personnel' ? t.appointments_manage_personal : showTabs && activeTab === 'membre' ? t.appointments_all_team : t.appointments_manage_calendar}
             </p>
           </div>
 
@@ -717,7 +731,7 @@ export function BusinessAppointments() {
                     : 'text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-800'
                 }`}
               >
-                Personnel
+                {t.appointments_tab_personal}
               </button>
               <button
                 onClick={() => setActiveTab('membre')}
@@ -727,7 +741,7 @@ export function BusinessAppointments() {
                     : 'text-[#444748] dark:text-neutral-300 hover:bg-[#eae8e7] dark:hover:bg-neutral-800'
                 }`}
               >
-                Membre
+                {t.appointments_tab_member}
               </button>
             </div>
           )}
@@ -744,7 +758,7 @@ export function BusinessAppointments() {
                 onChange={(e) => setFilterMember(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 bg-white/50 dark:bg-white/5 border-none rounded-full text-sm focus:ring-2 ring-[#006c49]/20 appearance-none font-medium text-[#1b1c1b] dark:text-white"
               >
-                <option value="all">Tous les membres</option>
+                <option value="all">{t.appointments_all_members}</option>
                 {teamMembers.map(m => (
                   <option key={m.id} value={m.id}>{m.first_name} {m.last_name}{m.role === 'Owner' ? ' (Owner)' : ''}</option>
                 ))}
@@ -758,11 +772,11 @@ export function BusinessAppointments() {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full pl-11 pr-4 py-3 bg-white/50 dark:bg-white/5 border-none rounded-full text-sm focus:ring-2 ring-[#006c49]/20 appearance-none font-medium text-[#1b1c1b] dark:text-white"
             >
-              <option value="all">Statut : Tous</option>
-              <option value="pending">En attente</option>
-              <option value="confirmed">Confirmé</option>
-              <option value="cancelled">Annulé</option>
-              <option value="done">Terminé</option>
+              <option value="all">{t.appointments_status_all}</option>
+              <option value="pending">{t.appointments_status_pending}</option>
+              <option value="confirmed">{t.appointments_status_confirmed}</option>
+              <option value="cancelled">{t.appointments_status_cancelled}</option>
+              <option value="done">{t.appointments_status_done}</option>
             </select>
           </div>
           <div className="flex-1 min-w-[180px] relative">
@@ -779,14 +793,14 @@ export function BusinessAppointments() {
               onClick={() => { setFilterStatus('all'); setFilterDate(''); setFilterMember('all') }}
               className="text-sm text-[#006c49] hover:text-[#005236] font-semibold"
             >
-              Réinitialiser
+              {t.appointments_reset_filters}
             </button>
           )}
           <button
             onClick={() => setShowBookModal(true)}
             className="bg-[#1b1c1b] text-white px-8 py-3 rounded-full font-bold text-sm hover:scale-105 active:scale-95 transition-all"
           >
-            Booker un RDV
+            {t.appointments_book_rdv}
           </button>
         </div>
       </div>
@@ -802,8 +816,8 @@ export function BusinessAppointments() {
 
               <div className="flex justify-between items-start px-10 pt-10 pb-0">
                 <div>
-                  <h2 className="text-3xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Nouveau RDV</h2>
-                  <p className="text-sm text-[#444748] dark:text-neutral-300 mt-1">Planifiez un nouveau rendez-vous.</p>
+                  <h2 className="text-3xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.appointments_new_rdv}</h2>
+                  <p className="text-sm text-[#444748] dark:text-neutral-300 mt-1">{t.appointments_schedule_new}</p>
                 </div>
                 <button onClick={() => { setShowBookModal(false); resetBookForm() }} className="p-2 rounded-full hover:bg-[#f5f3f2] dark:bg-neutral-900 transition-all">
                   <X className="h-5 w-5 text-[#444748] dark:text-neutral-300" />
@@ -812,7 +826,7 @@ export function BusinessAppointments() {
 
               <div className="p-10 pt-8 space-y-6">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Titre de l'événement</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_event_title}</label>
                   <input
                     type="text"
                     value={bookTitle}
@@ -824,7 +838,7 @@ export function BusinessAppointments() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Date *</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_label_date} *</label>
                     <input
                       type="date"
                       value={bookDate}
@@ -834,7 +848,7 @@ export function BusinessAppointments() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Heure *</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_label_time} *</label>
                     <input
                       type="time"
                       value={bookTime}
@@ -845,7 +859,7 @@ export function BusinessAppointments() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Durée</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_duration}</label>
                   <select
                     value={bookDuration}
                     onChange={e => setBookDuration(Number(e.target.value))}
@@ -862,13 +876,13 @@ export function BusinessAppointments() {
                 {/* For whom */}
                 {canBookForOthers && teamMembers.length > 0 ? (
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Assigner à</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_assign_to}</label>
                     <select
                       value={bookMemberId}
                       onChange={e => setBookMemberId(e.target.value)}
                       className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
                     >
-                      <option value="">Pour moi</option>
+                      <option value="">{t.appointments_for_me}</option>
                       {teamMembers.map(m => (
                         <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                       ))}
@@ -885,7 +899,7 @@ export function BusinessAppointments() {
                 ) : null}
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Notes internes</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_internal_notes}</label>
                   <textarea
                     value={bookNotes}
                     onChange={e => setBookNotes(e.target.value)}
@@ -900,7 +914,7 @@ export function BusinessAppointments() {
                   <div className="flex items-center justify-between p-4 bg-[#f5f3f2] dark:bg-neutral-900 rounded-xl">
                     <div className="flex items-center gap-3">
                       <Video className="h-5 w-5 text-[#444748] dark:text-neutral-300" />
-                      <span className="text-sm font-bold text-[#1b1c1b] dark:text-white">Activer Google Meet</span>
+                      <span className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.appointments_enable_google_meet}</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -917,7 +931,7 @@ export function BusinessAppointments() {
                 {!isGoogleConnected && (
                   <div className="p-4 rounded-xl bg-[#f5f3f2] dark:bg-neutral-900">
                     <p className="text-xs text-[#444748] dark:text-neutral-300">
-                      Connectez votre Google Calendar depuis l'Agenda pour générer des liens Google Meet.
+                      {t.appointments_connect_google_calendar}
                     </p>
                   </div>
                 )}
@@ -929,7 +943,7 @@ export function BusinessAppointments() {
                     className="w-full py-4 bg-[#1b1c1b] text-white rounded-full font-extrabold tracking-tight hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {bookSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Confirmer le rendez-vous
+                    {t.appointments_confirm_rdv}
                   </button>
                 </div>
               </div>
@@ -950,10 +964,10 @@ export function BusinessAppointments() {
               <div className="flex justify-between items-start px-10 pt-10 pb-0 shrink-0">
                 <div>
                   <h2 className="text-3xl font-extrabold tracking-tight text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    {editingReminder ? (editingReminder.id ? 'Modifier le rappel' : 'Nouveau rappel') : 'Rappels email'}
+                    {editingReminder ? (editingReminder.id ? t.appointments_edit_reminder : t.appointments_new_reminder) : t.appointments_email_reminders}
                   </h2>
                   <p className="text-sm text-[#444748] dark:text-neutral-300 mt-1">
-                    {editingReminder ? 'Configurez le contenu et le timing de votre rappel.' : 'Configurez des rappels automatiques envoyés avant vos rendez-vous.'}
+                    {editingReminder ? t.appointments_configure_reminder_desc : t.appointments_auto_reminders_desc}
                   </p>
                 </div>
                 <button onClick={() => { if (editingReminder) { setEditingReminder(null) } else { setShowReminderConfig(false) } }} className="p-2 rounded-full hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all">
@@ -967,7 +981,7 @@ export function BusinessAppointments() {
                   <div className="space-y-6">
                     {/* Manual reminder section */}
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 mb-3 ml-1">Rappel manuel (bouton sur les cartes)</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 mb-3 ml-1">{t.appointments_manual_reminder_label}</p>
                       {manualReminder ? (
                         <div className={`flex items-center justify-between p-5 rounded-xl border transition-all ${manualReminder.is_active ? 'bg-white dark:bg-neutral-800 border-[#ffb95f]/30' : 'bg-[#f5f3f2]/50 dark:bg-neutral-800/30 border-[#e4e2e1]/20 dark:border-neutral-700/10 opacity-60'}`}>
                           <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -976,10 +990,10 @@ export function BusinessAppointments() {
                               <div className="flex items-center gap-2">
                                 <h4 className="font-bold text-sm text-[#1b1c1b] dark:text-white truncate">{manualReminder.name}</h4>
                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${manualReminder.template_type === 'custom' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
-                                  {manualReminder.template_type === 'custom' ? 'Personnalisé' : 'Standard'}
+                                  {manualReminder.template_type === 'custom' ? t.appointments_custom : t.appointments_standard}
                                 </span>
                               </div>
-                              <p className="text-xs text-[#747878] dark:text-neutral-400 mt-0.5">Envoyé manuellement depuis chaque carte de rendez-vous</p>
+                              <p className="text-xs text-[#747878] dark:text-neutral-400 mt-0.5">{t.appointments_sent_manually_desc}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0 ml-3">
@@ -997,7 +1011,7 @@ export function BusinessAppointments() {
                           className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-[#ffb95f]/30 text-sm font-bold text-[#b87500] dark:text-[#ffb95f] hover:border-[#ffb95f] hover:bg-[#ffb95f]/5 transition-all"
                         >
                           <Plus className="h-4 w-4" />
-                          Configurer le rappel manuel
+                          {t.appointments_configure_manual_reminder}
                         </button>
                       )}
                     </div>
@@ -1007,11 +1021,11 @@ export function BusinessAppointments() {
 
                     {/* Automatic reminders section */}
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 mb-3 ml-1">Rappels automatiques</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-400 mb-3 ml-1">{t.appointments_auto_reminders}</p>
                       {reminders.filter(r => !r.is_manual).length === 0 && (
                         <div className="flex flex-col items-center py-8">
                           <Clock className="h-10 w-10 text-[#c4c7c7] dark:text-neutral-600 mb-3" />
-                          <p className="text-xs text-[#747878] dark:text-neutral-500">Aucun rappel automatique configuré.</p>
+                          <p className="text-xs text-[#747878] dark:text-neutral-500">{t.appointments_no_auto_reminders}</p>
                         </div>
                       )}
 
@@ -1030,7 +1044,7 @@ export function BusinessAppointments() {
                                 <div className="flex items-center gap-2">
                                   <h4 className="font-bold text-sm text-[#1b1c1b] dark:text-white truncate">{r.name}</h4>
                                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${r.template_type === 'custom' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
-                                    {r.template_type === 'custom' ? 'Personnalisé' : 'Standard'}
+                                    {r.template_type === 'custom' ? t.appointments_custom : t.appointments_standard}
                                   </span>
                                 </div>
                                 <p className="text-xs text-[#747878] dark:text-neutral-400 mt-0.5">
@@ -1055,7 +1069,7 @@ export function BusinessAppointments() {
                         className="w-full flex items-center justify-center gap-2 p-4 mt-3 rounded-xl border-2 border-dashed border-[#e4e2e1] dark:border-neutral-700 text-sm font-bold text-[#444748] dark:text-neutral-400 hover:border-[#006c49] hover:text-[#006c49] dark:hover:border-[#006c49] dark:hover:text-[#006c49] transition-all"
                       >
                         <Plus className="h-4 w-4" />
-                        Ajouter un rappel automatique
+                        {t.appointments_add_auto_reminder}
                       </button>
                     </div>
                   </div>
@@ -1064,7 +1078,7 @@ export function BusinessAppointments() {
                   <div className="space-y-6">
                     {/* Nom du rappel */}
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Nom du rappel</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_reminder_name}</label>
                       <input
                         type="text"
                         value={editingReminder.name}
@@ -1077,7 +1091,7 @@ export function BusinessAppointments() {
                     {/* Timing (hidden for manual) */}
                     {!editingReminder.is_manual && (
                       <div>
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Quand envoyer</label>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_when_to_send}</label>
                         <select
                           value={editingReminder.timing}
                           onChange={e => setEditingReminder({ ...editingReminder, timing: e.target.value })}
@@ -1093,14 +1107,14 @@ export function BusinessAppointments() {
                       <div className="flex items-center gap-3 p-4 rounded-xl bg-[#ffb95f]/10 border border-[#ffb95f]/20">
                         <Bell className="h-5 w-5 text-[#b87500] shrink-0" />
                         <p className="text-sm text-[#b87500] dark:text-[#ffb95f]">
-                          Ce rappel s'envoie manuellement via le bouton <strong>Rappel</strong> sur chaque carte de rendez-vous.
+                          {t.appointments_manual_reminder_desc}
                         </p>
                       </div>
                     )}
 
                     {/* Template type toggle */}
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Type de template</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_template_type}</label>
                       <div className="flex gap-2">
                         <button
                           onClick={() => setEditingReminder({ ...editingReminder, template_type: 'default' })}
@@ -1111,7 +1125,7 @@ export function BusinessAppointments() {
                           }`}
                         >
                           <FileText className="h-4 w-4" />
-                          Standard
+                          {t.appointments_standard}
                         </button>
                         <button
                           onClick={() => setEditingReminder({ ...editingReminder, template_type: 'custom' })}
@@ -1122,7 +1136,7 @@ export function BusinessAppointments() {
                           }`}
                         >
                           <Code2 className="h-4 w-4" />
-                          Personnalisé
+                          {t.appointments_custom}
                         </button>
                       </div>
                     </div>
@@ -1178,7 +1192,7 @@ export function BusinessAppointments() {
                         <div className="space-y-5">
                           {/* Sender name */}
                           <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Nom d'envoi</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_sender_name}</label>
                             <input
                               type="text"
                               value={editingReminder.sender_name}
@@ -1186,12 +1200,12 @@ export function BusinessAppointments() {
                               placeholder="CloseOS"
                               className="w-full px-5 py-3 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none focus:ring-2 ring-[#006c49]/20 font-medium text-sm text-[#1b1c1b] dark:text-white"
                             />
-                            <p className="text-[10px] text-[#747878] dark:text-neutral-500 mt-1 ml-1">L'email sera toujours envoyé depuis support@closeos.fr</p>
+                            <p className="text-[10px] text-[#747878] dark:text-neutral-500 mt-1 ml-1">{t.appointments_email_always_from}</p>
                           </div>
 
                           {/* Subject */}
                           <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Objet de l'email</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_email_subject}</label>
                             <div className="flex items-center gap-0">
                               <span className="px-4 py-3 bg-[#eae8e7] dark:bg-neutral-700 rounded-l-xl text-sm font-bold text-[#444748] dark:text-neutral-300 shrink-0 border-r-0">CloseOS -</span>
                               <input
@@ -1206,7 +1220,7 @@ export function BusinessAppointments() {
 
                           {/* Variables reference */}
                           <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Variables disponibles</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_available_variables}</label>
                             <div className="flex flex-wrap gap-1.5">
                               {TEMPLATE_VARIABLES.map(v => (
                                 <button
@@ -1227,7 +1241,7 @@ export function BusinessAppointments() {
 
                           {/* Custom HTML content */}
                           <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Contenu HTML de l'email</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_html_content}</label>
                             <textarea
                               value={editingReminder.custom_html}
                               onChange={e => setEditingReminder({ ...editingReminder, custom_html: e.target.value })}
@@ -1243,7 +1257,7 @@ export function BusinessAppointments() {
 
                         {/* Right: Live preview */}
                         <div className="flex flex-col">
-                          <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Prévisualisation</label>
+                          <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_preview}</label>
                           <div className="flex-1 rounded-xl border border-[#e4e2e1]/50 dark:border-neutral-700/30 overflow-hidden bg-[#fbf9f8] min-h-[500px]">
                             <iframe
                               title="Email preview"
@@ -1308,7 +1322,7 @@ export function BusinessAppointments() {
                         onClick={() => setEditingReminder(null)}
                         className="px-6 py-3 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#444748] dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all"
                       >
-                        Retour
+                        {t.common_back}
                       </button>
                       <button
                         onClick={() => handleSaveReminder(editingReminder)}
@@ -1316,7 +1330,7 @@ export function BusinessAppointments() {
                         className="flex items-center gap-2 px-8 py-3 rounded-full bg-[#1b1c1b] text-white text-sm font-extrabold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-black/10 disabled:opacity-50"
                       >
                         {savingReminder && <Loader2 className="h-4 w-4 animate-spin" />}
-                        {editingReminder.id ? 'Mettre à jour' : 'Créer le rappel'}
+                        {editingReminder.id ? t.appointments_update : t.appointments_create_reminder}
                       </button>
                     </div>
                   </div>
@@ -1335,11 +1349,11 @@ export function BusinessAppointments() {
           {filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center bg-white dark:bg-neutral-900 rounded-2xl border border-[#e4e2e1]/50 dark:border-neutral-700/30 py-20">
               <Calendar className="h-12 w-12 text-[#c4c7c7] mb-4" />
-              <h3 className="text-lg font-bold text-[#1b1c1b] dark:text-white mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>Aucun rendez-vous</h3>
+              <h3 className="text-lg font-bold text-[#1b1c1b] dark:text-white mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.appointments_no_appointments}</h3>
               <p className="text-sm text-[#444748] dark:text-neutral-300 mb-6">
                 {visibleAppointments.length === 0
-                  ? (isTeamMember ? 'Aucun rendez-vous ne vous est assigné' : 'Vos rendez-vous apparaîtront ici')
-                  : 'Aucun rendez-vous ne correspond à vos filtres'}
+                  ? (isTeamMember ? t.appointments_no_assigned : t.appointments_will_appear_here)
+                  : t.appointments_no_matching_filters}
               </p>
               <button
                 onClick={() => setShowBookModal(true)}
@@ -1587,7 +1601,7 @@ export function BusinessAppointments() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Durée</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_duration}</label>
                   <select
                     value={newLinkDuration}
                     onChange={e => setNewLinkDuration(Number(e.target.value))}
@@ -1608,7 +1622,7 @@ export function BusinessAppointments() {
                       onChange={e => setNewLinkMemberId(e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
                     >
-                      <option value="">Pour moi</option>
+                      <option value="">{t.appointments_for_me}</option>
                       {teamMembers.map(m => (
                         <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                       ))}
@@ -1789,7 +1803,7 @@ export function BusinessAppointments() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Durée</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">{t.appointments_duration}</label>
                 <select
                   value={editDuration}
                   onChange={e => setEditDuration(Number(e.target.value))}
@@ -1810,7 +1824,7 @@ export function BusinessAppointments() {
                     onChange={e => setEditMemberId(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
                   >
-                    <option value="">Pour moi</option>
+                    <option value="">{t.appointments_for_me}</option>
                     {teamMembers.map(m => (
                       <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                     ))}
@@ -1969,7 +1983,7 @@ export function BusinessAppointments() {
                   <Clock className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-bold text-[#1b1c1b] dark:text-white capitalize">
-                      {new Date(localDt.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                      {new Date(localDt.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
                       {localDt.time} — {endMinutes} ({appt.duration || 30}min)
