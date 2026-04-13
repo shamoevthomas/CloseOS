@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Plus, Copy, Check, Eye, Users, DollarSign, TrendingUp, X, Loader2, ExternalLink, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Copy, Check, Eye, Users, DollarSign, TrendingUp, X, Loader2, ExternalLink, Trash2, ChevronDown } from 'lucide-react';
 
 const API_BASE = '/api/business-referral';
 const PLANS = ['solo', 'business', 'business_acquisition'] as const;
 const PLAN_LABELS: Record<string, string> = { solo: 'Solo', business: 'Business', business_acquisition: 'Business + Acquisition' };
+const BILLING_CYCLES = ['monthly', 'quarterly', 'annual'] as const;
+const BILLING_LABELS: Record<string, string> = { monthly: 'Mensuel', quarterly: 'Trimestriel', annual: 'Annuel' };
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   active: { label: 'Actif', color: 'bg-emerald-50 text-emerald-700' },
   churned: { label: 'Churne', color: 'bg-red-50 text-red-700' },
@@ -196,11 +198,12 @@ function Stat({ icon: Icon, label, value, color }: { icon: any; label: string; v
 function CreateLinkModal({ password, onClose, onCreated }: { password: string; onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
-  const [config, setConfig] = useState<Record<string, { fixed: number; percent: number }>>({
+  const [config, setConfig] = useState<Record<string, { fixed: number; percent: number; per_billing?: Record<string, { fixed: number; percent: number }> }>>({
     solo: { fixed: 0, percent: 0 },
     business: { fixed: 0, percent: 0 },
     business_acquisition: { fixed: 0, percent: 0 },
   });
+  const [advancedOpen, setAdvancedOpen] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -214,6 +217,49 @@ function CreateLinkModal({ password, onClose, onCreated }: { password: string; o
 
   const updateConfig = (plan: string, field: 'fixed' | 'percent', value: number) => {
     setConfig(prev => ({ ...prev, [plan]: { ...prev[plan], [field]: value } }));
+  };
+
+  const toggleAdvanced = (plan: string) => {
+    setAdvancedOpen(prev => ({ ...prev, [plan]: !prev[plan] }));
+    // Initialize per_billing when opening for the first time
+    setConfig(prev => {
+      const current = prev[plan];
+      if (!current.per_billing) {
+        return {
+          ...prev,
+          [plan]: {
+            ...current,
+            per_billing: {
+              monthly: { fixed: current.fixed, percent: current.percent },
+              quarterly: { fixed: current.fixed, percent: current.percent },
+              annual: { fixed: current.fixed, percent: current.percent },
+            }
+          }
+        };
+      }
+      return prev;
+    });
+  };
+
+  const updateBillingConfig = (plan: string, cycle: string, field: 'fixed' | 'percent', value: number) => {
+    setConfig(prev => ({
+      ...prev,
+      [plan]: {
+        ...prev[plan],
+        per_billing: {
+          ...prev[plan].per_billing,
+          [cycle]: { ...prev[plan].per_billing![cycle], [field]: value }
+        }
+      }
+    }));
+  };
+
+  const removeAdvanced = (plan: string) => {
+    setAdvancedOpen(prev => ({ ...prev, [plan]: false }));
+    setConfig(prev => {
+      const { per_billing, ...rest } = prev[plan];
+      return { ...prev, [plan]: rest };
+    });
   };
 
   return (
@@ -246,21 +292,60 @@ function CreateLinkModal({ password, onClose, onCreated }: { password: string; o
             <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-3">Commission par formule</label>
             <div className="space-y-3">
               {PLANS.map(plan => (
-                <div key={plan} className="flex items-center gap-3 rounded-xl bg-stone-50 p-3">
-                  <span className="text-sm font-semibold text-stone-700 min-w-[140px]">{PLAN_LABELS[plan]}</span>
-                  <div className="flex items-center gap-1.5">
-                    <input type="number" min={0} step={1} value={config[plan]?.fixed || 0}
-                      onChange={e => updateConfig(plan, 'fixed', Number(e.target.value))}
-                      className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
-                    <span className="text-xs text-stone-400">€</span>
+                <div key={plan} className="rounded-xl bg-stone-50 p-3">
+                  {/* Default row */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-stone-700 min-w-[140px]">{PLAN_LABELS[plan]}</span>
+                    {!advancedOpen[plan] && (
+                      <>
+                        <div className="flex items-center gap-1.5">
+                          <input type="number" min={0} step={1} value={config[plan]?.fixed || 0}
+                            onChange={e => updateConfig(plan, 'fixed', Number(e.target.value))}
+                            className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
+                          <span className="text-xs text-stone-400">€</span>
+                        </div>
+                        <span className="text-stone-300">+</span>
+                        <div className="flex items-center gap-1.5">
+                          <input type="number" min={0} max={100} step={1} value={config[plan]?.percent || 0}
+                            onChange={e => updateConfig(plan, 'percent', Number(e.target.value))}
+                            className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
+                          <span className="text-xs text-stone-400">%</span>
+                        </div>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => advancedOpen[plan] ? removeAdvanced(plan) : toggleAdvanced(plan)}
+                      className="ml-auto flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400 hover:text-stone-600 transition-colors"
+                    >
+                      Avance
+                      <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${advancedOpen[plan] ? 'rotate-180' : ''}`} />
+                    </button>
                   </div>
-                  <span className="text-stone-300">+</span>
-                  <div className="flex items-center gap-1.5">
-                    <input type="number" min={0} max={100} step={1} value={config[plan]?.percent || 0}
-                      onChange={e => updateConfig(plan, 'percent', Number(e.target.value))}
-                      className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
-                    <span className="text-xs text-stone-400">%</span>
-                  </div>
+
+                  {/* Per-billing breakdown */}
+                  {advancedOpen[plan] && config[plan]?.per_billing && (
+                    <div className="mt-3 space-y-2 pl-2 border-l-2 border-stone-200 ml-1">
+                      {BILLING_CYCLES.map(cycle => (
+                        <div key={cycle} className="flex items-center gap-3">
+                          <span className="text-xs font-medium text-stone-500 min-w-[80px]">{BILLING_LABELS[cycle]}</span>
+                          <div className="flex items-center gap-1.5">
+                            <input type="number" min={0} step={1} value={config[plan]?.per_billing?.[cycle]?.fixed || 0}
+                              onChange={e => updateBillingConfig(plan, cycle, 'fixed', Number(e.target.value))}
+                              className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
+                            <span className="text-xs text-stone-400">€</span>
+                          </div>
+                          <span className="text-stone-300">+</span>
+                          <div className="flex items-center gap-1.5">
+                            <input type="number" min={0} max={100} step={1} value={config[plan]?.per_billing?.[cycle]?.percent || 0}
+                              onChange={e => updateBillingConfig(plan, cycle, 'percent', Number(e.target.value))}
+                              className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
+                            <span className="text-xs text-stone-400">%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -366,13 +451,28 @@ function LinkDetail({ linkId, password, onBack }: { linkId: string; password: st
           {/* Commission config display */}
           <div className="mt-5 pt-5 border-t border-stone-100">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400 mb-2">Commission configuree</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-2">
               {PLANS.map(plan => {
                 const cfg = (link.commission_config as any)?.[plan] || {};
+                const hasBilling = cfg.per_billing && Object.keys(cfg.per_billing).length > 0;
                 return (
-                  <span key={plan} className="text-xs bg-stone-50 text-stone-600 px-3 py-1.5 rounded-lg">
-                    {PLAN_LABELS[plan]}: {cfg.fixed || 0}€ + {cfg.percent || 0}%
-                  </span>
+                  <div key={plan}>
+                    <span className="text-xs bg-stone-50 text-stone-600 px-3 py-1.5 rounded-lg inline-block">
+                      {PLAN_LABELS[plan]}: {hasBilling ? 'par cycle' : `${cfg.fixed || 0}€ + ${cfg.percent || 0}%`}
+                    </span>
+                    {hasBilling && (
+                      <div className="mt-1 ml-3 flex flex-wrap gap-1.5">
+                        {BILLING_CYCLES.map(cycle => {
+                          const bc = cfg.per_billing[cycle] || {};
+                          return (
+                            <span key={cycle} className="text-[11px] bg-stone-100 text-stone-500 px-2 py-1 rounded-md">
+                              {BILLING_LABELS[cycle]}: {bc.fixed || 0}€ + {bc.percent || 0}%
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -407,6 +507,7 @@ function LinkDetail({ linkId, password, onBack }: { linkId: string; password: st
                   <tr className="border-b border-stone-100 text-left">
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">Utilisateur</th>
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">Formule</th>
+                    <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">Cycle</th>
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">Statut</th>
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400">Inscription</th>
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-stone-400 text-right">CA</th>
@@ -425,6 +526,11 @@ function LinkDetail({ linkId, password, onBack }: { linkId: string; password: st
                         <td className="px-5 py-3">
                           <span className="text-xs bg-stone-100 text-stone-600 px-2.5 py-1 rounded-full font-medium">
                             {PLAN_LABELS[conv.subscription_plan] || conv.subscription_plan || '—'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3">
+                          <span className="text-xs text-stone-500 font-medium">
+                            {BILLING_LABELS[conv.billing_cycle] || conv.billing_cycle || '—'}
                           </span>
                         </td>
                         <td className="px-5 py-3">

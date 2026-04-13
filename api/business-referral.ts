@@ -75,17 +75,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Calculate MRR commission for active users
       let commissionMrr = 0;
       for (const conv of activeConversions) {
-        const config = (link.commission_config as any)?.[conv.subscription_plan] || {};
-        const fixed = Number(config.fixed || 0);
-        const percent = Number(config.percent || 0);
+        const { fixed, percent } = resolveCommission(link.commission_config, conv.subscription_plan, conv.billing_cycle);
 
         // Estimate monthly revenue from total_paid and billing cycle
         let monthlyRevenue = 0;
         if (conv.total_paid > 0 && conv.last_payment_at) {
-          // Use billing cycle to estimate per-month
-          if (conv.billing_cycle === 'quarterly') monthlyRevenue = Number(conv.total_paid) / Math.max(1, monthsSince(conv.created_at)) || 0;
-          else if (conv.billing_cycle === 'annual') monthlyRevenue = Number(conv.total_paid) / Math.max(1, monthsSince(conv.created_at)) || 0;
-          else monthlyRevenue = Number(conv.total_paid) / Math.max(1, monthsSince(conv.created_at)) || 0;
+          monthlyRevenue = Number(conv.total_paid) / Math.max(1, monthsSince(conv.created_at)) || 0;
         }
 
         commissionMrr += fixed + (monthlyRevenue * percent / 100);
@@ -135,9 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Enrich each conversion with commission info
     const enrichedConversions = (conversions || []).map(conv => {
-      const config = (link.commission_config as any)?.[conv.subscription_plan] || {};
-      const fixed = Number(config.fixed || 0);
-      const percent = Number(config.percent || 0);
+      const { fixed, percent } = resolveCommission(link.commission_config, conv.subscription_plan, conv.billing_cycle);
       const months = Math.max(1, monthsSince(conv.created_at));
       const monthlyRevenue = Number(conv.total_paid) / months;
       const monthlyCommission = conv.status === 'active' ? fixed + (monthlyRevenue * percent / 100) : 0;
@@ -204,6 +197,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   return res.status(400).json({ error: 'Unknown action' });
+}
+
+// Resolve commission rates: use per_billing config if available, otherwise fall back to default
+function resolveCommission(commissionConfig: any, plan: string, billingCycle: string): { fixed: number; percent: number } {
+  const planConfig = commissionConfig?.[plan] || {};
+  // Check for per-billing-cycle config first
+  if (planConfig.per_billing && planConfig.per_billing[billingCycle]) {
+    const bc = planConfig.per_billing[billingCycle];
+    return { fixed: Number(bc.fixed || 0), percent: Number(bc.percent || 0) };
+  }
+  // Fall back to default plan-level config
+  return { fixed: Number(planConfig.fixed || 0), percent: Number(planConfig.percent || 0) };
 }
 
 function monthsSince(dateStr: string): number {
