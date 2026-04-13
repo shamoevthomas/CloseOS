@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { slug } = req.body;
     if (!slug) return res.status(400).json({ error: 'slug required' });
 
-    await supabase.rpc('increment_referral_views', { link_slug: slug }).catch(() => {});
+    try { await supabase.rpc('increment_referral_views', { link_slug: slug }) } catch { /* ignore */ }
     // Fallback: direct update if RPC doesn't exist
     await supabase
       .from('business_referral_links')

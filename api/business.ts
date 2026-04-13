@@ -4209,9 +4209,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .maybeSingle()
         if (incompletTag) {
           // Use service-level delete to bypass the system tag unlink trigger
-          await supabase.rpc('remove_system_tag_from_prospect', { p_prospect_id: prospect.id, p_tag_id: incompletTag.id }).catch(() => {
-            // Fallback: direct delete (will fail if trigger blocks it)
-          })
+          try {
+            await supabase.rpc('remove_system_tag_from_prospect', { p_prospect_id: prospect.id, p_tag_id: incompletTag.id })
+          } catch {
+            // Fallback: ignore if RPC fails (trigger may block it)
+          }
         }
       }
 

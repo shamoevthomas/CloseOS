@@ -847,7 +847,12 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
           <div className="mt-auto px-4 pt-8">
             <div className="p-6 bg-[#f5f3f2] dark:bg-neutral-800 rounded-2xl">
               <p className="text-[10px] uppercase tracking-widest font-bold text-stone-400 dark:text-neutral-500 mb-2">Workspace Plan</p>
-              <p className="font-business-display font-extrabold text-sm text-stone-900 dark:text-white">CloserOS Business</p>
+              <p className="font-business-display font-extrabold text-sm text-stone-900 dark:text-white">{
+                businessSettings?.subscription_plan === 'business_acquisition' ? 'CloseOS Business + Acquisition'
+                : businessSettings?.subscription_plan === 'enterprise' ? 'CloseOS Enterprise'
+                : isSolo ? 'CloseOS Solo'
+                : 'CloseOS Business'
+              }</p>
             </div>
           </div>
         </aside>

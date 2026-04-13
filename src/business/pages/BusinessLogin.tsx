@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Loader2, Check, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase';
@@ -23,6 +23,28 @@ export default function BusinessLogin() {
       }
     }
   }, [user, authLoading, businessProfile, isTeamMember, navigate, needsVerification, isSalesUser]);
+
+  // Load chatbot widget
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = '/chatbot-widget.js';
+    script.setAttribute('data-chatbot-id', 'acb35233-a6de-4738-9ba0-7e25c82c2a61');
+    script.setAttribute('data-supabase-url', 'https://mkxcircbzcsjamslijde.supabase.co');
+    script.setAttribute('data-supabase-key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1reGNpcmNiemNzamFtc2xpamRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjM0MDAsImV4cCI6MjA4NzQ5OTQwMH0.9-abq1tEFsmjfRkLJjrkXlG3z-9o2HKYjyp5eBIl178');
+    script.setAttribute('data-lang', lang);
+    document.body.appendChild(script);
+    return () => {
+      if (document.body.contains(script)) document.body.removeChild(script);
+      const container = document.getElementById('chatbot-widget-container');
+      if (container) container.remove();
+    };
+  }, [lang]);
+
+  const openChatbot = () => {
+    const panel = document.getElementById('chatbot-widget-panel');
+    const btn = document.getElementById('chatbot-widget-btn');
+    if (panel) { panel.classList.add('open'); if (btn) btn.style.display = 'none'; }
+  };
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -218,6 +240,12 @@ export default function BusinessLogin() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-stone-300/10 blur-[120px]" />
       </div>
 
+      {/* Back to home */}
+      <a href="/business" className="absolute top-6 left-6 flex items-center gap-2 text-sm font-semibold text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white transition-colors">
+        <ArrowLeft className="h-4 w-4" />
+        Accueil
+      </a>
+
       {/* Glass morphism card */}
       <div className="w-full max-w-md mx-4 bg-white/70 dark:bg-white/5 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-800 p-10">
         {/* Brand header */}
@@ -334,9 +362,9 @@ export default function BusinessLogin() {
         <div className="mt-9 pt-7 border-t border-stone-200/20 dark:border-neutral-800 text-center">
           <p className="text-sm text-stone-500 dark:text-neutral-400">
             {t.login_no_account}{' '}
-            <Link to="/business/register" className="font-bold text-stone-900 dark:text-white ml-1 hover:underline transition-all">
+            <a href="/business#pricing" className="font-bold text-stone-900 dark:text-white ml-1 hover:underline transition-all">
               {t.login_create_account}
-            </Link>
+            </a>
           </p>
         </div>
       </div>
@@ -344,9 +372,9 @@ export default function BusinessLogin() {
       {/* Bottom footer */}
       <div className="mt-8 flex flex-col items-center gap-3 pb-8">
         <div className="flex gap-6 text-xs font-medium text-stone-400 dark:text-neutral-500">
-          <a className="hover:text-emerald-700 transition-colors" href="#">{t.login_help}</a>
-          <a className="hover:text-emerald-700 transition-colors" href="#">{t.login_privacy}</a>
-          <a className="hover:text-emerald-700 transition-colors" href="#">{t.login_terms}</a>
+          <button onClick={openChatbot} className="hover:text-emerald-700 transition-colors">{t.login_help}</button>
+          <a className="hover:text-emerald-700 transition-colors" href="/confidentialite" target="_blank">{t.login_privacy}</a>
+          <a className="hover:text-emerald-700 transition-colors" href="/cgv" target="_blank">{t.login_terms}</a>
         </div>
         <div className="text-[0.65rem] text-stone-400/60 tracking-widest uppercase font-semibold">
           &copy; {new Date().getFullYear()} CloseOS Business. {t.login_all_rights}
