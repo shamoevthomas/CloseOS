@@ -406,7 +406,7 @@ export function CaptureForm() {
       if (field.required && !customData[field.label]?.trim()) return false
     }
     return true
-  }, [firstName, email, phone, customData, campaign])
+  }, [firstName, email, phone, countryCode, customData, campaign])
 
   const fullPhone = phone.trim() ? `${countryCode} ${phone.trim()}` : ''
 
@@ -458,12 +458,12 @@ export function CaptureForm() {
     return true
   }, [hasQuestionnaire, questionnaire, captureQuestions, answers])
 
-  // Auto-collapse info section in horizontal mode when date is selected
+  // Auto-advance to booking step in horizontal mode when info is complete
   useEffect(() => {
-    if (isHorizontal && !isInscriptionMode && selectedDate && isInfoComplete && currentStep === 1) {
+    if (isHorizontal && !isInscriptionMode && isInfoComplete && currentStep === 1) {
       setCurrentStep(hasQuestionnaire ? 2 : (bookingStep as 2 | 3))
     }
-  }, [selectedDate, isHorizontal, isInscriptionMode, isInfoComplete, currentStep, hasQuestionnaire, bookingStep])
+  }, [isHorizontal, isInscriptionMode, isInfoComplete, currentStep, hasQuestionnaire, bookingStep])
 
   const handleSubmit = async () => {
     if (!isInfoComplete) return

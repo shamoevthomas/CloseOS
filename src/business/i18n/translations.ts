@@ -1950,6 +1950,92 @@ export interface BusinessTranslations {
   appointments_at_time: string;
   appointments_at_member: string;
 
+  // ─── BusinessAppointments (Owner page) ───
+  appointments_timing_1d: string;
+  appointments_timing_10h: string;
+  appointments_timing_5h: string;
+  appointments_timing_3h: string;
+  appointments_timing_1h: string;
+  appointments_timing_30m: string;
+  appointments_timing_15m: string;
+  appointments_timing_now: string;
+  appointments_var_lead_name: string;
+  appointments_var_assignee_name: string;
+  appointments_var_title: string;
+  appointments_var_date: string;
+  appointments_var_time: string;
+  appointments_var_meet_link: string;
+  appointments_var_reschedule_link: string;
+  appointments_var_cancel_link: string;
+  appointments_new_reminder: string;
+  appointments_reminder_subject: string;
+  appointments_manual_reminder: string;
+  appointments_reminder_updated: string;
+  appointments_reminder_created: string;
+  appointments_save_error: string;
+  appointments_reminder_deleted: string;
+  appointments_reminder_enabled: string;
+  appointments_reminder_disabled: string;
+  appointments_send_reminder_error: string;
+  appointments_reminder_sent_to: string;
+  appointments_send_error: string;
+  appointments_create_error: string;
+  appointments_booking_link_created: string;
+  appointments_link_deleted: string;
+  appointments_update_error: string;
+  appointments_link_updated: string;
+  appointments_link_copied: string;
+  appointments_deleted: string;
+  appointments_delete_error: string;
+  appointments_date_time_required: string;
+  appointments_created_with_meet: string;
+  appointments_created: string;
+  appointments_configure_reminders: string;
+  appointments_manage_personal: string;
+  appointments_all_team: string;
+  appointments_manage_calendar: string;
+  appointments_tab_personal: string;
+  appointments_tab_member: string;
+  appointments_all_members: string;
+  appointments_status_all: string;
+  appointments_book_rdv: string;
+  appointments_new_rdv: string;
+  appointments_schedule_new: string;
+  appointments_event_title: string;
+  appointments_label_date: string;
+  appointments_label_time: string;
+  appointments_assign_to: string;
+  appointments_for_me: string;
+  appointments_internal_notes: string;
+  appointments_enable_google_meet: string;
+  appointments_connect_google_calendar: string;
+  appointments_confirm_rdv: string;
+  appointments_edit_reminder: string;
+  appointments_email_reminders: string;
+  appointments_configure_reminder_desc: string;
+  appointments_auto_reminders_desc: string;
+  appointments_manual_reminder_label: string;
+  appointments_custom: string;
+  appointments_standard: string;
+  appointments_sent_manually_desc: string;
+  appointments_configure_manual_reminder: string;
+  appointments_auto_reminders: string;
+  appointments_no_auto_reminders: string;
+  appointments_add_auto_reminder: string;
+  appointments_reminder_name: string;
+  appointments_when_to_send: string;
+  appointments_manual_reminder_desc: string;
+  appointments_template_type: string;
+  appointments_sender_name: string;
+  appointments_email_always_from: string;
+  appointments_email_subject: string;
+  appointments_available_variables: string;
+  appointments_html_content: string;
+  appointments_preview: string;
+  appointments_update: string;
+  appointments_create_reminder: string;
+  appointments_will_appear_here: string;
+
   // ─── Availability (CloserDisponibilite) ───
   availability_subtitle: string;
   availability_weekly_slots: string;
@@ -3331,6 +3417,68 @@ export const fr: BusinessTranslations = {
   revenue_chart: 'Graphique',
   revenue_stripe_connect: 'Connecter Stripe',
   revenue_payments: 'Paiements',
+  revenue_period_this_month: 'Ce mois-ci',
+  revenue_period_3m: '3 mois',
+  revenue_period_6m: '6 mois',
+  revenue_period_this_year: 'Cette année',
+  revenue_period_all: 'Tout',
+  revenue_tab_revenue: 'Revenus',
+  revenue_tab_charges: 'Charges',
+  revenue_tab_margin: 'Marge',
+  revenue_connect_stripe_title: 'Connecter Stripe',
+  revenue_connect_stripe_desc: 'Synchronisez vos abonnements et paiements Stripe pour un suivi automatique.',
+  revenue_connect_btn: 'Connecter Stripe',
+  revenue_stripe_syncing: 'Synchronisation en cours...',
+  revenue_resync_stripe: 'Re-synchroniser Stripe',
+  revenue_disconnect_stripe: 'Déconnecter Stripe',
+  revenue_disconnect_confirm: 'Êtes-vous sûr de vouloir déconnecter Stripe ?',
+  revenue_stripe_disconnected: 'Stripe déconnecté',
+  revenue_stripe_disconnect_error: 'Erreur lors de la déconnexion',
+  revenue_stripe_connected_success: 'Stripe connecté avec succès',
+  revenue_load_error: 'Erreur de chargement des revenus',
+  revenue_charge_added: 'Charge ajoutée',
+  revenue_ca_label: 'CA',
+  revenue_net_margin: 'Marge Nette',
+  revenue_new_clients: 'Nouveaux clients',
+  revenue_cancellations: 'Résiliations',
+  revenue_churn: 'Churn',
+  revenue_active_subscriptions: 'Abonnements actifs',
+  revenue_no_active_sub: 'Aucun abonnement actif',
+  revenue_connect_stripe_to_see: 'Connectez Stripe pour voir vos abonnements',
+  revenue_sub_active: 'Actif',
+  revenue_sub_trial: 'Essai',
+  revenue_per_month: 'mois',
+  revenue_per_year: 'an',
+  revenue_team_commissions: 'Commissions équipe',
+  revenue_no_commission: 'Aucune commission ce mois-ci',
+  revenue_fixed_salary: 'Salaire fixe',
+  revenue_commission_label: 'Commission',
+  revenue_fixed_charges: 'Charges fixes',
+  revenue_variable_charges: 'Charges variables',
+  revenue_no_fixed_charge: 'Aucune charge fixe',
+  revenue_no_variable_charge: 'Aucune charge variable',
+  revenue_label_placeholder: 'Libellé',
+  revenue_amount_placeholder: 'Montant',
+  revenue_monthly_evolution: 'Évolution mensuelle',
+  revenue_commissions_breakdown: 'Détail des commissions',
+  revenue_stripe_benefit_1: 'Synchronisation automatique des abonnements',
+  revenue_stripe_benefit_2: 'Suivi du MRR et du churn en temps réel',
+  revenue_stripe_benefit_3: 'Historique complet des paiements',
+  revenue_stripe_connected_desc: 'Votre compte Stripe est connecté. Les données sont synchronisées automatiquement.',
+  revenue_sync_created: '{created} abonnements créés, {matched} associés',
+  revenue_error: 'Une erreur est survenue',
+  revenue_month_jan: 'Janv',
+  revenue_month_feb: 'Fév',
+  revenue_month_mar: 'Mars',
+  revenue_month_apr: 'Avr',
+  revenue_month_may: 'Mai',
+  revenue_month_jun: 'Juin',
+  revenue_month_jul: 'Juil',
+  revenue_month_aug: 'Août',
+  revenue_month_sep: 'Sept',
+  revenue_month_oct: 'Oct',
+  revenue_month_nov: 'Nov',
+  revenue_month_dec: 'Déc',
 
   // ─── Call Room ───
   callroom_title: 'Cockpit d\'appel',
@@ -4096,6 +4244,92 @@ export const fr: BusinessTranslations = {
   appointments_time_future: 'Futur',
   appointments_at_time: 'à',
   appointments_at_member: 'chez',
+
+  // ─── BusinessAppointments (Owner page) ───
+  appointments_timing_1d: '1 jour avant',
+  appointments_timing_10h: '10h le jour même',
+  appointments_timing_5h: '5h avant',
+  appointments_timing_3h: '3h avant',
+  appointments_timing_1h: '1h avant',
+  appointments_timing_30m: '30 min avant',
+  appointments_timing_15m: '15 min avant',
+  appointments_timing_now: 'Immédiatement',
+  appointments_var_lead_name: 'Nom du prospect',
+  appointments_var_assignee_name: 'Nom de l\'assigné',
+  appointments_var_title: 'Titre du RDV',
+  appointments_var_date: 'Date du RDV',
+  appointments_var_time: 'Heure du RDV',
+  appointments_var_meet_link: 'Lien Google Meet',
+  appointments_var_reschedule_link: 'Lien de report',
+  appointments_var_cancel_link: 'Lien d\'annulation',
+  appointments_new_reminder: 'Nouveau rappel',
+  appointments_reminder_subject: 'Rappel de votre rendez-vous',
+  appointments_manual_reminder: 'Rappel manuel',
+  appointments_reminder_updated: 'Rappel mis à jour',
+  appointments_reminder_created: 'Rappel créé',
+  appointments_save_error: 'Erreur lors de la sauvegarde',
+  appointments_reminder_deleted: 'Rappel supprimé',
+  appointments_reminder_enabled: 'Rappel activé',
+  appointments_reminder_disabled: 'Rappel désactivé',
+  appointments_send_reminder_error: 'Erreur lors de l\'envoi du rappel',
+  appointments_reminder_sent_to: 'Rappel envoyé à',
+  appointments_send_error: 'Erreur d\'envoi',
+  appointments_create_error: 'Erreur lors de la création',
+  appointments_booking_link_created: 'Lien de booking créé',
+  appointments_link_deleted: 'Lien supprimé',
+  appointments_update_error: 'Erreur lors de la mise à jour',
+  appointments_link_updated: 'Lien mis à jour',
+  appointments_link_copied: 'Lien copié',
+  appointments_deleted: 'Rendez-vous supprimé',
+  appointments_delete_error: 'Erreur lors de la suppression',
+  appointments_date_time_required: 'La date et l\'heure sont requises',
+  appointments_created_with_meet: 'Rendez-vous créé avec Google Meet',
+  appointments_created: 'Rendez-vous créé',
+  appointments_configure_reminders: 'Configurer les rappels',
+  appointments_manage_personal: 'Gérer mes rendez-vous',
+  appointments_all_team: 'Toute l\'équipe',
+  appointments_manage_calendar: 'Gérer le calendrier',
+  appointments_tab_personal: 'Personnel',
+  appointments_tab_member: 'Par membre',
+  appointments_all_members: 'Tous les membres',
+  appointments_status_all: 'Tous les statuts',
+  appointments_book_rdv: 'Booker un RDV',
+  appointments_new_rdv: 'Nouveau rendez-vous',
+  appointments_schedule_new: 'Planifiez un nouveau rendez-vous pour votre équipe.',
+  appointments_event_title: 'Titre de l\'événement',
+  appointments_label_date: 'Date',
+  appointments_label_time: 'Heure',
+  appointments_assign_to: 'Assigner à',
+  appointments_for_me: 'Pour moi',
+  appointments_internal_notes: 'Notes internes',
+  appointments_enable_google_meet: 'Activer Google Meet',
+  appointments_connect_google_calendar: 'Connecter Google Calendar',
+  appointments_confirm_rdv: 'Confirmer le RDV',
+  appointments_edit_reminder: 'Modifier le rappel',
+  appointments_email_reminders: 'Rappels par email',
+  appointments_configure_reminder_desc: 'Configurez les détails de ce rappel.',
+  appointments_auto_reminders_desc: 'Envoyez automatiquement des rappels aux prospects avant leurs rendez-vous.',
+  appointments_manual_reminder_label: 'Rappel manuel',
+  appointments_custom: 'Personnalisé',
+  appointments_standard: 'Standard',
+  appointments_sent_manually_desc: 'Envoyé manuellement depuis la fiche du rendez-vous.',
+  appointments_configure_manual_reminder: 'Configurer le rappel manuel',
+  appointments_auto_reminders: 'Rappels automatiques',
+  appointments_no_auto_reminders: 'Aucun rappel automatique configuré',
+  appointments_add_auto_reminder: 'Ajouter un rappel automatique',
+  appointments_reminder_name: 'Nom du rappel',
+  appointments_when_to_send: 'Quand envoyer',
+  appointments_manual_reminder_desc: 'Ce rappel sera envoyé manuellement.',
+  appointments_template_type: 'Type de template',
+  appointments_sender_name: 'Nom de l\'expéditeur',
+  appointments_email_always_from: 'Les emails sont toujours envoyés depuis support@closeos.fr',
+  appointments_email_subject: 'Objet de l\'email',
+  appointments_available_variables: 'Variables disponibles',
+  appointments_html_content: 'Contenu HTML',
+  appointments_preview: 'Aperçu',
+  appointments_update: 'Mettre à jour',
+  appointments_create_reminder: 'Créer le rappel',
+  appointments_will_appear_here: 'Vos rendez-vous apparaîtront ici',
 
   // ─── Availability (CloserDisponibilite) ───
   availability_subtitle: 'Gérez vos créneaux et absences pour optimiser votre tunnel de vente.',
@@ -6231,6 +6465,68 @@ export const en: BusinessTranslations = {
   revenue_chart: 'Chart',
   revenue_stripe_connect: 'Connect Stripe',
   revenue_payments: 'Payments',
+  revenue_period_this_month: 'This month',
+  revenue_period_3m: '3 months',
+  revenue_period_6m: '6 months',
+  revenue_period_this_year: 'This year',
+  revenue_period_all: 'All',
+  revenue_tab_revenue: 'Revenue',
+  revenue_tab_charges: 'Charges',
+  revenue_tab_margin: 'Margin',
+  revenue_connect_stripe_title: 'Connect Stripe',
+  revenue_connect_stripe_desc: 'Sync your Stripe subscriptions and payments for automatic tracking.',
+  revenue_connect_btn: 'Connect Stripe',
+  revenue_stripe_syncing: 'Syncing...',
+  revenue_resync_stripe: 'Re-sync Stripe',
+  revenue_disconnect_stripe: 'Disconnect Stripe',
+  revenue_disconnect_confirm: 'Are you sure you want to disconnect Stripe?',
+  revenue_stripe_disconnected: 'Stripe disconnected',
+  revenue_stripe_disconnect_error: 'Error disconnecting',
+  revenue_stripe_connected_success: 'Stripe connected successfully',
+  revenue_load_error: 'Error loading revenue',
+  revenue_charge_added: 'Charge added',
+  revenue_ca_label: 'Revenue',
+  revenue_net_margin: 'Net Margin',
+  revenue_new_clients: 'New clients',
+  revenue_cancellations: 'Cancellations',
+  revenue_churn: 'Churn',
+  revenue_active_subscriptions: 'Active subscriptions',
+  revenue_no_active_sub: 'No active subscriptions',
+  revenue_connect_stripe_to_see: 'Connect Stripe to see your subscriptions',
+  revenue_sub_active: 'Active',
+  revenue_sub_trial: 'Trial',
+  revenue_per_month: 'month',
+  revenue_per_year: 'year',
+  revenue_team_commissions: 'Team commissions',
+  revenue_no_commission: 'No commissions this month',
+  revenue_fixed_salary: 'Fixed salary',
+  revenue_commission_label: 'Commission',
+  revenue_fixed_charges: 'Fixed charges',
+  revenue_variable_charges: 'Variable charges',
+  revenue_no_fixed_charge: 'No fixed charges',
+  revenue_no_variable_charge: 'No variable charges',
+  revenue_label_placeholder: 'Label',
+  revenue_amount_placeholder: 'Amount',
+  revenue_monthly_evolution: 'Monthly evolution',
+  revenue_commissions_breakdown: 'Commissions breakdown',
+  revenue_stripe_benefit_1: 'Automatic subscription sync',
+  revenue_stripe_benefit_2: 'Real-time MRR and churn tracking',
+  revenue_stripe_benefit_3: 'Complete payment history',
+  revenue_stripe_connected_desc: 'Your Stripe account is connected. Data is synced automatically.',
+  revenue_sync_created: '{created} subscriptions created, {matched} matched',
+  revenue_error: 'An error occurred',
+  revenue_month_jan: 'Jan',
+  revenue_month_feb: 'Feb',
+  revenue_month_mar: 'Mar',
+  revenue_month_apr: 'Apr',
+  revenue_month_may: 'May',
+  revenue_month_jun: 'Jun',
+  revenue_month_jul: 'Jul',
+  revenue_month_aug: 'Aug',
+  revenue_month_sep: 'Sep',
+  revenue_month_oct: 'Oct',
+  revenue_month_nov: 'Nov',
+  revenue_month_dec: 'Dec',
 
   // ─── Call Room ───
   callroom_title: 'Call cockpit',
@@ -7185,6 +7481,124 @@ export const en: BusinessTranslations = {
 
   // ─── Appointments/Agenda extra ───
   appointments_book_later: 'Book later',
+
+  // ─── CloserRendezVous ───
+  appointments_my_title: 'My Appointments',
+  appointments_assigned_count: '{n} assigned appointments',
+  appointments_all_statuses: 'All statuses',
+  appointments_date_from: 'From',
+  appointments_date_to: 'To',
+  appointments_reset_filters: 'Reset',
+  appointments_no_appointments_title: 'No appointments',
+  appointments_no_assigned: 'No appointments assigned to you',
+  appointments_no_matching_filters: 'No appointments match your filters',
+  appointments_date_time: 'Date & Time',
+  appointments_contact: 'Contact',
+  appointments_email: 'Email',
+  appointments_campaign: 'Campaign',
+  appointments_duration: 'Duration',
+  appointments_status: 'Status',
+  appointments_reassign: 'Reassign',
+  appointments_mark_done: 'Done',
+  appointments_reassign_title: 'Reassign appointment',
+  appointments_reassign_desc: 'Select a team member to assign this appointment to.',
+  appointments_no_member_available: 'No other member available',
+  appointments_confirm_reassign: 'Confirm reassignment',
+  appointments_reassigned: 'Appointment reassigned',
+  appointments_reassign_error: 'Error reassigning',
+  appointments_status_updated: 'Status updated',
+  appointments_time_past: 'Past',
+  appointments_time_soon: 'Soon',
+  appointments_time_ongoing: 'Ongoing',
+  appointments_time_future: 'Future',
+  appointments_at_time: 'at',
+  appointments_at_member: 'with',
+
+  // ─── BusinessAppointments (Owner page) ───
+  appointments_timing_1d: '1 day before',
+  appointments_timing_10h: '10am same day',
+  appointments_timing_5h: '5h before',
+  appointments_timing_3h: '3h before',
+  appointments_timing_1h: '1h before',
+  appointments_timing_30m: '30 min before',
+  appointments_timing_15m: '15 min before',
+  appointments_timing_now: 'Immediately',
+  appointments_var_lead_name: 'Lead name',
+  appointments_var_assignee_name: 'Assignee name',
+  appointments_var_title: 'Appointment title',
+  appointments_var_date: 'Appointment date',
+  appointments_var_time: 'Appointment time',
+  appointments_var_meet_link: 'Google Meet link',
+  appointments_var_reschedule_link: 'Reschedule link',
+  appointments_var_cancel_link: 'Cancel link',
+  appointments_new_reminder: 'New reminder',
+  appointments_reminder_subject: 'Reminder for your appointment',
+  appointments_manual_reminder: 'Manual reminder',
+  appointments_reminder_updated: 'Reminder updated',
+  appointments_reminder_created: 'Reminder created',
+  appointments_save_error: 'Error saving',
+  appointments_reminder_deleted: 'Reminder deleted',
+  appointments_reminder_enabled: 'Reminder enabled',
+  appointments_reminder_disabled: 'Reminder disabled',
+  appointments_send_reminder_error: 'Error sending reminder',
+  appointments_reminder_sent_to: 'Reminder sent to',
+  appointments_send_error: 'Send error',
+  appointments_create_error: 'Error creating',
+  appointments_booking_link_created: 'Booking link created',
+  appointments_link_deleted: 'Link deleted',
+  appointments_update_error: 'Error updating',
+  appointments_link_updated: 'Link updated',
+  appointments_link_copied: 'Link copied',
+  appointments_deleted: 'Appointment deleted',
+  appointments_delete_error: 'Error deleting',
+  appointments_date_time_required: 'Date and time are required',
+  appointments_created_with_meet: 'Appointment created with Google Meet',
+  appointments_created: 'Appointment created',
+  appointments_configure_reminders: 'Configure reminders',
+  appointments_manage_personal: 'Manage my appointments',
+  appointments_all_team: 'All team',
+  appointments_manage_calendar: 'Manage calendar',
+  appointments_tab_personal: 'Personal',
+  appointments_tab_member: 'By member',
+  appointments_all_members: 'All members',
+  appointments_status_all: 'All statuses',
+  appointments_book_rdv: 'Book an appointment',
+  appointments_new_rdv: 'New appointment',
+  appointments_schedule_new: 'Schedule a new appointment for your team.',
+  appointments_event_title: 'Event title',
+  appointments_label_date: 'Date',
+  appointments_label_time: 'Time',
+  appointments_assign_to: 'Assign to',
+  appointments_for_me: 'For me',
+  appointments_internal_notes: 'Internal notes',
+  appointments_enable_google_meet: 'Enable Google Meet',
+  appointments_connect_google_calendar: 'Connect Google Calendar',
+  appointments_confirm_rdv: 'Confirm appointment',
+  appointments_edit_reminder: 'Edit reminder',
+  appointments_email_reminders: 'Email reminders',
+  appointments_configure_reminder_desc: 'Configure the details of this reminder.',
+  appointments_auto_reminders_desc: 'Automatically send reminders to prospects before their appointments.',
+  appointments_manual_reminder_label: 'Manual reminder',
+  appointments_custom: 'Custom',
+  appointments_standard: 'Standard',
+  appointments_sent_manually_desc: 'Sent manually from the appointment card.',
+  appointments_configure_manual_reminder: 'Configure manual reminder',
+  appointments_auto_reminders: 'Automatic reminders',
+  appointments_no_auto_reminders: 'No automatic reminders configured',
+  appointments_add_auto_reminder: 'Add automatic reminder',
+  appointments_reminder_name: 'Reminder name',
+  appointments_when_to_send: 'When to send',
+  appointments_manual_reminder_desc: 'This reminder will be sent manually.',
+  appointments_template_type: 'Template type',
+  appointments_sender_name: 'Sender name',
+  appointments_email_always_from: 'Emails are always sent from support@closeos.fr',
+  appointments_email_subject: 'Email subject',
+  appointments_available_variables: 'Available variables',
+  appointments_html_content: 'HTML content',
+  appointments_preview: 'Preview',
+  appointments_update: 'Update',
+  appointments_create_reminder: 'Create reminder',
+  appointments_will_appear_here: 'Your appointments will appear here',
 
   // ─── Stripe Match Modal ───
   stripe_match_title: 'Link a Stripe subscription',
