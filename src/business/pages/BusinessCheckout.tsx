@@ -5,6 +5,7 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { ArrowLeft, Loader2, Tag, Check, User, Mail, Lock, Sparkles, CreditCard, ChevronDown, Rocket, Phone } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
+import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { PhoneInput, buildFullPhone, parsePhoneValue } from '../components/PhoneInput';
 
@@ -188,6 +189,7 @@ function CheckoutForm({
   const stripe = useStripe();
   const elements = useElements();
   const { t } = useBusinessLang()
+  const { refreshProfile: refreshParentProfile } = useAuth();
 
   const [paymentOpen, setPaymentOpen] = useState(true);
   const [paymentReady, setPaymentReady] = useState(false);
@@ -284,8 +286,10 @@ function CheckoutForm({
         );
       }
 
-      // Step 9: Done
+      // Step 9: Done — ensure parent AuthContext knows this is a Business user
       sessionStorage.removeItem('closeos_checkout_state');
+      localStorage.setItem('closeos_product', 'business');
+      await refreshParentProfile();
       navigate('/business/dashboard');
     } catch (err: any) {
       setError(err.message || t.checkout_error_generic);
@@ -524,6 +528,7 @@ export default function BusinessCheckout() {
   const navigate = useNavigate();
   const { user, register } = useBusinessAuth();
   const { t, lang } = useBusinessLang()
+  const { refreshProfile: refreshParentProfile } = useAuth();
 
   const plan = searchParams.get('plan') || 'solo';
   const billing = searchParams.get('billing') || 'annual';
@@ -670,6 +675,8 @@ export default function BusinessCheckout() {
         await supabase.from('business_settings').upsert({ user_id: result.data.user.id, subscription_plan: effectivePlan }, { onConflict: 'user_id' });
       }
 
+      localStorage.setItem('closeos_product', 'business');
+      await refreshParentProfile();
       navigate('/business/dashboard');
     } catch {
       setRegError(t.checkout_error_generic);

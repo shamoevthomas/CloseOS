@@ -230,7 +230,7 @@ function CreateLinkModal({ password, onClose, onCreated }: { password: string; o
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-stone-500 mb-1.5">Nom du partenaire</label>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Thomas, Enzo..."
-              className="w-full rounded-xl border border-stone-200 bg-stone-50 py-2.5 px-4 text-sm outline-none focus:ring-2 focus:ring-stone-900/10" />
+              className="w-full rounded-xl border border-stone-200 bg-stone-50 py-2.5 px-4 text-sm text-stone-900 placeholder:text-stone-400 outline-none focus:ring-2 focus:ring-stone-900/10" />
           </div>
 
           <div>
@@ -238,7 +238,7 @@ function CreateLinkModal({ password, onClose, onCreated }: { password: string; o
             <div className="flex items-center gap-2">
               <span className="text-xs text-stone-400 shrink-0">/business?ref=</span>
               <input value={slug} onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                placeholder="thomas" className="flex-1 rounded-xl border border-stone-200 bg-stone-50 py-2.5 px-4 text-sm outline-none focus:ring-2 focus:ring-stone-900/10 font-mono" />
+                placeholder="thomas" className="flex-1 rounded-xl border border-stone-200 bg-stone-50 py-2.5 px-4 text-sm text-stone-900 placeholder:text-stone-400 outline-none focus:ring-2 focus:ring-stone-900/10 font-mono" />
             </div>
           </div>
 
@@ -251,14 +251,14 @@ function CreateLinkModal({ password, onClose, onCreated }: { password: string; o
                   <div className="flex items-center gap-1.5">
                     <input type="number" min={0} step={1} value={config[plan]?.fixed || 0}
                       onChange={e => updateConfig(plan, 'fixed', Number(e.target.value))}
-                      className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-center outline-none" />
+                      className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
                     <span className="text-xs text-stone-400">€</span>
                   </div>
                   <span className="text-stone-300">+</span>
                   <div className="flex items-center gap-1.5">
                     <input type="number" min={0} max={100} step={1} value={config[plan]?.percent || 0}
                       onChange={e => updateConfig(plan, 'percent', Number(e.target.value))}
-                      className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-center outline-none" />
+                      className="w-16 rounded-lg border border-stone-200 bg-white py-1.5 px-2 text-sm text-stone-900 text-center outline-none" />
                     <span className="text-xs text-stone-400">%</span>
                   </div>
                 </div>

@@ -27,6 +27,8 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const [hasSalesAccount, setHasSalesAccount] = useState(false);
   const [authError, setAuthError] = useState(false);
   const isMountedRef = useRef(true);
+  // Guard: prevents initUser from signing out during registration (race condition)
+  const isRegisteringRef = useRef(false);
   // Guard: tracks the latest initUser call to discard stale results
   const initVersionRef = useRef(0);
   // Refs to avoid stale closures in visibility/token handlers
@@ -128,6 +130,12 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
       // No business_users row: user hasn't gone through checkout/registration
       if (!profile) {
+        // Registration in progress — row will exist shortly, don't sign out
+        if (isRegisteringRef.current) {
+          if (isMountedRef.current) setLoading(false);
+          return;
+        }
+
         // Sales user trying to access Business
         if (salesRes.data) {
           setIsSalesUser(true);
@@ -300,32 +308,40 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
   const login = useCallback((credentials: any) => supabase.auth.signInWithPassword(credentials), []);
 
   const register = useCallback(async (credentials: { email: string; password: string; full_name: string }) => {
-    const { data, error } = await supabase.auth.signUp({
-      email: credentials.email,
-      password: credentials.password,
-      options: {
-        data: { full_name: credentials.full_name }
+    isRegisteringRef.current = true;
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+        options: {
+          data: { full_name: credentials.full_name }
+        }
+      });
+
+      if (error) return { data, error };
+
+      if (data.user) {
+        const { error: insertError } = await supabase
+          .from('business_users')
+          .insert({
+            id: data.user.id,
+            full_name: credentials.full_name,
+            email: credentials.email,
+          });
+
+        if (insertError) {
+          console.error('Error inserting business_users:', insertError);
+        }
+
+        // Row exists now — initialize properly
+        await initUser(data.user.id);
       }
-    });
 
-    if (error) return { data, error };
-
-    if (data.user) {
-      const { error: insertError } = await supabase
-        .from('business_users')
-        .insert({
-          id: data.user.id,
-          full_name: credentials.full_name,
-          email: credentials.email,
-        });
-
-      if (insertError) {
-        console.error('Error inserting business_users:', insertError);
-      }
+      return { data, error: null };
+    } finally {
+      isRegisteringRef.current = false;
     }
-
-    return { data, error: null };
-  }, []);
+  }, [initUser]);
 
   const loginWithGoogle = useCallback(() => {
     return supabase.auth.signInWithOAuth({

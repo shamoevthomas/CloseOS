@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle2, Loader2, Lock, User, Mail, ArrowRight } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
+import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
 export default function BusinessReturn() {
@@ -20,6 +21,7 @@ export default function BusinessReturn() {
 
   const { register } = useBusinessAuth();
   const { t, lang } = useBusinessLang()
+  const { refreshProfile: refreshParentProfile } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
@@ -108,6 +110,8 @@ export default function BusinessReturn() {
           );
       }
 
+      localStorage.setItem('closeos_product', 'business');
+      await refreshParentProfile();
       navigate('/business/dashboard');
     } catch {
       setError(t.return_error_generic);
