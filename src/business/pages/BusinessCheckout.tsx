@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, Tag, Check, User, Mail, Lock, Sparkles, CreditCard,
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase';
+import { PhoneInput, buildFullPhone, parsePhoneValue } from '../components/PhoneInput';
 
 const stripePromise = loadStripe('pk_live_51SxnxC33xpuYLywqRhYvxhWrChlI3Ckjj1AfJLqRQJQwaXNyVLuLAPaURbnEcrKRAQJTneB3ZjhUHSHuFQ9Xekdt00k1ho4IEt');
 
@@ -459,18 +460,11 @@ function CheckoutForm({
           <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
             {t.checkout_phone}
           </label>
-          <div className="relative">
-            <Phone className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
-            <input
-              type="tel"
-              value={regPhone}
-              onChange={(e) => setRegPhone(e.target.value)}
-              className="w-full rounded-xl bg-stone-100/50 border-none py-3.5 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
-              placeholder="+33 6 12 34 56 78"
-              required
-              disabled={submitting}
-            />
-          </div>
+          <PhoneInput
+            value={regPhone}
+            onChange={setRegPhone}
+            className="bg-stone-100/50 rounded-xl"
+          />
         </div>
 
         <div>
@@ -596,6 +590,12 @@ export default function BusinessCheckout() {
       });
       const data = await res.json();
       setPromoResult(data);
+      // Skip payment step for lifetime_free and free_trial codes
+      if (data.valid && (data.type === 'lifetime_free' || data.type === 'free_trial')) {
+        setSkipPayment(true);
+      } else {
+        setSkipPayment(false);
+      }
     } catch {
       setPromoResult({ valid: false });
     } finally {
@@ -854,10 +854,11 @@ export default function BusinessCheckout() {
               </div>
               <div>
                 <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_phone}</label>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
-                  <input type="tel" value={regPhone} onChange={(e) => setRegPhone(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder="+33 6 12 34 56 78" required />
-                </div>
+                <PhoneInput
+                  value={regPhone}
+                  onChange={setRegPhone}
+                  className="bg-stone-100/50 rounded-xl"
+                />
               </div>
               <div>
                 <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_password}</label>
