@@ -985,7 +985,7 @@ function IndividualView({
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>CA Généré</p>
-            <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{formatCurrency(revenue)}</p>
+            <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{formatCurrencyLocalized(revenue, lang)}</p>
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
             <p className={cn(LABEL_STYLE, 'mb-1')}>Conversion</p>
@@ -1260,7 +1260,7 @@ function IndividualView({
                       <option value="">Aucune facture</option>
                       {paidInvoices.map(inv => (
                         <option key={inv.id} value={inv.id}>
-                          {inv.invoice_number} — {inv.client_name} ({formatCurrency(inv.amount_ttc)})
+                          {inv.invoice_number} — {inv.client_name} ({formatCurrencyLocalized(inv.amount_ttc, lang)})
                         </option>
                       ))}
                     </select>
@@ -1331,7 +1331,7 @@ function IndividualView({
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-extrabold text-stone-900 dark:text-white font-business-display">
-                            {formatCurrency(bonus.amount)}
+                            {formatCurrencyLocalized(bonus.amount, lang)}
                           </span>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {!isPaid && (
@@ -1362,7 +1362,7 @@ function IndividualView({
                 <div className="mt-4 pt-3 border-t border-stone-100 dark:border-neutral-700 flex justify-between">
                   <p className="text-xs text-stone-400 dark:text-neutral-500">Total primes</p>
                   <p className="text-sm font-extrabold text-stone-900 dark:text-white font-business-display">
-                    {formatCurrency(bonuses.reduce((s, b) => s + b.amount, 0))}
+                    {formatCurrencyLocalized(bonuses.reduce((s, b) => s + b.amount, 0), lang)}
                   </p>
                 </div>
               )}
