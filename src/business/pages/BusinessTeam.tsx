@@ -747,6 +747,7 @@ function IndividualView({
   const { userTimezone, ownerUserId, user } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
   const color = getRoleColor(member.role)
+  const PIPELINE_STAGES = PIPELINE_STAGE_DEFS.map(s => ({ ...s, name: t[s.tKey] || s.id }))
 
   const isMemberAbsent = (memberId: string) => {
     const today = new Date().toISOString().slice(0, 10)
