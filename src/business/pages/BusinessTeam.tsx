@@ -958,14 +958,14 @@ function IndividualView({
               <p className={LABEL_STYLE}>Anniversaire</p>
               <p className="text-sm font-semibold text-stone-900 dark:text-white">
                 {member.date_of_birth
-                  ? `${formatDate(member.date_of_birth)} (${calculateAge(member.date_of_birth)} ans)`
+                  ? `${formatDateLocalized(member.date_of_birth, lang)} (${calculateAge(member.date_of_birth)} ans)`
                   : 'Non renseigné'}
               </p>
             </div>
             <div className="space-y-1">
               <p className={LABEL_STYLE}>Arrivée</p>
               <p className="text-sm font-semibold text-stone-900 dark:text-white">
-                {formatDate(member.joined_at)}
+                {formatDateLocalized(member.joined_at, lang)}
               </p>
             </div>
           </div>
@@ -1488,7 +1488,7 @@ function IndividualView({
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-stone-900 dark:text-white truncate">{absence.reason || absence.type || 'Absence'}</p>
                         <p className="text-[10px] text-stone-500 dark:text-neutral-400">
-                          {formatDate(absence.start_date)} — {formatDate(absence.end_date)}
+                          {formatDateLocalized(absence.start_date, lang)} — {formatDateLocalized(absence.end_date, lang)}
                         </p>
                       </div>
                     </div>
