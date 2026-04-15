@@ -748,6 +748,7 @@ function IndividualView({
   const { t, lang } = useBusinessLang()
   const color = getRoleColor(member.role)
   const PIPELINE_STAGES = PIPELINE_STAGE_DEFS.map(s => ({ ...s, name: t[s.tKey] || s.id }))
+  const DAYS = [t.team_role_day_mon, t.team_role_day_tue, t.team_role_day_wed, t.team_role_day_thu, t.team_role_day_fri, t.team_role_day_sat, t.team_role_day_sun]
 
   const isMemberAbsent = (memberId: string) => {
     const today = new Date().toISOString().slice(0, 10)
@@ -780,9 +781,9 @@ function IndividualView({
       .from('business_team_members')
       .update(updates)
       .eq('id', member.id)
-    if (error) { toast.error('Erreur: ' + error.message) }
+    if (error) { toast.error(t.team_error + ': ' + error.message) }
     else {
-      toast.success('Rémunération mise à jour')
+      toast.success(t.team_compensation_updated)
       onMemberUpdate(updates)
     }
     setSavingComp(false)
@@ -846,9 +847,9 @@ function IndividualView({
       .insert(bonus)
       .select()
       .single()
-    if (error) { toast.error('Erreur: ' + error.message) }
+    if (error) { toast.error(t.team_error + ': ' + error.message) }
     else {
-      toast.success('Prime ajoutée')
+      toast.success(t.team_bonus_added)
       setBonuses(prev => [data, ...prev])
       setNewBonusLabel('')
       setNewBonusAmount('')
@@ -860,10 +861,10 @@ function IndividualView({
 
   const handleDeleteBonus = async (bonusId: string) => {
     const { error } = await supabase.from('business_team_bonuses').delete().eq('id', bonusId)
-    if (error) { toast.error('Erreur') }
+    if (error) { toast.error(t.team_error) }
     else {
       setBonuses(prev => prev.filter(b => b.id !== bonusId))
-      toast.success('Prime supprimée')
+      toast.success(t.team_bonus_deleted)
     }
   }
 
@@ -872,10 +873,10 @@ function IndividualView({
       .from('business_team_bonuses')
       .update({ status: 'payé', paid_at: new Date().toISOString() })
       .eq('id', bonusId)
-    if (error) { toast.error('Erreur') }
+    if (error) { toast.error(t.team_error) }
     else {
       setBonuses(prev => prev.map(b => b.id === bonusId ? { ...b, status: 'payé', paid_at: new Date().toISOString() } : b))
-      toast.success('Prime marquée comme payée')
+      toast.success(t.team_bonus_marked_paid)
     }
   }
   const [editRole, setEditRole] = useState(member.role)
@@ -928,7 +929,7 @@ function IndividualView({
               'absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-white dark:border-neutral-900',
               isMemberAbsent(member.id) ? 'bg-[#ffb95f]' : isReallyOnline(member) ? 'bg-[#006c49]' : 'bg-stone-300 dark:bg-neutral-600'
             )}
-            title={isMemberAbsent(member.id) ? 'Absent' : isReallyOnline(member) ? 'En ligne' : 'Hors ligne'}
+            title={isMemberAbsent(member.id) ? t.team_status_absent : isReallyOnline(member) ? t.team_status_online : t.team_status_offline}
           />
         </div>
         <div className="flex-1 text-center md:text-left">
@@ -942,29 +943,29 @@ function IndividualView({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-1">
-              <p className={LABEL_STYLE}>Email</p>
+              <p className={LABEL_STYLE}>{t.team_label_email}</p>
               <p className="text-sm font-semibold text-stone-900 dark:text-white">{member.email}</p>
             </div>
             <div className="space-y-1">
-              <p className={LABEL_STYLE}>WhatsApp</p>
+              <p className={LABEL_STYLE}>{t.team_label_whatsapp}</p>
               {member.phone ? (
                 <a href={`https://wa.me/${cleanPhone}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] transition-colors">
                   {member.phone}
                 </a>
               ) : (
-                <p className="text-sm text-stone-300 dark:text-neutral-600 italic">Non renseigné</p>
+                <p className="text-sm text-stone-300 dark:text-neutral-600 italic">—</p>
               )}
             </div>
             <div className="space-y-1">
-              <p className={LABEL_STYLE}>Anniversaire</p>
+              <p className={LABEL_STYLE}>{t.team_label_birthday}</p>
               <p className="text-sm font-semibold text-stone-900 dark:text-white">
                 {member.date_of_birth
-                  ? `${formatDateLocalized(member.date_of_birth, lang)} (${calculateAge(member.date_of_birth)} ans)`
-                  : 'Non renseigné'}
+                  ? `${formatDateLocalized(member.date_of_birth, lang)} (${calculateAge(member.date_of_birth)} ${t.team_years_old})`
+                  : '—'}
               </p>
             </div>
             <div className="space-y-1">
-              <p className={LABEL_STYLE}>Arrivée</p>
+              <p className={LABEL_STYLE}>{t.team_label_arrival}</p>
               <p className="text-sm font-semibold text-stone-900 dark:text-white">
                 {formatDateLocalized(member.joined_at, lang)}
               </p>
@@ -977,27 +978,27 @@ function IndividualView({
       {isOwnerView && (
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className={cn(WHITE_CARD, 'p-5')}>
-            <p className={cn(LABEL_STYLE, 'mb-1')}>Prospects</p>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_prospects}</p>
             <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{memberProspects.length}</p>
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
-            <p className={cn(LABEL_STYLE, 'mb-1')}>Ventes</p>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_sales}</p>
             <p className="text-2xl font-business-display font-extrabold text-[#006c49]">{won.length}</p>
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
-            <p className={cn(LABEL_STYLE, 'mb-1')}>CA Généré</p>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_revenue}</p>
             <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{formatCurrencyLocalized(revenue, lang)}</p>
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
-            <p className={cn(LABEL_STYLE, 'mb-1')}>Conversion</p>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_conversion}</p>
             <p className="text-2xl font-business-display font-extrabold text-stone-900 dark:text-white">{convRate.toFixed(1)}%</p>
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
-            <p className={cn(LABEL_STYLE, 'mb-1')}>No Show</p>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_noshow}</p>
             <p className="text-2xl font-business-display font-extrabold text-[#ba1a1a]">{noshowRate.toFixed(1)}%</p>
           </div>
           <div className={cn(WHITE_CARD, 'p-5')}>
-            <p className={cn(LABEL_STYLE, 'mb-1')}>Perdus</p>
+            <p className={cn(LABEL_STYLE, 'mb-1')}>{t.team_label_lost}</p>
             <p className="text-2xl font-business-display font-extrabold text-stone-400">{lost.length}</p>
           </div>
         </section>
@@ -1012,11 +1013,11 @@ function IndividualView({
             <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
               <h3 className={cn(SECTION_TITLE, 'mb-6')}>
                 <User className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-                Gestion du Rôle
+                {t.team_role_management}
               </h3>
               <div className="space-y-6">
                 <div>
-                  <label className={cn(LABEL_STYLE, 'block mb-2')}>Assignation</label>
+                  <label className={cn(LABEL_STYLE, 'block mb-2')}>{t.team_role_assignment}</label>
                   <select
                     value={editRole}
                     onChange={e => {
@@ -1035,7 +1036,7 @@ function IndividualView({
 
                 {editRole === 'Setter-Closer' && (
                   <div>
-                    <label className={cn(LABEL_STYLE, 'block mb-2')}>Scope de visibilité</label>
+                    <label className={cn(LABEL_STYLE, 'block mb-2')}>{t.team_scope_visibility}</label>
                     <div className="flex p-1 bg-stone-100 dark:bg-neutral-800 rounded-full">
                       <button
                         onClick={() => setEditSetterScope('self')}
@@ -1046,7 +1047,7 @@ function IndividualView({
                             : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
                         )}
                       >
-                        Lui-même
+                        {t.team_scope_self}
                       </button>
                       <button
                         onClick={() => setEditSetterScope('all')}
@@ -1057,7 +1058,7 @@ function IndividualView({
                             : 'text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white'
                         )}
                       >
-                        Équipe
+                        {t.team_scope_team}
                       </button>
                     </div>
                   </div>
@@ -1074,15 +1075,15 @@ function IndividualView({
                     className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
                   >
                     {savingRole ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" strokeWidth={1.5} />}
-                    Enregistrer
+                    {t.team_save}
                   </button>
                 )}
 
                 {editRole === 'Setter-Closer' && (
                   <p className="text-xs text-stone-400 dark:text-neutral-500">
                     {editSetterScope === 'self'
-                      ? 'Ce membre set uniquement pour ses propres rendez-vous.'
-                      : 'Ce membre set pour tous les closers de l\'équipe.'}
+                      ? t.team_scope_self_desc
+                      : t.team_scope_team_desc}
                   </p>
                 )}
               </div>
@@ -1094,17 +1095,17 @@ function IndividualView({
             <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
               <h3 className={cn(SECTION_TITLE, 'mb-6')}>
                 <span className="h-5 w-5 text-stone-400 flex items-center justify-center font-bold text-sm">€</span>
-                Rémunération
+                {t.team_compensation}
               </h3>
               <div className="space-y-4">
                 {/* Type de compensation */}
                 <div>
-                  <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest mb-2">Type de rémunération</p>
+                  <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest mb-2">{t.team_compensation_type}</p>
                   <div className="grid grid-cols-3 gap-2">
                     {([
-                      { value: 'commission', label: 'Commission' },
-                      { value: 'fixed', label: 'Fixe' },
-                      { value: 'fixed_plus_commission', label: 'Fixe + Commission' },
+                      { value: 'commission', label: t.team_comp_commission },
+                      { value: 'fixed', label: t.team_comp_fixed },
+                      { value: 'fixed_plus_commission', label: t.team_comp_fixed_plus_commission },
                     ] as const).map(opt => (
                       <button
                         key={opt.value}
@@ -1125,13 +1126,13 @@ function IndividualView({
                 {/* Salaire fixe — shown for fixed or fixed+commission */}
                 {(compType === 'fixed' || compType === 'fixed_plus_commission') && (
                   <div>
-                    <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest mb-2">Salaire fixe mensuel (€)</p>
+                    <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest mb-2">{t.team_fixed_salary_monthly}</p>
                     <input
                       type="number"
                       value={fixedSalary}
                       onChange={e => setFixedSalary(e.target.value)}
                       className="w-full bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
-                      placeholder="ex: 2000"
+                      placeholder={t.team_fixed_salary_placeholder}
                     />
                   </div>
                 )}
@@ -1141,8 +1142,8 @@ function IndividualView({
                 {member.role === 'Setter-Closer' && compType !== 'fixed' && (
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">Commissions setting</p>
-                      <p className="text-[11px] text-stone-400 dark:text-neutral-500 mt-0.5">Compter ses commissions en tant que setter</p>
+                      <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">{t.team_setter_commissions}</p>
+                      <p className="text-[11px] text-stone-400 dark:text-neutral-500 mt-0.5">{t.team_setter_commissions_desc}</p>
                     </div>
                     <button
                       onClick={() => setCountSetterCommission(!countSetterCommission)}
@@ -1167,7 +1168,7 @@ function IndividualView({
                     className="flex items-center gap-2 rounded-full bg-[#006c49] px-5 py-3 text-xs font-bold text-white hover:bg-[#005a3d] transition-all disabled:opacity-50"
                   >
                     {savingComp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" strokeWidth={1.5} />}
-                    Enregistrer
+                    {t.team_save}
                   </button>
                 )}
               </div>
@@ -1179,9 +1180,9 @@ function IndividualView({
             <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
               <h3 className={cn(SECTION_TITLE, 'mb-6')}>
                 <CreditCard className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-                Date de paiement
+                {t.team_pay_date}
               </h3>
-              <p className="text-xs text-stone-500 dark:text-neutral-400 mb-4">Jour du mois pour le versement des commissions.</p>
+              <p className="text-xs text-stone-500 dark:text-neutral-400 mb-4">{t.team_pay_date_desc}</p>
               <div className="flex items-center gap-3">
                 <select
                   value={payDay}
@@ -1189,7 +1190,7 @@ function IndividualView({
                   className="flex-1 bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
                 >
                   {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
-                    <option key={d} value={d}>Le {d} du mois</option>
+                    <option key={d} value={d}>{t.team_pay_date_day.replace('{day}', String(d))}</option>
                   ))}
                 </select>
                 {payDay !== (member.pay_day || 1) && (
@@ -1204,7 +1205,7 @@ function IndividualView({
               </div>
               {member.pay_day && (
                 <p className="text-xs text-stone-400 dark:text-neutral-500 mt-3">
-                  Prochain paiement le {member.pay_day} {new Date().getDate() >= member.pay_day
+                  {t.team_next_payment} {member.pay_day} {new Date().getDate() >= member.pay_day
                     ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { month: 'long', year: 'numeric' })
                     : new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { month: 'long', year: 'numeric' })
                   }
@@ -1220,14 +1221,14 @@ function IndividualView({
               <div className="flex items-center justify-between mb-6">
                 <h3 className={cn(SECTION_TITLE)}>
                   <Award className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-                  Primes
+                  {t.team_bonuses}
                 </h3>
                 <button
                   onClick={() => setShowBonusForm(!showBonusForm)}
                   className="flex items-center gap-1.5 rounded-full bg-stone-100 dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all"
                 >
                   <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-                  Ajouter
+                  {t.team_bonus_add}
                 </button>
               </div>
 
@@ -1237,7 +1238,7 @@ function IndividualView({
                     type="text"
                     value={newBonusLabel}
                     onChange={e => setNewBonusLabel(e.target.value)}
-                    placeholder="Libellé (ex: Prime performance Q1)"
+                    placeholder={t.team_bonus_label_placeholder}
                     className="w-full bg-white dark:bg-neutral-700 border-none rounded-full px-4 py-2.5 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:ring-2 focus:ring-[#006c49]/20"
                   />
                   <div className="relative">
@@ -1245,20 +1246,20 @@ function IndividualView({
                       type="number"
                       value={newBonusAmount}
                       onChange={e => setNewBonusAmount(e.target.value)}
-                      placeholder="Montant"
+                      placeholder={t.team_bonus_amount_placeholder}
                       min={0}
                       className="w-full bg-white dark:bg-neutral-700 border-none rounded-full px-4 py-2.5 pr-10 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:ring-2 focus:ring-[#006c49]/20"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-stone-400 font-bold">€</span>
                   </div>
                   <div>
-                    <label className={cn(LABEL_STYLE, 'block mb-1.5')}>Liée à une facture payée (optionnel)</label>
+                    <label className={cn(LABEL_STYLE, 'block mb-1.5')}>{t.team_bonus_link_invoice}</label>
                     <select
                       value={newBonusInvoice}
                       onChange={e => setNewBonusInvoice(e.target.value)}
                       className="w-full bg-white dark:bg-neutral-700 border-none rounded-full px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20"
                     >
-                      <option value="">Aucune facture</option>
+                      <option value="">{t.team_bonus_no_invoice}</option>
                       {paidInvoices.map(inv => (
                         <option key={inv.id} value={inv.id}>
                           {inv.invoice_number} — {inv.client_name} ({formatCurrencyLocalized(inv.amount_ttc, lang)})
@@ -1266,7 +1267,7 @@ function IndividualView({
                       ))}
                     </select>
                     <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1.5">
-                      Si liée à une facture, la prime sera versée une fois la facture au statut « payé ».
+                      {t.team_bonus_link_invoice_desc}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -1276,13 +1277,13 @@ function IndividualView({
                       className="flex-1 flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-4 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
                     >
                       {addingBonus ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" strokeWidth={2} />}
-                      Ajouter
+                      {t.team_bonus_add}
                     </button>
                     <button
                       onClick={() => { setShowBonusForm(false); setNewBonusLabel(''); setNewBonusAmount(''); setNewBonusInvoice('') }}
                       className="rounded-full bg-stone-200 dark:bg-neutral-700 px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-neutral-300 hover:opacity-90 transition-all"
                     >
-                      Annuler
+                      {t.team_bonus_cancel}
                     </button>
                   </div>
                 </div>
@@ -1295,7 +1296,7 @@ function IndividualView({
               ) : bonuses.length === 0 ? (
                 <div className="text-center py-6">
                   <Award className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
-                  <p className="text-sm text-stone-400 dark:text-neutral-500">Aucune prime</p>
+                  <p className="text-sm text-stone-400 dark:text-neutral-500">{t.team_bonus_none}</p>
                 </div>
               ) : (
                 <div className="space-y-0 max-h-72 overflow-y-auto">
@@ -1315,7 +1316,7 @@ function IndividualView({
                                 ? 'bg-[#6ffbbe]/20 dark:bg-[#6ffbbe]/10 text-[#005236] dark:text-[#6ffbbe]'
                                 : 'bg-[#ffddb8]/40 dark:bg-amber-500/10 text-[#653e00] dark:text-amber-300'
                             )}>
-                              {isPaid ? 'Payé' : 'En attente'}
+                              {isPaid ? t.team_bonus_status_paid : t.team_bonus_status_pending}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
@@ -1338,7 +1339,7 @@ function IndividualView({
                             {!isPaid && (
                               <button
                                 onClick={() => handleMarkBonusPaid(bonus.id)}
-                                title="Marquer comme payé"
+                                title={t.team_bonus_mark_paid}
                                 className="p-1.5 rounded-full hover:bg-[#6ffbbe]/20 transition-colors"
                               >
                                 <Check className="h-3.5 w-3.5 text-[#006c49]" strokeWidth={2} />
@@ -1346,7 +1347,7 @@ function IndividualView({
                             )}
                             <button
                               onClick={() => handleDeleteBonus(bonus.id)}
-                              title="Supprimer"
+                              title={t.team_delete || 'Delete'}
                               className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                             >
                               <Trash2 className="h-3.5 w-3.5 text-red-500" strokeWidth={1.5} />
@@ -1361,7 +1362,7 @@ function IndividualView({
 
               {bonuses.length > 0 && (
                 <div className="mt-4 pt-3 border-t border-stone-100 dark:border-neutral-700 flex justify-between">
-                  <p className="text-xs text-stone-400 dark:text-neutral-500">Total primes</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500">{t.team_bonus_total}</p>
                   <p className="text-sm font-extrabold text-stone-900 dark:text-white font-business-display">
                     {formatCurrencyLocalized(bonuses.reduce((s, b) => s + b.amount, 0), lang)}
                   </p>
@@ -1375,12 +1376,12 @@ function IndividualView({
             <div className={cn(GLASS_PANEL, 'rounded-2xl p-6')}>
               <h3 className={cn(SECTION_TITLE, 'mb-6')}>
                 <History className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-                Dernière semaine
+                {t.team_last_week}
               </h3>
               {connectionLogs.length === 0 ? (
                 <div className="text-center py-6">
                   <History className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
-                  <p className="text-sm text-stone-400 dark:text-neutral-500">Aucun historique</p>
+                  <p className="text-sm text-stone-400 dark:text-neutral-500">{t.team_no_history}</p>
                 </div>
               ) : (
                 <div className="space-y-0 max-h-72 overflow-y-auto">
@@ -1397,7 +1398,7 @@ function IndividualView({
                           <p className="text-[10px] text-stone-500 dark:text-neutral-400">{isConnect ? 'Log In' : 'Log Out'}</p>
                         </div>
                         <p className="text-sm font-medium text-stone-600 dark:text-neutral-300">
-                          {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          {date.toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                     )
@@ -1415,7 +1416,7 @@ function IndividualView({
             <div className={cn(WHITE_CARD, 'p-8')}>
               <h3 className={cn(SECTION_TITLE, 'mb-8')}>
                 <GitBranch className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-                Distribution du Pipeline
+                {t.team_pipeline_distribution}
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                 {PIPELINE_STAGES.map(stage => {
@@ -1442,12 +1443,12 @@ function IndividualView({
             <div className={cn(WHITE_CARD, 'p-6')}>
               <h3 className={cn(SECTION_TITLE, 'mb-6')}>
                 <Clock className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-                Slots Hebdomadaires
+                {t.team_weekly_slots}
               </h3>
               {slots.length === 0 ? (
                 <div className="text-center py-6">
                   <AlertCircle className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
-                  <p className="text-sm text-stone-400 dark:text-neutral-500">Aucun créneau configuré</p>
+                  <p className="text-sm text-stone-400 dark:text-neutral-500">{t.team_no_slots}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1461,7 +1462,7 @@ function IndividualView({
                             {daySlots.map(s => `${s.start_time?.slice(0, 5)} — ${s.end_time?.slice(0, 5)}`).join(', ')}
                           </span>
                         ) : (
-                          <span className="text-stone-300 dark:text-neutral-600 italic">Indisponible</span>
+                          <span className="text-stone-300 dark:text-neutral-600 italic">{t.team_unavailable}</span>
                         )}
                       </div>
                     )
@@ -1474,12 +1475,12 @@ function IndividualView({
             <div className={cn(WHITE_CARD, 'p-6')}>
               <h3 className={cn(SECTION_TITLE, 'mb-6')}>
                 <Calendar className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-                Absences prévues
+                {t.team_planned_absences}
               </h3>
               {absences.length === 0 ? (
                 <div className="text-center py-6">
                   <AlertCircle className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
-                  <p className="text-sm text-stone-400 dark:text-neutral-500">Aucune absence</p>
+                  <p className="text-sm text-stone-400 dark:text-neutral-500">{t.team_no_absences}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1487,7 +1488,7 @@ function IndividualView({
                     <div key={absence.id} className="flex items-center gap-3 p-2 bg-stone-50 dark:bg-neutral-800 rounded-xl">
                       <div className="w-2 h-2 rounded-full bg-[#ffb95f] shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-stone-900 dark:text-white truncate">{absence.reason || absence.type || 'Absence'}</p>
+                        <p className="text-xs font-bold text-stone-900 dark:text-white truncate">{absence.reason || absence.type || t.team_absence_label}</p>
                         <p className="text-[10px] text-stone-500 dark:text-neutral-400">
                           {formatDateLocalized(absence.start_date, lang)} — {formatDateLocalized(absence.end_date, lang)}
                         </p>
@@ -1506,27 +1507,27 @@ function IndividualView({
           <div className={cn(WHITE_CARD, 'p-8')}>
             <h3 className={cn(SECTION_TITLE, 'mb-8')}>
               <CalendarDays className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-              Prochains Rendez-vous
+              {t.team_upcoming_appointments}
             </h3>
             {upcomingAppts.length === 0 ? (
               <div className="text-center py-8">
                 <CalendarDays className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
-                <p className="text-sm text-stone-400 dark:text-neutral-500">Aucun rendez-vous à venir</p>
+                <p className="text-sm text-stone-400 dark:text-neutral-500">{t.team_no_upcoming_appointments}</p>
               </div>
             ) : (
               <div className="overflow-hidden">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-stone-100 dark:border-neutral-800">
-                      <th className={cn(LABEL_STYLE, 'pb-4')}>Prospect</th>
-                      <th className={cn(LABEL_STYLE, 'pb-4')}>Date</th>
-                      <th className={cn(LABEL_STYLE, 'pb-4 text-right')}>Statut</th>
+                      <th className={cn(LABEL_STYLE, 'pb-4')}>{t.team_th_prospect}</th>
+                      <th className={cn(LABEL_STYLE, 'pb-4')}>{t.team_th_date}</th>
+                      <th className={cn(LABEL_STYLE, 'pb-4 text-right')}>{t.team_th_status}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-50 dark:divide-neutral-800">
                     {upcomingAppts.map(appt => {
                       const prospect = prospects.find(p => p.id === appt.prospect_id)
-                      const prospectName = prospect ? (prospect.contact || prospect.company || `Prospect #${prospect.id}`) : `RDV`
+                      const prospectName = prospect ? (prospect.contact || prospect.company || `Prospect #${prospect.id}`) : t.team_appt_appointment
                       const initials = prospectName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
                       return (
                         <tr key={appt.id} className="group hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors">
@@ -1550,7 +1551,7 @@ function IndividualView({
                                     {`, ${localDt.time}`}
                                   </p>
                                   {memberLocal && (
-                                    <p className="text-xs text-stone-400 dark:text-neutral-500">({memberLocal.time} chez {member.first_name})</p>
+                                    <p className="text-xs text-stone-400 dark:text-neutral-500">({memberLocal.time} {t.team_appt_at_member} {member.first_name})</p>
                                   )}
                                 </>
                               )
@@ -1566,7 +1567,7 @@ function IndividualView({
                               appt.status === 'done' ? 'bg-[#6ffbbe]/20 dark:bg-[#6ffbbe]/10 text-[#005236] dark:text-[#6ffbbe]' :
                               'bg-[#ffddb8]/40 dark:bg-amber-500/10 text-[#653e00] dark:text-amber-300'
                             )}>
-                              {appt.status === 'confirmed' ? 'Confirmé' : appt.status === 'done' ? 'Terminé' : 'En attente'}
+                              {appt.status === 'confirmed' ? t.team_appt_confirmed : appt.status === 'done' ? t.team_appt_done : t.team_appt_pending}
                             </span>
                           </td>
                         </tr>

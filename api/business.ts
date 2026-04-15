@@ -94,6 +94,7 @@ async function fetchGoogleCalendarEvents(accessToken: string, timeMin: string, t
 
     return (data.items || [])
       .filter((item: any) => item.start?.dateTime && item.end?.dateTime) // Skip all-day events
+      .filter((item: any) => item.transparency !== 'transparent') // Skip events marked as "available"
       .map((item: any) => ({
         start: item.start.dateTime,
         end: item.end.dateTime,
