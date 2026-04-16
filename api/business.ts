@@ -4220,10 +4220,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Verify payment with Stripe
-      const stripeLib = (await import('stripe')).default
-      const stripeClient = new stripeLib(process.env.STRIPE_SECRET_KEY as string)
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
 
-      // Get campaign owner's connected account
+      // Get campaign info
       const { data: campaign } = await supabase
         .from('business_campaigns')
         .select('user_id, stripe_currency')
@@ -4232,16 +4231,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
 
-      const { data: stripeProfile } = await supabase
-        .from('profiles')
-        .select('stripe_account_id')
-        .eq('id', campaign.user_id)
-        .single()
-
-      const stripeSession = await stripeClient.checkout.sessions.retrieve(
-        session_id,
-        { stripeAccount: stripeProfile?.stripe_account_id || undefined }
-      )
+      // Destination charges live on the platform account — no stripeAccount needed
+      const stripeSession = await stripeClient.checkout.sessions.retrieve(session_id)
 
       if (stripeSession.payment_status !== 'paid') {
         return res.status(400).json({ error: 'Payment not completed' })
@@ -4314,26 +4305,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
 
-      const session = await stripeClient.checkout.sessions.create(
-        {
-          payment_method_types: ['card'],
-          line_items: [{
-            price_data: {
-              currency,
-              product_data: { name: campaign.name || 'Paiement' },
-              unit_amount: amount,
-            },
-            quantity: 1,
-          }],
-          mode: 'payment',
-          payment_intent_data: { application_fee_amount: applicationFee },
-          success_url: successUrl,
-          cancel_url: cancelUrl,
-          ...(email ? { customer_email: email } : {}),
-          metadata: { campaign_id: campaign.id, payment_type: 'pre_booking', slug },
+      const session = await stripeClient.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency,
+            product_data: { name: campaign.name || 'Paiement' },
+            unit_amount: amount,
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        payment_intent_data: {
+          application_fee_amount: applicationFee,
+          transfer_data: { destination: stripeProfile.stripe_account_id },
         },
-        { stripeAccount: stripeProfile.stripe_account_id }
-      )
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        ...(email ? { customer_email: email } : {}),
+        metadata: { campaign_id: campaign.id, payment_type: 'pre_booking', slug },
+      })
 
       await supabase.from('campaign_payment_sessions').insert({
         campaign_id: campaign.id,
@@ -4387,26 +4378,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
 
-        const session = await stripeClient.checkout.sessions.create(
-          {
-            payment_method_types: ['card'],
-            line_items: [{
-              price_data: {
-                currency,
-                product_data: { name: campaign.name || 'Paiement' },
-                unit_amount: amount,
-              },
-              quantity: 1,
-            }],
-            mode: 'payment',
-            payment_intent_data: { application_fee_amount: applicationFee },
-            success_url: successUrl,
-            cancel_url: cancelUrl,
-            ...(email ? { customer_email: email } : {}),
-            metadata: { campaign_id: campaign.id, payment_type: 'initial', slug },
+        const session = await stripeClient.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [{
+            price_data: {
+              currency,
+              product_data: { name: campaign.name || 'Paiement' },
+              unit_amount: amount,
+            },
+            quantity: 1,
+          }],
+          mode: 'payment',
+          payment_intent_data: {
+            application_fee_amount: applicationFee,
+            transfer_data: { destination: stripeProfile.stripe_account_id },
           },
-          { stripeAccount: stripeProfile.stripe_account_id }
-        )
+          success_url: successUrl,
+          cancel_url: cancelUrl,
+          ...(email ? { customer_email: email } : {}),
+          metadata: { campaign_id: campaign.id, payment_type: 'initial', slug },
+        })
 
         // Store prospect data for after payment
         await supabase.from('campaign_payment_sessions').insert({
