@@ -36,6 +36,7 @@ export interface Translations {
   nav_roles: string
   nav_demo: string
   nav_pricing: string
+  nav_partners: string
   nav_faq: string
   nav_waitlist: string
 
@@ -176,6 +177,8 @@ export interface Translations {
   capture_item_embed: string
   capture_item_popup: string
   capture_item_video: string
+  capture_item_precapture: string
+  capture_item_payment: string
   capture_tab_page: string
   capture_tab_embed: string
   capture_tab_popup: string
@@ -254,6 +257,19 @@ export interface Translations {
   demo_check_questions: string
   demo_check_free: string
 
+  // Partners section
+  partners_badge: string
+  partners_title: string
+  partners_subtitle: string
+  partners_integrate_title: string
+  partners_integrate_desc: string
+  partners_integrate_items: string[]
+  partners_integrate_cta: string
+  partners_ambassador_title: string
+  partners_ambassador_desc: string
+  partners_ambassador_items: string[]
+  partners_ambassador_cta: string
+
   // FAQ section
   faq_badge: string
   faq_title: string
@@ -277,6 +293,32 @@ export interface Translations {
   footer_cgv: string
   footer_confidentialite: string
   footer_politique: string
+  footer_contact: string
+
+  // Contact modal
+  contact_title: string
+  contact_name: string
+  contact_name_placeholder: string
+  contact_email: string
+  contact_email_placeholder: string
+  contact_subscriber: string
+  contact_category: string
+  contact_category_placeholder: string
+  contact_category_bug: string
+  contact_category_feature: string
+  contact_category_partnership: string
+  contact_category_help: string
+  contact_category_billing: string
+  contact_category_other: string
+  contact_subject: string
+  contact_subject_placeholder: string
+  contact_message: string
+  contact_message_placeholder: string
+  contact_attachment: string
+  contact_send: string
+  contact_sending: string
+  contact_success: string
+  contact_error: string
 
   // Scroll to top
   scroll_top_label: string
@@ -340,6 +382,7 @@ const fr: Translations = {
   nav_roles: 'Rôles',
   nav_demo: 'Démo',
   nav_pricing: 'Tarifs',
+  nav_partners: 'Partenariat',
   nav_faq: 'FAQ',
   nav_waitlist: "Liste d'attente",
 
@@ -480,6 +523,8 @@ const fr: Translations = {
   capture_item_embed: "Embed iframe intégrable sur n'importe quel site",
   capture_item_popup: 'Popup déclenchable au clic ou en automatique',
   capture_item_video: 'Ajoutez une vidéo de présentation avec un lien de redirection',
+  capture_item_precapture: 'Précapture : dès qu\'un email ou numéro est saisi, le prospect est enregistré — même sans avoir terminé le formulaire',
+  capture_item_payment: 'Rendez-vous payants via Stripe : idéal pour le consulting, audits, coaching…',
   capture_tab_page: 'Page',
   capture_tab_embed: 'Embed',
   capture_tab_popup: 'Popup',
@@ -551,6 +596,8 @@ const fr: Translations = {
           '2 modes : avec RDV ou inscription seule',
           'Page de capture personnalisable + embed iframe/popup',
           'Assignation configurable + tracking UTM',
+          'Précapture : lead enregistré dès le 1er champ saisi',
+          'Paiement Stripe intégré + remboursement par palier',
           'Analytics : vues, leads, taux de conversion, CA',
         ],
       },
@@ -731,6 +778,29 @@ const fr: Translations = {
   demo_check_questions: 'Réponses à toutes vos questions',
   demo_check_free: '100% gratuit',
 
+  // Partners section
+  partners_badge: 'Partenariat',
+  partners_title: 'Devenez partenaire CloseOS',
+  partners_subtitle: 'Deux façons de collaborer avec nous et de faire grandir votre business.',
+  partners_integrate_title: 'Intégrateur',
+  partners_integrate_desc: 'Intégrez CloseOS directement dans vos offres d\'accompagnement.',
+  partners_integrate_items: [
+    'Idéal pour les formateurs, coachs et agences',
+    'Proposez CloseOS dans vos formations ou packs',
+    'Offre personnalisée selon votre volume',
+    'Support dédié pour vos clients',
+  ],
+  partners_integrate_cta: 'Devenir intégrateur',
+  partners_ambassador_title: 'Ambassadeur',
+  partners_ambassador_desc: 'Recommandez CloseOS et touchez des commissions sur chaque vente.',
+  partners_ambassador_items: [
+    'Commissions récurrentes par virement',
+    'Lien de parrainage personnalisé',
+    'Dashboard de suivi en temps réel',
+    'Aucun engagement ni minimum requis',
+  ],
+  partners_ambassador_cta: 'Devenir ambassadeur',
+
   // FAQ section
   faq_badge: 'FAQs',
   faq_title: 'Questions fréquentes',
@@ -787,6 +857,32 @@ const fr: Translations = {
   footer_cgv: 'CGV',
   footer_confidentialite: 'Confidentialité',
   footer_politique: "Politique d'utilisation",
+  footer_contact: 'support@closeos.fr',
+
+  // Contact modal
+  contact_title: 'Contactez-nous',
+  contact_name: 'Nom & Prénom',
+  contact_name_placeholder: 'Jean Dupont',
+  contact_email: 'Votre email',
+  contact_email_placeholder: 'jean@exemple.com',
+  contact_subscriber: 'Je suis abonné à CloseOS',
+  contact_category: 'Sujet',
+  contact_category_placeholder: 'Sélectionnez un sujet',
+  contact_category_bug: 'Bug',
+  contact_category_feature: 'Idée de rajouts',
+  contact_category_partnership: 'Partenariat / Collaboration',
+  contact_category_help: 'Aide / Support',
+  contact_category_billing: 'Facturation / Abonnement',
+  contact_category_other: 'Autre',
+  contact_subject: 'Objet',
+  contact_subject_placeholder: "L'objet de votre message",
+  contact_message: 'Message',
+  contact_message_placeholder: 'Écrivez votre message ici...',
+  contact_attachment: 'Ajouter une pièce jointe',
+  contact_send: 'Envoyer',
+  contact_sending: 'Envoi en cours...',
+  contact_success: 'Votre message a bien été envoyé !',
+  contact_error: "Une erreur est survenue. Veuillez réessayer.",
 
   // Scroll to top
   scroll_top_label: 'Retour en haut',
@@ -850,6 +946,7 @@ const en: Translations = {
   nav_roles: 'Roles',
   nav_demo: 'Demo',
   nav_pricing: 'Pricing',
+  nav_partners: 'Partners',
   nav_faq: 'FAQ',
   nav_waitlist: 'Waitlist',
 
@@ -990,6 +1087,8 @@ const en: Translations = {
   capture_item_embed: 'Embed iframe integrable on any site',
   capture_item_popup: 'Popup triggerable on click or automatically',
   capture_item_video: 'Add a presentation video with a redirect link',
+  capture_item_precapture: 'Pre-capture: as soon as an email or phone number is entered, the prospect is saved — even if they don\'t complete the form',
+  capture_item_payment: 'Paid appointments via Stripe: ideal for consultations, audits, coaching…',
   capture_tab_page: 'Page',
   capture_tab_embed: 'Embed',
   capture_tab_popup: 'Popup',
@@ -1061,6 +1160,8 @@ const en: Translations = {
           '2 modes: with appointment or registration only',
           'Customizable capture page + embed iframe/popup',
           'Configurable assignment + UTM tracking',
+          'Pre-capture: lead saved from the 1st field entered',
+          'Integrated Stripe payment + tiered refunds',
           'Analytics: views, leads, conversion rate, revenue',
         ],
       },
@@ -1241,6 +1342,29 @@ const en: Translations = {
   demo_check_questions: 'Answers to all your questions',
   demo_check_free: '100% free',
 
+  // Partners section
+  partners_badge: 'Partnership',
+  partners_title: 'Become a CloseOS partner',
+  partners_subtitle: 'Two ways to collaborate with us and grow your business.',
+  partners_integrate_title: 'Integrator',
+  partners_integrate_desc: 'Integrate CloseOS directly into your coaching or training offers.',
+  partners_integrate_items: [
+    'Ideal for trainers, coaches and agencies',
+    'Include CloseOS in your courses or packages',
+    'Custom offer based on your volume',
+    'Dedicated support for your clients',
+  ],
+  partners_integrate_cta: 'Become an integrator',
+  partners_ambassador_title: 'Ambassador',
+  partners_ambassador_desc: 'Recommend CloseOS and earn commissions on every sale.',
+  partners_ambassador_items: [
+    'Recurring commissions paid by bank transfer',
+    'Personalized referral link',
+    'Real-time tracking dashboard',
+    'No commitment or minimum required',
+  ],
+  partners_ambassador_cta: 'Become an ambassador',
+
   // FAQ section
   faq_badge: 'FAQs',
   faq_title: 'Frequently asked questions',
@@ -1297,6 +1421,32 @@ const en: Translations = {
   footer_cgv: 'Terms of Sale',
   footer_confidentialite: 'Privacy',
   footer_politique: 'Usage Policy',
+  footer_contact: 'support@closeos.fr',
+
+  // Contact modal
+  contact_title: 'Contact us',
+  contact_name: 'Full name',
+  contact_name_placeholder: 'John Doe',
+  contact_email: 'Your email',
+  contact_email_placeholder: 'john@example.com',
+  contact_subscriber: 'I am a CloseOS subscriber',
+  contact_category: 'Topic',
+  contact_category_placeholder: 'Select a topic',
+  contact_category_bug: 'Bug',
+  contact_category_feature: 'Feature request',
+  contact_category_partnership: 'Partnership / Collaboration',
+  contact_category_help: 'Help / Support',
+  contact_category_billing: 'Billing / Subscription',
+  contact_category_other: 'Other',
+  contact_subject: 'Subject',
+  contact_subject_placeholder: 'Subject of your message',
+  contact_message: 'Message',
+  contact_message_placeholder: 'Write your message here...',
+  contact_attachment: 'Add an attachment',
+  contact_send: 'Send',
+  contact_sending: 'Sending...',
+  contact_success: 'Your message has been sent successfully!',
+  contact_error: 'An error occurred. Please try again.',
 
   // Scroll to top
   scroll_top_label: 'Back to top',

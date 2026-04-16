@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { PhoneInput } from './PhoneInput'
 import {
   X,
@@ -98,7 +98,7 @@ interface BusinessSettingsModalProps {
 }
 
 export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' }: BusinessSettingsModalProps) {
-  const { user, businessProfile, updateBusinessProfile, businessSettings, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile, isSolo } = useBusinessAuth()
+  const { user, businessProfile, updateBusinessProfile, businessSettings, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile, isSolo, hasAcquisition } = useBusinessAuth()
   const { dark, toggle: toggleDark } = useTheme()
   const { lang, setLang, t } = useBusinessLang()
 
@@ -215,6 +215,21 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
   const [savingSidebar, setSavingSidebar] = useState(false)
   const [sidebarDirty, setSidebarDirty] = useState(false)
 
+  // Filter nav items based on plan (same logic as BusinessSidebar)
+  const SOLO_HIDDEN_ROUTES = ['/business/team', '/business/factures', '/business/report']
+  const ACQUISITION_ROUTES = ['/business/campagnes', '/business/acquisition']
+
+  const filteredNav = useMemo(() => {
+    let nav = [...DEFAULT_OWNER_NAV]
+    if (isSolo && !isTeamMember) {
+      nav = nav.filter(item => !SOLO_HIDDEN_ROUTES.includes(item.href))
+    }
+    if (!hasAcquisition && !isTeamMember) {
+      nav = nav.filter(item => !ACQUISITION_ROUTES.includes(item.href))
+    }
+    return nav
+  }, [isSolo, hasAcquisition, isTeamMember])
+
   // Init sidebar items — load saved order from the right source
   useEffect(() => {
     if (!isOpen || !user) return
@@ -238,20 +253,20 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
       if (savedOrder && Array.isArray(savedOrder) && savedOrder.length > 0) {
         const ordered: { name: string; href: string }[] = []
         for (const href of savedOrder) {
-          const item = DEFAULT_OWNER_NAV.find(n => n.href === href)
+          const item = filteredNav.find(n => n.href === href)
           if (item) ordered.push(item)
         }
-        for (const item of DEFAULT_OWNER_NAV) {
+        for (const item of filteredNav) {
           if (!ordered.find(o => o.href === item.href)) ordered.push(item)
         }
         setSidebarItems(ordered)
       } else {
-        setSidebarItems([...DEFAULT_OWNER_NAV])
+        setSidebarItems([...filteredNav])
       }
       setSidebarDirty(false)
     }
     loadOrder()
-  }, [isOpen, user, isTeamMember, teamMember?.id])
+  }, [isOpen, user, isTeamMember, teamMember?.id, filteredNav])
 
   const handleDragStart = useCallback((idx: number) => {
     setDragIndex(idx)
@@ -318,7 +333,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
 
   const resetSidebarOrder = async () => {
     if (!user) return
-    setSidebarItems([...DEFAULT_OWNER_NAV])
+    setSidebarItems([...filteredNav])
     setSavingSidebar(true)
     try {
       let result: { error: any }

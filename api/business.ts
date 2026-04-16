@@ -1781,7 +1781,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'campaigns-create' && req.method === 'POST') {
-      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, team_id } = req.body
+      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, team_id, stripe_enabled, stripe_price, stripe_currency, stripe_payment_timing, refund_enabled, refund_tiers, reschedule_enabled, reschedule_paid, reschedule_price, reschedule_currency } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -1827,6 +1827,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           booking_assigned_members: booking_assigned_members || [],
           booking_distribution: booking_distribution || 'round_robin',
           team_id: team_id || null,
+          stripe_enabled: stripe_enabled ?? false,
+          stripe_price: stripe_price ?? 0,
+          stripe_currency: stripe_currency || 'eur',
+          stripe_payment_timing: stripe_payment_timing || 'after',
+          refund_enabled: refund_enabled ?? false,
+          refund_tiers: refund_tiers || [],
+          reschedule_enabled: reschedule_enabled ?? false,
+          reschedule_paid: reschedule_paid ?? false,
+          reschedule_price: reschedule_price ?? 0,
+          reschedule_currency: reschedule_currency || 'eur',
         })
         .select()
         .single()
@@ -2505,8 +2515,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const formattedDate = apptDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz })
       const formattedTime = apptDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: tz })
       const baseUrl = process.env.VITE_APP_URL || 'https://closeos.fr'
-      const rescheduleLink = appt.reschedule_token ? `${baseUrl}/appointment/reschedule/${appt.reschedule_token}` : ''
-      const cancelLink = appt.cancel_token ? `${baseUrl}/appointment/cancel/${appt.cancel_token}` : ''
+      const rescheduleLink = appt.reschedule_token ? `${baseUrl}/appointment/${appt.reschedule_token}?action=reschedule` : ''
+      const cancelLink = appt.cancel_token ? `${baseUrl}/appointment/${appt.cancel_token}?action=cancel` : ''
 
       const vars: Record<string, string> = {
         lead_name: prospectName,
@@ -3010,7 +3020,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: appt } = await supabase
         .from('business_appointments')
-        .select('id, date, time, duration, status, timezone, cancel_token, reschedule_token, campaign_id, prospect_id, assigned_to, user_id, datetime_utc, notes')
+        .select('id, title, date, time, duration, status, timezone, cancel_token, reschedule_token, campaign_id, prospect_id, assigned_to, user_id, datetime_utc, notes, stripe_payment_intent_id, stripe_payment_status, stripe_amount_paid, stripe_currency')
         .or(`cancel_token.eq.${token},reschedule_token.eq.${token}`)
         .single()
 
@@ -3026,20 +3036,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Get campaign slug or booking link slug for reschedule
       let campaignSlug = null
       let bookingSlug = null
+      let campaignStripeConfig: any = null
       if (appt.campaign_id) {
         const { data: camp } = await supabase
           .from('business_campaigns')
-          .select('slug')
+          .select('slug, stripe_enabled, refund_enabled, refund_tiers, reschedule_enabled, reschedule_paid, reschedule_price, reschedule_currency')
           .eq('id', appt.campaign_id)
           .single()
         campaignSlug = camp?.slug
+        if (camp?.stripe_enabled) {
+          campaignStripeConfig = {
+            refund_enabled: camp.refund_enabled,
+            refund_tiers: camp.refund_tiers,
+            reschedule_enabled: camp.reschedule_enabled,
+            reschedule_paid: camp.reschedule_paid,
+            reschedule_price: camp.reschedule_price,
+            reschedule_currency: camp.reschedule_currency,
+          }
+        }
       } else {
         // Booking appointment — find the booking link by owner + member
-        const bQuery = appt.assigned_to && appt.assigned_to !== appt.user_id
-          ? supabase.from('business_booking_links').select('slug').eq('team_member_id', appt.assigned_to).limit(1).maybeSingle()
-          : supabase.from('business_booking_links').select('slug').eq('business_owner_id', appt.user_id).is('team_member_id', null).limit(1).maybeSingle()
-        const { data: bLink } = await bQuery
-        bookingSlug = bLink?.slug || null
+        if (appt.assigned_to && appt.assigned_to !== appt.user_id) {
+          const { data: bLink } = await supabase.from('business_booking_links').select('slug').eq('team_member_id', appt.assigned_to).limit(1).maybeSingle()
+          bookingSlug = bLink?.slug || null
+        }
+        if (!bookingSlug) {
+          // Fallback: owner's booking link (team_member_id is null)
+          const { data: bLink } = await supabase.from('business_booking_links').select('slug').eq('business_owner_id', appt.user_id).is('team_member_id', null).limit(1).maybeSingle()
+          bookingSlug = bLink?.slug || null
+        }
+        if (!bookingSlug) {
+          // Last fallback: any booking link for this owner
+          const { data: bLink } = await supabase.from('business_booking_links').select('slug').eq('business_owner_id', appt.user_id).limit(1).maybeSingle()
+          bookingSlug = bLink?.slug || null
+        }
       }
 
       // Get assigned member name
@@ -3062,6 +3092,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       return res.status(200).json({
         id: appt.id,
+        title: appt.title || null,
         date: appt.date,
         time: appt.time,
         duration: appt.duration,
@@ -3072,18 +3103,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         assignee_name: assigneeName,
         campaign_slug: campaignSlug,
         booking_slug: bookingSlug,
+        user_id: appt.user_id,
+        assigned_to: appt.assigned_to,
         token_type: token === appt.cancel_token ? 'cancel' : 'reschedule',
+        // Stripe payment data
+        stripe_payment_status: appt.stripe_payment_status || null,
+        stripe_amount_paid: appt.stripe_amount_paid || 0,
+        stripe_currency: appt.stripe_currency || null,
+        // Campaign stripe config (refund/reschedule)
+        ...(campaignStripeConfig || {}),
       })
     }
 
     // ─── Cancel appointment by token (no auth) ───
     if (action === 'appointment-cancel' && req.method === 'POST') {
-      const { token } = req.body
+      const { token, request_refund } = req.body
       if (!token) return res.status(400).json({ error: 'token required' })
 
       const { data: appt } = await supabase
         .from('business_appointments')
-        .select('id, status, user_id, assigned_to, date, time, prospect_id, campaign_id, google_calendar_event_id')
+        .select('id, status, user_id, assigned_to, date, time, prospect_id, campaign_id, google_calendar_event_id, stripe_payment_intent_id, stripe_payment_status, stripe_amount_paid')
         .eq('cancel_token', token)
         .single()
 
@@ -3092,6 +3131,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Cancel the appointment
       await supabase.from('business_appointments').update({ status: 'cancelled' }).eq('id', appt.id)
+
+      // ─── Stripe refund if requested ───
+      let refundResult: { refunded: boolean; amount?: number; percent?: number } = { refunded: false }
+      if (request_refund && appt.stripe_payment_intent_id && appt.stripe_payment_status === 'paid' && appt.campaign_id) {
+        try {
+          const { data: camp } = await supabase
+            .from('business_campaigns')
+            .select('user_id, refund_enabled, refund_tiers')
+            .eq('id', appt.campaign_id)
+            .single()
+
+          if (camp?.refund_enabled && Array.isArray(camp.refund_tiers) && camp.refund_tiers.length > 0) {
+            const { data: stripeProfile } = await supabase
+              .from('profiles')
+              .select('stripe_account_id')
+              .eq('id', camp.user_id)
+              .single()
+
+            if (stripeProfile?.stripe_account_id) {
+              // Calculate refund percentage based on days until appointment
+              const now = new Date()
+              const apptDate = new Date(`${appt.date}T${appt.time}:00`)
+              const daysUntil = Math.floor((apptDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+              const sortedTiers = [...camp.refund_tiers].sort((a: any, b: any) => b.days - a.days)
+              let refundPercent = 0
+              for (const tier of sortedTiers) {
+                if (daysUntil >= (tier as any).days) {
+                  refundPercent = (tier as any).percent
+                  break
+                }
+              }
+
+              if (refundPercent > 0) {
+                const refundAmount = Math.round(appt.stripe_amount_paid * (refundPercent / 100))
+                const stripeLib = (await import('stripe')).default
+                const stripeClient = new stripeLib(process.env.STRIPE_SECRET_KEY as string)
+                const refund = await stripeClient.refunds.create(
+                  {
+                    payment_intent: appt.stripe_payment_intent_id,
+                    amount: refundAmount,
+                    refund_application_fee: true,
+                  },
+                  { stripeAccount: stripeProfile.stripe_account_id }
+                )
+
+                const newStatus = refundPercent >= 100 ? 'refunded' : 'partially_refunded'
+                await supabase.from('business_appointments').update({
+                  stripe_amount_refunded: refundAmount,
+                  stripe_refund_id: refund.id,
+                  stripe_payment_status: newStatus,
+                }).eq('id', appt.id)
+
+                refundResult = { refunded: true, amount: refundAmount, percent: refundPercent }
+              }
+            }
+          }
+        } catch (refundErr) {
+          console.error('[appointment-cancel] Refund error:', refundErr)
+        }
+      }
 
       // Delete Google Calendar event if exists
       if (appt.google_calendar_event_id && appt.assigned_to) {
@@ -3144,21 +3243,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
       } catch {}
 
-      return res.status(200).json({ cancelled: true })
+      return res.status(200).json({ cancelled: true, refund: refundResult })
     }
 
     // ─── Reschedule appointment by token (no auth) ───
     if (action === 'appointment-reschedule' && req.method === 'POST') {
-      const { token, date, time, datetime_utc, prospect_timezone } = req.body
+      const { token, date, time, datetime_utc, prospect_timezone, payment_session_id } = req.body
       if (!token || !date || !time) return res.status(400).json({ error: 'token, date and time required' })
 
       const { data: appt } = await supabase
         .from('business_appointments')
-        .select('id, status, user_id, assigned_to, date, time, prospect_id, campaign_id, duration, google_calendar_event_id')
+        .select('id, status, user_id, assigned_to, date, time, prospect_id, campaign_id, duration, google_calendar_event_id, stripe_payment_status')
         .eq('reschedule_token', token)
         .single()
 
       if (!appt) return res.status(404).json({ error: 'Appointment not found' })
+
+      // Check if paid reschedule is required
+      if (appt.campaign_id && !payment_session_id) {
+        const { data: camp } = await supabase
+          .from('business_campaigns')
+          .select('reschedule_enabled, reschedule_paid, reschedule_price, reschedule_currency')
+          .eq('id', appt.campaign_id)
+          .single()
+
+        if (camp?.reschedule_enabled && camp.reschedule_paid && camp.reschedule_price > 0) {
+          return res.status(200).json({
+            requires_payment: true,
+            reschedule_price: camp.reschedule_price,
+            reschedule_currency: camp.reschedule_currency || 'eur',
+            campaign_id: appt.campaign_id,
+          })
+        }
+      }
 
       const oldDate = appt.date
       const oldTime = appt.time
@@ -4073,9 +4190,84 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ appointment })
     }
 
+    // ─── Campaign payment success (after Stripe Checkout redirect) ───
+    if (action === 'campaign-payment-success' && req.method === 'POST') {
+      const { session_id } = req.body
+      if (!session_id) return res.status(400).json({ error: 'session_id required' })
+
+      // Find the payment session
+      const { data: paymentSession } = await supabase
+        .from('campaign_payment_sessions')
+        .select('*')
+        .eq('stripe_checkout_session_id', session_id)
+        .single()
+
+      if (!paymentSession) return res.status(404).json({ error: 'Payment session not found' })
+      if (paymentSession.status === 'completed') {
+        return res.status(200).json({ already_completed: true })
+      }
+
+      // Verify payment with Stripe
+      const stripeLib = (await import('stripe')).default
+      const stripeClient = new stripeLib(process.env.STRIPE_SECRET_KEY as string)
+
+      // Get campaign owner's connected account
+      const { data: campaign } = await supabase
+        .from('business_campaigns')
+        .select('user_id, stripe_currency')
+        .eq('id', paymentSession.campaign_id)
+        .single()
+
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
+
+      const { data: stripeProfile } = await supabase
+        .from('profiles')
+        .select('stripe_account_id')
+        .eq('id', campaign.user_id)
+        .single()
+
+      const stripeSession = await stripeClient.checkout.sessions.retrieve(
+        session_id,
+        { stripeAccount: stripeProfile?.stripe_account_id || undefined }
+      )
+
+      if (stripeSession.payment_status !== 'paid') {
+        return res.status(400).json({ error: 'Payment not completed' })
+      }
+
+      // Mark session as completed
+      await supabase
+        .from('campaign_payment_sessions')
+        .update({ status: 'completed' })
+        .eq('id', paymentSession.id)
+
+      // If it's an initial payment, update the appointment if it exists
+      if (paymentSession.payment_type === 'initial' && paymentSession.appointment_id) {
+        await supabase
+          .from('business_appointments')
+          .update({
+            stripe_payment_intent_id: stripeSession.payment_intent as string,
+            stripe_checkout_session_id: session_id,
+            stripe_payment_status: 'paid',
+            stripe_amount_paid: stripeSession.amount_total || paymentSession.amount,
+            stripe_currency: campaign.stripe_currency || 'eur',
+          })
+          .eq('id', paymentSession.appointment_id)
+      }
+
+      // For "before" timing: the prospect data is in paymentSession.prospect_data
+      // The frontend will re-call capture-submit with payment_session_id
+      return res.status(200).json({
+        success: true,
+        payment_type: paymentSession.payment_type,
+        prospect_data: paymentSession.prospect_data,
+        payment_intent_id: stripeSession.payment_intent,
+      })
+    }
+
     // ─── Public capture endpoint (no auth) ───
     if (action === 'capture-submit' && req.method === 'POST') {
-      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids } = req.body
+      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers, payment_session_id } = req.body
       if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
 
       // Find campaign by slug
@@ -4087,6 +4279,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single()
 
       if (campErr || !campaign) return res.status(404).json({ error: 'Campaign not found or inactive' })
+
+      // ─── Stripe payment check ───
+      if (campaign.stripe_enabled && campaign.stripe_price > 0 && !payment_session_id) {
+        // Get owner's Stripe account
+        const { data: stripeProfile } = await supabase
+          .from('profiles')
+          .select('stripe_account_id, stripe_connected')
+          .eq('id', campaign.user_id)
+          .single()
+
+        if (!stripeProfile?.stripe_account_id || !stripeProfile.stripe_connected) {
+          return res.status(400).json({ error: 'Stripe account not connected for this campaign' })
+        }
+
+        const origin = req.headers.origin || 'https://www.closeos.fr'
+        const successUrl = `${origin}/capture/${slug}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`
+        const cancelUrl = `${origin}/capture/${slug}?payment_cancelled=true`
+
+        const amount = campaign.stripe_price
+        const currency = campaign.stripe_currency || 'eur'
+        const applicationFee = Math.round(amount * 0.02)
+
+        const stripeLib = (await import('stripe')).default
+        const stripeClient = new stripeLib(process.env.STRIPE_SECRET_KEY as string)
+
+        const session = await stripeClient.checkout.sessions.create(
+          {
+            payment_method_types: ['card'],
+            line_items: [{
+              price_data: {
+                currency,
+                product_data: { name: campaign.name || 'Paiement' },
+                unit_amount: amount,
+              },
+              quantity: 1,
+            }],
+            mode: 'payment',
+            payment_intent_data: { application_fee_amount: applicationFee },
+            success_url: successUrl,
+            cancel_url: cancelUrl,
+            ...(email ? { customer_email: email } : {}),
+            metadata: { campaign_id: campaign.id, payment_type: 'initial', slug },
+          },
+          { stripeAccount: stripeProfile.stripe_account_id }
+        )
+
+        // Store prospect data for after payment
+        await supabase.from('campaign_payment_sessions').insert({
+          campaign_id: campaign.id,
+          stripe_checkout_session_id: session.id,
+          prospect_data: { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers },
+          payment_type: 'initial',
+          amount,
+        })
+
+        return res.status(200).json({
+          requires_payment: true,
+          checkout_url: session.url,
+          session_id: session.id,
+          payment_timing: campaign.stripe_payment_timing,
+        })
+      }
 
       // ─── Server-side assignment (round_robin / random) ───
       const targetRole = campaign.booking_with === 'setter' ? 'Setter' : 'Closer'
@@ -4429,6 +4683,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             assigned_to: (assigned_member_id && assigned_member_id !== campaign.user_id) ? prospectAssignId : null,
             cancel_token: crypto.randomBytes(16).toString('hex'),
             reschedule_token: crypto.randomBytes(16).toString('hex'),
+            ...(payment_session_id ? {
+              stripe_payment_status: 'paid',
+              stripe_checkout_session_id: payment_session_id,
+              stripe_amount_paid: campaign.stripe_price || 0,
+              stripe_currency: campaign.stripe_currency || 'eur',
+            } : {}),
           })
           .select()
           .single()
@@ -4561,11 +4821,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Récupérer le nom du membre assigné
         let memberDisplayName = ''
         if (assigned_member_id === campaign.user_id) {
-          const { data: ownerP } = await supabase.from('business_users').select('business_name').eq('id', campaign.user_id).single()
-          memberDisplayName = ownerP?.business_name || 'Owner'
+          const { data: ownerP } = await supabase.from('business_users').select('full_name, business_name').eq('id', campaign.user_id).single()
+          memberDisplayName = ownerP?.full_name || ownerP?.business_name || 'Owner'
         } else if (assigned_member_id) {
-          const { data: tmP } = await supabase.from('business_team_members').select('name').eq('id', assigned_member_id).single()
-          memberDisplayName = tmP?.name || ''
+          const { data: tmP } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', assigned_member_id).single()
+          memberDisplayName = tmP ? `${tmP.first_name} ${tmP.last_name}` : ''
         }
 
         // Récupérer le nom de la formule si liée

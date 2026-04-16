@@ -5,6 +5,7 @@ import {
   Loader2, DollarSign, TrendingUp, CalendarDays, Target, UserX, Activity,
   Megaphone, Users, Bell, ArrowUpRight, ArrowDownRight, FileDown, Circle,
   AlertTriangle, Clock, Search, Plus, X, CheckCircle2, Trash2, GitBranch, User,
+  Mail, Check,
 } from 'lucide-react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
@@ -144,7 +145,7 @@ function KpiTooltip({ children, text }: { children: React.ReactNode; text: strin
 // ─── Component ───
 
 export function BusinessDashboard() {
-  const { user, isTeamMember, teamMember, ownerUserId, businessProfile, userTimezone, businessSettings } = useBusinessAuth()
+  const { user, isTeamMember, teamMember, ownerUserId, businessProfile, userTimezone, businessSettings, isSolo } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
@@ -166,6 +167,14 @@ export function BusinessDashboard() {
   const [teams, setTeams] = useState<BusinessTeam[]>([])
   const [teamTab, setTeamTab] = useState<'all' | 'teams'>('all')
   const [formulaBillingTypes, setFormulaBillingTypes] = useState<Record<string, string>>({})
+
+  // Export modal state
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportFormats, setExportFormats] = useState<Set<string>>(new Set(['pdf']))
+  const [exportPeriod, setExportPeriod] = useState('month')
+  const [exportSending, setExportSending] = useState(false)
+  const [exportDone, setExportDone] = useState(false)
+  const [exportError, setExportError] = useState('')
 
   const isMemberAbsent = (memberId: string) => {
     const today = new Date().toISOString().slice(0, 10)
@@ -259,6 +268,34 @@ export function BusinessDashboard() {
   const handleDeleteReminder = async (id: string) => {
     await supabase.from('reminders').delete().eq('id', id)
     setReminders(prev => prev.filter(r => r.id !== id))
+  }
+
+  const handleSendReport = async () => {
+    if (exportFormats.size === 0) { setExportError(t.dashboard_export_select_format); return }
+    setExportSending(true)
+    setExportError('')
+    try {
+      const res = await fetch('/api/send-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: effectiveUserId, formats: Array.from(exportFormats), period: exportPeriod }),
+      })
+      if (!res.ok) throw new Error()
+      setExportDone(true)
+      setTimeout(() => { setShowExportModal(false); setExportDone(false) }, 2500)
+    } catch {
+      setExportError(t.dashboard_export_error)
+    } finally {
+      setExportSending(false)
+    }
+  }
+
+  const toggleExportFormat = (f: string) => {
+    setExportFormats(prev => {
+      const next = new Set(prev)
+      if (next.has(f)) next.delete(f); else next.add(f)
+      return next
+    })
   }
 
   // ─── HOS team filtering ───
@@ -434,14 +471,14 @@ export function BusinessDashboard() {
           <div className="hidden sm:flex">
             <BusinessReminderBell />
           </div>
-          <Link
-            to="/business/report"
+          <button
+            onClick={() => { setShowExportModal(true); setExportDone(false); setExportError('') }}
             className="bg-neutral-900 dark:bg-white dark:text-neutral-900 text-white px-8 py-3 rounded-full font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
             style={{ fontFamily: 'Manrope, sans-serif' }}
           >
             <FileDown className="h-4 w-4" />
             {t.dashboard_export_report}
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -677,7 +714,7 @@ export function BusinessDashboard() {
       {/* ─── Team + Reminders ─── */}
       <div className="grid grid-cols-12 gap-6">
         {/* Performance équipe */}
-        <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8`}>
+        {!isSolo && <div className={`col-span-12 lg:col-span-8 ${glassCard} rounded-2xl p-8`}>
           <div className="flex justify-between items-center mb-6 px-1">
             <div className="flex items-center gap-4">
               <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.sidebar_team}</h3>
@@ -837,10 +874,10 @@ export function BusinessDashboard() {
               )}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Rappels & Tâches */}
-        <div className={`col-span-12 lg:col-span-4 ${glassCard} rounded-2xl p-8 flex flex-col`}>
+        <div className={`col-span-12 ${isSolo ? '' : 'lg:col-span-4'} ${glassCard} rounded-2xl p-8 flex flex-col`}>
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.reminders_title}</h3>
             {reminders.length > 0 && (
@@ -925,6 +962,104 @@ export function BusinessDashboard() {
           </div>
         </div>
       </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowExportModal(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
+            <div className="px-8 pt-8 pb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-extrabold text-neutral-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  {t.dashboard_export_modal_title}
+                </h2>
+                <button onClick={() => setShowExportModal(false)} className="p-2 text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{t.dashboard_export_modal_subtitle}</p>
+            </div>
+
+            {exportDone ? (
+              <div className="px-8 pb-8 pt-4 text-center">
+                <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Mail className="h-7 w-7 text-emerald-600" />
+                </div>
+                <h3 className="text-lg font-bold text-neutral-900 dark:text-white">{t.dashboard_export_success}</h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{t.dashboard_export_success_desc}</p>
+              </div>
+            ) : (
+              <div className="px-8 pb-8 space-y-6">
+                {/* Format selection */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400 mb-3">{t.dashboard_export_format}</label>
+                  <div className="flex gap-3">
+                    {['pdf', 'csv'].map(f => (
+                      <button
+                        key={f}
+                        onClick={() => toggleExportFormat(f)}
+                        className={`flex-1 py-3.5 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 border-2 ${
+                          exportFormats.has(f)
+                            ? 'border-neutral-900 dark:border-white bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
+                            : 'border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-500'
+                        }`}
+                      >
+                        {exportFormats.has(f) && <Check className="h-4 w-4" />}
+                        {f.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Period selection */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 dark:text-neutral-400 mb-3">{t.dashboard_export_period}</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: 'week', label: t.dashboard_export_period_week },
+                      { value: 'month', label: t.dashboard_export_period_month },
+                      { value: 'quarter', label: t.dashboard_export_period_quarter },
+                      { value: 'year', label: t.dashboard_export_period_year },
+                      { value: 'all', label: t.dashboard_export_period_all },
+                    ] as const).map(p => (
+                      <button
+                        key={p.value}
+                        onClick={() => setExportPeriod(p.value)}
+                        className={`py-2.5 rounded-xl text-xs font-bold transition-all ${
+                          exportPeriod === p.value
+                            ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
+                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Error */}
+                {exportError && (
+                  <p className="text-sm text-red-500 font-medium text-center">{exportError}</p>
+                )}
+
+                {/* Send button */}
+                <button
+                  onClick={handleSendReport}
+                  disabled={exportSending || exportFormats.size === 0}
+                  className="w-full py-3.5 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-full font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {exportSending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="h-4 w-4" />
+                  )}
+                  {exportSending ? t.dashboard_export_sending : t.dashboard_export_send}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Reminder Detail Modal */}

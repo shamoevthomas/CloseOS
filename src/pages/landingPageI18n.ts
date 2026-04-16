@@ -207,6 +207,31 @@ export interface SalesTranslations {
   footer_cgu: string
   footer_cgv: string
   footer_privacy: string
+
+  // Contact modal
+  contact_title: string
+  contact_name: string
+  contact_name_placeholder: string
+  contact_email: string
+  contact_email_placeholder: string
+  contact_subscriber: string
+  contact_category: string
+  contact_category_placeholder: string
+  contact_category_bug: string
+  contact_category_feature: string
+  contact_category_partnership: string
+  contact_category_help: string
+  contact_category_billing: string
+  contact_category_other: string
+  contact_subject: string
+  contact_subject_placeholder: string
+  contact_message: string
+  contact_message_placeholder: string
+  contact_attachment: string
+  contact_send: string
+  contact_sending: string
+  contact_success: string
+  contact_error: string
 }
 
 const fr: SalesTranslations = {
@@ -416,6 +441,31 @@ const fr: SalesTranslations = {
   footer_cgu: "CGU",
   footer_cgv: "CGV",
   footer_privacy: "Politique de Confidentialité",
+
+  // Contact modal
+  contact_title: 'Contactez-nous',
+  contact_name: 'Nom & Prénom',
+  contact_name_placeholder: 'Jean Dupont',
+  contact_email: 'Votre email',
+  contact_email_placeholder: 'jean@exemple.com',
+  contact_subscriber: 'Je suis abonné à CloseOS',
+  contact_category: 'Sujet',
+  contact_category_placeholder: 'Sélectionnez un sujet',
+  contact_category_bug: 'Bug',
+  contact_category_feature: 'Idée de rajouts',
+  contact_category_partnership: 'Partenariat / Collaboration',
+  contact_category_help: 'Aide / Support',
+  contact_category_billing: 'Facturation / Abonnement',
+  contact_category_other: 'Autre',
+  contact_subject: 'Objet',
+  contact_subject_placeholder: "L'objet de votre message",
+  contact_message: 'Message',
+  contact_message_placeholder: 'Écrivez votre message ici...',
+  contact_attachment: 'Ajouter une pièce jointe',
+  contact_send: 'Envoyer',
+  contact_sending: 'Envoi en cours...',
+  contact_success: 'Votre message a bien été envoyé !',
+  contact_error: "Une erreur est survenue. Veuillez réessayer.",
 }
 
 const en: SalesTranslations = {
@@ -625,6 +675,31 @@ const en: SalesTranslations = {
   footer_cgu: "Terms of Use",
   footer_cgv: "Terms of Sale",
   footer_privacy: "Privacy Policy",
+
+  // Contact modal
+  contact_title: 'Contact us',
+  contact_name: 'Full name',
+  contact_name_placeholder: 'John Doe',
+  contact_email: 'Your email',
+  contact_email_placeholder: 'john@example.com',
+  contact_subscriber: 'I am a CloseOS subscriber',
+  contact_category: 'Topic',
+  contact_category_placeholder: 'Select a topic',
+  contact_category_bug: 'Bug',
+  contact_category_feature: 'Feature request',
+  contact_category_partnership: 'Partnership / Collaboration',
+  contact_category_help: 'Help / Support',
+  contact_category_billing: 'Billing / Subscription',
+  contact_category_other: 'Other',
+  contact_subject: 'Subject',
+  contact_subject_placeholder: 'Subject of your message',
+  contact_message: 'Message',
+  contact_message_placeholder: 'Write your message here...',
+  contact_attachment: 'Add an attachment',
+  contact_send: 'Send',
+  contact_sending: 'Sending...',
+  contact_success: 'Your message has been sent successfully!',
+  contact_error: 'An error occurred. Please try again.',
 }
 
 export const salesTranslations: Record<SalesLang, SalesTranslations> = { fr, en }

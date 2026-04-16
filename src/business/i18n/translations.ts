@@ -497,6 +497,28 @@ export interface BusinessTranslations {
   campaigns_tab_qualification: string;
   campaigns_tab_booking: string;
   campaigns_tab_assignation: string;
+  campaigns_tab_payment: string;
+  campaigns_stripe_integration: string;
+  campaigns_stripe_not_connected: string;
+  campaigns_stripe_connect_first: string;
+  campaigns_stripe_price: string;
+  campaigns_stripe_currency: string;
+  campaigns_stripe_fee_notice: string;
+  campaigns_payment_timing: string;
+  campaigns_payment_before: string;
+  campaigns_payment_after: string;
+  campaigns_payment_before_desc: string;
+  campaigns_payment_after_desc: string;
+  campaigns_refund_enabled: string;
+  campaigns_refund_tiers: string;
+  campaigns_refund_days_before: string;
+  campaigns_refund_percent: string;
+  campaigns_refund_add_tier: string;
+  campaigns_refund_remove_tier: string;
+  campaigns_reschedule_enabled: string;
+  campaigns_reschedule_free: string;
+  campaigns_reschedule_paid: string;
+  campaigns_reschedule_price: string;
   campaigns_identification: string;
   campaigns_assigned_team: string;
   campaigns_all_team: string;
@@ -1665,6 +1687,13 @@ export interface BusinessTranslations {
   checkout_email: string;
   checkout_phone: string;
   checkout_password: string;
+  checkout_confirm_password: string;
+  checkout_passwords_mismatch: string;
+  checkout_password_strength: string;
+  checkout_password_weak: string;
+  checkout_password_medium: string;
+  checkout_password_strong: string;
+  checkout_password_very_strong: string;
   checkout_trial_info: string;
   checkout_back: string;
   checkout_your_plan: string;
@@ -1891,6 +1920,9 @@ export interface BusinessTranslations {
   formulas_billing_quote: string;
   formulas_subscription_pricing: string;
   formulas_monthly_price_label: string;
+  formulas_quarterly_price_label: string;
+  formulas_quarterly_hint: string;
+  formulas_per_quarter: string;
   formulas_yearly_price_label: string;
   formulas_yearly_hint: string;
   formulas_stripe_connected: string;
@@ -2548,7 +2580,22 @@ export const fr: BusinessTranslations = {
   dashboard_calls_chart: 'Evolution des appels',
   dashboard_hello: 'Bonjour',
   dashboard_subtitle: 'Voici l\'etat de votre activite',
-  dashboard_export_report: 'Exporter Rapport',
+  dashboard_export_report: 'Exporter',
+  dashboard_export_modal_title: 'Exporter le rapport',
+  dashboard_export_modal_subtitle: 'Choisissez le format et la periode, le rapport sera envoye par email.',
+  dashboard_export_format: 'Format',
+  dashboard_export_period: 'Periode',
+  dashboard_export_period_week: 'Semaine',
+  dashboard_export_period_month: 'Mois',
+  dashboard_export_period_quarter: 'Trimestre',
+  dashboard_export_period_year: 'Annee',
+  dashboard_export_period_all: 'Depuis toujours',
+  dashboard_export_send: 'Envoyer par email',
+  dashboard_export_sending: 'Envoi en cours...',
+  dashboard_export_success: 'Rapport envoye !',
+  dashboard_export_success_desc: 'Consultez votre boite mail.',
+  dashboard_export_error: 'Erreur lors de l\'envoi',
+  dashboard_export_select_format: 'Selectionnez au moins un format',
   dashboard_tooltip_revenue: 'Chiffre d\'affaires total genere par les prospects gagnes (stage Gagne). Calcule en additionnant la valeur de chaque prospect signe.',
   dashboard_tooltip_pipeline: 'Valeur totale de tous les prospects actifs dans le pipeline (tous statuts confondus). Represente le potentiel commercial global en cours.',
   dashboard_tooltip_closing: 'Taux de closing : pourcentage de prospects convertis en vente. Calcule : prospects gagnes / (gagnes + perdus + no-shows ayant eu un rendez-vous).',
@@ -2788,6 +2835,28 @@ export const fr: BusinessTranslations = {
   campaigns_tab_qualification: 'Qualification',
   campaigns_tab_booking: 'Booking',
   campaigns_tab_assignation: 'Assignation',
+  campaigns_tab_payment: 'Paiement',
+  campaigns_stripe_integration: 'Intégration Stripe',
+  campaigns_stripe_not_connected: 'Compte Stripe non connecté',
+  campaigns_stripe_connect_first: 'Connectez votre compte Stripe pour activer les paiements.',
+  campaigns_stripe_price: 'Prix',
+  campaigns_stripe_currency: 'Devise',
+  campaigns_stripe_fee_notice: 'CloseOS prélève 2% de frais de service sur chaque transaction.',
+  campaigns_payment_timing: 'Moment du paiement',
+  campaigns_payment_before: 'Avant inscription',
+  campaigns_payment_after: 'Après inscription',
+  campaigns_payment_before_desc: 'Le prospect paie avant de remplir le formulaire.',
+  campaigns_payment_after_desc: 'Le prospect remplit le formulaire puis paie.',
+  campaigns_refund_enabled: 'Remboursement activé',
+  campaigns_refund_tiers: 'Paliers de remboursement',
+  campaigns_refund_days_before: 'jours avant le RDV',
+  campaigns_refund_percent: '% remboursé',
+  campaigns_refund_add_tier: 'Ajouter un palier',
+  campaigns_refund_remove_tier: 'Supprimer',
+  campaigns_reschedule_enabled: 'Reprogrammation possible',
+  campaigns_reschedule_free: 'Gratuite',
+  campaigns_reschedule_paid: 'Payante',
+  campaigns_reschedule_price: 'Prix de la reprogrammation',
   campaigns_identification: 'Identification',
   campaigns_assigned_team: 'Equipe assignee',
   campaigns_all_team: "Toute l'equipe",
@@ -3964,6 +4033,13 @@ export const fr: BusinessTranslations = {
   checkout_email: 'Adresse email',
   checkout_phone: 'Numero de telephone',
   checkout_password: 'Mot de passe',
+  checkout_confirm_password: 'Confirmer le mot de passe',
+  checkout_passwords_mismatch: 'Les mots de passe ne correspondent pas.',
+  checkout_password_strength: 'Niveau de securite',
+  checkout_password_weak: 'Faible',
+  checkout_password_medium: 'Moyen',
+  checkout_password_strong: 'Fort',
+  checkout_password_very_strong: 'Tres fort',
   checkout_trial_info: '20 jours d\'essai gratuit',
   checkout_back: 'Retour',
   checkout_your_plan: 'Votre formule',
@@ -4220,6 +4296,9 @@ export const fr: BusinessTranslations = {
   formulas_billing_quote: 'Sur devis',
   formulas_subscription_pricing: 'Tarification abonnement',
   formulas_monthly_price_label: 'Prix mensuel (€) *',
+  formulas_quarterly_price_label: 'Prix trimestriel (€)',
+  formulas_quarterly_hint: 'Laissez vide si pas d\'option trimestrielle',
+  formulas_per_quarter: 'trimestre',
   formulas_yearly_price_label: 'Prix annuel (€)',
   formulas_yearly_hint: 'Laissez vide si pas d\'option annuelle',
   formulas_stripe_connected: 'Stripe connecté',
@@ -5558,7 +5637,22 @@ export const en: BusinessTranslations = {
   dashboard_calls_chart: 'Calls trend',
   dashboard_hello: 'Hello',
   dashboard_subtitle: 'Here is the state of your activity',
-  dashboard_export_report: 'Export Report',
+  dashboard_export_report: 'Export',
+  dashboard_export_modal_title: 'Export report',
+  dashboard_export_modal_subtitle: 'Choose the format and period, the report will be sent by email.',
+  dashboard_export_format: 'Format',
+  dashboard_export_period: 'Period',
+  dashboard_export_period_week: 'Week',
+  dashboard_export_period_month: 'Month',
+  dashboard_export_period_quarter: 'Quarter',
+  dashboard_export_period_year: 'Year',
+  dashboard_export_period_all: 'All time',
+  dashboard_export_send: 'Send by email',
+  dashboard_export_sending: 'Sending...',
+  dashboard_export_success: 'Report sent!',
+  dashboard_export_success_desc: 'Check your inbox.',
+  dashboard_export_error: 'Error sending report',
+  dashboard_export_select_format: 'Select at least one format',
   dashboard_tooltip_revenue: 'Total revenue generated by won prospects (Won stage). Calculated by adding the value of each signed prospect.',
   dashboard_tooltip_pipeline: 'Total value of all active prospects in the pipeline (all statuses). Represents the overall business potential.',
   dashboard_tooltip_closing: 'Closing rate: percentage of prospects converted into sales. Calculated: won / (won + lost + no-shows with appointments).',
@@ -5798,6 +5892,28 @@ export const en: BusinessTranslations = {
   campaigns_tab_qualification: 'Qualification',
   campaigns_tab_booking: 'Booking',
   campaigns_tab_assignation: 'Assignment',
+  campaigns_tab_payment: 'Payment',
+  campaigns_stripe_integration: 'Stripe Integration',
+  campaigns_stripe_not_connected: 'Stripe account not connected',
+  campaigns_stripe_connect_first: 'Connect your Stripe account to enable payments.',
+  campaigns_stripe_price: 'Price',
+  campaigns_stripe_currency: 'Currency',
+  campaigns_stripe_fee_notice: 'CloseOS charges a 2% service fee on each transaction.',
+  campaigns_payment_timing: 'Payment timing',
+  campaigns_payment_before: 'Before registration',
+  campaigns_payment_after: 'After registration',
+  campaigns_payment_before_desc: 'The prospect pays before filling out the form.',
+  campaigns_payment_after_desc: 'The prospect fills out the form then pays.',
+  campaigns_refund_enabled: 'Refunds enabled',
+  campaigns_refund_tiers: 'Refund tiers',
+  campaigns_refund_days_before: 'days before appointment',
+  campaigns_refund_percent: '% refunded',
+  campaigns_refund_add_tier: 'Add a tier',
+  campaigns_refund_remove_tier: 'Remove',
+  campaigns_reschedule_enabled: 'Rescheduling allowed',
+  campaigns_reschedule_free: 'Free',
+  campaigns_reschedule_paid: 'Paid',
+  campaigns_reschedule_price: 'Reschedule price',
   campaigns_identification: 'Identification',
   campaigns_assigned_team: 'Assigned team',
   campaigns_all_team: 'Whole team',
@@ -6114,6 +6230,9 @@ export const en: BusinessTranslations = {
   formulas_billing_quote: 'On quote',
   formulas_subscription_pricing: 'Subscription pricing',
   formulas_monthly_price_label: 'Monthly price (€) *',
+  formulas_quarterly_price_label: 'Quarterly price (€)',
+  formulas_quarterly_hint: 'Leave empty if no quarterly option',
+  formulas_per_quarter: 'quarter',
   formulas_yearly_price_label: 'Yearly price (€)',
   formulas_yearly_hint: 'Leave empty if no yearly option',
   formulas_stripe_connected: 'Stripe connected',
@@ -7089,6 +7208,13 @@ export const en: BusinessTranslations = {
   checkout_email: 'Email address',
   checkout_phone: 'Phone number',
   checkout_password: 'Password',
+  checkout_confirm_password: 'Confirm password',
+  checkout_passwords_mismatch: 'Passwords do not match.',
+  checkout_password_strength: 'Security level',
+  checkout_password_weak: 'Weak',
+  checkout_password_medium: 'Medium',
+  checkout_password_strong: 'Strong',
+  checkout_password_very_strong: 'Very strong',
   checkout_trial_info: '20-day free trial',
   checkout_back: 'Back',
   checkout_your_plan: 'Your plan',

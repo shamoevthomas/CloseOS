@@ -1271,8 +1271,8 @@ export function BusinessAppointments() {
                                   appointment_date: 'mardi 25 mars 2026',
                                   appointment_time: '14:30',
                                   google_meet_link: 'https://meet.google.com/abc-defg-hij',
-                                  reschedule_link: 'https://closeos.fr/appointment/reschedule/xxx',
-                                  cancel_link: 'https://closeos.fr/appointment/cancel/xxx',
+                                  reschedule_link: 'https://closeos.fr/appointment/xxx?action=reschedule',
+                                  cancel_link: 'https://closeos.fr/appointment/xxx?action=cancel',
                                 }
                                 let html = editingReminder.custom_html || '<p style="color:#1b1c1b;opacity:0.4;text-align:center;padding:40px;font-family:Inter,Helvetica,sans-serif;font-size:14px;">Commencez à écrire votre HTML pour voir l\'aperçu ici...</p>'
                                 for (const [key, value] of Object.entries(previewVars)) {

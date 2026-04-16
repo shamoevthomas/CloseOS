@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { ArrowLeft, Loader2, Tag, Check, User, Mail, Lock, Sparkles, CreditCard, ChevronDown, Rocket, Phone } from 'lucide-react';
+import { ArrowLeft, Loader2, Tag, Check, User, Mail, Lock, Sparkles, CreditCard, ChevronDown, Rocket, Phone, Eye, EyeOff } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useAuth } from '../../contexts/AuthContext';
@@ -176,6 +176,39 @@ const STRIPE_APPEARANCE = {
   },
 };
 
+// ─── Password strength helper ─────────────────────────────────────────────────
+
+function getPasswordStrength(pw: string): number {
+  if (!pw) return 0
+  let score = 0
+  if (pw.length >= 8) score++
+  if (pw.length >= 12) score++
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++
+  if (/\d/.test(pw)) score++
+  if (/[^a-zA-Z0-9]/.test(pw)) score++
+  return Math.min(score, 4)
+}
+
+function PasswordStrengthBar({ password, t }: { password: string; t: any }) {
+  const strength = getPasswordStrength(password)
+  if (!password) return null
+  const labels = [t.checkout_password_weak, t.checkout_password_weak, t.checkout_password_medium, t.checkout_password_strong, t.checkout_password_very_strong]
+  const colors = ['bg-red-400', 'bg-red-400', 'bg-amber-400', 'bg-emerald-400', 'bg-emerald-500']
+  const textColors = ['text-red-500', 'text-red-500', 'text-amber-500', 'text-emerald-500', 'text-emerald-600']
+  return (
+    <div className="mt-2.5 space-y-1.5">
+      <div className="flex gap-1">
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i < strength ? colors[strength] : 'bg-stone-200'}`} />
+        ))}
+      </div>
+      <p className={`text-[10px] font-semibold ${textColors[strength]}`}>
+        {t.checkout_password_strength} : {labels[strength]}
+      </p>
+    </div>
+  )
+}
+
 // ─── Inner form component (needs useStripe/useElements inside <Elements>) ───────
 
 function CheckoutForm({
@@ -197,6 +230,9 @@ function CheckoutForm({
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState('');
@@ -305,6 +341,10 @@ function CheckoutForm({
     // Step 1: Client-side validation
     if (!regName.trim() || !regEmail.trim() || !regPhone.trim() || !regPassword || regPassword.length < 8) {
       setError(t.checkout_validation_fields);
+      return;
+    }
+    if (regPassword !== regConfirmPassword) {
+      setError(t.checkout_passwords_mismatch);
       return;
     }
 
@@ -478,16 +518,44 @@ function CheckoutForm({
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={regPassword}
               onChange={(e) => setRegPassword(e.target.value)}
-              className="w-full rounded-xl bg-stone-100/50 border-none py-3.5 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
+              className="w-full rounded-xl bg-stone-100/50 border-none py-3.5 pl-12 pr-12 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
               placeholder={t.return_password_placeholder}
               required
               minLength={8}
               disabled={submitting}
             />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors">
+              {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
           </div>
+          <PasswordStrengthBar password={regPassword} t={t} />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">
+            {t.checkout_confirm_password}
+          </label>
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={regConfirmPassword}
+              onChange={(e) => setRegConfirmPassword(e.target.value)}
+              className={`w-full rounded-xl bg-stone-100/50 border-none py-3.5 pl-12 pr-12 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all ${regConfirmPassword && regConfirmPassword !== regPassword ? 'focus:ring-red-400/30 ring-2 ring-red-400/30' : 'focus:ring-emerald-600/20'}`}
+              placeholder={t.return_password_placeholder}
+              required
+              minLength={8}
+              disabled={submitting}
+            />
+            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors">
+              {showConfirmPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
+          </div>
+          {regConfirmPassword && regConfirmPassword !== regPassword && (
+            <p className="mt-1.5 text-xs text-red-500 font-medium">{t.checkout_passwords_mismatch}</p>
+          )}
         </div>
       </div>
 
@@ -551,6 +619,9 @@ export default function BusinessCheckout() {
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [regLoading, setRegLoading] = useState(false);
   const [regError, setRegError] = useState<string | null>(null);
 
@@ -638,6 +709,10 @@ export default function BusinessCheckout() {
   // Handle direct registration (skip-payment flow)
   const handleDirectRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (regPassword !== regConfirmPassword) {
+      setRegError(t.checkout_passwords_mismatch);
+      return;
+    }
     setRegError(null);
     setRegLoading(true);
 
@@ -871,8 +946,25 @@ export default function BusinessCheckout() {
                 <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_password}</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
-                  <input type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder={t.return_password_placeholder} required minLength={8} />
+                  <input type={showPassword ? 'text' : 'password'} value={regPassword} onChange={(e) => setRegPassword(e.target.value)} className="w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-12 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all" placeholder={t.return_password_placeholder} required minLength={8} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors">
+                    {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                  </button>
                 </div>
+                <PasswordStrengthBar password={regPassword} t={t} />
+              </div>
+              <div>
+                <label className="mb-2 block text-[0.75rem] font-semibold uppercase tracking-widest text-stone-500 text-left">{t.checkout_confirm_password}</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
+                  <input type={showConfirmPassword ? 'text' : 'password'} value={regConfirmPassword} onChange={(e) => setRegConfirmPassword(e.target.value)} className={`w-full rounded-xl bg-stone-100/50 border-none py-4 pl-12 pr-12 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition-all ${regConfirmPassword && regConfirmPassword !== regPassword ? 'focus:ring-red-400/30 ring-2 ring-red-400/30' : 'focus:ring-emerald-600/20'}`} placeholder={t.return_password_placeholder} required minLength={8} />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors">
+                    {showConfirmPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                  </button>
+                </div>
+                {regConfirmPassword && regConfirmPassword !== regPassword && (
+                  <p className="mt-1.5 text-xs text-red-500 font-medium">{t.checkout_passwords_mismatch}</p>
+                )}
               </div>
               <button type="submit" disabled={regLoading} className="flex w-full items-center justify-center gap-2 rounded-full bg-stone-900 py-5 font-bold text-white shadow-lg transition-all hover:bg-stone-800 active:scale-95 disabled:opacity-50" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 {regLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Rocket className="h-5 w-5" /> {t.checkout_launch}</>}

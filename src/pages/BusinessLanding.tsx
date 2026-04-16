@@ -37,6 +37,9 @@ import {
   Check,
   Gift,
   Copy,
+  Paperclip,
+  Send,
+  Handshake,
 } from 'lucide-react';
 import { translations, detectLang, LangContext, useLang } from './businessLandingI18n';
 import type { Lang } from './businessLandingI18n';
@@ -328,12 +331,12 @@ export const BusinessLanding: React.FC = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
-            <a href="#integrations" className="hover:text-[#111111] transition-colors">{t.nav_integrations}</a>
             <a href="#features" className="hover:text-[#111111] transition-colors">{t.nav_management}</a>
             <a href="#crm" className="hover:text-[#111111] transition-colors">{t.nav_crm}</a>
             <a href="#roles" className="hover:text-[#111111] transition-colors">{t.nav_roles}</a>
             <a href="#demo" className="hover:text-[#111111] transition-colors">{t.nav_demo}</a>
             <a href="#pricing" className="hover:text-[#111111] transition-colors">{t.nav_pricing}</a>
+            <a href="#partners" className="hover:text-[#111111] transition-colors">{t.nav_partners}</a>
             <a href="#faq" className="hover:text-[#111111] transition-colors">{t.nav_faq}</a>
           </div>
 
@@ -372,12 +375,12 @@ export const BusinessLanding: React.FC = () => {
         </div>
         {isMobileMenuOpen && (
           <div className="md:hidden mt-2 bg-white/90 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-4 shadow-lg flex flex-col gap-4 text-sm font-medium text-stone-600">
-            <a href="#integrations" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_integrations}</a>
             <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_management}</a>
             <a href="#crm" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_crm}</a>
             <a href="#roles" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_roles}</a>
             <a href="#demo" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_demo}</a>
             <a href="#pricing" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_pricing}</a>
+            <a href="#partners" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_partners}</a>
             <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_faq}</a>
             <Link
               to="/business/login"
@@ -673,6 +676,9 @@ export const BusinessLanding: React.FC = () => {
 
         {/* Pricing Section */}
         <PricingSection />
+
+        {/* Partners Section */}
+        <PartnerSection />
 
         {/* FAQ Section */}
         <FAQSection />
@@ -1109,17 +1115,25 @@ const CaptureSection = () => {
               <span>{t.capture_item_video}</span>
             </div>
           )}
+          <div className="flex items-start gap-3 text-stone-700 font-medium">
+            <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+            <span>{t.capture_item_precapture}</span>
+          </div>
+          <div className="flex items-start gap-3 text-stone-700 font-medium">
+            <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+            <span>{t.capture_item_payment}</span>
+          </div>
         </div>
       </div>
 
       {/* Right — Preview */}
-      <div className="lg:col-span-7">
+      <div className="lg:col-span-7 flex items-center mt-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
+          className="w-full bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
         >
           {/* Tab bar */}
           <div className="flex border-b border-stone-100 bg-stone-50">
@@ -1973,6 +1987,81 @@ const PricingSection = () => {
   );
 };
 
+const PartnerSection = () => {
+  const { t } = useLang();
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="px-6 md:px-20 py-24 bg-[#f4f2f1]"
+      id="partners"
+    >
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-16 space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
+            <Handshake className="h-4 w-4 text-stone-700" />
+            <span className="text-sm font-semibold text-stone-800">{t.partners_badge}</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight">{t.partners_title}</h2>
+          <p className="text-stone-500 text-lg max-w-2xl mx-auto">{t.partners_subtitle}</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Integrator card */}
+          <div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm flex flex-col">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 border border-stone-200 w-fit mb-6">
+              <Layers className="h-4 w-4 text-stone-700" />
+              <span className="text-sm font-bold text-stone-800">{t.partners_integrate_title}</span>
+            </div>
+            <p className="text-stone-600 mb-6">{t.partners_integrate_desc}</p>
+            <ul className="space-y-3 mb-8 flex-1">
+              {t.partners_integrate_items.map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-stone-700">{item}</span>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:thomasshamoev@gmail.com?subject=Partenariat%20Int%C3%A9grateur%20CloseOS"
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-[#111111] text-white h-12 font-bold text-sm hover:bg-stone-800 transition-all active:scale-[0.98]"
+            >
+              {t.partners_integrate_cta}
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+
+          {/* Ambassador card */}
+          <div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm flex flex-col">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 w-fit mb-6">
+              <Gift className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-bold text-amber-800">{t.partners_ambassador_title}</span>
+            </div>
+            <p className="text-stone-600 mb-6">{t.partners_ambassador_desc}</p>
+            <ul className="space-y-3 mb-8 flex-1">
+              {t.partners_ambassador_items.map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm text-stone-700">{item}</span>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="mailto:thomasshamoev@gmail.com?subject=Partenariat%20Ambassadeur%20CloseOS"
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-[#111111] text-white h-12 font-bold text-sm hover:bg-stone-800 transition-all active:scale-[0.98]"
+            >
+              {t.partners_ambassador_cta}
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      </div>
+    </motion.section>
+  );
+};
+
 const FAQSection = () => {
   const { t } = useLang();
   return (
@@ -2002,34 +2091,183 @@ const FAQSection = () => {
   );
 };
 
+const ContactModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+  const { t } = useLang();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [isSubscriber, setIsSubscriber] = useState(false);
+  const [category, setCategory] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const categories = [
+    { value: 'Bug', label: t.contact_category_bug },
+    { value: 'Feature', label: t.contact_category_feature },
+    { value: 'Partnership', label: t.contact_category_partnership },
+    { value: 'Help', label: t.contact_category_help },
+    { value: 'Billing', label: t.contact_category_billing },
+    { value: 'Other', label: t.contact_category_other },
+  ];
+
+  const resetForm = () => {
+    setName(''); setEmail(''); setIsSubscriber(false); setCategory(''); setSubject(''); setMessage(''); setAttachment(null); setStatus('idle');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('sending');
+
+    try {
+      let attachmentBase64: string | undefined;
+      let attachmentType: string | undefined;
+      let attachmentName: string | undefined;
+
+      if (attachment) {
+        attachmentName = attachment.name;
+        attachmentType = attachment.type;
+        const buffer = await attachment.arrayBuffer();
+        attachmentBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+      }
+
+      const res = await fetch('/api/contact-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, isSubscriber, subject: `[${categories.find(c => c.value === category)?.label || category}]: ${subject}`, message, attachmentBase64, attachmentName, attachmentType }),
+      });
+
+      if (!res.ok) throw new Error();
+      setStatus('success');
+      setTimeout(() => { resetForm(); onClose(); }, 2000);
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-stone-200">
+          <h2 className="text-lg font-bold text-stone-900">{t.contact_title}</h2>
+          <button onClick={() => { resetForm(); onClose(); }} className="p-1 rounded-lg hover:bg-stone-100 transition-colors">
+            <X className="size-5 text-stone-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">{t.contact_name}</label>
+            <input type="text" required value={name} onChange={e => setName(e.target.value)}
+              placeholder={t.contact_name_placeholder}
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-stone-900 focus:border-transparent outline-none" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">{t.contact_email}</label>
+            <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
+              placeholder={t.contact_email_placeholder}
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-stone-900 focus:border-transparent outline-none" />
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={isSubscriber} onChange={e => setIsSubscriber(e.target.checked)}
+              className="w-4 h-4 rounded border-stone-300 text-stone-900 focus:ring-stone-900" />
+            <span className="text-sm text-stone-700">{t.contact_subscriber}</span>
+          </label>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">{t.contact_category}</label>
+            <select required value={category} onChange={e => setCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-stone-900 focus:border-transparent outline-none bg-white">
+              <option value="" disabled>{t.contact_category_placeholder}</option>
+              {categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">{t.contact_subject}</label>
+            <input type="text" required value={subject} onChange={e => setSubject(e.target.value)}
+              placeholder={t.contact_subject_placeholder}
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-stone-900 focus:border-transparent outline-none" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">{t.contact_message}</label>
+            <textarea required rows={5} value={message} onChange={e => setMessage(e.target.value)}
+              placeholder={t.contact_message_placeholder}
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-stone-900 focus:border-transparent outline-none resize-none" />
+          </div>
+
+          <div>
+            <input ref={fileRef} type="file" className="hidden" onChange={e => setAttachment(e.target.files?.[0] || null)} />
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className="flex items-center gap-2 text-sm text-stone-600 hover:text-stone-900 transition-colors">
+              <Paperclip className="size-4" />
+              {attachment ? attachment.name : t.contact_attachment}
+            </button>
+          </div>
+
+          {status === 'success' && (
+            <p className="text-sm text-emerald-600 font-medium">{t.contact_success}</p>
+          )}
+          {status === 'error' && (
+            <p className="text-sm text-red-600 font-medium">{t.contact_error}</p>
+          )}
+
+          <button type="submit" disabled={status === 'sending'}
+            className="w-full flex items-center justify-center gap-2 bg-stone-900 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-stone-800 transition-colors disabled:opacity-60">
+            {status === 'sending' ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+            {status === 'sending' ? t.contact_sending : t.contact_send}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const FooterSection = () => {
   const { t } = useLang();
+  const [showContact, setShowContact] = useState(false);
   return (
-    <footer className="px-6 md:px-20 py-6 border-t border-stone-200 bg-[#f4f2f1] flex flex-col md:flex-row items-center justify-between gap-4 pb-16">
-      <div className="flex items-center gap-2">
-        <img
-          alt="CloseOS Business"
-          className="w-auto object-contain h-10"
-          src="/closeos-business-logo-ecrit.png"
-          loading="lazy"
-          width={150}
-          height={40}
-        />
-      </div>
-      <div className="flex flex-wrap justify-center items-center gap-4 text-xs text-stone-500 font-medium">
-        <span>{t.footer_copyright}</span>
-        <span className="hidden sm:inline">&middot;</span>
-        <Link to="/mentions-legales" className="hover:text-stone-700 transition-colors">{t.footer_mentions}</Link>
-        <span className="hidden sm:inline">&middot;</span>
-        <Link to="/cgu" className="hover:text-stone-700 transition-colors">{t.footer_cgu}</Link>
-        <span className="hidden sm:inline">&middot;</span>
-        <Link to="/cgv" className="hover:text-stone-700 transition-colors">{t.footer_cgv}</Link>
-        <span className="hidden sm:inline">&middot;</span>
-        <Link to="/confidentialite" className="hover:text-stone-700 transition-colors">{t.footer_confidentialite}</Link>
-        <span className="hidden sm:inline">&middot;</span>
-        <Link to="/business/politique-utilisation" className="hover:text-stone-700 transition-colors">{t.footer_politique}</Link>
-      </div>
-    </footer>
+    <>
+      <footer className="px-6 md:px-20 py-6 border-t border-stone-200 bg-[#f4f2f1] flex flex-col md:flex-row items-center justify-between gap-4 pb-16">
+        <div className="flex items-center gap-2">
+          <img
+            alt="CloseOS Business"
+            className="w-auto object-contain h-10"
+            src="/closeos-business-logo-ecrit.png"
+            loading="lazy"
+            width={150}
+            height={40}
+          />
+        </div>
+        <div className="flex flex-wrap justify-center items-center gap-4 text-xs text-stone-500 font-medium">
+          <span>{t.footer_copyright}</span>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/mentions-legales" className="hover:text-stone-700 transition-colors">{t.footer_mentions}</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/cgu" className="hover:text-stone-700 transition-colors">{t.footer_cgu}</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/cgv" className="hover:text-stone-700 transition-colors">{t.footer_cgv}</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/confidentialite" className="hover:text-stone-700 transition-colors">{t.footer_confidentialite}</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/business/politique-utilisation" className="hover:text-stone-700 transition-colors">{t.footer_politique}</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <a href="https://www.linkedin.com/in/thomas-shamoev-570885237/" target="_blank" rel="noopener noreferrer" className="hover:text-stone-700 transition-colors">LinkedIn</a>
+          <span className="hidden sm:inline">&middot;</span>
+          <button onClick={() => setShowContact(true)} className="hover:text-stone-700 transition-colors flex items-center gap-1">
+            <Mail className="size-3" />
+            {t.footer_contact}
+          </button>
+        </div>
+      </footer>
+      <ContactModal open={showContact} onClose={() => setShowContact(false)} />
+    </>
   );
 };
 

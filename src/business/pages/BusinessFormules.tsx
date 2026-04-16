@@ -26,6 +26,7 @@ interface Formula {
   created_at: string
   team_id?: string | null
   billing_type: 'one_time' | 'subscription' | 'quote'
+  quarterly_price?: number | null
   yearly_price?: number | null
 }
 
@@ -73,6 +74,7 @@ export function BusinessFormules() {
   const [formDescription, setFormDescription] = useState('')
   const [formResources, setFormResources] = useState<Resource[]>([])
   const [formBillingType, setFormBillingType] = useState<'one_time' | 'subscription' | 'quote'>('one_time')
+  const [formQuarterlyPrice, setFormQuarterlyPrice] = useState('')
   const [formYearlyPrice, setFormYearlyPrice] = useState('')
 
   // Commission state (per-formula, inside modal)
@@ -91,12 +93,12 @@ export function BusinessFormules() {
     if (!isModalOpen) return
     const draft = {
       formName, formPrice, formDescription, formResources,
-      formBillingType, formYearlyPrice, formTeamId,
+      formBillingType, formQuarterlyPrice, formYearlyPrice, formTeamId,
       roleRates, memberRates,
       editingFormulaId: editingFormula?.id || null,
     }
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
-  }, [isModalOpen, formName, formPrice, formDescription, formResources, formBillingType, formYearlyPrice, formTeamId, roleRates, memberRates, editingFormula])
+  }, [isModalOpen, formName, formPrice, formDescription, formResources, formBillingType, formQuarterlyPrice, formYearlyPrice, formTeamId, roleRates, memberRates, editingFormula])
 
   // Restore draft on mount if one exists
   useEffect(() => {
@@ -109,6 +111,7 @@ export function BusinessFormules() {
       setFormDescription(d.formDescription || '')
       setFormResources(d.formResources || [])
       setFormBillingType(d.formBillingType || 'one_time')
+      setFormQuarterlyPrice(d.formQuarterlyPrice || '')
       setFormYearlyPrice(d.formYearlyPrice || '')
       setFormTeamId(d.formTeamId || null)
       setRoleRates(d.roleRates || {})
@@ -179,7 +182,7 @@ export function BusinessFormules() {
     setFormName(''); setFormPrice(''); setFormDescription('')
     setFormResources([]); setEditingFormula(null)
     setRoleRates({}); setMemberRates({}); setExpandedRoles({})
-    setFormTeamId(null); setFormBillingType('one_time'); setFormYearlyPrice('')
+    setFormTeamId(null); setFormBillingType('one_time'); setFormQuarterlyPrice(''); setFormYearlyPrice('')
     sessionStorage.removeItem(DRAFT_KEY)
   }
 
@@ -193,6 +196,7 @@ export function BusinessFormules() {
     setFormResources(formula.resources || [])
     setFormTeamId(formula.team_id || null)
     setFormBillingType(formula.billing_type || 'one_time')
+    setFormQuarterlyPrice(formula.quarterly_price?.toString() || '')
     setFormYearlyPrice(formula.yearly_price?.toString() || '')
     setRoleRates({}); setMemberRates({}); setExpandedRoles({})
     try {
@@ -243,6 +247,7 @@ export function BusinessFormules() {
         resources: formResources,
         team_id: formTeamId || null,
         billing_type: formBillingType,
+        quarterly_price: formBillingType === 'subscription' && formQuarterlyPrice ? parseFloat(formQuarterlyPrice) : null,
         yearly_price: formBillingType === 'subscription' && formYearlyPrice ? parseFloat(formYearlyPrice) : null,
       }
       payload.price = parseFloat(formPrice) || 0
@@ -428,6 +433,14 @@ export function BusinessFormules() {
                       {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                     </span>
                     <span className="text-stone-400 dark:text-neutral-500 text-sm ml-1">/ {formula.billing_type === 'subscription' ? t.formulas_per_month : t.formulas_one_time}</span>
+                    {formula.billing_type === 'subscription' && formula.quarterly_price != null && (
+                      <div className="mt-1">
+                        <span className="text-lg font-bold text-stone-600 dark:text-neutral-300">
+                          {formula.quarterly_price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                        </span>
+                        <span className="text-stone-400 dark:text-neutral-500 text-xs ml-1">/ {t.formulas_per_quarter}</span>
+                      </div>
+                    )}
                     {formula.billing_type === 'subscription' && formula.yearly_price != null && (
                       <div className="mt-1">
                         <span className="text-lg font-bold text-stone-600 dark:text-neutral-300">
@@ -517,10 +530,20 @@ export function BusinessFormules() {
                 <div className="space-y-4">
                   <div className="rounded-2xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/50 p-5 space-y-4">
                     <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest">{t.formulas_subscription_pricing}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">{t.formulas_monthly_price_label}</label>
                         <input type="number" min="0" step="0.01" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="49.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">{t.formulas_quarterly_price_label}</label>
+                        <input type="number" min="0" step="0.01" value={formQuarterlyPrice} onChange={(e) => setFormQuarterlyPrice(e.target.value)} placeholder="129.00" disabled={isTeamMember} className={`${inputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`} />
+                        <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">{t.formulas_quarterly_hint}</p>
+                        {formQuarterlyPrice && parseFloat(formQuarterlyPrice) > 0 && (
+                          <p className="text-[11px] text-stone-600 dark:text-neutral-300 mt-1 font-semibold">
+                            ≈ {(parseFloat(formQuarterlyPrice) / 3).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / {t.formulas_per_month}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-stone-700 dark:text-neutral-300 mb-1.5">{t.formulas_yearly_price_label}</label>
@@ -528,7 +551,7 @@ export function BusinessFormules() {
                         <p className="text-[10px] text-stone-400 dark:text-neutral-500 mt-1">{t.formulas_yearly_hint}</p>
                         {formYearlyPrice && parseFloat(formYearlyPrice) > 0 && (
                           <p className="text-[11px] text-stone-600 dark:text-neutral-300 mt-1 font-semibold">
-                            ≈ {(parseFloat(formYearlyPrice) / 12).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / mois
+                            ≈ {(parseFloat(formYearlyPrice) / 12).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € / {t.formulas_per_month}
                           </p>
                         )}
                       </div>

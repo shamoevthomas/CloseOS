@@ -73,6 +73,7 @@
     { "source": "/api/create-invoice-session", "destination": "/api/stripe?action=invoice-session" },
     { "source": "/api/create-portal-session", "destination": "/api/stripe?action=portal-session" },
     { "source": "/api/session-status", "destination": "/api/stripe?action=session-status" },
+    { "source": "/api/campaign-checkout", "destination": "/api/stripe?action=campaign-checkout" },
 
     { "source": "/api/cancel-subscription", "destination": "/api/subscription?action=cancel" },
     { "source": "/api/reactivate-subscription", "destination": "/api/subscription?action=reactivate" },
@@ -86,6 +87,7 @@
     { "source": "/api/confirm-email-change", "destination": "/api/email?action=confirm-email-change" },
     { "source": "/api/request-password-reset", "destination": "/api/email?action=request-password-reset" },
     { "source": "/api/send-deletion-code", "destination": "/api/email?action=send-deletion-code" },
+    { "source": "/api/contact-form", "destination": "/api/email?action=contact-form" },
 
     { "source": "/api/cal-callback", "destination": "/api/cal?action=callback" },
     { "source": "/api/cal-proxy", "destination": "/api/cal?action=proxy" },

@@ -434,6 +434,58 @@ export default async function handler(req: Request) {
                 break;
             }
 
+            // ─── Checkout session completed (campaign payments) ────────
+            case 'checkout.session.completed': {
+                const session = event.data.object as Stripe.Checkout.Session;
+                const paymentIntentId = typeof session.payment_intent === 'string'
+                    ? session.payment_intent
+                    : session.payment_intent?.id;
+
+                // Update campaign_payment_sessions if exists
+                const { data: paymentSession } = await supabaseAdmin
+                    .from('campaign_payment_sessions')
+                    .select('id, appointment_id, status')
+                    .eq('stripe_checkout_session_id', session.id)
+                    .maybeSingle();
+
+                if (paymentSession && paymentSession.status === 'pending') {
+                    await supabaseAdmin
+                        .from('campaign_payment_sessions')
+                        .update({ status: 'completed' })
+                        .eq('id', paymentSession.id);
+
+                    // Update appointment stripe columns if linked
+                    if (paymentSession.appointment_id && paymentIntentId) {
+                        await supabaseAdmin
+                            .from('business_appointments')
+                            .update({
+                                stripe_payment_intent_id: paymentIntentId,
+                                stripe_checkout_session_id: session.id,
+                                stripe_payment_status: 'paid',
+                                stripe_amount_paid: session.amount_total || 0,
+                                stripe_currency: session.currency || 'eur',
+                            })
+                            .eq('id', paymentSession.appointment_id);
+                    }
+                    console.log(`Campaign checkout completed: session ${session.id}`);
+                }
+                break;
+            }
+
+            // ─── Checkout session expired ──────────────────────────────
+            case 'checkout.session.expired': {
+                const session = event.data.object as Stripe.Checkout.Session;
+
+                await supabaseAdmin
+                    .from('campaign_payment_sessions')
+                    .update({ status: 'expired' })
+                    .eq('stripe_checkout_session_id', session.id)
+                    .eq('status', 'pending');
+
+                console.log(`Campaign checkout expired: session ${session.id}`);
+                break;
+            }
+
             default:
                 console.log(`Unhandled Connect event type: ${event.type}`);
         }

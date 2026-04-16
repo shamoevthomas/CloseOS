@@ -216,8 +216,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Build links
         const baseUrl = process.env.VITE_APP_URL || 'https://closeos.fr';
-        const rescheduleLink = appt.reschedule_token ? `${baseUrl}/appointment/reschedule/${appt.reschedule_token}` : '';
-        const cancelLink = appt.cancel_token ? `${baseUrl}/appointment/cancel/${appt.cancel_token}` : '';
+        const rescheduleLink = appt.reschedule_token ? `${baseUrl}/appointment/${appt.reschedule_token}?action=reschedule` : '';
+        const cancelLink = appt.cancel_token ? `${baseUrl}/appointment/${appt.cancel_token}?action=cancel` : '';
 
         // Format date/time in French
         const apptDate = new Date(appt.datetime_utc);

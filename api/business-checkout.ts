@@ -105,10 +105,10 @@ async function handleValidatePromo(req: VercelRequest, res: VercelResponse) {
 
 // ─── Extras pricing ────────────────────────────────────────────────────────────
 
-const EXTRAS_PRICES: Record<string, { name: string; amount: number }> = {
-  setup:       { name: 'Setup CloseOS Business', amount: 6000 },
-  integration: { name: 'Intégration technique', amount: 8000 },
-  combo:       { name: 'Setup + Intégration', amount: 12000 },
+const EXTRAS_PRICES: Record<string, { name: string; amount: number; priceId: string }> = {
+  setup:       { name: 'Setup CloseOS Business', amount: 6000, priceId: 'price_1TMozQ33xpuYLywqaIK69GFW' },
+  integration: { name: 'Intégration technique', amount: 8000, priceId: 'price_1TMozR33xpuYLywqVyucO0WK' },
+  combo:       { name: 'Setup + Intégration', amount: 12000, priceId: 'price_1TMozS33xpuYLywqyEs1BtNr' },
 };
 
 // ─── Action: create-setup-intent ────────────────────────────────────────────────
@@ -240,11 +240,7 @@ async function handleCompleteRegistration(req: VercelRequest, res: VercelRespons
         const extraDef = EXTRAS_PRICES[key];
         if (extraDef) {
           addInvoiceItems.push({
-            price_data: {
-              currency: 'eur',
-              product: 'prod_UJJ2ZysTmDDl7s', // CloseOS Business product
-              unit_amount: extraDef.amount,
-            },
+            price: extraDef.priceId,
             quantity: 1,
           });
         }
@@ -408,23 +404,13 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
     }
 
     // Build extra one-time line items
-    const EXTRAS_PRICES: Record<string, { name: string; amount: number }> = {
-      setup:       { name: 'Setup CloseOS Business', amount: 6000 },
-      integration: { name: 'Intégration technique', amount: 8000 },
-      combo:       { name: 'Setup + Intégration', amount: 12000 },
-    };
-
     const extraLineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
     if (Array.isArray(extras)) {
       for (const key of extras) {
         const extraDef = EXTRAS_PRICES[key];
         if (extraDef) {
           extraLineItems.push({
-            price_data: {
-              currency: 'eur',
-              product_data: { name: extraDef.name },
-              unit_amount: extraDef.amount,
-            },
+            price: extraDef.priceId,
             quantity: 1,
           });
         }

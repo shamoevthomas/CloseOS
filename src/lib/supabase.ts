@@ -14,3 +14,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 })
+
+// Manage auto-refresh based on tab visibility.
+// Browsers throttle timers in hidden tabs, which can cause the JWT to expire.
+// stopAutoRefresh() pauses the timer when hidden; startAutoRefresh() resumes it
+// and immediately refreshes the token if it has expired.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      supabase.auth.startAutoRefresh()
+    } else {
+      supabase.auth.stopAutoRefresh()
+    }
+  })
+}

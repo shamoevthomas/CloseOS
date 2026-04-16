@@ -484,6 +484,72 @@ async function handleWelcome(req: any, res: any) {
 }
 
 // ─── Main Router ───────────────────────────────────────────────────────────────
+// ─── action=contact-form ──────────────────────────────────────────────────────
+async function handleContactForm(req: any, res: any) {
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
+
+    try {
+        const { name, email, subject, message, isSubscriber, attachmentName, attachmentBase64, attachmentType } = req.body;
+
+        if (!name || !email || !subject || !message) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const subscriberLabel = isSubscriber ? '✅ Abonné CloseOS' : '❌ Non abonné';
+        const attachmentSection = attachmentName
+            ? `<p style="margin-top:16px;font-size:13px;color:#666;">📎 Pièce jointe : ${attachmentName}</p>`
+            : '';
+
+        const brevoBody: any = {
+            sender: { email: 'support@closeos.fr', name: 'CloseOS Contact' },
+            to: [{ email: 'support@closeos.fr' }],
+            replyTo: { email, name },
+            subject: `[Contact LP] ${subject}`,
+            htmlContent: `
+        <div style="font-family:sans-serif;padding:20px;color:#333;">
+          <h2 style="color:#1e293b;">Nouveau message depuis la Landing Page</h2>
+          <table style="border-collapse:collapse;margin:16px 0;">
+            <tr><td style="padding:6px 12px;font-weight:bold;color:#64748b;">Nom</td><td style="padding:6px 12px;">${name}</td></tr>
+            <tr><td style="padding:6px 12px;font-weight:bold;color:#64748b;">Email</td><td style="padding:6px 12px;"><a href="mailto:${email}">${email}</a></td></tr>
+            <tr><td style="padding:6px 12px;font-weight:bold;color:#64748b;">Statut</td><td style="padding:6px 12px;">${subscriberLabel}</td></tr>
+            <tr><td style="padding:6px 12px;font-weight:bold;color:#64748b;">Objet</td><td style="padding:6px 12px;">${subject}</td></tr>
+          </table>
+          <div style="background:#f8fafc;padding:16px;border-radius:8px;border:1px solid #e2e8f0;white-space:pre-wrap;">${message}</div>
+          ${attachmentSection}
+        </div>
+      `
+        };
+
+        if (attachmentBase64 && attachmentName && attachmentType) {
+            brevoBody.attachment = [{ content: attachmentBase64, name: attachmentName, type: attachmentType }];
+        }
+
+        const BREVO_API_KEY = process.env.BREVO_API_KEY;
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'api-key': BREVO_API_KEY || '',
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify(brevoBody)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            console.error("Erreur Brevo contact-form:", data);
+            return res.status(response.status).json(data);
+        }
+
+        return res.status(200).json({ success: true });
+    } catch (error: any) {
+        console.error("Erreur contact-form:", error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
 export default async function handler(req: any, res: any) {
     const action = req.query.action;
 
@@ -502,6 +568,8 @@ export default async function handler(req: any, res: any) {
             return handleRequestPasswordReset(req, res);
         case 'send-deletion-code':
             return handleSendDeletionCode(req, res);
+        case 'contact-form':
+            return handleContactForm(req, res);
         default:
             return res.status(400).json({ error: 'Invalid or missing action parameter' });
     }

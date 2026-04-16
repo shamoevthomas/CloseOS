@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight, ChevronDown } from 'lucide-react'
+import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight, ChevronDown, CreditCard, XCircle } from 'lucide-react'
 import { toUTC, fromUTC } from '../lib/timezone'
 import { captureTranslations, detectCaptureLang } from './captureFormI18n'
 import type { CaptureFormLang } from './captureFormI18n'
@@ -231,6 +231,10 @@ export function CaptureForm() {
   const [submitting, setSubmitting] = useState(false)
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
 
+  // Payment states
+  const [paymentProcessing, setPaymentProcessing] = useState(false)
+  const [paymentFailed, setPaymentFailed] = useState(false)
+
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -348,6 +352,43 @@ export function CaptureForm() {
     }
     fetchCampaign()
   }, [slug])
+
+  // Handle payment return from Stripe Checkout
+  useEffect(() => {
+    const paymentSuccess = searchParams.get('payment_success')
+    const sessionId = searchParams.get('session_id')
+    const paymentCancelled = searchParams.get('payment_cancelled')
+
+    if (paymentCancelled === 'true') {
+      setPaymentFailed(true)
+      return
+    }
+
+    if (paymentSuccess === 'true' && sessionId) {
+      setPaymentProcessing(true)
+      fetch(`${API_URL}?action=campaign-payment-success`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            setSubmitted(true)
+            if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
+            const rUrl = data.redirect_url || campaign?.redirect_url
+            if (rUrl) {
+              setRedirectUrl(rUrl)
+              setTimeout(() => { window.location.href = rUrl }, 2000)
+            }
+          } else {
+            setPaymentFailed(true)
+          }
+        })
+        .catch(() => setPaymentFailed(true))
+        .finally(() => setPaymentProcessing(false))
+    }
+  }, [searchParams, campaign])
 
   // Fetch real availability slots
   useEffect(() => {
@@ -501,6 +542,11 @@ export function CaptureForm() {
         body: JSON.stringify(payload),
       })
       const data = await res.json()
+      // Handle payment redirect
+      if (data.requires_payment && data.checkout_url) {
+        window.location.href = data.checkout_url
+        return
+      }
       if (data.prospect) {
         if (data.disqualified && questionnaire?.qualifying !== false) {
           setDisqualifiedMsg(true)
@@ -529,8 +575,39 @@ export function CaptureForm() {
   const prevMonth = () => { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1) } else setCalMonth(calMonth - 1) }
   const nextMonth = () => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1) } else setCalMonth(calMonth + 1) }
 
-  if (loading) {
-    return <div className={`min-h-screen flex items-center justify-center ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`}><Loader2 className="h-8 w-8 text-[#006c49] animate-spin" /></div>
+  if (loading || paymentProcessing) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`}>
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 text-[#006c49] animate-spin mx-auto mb-4" />
+          {paymentProcessing && <p className="text-sm text-[#444748]">{t.payment_processing}</p>}
+        </div>
+      </div>
+    )
+  }
+
+  if (paymentFailed) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`}>
+        <div className="max-w-md mx-auto text-center p-8">
+          <div className="flex justify-center mb-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-50">
+              <XCircle className="h-10 w-10 text-red-500" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {searchParams.get('payment_cancelled') === 'true' ? t.payment_cancelled : t.payment_failed}
+          </h1>
+          <button
+            onClick={() => { setPaymentFailed(false); window.history.replaceState({}, '', window.location.pathname) }}
+            className="mt-4 px-6 py-3 rounded-full bg-[#006c49] text-white font-bold text-sm hover:bg-[#005a3d] transition-all"
+            style={{ fontFamily: 'Manrope, sans-serif' }}
+          >
+            {lang === 'fr' ? 'Réessayer' : 'Try again'}
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (notFound) {

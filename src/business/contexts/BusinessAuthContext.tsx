@@ -268,18 +268,6 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       }
     });
 
-    // Proactive session refresh: keep session alive when tab stays open
-    const refreshInterval = setInterval(async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Refresh if token expires within the next 5 minutes
-        const expiresAt = session.expires_at ?? 0;
-        if (expiresAt - Math.floor(Date.now() / 1000) < 300) {
-          await supabase.auth.refreshSession();
-        }
-      }
-    }, 60000); // Check every minute
-
     // Re-establish session when tab becomes visible again
     const handleVisibility = async () => {
       if (document.visibilityState !== 'visible') return;
@@ -287,9 +275,9 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       if (!isMountedRef.current) return;
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (currentUser && !businessProfileRef.current && !teamMemberRef.current) {
+      if (currentUser) {
         await initUser(currentUser.id);
-      } else if (!currentUser) {
+      } else {
         clearUserData();
       }
     };
@@ -298,7 +286,6 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     return () => {
       isMountedRef.current = false;
       clearTimeout(safetyTimeout);
-      clearInterval(refreshInterval);
       document.removeEventListener('visibilitychange', handleVisibility);
       subscription.unsubscribe();
     };
@@ -496,7 +483,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
   const hasAcquisition = useMemo(() => {
     const plan = businessSettings?.subscription_plan
-    return plan === 'business_acquisition' || plan === 'enterprise'
+    return !plan || plan === 'solo' || plan === 'business_acquisition' || plan === 'enterprise'
   }, [businessSettings?.subscription_plan])
 
   const isLifetimeFree = useMemo(() => {

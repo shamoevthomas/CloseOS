@@ -6,8 +6,9 @@ import {
   ToggleLeft, ToggleRight, Link, Users, ChevronDown, Video,
   CalendarCheck, UserPlus, Monitor, Layers, MessageSquare, Clock, Copy, Eye,
   Paintbrush, Type, Palette, ArrowRightCircle, Shuffle, UserCheck, UsersRound, ExternalLink,
-  ChevronUp, AlertTriangle, ClipboardList
+  ChevronUp, AlertTriangle, ClipboardList, CreditCard, Info, Minus
 } from 'lucide-react'
+import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectModal'
 import toast from 'react-hot-toast'
 
 interface CustomField {
@@ -60,6 +61,17 @@ interface Campaign {
   team_id: string | null
   created_at: string
   business_prospects: { count: number }[]
+  // Stripe payment
+  stripe_enabled: boolean
+  stripe_price: number
+  stripe_currency: string
+  stripe_payment_timing: 'before' | 'after'
+  refund_enabled: boolean
+  refund_tiers: { days: number; percent: number }[]
+  reschedule_enabled: boolean
+  reschedule_paid: boolean
+  reschedule_price: number
+  reschedule_currency: string
 }
 
 interface Formula {
@@ -96,7 +108,7 @@ const BOOKING_DURATIONS = [
 const API_URL = '/api/business'
 
 export function BusinessCampaigns() {
-  const { user, ownerUserId } = useBusinessAuth()
+  const { user, ownerUserId, isSolo } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
   const effectiveUserId = ownerUserId || user?.id
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -104,7 +116,7 @@ export function BusinessCampaigns() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [saving, setSaving] = useState(false)
-  const [modalTab, setModalTab] = useState<'general' | 'landing' | 'fields' | 'questionnaire' | 'booking'>('general')
+  const [modalTab, setModalTab] = useState<'general' | 'landing' | 'fields' | 'questionnaire' | 'booking' | 'payment'>('general')
 
   // Team members for booking assignment
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -163,6 +175,21 @@ export function BusinessCampaigns() {
   const [formMaxEliminatory, setFormMaxEliminatory] = useState(0)
   const [formQuestions, setFormQuestions] = useState<QuestionConfig[]>([])
   const [questionnaireId, setQuestionnaireId] = useState<string | null>(null)
+
+  // Stripe payment config
+  const [formStripeEnabled, setFormStripeEnabled] = useState(false)
+  const [formStripePrice, setFormStripePrice] = useState(0)
+  const [formStripeCurrency, setFormStripeCurrency] = useState('eur')
+  const [formStripePaymentTiming, setFormStripePaymentTiming] = useState<'before' | 'after'>('after')
+  const [formRefundEnabled, setFormRefundEnabled] = useState(false)
+  const [formRefundTiers, setFormRefundTiers] = useState<{ days: number; percent: number }[]>([])
+  const [formRescheduleEnabled, setFormRescheduleEnabled] = useState(false)
+  const [formReschedulePaid, setFormReschedulePaid] = useState(false)
+  const [formReschedulePrice, setFormReschedulePrice] = useState(0)
+  const [formRescheduleCurrency, setFormRescheduleCurrency] = useState('eur')
+  const [showStripeConnectModal, setShowStripeConnectModal] = useState(false)
+  const [stripeConnected, setStripeConnected] = useState(false)
+  const [stripeCheckLoading, setStripeCheckLoading] = useState(false)
 
   const fetchCampaigns = useCallback(async () => {
     if (!effectiveUserId) { setLoading(false); return }
@@ -249,7 +276,18 @@ export function BusinessCampaigns() {
     setTeams(teamsRes.data || [])
   }, [effectiveUserId])
 
-  useEffect(() => { fetchCampaigns(); fetchFormulas(); fetchTeamMembers(); fetchCustomSources() }, [fetchCampaigns, fetchFormulas, fetchTeamMembers, fetchCustomSources])
+  // Check Stripe connection status
+  const checkStripeConnection = useCallback(async () => {
+    if (!effectiveUserId) return
+    setStripeCheckLoading(true)
+    try {
+      const { supabase } = await import('../../lib/supabase')
+      const { data } = await supabase.from('profiles').select('stripe_connected').eq('id', effectiveUserId).maybeSingle()
+      setStripeConnected(!!data?.stripe_connected)
+    } catch {} finally { setStripeCheckLoading(false) }
+  }, [effectiveUserId])
+
+  useEffect(() => { fetchCampaigns(); fetchFormulas(); fetchTeamMembers(); fetchCustomSources(); checkStripeConnection() }, [fetchCampaigns, fetchFormulas, fetchTeamMembers, fetchCustomSources, checkStripeConnection])
 
   const resetForm = () => {
     setFormName(''); setFormDescription(''); setFormSource('Insta')
@@ -265,6 +303,9 @@ export function BusinessCampaigns() {
     setFormTeamId(null)
     setFormQuestionnaireEnabled(false); setFormQuestionnaireRequired(false)
     setFormQuestionnaireQualifying(true); setFormMaxEliminatory(0); setFormQuestions([]); setQuestionnaireId(null)
+    setFormStripeEnabled(false); setFormStripePrice(0); setFormStripeCurrency('eur')
+    setFormStripePaymentTiming('after'); setFormRefundEnabled(false); setFormRefundTiers([])
+    setFormRescheduleEnabled(false); setFormReschedulePaid(false); setFormReschedulePrice(0); setFormRescheduleCurrency('eur')
   }
 
   const openCreate = () => { resetForm(); setIsModalOpen(true) }
@@ -291,6 +332,17 @@ export function BusinessCampaigns() {
     setFormBookingAssignMode(campaign.booking_assign_mode || 'all_role')
     setFormBookingAssignedMembers(campaign.booking_assigned_members || [])
     setFormBookingDistribution(campaign.booking_distribution || 'round_robin')
+    // Stripe payment fields (prices stored in cents, display in units)
+    setFormStripeEnabled(campaign.stripe_enabled ?? false)
+    setFormStripePrice((campaign.stripe_price ?? 0) / 100)
+    setFormStripeCurrency(campaign.stripe_currency || 'eur')
+    setFormStripePaymentTiming(campaign.stripe_payment_timing || 'after')
+    setFormRefundEnabled(campaign.refund_enabled ?? false)
+    setFormRefundTiers(campaign.refund_tiers || [])
+    setFormRescheduleEnabled(campaign.reschedule_enabled ?? false)
+    setFormReschedulePaid(campaign.reschedule_paid ?? false)
+    setFormReschedulePrice((campaign.reschedule_price ?? 0) / 100)
+    setFormRescheduleCurrency(campaign.reschedule_currency || 'eur')
     // Reset questionnaire before loading
     setFormQuestionnaireEnabled(false); setFormQuestionnaireRequired(false)
     setFormQuestionnaireQualifying(true); setFormMaxEliminatory(0); setFormQuestions([]); setQuestionnaireId(null)
@@ -341,11 +393,21 @@ export function BusinessCampaigns() {
     booking_duration: formBookingDuration,
     booking_title: formBookingTitle || null,
     booking_description: formBookingDescription || null,
-    booking_with: formCaptureType === 'without_rdv' ? 'setter' : formBookingWith,
-    booking_assign_mode: formBookingAssignMode,
-    booking_assigned_members: formBookingAssignedMembers,
-    booking_distribution: formBookingDistribution,
+    booking_with: isSolo ? 'closer' : (formCaptureType === 'without_rdv' ? 'setter' : formBookingWith),
+    booking_assign_mode: isSolo ? 'specific' : formBookingAssignMode,
+    booking_assigned_members: isSolo ? (effectiveUserId ? [effectiveUserId] : []) : formBookingAssignedMembers,
+    booking_distribution: isSolo ? 'round_robin' : formBookingDistribution,
     team_id: formTeamId || null,
+    stripe_enabled: formStripeEnabled,
+    stripe_price: Math.round(formStripePrice * 100),
+    stripe_currency: formStripeCurrency,
+    stripe_payment_timing: formStripePaymentTiming,
+    refund_enabled: formRefundEnabled,
+    refund_tiers: formRefundTiers,
+    reschedule_enabled: formRescheduleEnabled,
+    reschedule_paid: formReschedulePaid,
+    reschedule_price: Math.round(formReschedulePrice * 100),
+    reschedule_currency: formRescheduleCurrency,
   })
 
   const handleSave = async () => {
@@ -656,6 +718,7 @@ window.addEventListener('message',function(e){
                 { key: 'fields' as const, label: t.campaigns_tab_fields },
                 { key: 'questionnaire' as const, label: t.campaigns_tab_qualification },
                 { key: 'booking' as const, label: formCaptureType === 'with_rdv' ? t.campaigns_tab_booking : t.campaigns_tab_assignation },
+                { key: 'payment' as const, label: t.campaigns_tab_payment },
               ]).map(tab => (
                 <button
                   key={tab.key}
@@ -771,179 +834,183 @@ window.addEventListener('message',function(e){
                     <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">{t.campaigns_formula_hint}</p>
                   </div>
 
-                  {/* RDV with Closer or Setter switch (only with_rdv) */}
-                  {formCaptureType === 'with_rdv' && (
-                    <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
-                      <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">{t.campaigns_booking_with}</label>
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() => { setFormBookingWith('closer'); setFormBookingAssignedMembers([]) }}
-                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
-                            formBookingWith === 'closer'
-                              ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                              : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
-                          }`}
-                        >
-                          <UserCheck className="h-4 w-4" /> Closer
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setFormBookingWith('setter'); setFormBookingAssignedMembers([]) }}
-                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
-                            formBookingWith === 'setter'
-                              ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                              : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
-                          }`}
-                        >
-                          <UserCheck className="h-4 w-4" /> Setter
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Info banner for without_rdv */}
-                  {formCaptureType === 'without_rdv' && (
-                    <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
-                      <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_no_rdv}</p>
-                      <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">{t.campaigns_no_rdv_desc}</p>
-                    </div>
-                  )}
-
-                  {/* Assignment mode */}
-                  <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
-                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">
-                      {t.campaigns_assign_mode} {formCaptureType === 'without_rdv' ? 'Setters' : (formBookingWith === 'closer' ? 'Closers' : 'Setters')}
-                    </label>
-                    <div className="flex gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => { setFormBookingAssignMode('specific'); setFormBookingAssignedMembers([]) }}
-                        className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
-                          formBookingAssignMode === 'specific'
-                            ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                            : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
-                        }`}
-                      >
-                        <UserCheck className="h-3.5 w-3.5" /> {t.campaigns_specific_member}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setFormBookingAssignMode('all_role'); setFormBookingAssignedMembers([]) }}
-                        className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
-                          formBookingAssignMode === 'all_role'
-                            ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                            : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
-                        }`}
-                      >
-                        <UsersRound className="h-3.5 w-3.5" /> {t.campaigns_all_role}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setFormBookingAssignMode('multiple'); setFormBookingAssignedMembers([]) }}
-                        className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
-                          formBookingAssignMode === 'multiple'
-                            ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
-                            : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
-                        }`}
-                      >
-                        <Users className="h-3.5 w-3.5" /> {t.campaigns_multiple_members}
-                      </button>
-                    </div>
-
-                    {/* Specific member selector */}
-                    {formBookingAssignMode === 'specific' && (
-                      <div className="mt-3">
-                        <div className="relative">
-                          <select
-                            value={formBookingAssignedMembers[0] || ''}
-                            onChange={(e) => setFormBookingAssignedMembers(e.target.value ? [e.target.value] : [])}
-                            className={selectCls}
-                          >
-                            <option value="">{t.campaigns_choose_member}</option>
-                            {filteredTeamMembers
-                              .filter(m => {
-                                const assignRole = formCaptureType === 'without_rdv' ? 'setter' : formBookingWith
-                                if (assignRole === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
-                                return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
-                              })
-                              .map(m => (
-                                <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
-                              ))}
-                          </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
+                  {!isSolo && (
+                    <>
+                      {/* RDV with Closer or Setter switch (only with_rdv) */}
+                      {formCaptureType === 'with_rdv' && (
+                        <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                          <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">{t.campaigns_booking_with}</label>
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() => { setFormBookingWith('closer'); setFormBookingAssignedMembers([]) }}
+                              className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
+                                formBookingWith === 'closer'
+                                  ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                  : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
+                              }`}
+                            >
+                              <UserCheck className="h-4 w-4" /> Closer
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setFormBookingWith('setter'); setFormBookingAssignedMembers([]) }}
+                              className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
+                                formBookingWith === 'setter'
+                                  ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                  : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
+                              }`}
+                            >
+                              <UserCheck className="h-4 w-4" /> Setter
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Multiple members selector */}
-                    {formBookingAssignMode === 'multiple' && (
-                      <div className="mt-3 space-y-2">
-                        <p className="text-xs text-[#444748]/60 dark:text-neutral-500">{t.campaigns_select_members}</p>
-                        <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2">
-                          {filteredTeamMembers
-                            .filter(m => {
-                              if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
-                              return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
-                            })
-                            .map(m => (
-                              <label key={m.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={formBookingAssignedMembers.includes(m.id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setFormBookingAssignedMembers(prev => [...prev, m.id])
-                                    } else {
-                                      setFormBookingAssignedMembers(prev => prev.filter(id => id !== m.id))
-                                    }
-                                  }}
-                                  className="rounded border-[#c4c7c7]/30 text-[#1b1c1b] focus:ring-[#1b1c1b]"
-                                />
-                                <span className="text-sm text-[#1b1c1b] dark:text-white">{m.first_name} {m.last_name}</span>
-                                <span className="text-[10px] font-bold text-[#747878] dark:text-neutral-400 bg-[#f5f3f2] dark:bg-neutral-700 px-1.5 py-0.5 rounded">{m.role}</span>
-                              </label>
-                            ))}
+                      {/* Info banner for without_rdv */}
+                      {formCaptureType === 'without_rdv' && (
+                        <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                          <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_no_rdv}</p>
+                          <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">{t.campaigns_no_rdv_desc}</p>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Distribution mode (for all_role and multiple) */}
-                    {(formBookingAssignMode === 'all_role' || formBookingAssignMode === 'multiple') && (
-                      <div className="mt-4 pt-3 border-t border-[#c4c7c7]/15 dark:border-neutral-700">
-                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_distribution}</label>
-                        <div className="flex gap-3">
+                      {/* Assignment mode */}
+                      <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">
+                          {t.campaigns_assign_mode} {formCaptureType === 'without_rdv' ? 'Setters' : (formBookingWith === 'closer' ? 'Closers' : 'Setters')}
+                        </label>
+                        <div className="flex gap-2 flex-wrap">
                           <button
                             type="button"
-                            onClick={() => setFormBookingDistribution('round_robin')}
-                            className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
-                              formBookingDistribution === 'round_robin'
+                            onClick={() => { setFormBookingAssignMode('specific'); setFormBookingAssignedMembers([]) }}
+                            className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                              formBookingAssignMode === 'specific'
                                 ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
                                 : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                             }`}
                           >
-                            <ArrowRightCircle className="h-4 w-4" /> {t.campaigns_round_robin}
+                            <UserCheck className="h-3.5 w-3.5" /> {t.campaigns_specific_member}
                           </button>
                           <button
                             type="button"
-                            onClick={() => setFormBookingDistribution('random')}
-                            className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
-                              formBookingDistribution === 'random'
+                            onClick={() => { setFormBookingAssignMode('all_role'); setFormBookingAssignedMembers([]) }}
+                            className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                              formBookingAssignMode === 'all_role'
                                 ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
                                 : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
                             }`}
                           >
-                            <Shuffle className="h-4 w-4" /> {t.campaigns_random}
+                            <UsersRound className="h-3.5 w-3.5" /> {t.campaigns_all_role}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setFormBookingAssignMode('multiple'); setFormBookingAssignedMembers([]) }}
+                            className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                              formBookingAssignMode === 'multiple'
+                                ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
+                            }`}
+                          >
+                            <Users className="h-3.5 w-3.5" /> {t.campaigns_multiple_members}
                           </button>
                         </div>
-                        <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-2">
-                          {formBookingDistribution === 'round_robin'
-                            ? t.campaigns_round_robin_desc
-                            : t.campaigns_random_desc}
-                        </p>
+
+                        {/* Specific member selector */}
+                        {formBookingAssignMode === 'specific' && (
+                          <div className="mt-3">
+                            <div className="relative">
+                              <select
+                                value={formBookingAssignedMembers[0] || ''}
+                                onChange={(e) => setFormBookingAssignedMembers(e.target.value ? [e.target.value] : [])}
+                                className={selectCls}
+                              >
+                                <option value="">{t.campaigns_choose_member}</option>
+                                {filteredTeamMembers
+                                  .filter(m => {
+                                    const assignRole = formCaptureType === 'without_rdv' ? 'setter' : formBookingWith
+                                    if (assignRole === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
+                                    return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
+                                  })
+                                  .map(m => (
+                                    <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
+                                  ))}
+                              </select>
+                              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Multiple members selector */}
+                        {formBookingAssignMode === 'multiple' && (
+                          <div className="mt-3 space-y-2">
+                            <p className="text-xs text-[#444748]/60 dark:text-neutral-500">{t.campaigns_select_members}</p>
+                            <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2">
+                              {filteredTeamMembers
+                                .filter(m => {
+                                  if (formBookingWith === 'closer') return m.role === 'Closer' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
+                                  return m.role === 'Setter' || m.role === 'Setter-Closer' || m.role === 'Owner' || m.owner_assignable
+                                })
+                                .map(m => (
+                                  <label key={m.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={formBookingAssignedMembers.includes(m.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setFormBookingAssignedMembers(prev => [...prev, m.id])
+                                        } else {
+                                          setFormBookingAssignedMembers(prev => prev.filter(id => id !== m.id))
+                                        }
+                                      }}
+                                      className="rounded border-[#c4c7c7]/30 text-[#1b1c1b] focus:ring-[#1b1c1b]"
+                                    />
+                                    <span className="text-sm text-[#1b1c1b] dark:text-white">{m.first_name} {m.last_name}</span>
+                                    <span className="text-[10px] font-bold text-[#747878] dark:text-neutral-400 bg-[#f5f3f2] dark:bg-neutral-700 px-1.5 py-0.5 rounded">{m.role}</span>
+                                  </label>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Distribution mode (for all_role and multiple) */}
+                        {(formBookingAssignMode === 'all_role' || formBookingAssignMode === 'multiple') && (
+                          <div className="mt-4 pt-3 border-t border-[#c4c7c7]/15 dark:border-neutral-700">
+                            <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_distribution}</label>
+                            <div className="flex gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setFormBookingDistribution('round_robin')}
+                                className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
+                                  formBookingDistribution === 'round_robin'
+                                    ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                    : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
+                                }`}
+                              >
+                                <ArrowRightCircle className="h-4 w-4" /> {t.campaigns_round_robin}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormBookingDistribution('random')}
+                                className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
+                                  formBookingDistribution === 'random'
+                                    ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                    : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
+                                }`}
+                              >
+                                <Shuffle className="h-4 w-4" /> {t.campaigns_random}
+                              </button>
+                            </div>
+                            <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-2">
+                              {formBookingDistribution === 'round_robin'
+                                ? t.campaigns_round_robin_desc
+                                : t.campaigns_random_desc}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -1540,6 +1607,258 @@ window.addEventListener('message',function(e){
                   )}
                 </div>
               )}
+
+              {/* Payment tab */}
+              {modalTab === 'payment' && (
+                <div className="space-y-6">
+                  {/* Stripe integration toggle */}
+                  <div className="flex items-center justify-between p-5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="h-5 w-5 text-[#635bff]" />
+                      <div>
+                        <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_stripe_integration}</p>
+                        {!stripeConnected && (
+                          <p className="text-[10px] text-[#ba1a1a] mt-0.5">{t.campaigns_stripe_not_connected}</p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!stripeConnected) { setShowStripeConnectModal(true); return }
+                        setFormStripeEnabled(!formStripeEnabled)
+                      }}
+                      className="relative"
+                    >
+                      <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${formStripeEnabled && stripeConnected ? 'bg-[#635bff]/20' : 'bg-[#eae8e7] dark:bg-neutral-700'}`}>
+                        <div className={`w-3 h-3 rounded-full absolute transition-all ${formStripeEnabled && stripeConnected ? 'bg-[#635bff] right-1' : 'bg-[#747878] left-1'}`} />
+                      </div>
+                    </button>
+                  </div>
+
+                  {!stripeConnected && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-4 flex items-start gap-3">
+                      <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs text-amber-800 dark:text-amber-200">{t.campaigns_stripe_connect_first}</p>
+                        <button onClick={() => setShowStripeConnectModal(true)} className="text-xs font-bold text-[#635bff] hover:underline mt-1">
+                          {lang === 'fr' ? 'Connecter Stripe' : 'Connect Stripe'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {formStripeEnabled && stripeConnected && (
+                    <>
+                      {/* Price + Currency */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_stripe_price}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={formStripePrice || ''}
+                            onChange={(e) => setFormStripePrice(parseFloat(e.target.value) || 0)}
+                            placeholder="0.00"
+                            className={inputCls}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_stripe_currency}</label>
+                          <div className="relative">
+                            <select
+                              value={formStripeCurrency}
+                              onChange={(e) => setFormStripeCurrency(e.target.value)}
+                              className={selectCls}
+                            >
+                              <option value="eur">EUR (€)</option>
+                              <option value="usd">USD ($)</option>
+                              <option value="gbp">GBP (£)</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2% fee notice */}
+                      <div className="flex items-center gap-2 rounded-xl bg-[#635bff]/5 dark:bg-[#635bff]/10 px-4 py-3">
+                        <Info className="h-4 w-4 text-[#635bff] shrink-0" />
+                        <p className="text-xs text-[#635bff] font-medium">{t.campaigns_stripe_fee_notice}</p>
+                      </div>
+
+                      {/* Payment timing */}
+                      <div>
+                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">{t.campaigns_payment_timing}</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setFormStripePaymentTiming('after')}
+                            className={`p-4 rounded-xl text-left transition-all ${
+                              formStripePaymentTiming === 'after'
+                                ? 'border-2 border-[#635bff] bg-[#635bff]/5'
+                                : 'border border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#747878]'
+                            }`}
+                          >
+                            <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_payment_after}</p>
+                            <p className="text-[10px] text-[#444748] dark:text-neutral-400 mt-1">{t.campaigns_payment_after_desc}</p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormStripePaymentTiming('before')}
+                            className={`p-4 rounded-xl text-left transition-all ${
+                              formStripePaymentTiming === 'before'
+                                ? 'border-2 border-[#635bff] bg-[#635bff]/5'
+                                : 'border border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#747878]'
+                            }`}
+                          >
+                            <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_payment_before}</p>
+                            <p className="text-[10px] text-[#444748] dark:text-neutral-400 mt-1">{t.campaigns_payment_before_desc}</p>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Refund section (only for with_rdv) */}
+                      {formCaptureType === 'with_rdv' && (
+                        <div className="space-y-4 pt-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-[#444748] dark:text-neutral-400">{t.campaigns_refund_enabled}</label>
+                            <button onClick={() => setFormRefundEnabled(!formRefundEnabled)} className="relative">
+                              <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${formRefundEnabled ? 'bg-[#006c49]/20' : 'bg-[#eae8e7] dark:bg-neutral-700'}`}>
+                                <div className={`w-3 h-3 rounded-full absolute transition-all ${formRefundEnabled ? 'bg-[#006c49] right-1' : 'bg-[#747878] left-1'}`} />
+                              </div>
+                            </button>
+                          </div>
+
+                          {formRefundEnabled && (
+                            <div className="space-y-3 pl-1">
+                              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">{t.campaigns_refund_tiers}</label>
+                              {formRefundTiers.map((tier, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={tier.days}
+                                    onChange={(e) => {
+                                      const tiers = [...formRefundTiers]
+                                      tiers[idx] = { ...tiers[idx], days: parseInt(e.target.value) || 0 }
+                                      setFormRefundTiers(tiers)
+                                    }}
+                                    className={`${smallInputCls} w-16 text-center`}
+                                  />
+                                  <span className="text-[10px] text-[#444748] dark:text-neutral-400 whitespace-nowrap">{t.campaigns_refund_days_before}</span>
+                                  <span className="text-[#444748]/30">→</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={tier.percent}
+                                    onChange={(e) => {
+                                      const tiers = [...formRefundTiers]
+                                      tiers[idx] = { ...tiers[idx], percent: parseInt(e.target.value) || 0 }
+                                      setFormRefundTiers(tiers)
+                                    }}
+                                    className={`${smallInputCls} w-16 text-center`}
+                                  />
+                                  <span className="text-[10px] text-[#444748] dark:text-neutral-400">{t.campaigns_refund_percent}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setFormRefundTiers(formRefundTiers.filter((_, i) => i !== idx))}
+                                    className="p-1 text-[#ba1a1a]/60 hover:text-[#ba1a1a] transition-colors"
+                                    title={t.campaigns_refund_remove_tier}
+                                  >
+                                    <Minus className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => setFormRefundTiers([...formRefundTiers, { days: 7, percent: 100 }])}
+                                className="text-xs font-bold text-[#006c49] hover:underline flex items-center gap-1"
+                              >
+                                <Plus className="h-3 w-3" /> {t.campaigns_refund_add_tier}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Reschedule section (only for with_rdv) */}
+                      {formCaptureType === 'with_rdv' && (
+                        <div className="space-y-4 pt-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-[#444748] dark:text-neutral-400">{t.campaigns_reschedule_enabled}</label>
+                            <button onClick={() => setFormRescheduleEnabled(!formRescheduleEnabled)} className="relative">
+                              <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${formRescheduleEnabled ? 'bg-[#006c49]/20' : 'bg-[#eae8e7] dark:bg-neutral-700'}`}>
+                                <div className={`w-3 h-3 rounded-full absolute transition-all ${formRescheduleEnabled ? 'bg-[#006c49] right-1' : 'bg-[#747878] left-1'}`} />
+                              </div>
+                            </button>
+                          </div>
+
+                          {formRescheduleEnabled && (
+                            <div className="space-y-3 pl-1">
+                              <div className="flex gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setFormReschedulePaid(false)}
+                                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                                    !formReschedulePaid
+                                      ? 'bg-[#006c49]/10 text-[#006c49] border-2 border-[#006c49]'
+                                      : 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border border-[#c4c7c7]/30 dark:border-neutral-700'
+                                  }`}
+                                >
+                                  {t.campaigns_reschedule_free}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setFormReschedulePaid(true)}
+                                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                                    formReschedulePaid
+                                      ? 'bg-[#635bff]/10 text-[#635bff] border-2 border-[#635bff]'
+                                      : 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border border-[#c4c7c7]/30 dark:border-neutral-700'
+                                  }`}
+                                >
+                                  {t.campaigns_reschedule_paid}
+                                </button>
+                              </div>
+                              {formReschedulePaid && (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_reschedule_price}</label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      value={formReschedulePrice || ''}
+                                      onChange={(e) => setFormReschedulePrice(parseFloat(e.target.value) || 0)}
+                                      placeholder="0.00"
+                                      className={inputCls}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_stripe_currency}</label>
+                                    <div className="relative">
+                                      <select
+                                        value={formRescheduleCurrency}
+                                        onChange={(e) => setFormRescheduleCurrency(e.target.value)}
+                                        className={selectCls}
+                                      >
+                                        <option value="eur">EUR (€)</option>
+                                        <option value="usd">USD ($)</option>
+                                        <option value="gbp">GBP (£)</option>
+                                      </select>
+                                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Footer */}
@@ -2017,6 +2336,13 @@ window.addEventListener('message',function(e){
           </div>
         </div>
       )}
+
+      {/* Stripe Connect Modal */}
+      <BusinessStripeConnectModal
+        isOpen={showStripeConnectModal}
+        onClose={() => { setShowStripeConnectModal(false); checkStripeConnection() }}
+        returnPath="/business/campagnes"
+      />
     </div>
   )
 }

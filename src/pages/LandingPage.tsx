@@ -31,6 +31,10 @@ import {
   ChevronDown,
   Globe,
   Quote,
+  Paperclip,
+  Send,
+  Loader2,
+  Mail,
 } from 'lucide-react'
 import { salesTranslations, detectSalesLang } from './landingPageI18n'
 import type { SalesLang } from './landingPageI18n'
@@ -146,6 +150,125 @@ const itemVariants: any = {
 };
 
 /* ════════════════════════════════════════════════
+   CONTACT MODAL
+   ════════════════════════════════════════════════ */
+const SalesContactModal = ({ open, onClose, t }: { open: boolean; onClose: () => void; t: any }) => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [isSubscriber, setIsSubscriber] = useState(false);
+  const [category, setCategory] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const categories = [
+    { value: 'Bug', label: t.contact_category_bug },
+    { value: 'Feature', label: t.contact_category_feature },
+    { value: 'Partnership', label: t.contact_category_partnership },
+    { value: 'Help', label: t.contact_category_help },
+    { value: 'Billing', label: t.contact_category_billing },
+    { value: 'Other', label: t.contact_category_other },
+  ];
+
+  const resetForm = () => {
+    setName(''); setEmail(''); setIsSubscriber(false); setCategory(''); setSubject(''); setMessage(''); setAttachment(null); setStatus('idle');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('sending');
+    try {
+      let attachmentBase64: string | undefined;
+      let attachmentType: string | undefined;
+      let attachmentName: string | undefined;
+      if (attachment) {
+        attachmentName = attachment.name;
+        attachmentType = attachment.type;
+        const buffer = await attachment.arrayBuffer();
+        attachmentBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+      }
+      const res = await fetch('/api/contact-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, isSubscriber, subject: `[${categories.find(c => c.value === category)?.label || category}]: ${subject}`, message, attachmentBase64, attachmentName, attachmentType }),
+      });
+      if (!res.ok) throw new Error();
+      setStatus('success');
+      setTimeout(() => { resetForm(); onClose(); }, 2000);
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-stone-900 border border-stone-700/50 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-stone-700/50">
+          <h2 className="text-lg font-bold text-stone-100">{t.contact_title}</h2>
+          <button onClick={() => { resetForm(); onClose(); }} className="p-1 rounded-lg hover:bg-stone-800 transition-colors">
+            <X className="size-5 text-stone-400" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-stone-300 mb-1">{t.contact_name}</label>
+            <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder={t.contact_name_placeholder}
+              className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg text-sm text-stone-100 placeholder-stone-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-stone-300 mb-1">{t.contact_email}</label>
+            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder={t.contact_email_placeholder}
+              className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg text-sm text-stone-100 placeholder-stone-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none" />
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={isSubscriber} onChange={e => setIsSubscriber(e.target.checked)}
+              className="w-4 h-4 rounded border-stone-600 bg-stone-800 text-emerald-500 focus:ring-emerald-500" />
+            <span className="text-sm text-stone-300">{t.contact_subscriber}</span>
+          </label>
+          <div>
+            <label className="block text-sm font-medium text-stone-300 mb-1">{t.contact_category}</label>
+            <select required value={category} onChange={e => setCategory(e.target.value)}
+              className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg text-sm text-stone-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none">
+              <option value="" disabled className="text-stone-500">{t.contact_category_placeholder}</option>
+              {categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-stone-300 mb-1">{t.contact_subject}</label>
+            <input type="text" required value={subject} onChange={e => setSubject(e.target.value)} placeholder={t.contact_subject_placeholder}
+              className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg text-sm text-stone-100 placeholder-stone-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-stone-300 mb-1">{t.contact_message}</label>
+            <textarea required rows={5} value={message} onChange={e => setMessage(e.target.value)} placeholder={t.contact_message_placeholder}
+              className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg text-sm text-stone-100 placeholder-stone-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none resize-none" />
+          </div>
+          <div>
+            <input ref={fileRef} type="file" className="hidden" onChange={e => setAttachment(e.target.files?.[0] || null)} />
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className="flex items-center gap-2 text-sm text-stone-400 hover:text-stone-200 transition-colors">
+              <Paperclip className="size-4" />
+              {attachment ? attachment.name : t.contact_attachment}
+            </button>
+          </div>
+          {status === 'success' && <p className="text-sm text-emerald-400 font-medium">{t.contact_success}</p>}
+          {status === 'error' && <p className="text-sm text-red-400 font-medium">{t.contact_error}</p>}
+          <button type="submit" disabled={status === 'sending'}
+            className="w-full flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-400 transition-colors disabled:opacity-60">
+            {status === 'sending' ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+            {status === 'sending' ? t.contact_sending : t.contact_send}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* ════════════════════════════════════════════════
    LANDING PAGE — Liquid Stone & Glass (Dark)
    ════════════════════════════════════════════════ */
 export function LandingPage() {
@@ -153,6 +276,7 @@ export function LandingPage() {
   const pageRef = useRef<HTMLDivElement>(null);
   const [isExiting, setIsExiting] = useState(false);
   const [lang, setLangState] = useState<SalesLang>('fr');
+  const [showContact, setShowContact] = useState(false);
   const t = salesTranslations[lang];
 
   const setLang = (newLang: SalesLang) => {
@@ -946,10 +1070,14 @@ export function LandingPage() {
           </div>
           <div className="flex gap-6 text-[0.72rem]">
             <a href="https://www.linkedin.com/in/thomas-shamoev-570885237/" target="_blank" rel="noopener noreferrer" className="text-stone-600 hover:text-stone-200 transition-colors">LinkedIn</a>
-            <a href="mailto:support@closeos.fr" className="text-stone-600 hover:text-stone-200 transition-colors">support@closeos.fr</a>
+            <button onClick={() => setShowContact(true)} className="text-stone-600 hover:text-stone-200 transition-colors flex items-center gap-1">
+              <Mail className="size-3" />
+              support@closeos.fr
+            </button>
           </div>
         </div>
       </footer>
+      <SalesContactModal open={showContact} onClose={() => setShowContact(false)} t={t} />
 
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#111111] via-[#111111]/80 to-transparent pointer-events-none z-[80]" />
 

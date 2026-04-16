@@ -62,6 +62,14 @@ export interface CaptureFormTranslations {
   // Disqualification
   disqualified_title: string
   disqualified_text: string
+  // Payment
+  payment_required: string
+  payment_redirecting: string
+  payment_success: string
+  payment_failed: string
+  payment_cancelled: string
+  payment_processing: string
+  payment_amount: string
 }
 
 const fr: CaptureFormTranslations = {
@@ -109,6 +117,13 @@ const fr: CaptureFormTranslations = {
   questionnaire_complete: 'Questionnaire complété',
   disqualified_title: 'Merci pour vos réponses',
   disqualified_text: 'Malheureusement, votre profil ne correspond pas à nos critères actuels. Nous vous souhaitons bonne chance dans vos démarches.',
+  payment_required: 'Un paiement est requis pour confirmer votre inscription.',
+  payment_redirecting: 'Redirection vers la page de paiement...',
+  payment_success: 'Paiement confirmé ! Votre inscription est validée.',
+  payment_failed: 'Le paiement a échoué. Veuillez réessayer.',
+  payment_cancelled: 'Paiement annulé. Vous pouvez réessayer.',
+  payment_processing: 'Vérification du paiement en cours...',
+  payment_amount: 'Montant à payer',
 }
 
 const en: CaptureFormTranslations = {
@@ -156,6 +171,13 @@ const en: CaptureFormTranslations = {
   questionnaire_complete: 'Questionnaire completed',
   disqualified_title: 'Thank you for your answers',
   disqualified_text: 'Unfortunately, your profile does not match our current criteria. We wish you the best of luck.',
+  payment_required: 'A payment is required to confirm your registration.',
+  payment_redirecting: 'Redirecting to payment page...',
+  payment_success: 'Payment confirmed! Your registration is validated.',
+  payment_failed: 'Payment failed. Please try again.',
+  payment_cancelled: 'Payment cancelled. You can try again.',
+  payment_processing: 'Verifying payment...',
+  payment_amount: 'Amount to pay',
 }
 
 export const captureTranslations: Record<CaptureFormLang, CaptureFormTranslations> = { fr, en }

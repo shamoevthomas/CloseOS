@@ -355,6 +355,84 @@ async function handleSessionStatus(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Action: campaign-checkout ──────────────────────────────────────────────────
+
+async function handleCampaignCheckout(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  try {
+    const { campaign_id, prospect_data, payment_type, appointment_id, success_url, cancel_url } = req.body
+    if (!campaign_id) return res.status(400).json({ error: 'campaign_id required' })
+
+    // Fetch campaign to get price + owner
+    const { data: campaign } = await supabase
+      .from('business_campaigns')
+      .select('user_id, stripe_enabled, stripe_price, stripe_currency, name')
+      .eq('id', campaign_id)
+      .single()
+
+    if (!campaign || !campaign.stripe_enabled) {
+      return res.status(400).json({ error: 'Stripe not enabled for this campaign' })
+    }
+
+    // Get owner's Stripe connected account
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('stripe_account_id, stripe_connected')
+      .eq('id', campaign.user_id)
+      .single()
+
+    if (!profile?.stripe_account_id || !profile.stripe_connected) {
+      return res.status(400).json({ error: 'Stripe account not connected' })
+    }
+
+    const amount = campaign.stripe_price // already in cents
+    const currency = campaign.stripe_currency || 'eur'
+    const applicationFee = Math.round(amount * 0.02) // 2% CloseOS commission
+
+    const session = await stripe.checkout.sessions.create(
+      {
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency,
+            product_data: { name: campaign.name || 'Paiement campagne' },
+            unit_amount: amount,
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        payment_intent_data: {
+          application_fee_amount: applicationFee,
+        },
+        success_url: success_url || `${req.headers.origin}/capture?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: cancel_url || `${req.headers.origin}/capture?payment_cancelled=true`,
+        metadata: {
+          campaign_id,
+          payment_type: payment_type || 'initial',
+          ...(appointment_id ? { appointment_id } : {}),
+        },
+      },
+      { stripeAccount: profile.stripe_account_id }
+    )
+
+    // Store session in campaign_payment_sessions
+    await supabase.from('campaign_payment_sessions').insert({
+      campaign_id,
+      stripe_checkout_session_id: session.id,
+      prospect_data: prospect_data || {},
+      payment_type: payment_type || 'initial',
+      appointment_id: appointment_id || null,
+      amount,
+    })
+
+    return res.status(200).json({ url: session.url, session_id: session.id })
+  } catch (error: any) {
+    console.error('Campaign Checkout Error:', error)
+    return res.status(500).json({ error: error.message })
+  }
+}
+
 // ─── Main Router ────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -371,6 +449,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handlePortalSession(req, res);
     case 'session-status':
       return handleSessionStatus(req, res);
+    case 'campaign-checkout':
+      return handleCampaignCheckout(req, res);
     default:
       return res.status(400).json({ error: `Unknown action: ${action}` });
   }

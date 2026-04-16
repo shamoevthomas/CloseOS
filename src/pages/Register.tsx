@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User as UserIcon, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { User as UserIcon, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -15,13 +15,49 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const getPasswordStrength = (pw: string): number => {
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (pw.length >= 12) score++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+    if (/\d/.test(pw)) score++;
+    if (/[^a-zA-Z0-9]/.test(pw)) score++;
+    return Math.min(score, 4);
+  };
+
+  const PasswordStrengthBar = ({ strength }: { strength: number }) => {
+    const labels = [t.password_weak, t.password_weak, t.password_medium, t.password_strong, t.password_very_strong];
+    const colors = ['bg-red-500', 'bg-red-500', 'bg-amber-500', 'bg-green-500', 'bg-green-400'];
+    return (
+      <div className="mt-2">
+        <div className="flex gap-1 mb-1">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className={`h-1 flex-1 rounded-full ${i < strength ? colors[strength] : 'bg-slate-700'}`} />
+          ))}
+        </div>
+        <p className={`text-xs ${colors[strength].replace('bg-', 'text-')}`}>
+          {t.password_strength} : {labels[strength]}
+        </p>
+      </div>
+    );
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (password !== confirmPassword) {
+      setError(t.passwords_mismatch);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -201,15 +237,41 @@ export default function Register() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 py-3 pl-10 pr-4 text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-900 py-3 pl-10 pr-12 text-white focus:border-blue-500 focus:outline-none"
                   placeholder="••••••••"
                   required
                   minLength={8}
                 />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
+              {password && <PasswordStrengthBar strength={getPasswordStrength(password)} />}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">{t.confirm_password}</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`w-full rounded-lg border bg-slate-900 py-3 pl-10 pr-12 text-white focus:border-blue-500 focus:outline-none ${confirmPassword && confirmPassword !== password ? 'border-red-500' : 'border-slate-700'}`}
+                  placeholder="••••••••"
+                  required
+                  minLength={8}
+                />
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              {confirmPassword && confirmPassword !== password && (
+                <p className="mt-1 text-xs text-red-500">{t.passwords_mismatch}</p>
+              )}
             </div>
 
             <button
