@@ -2645,7 +2645,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: campaign, error } = await supabase
         .from('business_campaigns')
-        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url, capture_type, booking_duration, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, user_id')
+        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url, capture_type, booking_duration, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, user_id, stripe_enabled, stripe_price, stripe_currency, stripe_payment_timing')
         .eq('slug', slug)
         .eq('is_active', true)
         .single()
@@ -4206,6 +4206,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (!paymentSession) return res.status(404).json({ error: 'Payment session not found' })
       if (paymentSession.status === 'completed') {
+        // For pre_booking, allow re-entry (user might refresh after Stripe return)
+        if (paymentSession.payment_type === 'pre_booking') {
+          return res.status(200).json({
+            success: true,
+            already_completed: true,
+            payment_type: 'pre_booking',
+            prospect_data: paymentSession.prospect_data,
+            payment_session_id: paymentSession.id,
+          })
+        }
         return res.status(200).json({ already_completed: true })
       }
 
@@ -4257,13 +4267,86 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .eq('id', paymentSession.appointment_id)
       }
 
-      // For "before" timing: the prospect data is in paymentSession.prospect_data
-      // The frontend will re-call capture-submit with payment_session_id
       return res.status(200).json({
         success: true,
         payment_type: paymentSession.payment_type,
         prospect_data: paymentSession.prospect_data,
         payment_intent_id: stripeSession.payment_intent,
+        payment_session_id: paymentSession.id,
+      })
+    }
+
+    // ─── Pre-booking payment: create Stripe session before calendar step ───
+    if (action === 'capture-pre-payment' && req.method === 'POST') {
+      const { slug, name, email, phone, custom_data, answers } = req.body
+      if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
+
+      const { data: campaign, error: campErr } = await supabase
+        .from('business_campaigns')
+        .select('*')
+        .eq('slug', slug)
+        .eq('is_active', true)
+        .single()
+
+      if (campErr || !campaign) return res.status(404).json({ error: 'Campaign not found or inactive' })
+
+      if (!campaign.stripe_enabled || !campaign.stripe_price || campaign.stripe_price <= 0) {
+        return res.status(400).json({ error: 'Payment not configured for this campaign' })
+      }
+
+      const { data: stripeProfile } = await supabase
+        .from('profiles')
+        .select('stripe_account_id, stripe_connected')
+        .eq('id', campaign.user_id)
+        .single()
+
+      if (!stripeProfile?.stripe_account_id || !stripeProfile.stripe_connected) {
+        return res.status(400).json({ error: 'Stripe account not connected for this campaign' })
+      }
+
+      const origin = req.headers.origin || 'https://www.closeos.fr'
+      const successUrl = `${origin}/capture/${slug}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`
+      const cancelUrl = `${origin}/capture/${slug}?payment_cancelled=true`
+
+      const amount = campaign.stripe_price
+      const currency = campaign.stripe_currency || 'eur'
+      const applicationFee = Math.round(amount * 0.02)
+
+      const stripeLib = (await import('stripe')).default
+      const stripeClient = new stripeLib(process.env.STRIPE_SECRET_KEY as string)
+
+      const session = await stripeClient.checkout.sessions.create(
+        {
+          payment_method_types: ['card'],
+          line_items: [{
+            price_data: {
+              currency,
+              product_data: { name: campaign.name || 'Paiement' },
+              unit_amount: amount,
+            },
+            quantity: 1,
+          }],
+          mode: 'payment',
+          payment_intent_data: { application_fee_amount: applicationFee },
+          success_url: successUrl,
+          cancel_url: cancelUrl,
+          ...(email ? { customer_email: email } : {}),
+          metadata: { campaign_id: campaign.id, payment_type: 'pre_booking', slug },
+        },
+        { stripeAccount: stripeProfile.stripe_account_id }
+      )
+
+      await supabase.from('campaign_payment_sessions').insert({
+        campaign_id: campaign.id,
+        stripe_checkout_session_id: session.id,
+        prospect_data: { slug, name, email, phone, custom_data, answers },
+        payment_type: 'pre_booking',
+        amount,
+      })
+
+      return res.status(200).json({
+        checkout_url: session.url,
+        session_id: session.id,
       })
     }
 

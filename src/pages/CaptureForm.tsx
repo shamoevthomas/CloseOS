@@ -26,6 +26,10 @@ interface Campaign {
   phone_required: boolean
   redirect_url: string | null
   capture_type: 'with_rdv' | 'without_rdv'
+  stripe_enabled?: boolean
+  stripe_price?: number
+  stripe_currency?: string
+  stripe_payment_timing?: 'before' | 'after'
 }
 
 const API_URL = '/api/business'
@@ -234,6 +238,7 @@ export function CaptureForm() {
   // Payment states
   const [paymentProcessing, setPaymentProcessing] = useState(false)
   const [paymentFailed, setPaymentFailed] = useState(false)
+  const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null)
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -374,12 +379,41 @@ export function CaptureForm() {
         .then(r => r.json())
         .then(data => {
           if (data.success) {
-            setSubmitted(true)
-            if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
-            const rUrl = data.redirect_url || campaign?.redirect_url
-            if (rUrl) {
-              setRedirectUrl(rUrl)
-              setTimeout(() => { window.location.href = rUrl }, 2000)
+            if (data.payment_type === 'pre_booking') {
+              // Pre-booking payment: restore form data and advance to calendar
+              const pd = data.prospect_data
+              if (pd) {
+                const nameParts = (pd.name || '').split(' ')
+                setFirstName(nameParts[0] || '')
+                setLastName(nameParts.slice(1).join(' ') || '')
+                if (pd.email) setEmail(pd.email)
+                if (pd.phone) {
+                  const parts = (pd.phone as string).split(' ')
+                  if (parts.length >= 2) {
+                    const code = parts[0]
+                    if (COUNTRY_CODES.find(c => c.code === code)) {
+                      setCountryCode(code)
+                      setPhone(parts.slice(1).join(' '))
+                    }
+                  }
+                }
+                if (pd.custom_data) setCustomData(pd.custom_data)
+                if (pd.answers && Array.isArray(pd.answers)) {
+                  const ansObj: Record<string, any> = {}
+                  pd.answers.forEach((a: any) => { ansObj[a.question_id] = a.answer_value })
+                  setAnswers(ansObj)
+                }
+              }
+              setPaymentSessionId(data.payment_session_id)
+              window.history.replaceState({}, '', window.location.pathname)
+            } else {
+              setSubmitted(true)
+              if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
+              const rUrl = data.redirect_url || campaign?.redirect_url
+              if (rUrl) {
+                setRedirectUrl(rUrl)
+                setTimeout(() => { window.location.href = rUrl }, 2000)
+              }
             }
           } else {
             setPaymentFailed(true)
@@ -453,7 +487,7 @@ export function CaptureForm() {
 
   // Re-expand form if user deletes required fields while collapsed
   useEffect(() => {
-    if (!isInfoComplete && currentStep > 1) setCurrentStep(1)
+    if (!isInfoComplete && currentStep > 1 && !paymentSessionId) setCurrentStep(1)
   }, [isInfoComplete, currentStep])
 
   // Passive lead tracking: save partial prospect when email or phone is entered
@@ -484,6 +518,30 @@ export function CaptureForm() {
   }, [email, phone, submitted, savePartialLead])
 
   const isInscriptionMode = campaign?.capture_type === 'without_rdv'
+  const needsPrePayment = !isInscriptionMode && !!campaign?.stripe_enabled && !!campaign?.stripe_price && campaign.stripe_price > 0 && campaign.stripe_payment_timing !== 'before' && !paymentSessionId
+
+  const handlePrePayment = async () => {
+    setSubmitting(true)
+    try {
+      const name = `${firstName} ${lastName}`.trim()
+      const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData }
+      if (hasQuestionnaire && Object.keys(answers).length > 0) {
+        payload.answers = Object.entries(answers).map(([question_id, answer_value]) => ({ question_id, answer_value }))
+      }
+      const r = await fetch(`${API_URL}?action=capture-pre-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await r.json()
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url
+      } else {
+        alert(data.error || 'Payment error')
+      }
+    } catch { alert(t.error_network) }
+    finally { setSubmitting(false) }
+  }
 
   // Questionnaire completeness check
   const isQuestionnaireComplete = useMemo(() => {
@@ -502,9 +560,20 @@ export function CaptureForm() {
   // Auto-advance to booking step in horizontal mode when info is complete
   useEffect(() => {
     if (isHorizontal && !isInscriptionMode && isInfoComplete && currentStep === 1) {
-      setCurrentStep(hasQuestionnaire ? 2 : (bookingStep as 2 | 3))
+      if (hasQuestionnaire) {
+        setCurrentStep(2)
+      } else if (!needsPrePayment) {
+        setCurrentStep(bookingStep as 2 | 3)
+      }
     }
-  }, [isHorizontal, isInscriptionMode, isInfoComplete, currentStep, hasQuestionnaire, bookingStep])
+  }, [isHorizontal, isInscriptionMode, isInfoComplete, currentStep, hasQuestionnaire, bookingStep, needsPrePayment])
+
+  // Auto-advance to calendar after pre-booking payment is verified
+  useEffect(() => {
+    if (paymentSessionId && campaign && currentStep < bookingStep) {
+      setCurrentStep(bookingStep as 2 | 3)
+    }
+  }, [paymentSessionId, campaign, bookingStep, currentStep])
 
   const handleSubmit = async () => {
     if (!isInfoComplete) return
@@ -512,7 +581,7 @@ export function CaptureForm() {
     setSubmitting(true)
     try {
       const name = `${firstName} ${lastName}`.trim()
-      const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData }
+      const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData, ...(paymentSessionId ? { payment_session_id: paymentSessionId } : {}) }
       // Add questionnaire answers
       if (hasQuestionnaire && Object.keys(answers).length > 0) {
         payload.answers = Object.entries(answers).map(([question_id, answer_value]) => ({ question_id, answer_value }))
@@ -879,16 +948,28 @@ export function CaptureForm() {
                     </div>
                   ))}
 
-                  {/* Continue button → advance to questionnaire or booking */}
+                  {/* Continue button → advance to questionnaire, payment, or booking */}
                   {(!isInscriptionMode || hasQuestionnaire) && !isHorizontal && (
                     <button
-                      onClick={() => setCurrentStep(hasQuestionnaire ? 2 : (bookingStep as 2 | 3))}
-                      disabled={!isInfoComplete}
+                      onClick={() => {
+                        if (needsPrePayment && !hasQuestionnaire) {
+                          handlePrePayment()
+                        } else {
+                          setCurrentStep(hasQuestionnaire ? 2 : (bookingStep as 2 | 3))
+                        }
+                      }}
+                      disabled={!isInfoComplete || submitting}
                       className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
                       style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                     >
-                      <span>{t.continue_btn}</span>
-                      <ArrowRight className="h-5 w-5" />
+                      {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+                        <>
+                          <span>{needsPrePayment && !hasQuestionnaire && campaign?.stripe_price
+                            ? (lang === 'fr' ? `Payer ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ et continuer` : `Pay ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ and continue`)
+                            : t.continue_btn}</span>
+                          <ArrowRight className="h-5 w-5" />
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
@@ -992,17 +1073,36 @@ export function CaptureForm() {
                     {!isInscriptionMode && (
                       <div className="space-y-3">
                         <button
-                          onClick={() => setCurrentStep(bookingStep as 2 | 3)}
-                          disabled={questionnaire?.required && !isQuestionnaireComplete}
+                          onClick={() => {
+                            if (needsPrePayment) {
+                              handlePrePayment()
+                            } else {
+                              setCurrentStep(bookingStep as 2 | 3)
+                            }
+                          }}
+                          disabled={(questionnaire?.required && !isQuestionnaireComplete) || submitting}
                           className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
                           style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                         >
-                          <span>{t.continue_btn}</span>
-                          <ArrowRight className="h-5 w-5" />
+                          {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+                            <>
+                              <span>{needsPrePayment && campaign?.stripe_price
+                                ? (lang === 'fr' ? `Payer ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ et continuer` : `Pay ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ and continue`)
+                                : t.continue_btn}</span>
+                              <ArrowRight className="h-5 w-5" />
+                            </>
+                          )}
                         </button>
                         {!questionnaire?.required && (
                           <button
-                            onClick={() => setCurrentStep(bookingStep as 2 | 3)}
+                            onClick={() => {
+                              if (needsPrePayment) {
+                                handlePrePayment()
+                              } else {
+                                setCurrentStep(bookingStep as 2 | 3)
+                              }
+                            }}
+                            disabled={submitting}
                             className="w-full text-center text-xs text-[#006c49] font-bold py-2 hover:underline"
                           >
                             {t.questionnaire_skip || 'Passer et choisir un créneau'}
@@ -1273,13 +1373,36 @@ export function CaptureForm() {
 
                 {/* Submit */}
                 <div className={`${isHorizontal ? 'pt-4 mt-4' : 'pt-6 mt-6'} border-t border-[#c4c7c7]/10`}>
+                  {campaign?.stripe_enabled && campaign.stripe_price && campaign.stripe_price > 0 && (
+                    <div className="flex items-center justify-center gap-2 mb-4 py-3 rounded-xl bg-[#006c49]/8">
+                      {paymentSessionId ? (
+                        <>
+                          <CheckCircle2 className="h-5 w-5 text-[#006c49]" />
+                          <span className="text-sm font-bold text-[#006c49]">
+                            {lang === 'fr' ? 'Paiement effectué' : 'Payment completed'} — {(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                            {(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€
+                          </span>
+                          <span className="text-xs text-[#444748] font-medium">
+                            {campaign.stripe_payment_timing === 'before'
+                              ? (lang === 'fr' ? 'à payer avant confirmation' : 'to pay before confirmation')
+                              : (lang === 'fr' ? 'à payer après confirmation' : 'to pay after confirmation')}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
                   <button
                     onClick={handleSubmit}
                     disabled={!isInfoComplete || !selectedDate || !selectedTime || submitting}
                     className={`w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] ${isHorizontal ? 'py-3.5 text-sm' : 'py-5 text-base'} font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-2xl group`}
                     style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                   >
-                    {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>{t.confirm_rdv}</span><ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" /></>}
+                    {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>{campaign?.stripe_enabled && campaign.stripe_price && campaign.stripe_price > 0 && !paymentSessionId ? (lang === 'fr' ? `Payer ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ et confirmer` : `Pay ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ and confirm`) : t.confirm_rdv}</span><ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" /></>}
                   </button>
 
                   <p className={`text-center text-[10px] text-[#444748]/40 ${isHorizontal ? 'mt-3' : 'mt-6'} font-medium leading-relaxed`}>

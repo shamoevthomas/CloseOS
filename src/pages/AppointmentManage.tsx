@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { Loader2, CheckCircle2, XCircle, Calendar, ChevronLeft, ChevronRight, Clock, AlertTriangle, CreditCard } from 'lucide-react'
+import { fromUTC } from '../lib/timezone'
 
 const API_URL = '/api/business'
 
@@ -76,6 +77,7 @@ export function AppointmentManage() {
   const today = new Date()
   const [calMonth, setCalMonth] = useState(today.getMonth())
   const [calYear, setCalYear] = useState(today.getFullYear())
+  const prospectTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
 
   // Fetch appointment info
   useEffect(() => {
@@ -151,6 +153,15 @@ export function AppointmentManage() {
       .finally(() => setSlotsLoading(false))
   }, [info?.campaign_slug, info?.booking_slug, actionParam])
 
+  // Convert slots from UTC to prospect's local timezone
+  const convertedSlots = useMemo(() => {
+    return slots.map(slot => {
+      if (!slot.datetime_utc) return slot
+      const local = fromUTC(slot.datetime_utc, prospectTimezone)
+      return { ...slot, date: local.date, time: local.time }
+    })
+  }, [slots, prospectTimezone])
+
   const handleCancel = async () => {
     if (!token || cancelling) return
     setCancelling(true)
@@ -173,7 +184,7 @@ export function AppointmentManage() {
     setRescheduling(true)
     try {
       const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
-      const matchingSlot = slots.find(s => s.date === dateStr && s.time === selectedTime)
+      const matchingSlot = convertedSlots.find(s => s.date === dateStr && s.time === selectedTime)
       const res = await fetch(`${API_URL}?action=appointment-reschedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -225,15 +236,15 @@ export function AppointmentManage() {
 
   const availableDates = useMemo(() => {
     const set = new Set<string>()
-    for (const s of slots) set.add(s.date)
+    for (const s of convertedSlots) set.add(s.date)
     return set
-  }, [slots])
+  }, [convertedSlots])
 
   const availableTimesForDate = useMemo(() => {
     if (!selectedDate) return []
     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
-    return slots.filter(s => s.date === dateStr)
-  }, [selectedDate, slots])
+    return convertedSlots.filter(s => s.date === dateStr)
+  }, [selectedDate, convertedSlots])
 
   const prevMonth = useCallback(() => {
     if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) }
