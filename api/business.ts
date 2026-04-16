@@ -4312,8 +4312,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const currency = campaign.stripe_currency || 'eur'
       const applicationFee = Math.round(amount * 0.02)
 
-      const stripeLib = (await import('stripe')).default
-      const stripeClient = new stripeLib(process.env.STRIPE_SECRET_KEY as string)
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
 
       const session = await stripeClient.checkout.sessions.create(
         {
@@ -4386,8 +4385,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const currency = campaign.stripe_currency || 'eur'
         const applicationFee = Math.round(amount * 0.02)
 
-        const stripeLib = (await import('stripe')).default
-        const stripeClient = new stripeLib(process.env.STRIPE_SECRET_KEY as string)
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
 
         const session = await stripeClient.checkout.sessions.create(
           {
