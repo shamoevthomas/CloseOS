@@ -35,6 +35,11 @@ import {
   Send,
   Loader2,
   Mail,
+  Handshake,
+  Gift,
+  Layers,
+  Check,
+  CheckCircle,
 } from 'lucide-react'
 import { salesTranslations, detectSalesLang } from './landingPageI18n'
 import type { SalesLang } from './landingPageI18n'
@@ -136,6 +141,278 @@ function FAQItem({ question, children }: { question: string, children: React.Rea
       </div>
     </div>
   );
+}
+
+/* ─── Sales Partner Section ─── */
+const SALES_AUDIENCE_RANGES = ['0 - 50', '50 - 200', '200 - 500', '500 - 1K', '1K - 5K', '5K - 10K', '10K+']
+const SALES_PLATFORM_OPTIONS = ['Instagram', 'LinkedIn', 'YouTube', 'TikTok', 'X / Twitter', 'Site web / Blog', 'Newsletter', 'Podcast', 'Autre']
+
+const SALES_PHONE_CODES = [
+  { code: '+33', flag: '\u{1F1EB}\u{1F1F7}', name: 'France' },
+  { code: '+32', flag: '\u{1F1E7}\u{1F1EA}', name: 'Belgique' },
+  { code: '+41', flag: '\u{1F1E8}\u{1F1ED}', name: 'Suisse' },
+  { code: '+352', flag: '\u{1F1F1}\u{1F1FA}', name: 'Luxembourg' },
+  { code: '+1', flag: '\u{1F1FA}\u{1F1F8}', name: '\u00C9tats-Unis' },
+  { code: '+44', flag: '\u{1F1EC}\u{1F1E7}', name: 'Royaume-Uni' },
+  { code: '+49', flag: '\u{1F1E9}\u{1F1EA}', name: 'Allemagne' },
+  { code: '+34', flag: '\u{1F1EA}\u{1F1F8}', name: 'Espagne' },
+  { code: '+39', flag: '\u{1F1EE}\u{1F1F9}', name: 'Italie' },
+  { code: '+212', flag: '\u{1F1F2}\u{1F1E6}', name: 'Maroc' },
+  { code: '+216', flag: '\u{1F1F9}\u{1F1F3}', name: 'Tunisie' },
+  { code: '+213', flag: '\u{1F1E9}\u{1F1FF}', name: 'Alg\u00E9rie' },
+  { code: '+225', flag: '\u{1F1E8}\u{1F1EE}', name: "C\u00F4te d'Ivoire" },
+  { code: '+221', flag: '\u{1F1F8}\u{1F1F3}', name: 'S\u00E9n\u00E9gal' },
+  { code: '+237', flag: '\u{1F1E8}\u{1F1F2}', name: 'Cameroun' },
+]
+
+function SalesPhoneInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [code, setCode] = useState('+33')
+  const [local, setLocal] = useState('')
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  const handleLocal = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 15)
+    const parts: string[] = []
+    for (let i = 0; i < digits.length; i += 2) parts.push(digits.slice(i, i + 2))
+    const formatted = parts.join(' ')
+    setLocal(formatted)
+    onChange(digits ? `${code} ${formatted}` : '')
+  }
+
+  const currentFlag = SALES_PHONE_CODES.find(c => c.code === code)?.flag || '\u{1F30D}'
+
+  return (
+    <div className="relative flex items-center rounded-xl bg-white/5" ref={ref}>
+      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1 shrink-0 pl-3 pr-1.5 py-2.5 hover:bg-white/5 rounded-l-xl transition-colors">
+        <span className="text-base">{currentFlag}</span>
+        <span className="text-xs text-stone-400 font-medium">{code}</span>
+        <ChevronDown className="h-3 w-3 text-stone-500" />
+      </button>
+      <div className="w-px h-5 bg-white/10 shrink-0" />
+      <input type="tel" value={local} onChange={e => handleLocal(e.target.value)} placeholder="6 12 34 56 78" className="flex-1 min-w-0 bg-transparent border-none py-2.5 px-3 text-sm text-stone-100 focus:ring-0 focus:outline-none font-medium placeholder:text-stone-600" />
+      {open && (
+        <div className="absolute top-full left-0 z-50 mt-1 w-64 max-h-52 overflow-y-auto rounded-xl border border-white/10 bg-[#1a1a1a] shadow-xl">
+          {SALES_PHONE_CODES.map((c, i) => (
+            <button key={`${c.code}-${i}`} type="button" onClick={() => { setCode(c.code); setLocal(''); onChange(''); setOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-white/5 transition-colors ${code === c.code ? 'bg-white/10 font-medium text-stone-100' : 'text-stone-400'}`}>
+              <span className="text-base">{c.flag}</span>
+              <span className="flex-1 truncate">{c.name}</span>
+              <span className="text-xs text-stone-500 font-medium">{c.code}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SalesPartnerSection({ t }: { t: any }) {
+  const [showModal, setShowModal] = useState(false)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [isSubscriber, setIsSubscriber] = useState(false)
+  const [whatsapp, setWhatsapp] = useState('')
+  const [activity, setActivity] = useState('')
+  const [audienceIdx, setAudienceIdx] = useState(1)
+  const [platforms, setPlatforms] = useState<string[]>([])
+  const [notes, setNotes] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!firstName.trim() || !lastName.trim() || !whatsapp.trim()) return
+    setSending(true)
+    try {
+      const platformsList = platforms.length > 0 ? platforms.join(', ') : 'Non renseigné'
+      const message = `Prénom : ${firstName}\nNom : ${lastName}\nAbonné CloseOS : ${isSubscriber ? 'Oui' : 'Non'}\nWhatsApp : ${whatsapp}\nActivité : ${activity || 'Non renseigné'}\nTaille d'audience : ${SALES_AUDIENCE_RANGES[audienceIdx]}\nPrésence : ${platformsList}\n\nNotes :\n${notes || '—'}`
+      await fetch('/api/email?action=contact-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${firstName} ${lastName}`,
+          email: 'ambassador-form@closeos.fr',
+          isSubscriber,
+          subject: '[Ambassadeur Sales] Candidature',
+          message,
+        }),
+      })
+      setSent(true)
+    } catch {
+      // silent
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <>
+      <motion.section id="partners" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 relative border-t border-white/5">
+        <div className="mx-auto max-w-5xl px-6 relative z-10">
+          <div className="text-center mb-16 space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-4">
+              <Handshake className="h-4 w-4 text-stone-400" />
+              <span className="text-sm font-semibold text-stone-300">{t.partners_badge}</span>
+            </div>
+            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-stone-50 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.partners_title}</h2>
+            <p className="text-stone-500 mt-5 text-lg">{t.partners_subtitle}</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Partner card */}
+            <div className="glass-card rounded-2xl p-8 flex flex-col">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 w-fit mb-6">
+                <Layers className="h-4 w-4 text-stone-400" />
+                <span className="text-sm font-bold text-stone-300">{t.partners_integrate_title}</span>
+              </div>
+              <p className="text-stone-400 mb-6">{t.partners_integrate_desc}</p>
+              <ul className="space-y-3 mb-8 flex-1">
+                {t.partners_integrate_items.map((item: string, i: number) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-stone-300">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="/book/6512796c" target="_blank" rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 rounded-full bg-white text-[#111] h-12 font-bold text-sm hover:bg-stone-200 transition-all active:scale-[0.98]"
+              >
+                {t.partners_integrate_cta}
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+
+            {/* Ambassador card */}
+            <div className="glass-card rounded-2xl p-8 flex flex-col">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 w-fit mb-6">
+                <Gift className="h-4 w-4 text-amber-400" />
+                <span className="text-sm font-bold text-amber-300">{t.partners_ambassador_title}</span>
+              </div>
+              <p className="text-stone-400 mb-6">{t.partners_ambassador_desc}</p>
+              <ul className="space-y-3 mb-8 flex-1">
+                {t.partners_ambassador_items.map((item: string, i: number) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-stone-300">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => { setShowModal(true); setSent(false) }}
+                className="w-full flex items-center justify-center gap-2 rounded-full bg-white text-[#111] h-12 font-bold text-sm hover:bg-stone-200 transition-all active:scale-[0.98]"
+              >
+                {t.partners_ambassador_cta}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Ambassador modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-[#1a1a1a] border border-white/10 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <Gift className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-stone-100" style={{ fontFamily: "'Manrope', sans-serif" }}>Devenir Ambassadeur</h3>
+                </div>
+                <button onClick={() => setShowModal(false)} className="p-2 rounded-full hover:bg-white/5 transition-colors">
+                  <X className="h-5 w-5 text-stone-500" />
+                </button>
+              </div>
+
+              {sent ? (
+                <div className="text-center py-10">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="h-8 w-8 text-emerald-400" />
+                  </div>
+                  <h4 className="text-lg font-bold text-stone-100 mb-2">Candidature envoyée !</h4>
+                  <p className="text-stone-500 text-sm">Nous reviendrons vers vous rapidement.</p>
+                  <button onClick={() => setShowModal(false)} className="mt-6 px-6 py-2.5 rounded-full bg-white text-[#111] text-sm font-bold hover:bg-stone-200 transition-all">
+                    Fermer
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Prénom *</label>
+                      <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jean" className="w-full px-4 py-2.5 rounded-xl bg-white/5 border-none text-sm text-stone-100 focus:ring-2 ring-white/10 font-medium placeholder:text-stone-600" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Nom *</label>
+                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Dupont" className="w-full px-4 py-2.5 rounded-xl bg-white/5 border-none text-sm text-stone-100 focus:ring-2 ring-white/10 font-medium placeholder:text-stone-600" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <button onClick={() => setIsSubscriber(!isSubscriber)} className="flex items-center gap-3 w-full rounded-xl bg-white/5 px-4 py-3 transition-colors hover:bg-white/[0.07]">
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSubscriber ? 'bg-emerald-500 border-emerald-500' : 'border-stone-600'}`}>
+                        {isSubscriber && <Check className="h-3 w-3 text-white" />}
+                      </div>
+                      <span className="text-sm font-medium text-stone-300">Je suis abonné(e) CloseOS</span>
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">WhatsApp *</label>
+                    <SalesPhoneInput value={whatsapp} onChange={setWhatsapp} />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Ce que vous faites</label>
+                    <input type="text" value={activity} onChange={e => setActivity(e.target.value)} placeholder="Coach, formateur, créateur de contenu..." className="w-full px-4 py-2.5 rounded-xl bg-white/5 border-none text-sm text-stone-100 focus:ring-2 ring-white/10 font-medium placeholder:text-stone-600" />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Taille de votre audience</label>
+                    <div className="px-2">
+                      <input type="range" min={0} max={SALES_AUDIENCE_RANGES.length - 1} value={audienceIdx} onChange={e => setAudienceIdx(Number(e.target.value))} className="w-full h-2 rounded-full appearance-none bg-white/10 accent-emerald-500 cursor-pointer" />
+                      <div className="flex justify-between mt-1.5">
+                        {SALES_AUDIENCE_RANGES.map((r, i) => (
+                          <span key={i} className={`text-[9px] font-bold ${i === audienceIdx ? 'text-stone-100' : 'text-stone-600'}`}>{r}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Où vous trouver ? (Insta, LinkedIn, site vitrine…)</label>
+                    <input type="text" value={platforms.join(', ')} onChange={e => setPlatforms(e.target.value ? [e.target.value] : [])} placeholder="https://instagram.com/votre-compte, https://linkedin.com/in/..." className="w-full px-4 py-2.5 rounded-xl bg-white/5 border-none text-sm text-stone-100 focus:ring-2 ring-white/10 font-medium placeholder:text-stone-600" />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Notes</label>
+                    <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Parlez-nous de vous, de votre audience, de vos idées..." rows={3} className="w-full px-4 py-2.5 rounded-xl bg-white/5 border-none text-sm text-stone-100 focus:ring-2 ring-white/10 font-medium resize-none placeholder:text-stone-600" />
+                  </div>
+
+                  <button onClick={handleSubmit} disabled={sending || !firstName.trim() || !lastName.trim() || !whatsapp.trim()} className="w-full flex items-center justify-center gap-2 rounded-full bg-white text-[#111] h-12 font-bold text-sm hover:bg-stone-200 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed">
+                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                      <>
+                        <Send className="h-4 w-4" />
+                        Envoyer ma candidature
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 /* ─── Motion Variants ─── */
@@ -441,9 +718,9 @@ export function LandingPage() {
 
           <div className="hidden md:flex items-center gap-8 text-[0.82rem] font-semibold">
             <a href="#features" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_features}</a>
-            <a href="#integrations" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_integrations}</a>
             <a href="#comparison" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_comparison}</a>
             <a href="#pricing" className="text-emerald-500 font-bold">{t.nav_pricing}</a>
+            <a href="#partners" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_partners}</a>
             <a href="#faq" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_faq}</a>
           </div>
 
@@ -470,9 +747,9 @@ export function LandingPage() {
           <div className="mx-4 glass-card rounded-2xl px-6 py-5 flex flex-col gap-1">
             {[
               { href: '#features', label: t.nav_features },
-              { href: '#integrations', label: t.nav_integrations },
               { href: '#comparison', label: t.nav_comparison },
               { href: '#pricing', label: t.nav_pricing },
+              { href: '#partners', label: t.nav_partners },
               { href: '#faq', label: t.nav_faq },
             ].map((item) => (
               <a key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)} className="py-3 px-4 rounded-xl text-sm font-medium text-stone-400 hover:text-stone-100 hover:bg-white/5 transition-colors">
@@ -1006,6 +1283,9 @@ export function LandingPage() {
           </div>
         </div>
       )}
+
+      {/* ═══ PARTNERS ═══ */}
+      <SalesPartnerSection t={t} />
 
       {/* ═══ FAQ ═══ */}
       <motion.section id="faq" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 relative border-t border-white/5">

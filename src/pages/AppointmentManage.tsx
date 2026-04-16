@@ -144,7 +144,7 @@ export function AppointmentManage() {
     if (!slug) { setNoSlotsSource(true); return }
     const action = info.campaign_slug ? 'capture-slots' : 'booking-info'
     setSlotsLoading(true)
-    fetch(`${API_URL}?action=${action}&slug=${slug}`)
+    fetch(`${API_URL}?action=${action}&slug=${slug}${info.campaign_slug ? '&reschedule=true' : ''}`)
       .then(r => r.json())
       .then(data => setSlots(data.slots || []))
       .catch(() => {})

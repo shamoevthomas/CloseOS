@@ -203,7 +203,7 @@ async function handleConnect(req: VercelRequest, res: VercelResponse) {
       .from('profiles')
       .select('stripe_account_id')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     let accountId = profile?.stripe_account_id;
 
@@ -218,8 +218,7 @@ async function handleConnect(req: VercelRequest, res: VercelResponse) {
       // On sauvegarde cet ID tout de suite dans ta base
       await supabase
         .from('profiles')
-        .update({ stripe_account_id: accountId })
-        .eq('id', userId);
+        .upsert({ id: userId, stripe_account_id: accountId }, { onConflict: 'id' });
     }
 
     // 3. On génère le lien magique "Onboarding" de Stripe

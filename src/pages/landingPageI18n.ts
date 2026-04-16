@@ -197,6 +197,20 @@ export interface SalesTranslations {
   cta_btn: string
   cta_trial: string
 
+  // Partners
+  nav_partners: string
+  partners_badge: string
+  partners_title: string
+  partners_subtitle: string
+  partners_integrate_title: string
+  partners_integrate_desc: string
+  partners_integrate_items: string[]
+  partners_integrate_cta: string
+  partners_ambassador_title: string
+  partners_ambassador_desc: string
+  partners_ambassador_items: string[]
+  partners_ambassador_cta: string
+
   // Founder
   founder_section_title: string
   founder_role: string
@@ -431,6 +445,30 @@ const fr: SalesTranslations = {
   cta_btn: "Commencer gratuitement",
   cta_trial: "10 jours d'essai gratuit. Pas de prélèvement immédiat.",
 
+  // Partners
+  nav_partners: "Partenariat",
+  partners_badge: "Partenariat",
+  partners_title: "Devenez partenaire CloseOS",
+  partners_subtitle: "Deux façons de collaborer avec nous et de développer votre activité.",
+  partners_integrate_title: "Partenaire",
+  partners_integrate_desc: "Intégrez CloseOS directement dans vos offres d'accompagnement.",
+  partners_integrate_items: [
+    "Idéal pour les formateurs, coachs et agences",
+    "Proposez CloseOS dans vos formations ou packs",
+    "Offre personnalisée selon votre volume",
+    "Support dédié pour vos clients",
+  ],
+  partners_integrate_cta: "Devenir partenaire",
+  partners_ambassador_title: "Ambassadeur",
+  partners_ambassador_desc: "Parlez de CloseOS à votre audience et gagnez des commissions.",
+  partners_ambassador_items: [
+    "Lien de parrainage personnalisé",
+    "Commissions récurrentes sur chaque vente",
+    "Kit de contenu fourni",
+    "Dashboard de suivi en temps réel",
+  ],
+  partners_ambassador_cta: "Devenir ambassadeur",
+
   // Founder
   founder_section_title: "Le fondateur",
   founder_role: "Fondateur de CloseOS",
@@ -664,6 +702,30 @@ const en: SalesTranslations = {
   cta_subtitle: "Join the elite closers who use CloseOS, the all-in-one closing system.",
   cta_btn: "Start for free",
   cta_trial: "10-day free trial. No upfront payment.",
+
+  // Partners
+  nav_partners: "Partners",
+  partners_badge: "Partnership",
+  partners_title: "Become a CloseOS partner",
+  partners_subtitle: "Two ways to collaborate with us and grow your business.",
+  partners_integrate_title: "Partner",
+  partners_integrate_desc: "Integrate CloseOS directly into your coaching or training offers.",
+  partners_integrate_items: [
+    "Ideal for trainers, coaches and agencies",
+    "Include CloseOS in your courses or bundles",
+    "Custom offer based on your volume",
+    "Dedicated support for your clients",
+  ],
+  partners_integrate_cta: "Become a partner",
+  partners_ambassador_title: "Ambassador",
+  partners_ambassador_desc: "Share CloseOS with your audience and earn commissions.",
+  partners_ambassador_items: [
+    "Personalized referral link",
+    "Recurring commissions on every sale",
+    "Content kit provided",
+    "Real-time tracking dashboard",
+  ],
+  partners_ambassador_cta: "Become an ambassador",
 
   // Founder
   founder_section_title: "The founder",

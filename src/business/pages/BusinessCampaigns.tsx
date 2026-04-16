@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import {
@@ -288,6 +288,24 @@ export function BusinessCampaigns() {
   }, [effectiveUserId])
 
   useEffect(() => { fetchCampaigns(); fetchFormulas(); fetchTeamMembers(); fetchCustomSources(); checkStripeConnection() }, [fetchCampaigns, fetchFormulas, fetchTeamMembers, fetchCustomSources, checkStripeConnection])
+
+  // Handle Stripe Connect return
+  const handledStripeReturn = useRef(false)
+  useEffect(() => {
+    if (handledStripeReturn.current || !effectiveUserId) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('stripe_connected') === 'true') {
+      handledStripeReturn.current = true
+      window.history.replaceState({}, '', window.location.pathname)
+      import('../../lib/supabase').then(({ supabase }) => {
+        supabase.from('profiles').update({ stripe_connected: true }).eq('id', effectiveUserId)
+          .then(() => {
+            setStripeConnected(true)
+            toast.success(lang === 'fr' ? 'Compte Stripe connecté avec succès !' : 'Stripe account connected successfully!')
+          })
+      })
+    }
+  }, [effectiveUserId])
 
   const resetForm = () => {
     setFormName(''); setFormDescription(''); setFormSource('Insta')
@@ -2342,6 +2360,8 @@ window.addEventListener('message',function(e){
         isOpen={showStripeConnectModal}
         onClose={() => { setShowStripeConnectModal(false); checkStripeConnection() }}
         returnPath="/business/campagnes"
+        benefits={[t.stripe_connect_campaign_benefit_1, t.stripe_connect_campaign_benefit_2, t.stripe_connect_campaign_benefit_3]}
+        connectedDescription={t.stripe_connect_campaign_connected_desc}
       />
     </div>
   )

@@ -262,11 +262,6 @@ export default function Tarifs() {
               transition={{ duration: 0.6 }}
               className="rounded-3xl border-2 border-blue-500 bg-blue-950/20 p-8 shadow-2xl shadow-blue-900/40 relative"
             >
-              <div className="absolute -top-3 right-6">
-                <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-black uppercase tracking-widest shadow-lg">
-                  {'\u{1F525}'} -51% OFFRE DE LANCEMENT
-                </span>
-              </div>
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="text-2xl font-bold text-white">PACK PRO</h3>

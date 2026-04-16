@@ -5,7 +5,7 @@ import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarCon
 import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
   ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save, Video, Globe,
-  Settings, Trash2, Bell, Code2, FileText, ChevronRight, ToggleLeft, ToggleRight, Pencil, Phone,
+  Settings, Trash2, Bell, Code2, FileText, ChevronRight, ToggleLeft, ToggleRight, Pencil, Phone, Hash, List, Type,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -36,6 +36,13 @@ interface TeamMember {
   timezone?: string
 }
 
+interface CustomField {
+  label: string
+  type: 'text' | 'email' | 'phone' | 'number' | 'select'
+  required: boolean
+  options?: string[]
+}
+
 interface BookingLink {
   id: string
   label: string
@@ -50,6 +57,7 @@ interface BookingLink {
   phone_enabled: boolean
   phone_required: boolean
   google_meet_enabled: boolean
+  custom_fields: CustomField[]
   created_at: string
 }
 
@@ -168,6 +176,7 @@ export function BusinessAppointments() {
   const [newLinkPhoneEnabled, setNewLinkPhoneEnabled] = useState(true)
   const [newLinkPhoneRequired, setNewLinkPhoneRequired] = useState(false)
   const [newLinkGoogleMeetEnabled, setNewLinkGoogleMeetEnabled] = useState(true)
+  const [newLinkCustomFields, setNewLinkCustomFields] = useState<CustomField[]>([])
   const [savingLink, setSavingLink] = useState(false)
 
   // Detail popup
@@ -359,6 +368,7 @@ export function BusinessAppointments() {
         phone_enabled: newLinkPhoneEnabled,
         phone_required: newLinkPhoneRequired,
         google_meet_enabled: newLinkGoogleMeetEnabled,
+        custom_fields: newLinkCustomFields,
         link: bookingUrl,
         slug,
       })
@@ -378,6 +388,7 @@ export function BusinessAppointments() {
     setNewLinkPhoneEnabled(true)
     setNewLinkPhoneRequired(false)
     setNewLinkGoogleMeetEnabled(true)
+    setNewLinkCustomFields([])
     toast.success(t.appointments_booking_link_created)
   }
 
@@ -399,6 +410,7 @@ export function BusinessAppointments() {
   const [editPhoneEnabled, setEditPhoneEnabled] = useState(true)
   const [editPhoneRequired, setEditPhoneRequired] = useState(false)
   const [editGoogleMeetEnabled, setEditGoogleMeetEnabled] = useState(true)
+  const [editCustomFields, setEditCustomFields] = useState<CustomField[]>([])
   const [savingEdit, setSavingEdit] = useState(false)
 
   const handleStartEdit = (bl: BookingLink) => {
@@ -413,6 +425,7 @@ export function BusinessAppointments() {
     setEditPhoneEnabled(bl.phone_enabled)
     setEditPhoneRequired(bl.phone_required)
     setEditGoogleMeetEnabled(bl.google_meet_enabled ?? true)
+    setEditCustomFields(bl.custom_fields || [])
   }
 
   const handleSaveEdit = async () => {
@@ -431,6 +444,7 @@ export function BusinessAppointments() {
         phone_enabled: editPhoneEnabled,
         phone_required: editPhoneRequired,
         google_meet_enabled: editGoogleMeetEnabled,
+        custom_fields: editCustomFields,
       })
       .eq('id', editingLink.id)
     setSavingEdit(false)
@@ -447,6 +461,7 @@ export function BusinessAppointments() {
       phone_enabled: editPhoneEnabled,
       phone_required: editPhoneRequired,
       google_meet_enabled: editGoogleMeetEnabled,
+      custom_fields: editCustomFields,
     } : l))
     setEditingLink(null)
     toast.success(t.appointments_link_updated)
@@ -1571,7 +1586,7 @@ export function BusinessAppointments() {
             </div>
 
             {/* Member filter for booking links */}
-            {isOwnerOrHoS && teamMembers.length > 0 && (
+            {isOwnerOrHoS && teamMembers.filter(m => m.id !== effectiveUserId).length > 0 && (
               <div className="mb-6">
                 <select
                   value={filterBookingMember}
@@ -1614,7 +1629,7 @@ export function BusinessAppointments() {
                     <option value={90}>90 min</option>
                   </select>
                 </div>
-                {(isOwnerOrHoS || (isSetter && canBookForOthers)) && (
+                {teamMembers.filter(m => m.id !== effectiveUserId).length > 0 && (isOwnerOrHoS || (isSetter && canBookForOthers)) && (
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Pour qui ?</label>
                     <select
@@ -1623,7 +1638,7 @@ export function BusinessAppointments() {
                       className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
                     >
                       <option value="">{t.appointments_for_me}</option>
-                      {teamMembers.map(m => (
+                      {teamMembers.filter(m => m.id !== effectiveUserId).map(m => (
                         <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                       ))}
                     </select>
@@ -1656,13 +1671,13 @@ export function BusinessAppointments() {
                     <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
                       <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-[#444748]/50" />Email</span>
                       <div className="flex items-center gap-3">
-                        <button onClick={() => setNewLinkEmailEnabled(!newLinkEmailEnabled)} className="text-[#444748] dark:text-neutral-300">
+                        <button onClick={() => { if (!newLinkGoogleMeetEnabled) setNewLinkEmailEnabled(!newLinkEmailEnabled) }} className={`text-[#444748] dark:text-neutral-300 ${newLinkGoogleMeetEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
                           {newLinkEmailEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
                         </button>
                         {newLinkEmailEnabled && (
                           <button
-                            onClick={() => setNewLinkEmailRequired(!newLinkEmailRequired)}
-                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-all ${newLinkEmailRequired ? 'bg-[#006c49] text-white' : 'bg-[#f5f3f2] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                            onClick={() => { if (!newLinkGoogleMeetEnabled) setNewLinkEmailRequired(!newLinkEmailRequired) }}
+                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-all ${newLinkEmailRequired ? 'bg-[#006c49] text-white' : 'bg-[#f5f3f2] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'} ${newLinkGoogleMeetEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             {newLinkEmailRequired ? 'Requis' : 'Optionnel'}
                           </button>
@@ -1687,11 +1702,92 @@ export function BusinessAppointments() {
                     </div>
                   </div>
                 </div>
+                {/* Custom fields */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Champs personnalisés</label>
+                  <div className="space-y-2">
+                    {newLinkCustomFields.map((cf, idx) => (
+                      <div key={idx} className="rounded-xl bg-white dark:bg-neutral-800 px-4 py-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <input
+                            type="text"
+                            value={cf.label}
+                            onChange={e => { const arr = [...newLinkCustomFields]; arr[idx] = { ...arr[idx], label: e.target.value }; setNewLinkCustomFields(arr) }}
+                            placeholder="Titre du champ"
+                            className="flex-1 bg-transparent text-sm font-medium text-[#1b1c1b] dark:text-white border-none focus:outline-none focus:ring-0 p-0"
+                          />
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => { const arr = [...newLinkCustomFields]; arr[idx] = { ...arr[idx], required: !arr[idx].required }; setNewLinkCustomFields(arr) }}
+                              className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-all ${cf.required ? 'bg-[#006c49] text-white' : 'bg-[#f5f3f2] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                            >
+                              {cf.required ? 'Requis' : 'Optionnel'}
+                            </button>
+                            <button onClick={() => setNewLinkCustomFields(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-500">
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {(['text', 'email', 'phone', 'number', 'select'] as const).map(tp => {
+                            const icons: Record<string, React.ReactNode> = { text: <Type className="h-3 w-3" />, email: <Mail className="h-3 w-3" />, phone: <Phone className="h-3 w-3" />, number: <Hash className="h-3 w-3" />, select: <List className="h-3 w-3" /> }
+                            const labels: Record<string, string> = { text: 'Texte', email: 'Email', phone: 'Téléphone', number: 'Nombre', select: 'Choix' }
+                            return (
+                              <button
+                                key={tp}
+                                onClick={() => { const arr = [...newLinkCustomFields]; arr[idx] = { ...arr[idx], type: tp, options: tp === 'select' ? (arr[idx].options || ['']) : undefined }; setNewLinkCustomFields(arr) }}
+                                className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full transition-all ${cf.type === tp ? 'bg-[#006c49] text-white' : 'bg-[#f5f3f2] dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                              >
+                                {icons[tp]} {labels[tp]}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {cf.type === 'select' && (
+                          <div className="space-y-1.5 pl-1">
+                            {(cf.options || ['']).map((opt, oi) => (
+                              <div key={oi} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={opt}
+                                  onChange={e => { const arr = [...newLinkCustomFields]; const opts = [...(arr[idx].options || [''])]; opts[oi] = e.target.value; arr[idx] = { ...arr[idx], options: opts }; setNewLinkCustomFields(arr) }}
+                                  placeholder={`Option ${oi + 1}`}
+                                  className="flex-1 px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-xs text-[#1b1c1b] dark:text-white focus:ring-1 ring-[#006c49]/20"
+                                />
+                                {(cf.options || []).length > 1 && (
+                                  <button onClick={() => { const arr = [...newLinkCustomFields]; const opts = [...(arr[idx].options || [])]; opts.splice(oi, 1); arr[idx] = { ...arr[idx], options: opts }; setNewLinkCustomFields(arr) }} className="text-red-400">
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => { const arr = [...newLinkCustomFields]; arr[idx] = { ...arr[idx], options: [...(arr[idx].options || []), ''] }; setNewLinkCustomFields(arr) }}
+                              className="text-[10px] font-bold text-[#006c49] hover:underline"
+                            >
+                              + Ajouter une option
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => setNewLinkCustomFields(prev => [...prev, { label: '', type: 'text', required: false }])}
+                      className="flex items-center gap-1.5 w-full justify-center rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700/30 py-2.5 text-xs font-bold text-[#444748] dark:text-neutral-400 hover:border-[#006c49]/30 hover:text-[#006c49] transition-all"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Ajouter un champ
+                    </button>
+                  </div>
+                </div>
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Visioconférence</label>
                   <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
                     <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><Video className="h-3.5 w-3.5 text-[#444748]/50" />Google Meet</span>
-                    <button onClick={() => setNewLinkGoogleMeetEnabled(!newLinkGoogleMeetEnabled)} className="text-[#444748] dark:text-neutral-300">
+                    <button onClick={() => {
+                      const next = !newLinkGoogleMeetEnabled
+                      setNewLinkGoogleMeetEnabled(next)
+                      if (next) { setNewLinkEmailEnabled(true); setNewLinkEmailRequired(true) }
+                    }} className="text-[#444748] dark:text-neutral-300">
                       {newLinkGoogleMeetEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
                     </button>
                   </div>
@@ -1816,7 +1912,7 @@ export function BusinessAppointments() {
                   <option value={90}>90 min</option>
                 </select>
               </div>
-              {(isOwnerOrHoS || (isSetter && canBookForOthers)) && (
+              {teamMembers.filter(m => m.id !== effectiveUserId).length > 0 && (isOwnerOrHoS || (isSetter && canBookForOthers)) && (
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-2 ml-1">Pour qui ?</label>
                   <select
@@ -1825,7 +1921,7 @@ export function BusinessAppointments() {
                     className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border-none text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
                   >
                     <option value="">{t.appointments_for_me}</option>
-                    {teamMembers.map(m => (
+                    {teamMembers.filter(m => m.id !== effectiveUserId).map(m => (
                       <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                     ))}
                   </select>
@@ -1857,13 +1953,13 @@ export function BusinessAppointments() {
                   <div className="flex items-center justify-between rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2.5">
                     <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-[#444748]/50" />Email</span>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => setEditEmailEnabled(!editEmailEnabled)} className="text-[#444748] dark:text-neutral-300">
+                      <button onClick={() => { if (!editGoogleMeetEnabled) setEditEmailEnabled(!editEmailEnabled) }} className={`text-[#444748] dark:text-neutral-300 ${editGoogleMeetEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         {editEmailEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
                       </button>
                       {editEmailEnabled && (
                         <button
-                          onClick={() => setEditEmailRequired(!editEmailRequired)}
-                          className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-all ${editEmailRequired ? 'bg-[#006c49] text-white' : 'bg-white dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                          onClick={() => { if (!editGoogleMeetEnabled) setEditEmailRequired(!editEmailRequired) }}
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-all ${editEmailRequired ? 'bg-[#006c49] text-white' : 'bg-white dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'} ${editGoogleMeetEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           {editEmailRequired ? 'Requis' : 'Optionnel'}
                         </button>
@@ -1888,11 +1984,92 @@ export function BusinessAppointments() {
                   </div>
                 </div>
               </div>
+              {/* Custom fields */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Champs personnalisés</label>
+                <div className="space-y-2">
+                  {editCustomFields.map((cf, idx) => (
+                    <div key={idx} className="rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <input
+                          type="text"
+                          value={cf.label}
+                          onChange={e => { const arr = [...editCustomFields]; arr[idx] = { ...arr[idx], label: e.target.value }; setEditCustomFields(arr) }}
+                          placeholder="Titre du champ"
+                          className="flex-1 bg-transparent text-sm font-medium text-[#1b1c1b] dark:text-white border-none focus:outline-none focus:ring-0 p-0"
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => { const arr = [...editCustomFields]; arr[idx] = { ...arr[idx], required: !arr[idx].required }; setEditCustomFields(arr) }}
+                            className={`text-[10px] font-bold px-2.5 py-1 rounded-full transition-all ${cf.required ? 'bg-[#006c49] text-white' : 'bg-white dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                          >
+                            {cf.required ? 'Requis' : 'Optionnel'}
+                          </button>
+                          <button onClick={() => setEditCustomFields(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-500">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {(['text', 'email', 'phone', 'number', 'select'] as const).map(tp => {
+                          const icons: Record<string, React.ReactNode> = { text: <Type className="h-3 w-3" />, email: <Mail className="h-3 w-3" />, phone: <Phone className="h-3 w-3" />, number: <Hash className="h-3 w-3" />, select: <List className="h-3 w-3" /> }
+                          const labels: Record<string, string> = { text: 'Texte', email: 'Email', phone: 'Téléphone', number: 'Nombre', select: 'Choix' }
+                          return (
+                            <button
+                              key={tp}
+                              onClick={() => { const arr = [...editCustomFields]; arr[idx] = { ...arr[idx], type: tp, options: tp === 'select' ? (arr[idx].options || ['']) : undefined }; setEditCustomFields(arr) }}
+                              className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full transition-all ${cf.type === tp ? 'bg-[#006c49] text-white' : 'bg-white dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                            >
+                              {icons[tp]} {labels[tp]}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      {cf.type === 'select' && (
+                        <div className="space-y-1.5 pl-1">
+                          {(cf.options || ['']).map((opt, oi) => (
+                            <div key={oi} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={opt}
+                                onChange={e => { const arr = [...editCustomFields]; const opts = [...(arr[idx].options || [''])]; opts[oi] = e.target.value; arr[idx] = { ...arr[idx], options: opts }; setEditCustomFields(arr) }}
+                                placeholder={`Option ${oi + 1}`}
+                                className="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-700 border-none text-xs text-[#1b1c1b] dark:text-white focus:ring-1 ring-[#006c49]/20"
+                              />
+                              {(cf.options || []).length > 1 && (
+                                <button onClick={() => { const arr = [...editCustomFields]; const opts = [...(arr[idx].options || [])]; opts.splice(oi, 1); arr[idx] = { ...arr[idx], options: opts }; setEditCustomFields(arr) }} className="text-red-400">
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => { const arr = [...editCustomFields]; arr[idx] = { ...arr[idx], options: [...(arr[idx].options || []), ''] }; setEditCustomFields(arr) }}
+                            className="text-[10px] font-bold text-[#006c49] hover:underline"
+                          >
+                            + Ajouter une option
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setEditCustomFields(prev => [...prev, { label: '', type: 'text', required: false }])}
+                    className="flex items-center gap-1.5 w-full justify-center rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700/30 py-2.5 text-xs font-bold text-[#444748] dark:text-neutral-400 hover:border-[#006c49]/30 hover:text-[#006c49] transition-all"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Ajouter un champ
+                  </button>
+                </div>
+              </div>
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Visioconférence</label>
                 <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
                   <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><Video className="h-3.5 w-3.5 text-[#444748]/50" />Google Meet</span>
-                  <button onClick={() => setEditGoogleMeetEnabled(!editGoogleMeetEnabled)} className="text-[#444748] dark:text-neutral-300">
+                  <button onClick={() => {
+                    const next = !editGoogleMeetEnabled
+                    setEditGoogleMeetEnabled(next)
+                    if (next) { setEditEmailEnabled(true); setEditEmailRequired(true) }
+                  }} className="text-[#444748] dark:text-neutral-300">
                     {editGoogleMeetEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
                   </button>
                 </div>

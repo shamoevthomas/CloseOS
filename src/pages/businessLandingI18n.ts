@@ -782,7 +782,7 @@ const fr: Translations = {
   partners_badge: 'Partenariat',
   partners_title: 'Devenez partenaire CloseOS',
   partners_subtitle: 'Deux façons de collaborer avec nous et de faire grandir votre business.',
-  partners_integrate_title: 'Intégrateur',
+  partners_integrate_title: 'Partenaire',
   partners_integrate_desc: 'Intégrez CloseOS directement dans vos offres d\'accompagnement.',
   partners_integrate_items: [
     'Idéal pour les formateurs, coachs et agences',
@@ -790,7 +790,7 @@ const fr: Translations = {
     'Offre personnalisée selon votre volume',
     'Support dédié pour vos clients',
   ],
-  partners_integrate_cta: 'Devenir intégrateur',
+  partners_integrate_cta: 'Devenir partenaire',
   partners_ambassador_title: 'Ambassadeur',
   partners_ambassador_desc: 'Recommandez CloseOS et touchez des commissions sur chaque vente.',
   partners_ambassador_items: [
@@ -1346,7 +1346,7 @@ const en: Translations = {
   partners_badge: 'Partnership',
   partners_title: 'Become a CloseOS partner',
   partners_subtitle: 'Two ways to collaborate with us and grow your business.',
-  partners_integrate_title: 'Integrator',
+  partners_integrate_title: 'Partner',
   partners_integrate_desc: 'Integrate CloseOS directly into your coaching or training offers.',
   partners_integrate_items: [
     'Ideal for trainers, coaches and agencies',
@@ -1354,7 +1354,7 @@ const en: Translations = {
     'Custom offer based on your volume',
     'Dedicated support for your clients',
   ],
-  partners_integrate_cta: 'Become an integrator',
+  partners_integrate_cta: 'Become a partner',
   partners_ambassador_title: 'Ambassador',
   partners_ambassador_desc: 'Recommend CloseOS and earn commissions on every sale.',
   partners_ambassador_items: [

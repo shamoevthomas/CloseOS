@@ -1,10 +1,17 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Globe, ArrowRight } from 'lucide-react'
+import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Globe, ArrowRight, Hash, List, Type } from 'lucide-react'
 import { toUTC, fromUTC, getTimezoneLabel } from '../lib/timezone'
 import { supabase } from '../lib/supabase'
 
 interface SlotData { date: string; time: string; datetime_utc?: string }
+interface CustomField {
+  label: string
+  type: 'text' | 'email' | 'phone' | 'number' | 'select'
+  required: boolean
+  options?: string[]
+}
+
 interface BookingInfo {
   label: string
   duration: number
@@ -16,6 +23,7 @@ interface BookingInfo {
   emailRequired: boolean
   phoneEnabled: boolean
   phoneRequired: boolean
+  customFields: CustomField[]
   slots?: SlotData[]
 }
 
@@ -58,6 +66,7 @@ export function PublicBooking() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({})
   const [step, setStep] = useState<'form' | 'calendar' | 'confirm'>('form')
 
   // Calendar
@@ -87,7 +96,7 @@ export function PublicBooking() {
         // Compléter avec données Supabase (description, redirect, creator)
         const { data: link } = await supabase
           .from('business_booking_links')
-          .select('description, redirect_url, business_owner_id, team_member_id, email_enabled, email_required, phone_enabled, phone_required')
+          .select('description, redirect_url, business_owner_id, team_member_id, email_enabled, email_required, phone_enabled, phone_required, custom_fields')
           .eq('slug', slug)
           .maybeSingle()
         if (link) {
@@ -98,6 +107,7 @@ export function PublicBooking() {
           d.emailRequired = link.email_required ?? false
           d.phoneEnabled = link.phone_enabled ?? true
           d.phoneRequired = link.phone_required ?? false
+          d.customFields = (link.custom_fields as CustomField[]) || []
 
           // Fallback: compute slots client-side if API doesn't return them (deployed API still uses freeMode)
           if (!d.slots || d.slots.length === 0 || d.freeMode) {
@@ -270,7 +280,7 @@ export function PublicBooking() {
           timezone: prospectTimezone,
           cancel_token: cancelToken,
           reschedule_token: rescheduleToken,
-          notes: `Booking: ${name}${email ? ` — ${email}` : ''}${phone ? ` — ${phone}` : ''}`,
+          notes: `Booking: ${name}${email ? ` — ${email}` : ''}${phone ? ` — ${phone}` : ''}${Object.entries(customFieldValues).filter(([, v]) => v.trim()).map(([k, v]) => ` — ${k}: ${v}`).join('')}`,
         })
         .select()
         .single()
@@ -587,9 +597,38 @@ export function PublicBooking() {
                       </div>
                     )}
 
+                    {/* Custom fields */}
+                    {(info.customFields || []).map((cf, idx) => (
+                      <div key={idx} className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">
+                          {cf.label}{cf.required ? ' *' : ''}
+                        </label>
+                        {cf.type === 'select' ? (
+                          <select
+                            value={customFieldValues[cf.label] || ''}
+                            onChange={e => setCustomFieldValues(prev => ({ ...prev, [cf.label]: e.target.value }))}
+                            className={inputCls}
+                          >
+                            <option value="">{lang === 'fr' ? 'Sélectionner...' : 'Select...'}</option>
+                            {(cf.options || []).filter(o => o.trim()).map((opt, oi) => (
+                              <option key={oi} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type={cf.type === 'phone' ? 'tel' : cf.type === 'number' ? 'number' : cf.type === 'email' ? 'email' : 'text'}
+                            value={customFieldValues[cf.label] || ''}
+                            onChange={e => setCustomFieldValues(prev => ({ ...prev, [cf.label]: e.target.value }))}
+                            placeholder={cf.label}
+                            className={inputCls}
+                          />
+                        )}
+                      </div>
+                    ))}
+
                     <button
                       onClick={handleContactSubmit}
-                      disabled={!name.trim() || (info.emailRequired && !email.trim()) || (info.phoneRequired && !phone.trim())}
+                      disabled={!name.trim() || (info.emailRequired && !email.trim()) || (info.phoneRequired && !phone.trim()) || (info.customFields || []).some(cf => cf.required && !customFieldValues[cf.label]?.trim())}
                       className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-4 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl mt-4"
                       style={{ fontFamily: 'Manrope, sans-serif' }}
                     >

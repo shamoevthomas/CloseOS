@@ -5262,6 +5262,10 @@ export const fr: BusinessTranslations = {
   stripe_connect_benefit_1: 'Recevez vos commissions par CB directement sur votre compte bancaire.',
   stripe_connect_benefit_2: 'Vos clients paient en 1 clic depuis le PDF de la facture.',
   stripe_connect_connected_desc: 'Votre compte Stripe est correctement relie. Vous pouvez recevoir des paiements directement sur vos factures.',
+  stripe_connect_campaign_benefit_1: 'Faites payer vos rendez-vous directement via vos campagnes.',
+  stripe_connect_campaign_benefit_2: 'CloseOS prélève 2% de frais de service sur chaque transaction.',
+  stripe_connect_campaign_benefit_3: 'Remboursement configurable par palier + reprogrammation payante.',
+  stripe_connect_campaign_connected_desc: 'Votre compte Stripe est connecté. Vous pouvez activer le paiement sur vos campagnes.',
   // ─── Issuer Profiles Modal (extra) ───
   issuer_form_title_edit: 'Modifier profil',
   issuer_form_title_new: 'Nouveau profil',
@@ -8244,6 +8248,10 @@ export const en: BusinessTranslations = {
   stripe_connect_benefit_1: 'Receive your commissions by card directly to your bank account.',
   stripe_connect_benefit_2: 'Your clients pay in 1 click from the invoice PDF.',
   stripe_connect_connected_desc: 'Your Stripe account is properly linked. You can receive payments directly on your invoices.',
+  stripe_connect_campaign_benefit_1: 'Charge for appointments directly through your campaigns.',
+  stripe_connect_campaign_benefit_2: 'CloseOS takes a 2% service fee on each transaction.',
+  stripe_connect_campaign_benefit_3: 'Configurable tiered refunds + paid rescheduling.',
+  stripe_connect_campaign_connected_desc: 'Your Stripe account is connected. You can enable payments on your campaigns.',
   // ─── Issuer Profiles Modal (extra) ───
   issuer_form_title_edit: 'Edit profile',
   issuer_form_title_new: 'New profile',

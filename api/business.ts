@@ -2748,13 +2748,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'capture-slots' && req.method === 'GET') {
       const slug = req.query.slug as string
       if (!slug) return res.status(400).json({ error: 'slug required' })
+      const isReschedule = req.query.reschedule === 'true'
 
-      const { data: campaign } = await supabase
+      let campaignQuery = supabase
         .from('business_campaigns')
         .select('id, user_id, booking_duration, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, capture_type')
         .eq('slug', slug)
-        .eq('is_active', true)
-        .single()
+      // Allow inactive campaigns when rescheduling existing appointments
+      if (!isReschedule) campaignQuery = campaignQuery.eq('is_active', true)
+      const { data: campaign } = await campaignQuery.single()
 
       if (!campaign) return res.status(404).json({ error: 'Campaign not found' })
       if (campaign.capture_type === 'without_rdv') return res.status(200).json({ slots: [], freeMode: false })

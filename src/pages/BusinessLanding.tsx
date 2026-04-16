@@ -1987,9 +1987,116 @@ const PricingSection = () => {
   );
 };
 
+const AUDIENCE_RANGES = ['0 - 50', '50 - 200', '200 - 500', '500 - 1K', '1K - 5K', '5K - 10K', '10K+']
+const PLATFORM_OPTIONS = ['Instagram', 'LinkedIn', 'YouTube', 'TikTok', 'X / Twitter', 'Site web / Blog', 'Newsletter', 'Podcast', 'Autre']
+
+const PHONE_COUNTRY_CODES = [
+  { code: '+33', flag: '\u{1F1EB}\u{1F1F7}', name: 'France' },
+  { code: '+32', flag: '\u{1F1E7}\u{1F1EA}', name: 'Belgique' },
+  { code: '+41', flag: '\u{1F1E8}\u{1F1ED}', name: 'Suisse' },
+  { code: '+352', flag: '\u{1F1F1}\u{1F1FA}', name: 'Luxembourg' },
+  { code: '+1', flag: '\u{1F1FA}\u{1F1F8}', name: '\u00C9tats-Unis' },
+  { code: '+44', flag: '\u{1F1EC}\u{1F1E7}', name: 'Royaume-Uni' },
+  { code: '+49', flag: '\u{1F1E9}\u{1F1EA}', name: 'Allemagne' },
+  { code: '+34', flag: '\u{1F1EA}\u{1F1F8}', name: 'Espagne' },
+  { code: '+39', flag: '\u{1F1EE}\u{1F1F9}', name: 'Italie' },
+  { code: '+212', flag: '\u{1F1F2}\u{1F1E6}', name: 'Maroc' },
+  { code: '+216', flag: '\u{1F1F9}\u{1F1F3}', name: 'Tunisie' },
+  { code: '+213', flag: '\u{1F1E9}\u{1F1FF}', name: 'Alg\u00E9rie' },
+  { code: '+225', flag: '\u{1F1E8}\u{1F1EE}', name: "C\u00F4te d'Ivoire" },
+  { code: '+221', flag: '\u{1F1F8}\u{1F1F3}', name: 'S\u00E9n\u00E9gal' },
+  { code: '+237', flag: '\u{1F1E8}\u{1F1F2}', name: 'Cameroun' },
+]
+
+const PhoneInputLanding = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
+  const [code, setCode] = useState('+33');
+  const [local, setLocal] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  const handleLocal = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 15);
+    // Simple formatting: groups of 2
+    const parts: string[] = [];
+    for (let i = 0; i < digits.length; i += 2) parts.push(digits.slice(i, i + 2));
+    const formatted = parts.join(' ');
+    setLocal(formatted);
+    onChange(digits ? `${code} ${formatted}` : '');
+  };
+
+  const currentFlag = PHONE_COUNTRY_CODES.find(c => c.code === code)?.flag || '\u{1F30D}';
+
+  return (
+    <div className="relative flex items-center rounded-xl bg-stone-100" ref={ref}>
+      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1 shrink-0 pl-3 pr-1.5 py-2.5 hover:bg-stone-200/50 rounded-l-xl transition-colors">
+        <span className="text-base">{currentFlag}</span>
+        <span className="text-xs text-stone-500 font-medium">{code}</span>
+        <ChevronDown className="h-3 w-3 text-stone-400" />
+      </button>
+      <div className="w-px h-5 bg-stone-200 shrink-0" />
+      <input type="tel" value={local} onChange={e => handleLocal(e.target.value)} placeholder="6 12 34 56 78" className="flex-1 min-w-0 bg-transparent border-none py-2.5 px-3 text-sm text-[#111111] focus:ring-0 focus:outline-none font-medium" />
+      {open && (
+        <div className="absolute top-full left-0 z-50 mt-1 w-64 max-h-52 overflow-y-auto rounded-xl border border-stone-200 bg-white shadow-xl">
+          {PHONE_COUNTRY_CODES.map((c, i) => (
+            <button key={`${c.code}-${i}`} type="button" onClick={() => { setCode(c.code); setLocal(''); onChange(''); setOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone-50 transition-colors ${code === c.code ? 'bg-stone-100 font-medium' : 'text-stone-700'}`}>
+              <span className="text-base">{c.flag}</span>
+              <span className="flex-1 truncate">{c.name}</span>
+              <span className="text-xs text-stone-400 font-medium">{c.code}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const PartnerSection = () => {
   const { t } = useLang();
+  const [showAmbassadorModal, setShowAmbassadorModal] = useState(false);
+  const [ambFirstName, setAmbFirstName] = useState('');
+  const [ambLastName, setAmbLastName] = useState('');
+  const [ambIsSubscriber, setAmbIsSubscriber] = useState(false);
+  const [ambWhatsapp, setAmbWhatsapp] = useState('');
+  const [ambActivity, setAmbActivity] = useState('');
+  const [ambAudienceIdx, setAmbAudienceIdx] = useState(1);
+  const [ambPlatforms, setAmbPlatforms] = useState<string[]>([]);
+  const [ambNotes, setAmbNotes] = useState('');
+  const [ambSending, setAmbSending] = useState(false);
+  const [ambSent, setAmbSent] = useState(false);
+
+  const handleAmbassadorSubmit = async () => {
+    if (!ambFirstName.trim() || !ambLastName.trim() || !ambWhatsapp.trim()) return;
+    setAmbSending(true);
+    try {
+      const platformsList = ambPlatforms.length > 0 ? ambPlatforms.join(', ') : 'Non renseigné';
+      const message = `Prénom : ${ambFirstName}\nNom : ${ambLastName}\nAbonné CloseOS : ${ambIsSubscriber ? 'Oui' : 'Non'}\nWhatsApp : ${ambWhatsapp}\nActivité : ${ambActivity || 'Non renseigné'}\nTaille d'audience : ${AUDIENCE_RANGES[ambAudienceIdx]}\nPrésence : ${platformsList}\n\nNotes :\n${ambNotes || '—'}`;
+      await fetch('/api/email?action=contact-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${ambFirstName} ${ambLastName}`,
+          email: 'ambassador-form@closeos.fr',
+          isSubscriber: ambIsSubscriber,
+          subject: '[Ambassadeur] Candidature',
+          message,
+        }),
+      });
+      setAmbSent(true);
+    } catch {
+      // silent
+    } finally {
+      setAmbSending(false);
+    }
+  };
+
   return (
+    <>
     <motion.section
       initial={{ opacity: 0, y: 50 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -2025,7 +2132,7 @@ const PartnerSection = () => {
               ))}
             </ul>
             <a
-              href="mailto:thomasshamoev@gmail.com?subject=Partenariat%20Int%C3%A9grateur%20CloseOS"
+              href="/book/b0f4db2e" target="_blank" rel="noopener noreferrer"
               className="w-full flex items-center justify-center gap-2 rounded-full bg-[#111111] text-white h-12 font-bold text-sm hover:bg-stone-800 transition-all active:scale-[0.98]"
             >
               {t.partners_integrate_cta}
@@ -2048,17 +2155,136 @@ const PartnerSection = () => {
                 </li>
               ))}
             </ul>
-            <a
-              href="mailto:thomasshamoev@gmail.com?subject=Partenariat%20Ambassadeur%20CloseOS"
+            <button
+              onClick={() => { setShowAmbassadorModal(true); setAmbSent(false) }}
               className="w-full flex items-center justify-center gap-2 rounded-full bg-[#111111] text-white h-12 font-bold text-sm hover:bg-stone-800 transition-all active:scale-[0.98]"
             >
               {t.partners_ambassador_cta}
               <ArrowRight className="h-4 w-4" />
-            </a>
+            </button>
           </div>
         </div>
       </div>
     </motion.section>
+
+    {/* Ambassador popup */}
+    {showAmbassadorModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowAmbassadorModal(false)}>
+        <div className="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                  <Gift className="h-5 w-5 text-amber-600" />
+                </div>
+                <h3 className="text-xl font-bold text-[#111111]">Devenir Ambassadeur</h3>
+              </div>
+              <button onClick={() => setShowAmbassadorModal(false)} className="p-2 rounded-full hover:bg-stone-100 transition-colors">
+                <X className="h-5 w-5 text-stone-500" />
+              </button>
+            </div>
+
+            {ambSent ? (
+              <div className="text-center py-10">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="h-8 w-8 text-emerald-600" />
+                </div>
+                <h4 className="text-lg font-bold text-[#111111] mb-2">Candidature envoyée !</h4>
+                <p className="text-stone-500 text-sm">Nous reviendrons vers vous rapidement.</p>
+                <button onClick={() => setShowAmbassadorModal(false)} className="mt-6 px-6 py-2.5 rounded-full bg-[#111111] text-white text-sm font-bold hover:bg-stone-800 transition-all">
+                  Fermer
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {/* Nom + Prénom */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Prénom *</label>
+                    <input type="text" value={ambFirstName} onChange={e => setAmbFirstName(e.target.value)} placeholder="Jean" className="w-full px-4 py-2.5 rounded-xl bg-stone-100 border-none text-sm text-[#111111] focus:ring-2 ring-stone-900/10 font-medium" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Nom *</label>
+                    <input type="text" value={ambLastName} onChange={e => setAmbLastName(e.target.value)} placeholder="Dupont" className="w-full px-4 py-2.5 rounded-xl bg-stone-100 border-none text-sm text-[#111111] focus:ring-2 ring-stone-900/10 font-medium" />
+                  </div>
+                </div>
+
+                {/* Abonné */}
+                <div>
+                  <button
+                    onClick={() => setAmbIsSubscriber(!ambIsSubscriber)}
+                    className="flex items-center gap-3 w-full rounded-xl bg-stone-100 px-4 py-3 transition-colors hover:bg-stone-200/70"
+                  >
+                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${ambIsSubscriber ? 'bg-[#111111] border-[#111111]' : 'border-stone-300'}`}>
+                      {ambIsSubscriber && <Check className="h-3 w-3 text-white" />}
+                    </div>
+                    <span className="text-sm font-medium text-[#111111]">Je suis abonné(e) CloseOS</span>
+                  </button>
+                </div>
+
+                {/* WhatsApp */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">WhatsApp *</label>
+                  <PhoneInputLanding value={ambWhatsapp} onChange={setAmbWhatsapp} />
+                </div>
+
+                {/* Activité */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Ce que vous faites</label>
+                  <input type="text" value={ambActivity} onChange={e => setAmbActivity(e.target.value)} placeholder="Coach, formateur, créateur de contenu..." className="w-full px-4 py-2.5 rounded-xl bg-stone-100 border-none text-sm text-[#111111] focus:ring-2 ring-stone-900/10 font-medium" />
+                </div>
+
+                {/* Audience slider */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Taille de votre audience</label>
+                  <div className="px-2">
+                    <input
+                      type="range"
+                      min={0}
+                      max={AUDIENCE_RANGES.length - 1}
+                      value={ambAudienceIdx}
+                      onChange={e => setAmbAudienceIdx(Number(e.target.value))}
+                      className="w-full h-2 rounded-full appearance-none bg-stone-200 accent-[#111111] cursor-pointer"
+                    />
+                    <div className="flex justify-between mt-1.5">
+                      {AUDIENCE_RANGES.map((r, i) => (
+                        <span key={i} className={`text-[9px] font-bold ${i === ambAudienceIdx ? 'text-[#111111]' : 'text-stone-400'}`}>{r}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Liens */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Où vous trouver ? (Insta, LinkedIn, site vitrine…)</label>
+                  <input type="text" value={ambPlatforms.join(', ')} onChange={e => setAmbPlatforms(e.target.value ? [e.target.value] : [])} placeholder="https://instagram.com/votre-compte, https://linkedin.com/in/..." className="w-full px-4 py-2.5 rounded-xl bg-stone-100 border-none text-sm text-[#111111] focus:ring-2 ring-stone-900/10 font-medium" />
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Notes</label>
+                  <textarea value={ambNotes} onChange={e => setAmbNotes(e.target.value)} placeholder="Parlez-nous de vous, de votre audience, de vos idées..." rows={3} className="w-full px-4 py-2.5 rounded-xl bg-stone-100 border-none text-sm text-[#111111] focus:ring-2 ring-stone-900/10 font-medium resize-none" />
+                </div>
+
+                <button
+                  onClick={handleAmbassadorSubmit}
+                  disabled={ambSending || !ambFirstName.trim() || !ambLastName.trim() || !ambWhatsapp.trim()}
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-[#111111] text-white h-12 font-bold text-sm hover:bg-stone-800 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {ambSending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Envoyer ma candidature
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
