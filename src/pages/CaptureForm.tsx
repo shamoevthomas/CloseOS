@@ -557,16 +557,17 @@ export function CaptureForm() {
     return true
   }, [hasQuestionnaire, questionnaire, captureQuestions, answers])
 
-  // Auto-advance to booking step in horizontal mode when info is complete
+  // Auto-advance when info is complete (vertical + horizontal)
   useEffect(() => {
-    if (isHorizontal && !isInscriptionMode && isInfoComplete && currentStep === 1) {
+    if (!isInscriptionMode && isInfoComplete && currentStep === 1) {
       if (hasQuestionnaire) {
         setCurrentStep(2)
       } else if (!needsPrePayment) {
         setCurrentStep(bookingStep as 2 | 3)
       }
+      // If needsPrePayment: stay on step 1 so user can click "Payer X€"
     }
-  }, [isHorizontal, isInscriptionMode, isInfoComplete, currentStep, hasQuestionnaire, bookingStep, needsPrePayment])
+  }, [isInscriptionMode, isInfoComplete, currentStep, hasQuestionnaire, bookingStep, needsPrePayment])
 
   // Auto-advance to calendar after pre-booking payment is verified
   useEffect(() => {

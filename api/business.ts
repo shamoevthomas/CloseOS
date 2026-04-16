@@ -4305,7 +4305,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
 
-      const session = await stripeClient.checkout.sessions.create({
+      const commonParams: any = {
         payment_method_types: ['card'],
         line_items: [{
           price_data: {
@@ -4315,16 +4315,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
           quantity: 1,
         }],
-        mode: 'payment',
-        payment_intent_data: {
-          application_fee_amount: applicationFee,
-          transfer_data: { destination: stripeProfile.stripe_account_id },
-        },
+        mode: 'payment' as const,
         success_url: successUrl,
         cancel_url: cancelUrl,
         ...(email ? { customer_email: email } : {}),
         metadata: { campaign_id: campaign.id, payment_type: 'pre_booking', slug },
-      })
+      }
+
+      let session;
+      try {
+        session = await stripeClient.checkout.sessions.create({
+          ...commonParams,
+          payment_intent_data: {
+            application_fee_amount: applicationFee,
+            transfer_data: { destination: stripeProfile.stripe_account_id },
+          },
+        })
+      } catch (stripeErr: any) {
+        if (stripeErr.message?.includes('your own account')) {
+          session = await stripeClient.checkout.sessions.create(commonParams)
+        } else {
+          throw stripeErr
+        }
+      }
 
       await supabase.from('campaign_payment_sessions').insert({
         campaign_id: campaign.id,
@@ -4378,7 +4391,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
 
-        const session = await stripeClient.checkout.sessions.create({
+        const commonParams: any = {
           payment_method_types: ['card'],
           line_items: [{
             price_data: {
@@ -4388,16 +4401,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             },
             quantity: 1,
           }],
-          mode: 'payment',
-          payment_intent_data: {
-            application_fee_amount: applicationFee,
-            transfer_data: { destination: stripeProfile.stripe_account_id },
-          },
+          mode: 'payment' as const,
           success_url: successUrl,
           cancel_url: cancelUrl,
           ...(email ? { customer_email: email } : {}),
           metadata: { campaign_id: campaign.id, payment_type: 'initial', slug },
-        })
+        }
+
+        let session;
+        try {
+          session = await stripeClient.checkout.sessions.create({
+            ...commonParams,
+            payment_intent_data: {
+              application_fee_amount: applicationFee,
+              transfer_data: { destination: stripeProfile.stripe_account_id },
+            },
+          })
+        } catch (stripeErr: any) {
+          if (stripeErr.message?.includes('your own account')) {
+            session = await stripeClient.checkout.sessions.create(commonParams)
+          } else {
+            throw stripeErr
+          }
+        }
 
         // Store prospect data for after payment
         await supabase.from('campaign_payment_sessions').insert({
