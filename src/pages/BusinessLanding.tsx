@@ -1964,8 +1964,8 @@ const PricingSection = () => {
 
       {/* Enterprise capture modal */}
       {contactModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setContactModalOpen(false)}>
-          <div className="bg-white rounded-2xl p-6 max-w-3xl w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-4 md:py-10" onClick={() => setContactModalOpen(false)}>
+          <div className="bg-white rounded-2xl p-4 md:p-6 max-w-3xl w-full mx-4 shadow-2xl my-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-extrabold text-[#111111] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 Enterprise / Challenge
@@ -1980,7 +1980,7 @@ const PricingSection = () => {
               width="100%"
               height={530}
               frameBorder="0"
-              scrolling="no"
+              scrolling="yes"
               style={{ border: 'none', borderRadius: 12, overflow: 'hidden', transition: 'height 0.4s ease' }}
             />
           </div>
