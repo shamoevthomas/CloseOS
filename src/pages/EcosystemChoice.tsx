@@ -193,11 +193,12 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
 
             {/* ── Card: CloseOS Sales ── */}
-            <motion.div
+            <motion.a
+              href="/landing"
               initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              onClick={onChooseSales}
+              onClick={(e) => { e.preventDefault(); onChooseSales(); }}
               className="group relative flex flex-col cursor-pointer"
             >
               {/* Card glow */}
@@ -272,8 +273,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
 
                 {/* CTA Button */}
                 <div className="relative z-10">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onChooseSales(); }}
+                  <span
                     className="w-full flex items-center justify-between px-8 py-5 rounded-xl font-semibold text-base transition-all duration-300 group-hover:shadow-[0_0_30px_rgba(0,180,255,0.12)]"
                     style={{
                       fontFamily: "'Sora', sans-serif",
@@ -292,17 +292,18 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                   >
                     {t.sales_cta}
                     <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={1.5} />
-                  </button>
+                  </span>
                 </div>
               </div>
-            </motion.div>
+            </motion.a>
 
             {/* ── Card: CloseOS Business ── */}
-            <motion.div
+            <motion.a
+              href="/business"
               initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               transition={{ duration: 0.8, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              onClick={onChooseBusiness}
+              onClick={(e) => { e.preventDefault(); onChooseBusiness(); }}
               className="group relative flex flex-col cursor-pointer"
             >
               {/* Card glow */}
@@ -382,8 +383,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
 
                 {/* CTA Button */}
                 <div className="relative z-10">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onChooseBusiness(); }}
+                  <span
                     className="w-full flex items-center justify-between px-8 py-5 rounded-xl font-semibold text-base transition-all duration-300 group-hover:shadow-[0_0_30px_rgba(255,160,40,0.12)]"
                     style={{
                       fontFamily: "'Sora', sans-serif",
@@ -402,10 +402,10 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                   >
                     {t.business_cta}
                     <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={1.5} />
-                  </button>
+                  </span>
                 </div>
               </div>
-            </motion.div>
+            </motion.a>
           </div>
 
           {/* ═══ Integrations Marquee ═══ */}

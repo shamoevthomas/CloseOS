@@ -27,8 +27,10 @@ const businessPlans = [
     name: 'Solo',
     badge: 'Infopreneur qui close seul',
     monthlyPrice: 39,
-    annualPrice: 390,
-    annualMonthly: 32,
+    quarterlyMonthly: 32,
+    quarterlyTotal: 96,
+    annualMonthly: 28,
+    annualTotal: 336,
     features: [
       'CRM complet avec pipeline visuel',
       { main: 'Système d\'acquisition intégré', sub: ['Campagnes d\'acquisition', 'Tracking UTM et analytics', 'CRM acquisition dédié', 'KPIs d\'acquisition'] },
@@ -37,68 +39,75 @@ const businessPlans = [
       'Booking et agenda intégré',
       'Intégrations (iClosed, Pipedrive, Zapier…)',
     ],
-    cta: { label: 'Essai gratuit 20 jours', to: '/register' },
+    cta: { label: 'Essai gratuit 20 jours', to: '/business#pricing' },
     highlighted: false,
     popularBadge: false,
   },
   {
     name: 'Business',
-    badge: 'Pour les équipes de vente',
+    badge: '3 équipiers inclus',
     monthlyPrice: 59,
-    annualPrice: 590,
-    annualMonthly: 49,
+    quarterlyMonthly: 48,
+    quarterlyTotal: 144,
+    annualMonthly: 42,
+    annualTotal: 504,
     features: [
-      'Tout ce qui est dans Solo, plus :',
-      'Gestion d\'équipe (3 membres inclus)',
-      'Rôles : Closer, Setter, Head of Sales, Admin',
-      'Attribution automatique des leads',
-      'KPIs individuels et collectifs',
-      'Onboarding automatisé des closers',
+      'Tout ce que le Solo a, SAUF le système d\'acquisition',
+      'Gestion d\'équipe complète (6 rôles : Owner, Admin, HOS, Closer, Setter, Setter-Closer)',
+      'Vue macro Owner en temps réel',
+      'Kanban partagé avec filtres avancés',
+      'KPIs par membre / par offre / global',
+      'Objectifs assignables par membre',
+      'Monday Morning Reporting automatique',
     ],
-    cta: { label: 'Essai gratuit 20 jours', to: '/register' },
+    cta: { label: 'Essai gratuit 20 jours', to: '/business#pricing' },
     highlighted: false,
     popularBadge: false,
   },
   {
     name: 'Business + Acquisition',
-    badge: 'Tout inclus',
+    badge: '5 équipiers inclus — l\'arsenal complet',
     monthlyPrice: 99,
-    annualPrice: 990,
-    annualMonthly: 82,
+    quarterlyMonthly: 81,
+    quarterlyTotal: 243,
+    annualMonthly: 71,
+    annualTotal: 852,
     features: [
-      'Tout ce qui est dans Business, plus :',
-      'Campagnes d\'acquisition',
-      'Tracking UTM et analytics',
-      'CRM acquisition dédié',
-      'KPIs d\'acquisition',
+      'Tout ce que Business a',
+      'Système d\'acquisition complet en plus :',
+      'Campagnes d\'acquisition (RDV ou inscription)',
+      'Page de capture configurable + embed/popup',
+      'Tracking UTM + KPIs par campagne',
     ],
-    cta: { label: 'Essai gratuit 20 jours', to: '/register' },
+    cta: { label: 'Essai gratuit 20 jours', to: '/business#pricing' },
     highlighted: true,
     popularBadge: true,
   },
   {
-    name: 'Enterprise',
-    badge: 'Grandes équipes',
+    name: 'Enterprise / Challenge',
+    badge: 'Sur devis — grandes organisations',
     monthlyPrice: null,
-    annualPrice: null,
+    quarterlyMonthly: null,
+    quarterlyTotal: null,
     annualMonthly: null,
+    annualTotal: null,
     features: [
-      'Tout ce qui est dans Business + Acquisition, plus :',
       'Membres illimités',
-      'Setup + intégration inclus',
+      'Tout le système d\'acquisition inclus',
+      'Setup + Intégration inclus',
       'Support prioritaire dédié',
-      'Idéal pour agences et challenges',
+      'Accès one-shot (durée du challenge) ou abonnement classique',
     ],
-    cta: { label: 'Nous contacter', to: 'mailto:support@closeos.fr' },
+    cta: { label: 'Nous contacter', to: '/business#pricing' },
     highlighted: false,
     popularBadge: false,
   },
 ];
 
 const seatPricing = [
-  { role: 'Closer ou Setter', monthly: '5€/mois', annual: '42€/an' },
-  { role: 'Setter-Closer', monthly: '8€/mois', annual: '67€/an' },
-  { role: 'Head of Sales ou Admin', monthly: '12€/mois', annual: '100€/an' },
+  { role: 'Closer ou Setter', monthly: '5€/mois', quarterly: '4€/mois', annual: '3.5€/mois' },
+  { role: 'Setter-Closer', monthly: '8€/mois', quarterly: '6.5€/mois', annual: '5.5€/mois' },
+  { role: 'Head of Sales ou Admin', monthly: '12€/mois', quarterly: '10€/mois', annual: '8.5€/mois' },
 ];
 
 const services = [
@@ -123,7 +132,7 @@ const faqItems = [
 ];
 
 export default function Tarifs() {
-  const [annual, setAnnual] = useState(true);
+  const [billing, setBilling] = useState<'monthly' | 'quarterly' | 'annual'>('annual');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
@@ -238,18 +247,32 @@ export default function Tarifs() {
       >
         <div className="mx-auto max-w-7xl">
           {/* Toggle */}
-          <div className="flex items-center justify-center gap-4 mb-14">
-            <span className={`text-sm font-medium ${!annual ? 'text-white' : 'text-slate-500'}`}>Mensuel</span>
-            <button
-              onClick={() => setAnnual(!annual)}
-              className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${annual ? 'bg-[#00E676]' : 'bg-white/20'}`}
-              aria-label="Basculer entre mensuel et annuel"
-            >
-              <span className={`inline-block h-6 w-6 rounded-full bg-white shadow transition-transform ${annual ? 'translate-x-7' : 'translate-x-1'}`} />
-            </button>
-            <span className={`text-sm font-medium ${annual ? 'text-white' : 'text-slate-500'}`}>
-              Annuel <span className="text-[#00E676] text-xs font-semibold ml-1">-17%</span>
-            </span>
+          <div className="flex items-center justify-center mb-14">
+            <div className="relative grid grid-cols-3 rounded-full bg-white/5 border border-white/10 p-1" style={{ minWidth: 340 }}>
+              {([
+                { key: 'monthly' as const, label: 'Mensuel' },
+                { key: 'quarterly' as const, label: 'Trimestriel', badge: '-18%' },
+                { key: 'annual' as const, label: 'Annuel', badge: '-28%' },
+              ]).map(opt => (
+                <button
+                  key={opt.key}
+                  onClick={() => setBilling(opt.key)}
+                  className={`relative z-10 rounded-full px-5 py-2.5 text-sm font-semibold transition-all ${
+                    billing === opt.key ? 'text-slate-950' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {opt.label}
+                  {opt.badge && <span className={`ml-1 text-xs font-bold ${billing === opt.key ? 'text-slate-700' : 'text-[#00E676]'}`}>{opt.badge}</span>}
+                </button>
+              ))}
+              <div
+                className="absolute top-1 bottom-1 rounded-full bg-[#00E676] transition-all duration-300 ease-out"
+                style={{
+                  width: 'calc(100% / 3 - 4px)',
+                  left: billing === 'monthly' ? 4 : billing === 'quarterly' ? 'calc(100% / 3 + 2px)' : 'calc(200% / 3)',
+                }}
+              />
+            </div>
           </div>
 
           {/* CloseOS Sales */}
@@ -269,11 +292,14 @@ export default function Tarifs() {
                 </div>
                 <p className="mt-2 text-blue-200 text-sm">L'outil tout-en-un des closers. Accès complet & illimité.</p>
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-5xl font-extrabold text-white">{annual ? '25.5' : '34'}€</span>
+                  <span className="text-5xl font-extrabold text-white">{billing === 'annual' ? '25.5' : billing === 'quarterly' ? '28' : '34'}€</span>
                   <span className="text-slate-400 line-through text-lg">69€</span>
                   <span className="text-slate-500">/mois</span>
                 </div>
-                {annual && (
+                {billing === 'quarterly' && (
+                  <p className="text-xs text-emerald-400 mt-2">Facturé trimestriellement (84€/trimestre)</p>
+                )}
+                {billing === 'annual' && (
                   <p className="text-xs text-emerald-400 mt-2">Facturé annuellement (306€/an)</p>
                 )}
               </div>
@@ -352,11 +378,14 @@ export default function Tarifs() {
                   {plan.monthlyPrice !== null ? (
                     <>
                       <span className="text-4xl font-extrabold">
-                        {annual ? plan.annualMonthly : plan.monthlyPrice}€
+                        {billing === 'annual' ? plan.annualMonthly : billing === 'quarterly' ? plan.quarterlyMonthly : plan.monthlyPrice}€
                       </span>
                       <span className="text-slate-400 text-sm">/mois</span>
-                      {annual && (
-                        <p className="text-xs text-slate-500 mt-1">Facturé {plan.annualPrice}€/an</p>
+                      {billing === 'quarterly' && (
+                        <p className="text-xs text-slate-500 mt-1">Facturé {plan.quarterlyTotal}€/trimestre</p>
+                      )}
+                      {billing === 'annual' && (
+                        <p className="text-xs text-slate-500 mt-1">Facturé {plan.annualTotal}€/an</p>
                       )}
                     </>
                   ) : (
@@ -420,13 +449,14 @@ export default function Tarifs() {
         className="pb-24 px-6"
       >
         <div className="mx-auto max-w-3xl">
-          <h2 className="text-3xl font-bold text-center mb-10">Sieges supplementaires</h2>
+          <h2 className="text-3xl font-bold text-center mb-10">Sièges supplémentaires</h2>
           <div className="overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full text-sm text-left">
               <thead>
                 <tr className="border-b border-white/10 bg-white/5">
-                  <th className="px-6 py-4 font-semibold text-slate-300">Role</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Rôle</th>
                   <th className="px-6 py-4 font-semibold text-slate-300">Mensuel</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Trimestriel</th>
                   <th className="px-6 py-4 font-semibold text-slate-300">Annuel</th>
                 </tr>
               </thead>
@@ -435,6 +465,7 @@ export default function Tarifs() {
                   <tr key={row.role} className="border-b border-white/5">
                     <td className="px-6 py-4 text-slate-300">{row.role}</td>
                     <td className="px-6 py-4 text-white font-medium">+{row.monthly}</td>
+                    <td className="px-6 py-4 text-white font-medium">+{row.quarterly}</td>
                     <td className="px-6 py-4 text-white font-medium">+{row.annual}</td>
                   </tr>
                 ))}
@@ -442,7 +473,7 @@ export default function Tarifs() {
             </table>
           </div>
           <p className="mt-4 text-sm text-slate-500 text-center">
-            3 membres sont inclus dans les formules Business et Business + Acquisition. L'offre Enterprise inclut des membres illimites.
+            3 membres sont inclus dans Business, 5 dans Business + Acquisition. L'offre Enterprise inclut des membres illimités.
           </p>
         </div>
       </motion.section>

@@ -15,10 +15,8 @@ export function getProspectCA(
   },
   formulaBillingTypes: Record<string, string>, // formula_id → billing_type
 ): number {
-  // Check if this prospect's formula is a subscription type
-  const billingType = prospect.formula_id ? formulaBillingTypes[prospect.formula_id] : null
-
-  if (billingType === 'subscription' && prospect.stripe_subscription_id && prospect.subscription_amount) {
+  // If prospect has a linked Stripe subscription with an amount, use that
+  if (prospect.stripe_subscription_id && prospect.subscription_amount) {
     return Number(prospect.subscription_amount) || 0
   }
 

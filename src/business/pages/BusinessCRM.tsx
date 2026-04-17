@@ -860,7 +860,9 @@ export function BusinessCRM() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {deal.value ? (
+                      {(deal.stripe_subscription_id && deal.subscription_amount) ? (
+                        <span className="text-sm font-bold text-[#635BFF]">{Number(deal.subscription_amount).toLocaleString()} €<span className="text-[10px] text-[#635BFF]/60 ml-0.5">/{deal.subscription_interval === 'year' ? t.prospect_stripe_year : t.prospect_stripe_month}</span></span>
+                      ) : deal.value ? (
                         <span className="text-sm font-bold text-emerald-600">{deal.value.toLocaleString()} €</span>
                       ) : (
                         <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>

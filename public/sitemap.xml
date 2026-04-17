@@ -1,51 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Landing / Home Pages -->
   <url>
     <loc>https://www.closeos.fr/</loc>
-    <lastmod>2026-03-26</lastmod>
+    <lastmod>2026-04-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.closeos.fr/landing</loc>
-    <lastmod>2026-03-26</lastmod>
+    <lastmod>2026-04-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.closeos.fr/sales</loc>
+    <lastmod>2026-04-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.closeos.fr/business</loc>
-    <lastmod>2026-03-26</lastmod>
+    <lastmod>2026-04-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
   </url>
+
+  <!-- Pricing -->
+  <url>
+    <loc>https://www.closeos.fr/tarifs</loc>
+    <lastmod>2026-04-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Features -->
+  <url>
+    <loc>https://www.closeos.fr/fonctionnalites</loc>
+    <lastmod>2026-04-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.closeos.fr/fonctionnalites/crm-closer</loc>
+    <lastmod>2026-04-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Comparisons -->
+  <url>
+    <loc>https://www.closeos.fr/comparatifs/alternative-iclosed</loc>
+    <lastmod>2026-04-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.closeos.fr/comparatifs/closeos-vs-iclosed</loc>
+    <lastmod>2026-04-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Legal -->
   <url>
     <loc>https://www.closeos.fr/mentions-legales</loc>
     <lastmod>2026-03-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://www.closeos.fr/cgu</loc>
     <lastmod>2026-03-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://www.closeos.fr/cgv</loc>
     <lastmod>2026-03-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://www.closeos.fr/confidentialite</loc>
     <lastmod>2026-03-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.closeos.fr/tarifs</loc>
-    <lastmod>2026-03-28</lastmod>
-  </url>
-  <url>
-    <loc>https://www.closeos.fr/fonctionnalites</loc>
-    <lastmod>2026-03-28</lastmod>
-  </url>
-  <url>
-    <loc>https://www.closeos.fr/fonctionnalites/crm-closer</loc>
-    <lastmod>2026-03-28</lastmod>
-  </url>
-  <url>
-    <loc>https://www.closeos.fr/comparatifs/alternative-iclosed</loc>
-    <lastmod>2026-03-28</lastmod>
-  </url>
-  <url>
-    <loc>https://www.closeos.fr/comparatifs/closeos-vs-iclosed</loc>
-    <lastmod>2026-03-28</lastmod>
+    <loc>https://www.closeos.fr/business/politique-utilisation</loc>
+    <lastmod>2026-03-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

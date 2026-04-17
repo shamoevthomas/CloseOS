@@ -1000,9 +1000,9 @@ export function CaptureForm() {
             )}
 
             {/* Horizontal layout wrapper */}
-            <div className={isHorizontal && !isInscriptionMode && currentStep >= bookingStep ? (isEmbed ? 'flex flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
+            <div className={isHorizontal && !isInscriptionMode ? (isEmbed ? 'flex flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
             {/* Left column in horizontal mode */}
-            <div className={isHorizontal && !isInscriptionMode && currentStep >= bookingStep ? 'flex-1 min-w-0 flex flex-col' : ''}>
+            <div className={isHorizontal && !isInscriptionMode ? 'flex-1 min-w-0 flex flex-col' : ''}>
 
             {/* INFO SECTION - collapsible */}
             <div className={`transition-all duration-500 ease-in-out ${infoCollapsed ? 'max-h-16 overflow-hidden' : 'max-h-[2000px]'}`}>

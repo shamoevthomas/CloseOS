@@ -800,7 +800,7 @@ export const BusinessLanding: React.FC = () => {
             <div className="mt-4">
               <iframe
                 ref={demoPopupIframeRef}
-                src="https://www.closeos.fr/capture/70a5511a-d961-4f95-ace2-f8b0197e5aae?embed=true&layout=horizontal"
+                src="https://www.closeos.fr/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&layout=horizontal"
                 width="100%"
                 height={530}
                 frameBorder="0"
@@ -2026,7 +2026,7 @@ const PricingSection = () => {
             </div>
             <iframe
               ref={iframeRef}
-              src="https://www.closeos.fr/capture/70a5511a-d961-4f95-ace2-f8b0197e5aae?embed=true&layout=horizontal"
+              src="https://www.closeos.fr/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&layout=horizontal"
               width="100%"
               height={530}
               frameBorder="0"
@@ -2756,25 +2756,25 @@ const FeaturesByRole = () => {
         </div>
 
         {/* Feature Cards */}
-        <div className={`grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3`}>
+        <div className={`grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4`}>
           {currentRole.features.map((feature, i) => (
             <motion.div
               key={feature.title}
               initial={{ opacity: 0, y: 16, filter: 'blur(4px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               transition={{ duration: 0.5, delay: i * 0.08, ease: roleEase }}
-              className="bg-white rounded-2xl p-5 sm:p-7 border border-stone-200 shadow-sm hover:shadow-md transition-shadow duration-300"
+              className="bg-white rounded-xl p-4 border border-stone-200 shadow-sm hover:shadow-md transition-shadow duration-300"
             >
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-[#111111] flex-shrink-0">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-[#111111] flex-shrink-0 [&>svg]:size-4">
                   {feature.icon}
                 </div>
-                <h4 className="font-bold text-[#111111] text-base">{feature.title}</h4>
+                <h4 className="font-bold text-[#111111] text-sm leading-tight">{feature.title}</h4>
               </div>
-              <ul className="space-y-3">
+              <ul className="space-y-1.5">
                 {feature.items.map((item, j) => (
-                  <li key={j} className="flex items-start gap-2.5 text-sm text-stone-500 font-medium leading-relaxed">
-                    <ArrowRight className="size-3.5 text-stone-300 mt-1 flex-shrink-0" />
+                  <li key={j} className="flex items-start gap-1.5 text-xs text-stone-500 font-medium leading-snug">
+                    <ArrowRight className="size-3 text-stone-300 mt-0.5 flex-shrink-0" />
                     {item}
                   </li>
                 ))}
