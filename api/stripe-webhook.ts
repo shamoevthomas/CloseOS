@@ -265,6 +265,21 @@ export default async function handler(req: Request) {
                 break;
             }
 
+            // ─── Business reactivation (trial expired, no card) ───
+            if (session.metadata?.reactivation === 'true' && session.metadata?.user_id) {
+                const reactivateUserId = session.metadata.user_id;
+                const reactivateCustomerId = session.customer as string;
+                const reactivateSubId = session.subscription as string;
+
+                await supabaseAdmin
+                    .from('business_users')
+                    .update({ stripe_customer_id: reactivateCustomerId })
+                    .eq('id', reactivateUserId);
+
+                console.log(`✅ Business reactivation: user ${reactivateUserId} → customer ${reactivateCustomerId}, subscription ${reactivateSubId}`);
+                break;
+            }
+
             const customerId = session.customer as string;
             const customerEmail = session.customer_details?.email;
             const subscriptionId = session.subscription as string;

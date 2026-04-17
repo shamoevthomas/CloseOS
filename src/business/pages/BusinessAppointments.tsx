@@ -6,6 +6,7 @@ import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
   ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save, Video, Globe,
   Settings, Trash2, Bell, Code2, FileText, ChevronRight, ToggleLeft, ToggleRight, Pencil, Phone, Hash, List, Type,
+  ClipboardList, ChevronUp,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -26,6 +27,7 @@ interface Appointment {
   assigned_to?: string
   prospect: { id: number; contact: string; email: string; phone: string } | null
   campaign: { id: string; name: string } | null
+  questionnaire_answers?: { question_text: string; answer_value: string | string[] }[] | null
 }
 
 interface TeamMember {
@@ -43,6 +45,14 @@ interface CustomField {
   options?: string[]
 }
 
+interface BookingQuestion {
+  question_text: string
+  question_type: 'text' | 'select' | 'multiple_choice' | 'number'
+  is_required: boolean
+  options: string[]
+  sort_order: number
+}
+
 interface BookingLink {
   id: string
   label: string
@@ -58,6 +68,9 @@ interface BookingLink {
   phone_required: boolean
   google_meet_enabled: boolean
   custom_fields: CustomField[]
+  questionnaire_enabled: boolean
+  questionnaire_required: boolean
+  questionnaire_questions: BookingQuestion[]
   created_at: string
 }
 
@@ -90,7 +103,7 @@ function parseBookingNotes(notes: string | null): { name: string; email?: string
 const API_URL = '/api/business'
 
 export function BusinessAppointments() {
-  const { user, isTeamMember, ownerUserId, teamMember, userTimezone } = useBusinessAuth()
+  const { user, isTeamMember, ownerUserId, teamMember, userTimezone, isSolo } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
   const { isConnected: isGoogleConnected, createEvent: createGoogleEvent } = useBusinessGoogleCalendar()
 
@@ -177,6 +190,10 @@ export function BusinessAppointments() {
   const [newLinkPhoneRequired, setNewLinkPhoneRequired] = useState(false)
   const [newLinkGoogleMeetEnabled, setNewLinkGoogleMeetEnabled] = useState(true)
   const [newLinkCustomFields, setNewLinkCustomFields] = useState<CustomField[]>([])
+  const [newLinkQuestionnaireEnabled, setNewLinkQuestionnaireEnabled] = useState(false)
+  const [newLinkQuestionnaireRequired, setNewLinkQuestionnaireRequired] = useState(false)
+  const [newLinkQuestionnaireQuestions, setNewLinkQuestionnaireQuestions] = useState<BookingQuestion[]>([])
+  const [showNewLinkQuestionnairePopup, setShowNewLinkQuestionnairePopup] = useState(false)
   const [savingLink, setSavingLink] = useState(false)
 
   // Detail popup
@@ -314,8 +331,8 @@ export function BusinessAppointments() {
   useEffect(() => {
     if (!effectiveUserId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role, timezone, owner_assignable').eq('business_owner_id', effectiveUserId),
-      supabase.from('business_users').select('id, full_name, timezone, owner_assignable').eq('id', effectiveUserId).single(),
+      supabase.from('business_team_members').select('id, first_name, last_name, role, timezone, owner_assignable, owner_assignable_roles').eq('business_owner_id', effectiveUserId),
+      supabase.from('business_users').select('id, full_name, timezone, owner_assignable, owner_assignable_roles').eq('id', effectiveUserId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = (tmRes.data || []).filter((m: any) => !['Head of Sales', 'Admin'].includes(m.role) || m.owner_assignable)
       if (ownerRes.data?.owner_assignable) {
@@ -369,6 +386,9 @@ export function BusinessAppointments() {
         phone_required: newLinkPhoneRequired,
         google_meet_enabled: newLinkGoogleMeetEnabled,
         custom_fields: newLinkCustomFields,
+        questionnaire_enabled: newLinkQuestionnaireEnabled,
+        questionnaire_required: newLinkQuestionnaireRequired,
+        questionnaire_questions: newLinkQuestionnaireQuestions,
         link: bookingUrl,
         slug,
       })
@@ -389,6 +409,9 @@ export function BusinessAppointments() {
     setNewLinkPhoneRequired(false)
     setNewLinkGoogleMeetEnabled(true)
     setNewLinkCustomFields([])
+    setNewLinkQuestionnaireEnabled(false)
+    setNewLinkQuestionnaireRequired(false)
+    setNewLinkQuestionnaireQuestions([])
     toast.success(t.appointments_booking_link_created)
   }
 
@@ -411,6 +434,10 @@ export function BusinessAppointments() {
   const [editPhoneRequired, setEditPhoneRequired] = useState(false)
   const [editGoogleMeetEnabled, setEditGoogleMeetEnabled] = useState(true)
   const [editCustomFields, setEditCustomFields] = useState<CustomField[]>([])
+  const [editQuestionnaireEnabled, setEditQuestionnaireEnabled] = useState(false)
+  const [editQuestionnaireRequired, setEditQuestionnaireRequired] = useState(false)
+  const [editQuestionnaireQuestions, setEditQuestionnaireQuestions] = useState<BookingQuestion[]>([])
+  const [showQuestionnairePopup, setShowQuestionnairePopup] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
 
   const handleStartEdit = (bl: BookingLink) => {
@@ -426,6 +453,9 @@ export function BusinessAppointments() {
     setEditPhoneRequired(bl.phone_required)
     setEditGoogleMeetEnabled(bl.google_meet_enabled ?? true)
     setEditCustomFields(bl.custom_fields || [])
+    setEditQuestionnaireEnabled(bl.questionnaire_enabled ?? false)
+    setEditQuestionnaireRequired(bl.questionnaire_required ?? false)
+    setEditQuestionnaireQuestions(bl.questionnaire_questions || [])
   }
 
   const handleSaveEdit = async () => {
@@ -445,6 +475,9 @@ export function BusinessAppointments() {
         phone_required: editPhoneRequired,
         google_meet_enabled: editGoogleMeetEnabled,
         custom_fields: editCustomFields,
+        questionnaire_enabled: editQuestionnaireEnabled,
+        questionnaire_required: editQuestionnaireRequired,
+        questionnaire_questions: editQuestionnaireQuestions,
       })
       .eq('id', editingLink.id)
     setSavingEdit(false)
@@ -462,6 +495,9 @@ export function BusinessAppointments() {
       phone_required: editPhoneRequired,
       google_meet_enabled: editGoogleMeetEnabled,
       custom_fields: editCustomFields,
+      questionnaire_enabled: editQuestionnaireEnabled,
+      questionnaire_required: editQuestionnaireRequired,
+      questionnaire_questions: editQuestionnaireQuestions,
     } : l))
     setEditingLink(null)
     toast.success(t.appointments_link_updated)
@@ -693,7 +729,8 @@ export function BusinessAppointments() {
   }
 
   /** Get initials from prospect name */
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return '??'
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
@@ -765,7 +802,7 @@ export function BusinessAppointments() {
         {/* Filter Bar — Glass morphism */}
         <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-4 rounded-2xl flex flex-wrap items-center gap-4 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] ring-1 ring-white/20 dark:ring-neutral-700">
           {/* Team member filter (owner/HoS) */}
-          {isOwnerOrHoS && teamMembers.length > 0 && (
+          {isOwnerOrHoS && !isSolo && teamMembers.length > 0 && (
             <div className="flex-1 min-w-[180px] relative">
               <Users className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444748] dark:text-neutral-300/60" />
               <select
@@ -1586,7 +1623,7 @@ export function BusinessAppointments() {
             </div>
 
             {/* Member filter for booking links */}
-            {isOwnerOrHoS && teamMembers.filter(m => m.id !== effectiveUserId).length > 0 && (
+            {isOwnerOrHoS && !isSolo && teamMembers.filter(m => m.id !== effectiveUserId).length > 0 && (
               <div className="mb-6">
                 <select
                   value={filterBookingMember}
@@ -1792,6 +1829,35 @@ export function BusinessAppointments() {
                     </button>
                   </div>
                 </div>
+                {/* Questionnaire */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Questionnaire</label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                      <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><ClipboardList className="h-3.5 w-3.5 text-[#444748]/50" />Activer le questionnaire</span>
+                      <button onClick={() => setNewLinkQuestionnaireEnabled(!newLinkQuestionnaireEnabled)} className="text-[#444748] dark:text-neutral-300">
+                        {newLinkQuestionnaireEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {newLinkQuestionnaireEnabled && (
+                      <>
+                        <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                          <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Obligatoire</span>
+                          <button onClick={() => setNewLinkQuestionnaireRequired(!newLinkQuestionnaireRequired)} className="text-[#444748] dark:text-neutral-300">
+                            {newLinkQuestionnaireRequired ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => setShowNewLinkQuestionnairePopup(true)}
+                          className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#006c49]/30 py-2.5 text-xs font-bold text-[#006c49] hover:bg-[#006c49]/5 transition-all"
+                        >
+                          <Settings className="h-3.5 w-3.5" />
+                          Configurer le questionnaire ({newLinkQuestionnaireQuestions.length} question{newLinkQuestionnaireQuestions.length !== 1 ? 's' : ''})
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <button
                     onClick={() => setShowCreateLink(false)}
@@ -1807,6 +1873,154 @@ export function BusinessAppointments() {
                     {savingLink ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
                     Enregistrer
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* New Link Questionnaire Configuration Popup */}
+            {showNewLinkQuestionnairePopup && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowNewLinkQuestionnairePopup(false)}>
+                <div className="bg-white dark:bg-neutral-900 rounded-[2rem] p-8 w-full max-w-lg mx-4 shadow-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-6 shrink-0">
+                    <h3 className="text-lg font-extrabold text-[#1b1c1b] dark:text-white flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                      <ClipboardList className="h-5 w-5" /> Configurer le questionnaire
+                    </h3>
+                    <button onClick={() => setShowNewLinkQuestionnairePopup(false)} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5">
+                      <X className="w-4 h-4 text-neutral-400" />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3">
+                    {newLinkQuestionnaireQuestions.length === 0 && (
+                      <p className="text-xs text-[#747878] dark:text-neutral-500 italic text-center py-6">Aucune question configurée</p>
+                    )}
+                    {newLinkQuestionnaireQuestions.map((q, idx) => (
+                      <div key={idx} className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-4 space-y-3 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs font-bold text-[#747878] dark:text-neutral-500 mt-2.5 flex-shrink-0 w-5">{idx + 1}.</span>
+                          <input
+                            type="text"
+                            value={q.question_text}
+                            onChange={e => { const qs = [...newLinkQuestionnaireQuestions]; qs[idx] = { ...qs[idx], question_text: e.target.value }; setNewLinkQuestionnaireQuestions(qs) }}
+                            placeholder="Votre question..."
+                            className="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
+                          />
+                          <button
+                            onClick={() => { const qs = [...newLinkQuestionnaireQuestions]; qs[idx] = { ...qs[idx], is_required: !qs[idx].is_required }; setNewLinkQuestionnaireQuestions(qs) }}
+                            className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap mt-1 ${q.is_required ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
+                          >
+                            {q.is_required ? 'Requis' : 'Optionnel'}
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2 ml-7">
+                          <label className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide flex-shrink-0">Type</label>
+                          {(['text', 'select', 'multiple_choice', 'number'] as const).map(tp => {
+                            const labels: Record<string, string> = { text: 'Texte', select: 'Choix unique', multiple_choice: 'Choix multiples', number: 'Nombre' }
+                            return (
+                              <button
+                                key={tp}
+                                onClick={() => {
+                                  const qs = [...newLinkQuestionnaireQuestions]
+                                  const updates: Partial<BookingQuestion> = { question_type: tp }
+                                  if (tp === 'text' || tp === 'number') updates.options = []
+                                  else if ((tp === 'select' || tp === 'multiple_choice') && qs[idx].options.length === 0) updates.options = ['']
+                                  qs[idx] = { ...qs[idx], ...updates }
+                                  setNewLinkQuestionnaireQuestions(qs)
+                                }}
+                                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors ${q.question_type === tp ? 'bg-[#006c49] text-white' : 'bg-white dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                              >
+                                {labels[tp]}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {(q.question_type === 'select' || q.question_type === 'multiple_choice') && (
+                          <div className="ml-7 border-l-2 border-[#c4c7c7]/30 dark:border-neutral-700 pl-3 space-y-1.5">
+                            <p className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">Options</p>
+                            {(q.options.length > 0 ? q.options : ['']).map((opt, oi) => (
+                              <div key={oi} className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={opt}
+                                  onChange={e => {
+                                    const qs = [...newLinkQuestionnaireQuestions]
+                                    const opts = [...qs[idx].options]; opts[oi] = e.target.value
+                                    qs[idx] = { ...qs[idx], options: opts }
+                                    setNewLinkQuestionnaireQuestions(qs)
+                                  }}
+                                  placeholder={`Option ${oi + 1}`}
+                                  className="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-700 border border-[#c4c7c7]/20 dark:border-neutral-600 text-xs text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
+                                />
+                                {q.options.length > 1 && (
+                                  <button onClick={() => {
+                                    const qs = [...newLinkQuestionnaireQuestions]
+                                    qs[idx] = { ...qs[idx], options: qs[idx].options.filter((_, i) => i !== oi) }
+                                    setNewLinkQuestionnaireQuestions(qs)
+                                  }} className="text-red-400 hover:text-red-600">
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => {
+                                const qs = [...newLinkQuestionnaireQuestions]
+                                qs[idx] = { ...qs[idx], options: [...qs[idx].options, ''] }
+                                setNewLinkQuestionnaireQuestions(qs)
+                              }}
+                              className="text-[10px] font-bold text-[#006c49] hover:underline"
+                            >
+                              + Ajouter une option
+                            </button>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between ml-7 pt-2 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                if (idx === 0) return
+                                const qs = [...newLinkQuestionnaireQuestions]
+                                ;[qs[idx], qs[idx - 1]] = [qs[idx - 1], qs[idx]]
+                                setNewLinkQuestionnaireQuestions(qs)
+                              }}
+                              disabled={idx === 0}
+                              className="p-1 text-[#747878] hover:text-[#1b1c1b] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (idx === newLinkQuestionnaireQuestions.length - 1) return
+                                const qs = [...newLinkQuestionnaireQuestions]
+                                ;[qs[idx], qs[idx + 1]] = [qs[idx + 1], qs[idx]]
+                                setNewLinkQuestionnaireQuestions(qs)
+                              }}
+                              disabled={idx === newLinkQuestionnaireQuestions.length - 1}
+                              className="p-1 text-[#747878] hover:text-[#1b1c1b] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rotate-180"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <button onClick={() => setNewLinkQuestionnaireQuestions(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-600 p-1">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 shrink-0 space-y-3">
+                    <button
+                      onClick={() => setNewLinkQuestionnaireQuestions(prev => [...prev, { question_text: '', question_type: 'text', is_required: false, options: [], sort_order: prev.length }])}
+                      className="w-full flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700/30 py-2.5 text-xs font-bold text-[#444748] dark:text-neutral-400 hover:border-[#006c49]/30 hover:text-[#006c49] transition-all"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Ajouter une question
+                    </button>
+                    <button
+                      onClick={() => setShowNewLinkQuestionnairePopup(false)}
+                      className="w-full px-4 py-2.5 rounded-full bg-[#006c49] text-white text-xs font-bold hover:shadow-md transition-all"
+                    >
+                      Fermer
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -2074,6 +2288,35 @@ export function BusinessAppointments() {
                   </button>
                 </div>
               </div>
+              {/* Questionnaire */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Questionnaire</label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                    <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><ClipboardList className="h-3.5 w-3.5 text-[#444748]/50" />Activer le questionnaire</span>
+                    <button onClick={() => setEditQuestionnaireEnabled(!editQuestionnaireEnabled)} className="text-[#444748] dark:text-neutral-300">
+                      {editQuestionnaireEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  {editQuestionnaireEnabled && (
+                    <>
+                      <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                        <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Obligatoire</span>
+                        <button onClick={() => setEditQuestionnaireRequired(!editQuestionnaireRequired)} className="text-[#444748] dark:text-neutral-300">
+                          {editQuestionnaireRequired ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => setShowQuestionnairePopup(true)}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#006c49]/30 py-2.5 text-xs font-bold text-[#006c49] hover:bg-[#006c49]/5 transition-all"
+                      >
+                        <Settings className="h-3.5 w-3.5" />
+                        Configurer le questionnaire ({editQuestionnaireQuestions.length} question{editQuestionnaireQuestions.length !== 1 ? 's' : ''})
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   onClick={() => setEditingLink(null)}
@@ -2090,6 +2333,157 @@ export function BusinessAppointments() {
                   Enregistrer
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Questionnaire Configuration Popup */}
+      {showQuestionnairePopup && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowQuestionnairePopup(false)}>
+          <div className="bg-white dark:bg-neutral-900 rounded-[2rem] p-8 w-full max-w-lg mx-4 shadow-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6 shrink-0">
+              <h3 className="text-lg font-extrabold text-[#1b1c1b] dark:text-white flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                <ClipboardList className="h-5 w-5" /> Configurer le questionnaire
+              </h3>
+              <button onClick={() => setShowQuestionnairePopup(false)} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5">
+                <X className="w-4 h-4 text-neutral-400" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-3">
+              {editQuestionnaireQuestions.length === 0 && (
+                <p className="text-xs text-[#747878] dark:text-neutral-500 italic text-center py-6">Aucune question configurée</p>
+              )}
+              {editQuestionnaireQuestions.map((q, idx) => (
+                <div key={idx} className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-4 space-y-3 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-bold text-[#747878] dark:text-neutral-500 mt-2.5 flex-shrink-0 w-5">{idx + 1}.</span>
+                    <input
+                      type="text"
+                      value={q.question_text}
+                      onChange={e => { const qs = [...editQuestionnaireQuestions]; qs[idx] = { ...qs[idx], question_text: e.target.value }; setEditQuestionnaireQuestions(qs) }}
+                      placeholder="Votre question..."
+                      className="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
+                    />
+                    <button
+                      onClick={() => { const qs = [...editQuestionnaireQuestions]; qs[idx] = { ...qs[idx], is_required: !qs[idx].is_required }; setEditQuestionnaireQuestions(qs) }}
+                      className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap mt-1 ${q.is_required ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
+                    >
+                      {q.is_required ? 'Requis' : 'Optionnel'}
+                    </button>
+                  </div>
+                  {/* Type selector */}
+                  <div className="flex items-center gap-2 ml-7">
+                    <label className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide flex-shrink-0">Type</label>
+                    {(['text', 'select', 'multiple_choice', 'number'] as const).map(tp => {
+                      const labels: Record<string, string> = { text: 'Texte', select: 'Choix unique', multiple_choice: 'Choix multiples', number: 'Nombre' }
+                      return (
+                        <button
+                          key={tp}
+                          onClick={() => {
+                            const qs = [...editQuestionnaireQuestions]
+                            const updates: Partial<BookingQuestion> = { question_type: tp }
+                            if (tp === 'text' || tp === 'number') updates.options = []
+                            else if ((tp === 'select' || tp === 'multiple_choice') && qs[idx].options.length === 0) updates.options = ['']
+                            qs[idx] = { ...qs[idx], ...updates }
+                            setEditQuestionnaireQuestions(qs)
+                          }}
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors ${q.question_type === tp ? 'bg-[#006c49] text-white' : 'bg-white dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
+                        >
+                          {labels[tp]}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {/* Options for select / multiple_choice */}
+                  {(q.question_type === 'select' || q.question_type === 'multiple_choice') && (
+                    <div className="ml-7 border-l-2 border-[#c4c7c7]/30 dark:border-neutral-700 pl-3 space-y-1.5">
+                      <p className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">Options</p>
+                      {(q.options.length > 0 ? q.options : ['']).map((opt, oi) => (
+                        <div key={oi} className="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={opt}
+                            onChange={e => {
+                              const qs = [...editQuestionnaireQuestions]
+                              const opts = [...qs[idx].options]; opts[oi] = e.target.value
+                              qs[idx] = { ...qs[idx], options: opts }
+                              setEditQuestionnaireQuestions(qs)
+                            }}
+                            placeholder={`Option ${oi + 1}`}
+                            className="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-700 border border-[#c4c7c7]/20 dark:border-neutral-600 text-xs text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
+                          />
+                          {q.options.length > 1 && (
+                            <button onClick={() => {
+                              const qs = [...editQuestionnaireQuestions]
+                              qs[idx] = { ...qs[idx], options: qs[idx].options.filter((_, i) => i !== oi) }
+                              setEditQuestionnaireQuestions(qs)
+                            }} className="text-red-400 hover:text-red-600">
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          const qs = [...editQuestionnaireQuestions]
+                          qs[idx] = { ...qs[idx], options: [...qs[idx].options, ''] }
+                          setEditQuestionnaireQuestions(qs)
+                        }}
+                        className="text-[10px] font-bold text-[#006c49] hover:underline"
+                      >
+                        + Ajouter une option
+                      </button>
+                    </div>
+                  )}
+                  {/* Move + delete */}
+                  <div className="flex items-center justify-between ml-7 pt-2 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          if (idx === 0) return
+                          const qs = [...editQuestionnaireQuestions]
+                          ;[qs[idx], qs[idx - 1]] = [qs[idx - 1], qs[idx]]
+                          setEditQuestionnaireQuestions(qs)
+                        }}
+                        disabled={idx === 0}
+                        className="p-1 text-[#747878] hover:text-[#1b1c1b] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (idx === editQuestionnaireQuestions.length - 1) return
+                          const qs = [...editQuestionnaireQuestions]
+                          ;[qs[idx], qs[idx + 1]] = [qs[idx + 1], qs[idx]]
+                          setEditQuestionnaireQuestions(qs)
+                        }}
+                        disabled={idx === editQuestionnaireQuestions.length - 1}
+                        className="p-1 text-[#747878] hover:text-[#1b1c1b] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rotate-180"
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <button onClick={() => setEditQuestionnaireQuestions(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-600 p-1">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 shrink-0 space-y-3">
+              <button
+                onClick={() => setEditQuestionnaireQuestions(prev => [...prev, { question_text: '', question_type: 'text', is_required: false, options: [], sort_order: prev.length }])}
+                className="w-full flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700/30 py-2.5 text-xs font-bold text-[#444748] dark:text-neutral-400 hover:border-[#006c49]/30 hover:text-[#006c49] transition-all"
+              >
+                <Plus className="h-3.5 w-3.5" /> Ajouter une question
+              </button>
+              <button
+                onClick={() => setShowQuestionnairePopup(false)}
+                className="w-full px-4 py-2.5 rounded-full bg-[#006c49] text-white text-xs font-bold hover:shadow-md transition-all"
+              >
+                Fermer
+              </button>
             </div>
           </div>
         </div>
@@ -2190,6 +2584,26 @@ export function BusinessAppointments() {
                           )}
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Questionnaire answers */}
+                {appt.questionnaire_answers && appt.questionnaire_answers.length > 0 && (
+                  <div className="flex items-start gap-4">
+                    <ClipboardList className="h-5 w-5 text-neutral-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 bg-neutral-100 dark:bg-white/5 rounded-2xl p-4">
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-black mb-3">Questionnaire</p>
+                      <div className="space-y-3">
+                        {appt.questionnaire_answers.map((qa: any, idx: number) => (
+                          <div key={idx}>
+                            <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400">{qa.question_text}</p>
+                            <p className="text-sm text-[#1b1c1b] dark:text-white mt-0.5">
+                              {Array.isArray(qa.answer_value) ? qa.answer_value.join(', ') : qa.answer_value || '—'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

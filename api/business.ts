@@ -2776,9 +2776,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .eq('business_owner_id', campaign.user_id)
           .in('role', targetRole === 'Closer' ? ['Closer', 'Setter-Closer'] : ['Setter', 'Setter-Closer'])
         memberIds = (members || []).map((m: any) => m.id)
-        // Include owner if owner_assignable
-        const { data: ownerAssignable } = await supabase.from('business_users').select('owner_assignable').eq('id', campaign.user_id).single()
-        if (ownerAssignable?.owner_assignable) memberIds.push(campaign.user_id)
+        // Include owner if owner_assignable and role matches
+        const { data: ownerData } = await supabase.from('business_users').select('owner_assignable, owner_assignable_roles').eq('id', campaign.user_id).single()
+        if (ownerData?.owner_assignable) {
+          const roles: string[] = ownerData.owner_assignable_roles || []
+          if (roles.length === 0 || roles.includes(targetRole)) {
+            memberIds.push(campaign.user_id)
+          }
+        }
       }
 
       // Separate owner from team members
@@ -3666,7 +3671,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ─── Native CloseOS booking: submit ───
     // ─── Booking: Google Calendar + Meet + Emails only (appointment already created client-side) ───
     if (action === 'booking-gcal-email' && req.method === 'POST') {
-      const { slug, name, email, phone, date, time, prospect_timezone, datetime_utc, appointment_id } = req.body
+      const { slug, name, email, phone, date, time, prospect_timezone, datetime_utc, appointment_id, questionnaire_answers } = req.body
       if (!appointment_id || !slug || !name || !date || !time) return res.status(400).json({ error: 'appointment_id, slug, name, date, time required' })
 
       const { data: link } = await supabase.from('business_booking_links').select('*').eq('slug', slug).single()
@@ -3732,7 +3737,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const rawDesc = link.description
               ? `${link.description}\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
               : `Rendez-vous CloseOS\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
-            const description = replaceBookingLinkVars(rawDesc) + `\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
+            const qaSection = (questionnaire_answers && Array.isArray(questionnaire_answers) && questionnaire_answers.length > 0)
+              ? '\n\n─────────────────\n📋 Questionnaire:\n' + questionnaire_answers.map((qa: any) => `• ${qa.question_text}: ${Array.isArray(qa.answer_value) ? qa.answer_value.join(', ') : qa.answer_value}`).join('\n')
+              : ''
+            const description = replaceBookingLinkVars(rawDesc) + qaSection + `\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
 
             const gcalResult = await createGoogleCalendarEvent(gcalToken, {
               summary,
@@ -4267,7 +4275,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
-    // ─── Pre-booking payment: create Stripe session before calendar step ───
+    // ─── Verify pre-booking inline payment (PaymentIntent) ───
+    if (action === 'capture-verify-payment' && req.method === 'POST') {
+      const { payment_intent_id } = req.body
+      if (!payment_intent_id) return res.status(400).json({ error: 'payment_intent_id required' })
+
+      const { data: paymentSession } = await supabase
+        .from('campaign_payment_sessions')
+        .select('*')
+        .eq('stripe_checkout_session_id', payment_intent_id)
+        .single()
+
+      if (!paymentSession) return res.status(404).json({ error: 'Payment session not found' })
+
+      if (paymentSession.status === 'completed') {
+        return res.status(200).json({
+          success: true,
+          already_completed: true,
+          payment_type: paymentSession.payment_type,
+          prospect_data: paymentSession.prospect_data,
+          payment_session_id: paymentSession.id,
+        })
+      }
+
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
+      const pi = await stripeClient.paymentIntents.retrieve(payment_intent_id)
+
+      if (pi.status !== 'succeeded') {
+        return res.status(400).json({ error: 'Payment not completed' })
+      }
+
+      await supabase
+        .from('campaign_payment_sessions')
+        .update({ status: 'completed' })
+        .eq('id', paymentSession.id)
+
+      return res.status(200).json({
+        success: true,
+        payment_type: paymentSession.payment_type,
+        prospect_data: paymentSession.prospect_data,
+        payment_session_id: paymentSession.id,
+      })
+    }
+
+    // ─── Pre-booking payment: create PaymentIntent for inline payment ───
     if (action === 'capture-pre-payment' && req.method === 'POST') {
       const { slug, name, email, phone, custom_data, answers } = req.body
       if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
@@ -4295,10 +4346,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Stripe account not connected for this campaign' })
       }
 
-      const origin = req.headers.origin || 'https://www.closeos.fr'
-      const successUrl = `${origin}/capture/${slug}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`
-      const cancelUrl = `${origin}/capture/${slug}?payment_cancelled=true`
-
       const amount = campaign.stripe_price
       const currency = campaign.stripe_currency || 'eur'
       const applicationFee = Math.round(amount * 0.02)
@@ -4306,34 +4353,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
 
       const commonParams: any = {
-        payment_method_types: ['card'],
-        line_items: [{
-          price_data: {
-            currency,
-            product_data: { name: campaign.name || 'Paiement' },
-            unit_amount: amount,
-          },
-          quantity: 1,
-        }],
-        mode: 'payment' as const,
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        ...(email ? { customer_email: email } : {}),
+        amount,
+        currency,
         metadata: { campaign_id: campaign.id, payment_type: 'pre_booking', slug },
+        ...(email ? { receipt_email: email } : {}),
+        automatic_payment_methods: { enabled: true },
       }
 
-      let session;
+      let paymentIntent;
       try {
-        session = await stripeClient.checkout.sessions.create({
+        paymentIntent = await stripeClient.paymentIntents.create({
           ...commonParams,
-          payment_intent_data: {
-            application_fee_amount: applicationFee,
-            transfer_data: { destination: stripeProfile.stripe_account_id },
-          },
+          application_fee_amount: applicationFee,
+          transfer_data: { destination: stripeProfile.stripe_account_id },
         })
       } catch (stripeErr: any) {
         if (stripeErr.message?.includes('your own account')) {
-          session = await stripeClient.checkout.sessions.create(commonParams)
+          paymentIntent = await stripeClient.paymentIntents.create(commonParams)
         } else {
           throw stripeErr
         }
@@ -4341,15 +4377,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       await supabase.from('campaign_payment_sessions').insert({
         campaign_id: campaign.id,
-        stripe_checkout_session_id: session.id,
+        stripe_checkout_session_id: paymentIntent.id,
         prospect_data: { slug, name, email, phone, custom_data, answers },
         payment_type: 'pre_booking',
         amount,
       })
 
       return res.status(200).json({
-        checkout_url: session.url,
-        session_id: session.id,
+        client_secret: paymentIntent.client_secret,
+        payment_intent_id: paymentIntent.id,
       })
     }
 
@@ -4392,7 +4428,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
 
         const commonParams: any = {
-          payment_method_types: ['card'],
           line_items: [{
             price_data: {
               currency,
@@ -4457,9 +4492,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .eq('business_owner_id', campaign.user_id)
           .in('role', targetRole === 'Closer' ? ['Closer', 'Setter-Closer'] : ['Setter', 'Setter-Closer'])
         eligibleMemberIds = (roleMembers || []).map((m: any) => m.id)
-        // Include owner if owner_assignable
-        const { data: ownerData } = await supabase.from('business_users').select('owner_assignable').eq('id', campaign.user_id).single()
-        if (ownerData?.owner_assignable) eligibleMemberIds.push(campaign.user_id)
+        // Include owner if owner_assignable and role matches
+        const { data: ownerData } = await supabase.from('business_users').select('owner_assignable, owner_assignable_roles').eq('id', campaign.user_id).single()
+        if (ownerData?.owner_assignable) {
+          const roles: string[] = ownerData.owner_assignable_roles || []
+          if (roles.length === 0 || roles.includes(targetRole)) {
+            eligibleMemberIds.push(campaign.user_id)
+          }
+        }
       }
 
       // Fallback to owner if no team members configured

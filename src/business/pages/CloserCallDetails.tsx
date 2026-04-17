@@ -190,11 +190,11 @@ export function CloserCallDetails() {
   useEffect(() => {
     if (!showSetterOutcomes || !effectiveOwnerId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, email, role, owner_assignable').eq('business_owner_id', effectiveOwnerId),
-      supabase.from('business_users').select('id, full_name, email, owner_assignable').eq('id', effectiveOwnerId).single(),
+      supabase.from('business_team_members').select('id, first_name, last_name, email, role, owner_assignable, owner_assignable_roles').eq('business_owner_id', effectiveOwnerId),
+      supabase.from('business_users').select('id, full_name, email, owner_assignable, owner_assignable_roles').eq('id', effectiveOwnerId).single(),
     ]).then(([tmRes, ownerRes]) => {
-      const closerList = (tmRes.data || []).filter((m: any) => m.role === 'Closer' || m.role === 'Setter-Closer' || m.owner_assignable)
-      if (ownerRes.data?.owner_assignable) {
+      const closerList = (tmRes.data || []).filter((m: any) => m.role === 'Closer' || m.role === 'Setter-Closer' || (m.owner_assignable_roles || []).includes('Closer'))
+      if (ownerRes.data?.owner_assignable && (ownerRes.data.owner_assignable_roles || []).includes('Closer')) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
         closerList.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', email: ownerRes.data.email || '', role: 'Owner' })
       }

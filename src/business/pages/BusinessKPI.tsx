@@ -173,7 +173,7 @@ function computeLossReasonData(prospects: any[]) {
 // TABS
 // ============================================================================
 
-type Tab = 'global' | 'period' | 'team' | 'equipe'
+type Tab = 'global' | 'period' | 'team' | 'equipe' | 'personnel'
 
 // BASE_TABS is now derived from t inside the component
 
@@ -183,7 +183,7 @@ type Tab = 'global' | 'period' | 'team' | 'equipe'
 
 export function BusinessKPI() {
   const { prospects } = useBusinessProspects()
-  const { user, ownerUserId, teamMember, isTeamMember } = useBusinessAuth()
+  const { user, ownerUserId, teamMember, isTeamMember, isSolo } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
   const MONTH_NAMES = useMemo(() => [
     t.kpi_month_jan, t.kpi_month_feb, t.kpi_month_mar, t.kpi_month_apr, t.kpi_month_may, t.kpi_month_jun,
@@ -247,6 +247,7 @@ export function BusinessKPI() {
       { key: 'team', label: t.kpi_tab_member },
     ]
     if (teams.length > 0) tabs.push({ key: 'equipe', label: t.kpi_tab_team })
+    if (isOwnerView) tabs.push({ key: 'personnel', label: t.kpi_tab_personal })
     return tabs
   }, [teams, t])
 
@@ -258,6 +259,13 @@ export function BusinessKPI() {
 
   // ---- GLOBAL KPIs ----
   const globalKpis = useMemo(() => computeKpis(filteredProspects, formulaBillingTypes), [filteredProspects, formulaBillingTypes])
+
+  // ---- PERSONAL KPIs (owner's own prospects = not assigned to any team member) ----
+  const personalProspects = useMemo(() => {
+    const memberIds = new Set(teamMembers.map(m => m.id))
+    return prospects.filter(p => !p.assigned_to || !memberIds.has(p.assigned_to))
+  }, [prospects, teamMembers])
+  const personalKpis = useMemo(() => computeKpis(personalProspects, formulaBillingTypes), [personalProspects, formulaBillingTypes])
 
   // ---- LOSS REASON DATA (for pie chart) ----
   const lossReasonData = useMemo(() => computeLossReasonData(filteredProspects), [filteredProspects])
@@ -426,7 +434,7 @@ export function BusinessKPI() {
             </button>
           ))}
         </div>
-        {isOwnerView && teamMembers.length > 0 && (
+        {isOwnerView && !isSolo && teamMembers.length > 0 && (
           <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 rounded-full border border-stone-200 dark:border-neutral-700 pl-3 pr-1 py-1 shadow-sm">
             <Users className="h-4 w-4 text-stone-400 shrink-0" />
             <select
@@ -956,6 +964,185 @@ export function BusinessKPI() {
       })()}
 
       {/* ============ EQUIPE TAB ============ */}
+      {/* ============ PERSONNEL TAB ============ */}
+      {activeTab === 'personnel' && (() => {
+        const pWon = personalProspects.filter(p => p.stage === 'won')
+        const pLost = personalProspects.filter(p => p.stage === 'lost')
+        const pNoshow = personalProspects.filter(p => p.stage === 'noshow')
+        const pActive = personalProspects.filter(p => ['prospect', 'qualified', 'followup'].includes(p.stage))
+        const pRevenue = pWon.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
+        const pDecided = pWon.length + pLost.length + pNoshow.length
+        const pConversion = pDecided > 0 ? (pWon.length / pDecided) * 100 : 0
+        const pNoShowRate = pDecided > 0 ? (pNoshow.length / pDecided) * 100 : 0
+        const pAvgValue = pWon.length > 0 ? pRevenue / pWon.length : 0
+
+        // Chart data
+        const pChartData = (() => {
+          const monthMap: Record<string, { won: number; total: number; ca: number }> = {}
+          const now = new Date()
+          for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+            monthMap[key] = { won: 0, total: 0, ca: 0 }
+          }
+          personalProspects.forEach(p => {
+            const d = p.created_at ? new Date(p.created_at) : null
+            if (!d) return
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+            if (monthMap[key]) {
+              monthMap[key].total++
+              if (p.stage === 'won') {
+                monthMap[key].won++
+                monthMap[key].ca += getProspectCA(p, formulaBillingTypes)
+              }
+            }
+          })
+          return Object.entries(monthMap)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, val]) => ({
+              month: `${MONTH_NAMES[parseInt(key.split('-')[1]) - 1]?.slice(0, 3)} ${key.split('-')[0]}`,
+              closing: val.total > 0 ? Math.round((val.won / val.total) * 100) : 0,
+              ca: val.ca,
+            }))
+        })()
+
+        const personalLossData = computeLossReasonData(personalProspects)
+
+        return (
+          <div className="space-y-6">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <KpiCard title={t.kpi_ca_generated} value={formatCurrency(pRevenue)} icon={DollarSign} color="emerald" />
+              <KpiCard title={t.kpi_total_sales} value={pWon.length} icon={ShoppingCart} color="blue" />
+              <KpiCard title={t.kpi_conversion_rate} value={`${pConversion.toFixed(1)}%`} icon={Target} color="purple" />
+              <KpiCard title={t.kpi_active_prospects} value={pActive.length} icon={Activity} color="cyan" />
+              <KpiCard title={t.kpi_noshow_rate} value={`${pNoShowRate.toFixed(1)}%`} icon={UserX} color="rose" />
+              <KpiCard title={t.kpi_deals_lost} value={pLost.length} icon={XCircle} color="slate" />
+            </div>
+
+            {/* Pipeline Summary */}
+            <div className="bg-stone-900 rounded-2xl p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)] flex flex-wrap justify-between items-center gap-8">
+              <div className="flex items-center gap-6">
+                <div className="p-4 bg-white/5 rounded-full">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">{t.kpi_total_leads}</p>
+                  <p className="text-2xl font-extrabold text-white">{personalProspects.length}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="p-4 bg-white/5 rounded-full">
+                  <Briefcase className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">{t.kpi_deals_in_progress}</p>
+                  <p className="text-2xl font-extrabold text-white">{pActive.length}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="p-4 bg-white/5 rounded-full">
+                  <Award className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-400">{t.kpi_average_value}</p>
+                  <p className="text-2xl font-extrabold text-white">{formatCurrency(pAvgValue)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Closing Rate Chart */}
+              <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">{t.kpi_closing_rate_history}</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={pChartData}>
+                      <defs>
+                        <linearGradient id="personalClosingGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#1c1917" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#1c1917" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#78716c' }} />
+                      <YAxis tick={{ fontSize: 11, fill: '#78716c' }} unit="%" />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }}
+                        formatter={(v: number) => [`${v}%`, t.kpi_closing_rate_tooltip]}
+                      />
+                      <Area type="monotone" dataKey="closing" stroke="#1c1917" strokeWidth={2} fill="url(#personalClosingGrad)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* CA Chart */}
+              <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">{t.kpi_ca_history}</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={pChartData}>
+                      <defs>
+                        <linearGradient id="personalCaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#059669" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#059669" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#78716c' }} />
+                      <YAxis tick={{ fontSize: 11, fill: '#78716c' }} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }}
+                        formatter={(v: number) => [formatCurrency(v), 'CA']}
+                      />
+                      <Area type="monotone" dataKey="ca" stroke="#059669" strokeWidth={2} fill="url(#personalCaGrad)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Loss Reason Pie Chart */}
+            {personalLossData.length > 0 && (() => {
+              const total = personalLossData.reduce((s, r) => s + r.value, 0)
+              return (
+                <div className="bg-white dark:bg-neutral-800 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+                  <h3 className="text-xl font-extrabold text-stone-900 dark:text-white mb-8">{t.kpi_loss_reasons}</h3>
+                  <div className="flex flex-col lg:flex-row items-center gap-8">
+                    <div className="w-64 h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={personalLossData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value">
+                            {personalLossData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                          </Pie>
+                          <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v: number) => [v, 'Deals']} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      {personalLossData.map(d => (
+                        <div key={d.name} className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                            <span className="text-sm font-medium text-stone-700 dark:text-neutral-200">{d.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold text-stone-900 dark:text-white">{d.value}</span>
+                            <span className="text-xs text-stone-400 dark:text-neutral-500 w-10 text-right">{total > 0 ? Math.round((d.value / total) * 100) : 0}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        )
+      })()}
+
       {activeTab === 'equipe' && (
         <div className="space-y-6">
           {teams.map(team => {

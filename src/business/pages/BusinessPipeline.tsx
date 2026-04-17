@@ -77,7 +77,7 @@ const ROLE_OPTIONS = [
 
 export function BusinessPipeline() {
   const { prospects, updateProspect, deleteProspect } = useBusinessProspects()
-  const { user, ownerUserId, businessSettings, userTimezone } = useBusinessAuth()
+  const { user, ownerUserId, businessSettings, userTimezone, isSolo } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
 
   const PERIOD_OPTIONS = useMemo(() => [
@@ -609,6 +609,7 @@ export function BusinessPipeline() {
             )}
 
             {/* Members */}
+            {!isSolo && (
             <div>
               <label className="block text-xs font-medium text-stone-500 mb-2">{t.pipeline_closer_setter}</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
@@ -629,6 +630,7 @@ export function BusinessPipeline() {
                 {teamMembers.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">{t.pipeline_no_members}</span>}
               </div>
             </div>
+            )}
 
             {/* Stages */}
             <div>

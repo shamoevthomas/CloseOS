@@ -148,6 +148,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     role: '',
     avatar_url: '',
     owner_assignable: false,
+    owner_assignable_roles: [] as string[],
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -372,6 +373,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
           role: teamMember.role || 'Closer',
           avatar_url: teamMember.avatar_url || '',
           owner_assignable: (teamMember as any).owner_assignable ?? false,
+          owner_assignable_roles: (teamMember as any).owner_assignable_roles ?? [],
           deletion_scheduled_at: null,
         }))
       } else {
@@ -382,6 +384,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
           role: businessProfile?.role || 'Business Owner',
           avatar_url: businessProfile?.avatar_url || user.user_metadata?.avatar_url || '',
           owner_assignable: businessProfile?.owner_assignable ?? false,
+          owner_assignable_roles: (businessProfile as any)?.owner_assignable_roles ?? [],
           deletion_scheduled_at: null,
         }))
       }
@@ -485,6 +488,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
         }
         if (teamMember.role === 'Head of Sales') {
           updatePayload.owner_assignable = formData.owner_assignable
+          updatePayload.owner_assignable_roles = formData.owner_assignable ? formData.owner_assignable_roles : []
         }
         const { error: tmError } = await supabase
           .from('business_team_members')
@@ -499,6 +503,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
           role: formData.role,
           avatar_url: formData.avatar_url,
           owner_assignable: formData.owner_assignable,
+          owner_assignable_roles: formData.owner_assignable ? formData.owner_assignable_roles : [],
         })
         error = res.error
       }
@@ -974,8 +979,8 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                   </div>
                 </div>
 
-                {/* Owner assignable toggle - only for Owner and HOS */}
-                {(!isTeamMember || teamMember?.role === 'Head of Sales') && (
+                {/* Owner assignable toggle - only for Owner and HOS, hidden for Solo */}
+                {!isSolo && (!isTeamMember || teamMember?.role === 'Head of Sales') && (<>
                 <div
                   onClick={() => setFormData(prev => ({ ...prev, owner_assignable: !prev.owner_assignable }))}
                   className="mt-8 flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
@@ -994,7 +999,38 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     : <ToggleLeft className="h-7 w-7 text-stone-300 shrink-0" />
                   }
                 </div>
+
+                {/* Role selection when owner_assignable is on */}
+                {formData.owner_assignable && (
+                  <div className="mt-3 ml-2 p-5 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
+                    <p className="text-xs font-semibold text-stone-600 dark:text-neutral-400 mb-3">Assignable automatiquement en tant que :</p>
+                    <div className="flex gap-2">
+                      {['Setter', 'Closer'].map(role => {
+                        const isSelected = formData.owner_assignable_roles.includes(role)
+                        return (
+                          <button
+                            key={role}
+                            type="button"
+                            onClick={() => setFormData(prev => ({
+                              ...prev,
+                              owner_assignable_roles: isSelected
+                                ? prev.owner_assignable_roles.filter(r => r !== role)
+                                : [...prev.owner_assignable_roles, role]
+                            }))}
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                              isSelected
+                                ? 'bg-[#006c49] text-white shadow-sm'
+                                : 'bg-[#f5f3f2] dark:bg-neutral-700 text-stone-500 dark:text-neutral-400 hover:bg-[#006c49]/10 hover:text-[#006c49]'
+                            }`}
+                          >
+                            {role}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
                 )}
+                </>)}
 
                 {/* Security section inline */}
                 <section className="mt-16 mb-12">

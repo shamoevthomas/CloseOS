@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase'
 import {
   TrendingUp, DollarSign, ShoppingCart, Target, Award,
   Ban, Users, Briefcase, UserX, Settings, X, Save, Loader2, Package,
-  Download, CalendarDays, ArrowRight, Filter,
+  Download, CalendarDays, ArrowRight, Filter, Plus, Trash2, AlertTriangle,
 } from 'lucide-react'
 import {
   AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -23,6 +23,29 @@ interface KpiConfig {
   revenue_target: number
   commission_rate: number
 }
+
+interface KpiFormulaEntry {
+  name: string
+  price: number
+  commission: number
+  sales: number
+}
+
+interface KpiConfigEntry {
+  planned_calls: number
+  no_shows: number
+  lost_calls: number
+  won_calls: number
+  formulas: KpiFormulaEntry[]
+  total_revenue: number
+  total_commission: number
+  mode: 'formulas' | 'manual'
+}
+
+const defaultConfigEntry = (): KpiConfigEntry => ({
+  planned_calls: 0, no_shows: 0, lost_calls: 0, won_calls: 0,
+  formulas: [], total_revenue: 0, total_commission: 0, mode: 'formulas',
+})
 
 interface Formula {
   id: string
@@ -79,9 +102,16 @@ export function CloserKPI() {
   const pdfRef = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState(false)
 
+  // Personal KPI config (before joining org)
+  const [personalConfigs, setPersonalConfigs] = useState<Record<string, KpiConfigEntry>>({})
+  const configTab = 'global'
+  const [savingConfig, setSavingConfig] = useState(false)
+  const configMemberId = isOwnerView ? `owner_${user?.id}` : teamMember?.id
+
   // Load KPI config
   useEffect(() => {
-    if (!teamMember?.id) {
+    const memberId = isOwnerView ? `owner_${user?.id}` : teamMember?.id
+    if (!memberId) {
       setLoading(false)
       return
     }
@@ -89,14 +119,23 @@ export function CloserKPI() {
     supabase
       .from('business_kpi_config')
       .select('*')
-      .eq('team_member_id', teamMember.id)
+      .eq('team_member_id', memberId)
       .single()
       .then(({ data }) => {
-        if (data?.config) setKpiConfig(data.config as any)
+        if (data?.config) {
+          // Support both old format {planned_calls, revenue_target, commission_rate} and new {entries: {...}, ...legacy}
+          const cfg = data.config as any
+          if (cfg.entries) {
+            setPersonalConfigs(cfg.entries)
+          }
+          // Keep legacy kpiConfig for commission rate fallback
+          if (cfg.commission_rate !== undefined) setKpiConfig(cfg as KpiConfig)
+          else if (cfg.planned_calls !== undefined) setKpiConfig(cfg as KpiConfig)
+        }
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [teamMember?.id, isOwnerView])
+  }, [teamMember?.id, user?.id, isOwnerView])
 
   // Load formulas for per-offer tab
   useEffect(() => {
@@ -200,16 +239,70 @@ export function CloserKPI() {
   }, [effectiveOwnerId])
 
   const saveConfig = async () => {
-    if (!teamMember?.id || !effectiveOwnerId) return
+    if (!configMemberId || !effectiveOwnerId) return
+    setSavingConfig(true)
     const { error } = await supabase.from('business_kpi_config').upsert({
-      team_member_id: teamMember.id,
+      team_member_id: configMemberId,
       business_owner_id: effectiveOwnerId,
-      config: kpiConfig,
+      config: { ...kpiConfig, entries: personalConfigs },
     }, { onConflict: 'team_member_id' })
+    setSavingConfig(false)
     if (error) { toast.error(t.kpi_save_error); return }
     toast.success(t.kpi_config_saved)
     setIsConfigOpen(false)
   }
+
+  // Personal config helpers
+  const getConfigForKey = (key: string): KpiConfigEntry => personalConfigs[key] || defaultConfigEntry()
+  const updateConfigField = (key: string, field: string, value: any) => {
+    setPersonalConfigs(prev => ({
+      ...prev,
+      [key]: { ...getConfigForKey(key), [field]: value },
+    }))
+  }
+  const addFormula = (key: string) => {
+    const cfg = getConfigForKey(key)
+    setPersonalConfigs(prev => ({
+      ...prev,
+      [key]: { ...cfg, formulas: [...cfg.formulas, { name: '', price: 0, commission: 0, sales: 0 }] },
+    }))
+  }
+  const removeFormula = (key: string, idx: number) => {
+    const cfg = getConfigForKey(key)
+    setPersonalConfigs(prev => ({
+      ...prev,
+      [key]: { ...cfg, formulas: cfg.formulas.filter((_, i) => i !== idx) },
+    }))
+  }
+  const updateFormula = (key: string, idx: number, field: string, value: any) => {
+    const cfg = getConfigForKey(key)
+    const updated = cfg.formulas.map((f, i) => i === idx ? { ...f, [field]: value } : f)
+    setPersonalConfigs(prev => ({
+      ...prev,
+      [key]: { ...cfg, formulas: updated },
+    }))
+  }
+
+  // Compute totals from personal config (for Personnel tab)
+  const personalConfigTotals = useMemo(() => {
+    let planned = 0, noShows = 0, lost = 0, won = 0, revenue = 0, commission = 0
+    Object.values(personalConfigs).forEach(entry => {
+      planned += entry.planned_calls || 0
+      noShows += entry.no_shows || 0
+      lost += entry.lost_calls || 0
+      won += entry.won_calls || 0
+      if (entry.mode === 'formulas') {
+        entry.formulas.forEach(f => {
+          revenue += (f.price || 0) * (f.sales || 0)
+          commission += (f.price || 0) * ((f.commission || 0) / 100) * (f.sales || 0)
+        })
+      } else {
+        revenue += entry.total_revenue || 0
+        commission += entry.total_commission || 0
+      }
+    })
+    return { planned, noShows, lost, won, revenue: Math.round(revenue), commission: Math.round(commission) }
+  }, [personalConfigs])
 
   // Period-filtered prospects
   const periodProspects = useMemo(() => {
@@ -284,7 +377,10 @@ export function CloserKPI() {
   }
 
   // Personal KPIs
-  const myProspects = periodProspects.filter(p => p.assigned_to === teamMember?.id)
+  const closerMemberIds = useMemo(() => new Set(teamClosers.map(c => c.id)), [teamClosers])
+  const myProspects = isOwnerView
+    ? periodProspects.filter(p => !p.assigned_to || !closerMemberIds.has(p.assigned_to))
+    : periodProspects.filter(p => p.assigned_to === teamMember?.id)
   const personal = computeCloserKpis(myProspects)
   const commission = computeCloserCommission(personal.won, teamMember?.id)
 
@@ -361,7 +457,22 @@ export function CloserKPI() {
     if (activeTab === 'offer') return makeVals(formula, formulaCommission, formulaProspects)
     if (activeTab === 'campaign') return makeVals(campaign, campaignCommission, campaignProspects)
     if (activeTab === 'source') return makeVals(source, sourceCommission, sourceProspects)
-    return makeVals(personal, commission, myProspects)
+    // Personal tab: org data + configured data
+    const base = makeVals(personal, commission, myProspects)
+    const totalSales = base.sales + personalConfigTotals.won
+    const totalLost = base.lost + personalConfigTotals.lost
+    const totalNoShow = (personal.noShow?.length || 0) + personalConfigTotals.noShows
+    const totalDecided = totalSales + totalLost + totalNoShow
+    return {
+      ...base,
+      revenue: base.revenue + personalConfigTotals.revenue,
+      sales: totalSales,
+      commission: base.commission + personalConfigTotals.commission,
+      lost: totalLost,
+      leads: base.leads + personalConfigTotals.planned,
+      noShowRate: totalDecided > 0 ? (totalNoShow / totalDecided) * 100 : base.noShowRate,
+      conversion: totalDecided > 0 ? (totalSales / totalDecided) * 100 : base.conversion,
+    }
   }
 
   const v = getTabValues()
@@ -445,6 +556,7 @@ export function CloserKPI() {
         { key: 'offer' as const, label: t.kpi_tab_by_formula },
         { key: 'campaign' as const, label: t.kpi_tab_by_campaign },
         { key: 'source' as const, label: t.kpi_tab_by_source },
+        { key: 'personal' as const, label: t.kpi_tab_personal },
       ]
     : [
         { key: 'personal' as const, label: t.kpi_tab_personal },
@@ -505,14 +617,12 @@ export function CloserKPI() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isOwnerView && (
-            <button
-              onClick={() => setIsConfigOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/10 transition-colors"
-            >
-              <Settings className="h-4 w-4" /> {t.kpi_configure}
-            </button>
-          )}
+          <button
+            onClick={() => setIsConfigOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/10 transition-colors"
+          >
+            <Settings className="h-4 w-4" /> {t.kpi_configure}
+          </button>
           <button
             onClick={handleExportPdf}
             disabled={exporting}
@@ -569,7 +679,7 @@ export function CloserKPI() {
             </button>
           ))}
         </div>
-        {isOwnerView && teamClosers.length > 0 && (
+        {isOwnerView && !isSolo && teamClosers.length > 0 && (
           <div className="flex items-center gap-2 bg-white dark:bg-white/5 rounded-full border border-stone-200 dark:border-white/10 pl-3 pr-1 py-1 shadow-sm">
             <Users className="h-4 w-4 text-stone-400 shrink-0" />
             <select
@@ -854,59 +964,155 @@ export function CloserKPI() {
       </div>
       </div>{/* end pdfRef */}
 
-      {/* Config Modal (team members only) */}
-      {isConfigOpen && !isOwnerView && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 px-6 py-4">
-              <h2 className="text-xl font-extrabold text-stone-900 dark:text-white">{t.kpi_config_title}</h2>
-              <button onClick={() => setIsConfigOpen(false)} className="text-stone-400 hover:text-stone-600 transition-colors">
-                <X className="h-5 w-5" />
+      {/* Config Modal — Personal KPI (before joining org) */}
+      {isConfigOpen && (() => {
+        const cfg = getConfigForKey(configTab)
+        const cfgMode = cfg.mode || 'formulas'
+        return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setIsConfigOpen(false)} />
+          <div className="relative w-full max-w-xl mx-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-stone-100 dark:bg-blue-600/20 rounded-lg border border-stone-200 dark:border-blue-500/30">
+                  <Settings className="w-5 h-5 text-stone-600 dark:text-blue-400" />
+                </div>
+                <h2 className="text-xl font-bold text-stone-900 dark:text-white">{t.kpi_config_title}</h2>
+              </div>
+              <button onClick={() => setIsConfigOpen(false)} className="p-2 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5 hover:text-stone-600 dark:hover:text-white transition-colors">
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.kpi_revenue_target}</label>
-                <input
-                  type="number"
-                  value={kpiConfig.revenue_target}
-                  onChange={e => setKpiConfig(prev => ({ ...prev, revenue_target: Number(e.target.value) }))}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.kpi_planned_calls}</label>
-                <input
-                  type="number"
-                  value={kpiConfig.planned_calls}
-                  onChange={e => setKpiConfig(prev => ({ ...prev, planned_calls: Number(e.target.value) }))}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.kpi_commission_rate}</label>
-                <input
-                  type="number"
-                  value={kpiConfig.commission_rate}
-                  onChange={e => setKpiConfig(prev => ({ ...prev, commission_rate: Number(e.target.value) }))}
-                  className={inputCls}
-                />
+
+            {/* Warning */}
+            <div className="mx-6 mt-4 flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30">
+              <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-sm text-amber-700 dark:text-amber-300">{lang === 'fr' ? 'Renseignez ici vos KPI avant de rejoindre l\'organisation' : 'Enter your KPI from before joining the organization'}</p>
+            </div>
+            <p className="mx-6 mt-3 text-xs text-stone-400 dark:text-white/40 italic">{lang === 'fr' ? 'Ces données apparaîtront uniquement dans l\'onglet Personnel.' : 'This data will only appear in the Personal tab.'}</p>
+
+            {/* Form body */}
+            <div className="p-6 space-y-4 max-h-[50vh] overflow-y-auto">
+              {/* 4 call count fields */}
+              {[
+                { key: 'planned_calls', label: lang === 'fr' ? 'Combien de calls prévus initialement ?' : 'How many calls originally planned?', icon: '📞' },
+                { key: 'no_shows', label: lang === 'fr' ? 'Combien de no show ?' : 'How many no shows?', icon: '👻' },
+                { key: 'lost_calls', label: lang === 'fr' ? 'Combien de calls perdus ?' : 'How many lost calls?', icon: '❌' },
+                { key: 'won_calls', label: lang === 'fr' ? 'Combien de calls gagnés ?' : 'How many won calls?', icon: '✅' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="flex items-center gap-2 text-sm font-medium text-stone-600 dark:text-white/60 mb-1.5">
+                    <span>{f.icon}</span> {f.label}
+                  </label>
+                  <input type="number" min={0} value={(cfg as any)[f.key] as number}
+                    onChange={e => updateConfigField(configTab, f.key, parseInt(e.target.value) || 0)}
+                    className="w-full rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-stone-400 dark:focus:border-blue-500" />
+                </div>
+              ))}
+
+              {/* Mode switch + formulas or manual */}
+              <div className="mt-4 space-y-4">
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-stone-100 dark:bg-white/[0.03] border border-stone-200 dark:border-white/5">
+                  <button onClick={() => updateConfigField(configTab, 'mode', 'formulas')}
+                    className={cn('flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all',
+                      cfgMode === 'formulas' ? 'bg-stone-900 dark:bg-gradient-to-r dark:from-emerald-600 dark:to-teal-600 text-white shadow-lg' : 'text-stone-400 dark:text-white/40 hover:text-stone-900 dark:hover:text-white'
+                    )}>
+                    {lang === 'fr' ? 'Calcul auto (formules)' : 'Auto calc (formulas)'}
+                  </button>
+                  <button onClick={() => updateConfigField(configTab, 'mode', 'manual')}
+                    className={cn('flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all',
+                      cfgMode === 'manual' ? 'bg-stone-900 dark:bg-gradient-to-r dark:from-blue-600 dark:to-indigo-600 text-white shadow-lg' : 'text-stone-400 dark:text-white/40 hover:text-stone-900 dark:hover:text-white'
+                    )}>
+                    {lang === 'fr' ? 'Saisie manuelle' : 'Manual entry'}
+                  </button>
+                </div>
+
+                {cfgMode === 'formulas' && (
+                  <div className="rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/[0.03] p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-stone-900 dark:text-white">{lang === 'fr' ? 'Formules' : 'Formulas'}</h4>
+                      <button onClick={() => addFormula(configTab)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-stone-200 dark:bg-emerald-600/20 border border-stone-300 dark:border-emerald-500/30 text-xs font-medium text-stone-700 dark:text-emerald-400 hover:bg-stone-300 dark:hover:bg-emerald-600/30 transition-colors">
+                        <Plus className="w-3.5 h-3.5" /> {lang === 'fr' ? 'Ajouter' : 'Add'}
+                      </button>
+                    </div>
+                    {cfg.formulas.length === 0 && (
+                      <p className="text-xs text-stone-400 dark:text-white/40 italic">{lang === 'fr' ? 'Aucune formule. Cliquez sur "Ajouter" pour en créer une.' : 'No formulas. Click "Add" to create one.'}</p>
+                    )}
+                    {cfg.formulas.map((fm, idx) => (
+                      <div key={idx} className="rounded-lg border border-stone-200 dark:border-white/5 bg-white dark:bg-white/[0.03] p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-stone-400 dark:text-white/40">{lang === 'fr' ? 'Formule' : 'Formula'} {idx + 1}</span>
+                          <button onClick={() => removeFormula(configTab, idx)} className="p-1 rounded text-red-400/60 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div>
+                          <label className="text-xs text-stone-400 dark:text-white/40 mb-1 block">{lang === 'fr' ? 'Nom' : 'Name'}</label>
+                          <input type="text" value={fm.name} onChange={e => updateFormula(configTab, idx, 'name', e.target.value)} placeholder="Ex: Formule Gold"
+                            className="w-full rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-2 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-stone-400 dark:focus:border-blue-500" />
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="text-xs text-stone-400 dark:text-white/40 mb-1 block">{lang === 'fr' ? 'Prix (€)' : 'Price (€)'}</label>
+                            <input type="number" min={0} value={fm.price} onChange={e => updateFormula(configTab, idx, 'price', parseFloat(e.target.value) || 0)}
+                              className="w-full rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-2 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-stone-400" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-stone-400 dark:text-white/40 mb-1 block">{lang === 'fr' ? 'Commission (%)' : 'Commission (%)'}</label>
+                            <input type="number" min={0} max={100} value={fm.commission} onChange={e => updateFormula(configTab, idx, 'commission', parseFloat(e.target.value) || 0)}
+                              className="w-full rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-2 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-stone-400" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-stone-400 dark:text-white/40 mb-1 block">{lang === 'fr' ? 'Ventes' : 'Sales'}</label>
+                            <input type="number" min={0} value={fm.sales || 0} onChange={e => updateFormula(configTab, idx, 'sales', parseInt(e.target.value) || 0)}
+                              className="w-full rounded-lg border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-2 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-stone-400" />
+                          </div>
+                        </div>
+                        {(fm.sales || 0) > 0 && fm.price > 0 && fm.commission > 0 && (
+                          <div className="text-xs text-emerald-600 dark:text-emerald-400/80 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg px-3 py-1.5 border border-emerald-200 dark:border-emerald-500/20">
+                            {lang === 'fr' ? 'Commission calculée' : 'Calculated commission'} : <span className="font-bold">{((fm.price * (fm.commission / 100)) * (fm.sales || 0)).toLocaleString('fr-FR')} €</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {cfgMode === 'manual' && (
+                  <div className="rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/[0.03] p-4 space-y-3">
+                    <h4 className="text-sm font-bold text-stone-900 dark:text-white">{lang === 'fr' ? 'Revenus' : 'Revenue'}</h4>
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-stone-600 dark:text-white/60 mb-1.5"><span>💰</span> {lang === 'fr' ? 'CA Généré (€)' : 'Revenue (€)'}</label>
+                      <input type="number" min={0} value={cfg.total_revenue} onChange={e => updateConfigField(configTab, 'total_revenue', parseFloat(e.target.value) || 0)}
+                        className="w-full rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-emerald-500" />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-stone-600 dark:text-white/60 mb-1.5"><span>🏆</span> {lang === 'fr' ? 'Commission touchée (€)' : 'Commission earned (€)'}</label>
+                      <input type="number" min={0} value={cfg.total_commission} onChange={e => updateConfigField(configTab, 'total_commission', parseFloat(e.target.value) || 0)}
+                        className="w-full rounded-lg border border-stone-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:outline-none focus:border-amber-500" />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="flex justify-end gap-3 border-t border-stone-100 dark:border-neutral-800 px-6 py-4">
-              <button onClick={() => setIsConfigOpen(false)} className="rounded-xl border border-stone-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-white/5 transition-colors">
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 pb-6">
+              <button onClick={() => setIsConfigOpen(false)} className="px-4 py-2.5 rounded-xl text-sm font-medium text-stone-400 hover:text-stone-600 dark:hover:text-white transition-colors">
                 {t.common_cancel}
               </button>
-              <button
-                onClick={saveConfig}
-                className="flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-colors"
-              >
-                <Save className="h-4 w-4" /> {t.common_save}
+              <button onClick={saveConfig} disabled={savingConfig}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-stone-900 dark:bg-gradient-to-r dark:from-blue-600 dark:to-indigo-600 text-sm font-bold text-white hover:opacity-90 transition-all shadow-lg disabled:opacity-50">
+                <Save className="w-4 h-4" />
+                {savingConfig ? '...' : t.common_save}
               </button>
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
     </div>
   )
 }

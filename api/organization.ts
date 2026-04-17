@@ -173,7 +173,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const origin = req.headers.origin || 'https://closeos.fr'
       const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
         line_items: [{ price: EXTRA_ORG_PRICE_ID, quantity: 1 }],
         mode: 'payment',
         customer_email: customerEmail,

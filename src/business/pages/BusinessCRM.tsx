@@ -74,7 +74,7 @@ export function BusinessCRM() {
     hubspotConnected, pipedriveConnected, ghlConnected,
     nextSyncSeconds,
   } = useBusinessProspects()
-  const { businessSettings, user, isTeamMember, ownerUserId, teamMember } = useBusinessAuth()
+  const { businessSettings, businessProfile, user, isTeamMember, ownerUserId, teamMember, isSolo } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
   const { customStages } = useCustomStages()
   const isReadOnly = false
@@ -156,11 +156,12 @@ export function BusinessCRM() {
     // Team members
     import('../../lib/supabase').then(({ supabase }) => {
       Promise.all([
-        supabase.from('business_team_members').select('id, first_name, last_name, role, team_id, owner_assignable, count_setter_commission').eq('business_owner_id', effectiveUserId),
-        supabase.from('business_users').select('id, full_name, email, owner_assignable').eq('id', effectiveUserId).single(),
+        supabase.from('business_team_members').select('id, first_name, last_name, role, team_id, owner_assignable, owner_assignable_roles, count_setter_commission').eq('business_owner_id', effectiveUserId),
+        supabase.from('business_users').select('id, full_name, email, owner_assignable, owner_assignable_roles').eq('id', effectiveUserId).single(),
         supabase.from('business_teams').select('id, name').eq('business_owner_id', effectiveUserId).order('position'),
       ]).then(([tmRes, ownerRes, teamsRes]) => {
         const all = tmRes.data || []
+        const ownerRoles: string[] = ownerRes.data?.owner_assignable_roles || []
         const ownerMember = (ownerRes.data?.owner_assignable) ? {
           id: ownerRes.data.id,
           first_name: (ownerRes.data.full_name || 'Owner').split(' ')[0] || 'Owner',
@@ -174,11 +175,11 @@ export function BusinessCRM() {
         setAllTeamMembers(allList)
         setTeams(teamsRes.data || [])
         // Setters/Closers for add modal
-        const setters = all.filter((m: any) => m.role === 'Setter' || m.role === 'Setter-Closer' || m.owner_assignable)
-        if (ownerMember) setters.unshift(ownerMember)
+        const setters = all.filter((m: any) => m.role === 'Setter' || m.role === 'Setter-Closer' || (m.owner_assignable_roles || []).includes('Setter'))
+        if (ownerMember && ownerRoles.includes('Setter')) setters.unshift(ownerMember)
         setTeamSetters(setters)
-        const closers = all.filter((m: any) => m.role === 'Closer' || m.role === 'Setter-Closer' || m.owner_assignable)
-        if (ownerMember) closers.unshift(ownerMember)
+        const closers = all.filter((m: any) => m.role === 'Closer' || m.role === 'Setter-Closer' || (m.owner_assignable_roles || []).includes('Closer'))
+        if (ownerMember && ownerRoles.includes('Closer')) closers.unshift(ownerMember)
         setTeamClosers(closers)
       })
     })
@@ -365,17 +366,21 @@ export function BusinessCRM() {
     if (!newContact) return
     // Determine setter
     let setterId: string | null = null
-    if (isPureSetter || isSetterCloser) {
+    if (isSolo) {
+      setterId = user?.id || null
+    } else if (isPureSetter || isSetterCloser) {
       setterId = teamMember?.id || null
     } else {
       setterId = newSetterId || null
     }
-    // Setter is required only if user needs picker (Closer/Owner/HoS/Admin)
-    if (needsSetterPicker && !setterId) return
+    // Setter is required only if user needs picker (Closer/Owner/HoS/Admin) and not solo
+    if (!isSolo && needsSetterPicker && !setterId) return
 
     // Determine closer
     let closerId: string | null = null
-    if (isSetterCloser) {
+    if (isSolo) {
+      closerId = user?.id || null
+    } else if (isSetterCloser) {
       // Setter-Closer: auto-assign self as closer
       closerId = teamMember?.id || null
     } else if (isPureCloser) {
@@ -633,6 +638,7 @@ export function BusinessCRM() {
             )}
 
             {/* Members */}
+            {!isSolo && (
             <div>
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.crm_closer_setter}</label>
               <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
@@ -653,6 +659,7 @@ export function BusinessCRM() {
                 {allTeamMembers.length === 0 && <span className="text-xs text-stone-400 dark:text-neutral-500">{t.crm_no_members}</span>}
               </div>
             </div>
+            )}
 
             {/* Stages */}
             <div>
@@ -986,7 +993,13 @@ export function BusinessCRM() {
               )}
 
               {/* Setter assignment */}
-              {isPureSetter ? (
+              {isSolo ? (
+                <div className="rounded-xl bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 px-4 py-2.5">
+                  <p className="text-xs font-medium text-stone-700 dark:text-neutral-200">
+                    Setter : <span className="font-bold">{businessProfile?.full_name || 'Vous'}</span>
+                  </p>
+                </div>
+              ) : isPureSetter ? (
                 <div className="rounded-xl bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 px-4 py-2.5">
                   <p className="text-xs font-medium text-stone-700 dark:text-neutral-200">
                     Setter : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> ({t.crm_you})
@@ -1082,7 +1095,13 @@ export function BusinessCRM() {
               )}
 
               {/* Closer assignment — only for Owner/HoS/Admin (optional) and pure Closer (auto-assigned) */}
-              {isPureCloser ? (
+              {isSolo ? (
+                <div className="rounded-xl bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 px-4 py-2.5">
+                  <p className="text-xs font-medium text-stone-700 dark:text-neutral-200">
+                    Closer : <span className="font-bold">{businessProfile?.full_name || 'Vous'}</span>
+                  </p>
+                </div>
+              ) : isPureCloser ? (
                 <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-2.5">
                   <p className="text-xs font-medium text-blue-700">
                     Closer : <span className="font-bold">{teamMember?.first_name} {teamMember?.last_name}</span> ({t.crm_you})

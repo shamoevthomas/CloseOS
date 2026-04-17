@@ -95,8 +95,8 @@ export function CloserRendezVous() {
   const fetchTeamMembers = useCallback(async () => {
     if (!ownerUserId) return
     const [tmRes, ownerRes] = await Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role, timezone, owner_assignable').eq('business_owner_id', ownerUserId),
-      supabase.from('business_users').select('id, full_name, owner_assignable').eq('id', ownerUserId).single(),
+      supabase.from('business_team_members').select('id, first_name, last_name, role, timezone, owner_assignable, owner_assignable_roles').eq('business_owner_id', ownerUserId),
+      supabase.from('business_users').select('id, full_name, owner_assignable, owner_assignable_roles').eq('id', ownerUserId).single(),
     ])
     const list = (tmRes.data || []).filter((m: any) => !['Head of Sales', 'Admin'].includes(m.role) || m.owner_assignable)
     if (ownerRes.data?.owner_assignable) {

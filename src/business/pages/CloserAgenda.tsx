@@ -206,7 +206,7 @@ interface TeamMemberOption {
 }
 
 export function CloserAgenda() {
-  const { user, teamMember, ownerUserId, isTeamMember, userTimezone } = useBusinessAuth()
+  const { user, teamMember, ownerUserId, isTeamMember, userTimezone, isSolo } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
 
   const DAY_NAMES_SHORT = [t.closer_agenda_day_mon, t.closer_agenda_day_tue, t.closer_agenda_day_wed, t.closer_agenda_day_thu, t.closer_agenda_day_fri, t.closer_agenda_day_sat, t.closer_agenda_day_sun]
@@ -1078,7 +1078,7 @@ export function CloserAgenda() {
 
         <div className="flex items-center gap-4">
           {/* Owner: team member filter */}
-          {isOwnerView && teamMembers.length > 0 && (
+          {isOwnerView && !isSolo && teamMembers.length > 0 && (
             <select
               value={selectedMemberId}
               onChange={e => setSelectedMemberId(e.target.value)}

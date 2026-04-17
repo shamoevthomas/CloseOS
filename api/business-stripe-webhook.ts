@@ -84,6 +84,60 @@ async function updateProspectStripeData(
         .eq('id', prospectId);
 }
 
+// ─── Email helpers ──────────────────────────────────────────────────────────
+
+const brevoApiKey = process.env.BREVO_API_KEY || '';
+
+function businessEmailWrap(badge: string, heading: string, bodyHtml: string, ctaText: string, ctaUrl: string) {
+    return `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;">
+<tr><td align="center">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+<tr><td align="center" style="padding-bottom:32px;">
+<span style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;color:#111;letter-spacing:-0.04em;">Close</span><span style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;background:linear-gradient(135deg,#ff4b72,#a03cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">OS</span>
+</td></tr>
+<tr><td>
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fff;border-radius:48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
+<tr><td style="padding:64px 48px;">
+<span style="display:inline-block;background-color:#fff0f0;color:#dc2626;padding:6px 16px;border-radius:50px;font-size:12px;font-weight:800;text-transform:uppercase;font-family:'Manrope',Arial,sans-serif;letter-spacing:0.05em;">${badge}</span>
+<h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:26px;color:#111;letter-spacing:-0.04em;line-height:1.1;margin:24px 0 16px;">${heading}</h1>
+<div style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;font-size:15px;line-height:1.6;">${bodyHtml}</div>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;">
+<tr><td align="center">
+<a href="${ctaUrl}" style="display:inline-block;background-color:#111;color:#fff;text-decoration:none;padding:16px 32px;border-radius:48px;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;">${ctaText}</a>
+</td></tr></table>
+</td></tr></table>
+</td></tr>
+<tr><td align="center" style="padding-top:32px;">
+<p style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;opacity:0.5;font-size:12px;margin:0 0 4px;">&copy; 2026 CloseOS.fr</p>
+<p style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;opacity:0.5;font-size:12px;margin:0;">
+<a href="https://closeos.fr/cgu" style="color:#1b1c1b;text-decoration:none;">CGU</a> &middot; <a href="https://closeos.fr/cgv" style="color:#1b1c1b;text-decoration:none;">CGV</a> &middot; <a href="https://closeos.fr/confidentialite" style="color:#1b1c1b;text-decoration:none;">Confidentialit&eacute;</a>
+</p>
+</td></tr></table>
+</td></tr></table>
+</body></html>`;
+}
+
+async function sendBrevoEmail(to: string, subject: string, html: string) {
+    try {
+        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: { 'accept': 'application/json', 'api-key': brevoApiKey, 'content-type': 'application/json' },
+            body: JSON.stringify({
+                sender: { email: 'support@closeos.fr', name: 'CloseOS' },
+                to: [{ email: to }],
+                subject, htmlContent: html
+            })
+        });
+        console.log(`📧 Email "${subject}" → ${to}: ${res.ok ? 'OK' : 'FAIL'}`);
+        return res.ok;
+    } catch (e) { console.error('Email error:', e); return false; }
+}
+
 // ─── Main handler ───────────────────────────────────────────────────────────
 
 export default async function handler(req: Request) {
@@ -468,6 +522,121 @@ export default async function handler(req: Request) {
                             .eq('id', paymentSession.appointment_id);
                     }
                     console.log(`Campaign checkout completed: session ${session.id}`);
+                }
+                break;
+            }
+
+            // ─── Invoice payment failed (prospect subscription renewal) ─
+            case 'invoice.payment_failed': {
+                const invoice = event.data.object as Stripe.Invoice;
+                const subscriptionId = typeof invoice.subscription === 'string'
+                    ? invoice.subscription
+                    : (invoice.subscription as any)?.id;
+
+                if (!subscriptionId) break;
+
+                const customerId = typeof invoice.customer === 'string'
+                    ? invoice.customer
+                    : (invoice.customer as any)?.id;
+
+                // Find prospect by subscription
+                const { data: failedProspect } = await supabaseAdmin
+                    .from('business_prospects')
+                    .select('id, contact, email')
+                    .eq('user_id', ownerUserId)
+                    .eq('stripe_subscription_id', subscriptionId)
+                    .maybeSingle();
+
+                if (failedProspect) {
+                    // Mark prospect as past_due
+                    await supabaseAdmin
+                        .from('business_prospects')
+                        .update({ subscription_status: 'past_due' })
+                        .eq('id', failedProspect.id);
+
+                    console.log(`❌ Payment failed for prospect ${failedProspect.id} (${failedProspect.contact})`);
+
+                    // Log in prospect history
+                    await supabaseAdmin.from('business_prospect_history').insert({
+                        prospect_id: failedProspect.id,
+                        business_owner_id: ownerUserId,
+                        changed_by_id: 'stripe',
+                        changed_by_name: 'Stripe',
+                        change_type: 'payment_failed',
+                        field_name: 'subscription_status',
+                        old_value: 'active',
+                        new_value: 'past_due',
+                        metadata: { invoice_id: invoice.id },
+                    }).catch(() => {});
+
+                    // Notify the Business owner by email
+                    const { data: { user: ownerAuth } } = await supabaseAdmin.auth.admin.getUserById(ownerUserId);
+                    const { data: ownerProfile } = await supabaseAdmin
+                        .from('profiles')
+                        .select('full_name')
+                        .eq('id', ownerUserId)
+                        .single();
+
+                    if (ownerAuth?.email) {
+                        const ownerName = ownerProfile?.full_name?.split(' ')[0] || 'Bonjour';
+                        const prospectName = failedProspect.contact || failedProspect.email || 'Un client';
+                        const amount = typeof (invoice as any).amount_due === 'number'
+                            ? ((invoice as any).amount_due / 100).toFixed(2).replace('.00', '')
+                            : '?';
+
+                        await sendBrevoEmail(
+                            ownerAuth.email,
+                            `\u00c9chec de paiement \u2014 ${prospectName}`,
+                            businessEmailWrap(
+                                'Paiement \u00e9chou\u00e9',
+                                `${ownerName}, le paiement de ${prospectName} a \u00e9chou\u00e9.`,
+                                `<p>Le renouvellement de l'abonnement de <strong>${prospectName}</strong> (${amount}\u20ac) n'a pas pu \u00eatre effectu\u00e9.</p>
+                                <div style="background-color:#f5f3f2;border-radius:24px;padding:24px 20px;margin-top:20px;">
+                                    <p style="margin:0 0 8px;font-weight:600;color:#111;">\u26a0\ufe0f Ce qu'il se passe :</p>
+                                    <p style="margin:0 0 4px;">\u2022 Stripe va retenter automatiquement le paiement (jusqu'\u00e0 3 tentatives)</p>
+                                    <p style="margin:0 0 4px;">\u2022 Le client est marqu\u00e9 <strong>en retard de paiement</strong> dans votre CRM</p>
+                                    <p style="margin:0;">\u2022 Si toutes les tentatives \u00e9chouent, l'abonnement sera annul\u00e9</p>
+                                </div>`,
+                                'Voir le client',
+                                'https://closeos.app/business/clients'
+                            )
+                        );
+                    }
+
+                    // Also create a Stripe Billing portal link for the prospect to update their payment
+                    if (failedProspect.email && customerId) {
+                        try {
+                            const portalSession = selfConnect
+                                ? await stripe.billingPortal.sessions.create({
+                                    customer: customerId,
+                                    return_url: 'https://closeos.fr',
+                                })
+                                : await stripe.billingPortal.sessions.create({
+                                    customer: customerId,
+                                    return_url: 'https://closeos.fr',
+                                }, { stripeAccount: connectedAccountId });
+
+                            // Email the prospect with the portal link
+                            await sendBrevoEmail(
+                                failedProspect.email,
+                                'Votre paiement a \u00e9chou\u00e9 \u2014 Action requise',
+                                businessEmailWrap(
+                                    'Action requise',
+                                    'Votre paiement n\'a pas pu \u00eatre effectu\u00e9.',
+                                    `<p>Bonjour${failedProspect.contact ? ` ${failedProspect.contact.split(' ')[0]}` : ''},</p>
+                                    <p>Le renouvellement de votre abonnement n'a pas pu \u00eatre trait\u00e9. Votre moyen de paiement a peut-\u00eatre expir\u00e9 ou \u00e9t\u00e9 refus\u00e9.</p>
+                                    <div style="background-color:#f5f3f2;border-radius:24px;padding:24px 20px;margin-top:20px;">
+                                        <p style="margin:0 0 4px;">\u2022 Cliquez sur le bouton ci-dessous pour mettre \u00e0 jour votre moyen de paiement</p>
+                                        <p style="margin:0;">\u2022 Votre abonnement sera r\u00e9activ\u00e9 automatiquement apr\u00e8s le paiement</p>
+                                    </div>`,
+                                    'Mettre \u00e0 jour le paiement',
+                                    portalSession.url
+                                )
+                            );
+                        } catch (portalErr) {
+                            console.error('Billing portal error:', portalErr);
+                        }
+                    }
                 }
                 break;
             }

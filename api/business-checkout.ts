@@ -73,6 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (action === 'session-status') return handleSessionStatus(req, res);
   if (action === 'seat-info') return handleSeatInfo(req, res);
   if (action === 'purchase-seats') return handlePurchaseSeats(req, res);
+  if (action === 'reactivate') return handleReactivate(req, res);
 
   return res.status(400).json({ error: 'Unknown action' });
 }
@@ -159,9 +160,9 @@ async function handleCreateSetupIntent(req: VercelRequest, res: VercelResponse) 
       trialDays = promoData.trial_days;
     }
 
-    // Create SetupIntent (collects card without charging)
+    // Create SetupIntent (collects card / Apple Pay / Google Pay)
     const setupIntent = await stripe.setupIntents.create({
-      payment_method_types: ['card'],
+      automatic_payment_methods: { enabled: true },
       metadata: {
         plan,
         billing_cycle,
@@ -618,6 +619,68 @@ async function handlePurchaseSeats(req: VercelRequest, res: VercelResponse) {
     return res.json({ success: true, updated_seats: merged });
   } catch (err: any) {
     console.error('PURCHASE SEATS ERROR:', err.message);
+    return res.status(err.statusCode || 500).json({ error: err.message });
+  }
+}
+
+// ─── Action: reactivate (existing user, trial expired, no card on file) ────────
+
+async function handleReactivate(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  try {
+    const { user_id } = req.body;
+    if (!user_id) return res.status(400).json({ error: 'user_id required' });
+
+    // Get the user's plan from business_settings
+    const { data: settings } = await supabase
+      .from('business_settings')
+      .select('subscription_plan')
+      .eq('user_id', user_id)
+      .single();
+
+    const plan = settings?.subscription_plan || 'solo';
+
+    // Get user email
+    const { data: bizUser } = await supabase
+      .from('business_users')
+      .select('stripe_customer_id')
+      .eq('id', user_id)
+      .single();
+
+    // Default to monthly billing, cheapest entry
+    const billing = 'monthly';
+    const priceId = PRICE_MAP[plan]?.[billing];
+    if (!priceId) return res.status(400).json({ error: 'Invalid plan' });
+
+    // Get user email from auth
+    const { data: { user: authUser } } = await supabase.auth.admin.getUserById(user_id);
+    if (!authUser?.email) return res.status(400).json({ error: 'User not found' });
+
+    const origin = req.headers.origin || 'https://closeos.app';
+
+    // If user already has a Stripe customer, reuse it
+    let customerId = bizUser?.stripe_customer_id;
+
+    // Create Checkout Session in subscription mode (Stripe hosted page)
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${origin}/business/dashboard?reactivated=true`,
+      cancel_url: `${origin}/business/dashboard`,
+      customer_email: customerId ? undefined : authUser.email,
+      ...(customerId ? { customer: customerId } : {}),
+      metadata: { user_id, plan, billing_cycle: billing, reactivation: 'true' },
+      subscription_data: {
+        metadata: { plan, billing_cycle: billing, user_id },
+      },
+    };
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+
+    return res.json({ checkout_url: session.url });
+  } catch (err: any) {
+    console.error('REACTIVATE ERROR:', err.message);
     return res.status(err.statusCode || 500).json({ error: err.message });
   }
 }

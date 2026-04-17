@@ -259,7 +259,6 @@ async function handleInvoiceSession(req: VercelRequest, res: VercelResponse) {
     // L'option clé ici est "stripeAccount", qui crée la session AU NOM du closer
     const session = await stripe.checkout.sessions.create(
       {
-        payment_method_types: ['card'],
         line_items: [
           {
             price_data: {
@@ -391,7 +390,6 @@ async function handleCampaignCheckout(req: VercelRequest, res: VercelResponse) {
 
     const session = await stripe.checkout.sessions.create(
       {
-        payment_method_types: ['card'],
         line_items: [{
           price_data: {
             currency,

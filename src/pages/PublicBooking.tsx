@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Globe, ArrowRight, Hash, List, Type } from 'lucide-react'
+import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Globe, ArrowRight, Hash, List, Type, ChevronDown } from 'lucide-react'
 import { toUTC, fromUTC, getTimezoneLabel } from '../lib/timezone'
 import { supabase } from '../lib/supabase'
 
@@ -10,6 +10,14 @@ interface CustomField {
   type: 'text' | 'email' | 'phone' | 'number' | 'select'
   required: boolean
   options?: string[]
+}
+
+interface BookingQuestion {
+  question_text: string
+  question_type: 'text' | 'select' | 'multiple_choice' | 'number'
+  is_required: boolean
+  options: string[]
+  sort_order: number
 }
 
 interface BookingInfo {
@@ -24,6 +32,9 @@ interface BookingInfo {
   phoneEnabled: boolean
   phoneRequired: boolean
   customFields: CustomField[]
+  questionnaireEnabled: boolean
+  questionnaireRequired: boolean
+  questionnaireQuestions: BookingQuestion[]
   slots?: SlotData[]
 }
 
@@ -33,6 +44,57 @@ interface CreatorInfo {
 }
 
 const API_URL = '/api/business'
+
+const PHONE_FORMATS: Record<string, { maxDigits: number; groups: number[] }> = {
+  '+33': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },
+  '+32': { maxDigits: 9, groups: [3, 2, 2, 2] },
+  '+41': { maxDigits: 9, groups: [2, 3, 2, 2] },
+  '+352': { maxDigits: 9, groups: [3, 3, 3] },
+  '+377': { maxDigits: 8, groups: [2, 2, 2, 2] },
+  '+1': { maxDigits: 10, groups: [3, 3, 4] },
+  '+44': { maxDigits: 10, groups: [4, 3, 3] },
+  '+49': { maxDigits: 11, groups: [3, 4, 4] },
+  '+34': { maxDigits: 9, groups: [3, 3, 3] },
+  '+39': { maxDigits: 10, groups: [3, 3, 4] },
+  '+351': { maxDigits: 9, groups: [3, 3, 3] },
+  '+31': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },
+  '+212': { maxDigits: 9, groups: [3, 3, 3] },
+  '+216': { maxDigits: 8, groups: [2, 3, 3] },
+  '+213': { maxDigits: 9, groups: [3, 3, 3] },
+}
+
+function formatPhoneByCountry(raw: string, code: string): string {
+  const digits = raw.replace(/\D/g, '')
+  const fmt = PHONE_FORMATS[code]
+  if (!fmt) return digits.slice(0, 15)
+  const limited = digits.slice(0, fmt.maxDigits)
+  const parts: string[] = []
+  let idx = 0
+  for (const g of fmt.groups) {
+    if (idx >= limited.length) break
+    parts.push(limited.slice(idx, idx + g))
+    idx += g
+  }
+  return parts.join(' ')
+}
+
+const COUNTRY_CODES = [
+  { code: '+33', flag: '🇫🇷', name: 'France' },
+  { code: '+32', flag: '🇧🇪', name: 'Belgique' },
+  { code: '+41', flag: '🇨🇭', name: 'Suisse' },
+  { code: '+352', flag: '🇱🇺', name: 'Luxembourg' },
+  { code: '+377', flag: '🇲🇨', name: 'Monaco' },
+  { code: '+1', flag: '🇺🇸', name: 'États-Unis' },
+  { code: '+44', flag: '🇬🇧', name: 'Royaume-Uni' },
+  { code: '+49', flag: '🇩🇪', name: 'Allemagne' },
+  { code: '+34', flag: '🇪🇸', name: 'Espagne' },
+  { code: '+39', flag: '🇮🇹', name: 'Italie' },
+  { code: '+351', flag: '🇵🇹', name: 'Portugal' },
+  { code: '+31', flag: '🇳🇱', name: 'Pays-Bas' },
+  { code: '+212', flag: '🇲🇦', name: 'Maroc' },
+  { code: '+216', flag: '🇹🇳', name: 'Tunisie' },
+  { code: '+213', flag: '🇩🇿', name: 'Algérie' },
+]
 
 const DAY_NAMES = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
@@ -66,8 +128,13 @@ export function PublicBooking() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [countryCode, setCountryCode] = useState('+33')
+  const [showCountryPicker, setShowCountryPicker] = useState(false)
+  const [countrySearch, setCountrySearch] = useState('')
+  const countryPickerRef = useRef<HTMLDivElement>(null)
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({})
-  const [step, setStep] = useState<'form' | 'calendar' | 'confirm'>('form')
+  const [questionnaireAnswers, setQuestionnaireAnswers] = useState<Record<string, string | string[]>>({})
+  const [step, setStep] = useState<'form' | 'questionnaire' | 'calendar' | 'confirm'>('form')
 
   // Calendar
   const [calMonth, setCalMonth] = useState(new Date().getMonth())
@@ -96,7 +163,7 @@ export function PublicBooking() {
         // Compléter avec données Supabase (description, redirect, creator)
         const { data: link } = await supabase
           .from('business_booking_links')
-          .select('description, redirect_url, business_owner_id, team_member_id, email_enabled, email_required, phone_enabled, phone_required, custom_fields')
+          .select('description, redirect_url, business_owner_id, team_member_id, email_enabled, email_required, phone_enabled, phone_required, custom_fields, questionnaire_enabled, questionnaire_required, questionnaire_questions')
           .eq('slug', slug)
           .maybeSingle()
         if (link) {
@@ -108,6 +175,9 @@ export function PublicBooking() {
           d.phoneEnabled = link.phone_enabled ?? true
           d.phoneRequired = link.phone_required ?? false
           d.customFields = (link.custom_fields as CustomField[]) || []
+          d.questionnaireEnabled = link.questionnaire_enabled ?? false
+          d.questionnaireRequired = link.questionnaire_required ?? false
+          d.questionnaireQuestions = ((link.questionnaire_questions as BookingQuestion[]) || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
 
           // Fallback: compute slots client-side if API doesn't return them (deployed API still uses freeMode)
           if (!d.slots || d.slots.length === 0 || d.freeMode) {
@@ -206,6 +276,18 @@ export function PublicBooking() {
       .finally(() => setLoading(false))
   }, [slug])
 
+  // Close country picker on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (countryPickerRef.current && !countryPickerRef.current.contains(e.target as Node)) {
+        setShowCountryPicker(false)
+        setCountrySearch('')
+      }
+    }
+    if (showCountryPicker) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showCountryPicker])
+
   // Convert API slots from UTC to prospect's timezone for display
   const prospectSlots = useMemo(() => {
     if (!info?.slots) return []
@@ -228,9 +310,22 @@ export function PublicBooking() {
     return prospectSlots.filter(s => s.date === selectedDate).map(s => s.time)
   }, [selectedDate, prospectSlots])
 
+  const hasQuestionnaire = !!(info?.questionnaireEnabled && info.questionnaireQuestions?.length > 0)
+
+  const isQuestionnaireComplete = useMemo(() => {
+    if (!info?.questionnaireQuestions) return true
+    return info.questionnaireQuestions.every(q => {
+      if (!q.is_required) return true
+      const answer = questionnaireAnswers[q.question_text]
+      if (!answer) return false
+      if (Array.isArray(answer)) return answer.length > 0
+      return answer.toString().trim() !== ''
+    })
+  }, [info?.questionnaireQuestions, questionnaireAnswers])
+
   const handleContactSubmit = () => {
     if (!name.trim()) return
-    setStep('calendar')
+    setStep(hasQuestionnaire ? 'questionnaire' : 'calendar')
   }
 
   const handleSubmit = async () => {
@@ -265,12 +360,27 @@ export function PublicBooking() {
       const cancelToken = crypto.randomUUID()
       const rescheduleToken = crypto.randomUUID()
 
-      // Create appointment directly via Supabase (no prospect)
+      // Build full phone with country code
+      const fullPhone = phone.trim() ? `${countryCode} ${phone.trim()}` : ''
+
+      // Look up existing prospect by email in the CRM
+      let matchedProspectId: number | null = null
+      if (email.trim()) {
+        const { data: existingProspect } = await supabase
+          .from('business_prospects')
+          .select('id')
+          .eq('user_id', linkMeta.business_owner_id)
+          .eq('email', email.trim())
+          .maybeSingle()
+        if (existingProspect) matchedProspectId = existingProspect.id
+      }
+
+      // Create appointment
       const { data: appointment, error: apptErr } = await supabase
         .from('business_appointments')
         .insert({
           user_id: linkMeta.business_owner_id,
-          prospect_id: null,
+          prospect_id: matchedProspectId,
           assigned_to: linkMeta.team_member_id || null,
           date: selectedDate,
           time: selectedTime,
@@ -280,7 +390,14 @@ export function PublicBooking() {
           timezone: prospectTimezone,
           cancel_token: cancelToken,
           reschedule_token: rescheduleToken,
-          notes: `Booking: ${name}${email ? ` — ${email}` : ''}${phone ? ` — ${phone}` : ''}${Object.entries(customFieldValues).filter(([, v]) => v.trim()).map(([k, v]) => ` — ${k}: ${v}`).join('')}`,
+          notes: `Booking: ${name}${email ? ` — ${email}` : ''}${fullPhone ? ` — ${fullPhone}` : ''}${Object.entries(customFieldValues).filter(([, v]) => v.trim()).map(([k, v]) => ` — ${k}: ${v}`).join('')}`,
+          questionnaire_answers: hasQuestionnaire ? info.questionnaireQuestions.map(q => ({
+            question_text: q.question_text,
+            answer_value: questionnaireAnswers[q.question_text] || ''
+          })).filter(a => {
+            const val = a.answer_value
+            return Array.isArray(val) ? val.length > 0 : val !== ''
+          }) : null,
         })
         .select()
         .single()
@@ -329,10 +446,17 @@ export function PublicBooking() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          slug, name, email, phone, date: selectedDate, time: selectedTime,
+          slug, name, email, phone: fullPhone, date: selectedDate, time: selectedTime,
           datetime_utc: datetimeUtc,
           prospect_timezone: prospectTimezone,
           appointment_id: appointment.id,
+          questionnaire_answers: hasQuestionnaire ? info.questionnaireQuestions.map(q => ({
+            question_text: q.question_text,
+            answer_value: questionnaireAnswers[q.question_text] || ''
+          })).filter(a => {
+            const val = a.answer_value
+            return Array.isArray(val) ? val.length > 0 : val !== ''
+          }) : null,
         }),
       }).catch(() => {})
 
@@ -501,12 +625,25 @@ export function PublicBooking() {
                     )}
                     {phone && (
                       <p className="text-sm text-[#1b1c1b] flex items-center gap-2.5 font-medium">
-                        <Phone className="h-3.5 w-3.5 text-[#444748]/50" />{phone}
+                        <Phone className="h-3.5 w-3.5 text-[#444748]/50" />{countryCode} {phone}
                       </p>
                     )}
                   </div>
                   <button onClick={() => setStep('form')} className="text-xs text-[#006c49] font-bold hover:underline">
                     Modifier
+                  </button>
+                </div>
+              )}
+
+              {/* Questionnaire recap */}
+              {(step === 'calendar' || step === 'confirm') && hasQuestionnaire && Object.keys(questionnaireAnswers).length > 0 && (
+                <div className="mt-4 pt-5 border-t border-[#c4c7c7]/20 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[#006c49]" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#006c49]">Questionnaire complété</span>
+                  </div>
+                  <button onClick={() => setStep('questionnaire')} className="text-xs text-[#006c49] font-bold hover:underline">
+                    Modifier les réponses
                   </button>
                 </div>
               )}
@@ -587,13 +724,52 @@ export function PublicBooking() {
                     {(info.phoneEnabled !== false) && (
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Téléphone{info.phoneRequired ? ' *' : ''}</label>
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={e => setPhone(e.target.value)}
-                          placeholder="+33 6 12 34 56 78"
-                          className={inputCls}
-                        />
+                        <div className="relative flex gap-0 z-20" ref={countryPickerRef}>
+                          <button
+                            type="button"
+                            onClick={() => { setShowCountryPicker(!showCountryPicker); setCountrySearch('') }}
+                            className="flex items-center gap-1.5 border-b-2 border-[#c4c7c7]/30 py-3 pr-3 hover:border-[#006c49] transition-colors flex-shrink-0"
+                          >
+                            <span className="text-base">{COUNTRY_CODES.find(c => c.code === countryCode)?.flag || '🌍'}</span>
+                            <span className="text-sm text-[#1b1c1b] font-medium">{countryCode}</span>
+                            <ChevronDown className="h-3 w-3 text-[#444748]/40" />
+                          </button>
+                          {showCountryPicker && (
+                            <div className="fixed z-[9999] w-64 max-h-60 overflow-y-auto rounded-2xl border border-[#c4c7c7]/10 bg-white shadow-xl" style={{ top: (countryPickerRef.current?.getBoundingClientRect().bottom ?? 0) + 4, left: countryPickerRef.current?.getBoundingClientRect().left ?? 0 }}>
+                              <div className="sticky top-0 bg-white border-b border-[#c4c7c7]/10 p-3">
+                                <input
+                                  type="text"
+                                  value={countrySearch}
+                                  onChange={(e) => setCountrySearch(e.target.value)}
+                                  placeholder="Rechercher un pays..."
+                                  className="w-full rounded-full border border-[#c4c7c7]/20 bg-[#f5f3f2] px-3.5 py-2 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:outline-none focus:ring-1 focus:ring-[#006c49]"
+                                  autoFocus
+                                />
+                              </div>
+                              {COUNTRY_CODES
+                                .filter(c => !countrySearch || c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch))
+                                .map((c, i) => (
+                                <button
+                                  key={`${c.code}-${c.name}-${i}`}
+                                  type="button"
+                                  onClick={() => { setCountryCode(c.code); setPhone(''); setShowCountryPicker(false); setCountrySearch('') }}
+                                  className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left hover:bg-[#f5f3f2] transition-colors ${countryCode === c.code ? 'bg-[#006c49]/5 text-[#006c49]' : 'text-[#1b1c1b]'}`}
+                                >
+                                  <span className="text-base">{c.flag}</span>
+                                  <span className="flex-1 truncate">{c.name}</span>
+                                  <span className="text-xs text-[#444748]/40 font-medium">{c.code}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(formatPhoneByCountry(e.target.value, countryCode))}
+                            placeholder={PHONE_FORMATS[countryCode] ? PHONE_FORMATS[countryCode].groups.map(g => '0'.repeat(g)).join(' ') : '6 12 34 56 78'}
+                            className="flex-1 bg-transparent border-b-2 border-[#c4c7c7]/30 py-3 pl-3 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:border-[#006c49] focus:ring-0 transition-colors outline-none font-medium"
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -639,11 +815,100 @@ export function PublicBooking() {
                 </div>
               )}
 
-              {/* Step 2: Calendar + time slots */}
-              {step === 'calendar' && (
+              {/* Questionnaire step */}
+              {step === 'questionnaire' && hasQuestionnaire && (
                 <div>
                   <div className="flex items-center gap-3 mb-8">
                     <div className="w-10 h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white text-sm font-bold shrink-0">2</div>
+                    <h2 className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Quelques questions</h2>
+                  </div>
+                  <div className="space-y-6">
+                    {info!.questionnaireQuestions.map((q, idx) => (
+                      <div key={idx} className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">
+                          {q.question_text} {q.is_required ? '*' : ''}
+                        </label>
+                        {q.question_type === 'text' && (
+                          <input
+                            type="text"
+                            value={(questionnaireAnswers[q.question_text] as string) || ''}
+                            onChange={e => setQuestionnaireAnswers(prev => ({ ...prev, [q.question_text]: e.target.value }))}
+                            placeholder="Votre réponse..."
+                            className={inputCls}
+                          />
+                        )}
+                        {q.question_type === 'number' && (
+                          <input
+                            type="number"
+                            value={(questionnaireAnswers[q.question_text] as string) ?? ''}
+                            onChange={e => setQuestionnaireAnswers(prev => ({ ...prev, [q.question_text]: e.target.value }))}
+                            placeholder="0"
+                            className={inputCls}
+                          />
+                        )}
+                        {q.question_type === 'select' && (
+                          <div className="flex flex-wrap gap-2">
+                            {(q.options || []).map((opt, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => setQuestionnaireAnswers(prev => ({ ...prev, [q.question_text]: opt }))}
+                                className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all ${questionnaireAnswers[q.question_text] === opt ? 'bg-[#1b1c1b] text-white scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {q.question_type === 'multiple_choice' && (
+                          <div className="flex flex-wrap gap-2">
+                            {(q.options || []).map((opt, i) => {
+                              const selected = Array.isArray(questionnaireAnswers[q.question_text]) ? (questionnaireAnswers[q.question_text] as string[]) : []
+                              const isSelected = selected.includes(opt)
+                              return (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => {
+                                    const newSel = isSelected ? selected.filter(s => s !== opt) : [...selected, opt]
+                                    setQuestionnaireAnswers(prev => ({ ...prev, [q.question_text]: newSel }))
+                                  }}
+                                  className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all ${isSelected ? 'bg-[#1b1c1b] text-white scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
+                                >
+                                  {opt}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => setStep('calendar')}
+                      disabled={info!.questionnaireRequired && !isQuestionnaireComplete}
+                      className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-4 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl mt-4"
+                      style={{ fontFamily: 'Manrope, sans-serif' }}
+                    >
+                      <span>Choisir un créneau</span>
+                      <ArrowRight className="h-5 w-5" />
+                    </button>
+                    {!info!.questionnaireRequired && (
+                      <button
+                        onClick={() => setStep('calendar')}
+                        className="w-full text-center text-xs text-[#006c49] font-bold py-2 hover:underline"
+                      >
+                        Passer et choisir un créneau
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Calendar + time slots */}
+              {step === 'calendar' && (
+                <div>
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-10 h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white text-sm font-bold shrink-0">{hasQuestionnaire ? 3 : 2}</div>
                     <h2 className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Choisissez un créneau</h2>
                   </div>
 

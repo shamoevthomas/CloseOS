@@ -129,13 +129,13 @@ export function BusinessProspectView({
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role, setter_scope, owner_assignable').eq('business_owner_id', ownerId),
-      supabase.from('business_users').select('id, full_name, email, owner_assignable').eq('id', ownerId).single(),
+      supabase.from('business_team_members').select('id, first_name, last_name, role, setter_scope, owner_assignable, owner_assignable_roles').eq('business_owner_id', ownerId),
+      supabase.from('business_users').select('id, full_name, email, owner_assignable, owner_assignable_roles').eq('id', ownerId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = tmRes.data || []
       if (ownerRes.data?.owner_assignable) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
-        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', owner_assignable_roles: ownerRes.data.owner_assignable_roles || [] })
       }
       setTeamMembers(list)
     })
@@ -1300,8 +1300,8 @@ export function BusinessProspectView({
 
               {/* Assignment */}
               {teamMembers.length > 0 && (() => {
-                const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales' || tm.role === 'Admin')
-                const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Owner' || tm.role === 'Head of Sales' || tm.role === 'Admin')
+                const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Head of Sales' || tm.role === 'Admin' || (tm.owner_assignable_roles || []).includes('Closer'))
+                const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Head of Sales' || tm.role === 'Admin' || (tm.owner_assignable_roles || []).includes('Setter'))
 
                 return (
                   <div className="grid grid-cols-2 gap-4">

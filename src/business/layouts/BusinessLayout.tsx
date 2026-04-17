@@ -105,6 +105,20 @@ export function BusinessLayout() {
     setTzBannerDismissed(true)
   }
 
+  // Paywall: block access if trial expired and no active subscription (owners only)
+  const showPaywall = !isTeamMember && !isLifetimeFree && !isTrialActive && !isSubscribed && !!businessProfile
+  const isSubscriptionBlocked = !!businessSettings?.subscription_deletion_deadline
+    && new Date(businessSettings.subscription_deletion_deadline) > new Date()
+
+  // Trial countdown: show warning popup 5 days before expiry
+  const trialDaysLeft = useMemo(() => {
+    if (!businessProfile?.trial_ends_at || isSubscribed || isLifetimeFree || isTeamMember) return null
+    const diff = new Date(businessProfile.trial_ends_at).getTime() - Date.now()
+    return Math.ceil(diff / (1000 * 60 * 60 * 24))
+  }, [businessProfile?.trial_ends_at, isSubscribed, isLifetimeFree, isTeamMember])
+
+  const showTrialWarning = trialDaysLeft !== null && trialDaysLeft > 0 && trialDaysLeft <= 5
+
   // Redirect to login if not authenticated after loading
   if (!loading && !user) {
     navigate('/business/login', { replace: true })
@@ -171,14 +185,10 @@ export function BusinessLayout() {
     );
   }
 
-  // Paywall: block access if trial expired and no active subscription (owners only)
-  const showPaywall = !isTeamMember && !isLifetimeFree && !isTrialActive && !isSubscribed && !!businessProfile
-  const isSubscriptionBlocked = !!businessSettings?.subscription_deletion_deadline
-    && new Date(businessSettings.subscription_deletion_deadline) > new Date()
-
   return (
     <BusinessThemeProvider>
     {showPaywall && <BusinessPaywallModal />}
+    {showTrialWarning && !showPaywall && <BusinessPaywallModal daysLeft={trialDaysLeft!} dismissable />}
     {isSubscriptionBlocked && <BusinessSubscriptionBlockModal deadline={businessSettings.subscription_deletion_deadline} />}
     <BusinessLayoutInner
       isSidebarOpen={isSidebarOpen}
