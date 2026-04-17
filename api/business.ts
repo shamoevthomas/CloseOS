@@ -6477,8 +6477,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ─── Manual Stripe match (Method 3) ───
     if (action === 'stripe-match' && req.method === 'POST') {
       const { user_id, prospect_id, stripe_customer_id, stripe_subscription_id } = req.body
-      if (!user_id || !prospect_id || !stripe_customer_id || !stripe_subscription_id) {
-        return res.status(400).json({ error: 'user_id, prospect_id, stripe_customer_id, stripe_subscription_id required' })
+      if (!user_id || !prospect_id || !stripe_customer_id) {
+        return res.status(400).json({ error: 'user_id, prospect_id, stripe_customer_id required' })
       }
       if (!stripeKey) return res.status(500).json({ error: 'STRIPE_SECRET_KEY missing' })
 
@@ -6487,28 +6487,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const s = getStripe()
       const selfConnect = await isSelfConnectAccount(s, profile.stripe_account_id)
-      const sub = selfConnect
-        ? await s.subscriptions.retrieve(stripe_subscription_id)
-        : await s.subscriptions.retrieve(stripe_subscription_id, { stripeAccount: profile.stripe_account_id })
-      const item = sub.items.data[0]
 
+      // If subscription ID provided, fetch subscription details
+      if (stripe_subscription_id) {
+        const sub = selfConnect
+          ? await s.subscriptions.retrieve(stripe_subscription_id)
+          : await s.subscriptions.retrieve(stripe_subscription_id, { stripeAccount: profile.stripe_account_id })
+        const item = sub.items.data[0]
+
+        await supabase.from('business_prospects').update({
+          stripe_customer_id,
+          stripe_subscription_id,
+          subscription_status: sub.status,
+          subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+          subscription_interval: item?.price?.recurring?.interval || 'month',
+          matched_via: 'manual',
+          last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
+          next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+        }).eq('id', prospect_id)
+
+        return res.status(200).json({
+          matched: true,
+          subscription_status: sub.status,
+          subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+          subscription_interval: item?.price?.recurring?.interval || 'month',
+        })
+      }
+
+      // Customer-only link (no subscription)
       await supabase.from('business_prospects').update({
         stripe_customer_id,
-        stripe_subscription_id,
-        subscription_status: sub.status,
-        subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
-        subscription_interval: item?.price?.recurring?.interval || 'month',
         matched_via: 'manual',
-        last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
-        next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
       }).eq('id', prospect_id)
 
-      return res.status(200).json({
-        matched: true,
-        subscription_status: sub.status,
-        subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
-        subscription_interval: item?.price?.recurring?.interval || 'month',
-      })
+      return res.status(200).json({ matched: true })
     }
 
     // ─── Revenue summary ───

@@ -220,6 +220,7 @@ export function BusinessProspectView({
   const canEditPrice = isOwner || isHosOrAdmin
 
   // Payment calculations
+  const closerIsOwner = teamMembers.some(tm => tm.id === (local as any).assigned_to && tm.role === 'Owner')
   const commissionRate = memberCommissionRate
   const commissionAmount = (editedValue * commissionRate) / 100
   const savedInstallments = local.installments || 1
@@ -442,21 +443,21 @@ export function BusinessProspectView({
     setStripeMatching(false)
   }
 
-  // Stripe: manual match
+  // Stripe: manual match (subscription ID optional)
   const handleStripeManualMatch = async () => {
-    if (!effectiveOwnerId || !stripeManualCusId.trim() || !stripeManualSubId.trim()) return
+    if (!effectiveOwnerId || !stripeManualCusId.trim()) return
     setStripeMatching(true)
     try {
       const res = await fetch('/api/business-stripe-match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: effectiveOwnerId, prospect_id: local.id, stripe_customer_id: stripeManualCusId.trim(), stripe_subscription_id: stripeManualSubId.trim() }),
+        body: JSON.stringify({ user_id: effectiveOwnerId, prospect_id: local.id, stripe_customer_id: stripeManualCusId.trim(), ...(stripeManualSubId.trim() ? { stripe_subscription_id: stripeManualSubId.trim() } : {}) }),
       })
       const data = await res.json()
       if (data.matched) {
         onUpdate(local.id, {
           stripe_customer_id: stripeManualCusId.trim(),
-          stripe_subscription_id: stripeManualSubId.trim(),
+          ...(stripeManualSubId.trim() ? { stripe_subscription_id: stripeManualSubId.trim() } : {}),
           subscription_status: data.subscription_status,
           subscription_amount: data.subscription_amount,
           subscription_interval: data.subscription_interval,
@@ -1075,6 +1076,7 @@ export function BusinessProspectView({
                           </select>
                         </div>
                       )}
+                      {!closerIsOwner && (
                       <div className="rounded-xl bg-emerald-500/10 p-4 border border-emerald-500/20">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" /> {t.prospect_payment_commission.replace('{rate}', String(commissionRate))}</span>
@@ -1086,6 +1088,7 @@ export function BusinessProspectView({
                           </p>
                         )}
                       </div>
+                      )}
                       <button onClick={handleSavePayment} className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-business-display font-bold text-white hover:bg-emerald-500 transition-colors">{t.prospect_payment_validate}</button>
                     </div>
                   ) : (
@@ -1094,10 +1097,12 @@ export function BusinessProspectView({
                         <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.prospect_payment_sale_amount}</span>
                         <span className="text-sm font-extrabold text-stone-900 dark:text-white">{(local.value || 0).toLocaleString()}€</span>
                       </div>
+                      {!closerIsOwner && (
                       <div className="flex items-center justify-between mb-2.5">
                         <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.prospect_payment_total_commission.replace('{rate}', String(commissionRate))}</span>
                         <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">+{savedCommission.toFixed(2)}€</span>
                       </div>
+                      )}
 
                       {isPayingInInstallments && (
                         <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
@@ -1105,10 +1110,12 @@ export function BusinessProspectView({
                             <span className="text-xs text-stone-500 dark:text-neutral-300">{t.prospect_payment_client_pays.replace('{count}', String(savedInstallments))}</span>
                             <span className="text-sm font-bold text-stone-900 dark:text-white">{savedMonthlyPayment.toFixed(2)}€ {t.prospect_payment_monthly}</span>
                           </div>
+                          {!closerIsOwner && (
                           <div className="flex justify-between items-center">
                             <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80">{t.prospect_payment_you_get}</span>
                             <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{savedMonthlyCommission.toFixed(2)}€ {t.prospect_payment_monthly}</span>
                           </div>
+                          )}
                         </div>
                       )}
 
@@ -1122,8 +1129,8 @@ export function BusinessProspectView({
                 </div>
               )}
 
-              {/* SECTION ABONNEMENT STRIPE — visible quand prospect matche ET formule abonnement ET Stripe connecte */}
-              {local.stripe_subscription_id && formula?.billing_type === 'subscription' && stripeConnected && (
+              {/* SECTION STRIPE — visible quand prospect lié à Stripe ET Stripe connecté */}
+              {local.stripe_subscription_id && stripeConnected && (
                 <div className="animate-in slide-in-from-top-4 fade-in duration-300">
                   <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-[#635BFF] mb-3">
                     <CreditCard className="h-4 w-4" /> {t.prospect_stripe_subscription}
@@ -1167,8 +1174,8 @@ export function BusinessProspectView({
                 </div>
               )}
 
-              {/* Stripe linking — 3 modes (only for subscription formulas + Stripe connected) */}
-              {local.stage === 'won' && formula?.billing_type === 'subscription' && stripeConnected && !local.stripe_subscription_id && stripeAutoStatus !== 'matched' && !(isTeamMember && teamMember?.role === 'Setter') && (
+              {/* Stripe linking — 3 modes */}
+              {local.stage === 'won' && stripeConnected && !local.stripe_subscription_id && stripeAutoStatus !== 'matched' && !(isTeamMember && teamMember?.role === 'Setter') && (
                 <div className="space-y-3">
                   {!stripeLinkOpen ? (
                     <button
@@ -1381,7 +1388,8 @@ export function BusinessProspectView({
                     onChange={(e) => {
                       const fId = e.target.value || null
                       const selected = allFormulas.find(f => f.id === fId)
-                      handleUpdate({ formula_id: fId, value: selected?.price || 0 } as any)
+                      const hasStripe = !!(local as any).stripe_customer_id || !!(local as any).stripe_subscription_id
+                      handleUpdate({ formula_id: fId, ...(hasStripe ? {} : { value: selected?.price || 0 }) } as any)
                       setFormula(selected || null)
                     }}
                     className={cn(SELECT_CLS, 'py-4 px-5')}
