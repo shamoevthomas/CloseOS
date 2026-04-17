@@ -275,7 +275,7 @@ async function handleCompleteRegistration(req: VercelRequest, res: VercelRespons
         referralLinkId = refLink.id;
         await supabase.from('business_referral_conversions').insert({
           referral_link_id: refLink.id,
-          user_id: '00000000-0000-0000-0000-000000000000', // placeholder, updated after Supabase auth user is created
+          user_id: null,
           user_email,
           user_name,
           subscription_plan: plan,
@@ -598,25 +598,23 @@ async function handlePurchaseSeats(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Update purchased_seats in Supabase
-    const { data: currentSettings } = await supabase
-      .from('business_settings')
-      .select('purchased_seats')
-      .eq('user_id', user_id)
-      .single();
-
-    const existing = (currentSettings?.purchased_seats || {}) as Record<string, number>;
-    const merged: Record<string, number> = { ...existing };
+    // Update purchased_seats atomically to avoid race conditions
+    const seatsToAdd: Record<string, number> = {};
     for (const [tier, count] of Object.entries(seats as Record<string, number>)) {
-      if (count > 0) merged[tier] = (merged[tier] || 0) + count;
+      if (count > 0) seatsToAdd[tier] = count;
     }
 
-    await supabase
-      .from('business_settings')
-      .update({ purchased_seats: merged })
-      .eq('user_id', user_id);
+    const { data: updated, error: rpcErr } = await supabase.rpc('increment_purchased_seats', {
+      p_user_id: user_id,
+      p_seats: seatsToAdd,
+    });
 
-    return res.json({ success: true, updated_seats: merged });
+    if (rpcErr) {
+      console.error('Failed to update purchased_seats:', rpcErr);
+      return res.status(500).json({ error: 'Failed to update seat count' });
+    }
+
+    return res.json({ success: true, updated_seats: updated });
   } catch (err: any) {
     console.error('PURCHASE SEATS ERROR:', err.message);
     return res.status(err.statusCode || 500).json({ error: err.message });

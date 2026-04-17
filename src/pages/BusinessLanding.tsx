@@ -1748,10 +1748,23 @@ type BillingCycle = 'annual' | 'quarterly' | 'monthly';
 const PricingSection = () => {
   const [billing, setBilling] = useState<BillingCycle>('annual');
   const [contactModalOpen, setContactModalOpen] = useState(false);
-  const [emailCopied, setEmailCopied] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const { t, lang } = useLang();
   const pricingPlans = getPricingPlans(lang);
   const pricingExtras = getPricingExtras(lang);
+
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'closeos-capture-resize' && iframeRef.current) {
+        iframeRef.current.style.height = e.data.height + 'px';
+      }
+      if (e.data === 'closeos-capture-done' && iframeRef.current) {
+        iframeRef.current.style.height = '120px';
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   return (
     <motion.section
@@ -1949,37 +1962,27 @@ const PricingSection = () => {
         </motion.div>
       </div>
 
-      {/* Contact modal */}
+      {/* Enterprise capture modal */}
       {contactModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setContactModalOpen(false)}>
-          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl text-center" onClick={(e) => e.stopPropagation()}>
-            <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mx-auto mb-4">
-              <Mail className="h-5 w-5 text-stone-600" />
-            </div>
-            <h3 className="text-lg font-extrabold text-[#111111] tracking-tight mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              {lang === 'fr' ? 'Contactez-nous' : 'Contact us'}
-            </h3>
-            <div className="flex items-center justify-center gap-2 mb-5">
-              <p className="text-sm text-stone-500">thomasshamoev@gmail.com</p>
-              <button
-                onClick={() => { navigator.clipboard.writeText('thomasshamoev@gmail.com'); setEmailCopied(true); setTimeout(() => setEmailCopied(false), 2000); }}
-                className="text-stone-400 hover:text-stone-600 transition-colors"
-                title={lang === 'fr' ? 'Copier' : 'Copy'}
-              >
-                {emailCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+          <div className="bg-white rounded-2xl p-6 max-w-3xl w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-extrabold text-[#111111] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                Enterprise / Challenge
+              </h3>
+              <button onClick={() => setContactModalOpen(false)} className="text-stone-400 hover:text-stone-600 transition-colors">
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <a
-              href="https://mail.google.com/mail/?view=cm&to=thomasshamoev@gmail.com&su=CloseOS%20Enterprise%20%2F%20Challenge"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 rounded-full bg-[#111111] text-white h-11 font-bold text-sm hover:bg-stone-800 transition-all active:scale-[0.98]"
-            >
-              {lang === 'fr' ? 'Ouvrir dans Gmail' : 'Open in Gmail'}
-            </a>
-            <button onClick={() => setContactModalOpen(false)} className="mt-3 text-sm text-stone-400 hover:text-stone-600 transition-colors font-medium">
-              {lang === 'fr' ? 'Fermer' : 'Close'}
-            </button>
+            <iframe
+              ref={iframeRef}
+              src="https://www.closeos.fr/capture/70a5511a-d961-4f95-ace2-f8b0197e5aae?embed=true&layout=horizontal"
+              width="100%"
+              height={530}
+              frameBorder="0"
+              scrolling="no"
+              style={{ border: 'none', borderRadius: 12, overflow: 'hidden', transition: 'height 0.4s ease' }}
+            />
           </div>
         </div>
       )}

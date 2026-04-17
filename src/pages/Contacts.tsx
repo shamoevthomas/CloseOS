@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, Plus, User, Phone, Mail, Pencil, Trash2, UserPlus, X, Search, Filter, Building2, Calendar, Sparkles, Tag, Check } from 'lucide-react'
+import { ChevronDown, Plus, User, Phone, Mail, Pencil, Trash2, UserPlus, X, Search, Filter, Building2, Calendar, Sparkles, Tag, Check, ArrowDownUp } from 'lucide-react'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
 import { useInternalContacts, type InternalContact } from '../contexts/InternalContactsContext'
 import { useOffers } from '../contexts/OffersContext'
@@ -10,6 +10,7 @@ import { InternalContactModal } from '../components/InternalContactModal'
 import { CreateProspectModal } from '../components/CreateProspectModal'
 // MODIFICATION : Utilisation de votre fichier existant CreateEventModal pour corriger l'erreur Vercel
 import { CreateEventModal } from '../components/CreateEventModal'
+import { ImportExportModal } from '../components/ImportExportModal'
 import { MaskedText } from '../components/MaskedText'
 import { cn } from '../lib/utils'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -27,6 +28,7 @@ export function Contacts() {
   const { tags, prospectTags, getProspectTagObjects } = useTags()
   const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false)
+  const [isImportExportOpen, setIsImportExportOpen] = useState(false)
   const tagDropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -418,6 +420,13 @@ export function Contacts() {
                 </div>
               )}
 
+              <button
+                onClick={() => setIsImportExportOpen(true)}
+                className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.06] transition-all"
+              >
+                <ArrowDownUp className="h-4 w-4" />
+                <span className="hidden lg:inline">{lang === 'fr' ? 'Import / Export' : 'Import / Export'}</span>
+              </button>
               <button
                 onClick={() => setIsNewProspectModalOpen(true)}
                 className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-600/20 active:scale-95"
@@ -861,6 +870,13 @@ export function Contacts() {
           onDelete={handleDeleteContact}
         />
       )}
+
+      <ImportExportModal
+        isOpen={isImportExportOpen}
+        onClose={() => setIsImportExportOpen(false)}
+        source="contacts"
+        prospects={displayProspects}
+      />
     </div>
   )
 }

@@ -4375,13 +4375,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      await supabase.from('campaign_payment_sessions').insert({
+      const { error: insertErr } = await supabase.from('campaign_payment_sessions').insert({
         campaign_id: campaign.id,
         stripe_checkout_session_id: paymentIntent.id,
         prospect_data: { slug, name, email, phone, custom_data, answers },
         payment_type: 'pre_booking',
         amount,
       })
+      if (insertErr) {
+        console.error('Failed to store payment session:', insertErr)
+        return res.status(500).json({ error: 'Failed to initialize payment session' })
+      }
 
       return res.status(200).json({
         client_secret: paymentIntent.client_secret,
@@ -4461,13 +4465,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Store prospect data for after payment
-        await supabase.from('campaign_payment_sessions').insert({
+        const { error: insertErr } = await supabase.from('campaign_payment_sessions').insert({
           campaign_id: campaign.id,
           stripe_checkout_session_id: session.id,
           prospect_data: { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers },
           payment_type: 'initial',
           amount,
         })
+        if (insertErr) {
+          console.error('Failed to store payment session:', insertErr)
+          return res.status(500).json({ error: 'Failed to initialize payment session' })
+        }
 
         return res.status(200).json({
           requires_payment: true,

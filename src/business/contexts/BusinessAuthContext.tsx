@@ -271,14 +271,37 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     // Re-establish session when tab becomes visible again
     const handleVisibility = async () => {
       if (document.visibilityState !== 'visible') return;
+
+      // Wait for Supabase startAutoRefresh() to kick in and refresh the JWT
+      await new Promise(r => setTimeout(r, 100));
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!isMountedRef.current) return;
       const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        await initUser(currentUser.id);
-      } else {
+
+      // If session is null, the token may still be refreshing — retry once
+      if (!currentUser) {
+        await new Promise(r => setTimeout(r, 2000));
+        const { data: { session: retrySession } } = await supabase.auth.getSession();
+        if (!isMountedRef.current) return;
+        const retryUser = retrySession?.user ?? null;
+        if (retryUser) {
+          setUser(retryUser);
+          if (!businessProfileRef.current && !teamMemberRef.current) {
+            await initUser(retryUser.id);
+          }
+          return;
+        }
+        // Still null after retry — genuinely signed out
+        setUser(null);
         clearUserData();
+        return;
+      }
+
+      setUser(currentUser);
+      // Only reinit if business data is missing (same guard as TOKEN_REFRESHED)
+      if (!businessProfileRef.current && !teamMemberRef.current) {
+        await initUser(currentUser.id);
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);

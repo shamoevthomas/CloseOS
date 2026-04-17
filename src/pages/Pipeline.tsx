@@ -18,7 +18,8 @@ import {
   Check,
   X,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  ArrowDownUp
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -37,6 +38,7 @@ import { useOffers } from '../contexts/OffersContext'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { useTags } from '../hooks/useTags'
 import { SharePerformanceButton } from '../components/SharePerformanceButton'
+import { ImportExportModal } from '../components/ImportExportModal'
 import { useLanguage } from '../contexts/LanguageContext'
 import { pipelineTranslations } from '../i18n/translations'
 
@@ -93,6 +95,8 @@ export function Pipeline() {
   const t = pipelineTranslations[lang]
   const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
   const pipelineDeals = pipelineDealsFromContext || []
+
+  const [isImportExportOpen, setIsImportExportOpen] = useState(false)
 
   // Pipeline dismissals (per-user)
   const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set())
@@ -497,6 +501,15 @@ export function Pipeline() {
           {/* Contrôles Secondaires */}
           <div className="flex items-center gap-3">
             <SharePerformanceButton />
+
+            <button
+              onClick={() => setIsImportExportOpen(true)}
+              className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.06] transition-all"
+              title={lang === 'fr' ? 'Import / Export' : 'Import / Export'}
+            >
+              <ArrowDownUp className="h-4 w-4" />
+              <span className="hidden lg:inline">{lang === 'fr' ? 'Import / Export' : 'Import / Export'}</span>
+            </button>
 
             <div className="relative hidden md:block w-64">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
@@ -1244,6 +1257,13 @@ export function Pipeline() {
           </div>
         </div>
       )}
+
+      <ImportExportModal
+        isOpen={isImportExportOpen}
+        onClose={() => setIsImportExportOpen(false)}
+        source="pipeline"
+        prospects={filteredDeals}
+      />
     </div>
   )
 }
