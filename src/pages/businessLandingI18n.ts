@@ -632,7 +632,6 @@ const fr: Translations = {
       {
         title: '\u00C9quipe & Organisation',
         items: [
-          'Créez des équipes dédiées et groupez closers/setters par spécialité',
           'Statut online temps réel + historique connexion 7j de chaque membre',
           'Disponibilités, absences, primes et commissions individuelles par membre',
           '5 rôles avec permissions : Closer, Setter, Setter-Closer, Head of Sales, Admin',
@@ -1196,7 +1195,6 @@ const en: Translations = {
       {
         title: 'Team & Organization',
         items: [
-          'Create dedicated teams and group closers/setters by specialty',
           'Real-time online status + 7-day connection history for each member',
           'Availability, absences, bonuses and individual commissions per member',
           '5 roles with permissions: Closer, Setter, Setter-Closer, Head of Sales, Admin',

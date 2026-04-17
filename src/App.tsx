@@ -308,10 +308,15 @@ function AuthenticatedApp() {
 
   // Gestion de la visibilité de la bulle CookieYes
   useEffect(() => {
-    // La bulle CookieYes n'est visible que sur la landing page
-    const isLanding = location.pathname === '/';
+    const p = location.pathname;
+    const showCookieYes = p === '/' || p === '/business' || p === '/landing' || p === '/sales'
+      || p === '/tarifs' || p.startsWith('/fonctionnalites')
+      || p === '/login' || p === '/register' || p === '/checkout'
+      || p === '/business/login' || p === '/business/register' || p === '/business/checkout'
+      || p === '/mentions-legales' || p === '/cgu' || p === '/cgv' || p === '/confidentialite'
+      || p === '/business/politique-utilisation';
 
-    if (isLanding) {
+    if (showCookieYes) {
       document.body.classList.remove('hide-cookieyes');
     } else {
       document.body.classList.add('hide-cookieyes');

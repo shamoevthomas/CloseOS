@@ -612,11 +612,7 @@ export function BusinessTeam() {
         </div>
 
 
-      {/* ─── Team Kanban Organisation ─── */}
-      <TeamKanban
-        members={members}
-        onMemberTeamChange={handleMemberTeamChange}
-      />
+      {/* Team Kanban Organisation — hidden for now */}
 
       {isOwnerView && (
         <>

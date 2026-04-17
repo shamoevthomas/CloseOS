@@ -52,6 +52,8 @@ export const BusinessLanding: React.FC = () => {
   // WaitingListModal removed — replaced with direct checkout links
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showDemoPopup, setShowDemoPopup] = useState(false);
+  const demoPopupIframeRef = useRef<HTMLIFrameElement>(null);
   const [lang, setLang] = useState<Lang>('fr');
   const t = translations[lang];
 
@@ -73,12 +75,26 @@ export const BusinessLanding: React.FC = () => {
   // Dynamic iframe height from embed postMessage
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (e.data?.type === 'closeos-capture-resize' && demoIframeRef.current) {
-        demoIframeRef.current.style.height = `${e.data.height}px`;
+      if (e.data?.type === 'closeos-capture-resize') {
+        if (demoIframeRef.current) demoIframeRef.current.style.height = `${e.data.height}px`;
+        if (demoPopupIframeRef.current) demoPopupIframeRef.current.style.height = `${e.data.height}px`;
+      }
+      if (e.data === 'closeos-capture-done' && demoPopupIframeRef.current) {
+        demoPopupIframeRef.current.style.height = '120px';
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
+  }, []);
+
+  // Demo popup after 45s (once per session)
+  useEffect(() => {
+    if (sessionStorage.getItem('closeos_demo_popup_shown')) return;
+    const timer = setTimeout(() => {
+      setShowDemoPopup(true);
+      sessionStorage.setItem('closeos_demo_popup_shown', '1');
+    }, 45000);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleNavigateToSales = (e: React.MouseEvent) => {
@@ -761,6 +777,40 @@ export const BusinessLanding: React.FC = () => {
           animation-delay: 4s;
         }
       `}</style>
+
+      {/* Demo popup — appears after 45s */}
+      {showDemoPopup && (
+        <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 md:py-10 animate-in fade-in duration-300" onClick={() => setShowDemoPopup(false)}>
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-3xl w-full mx-4 shadow-2xl my-auto animate-in slide-in-from-bottom-4 duration-500" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <h3 className="text-xl md:text-2xl font-extrabold text-[#111111] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  {lang === 'fr' ? 'Pas encore convaincu ?' : 'Not convinced yet?'}
+                </h3>
+                <p className="text-sm text-stone-500 mt-1">
+                  {lang === 'fr'
+                    ? 'Réservez un appel de 15 min avec notre équipe — on vous montre comment CloseOS s\'adapte à votre business.'
+                    : 'Book a 15-min call with our team — we\'ll show you how CloseOS fits your business.'}
+                </p>
+              </div>
+              <button onClick={() => setShowDemoPopup(false)} className="text-stone-400 hover:text-stone-600 transition-colors p-1">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mt-4">
+              <iframe
+                ref={demoPopupIframeRef}
+                src="https://www.closeos.fr/capture/70a5511a-d961-4f95-ace2-f8b0197e5aae?embed=true&layout=horizontal"
+                width="100%"
+                height={530}
+                frameBorder="0"
+                scrolling="yes"
+                style={{ border: 'none', borderRadius: 12, overflow: 'hidden', transition: 'height 0.4s ease' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </LangContext.Provider>
   );
