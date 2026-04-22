@@ -206,6 +206,21 @@ export default async function handler(req: Request) {
                     break;
                 }
 
+                // Idempotence: if a prospect is already linked to this subscription, we've
+                // processed this event before (or a duplicate delivery arrived). Refresh
+                // Stripe fields but never double-create payments/prospects.
+                const { data: existingBySub } = await supabaseAdmin
+                    .from('business_prospects')
+                    .select('id')
+                    .eq('user_id', ownerUserId)
+                    .eq('stripe_subscription_id', subscription.id)
+                    .maybeSingle();
+                if (existingBySub) {
+                    await updateProspectStripeData(existingBySub.id, subscription, customer, 'webhook');
+                    console.log(`Subscription ${subscription.id} already linked to prospect ${existingBySub.id}, refreshed only`);
+                    break;
+                }
+
                 const prospect = await matchProspectByEmail(ownerUserId, customer.email);
                 if (prospect) {
                     const isFirstMatch = !prospect.stripe_subscription_id;
@@ -217,28 +232,37 @@ export default async function handler(req: Request) {
                         const item = subscription.items.data[0];
                         const amount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0;
                         if (amount > 0) {
-                            // Fetch prospect details for assignment
-                            const { data: fullProspect } = await supabaseAdmin
-                                .from('business_prospects')
-                                .select('assigned_to, assigned_setter')
-                                .eq('id', prospect.id)
-                                .single();
-
-                            await supabaseAdmin
+                            const initialInvoiceId = `initial_${subscription.id}`;
+                            // Dedup against redelivered webhooks
+                            const { data: existingPayment } = await supabaseAdmin
                                 .from('business_payments')
-                                .insert({
-                                    business_owner_id: ownerUserId,
-                                    prospect_id: prospect.id,
-                                    stripe_invoice_id: `initial_${subscription.id}`,
-                                    amount,
-                                    currency: item?.price?.currency || 'eur',
-                                    paid_at: subscription.current_period_start
-                                        ? new Date(subscription.current_period_start * 1000).toISOString()
-                                        : new Date().toISOString(),
-                                    assigned_to: fullProspect?.assigned_to || null,
-                                    assigned_setter: fullProspect?.assigned_setter || null,
-                                });
-                            console.log(`Created initial payment of ${amount} for prospect ${prospect.id}`);
+                                .select('id')
+                                .eq('stripe_invoice_id', initialInvoiceId)
+                                .maybeSingle();
+                            if (!existingPayment) {
+                                // Fetch prospect details for assignment
+                                const { data: fullProspect } = await supabaseAdmin
+                                    .from('business_prospects')
+                                    .select('assigned_to, assigned_setter')
+                                    .eq('id', prospect.id)
+                                    .single();
+
+                                await supabaseAdmin
+                                    .from('business_payments')
+                                    .insert({
+                                        business_owner_id: ownerUserId,
+                                        prospect_id: prospect.id,
+                                        stripe_invoice_id: initialInvoiceId,
+                                        amount,
+                                        currency: item?.price?.currency || 'eur',
+                                        paid_at: subscription.current_period_start
+                                            ? new Date(subscription.current_period_start * 1000).toISOString()
+                                            : new Date().toISOString(),
+                                        assigned_to: fullProspect?.assigned_to || null,
+                                        assigned_setter: fullProspect?.assigned_setter || null,
+                                    });
+                                console.log(`Created initial payment of ${amount} for prospect ${prospect.id}`);
+                            }
                         }
                     }
                 } else {
@@ -274,22 +298,30 @@ export default async function handler(req: Request) {
                         .single();
 
                     if (newProspect) {
-                        // Create initial payment record
+                        // Create initial payment record (dedup against redelivered webhooks)
                         if (amount > 0) {
-                            await supabaseAdmin
+                            const initialInvoiceId = `initial_${subscription.id}`;
+                            const { data: existingPayment } = await supabaseAdmin
                                 .from('business_payments')
-                                .insert({
-                                    business_owner_id: ownerUserId,
-                                    prospect_id: newProspect.id,
-                                    stripe_invoice_id: `initial_${subscription.id}`,
-                                    amount,
-                                    currency: item?.price?.currency || 'eur',
-                                    paid_at: subscription.current_period_start
-                                        ? new Date(subscription.current_period_start * 1000).toISOString()
-                                        : new Date().toISOString(),
-                                    assigned_to: null,
-                                    assigned_setter: null,
-                                });
+                                .select('id')
+                                .eq('stripe_invoice_id', initialInvoiceId)
+                                .maybeSingle();
+                            if (!existingPayment) {
+                                await supabaseAdmin
+                                    .from('business_payments')
+                                    .insert({
+                                        business_owner_id: ownerUserId,
+                                        prospect_id: newProspect.id,
+                                        stripe_invoice_id: initialInvoiceId,
+                                        amount,
+                                        currency: item?.price?.currency || 'eur',
+                                        paid_at: subscription.current_period_start
+                                            ? new Date(subscription.current_period_start * 1000).toISOString()
+                                            : new Date().toISOString(),
+                                        assigned_to: null,
+                                        assigned_setter: null,
+                                    });
+                            }
                         }
                         console.log(`Auto-created prospect ${newProspect.id} from Stripe customer ${customer.email}`);
                     }
@@ -495,21 +527,19 @@ export default async function handler(req: Request) {
                     ? session.payment_intent
                     : session.payment_intent?.id;
 
-                // Update campaign_payment_sessions if exists
-                const { data: paymentSession } = await supabaseAdmin
+                // Atomic claim: prevents double-processing when frontend redirect and
+                // webhook both fire. Only the first to flip pending→completed wins.
+                const { data: claimed } = await supabaseAdmin
                     .from('campaign_payment_sessions')
-                    .select('id, appointment_id, status')
+                    .update({ status: 'completed' })
                     .eq('stripe_checkout_session_id', session.id)
+                    .eq('status', 'pending')
+                    .select('id, appointment_id, payment_type, prospect_data')
                     .maybeSingle();
 
-                if (paymentSession && paymentSession.status === 'pending') {
-                    await supabaseAdmin
-                        .from('campaign_payment_sessions')
-                        .update({ status: 'completed' })
-                        .eq('id', paymentSession.id);
-
-                    // Update appointment stripe columns if linked
-                    if (paymentSession.appointment_id && paymentIntentId) {
+                if (claimed) {
+                    // Legacy: appointment was pre-created — just stamp Stripe info
+                    if (claimed.appointment_id && paymentIntentId) {
                         await supabaseAdmin
                             .from('business_appointments')
                             .update({
@@ -519,10 +549,49 @@ export default async function handler(req: Request) {
                                 stripe_amount_paid: session.amount_total || 0,
                                 stripe_currency: session.currency || 'eur',
                             })
-                            .eq('id', paymentSession.appointment_id);
+                            .eq('id', claimed.appointment_id);
+                    }
+
+                    // Current flow: appointment not yet created — trigger capture-submit
+                    // so the booking survives even if the user never returned from Stripe.
+                    if (claimed.payment_type === 'initial' && !claimed.appointment_id) {
+                        const pd = (claimed.prospect_data as any) || {};
+                        const host = req.headers.get('host') || 'www.closeos.fr';
+                        const proto = req.headers.get('x-forwarded-proto') || 'https';
+                        try {
+                            const submitRes = await fetch(`${proto}://${host}/api/business?action=capture-submit`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ ...pd, payment_session_id: claimed.id }),
+                            });
+                            const submitData: any = await submitRes.json().catch(() => ({}));
+                            if (submitData?.appointment?.id) {
+                                await supabaseAdmin
+                                    .from('campaign_payment_sessions')
+                                    .update({ appointment_id: submitData.appointment.id })
+                                    .eq('id', claimed.id);
+                            } else if (submitData?.error) {
+                                console.error(`[webhook checkout.session.completed] capture-submit error: ${submitData.error}`);
+                            }
+                        } catch (err: any) {
+                            console.error(`[webhook checkout.session.completed] internal submit failed: ${err?.message}`);
+                        }
                     }
                     console.log(`Campaign checkout completed: session ${session.id}`);
                 }
+                break;
+            }
+
+            // ─── PaymentIntent succeeded (inline capture flow, "paiement avant inscription") ─
+            case 'payment_intent.succeeded': {
+                const pi = event.data.object as Stripe.PaymentIntent;
+                // Only touch pre_booking sessions (campaign_payment_sessions stores pi.id here)
+                await supabaseAdmin
+                    .from('campaign_payment_sessions')
+                    .update({ status: 'completed' })
+                    .eq('stripe_checkout_session_id', pi.id)
+                    .eq('status', 'pending');
+                console.log(`PaymentIntent succeeded: ${pi.id}`);
                 break;
             }
 

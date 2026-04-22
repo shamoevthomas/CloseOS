@@ -102,3 +102,13 @@ body.hide-cookieyes #cookieyes {
 .animate-blob { animation: blob 7s infinite ease-in-out; }
 .animation-delay-2000 { animation-delay: 2s; }
 .animation-delay-4000 { animation-delay: 4s; }
+
+/* Rich text content (campaign landing_text rendered via RichTextEditor) */
+.rte-content a { color: #635bff; text-decoration: underline; }
+.rte-content ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+.rte-content ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
+.rte-content li { margin: 0.15rem 0; }
+.rte-content b, .rte-content strong { font-weight: 700; }
+.rte-content i, .rte-content em { font-style: italic; }
+.rte-content u { text-decoration: underline; }
+.rte-content s, .rte-content strike { text-decoration: line-through; }

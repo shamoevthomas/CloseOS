@@ -199,6 +199,21 @@ async function handleCompleteRegistration(req: VercelRequest, res: VercelRespons
       return res.status(400).json({ error: 'SetupIntent not confirmed' });
     }
 
+    // Pre-check: refuse to create a Stripe subscription if the email is already taken in
+    // Supabase Auth. Without this, we would charge the card for an account that
+    // signUp() will later reject — leaving a dangling subscription on Stripe.
+    try {
+      const { data: authList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const emailLower = user_email.toLowerCase();
+      const taken = (authList?.users || []).some((u: any) => (u.email || '').toLowerCase() === emailLower);
+      if (taken) {
+        return res.status(409).json({ error: 'Un compte existe déjà avec cet email. Connectez-vous plutôt.' });
+      }
+    } catch (precheckErr: any) {
+      // Pre-check failure is non-fatal — proceed and let signUp surface the duplicate later
+      console.warn('[complete-registration] email pre-check failed:', precheckErr?.message);
+    }
+
     const paymentMethodId = setupIntent.payment_method as string;
 
     // Create Stripe Customer
@@ -598,20 +613,51 @@ async function handlePurchaseSeats(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Update purchased_seats atomically to avoid race conditions
+    // Update purchased_seats atomically. Stripe has already been charged above, so if
+    // the RPC fails we MUST NOT give up — retry with backoff, then fall back to a direct
+    // JSON merge. As a last resort, log loudly so the charge can be reconciled by hand.
     const seatsToAdd: Record<string, number> = {};
     for (const [tier, count] of Object.entries(seats as Record<string, number>)) {
       if (count > 0) seatsToAdd[tier] = count;
     }
 
-    const { data: updated, error: rpcErr } = await supabase.rpc('increment_purchased_seats', {
-      p_user_id: user_id,
-      p_seats: seatsToAdd,
-    });
+    let updated: any = null;
+    let rpcErr: any = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const result = await supabase.rpc('increment_purchased_seats', {
+        p_user_id: user_id,
+        p_seats: seatsToAdd,
+      });
+      if (!result.error) { updated = result.data; rpcErr = null; break; }
+      rpcErr = result.error;
+      if (attempt < 3) await new Promise(r => setTimeout(r, (attempt + 1) * 500));
+    }
 
     if (rpcErr) {
-      console.error('Failed to update purchased_seats:', rpcErr);
-      return res.status(500).json({ error: 'Failed to update seat count' });
+      // Fallback: read-modify-write without the RPC. Safe-ish because concurrent seat
+      // purchases for the same owner are extremely rare; if they collide one will lose
+      // and we log it for manual reconciliation.
+      console.error('[purchase-seats] RPC failed after retries, falling back to direct update:', rpcErr);
+      const { data: current } = await supabase
+        .from('business_settings')
+        .select('purchased_seats')
+        .eq('user_id', user_id)
+        .single();
+      const merged: Record<string, number> = { ...(current?.purchased_seats || {}) };
+      for (const [tier, count] of Object.entries(seatsToAdd)) {
+        merged[tier] = (merged[tier] || 0) + count;
+      }
+      const { error: updErr } = await supabase
+        .from('business_settings')
+        .update({ purchased_seats: merged })
+        .eq('user_id', user_id);
+      if (updErr) {
+        console.error('[purchase-seats] CRITICAL: seats charged on Stripe but DB update failed. user_id=', user_id, 'seats=', seatsToAdd, 'subscription=', subscription.id, 'error=', updErr.message);
+        return res.status(500).json({
+          error: 'Paiement reçu mais échec de l\'enregistrement. Contactez le support avec la référence : ' + subscription.id,
+        });
+      }
+      updated = merged;
     }
 
     return res.json({ success: true, updated_seats: updated });

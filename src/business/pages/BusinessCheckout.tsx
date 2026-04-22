@@ -295,31 +295,54 @@ function CheckoutForm({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t.checkout_error_server);
 
-      // Step 7: Register Supabase account
+      // Step 7: Register Supabase account.
+      // If this fails AFTER the Stripe subscription has been created, the user would be
+      // charged in N days for an account that doesn't exist. Surface a clear message
+      // with the Stripe reference so support can reconcile.
       setStep(t.checkout_creating_account);
       const result = await register({ email, password, full_name: name });
       if (result?.error) {
-        setError(result.error.message);
+        const ref = data.subscription_id || data.customer_id;
+        setError(`${result.error.message}\n\nVotre paiement est enregistré (réf: ${ref}). Contactez support@closeos.fr pour finaliser.`);
         setSubmitting(false);
         return;
       }
 
-      // Step 8: Set billing metadata
+      // Step 8: Set billing metadata — retry to absorb transient Supabase errors.
       if (result.data?.user) {
         const trialEnd = new Date();
         trialEnd.setDate(trialEnd.getDate() + (data.trial_days || trialDays));
+        const userId = result.data.user.id;
 
-        await supabase.from('business_users').update({
+        const withRetry = async <T,>(fn: () => Promise<{ error: any } & T>): Promise<{ error: any } & T> => {
+          let last: any;
+          for (let i = 0; i < 3; i++) {
+            last = await fn();
+            if (!last.error) return last;
+            await new Promise(r => setTimeout(r, (i + 1) * 500));
+          }
+          return last;
+        };
+
+        const upd1 = await withRetry(() => supabase.from('business_users').update({
           stripe_customer_id: data.customer_id,
           trial_ends_at: trialEnd.toISOString(),
           promo_code_used: promoCode.trim().toUpperCase() || null,
           ...(data.referral_link_id ? { referral_link_id: data.referral_link_id } : {}),
-        }).eq('id', result.data.user.id);
+        }).eq('id', userId));
 
-        await supabase.from('business_settings').upsert(
-          { user_id: result.data.user.id, subscription_plan: plan },
+        const upd2 = await withRetry(() => supabase.from('business_settings').upsert(
+          { user_id: userId, subscription_plan: plan },
           { onConflict: 'user_id' }
-        );
+        ));
+
+        if (upd1.error || upd2.error) {
+          console.error('[BusinessCheckout] failed to link Stripe after retries:', upd1.error || upd2.error);
+          const ref = data.subscription_id || data.customer_id;
+          setError(`Votre compte et paiement sont créés, mais la liaison a échoué. Contactez support@closeos.fr avec la référence : ${ref}`);
+          setSubmitting(false);
+          return;
+        }
       }
 
       // Step 9: Done — ensure parent AuthContext knows this is a Business user

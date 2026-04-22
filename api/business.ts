@@ -4246,32 +4246,78 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Payment not completed' })
       }
 
-      // Mark session as completed
-      await supabase
+      // Atomic claim: only the first concurrent caller (frontend OR webhook) owns the
+      // post-payment work. Subsequent callers get a no-op and re-read current state.
+      const { data: claimed } = await supabase
         .from('campaign_payment_sessions')
         .update({ status: 'completed' })
         .eq('id', paymentSession.id)
+        .eq('status', 'pending')
+        .select('*')
+        .maybeSingle()
 
-      // If it's an initial payment, update the appointment if it exists
-      if (paymentSession.payment_type === 'initial' && paymentSession.appointment_id) {
+      if (!claimed) {
+        const { data: latest } = await supabase
+          .from('campaign_payment_sessions')
+          .select('*')
+          .eq('id', paymentSession.id)
+          .single()
+        return res.status(200).json({
+          success: true,
+          already_completed: true,
+          payment_type: latest?.payment_type,
+          prospect_data: latest?.prospect_data,
+          payment_intent_id: stripeSession.payment_intent,
+          payment_session_id: latest?.id,
+        })
+      }
+
+      // Legacy flow: appointment was pre-created before payment — just stamp Stripe info.
+      if (claimed.payment_type === 'initial' && claimed.appointment_id) {
         await supabase
           .from('business_appointments')
           .update({
             stripe_payment_intent_id: stripeSession.payment_intent as string,
             stripe_checkout_session_id: session_id,
             stripe_payment_status: 'paid',
-            stripe_amount_paid: stripeSession.amount_total || paymentSession.amount,
+            stripe_amount_paid: stripeSession.amount_total || claimed.amount,
             stripe_currency: campaign.stripe_currency || 'eur',
           })
-          .eq('id', paymentSession.appointment_id)
+          .eq('id', claimed.appointment_id)
+      }
+
+      // Current flow: appointment NOT yet created — trigger capture-submit internally now
+      // that the payment is confirmed. prospect_data was stored before the Stripe redirect.
+      if (claimed.payment_type === 'initial' && !claimed.appointment_id) {
+        const pd = (claimed.prospect_data as any) || {}
+        const host = req.headers.host
+        const proto = (req.headers['x-forwarded-proto'] as string) || 'https'
+        try {
+          const submitRes = await fetch(`${proto}://${host}/api/business?action=capture-submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...pd, payment_session_id: claimed.id }),
+          })
+          const submitData: any = await submitRes.json().catch(() => ({}))
+          if (submitData?.appointment?.id) {
+            await supabase
+              .from('campaign_payment_sessions')
+              .update({ appointment_id: submitData.appointment.id })
+              .eq('id', claimed.id)
+          } else if (submitData?.error) {
+            console.error('[campaign-payment-success] capture-submit error:', submitData.error)
+          }
+        } catch (err: any) {
+          console.error('[campaign-payment-success] internal capture-submit failed:', err?.message)
+        }
       }
 
       return res.status(200).json({
         success: true,
-        payment_type: paymentSession.payment_type,
-        prospect_data: paymentSession.prospect_data,
+        payment_type: claimed.payment_type,
+        prospect_data: claimed.prospect_data,
         payment_intent_id: stripeSession.payment_intent,
-        payment_session_id: paymentSession.id,
+        payment_session_id: claimed.id,
       })
     }
 
@@ -4321,7 +4367,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ─── Pre-booking payment: create PaymentIntent for inline payment ───
     if (action === 'capture-pre-payment' && req.method === 'POST') {
       const { slug, name, email, phone, custom_data, answers } = req.body
-      if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
+      if (!slug) return res.status(400).json({ error: 'slug required' })
 
       const { data: campaign, error: campErr } = await supabase
         .from('business_campaigns')

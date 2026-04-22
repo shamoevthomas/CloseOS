@@ -131,26 +131,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Re-sync React state when tab becomes visible after being hidden
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState !== 'visible') return;
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!isMountedRef.current) return;
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        await fetchProfile(currentUser.id);
-      } else {
-        setProfile(null);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Tab-visibility handling is delegated to Supabase (startAutoRefresh in
+    // src/lib/supabase.ts + onAuthStateChange above). A manual handler here
+    // caused unnecessary refetches and race conditions on tab switch.
 
     return () => {
       isMountedRef.current = false;
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

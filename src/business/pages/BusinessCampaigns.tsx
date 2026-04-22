@@ -9,6 +9,7 @@ import {
   ChevronUp, AlertTriangle, ClipboardList, CreditCard, Info, Minus
 } from 'lucide-react'
 import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectModal'
+import { RichTextEditor } from '../components/RichTextEditor'
 import toast from 'react-hot-toast'
 
 interface CustomField {
@@ -1048,7 +1049,7 @@ window.addEventListener('message',function(e){
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_desc_text}</label>
-                    <textarea value={formLandingText} onChange={(e) => setFormLandingText(e.target.value)} rows={3} placeholder={t.campaigns_desc_text_placeholder} className={`${inputCls} resize-none`} />
+                    <RichTextEditor value={formLandingText} onChange={setFormLandingText} rows={4} placeholder={t.campaigns_desc_text_placeholder} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_video_url}</label>

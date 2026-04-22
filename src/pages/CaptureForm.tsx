@@ -6,6 +6,7 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { toUTC, fromUTC } from '../lib/timezone'
 import { captureTranslations, detectCaptureLang } from './captureFormI18n'
 import type { CaptureFormLang } from './captureFormI18n'
+import { sanitizeRichHtml } from '../business/components/RichTextEditor'
 
 interface CustomField {
   label: string
@@ -348,6 +349,8 @@ export function CaptureForm() {
   // Payment states
   const [paymentProcessing, setPaymentProcessing] = useState(false)
   const [paymentFailed, setPaymentFailed] = useState(false)
+  // Paid on Stripe but our backend couldn't confirm synchronously — webhook will finish.
+  const [paymentPendingSync, setPaymentPendingSync] = useState(false)
   const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null)
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null)
   const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null)
@@ -480,15 +483,27 @@ export function CaptureForm() {
     const piReturn = searchParams.get('payment_intent')
     const redirectStatus = searchParams.get('redirect_status')
     if (piReturn && redirectStatus === 'succeeded') {
+      // User was definitely charged by Stripe (redirect_status=succeeded is set by Stripe
+      // only after the PaymentIntent reaches succeeded). Never flash "Paiement refusé" here.
       setPaymentProcessing(true)
-      fetch(`${API_URL}?action=capture-verify-payment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payment_intent_id: piReturn }),
-      })
-        .then(r => r.json())
+      const verifyWithRetry = async (attempts = 4): Promise<any> => {
+        for (let i = 0; i < attempts; i++) {
+          try {
+            const r = await fetch(`${API_URL}?action=capture-verify-payment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ payment_intent_id: piReturn }),
+            })
+            const data = await r.json()
+            if (data.success) return data
+          } catch { /* transient network — retry */ }
+          if (i < attempts - 1) await new Promise(res => setTimeout(res, (i + 1) * 1500))
+        }
+        return null
+      }
+      verifyWithRetry()
         .then(data => {
-          if (data.success) {
+          if (data) {
             const pd = data.prospect_data
             if (pd) {
               const nameParts = (pd.name || '').split(' ')
@@ -515,10 +530,13 @@ export function CaptureForm() {
             setPaymentSessionId(data.payment_session_id)
             window.history.replaceState({}, '', window.location.pathname)
           } else {
-            setPaymentFailed(true)
+            // Charge succeeded on Stripe side but our API couldn't confirm after retries.
+            // The Stripe webhook (payment_intent.succeeded) will still mark the session
+            // completed server-side. Show the user they paid OK, booking is being processed.
+            setPaymentPendingSync(true)
+            window.history.replaceState({}, '', window.location.pathname)
           }
         })
-        .catch(() => setPaymentFailed(true))
         .finally(() => setPaymentProcessing(false))
       return
     }
@@ -529,15 +547,27 @@ export function CaptureForm() {
     }
 
     if (paymentSuccess === 'true' && sessionId) {
+      // Stripe redirected with payment_success=true → user was charged. Retry with
+      // backoff to absorb propagation delay, and never flash "Paiement refusé".
       setPaymentProcessing(true)
-      fetch(`${API_URL}?action=campaign-payment-success`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId }),
-      })
-        .then(r => r.json())
+      const successWithRetry = async (attempts = 4): Promise<any> => {
+        for (let i = 0; i < attempts; i++) {
+          try {
+            const r = await fetch(`${API_URL}?action=campaign-payment-success`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ session_id: sessionId }),
+            })
+            const d = await r.json()
+            if (d.success || d.already_completed) return d
+          } catch { /* transient — retry */ }
+          if (i < attempts - 1) await new Promise(res => setTimeout(res, (i + 1) * 1500))
+        }
+        return null
+      }
+      successWithRetry()
         .then(data => {
-          if (data.success) {
+          if (data) {
             if (data.payment_type === 'pre_booking') {
               // Pre-booking payment: restore form data and advance to calendar
               const pd = data.prospect_data
@@ -575,10 +605,12 @@ export function CaptureForm() {
               }
             }
           } else {
-            setPaymentFailed(true)
+            // Charge succeeded on Stripe side but our API couldn't confirm after retries.
+            // The Stripe webhook will still complete the booking server-side.
+            setPaymentPendingSync(true)
+            window.history.replaceState({}, '', window.location.pathname)
           }
         })
-        .catch(() => setPaymentFailed(true))
         .finally(() => setPaymentProcessing(false))
     }
   }, [searchParams, campaign])
@@ -677,7 +709,7 @@ export function CaptureForm() {
   }, [email, phone, submitted, savePartialLead])
 
   const isInscriptionMode = campaign?.capture_type === 'without_rdv'
-  const needsPrePayment = !isInscriptionMode && !!campaign?.stripe_enabled && !!campaign?.stripe_price && campaign.stripe_price > 0 && campaign.stripe_payment_timing !== 'before' && !paymentSessionId
+  const needsPrePayment = !isInscriptionMode && !!campaign?.stripe_enabled && !!campaign?.stripe_price && campaign.stripe_price > 0 && campaign.stripe_payment_timing === 'before' && !paymentSessionId
 
   const handlePrePayment = async () => {
     setSubmitting(true)
@@ -822,6 +854,28 @@ export function CaptureForm() {
     )
   }
 
+  if (paymentPendingSync) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`}>
+        <div className="max-w-md mx-auto text-center p-8">
+          <div className="flex justify-center mb-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#006c49]/10">
+              <CheckCircle2 className="h-10 w-10 text-[#006c49]" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {lang === 'fr' ? 'Paiement reçu' : 'Payment received'}
+          </h1>
+          <p className="text-sm text-[#444748] leading-relaxed">
+            {lang === 'fr'
+              ? "Votre paiement a bien été reçu. Nous finalisons votre inscription — vous recevrez un email de confirmation dans quelques instants."
+              : "Your payment was received. We're finalizing your booking — you'll receive a confirmation email shortly."}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (paymentFailed) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isEmbed ? 'bg-white' : 'bg-[#fbf9f8]'}`}>
@@ -954,9 +1008,10 @@ export function CaptureForm() {
             </h1>
 
             {campaign?.landing_text && (
-              <p className="text-lg text-[#444748] leading-relaxed mb-8 max-w-lg">
-                {campaign.landing_text}
-              </p>
+              <div
+                className="rte-content text-lg text-[#444748] leading-relaxed mb-8 max-w-lg whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(campaign.landing_text) }}
+              />
             )}
 
             {videoEmbedUrl && (
@@ -994,11 +1049,66 @@ export function CaptureForm() {
                   {campaign?.landing_title || campaign?.name || t.fallback_title}
                 </h1>
                 {campaign?.landing_text && (
-                  <p className="text-sm text-[#444748]">{campaign.landing_text}</p>
+                  <div
+                    className="rte-content text-sm text-[#444748] whitespace-pre-wrap"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(campaign.landing_text) }}
+                  />
                 )}
               </div>
             )}
 
+            {needsPrePayment ? (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white flex-shrink-0">
+                    <Lock className="h-4 w-4" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    {lang === 'fr' ? 'Paiement requis' : 'Payment required'}
+                  </h2>
+                </div>
+                <p className="text-sm text-[#444748]">
+                  {lang === 'fr'
+                    ? "Pour accéder au formulaire d'inscription, veuillez d'abord régler le paiement."
+                    : 'To access the registration form, please complete payment first.'}
+                </p>
+                <div className="flex items-center justify-center py-5 rounded-xl bg-[#006c49]/8">
+                  <span className="text-3xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                    {((campaign?.stripe_price ?? 0) / 100).toFixed(2).replace('.00', '')}€
+                  </span>
+                </div>
+                {stripeClientSecret && stripePaymentIntentId ? (
+                  <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, appearance: CAPTURE_STRIPE_APPEARANCE }}>
+                    <CapturePaymentInner
+                      paymentIntentId={stripePaymentIntentId}
+                      slug={slug || ''}
+                      onSuccess={handlePaymentSuccess}
+                      amount={campaign?.stripe_price || 0}
+                      currency={campaign?.stripe_currency || 'eur'}
+                      lang={lang}
+                    />
+                  </Elements>
+                ) : (
+                  <button
+                    onClick={handlePrePayment}
+                    disabled={submitting}
+                    className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
+                    style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
+                  >
+                    {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+                      <>
+                        <span>{lang === 'fr' ? `Payer ${((campaign?.stripe_price ?? 0) / 100).toFixed(2).replace('.00', '')}€` : `Pay ${((campaign?.stripe_price ?? 0) / 100).toFixed(2).replace('.00', '')}€`}</span>
+                        <ArrowRight className="h-5 w-5" />
+                      </>
+                    )}
+                  </button>
+                )}
+                <p className="text-center text-[10px] text-[#444748]/40 font-medium">
+                  {t.consent_text}
+                </p>
+              </div>
+            ) : (
+            <>
             {/* Horizontal layout wrapper */}
             <div className={isHorizontal && !isInscriptionMode ? (isEmbed ? 'flex flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
             {/* Left column in horizontal mode */}
@@ -1608,6 +1718,8 @@ export function CaptureForm() {
             </div>}
 
             </div>{/* End horizontal layout wrapper */}
+            </>
+            )}
 
           </div>
         </div>

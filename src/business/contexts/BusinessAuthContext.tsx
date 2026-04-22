@@ -54,8 +54,9 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     teamMemberRef.current = data.teamMember;
   }, []);
 
-  const initUser = useCallback(async (userId: string) => {
+  const initUser = useCallback(async (userId: string, opts?: { allowSignOut?: boolean }) => {
     const version = ++initVersionRef.current;
+    const allowSignOut = opts?.allowSignOut === true;
     setAuthError(false);
 
     try {
@@ -143,12 +144,15 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
           return;
         }
 
-        // No profile at all → sign out and let the UI redirect to login/checkout
-        // Do NOT auto-create accounts (prevents Google OAuth from bypassing payment)
-        console.log('[BusinessAuth] No business_users row found — user needs checkout');
-        await supabase.auth.signOut();
-        setUser(null);
-        clearUserData();
+        // No profile at all: only force signOut on initial load / fresh sign-in
+        // (prevents Google OAuth bypassing payment). Skip on token-refresh / re-init
+        // so a transient RLS/network hiccup can't disconnect an already-valid session.
+        if (allowSignOut) {
+          console.log('[BusinessAuth] No business_users row found — user needs checkout');
+          await supabase.auth.signOut();
+          setUser(null);
+          clearUserData();
+        }
         if (isMountedRef.current) setLoading(false);
         return;
       }
@@ -250,7 +254,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       setUser(currentUser);
 
       if (currentUser) {
-        await initUser(currentUser.id);
+        await initUser(currentUser.id, { allowSignOut: true });
         // Check device verification (skip for local dev account)
         const isLocalDev = currentUser.email === 'teka@closeos.local';
         const deviceOk = isLocalDev || await checkDeviceVerified(currentUser.id);
@@ -268,48 +272,15 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       }
     });
 
-    // Re-establish session when tab becomes visible again
-    const handleVisibility = async () => {
-      if (document.visibilityState !== 'visible') return;
-
-      // Wait for Supabase startAutoRefresh() to kick in and refresh the JWT
-      await new Promise(r => setTimeout(r, 100));
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!isMountedRef.current) return;
-      const currentUser = session?.user ?? null;
-
-      // If session is null, the token may still be refreshing — retry once
-      if (!currentUser) {
-        await new Promise(r => setTimeout(r, 2000));
-        const { data: { session: retrySession } } = await supabase.auth.getSession();
-        if (!isMountedRef.current) return;
-        const retryUser = retrySession?.user ?? null;
-        if (retryUser) {
-          setUser(retryUser);
-          if (!businessProfileRef.current && !teamMemberRef.current) {
-            await initUser(retryUser.id);
-          }
-          return;
-        }
-        // Still null after retry — genuinely signed out
-        setUser(null);
-        clearUserData();
-        return;
-      }
-
-      setUser(currentUser);
-      // Only reinit if business data is missing (same guard as TOKEN_REFRESHED)
-      if (!businessProfileRef.current && !teamMemberRef.current) {
-        await initUser(currentUser.id);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
+    // Tab-visibility handling is delegated to Supabase:
+    //   - src/lib/supabase.ts pauses/resumes startAutoRefresh on visibilitychange
+    //   - onAuthStateChange above fires TOKEN_REFRESHED / SIGNED_OUT as needed
+    // A manual visibility handler here created a race condition that falsely
+    // disconnected users when getSession() returned null mid-refresh.
 
     return () => {
       isMountedRef.current = false;
       clearTimeout(safetyTimeout);
-      document.removeEventListener('visibilitychange', handleVisibility);
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -343,8 +314,8 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
           console.error('Error inserting business_users:', insertError);
         }
 
-        // Row exists now — initialize properly
-        await initUser(data.user.id);
+        // Row exists now — initialize properly (fresh sign-up allows signOut on missing row)
+        await initUser(data.user.id, { allowSignOut: true });
       }
 
       return { data, error: null };
