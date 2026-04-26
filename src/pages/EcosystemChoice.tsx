@@ -75,9 +75,10 @@ function IntegrationsStrip() {
 interface EcosystemChoiceProps {
   onChooseSales: () => void;
   onChooseBusiness: () => void;
+  onChooseCRM?: () => void;
 }
 
-export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales, onChooseBusiness }) => {
+export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales, onChooseBusiness, onChooseCRM }) => {
   const [lang, setLang] = useState<EcoLang>('fr');
   const t = ecoTranslations[lang];
   const st = salesTranslations[lang];
@@ -406,6 +407,117 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 </div>
               </div>
             </motion.a>
+
+            {/* ── Card: CloseOS CRM — DÉSACTIVÉ (produit suspendu, code conservé) ── */}
+            {false && (
+            <motion.a
+              href="/crm"
+              initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => { if (onChooseCRM) { e.preventDefault(); onChooseCRM(); } }}
+              className="group relative flex flex-col cursor-pointer"
+            >
+              <div className="absolute -inset-1 rounded-[2.2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" style={{
+                background: 'radial-gradient(ellipse at 50% 80%, rgba(245,158,11,0.14) 0%, transparent 70%)',
+              }} />
+
+              <div
+                className="relative flex flex-col justify-between h-full p-10 md:p-12 rounded-[2rem] transition-all duration-500 overflow-hidden group-hover:translate-y-[-2px]"
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '0.5px solid rgba(255,255,255,0.06)',
+                  boxShadow: '0 0 0 0 rgba(245,158,11,0), inset 0 1px 0 0 rgba(255,255,255,0.03)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.border = '0.5px solid rgba(245,158,11,0.18)';
+                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(245,158,11,0.08), inset 0 1px 0 0 rgba(255,255,255,0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.border = '0.5px solid rgba(255,255,255,0.06)';
+                  e.currentTarget.style.boxShadow = '0 0 0 0 rgba(245,158,11,0), inset 0 1px 0 0 rgba(255,255,255,0.03)';
+                }}
+              >
+                <div className="absolute -top-20 -right-20 w-60 h-60 blur-[80px] rounded-full pointer-events-none transition-all duration-700" style={{ background: 'rgba(245,158,11,0.05)' }} />
+
+                <div className="relative z-10 flex-1">
+                  <div className="flex items-start justify-between mb-10">
+                    <div className="flex items-center gap-2 font-extrabold text-2xl" style={{ fontFamily: "'Sora', sans-serif" }}>
+                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white font-black"
+                        style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #60A5FA 100%)' }}>C</span>
+                      <span className="text-white">
+                        Close<span style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #60A5FA 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>OS</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[0.58rem] font-bold uppercase tracking-[0.12em] text-[#060608] px-3 py-1.5 rounded-full" style={{ background: '#F59E0B' }}>
+                        {lang === 'fr' ? 'Nouveau' : 'New'}
+                      </span>
+                      <span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] px-3 py-1.5 rounded-full" style={{
+                        color: 'rgba(245,158,11,0.7)',
+                        background: 'rgba(245,158,11,0.06)',
+                        border: '0.5px solid rgba(245,158,11,0.1)',
+                      }}>CRM</span>
+                    </div>
+                  </div>
+
+                  <h2 className="text-[1.75rem] md:text-[2rem] font-bold tracking-[-0.03em] text-white mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>
+                    CloseOS CRM
+                  </h2>
+
+                  <div className="inline-block px-4 py-1.5 rounded-full text-[0.68rem] font-medium tracking-wide text-[#8a8a96] mb-6" style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '0.5px solid rgba(255,255,255,0.05)',
+                  }}>
+                    {lang === 'fr' ? 'Pour entrepreneurs solo' : 'For solo entrepreneurs'}
+                  </div>
+
+                  <p className="text-[#6a6a78] text-sm leading-relaxed mb-8 max-w-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    {lang === 'fr'
+                      ? 'Le CRM tout-en-un pour gérer vos prospects, créer vos pages de capture et mesurer votre acquisition. Sans équipe.'
+                      : 'The all-in-one CRM to manage prospects, build capture pages, and measure acquisition. No team needed.'}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3 mb-10">
+                    {[
+                      { icon: <Users className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'CRM + Pipeline' : 'CRM + Pipeline' },
+                      { icon: <Rocket className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'Campagnes + Stripe' : 'Campaigns + Stripe' },
+                      { icon: <BarChart3 className="w-3.5 h-3.5" strokeWidth={1.5} />, label: 'Acquisition analytics' },
+                      { icon: <Zap className="w-3.5 h-3.5" strokeWidth={1.5} />, label: 'API · Zapier · Make · N8N' },
+                    ].map((feat, i) => (
+                      <div key={i} className="flex items-center gap-2.5 text-[#6a6a78] text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        <span style={{ color: 'rgba(245,158,11,0.6)' }}>{feat.icon}</span>
+                        <span>{feat.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative z-10">
+                  <span
+                    className="w-full flex items-center justify-between px-8 py-5 rounded-xl font-semibold text-base transition-all duration-300 group-hover:shadow-[0_0_30px_rgba(245,158,11,0.14)]"
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      background: 'rgba(245,158,11,0.08)',
+                      color: '#F59E0B',
+                      border: '0.5px solid rgba(245,158,11,0.18)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#F59E0B';
+                      e.currentTarget.style.color = '#060608';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(245,158,11,0.08)';
+                      e.currentTarget.style.color = '#F59E0B';
+                    }}
+                  >
+                    {lang === 'fr' ? 'Découvrir le CRM' : 'Discover CRM'}
+                    <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={1.5} />
+                  </span>
+                </div>
+              </div>
+            </motion.a>
+            )}
           </div>
 
           {/* ═══ Integrations Marquee ═══ */}

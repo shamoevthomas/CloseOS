@@ -5,6 +5,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext';
 import { supabase } from '../../lib/supabase';
+import { BusinessCRMAutoAssignBlock } from './BusinessCRMAutoAssignBlock';
 
 const CRM_OPTIONS = [
   { id: 'closeos', name: 'CloseOS CRM', description: 'CRM intégré CloseOS', color: 'bg-amber-500', textColor: 'text-amber-700', bgColor: 'bg-amber-50', borderColor: 'border-amber-300', iconBg: 'bg-[#1b1c1b]', iconText: 'text-white', logo: '/closeos-crm.png' },
@@ -36,7 +37,7 @@ interface Props {
 }
 
 export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
-  const { user, businessSettings, updateBusinessSettings } = useBusinessAuth();
+  const { user, businessSettings, updateBusinessSettings, hasApiAccess } = useBusinessAuth();
   const { t, lang } = useBusinessLang()
   const { prospects, addProspect, syncHubspot, syncPipedrive, syncAirtable, syncGhl, isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable, isSyncingGhl, hubspotConnected, pipedriveConnected, airtableConnected, ghlConnected } = useBusinessProspects();
 
@@ -45,7 +46,22 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   const [syncResult, setSyncResult] = useState<{ imported: number; updated: number } | null>(null);
 
   // iClosed webhook
-  const [webhookCopied, setWebhookCopied] = useState(false);
+  const [iclosedApiKey, setIclosedApiKey] = useState<string | null>(null);
+  const [iclosedKeyId, setIclosedKeyId] = useState<string | null>(null);
+  const [iclosedLoading, setIclosedLoading] = useState(false);
+  const [iclosedCopiedUrl, setIclosedCopiedUrl] = useState(false);
+  const [iclosedCopiedKey, setIclosedCopiedKey] = useState(false);
+  const [iclosedShowKey, setIclosedShowKey] = useState(false);
+  // iClosed custom stage mapping (iClosed stage name → CloseOS stage)
+  const [iclosedMappings, setIclosedMappings] = useState<Array<{ name: string; stage: string }>>([]);
+  const [iclosedMappingSaving, setIclosedMappingSaving] = useState(false);
+
+  // iClosed outbound push key (the user's iClosed Bearer key — different from
+  // the inbound webhook key generated above). Stored in business_settings.iclosed_api_key.
+  const [iclosedPushKey, setIclosedPushKey] = useState<string>('');
+  const [iclosedPushKeySaving, setIclosedPushKeySaving] = useState(false);
+  const [iclosedPushKeyTesting, setIclosedPushKeyTesting] = useState(false);
+  const [iclosedPushShowKey, setIclosedPushShowKey] = useState(false);
 
   // Pipedrive mapping
   const [pipedrivePipelines, setPipedrivePipelines] = useState<any[]>([]);
@@ -117,6 +133,21 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   const [ghlMappings, setGhlMappings] = useState<Record<string, string>>({});
   const [ghlLoadingPipelines, setGhlLoadingPipelines] = useState(false);
   const [ghlSavingConfig, setGhlSavingConfig] = useState(false);
+
+  // ─── CloseOS CRM tab state ───────────────────────────────────────────────
+  const [closeosKeys, setCloseosKeys] = useState<any[]>([]);
+  const [closeosSubs, setCloseosSubs] = useState<any[]>([]);
+  const [closeosNewKeyName, setCloseosNewKeyName] = useState('API CloseOS');
+  const [closeosNewSubUrl, setCloseosNewSubUrl] = useState('');
+  const [closeosNewSubEvents, setCloseosNewSubEvents] = useState<string[]>(['prospect.created']);
+  const [closeosCreatingKey, setCloseosCreatingKey] = useState(false);
+  const [closeosCreatingSub, setCloseosCreatingSub] = useState(false);
+  const [closeosShowKey, setCloseosShowKey] = useState<Record<string, boolean>>({});
+  const [closeosShowSecret, setCloseosShowSecret] = useState<Record<string, boolean>>({});
+  const [closeosCopiedKey, setCloseosCopiedKey] = useState<string | null>(null);
+  const [closeosCopiedSecret, setCloseosCopiedSecret] = useState<string | null>(null);
+  const [closeosCopiedCurl, setCloseosCopiedCurl] = useState(false);
+  const [closeosTesting, setCloseosTesting] = useState<string | null>(null);
 
   useEffect(() => {
     if (businessSettings?.crm_provider) {
@@ -281,6 +312,65 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
       }
     };
     load();
+  }, [selected, user, isOpen]);
+
+  // Load existing iClosed API key
+  useEffect(() => {
+    if (selected !== 'iclosed' || !user || !isOpen) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from('business_webhook_keys')
+        .select('id, api_key')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .eq('name', 'iClosed')
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setIclosedApiKey(data.api_key);
+        setIclosedKeyId(data.id);
+      } else {
+        setIclosedApiKey(null);
+        setIclosedKeyId(null);
+      }
+    };
+    load();
+  }, [selected, user, isOpen]);
+
+  // Load existing iClosed custom stage mapping
+  useEffect(() => {
+    if (selected !== 'iclosed' || !isOpen) return;
+    const raw = (businessSettings as any)?.iclosed_stage_mapping;
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      const list = Object.entries(raw).map(([name, stage]) => ({ name, stage: String(stage) }));
+      setIclosedMappings(list);
+    } else {
+      setIclosedMappings([]);
+    }
+  }, [selected, isOpen, businessSettings]);
+
+  // Load existing iClosed push (outbound) API key
+  useEffect(() => {
+    if (selected !== 'iclosed' || !isOpen) return;
+    const raw = (businessSettings as any)?.iclosed_api_key;
+    setIclosedPushKey(typeof raw === 'string' ? raw : '');
+  }, [selected, isOpen, businessSettings]);
+
+  // ─── CloseOS CRM tab: load API keys + outbound subscriptions ──────────────
+  const refreshCloseosKeysAndSubs = async () => {
+    if (!user) return;
+    const [keysRes, subsRes] = await Promise.all([
+      supabase.from('business_webhook_keys').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('business_webhook_subscriptions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+    ]);
+    setCloseosKeys(keysRes.data || []);
+    setCloseosSubs(subsRes.data || []);
+  };
+
+  useEffect(() => {
+    if (selected !== 'closeos' || !user || !isOpen) return;
+    refreshCloseosKeysAndSubs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, user, isOpen]);
 
   // Load existing Airtable config
@@ -528,6 +618,290 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
     }
   };
 
+  const handleGenerateIclosedKey = async () => {
+    if (!user) return;
+    setIclosedLoading(true);
+    try {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      const newKey = 'ic_' + Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+
+      const { data, error } = await supabase
+        .from('business_webhook_keys')
+        .insert({ user_id: user.id, api_key: newKey, name: 'iClosed' })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setIclosedApiKey(newKey);
+      setIclosedKeyId(data.id);
+      setIclosedShowKey(true);
+    } catch (err) {
+      console.error('Error generating iClosed key:', err);
+    } finally {
+      setIclosedLoading(false);
+    }
+  };
+
+  const handleDeleteIclosedKey = async () => {
+    if (!iclosedKeyId || !window.confirm('Supprimer cette clé API ? Le webhook iClosed ne fonctionnera plus.')) return;
+    setIclosedLoading(true);
+    try {
+      await supabase.from('business_webhook_keys').delete().eq('id', iclosedKeyId);
+      setIclosedApiKey(null);
+      setIclosedKeyId(null);
+      setIclosedShowKey(false);
+    } catch (err) {
+      console.error('Error deleting iClosed key:', err);
+    } finally {
+      setIclosedLoading(false);
+    }
+  };
+
+  const handleAddIclosedMapping = () => {
+    setIclosedMappings(prev => [...prev, { name: '', stage: 'prospect' }]);
+  };
+
+  const handleRemoveIclosedMapping = (index: number) => {
+    setIclosedMappings(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateIclosedMapping = (index: number, field: 'name' | 'stage', value: string) => {
+    setIclosedMappings(prev => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
+  };
+
+  const handleSaveIclosedMappings = async () => {
+    setIclosedMappingSaving(true);
+    try {
+      const obj: Record<string, string> = {};
+      for (const m of iclosedMappings) {
+        const key = (m.name || '').trim();
+        if (!key) continue;
+        obj[key] = m.stage;
+      }
+      await updateBusinessSettings({ iclosed_stage_mapping: obj });
+      toast.success('Mapping enregistré');
+    } catch (err) {
+      console.error('Error saving iClosed mapping:', err);
+      toast.error('Erreur lors de la sauvegarde');
+    } finally {
+      setIclosedMappingSaving(false);
+    }
+  };
+
+  const handleSaveIclosedPushKey = async () => {
+    setIclosedPushKeySaving(true);
+    try {
+      const trimmed = (iclosedPushKey || '').trim();
+      if (trimmed && !trimmed.startsWith('iclosed_')) {
+        toast.error('La clé doit commencer par "iclosed_"');
+        return;
+      }
+      await updateBusinessSettings({ iclosed_api_key: trimmed || null } as any);
+      toast.success(trimmed ? 'Clé enregistrée' : 'Clé supprimée');
+    } catch (err) {
+      console.error('Error saving iClosed push key:', err);
+      toast.error('Erreur lors de la sauvegarde');
+    } finally {
+      setIclosedPushKeySaving(false);
+    }
+  };
+
+  const [iclosedSyncing, setIclosedSyncing] = useState(false);
+  const [iclosedSyncResult, setIclosedSyncResult] = useState<{ imported: number; updated: number } | null>(null);
+
+  const handleSyncIclosedNow = async () => {
+    setIclosedSyncing(true);
+    setIclosedSyncResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        toast.error('Session expirée — reconnectez-vous');
+        return;
+      }
+      let totalImported = 0;
+      let totalUpdated = 0;
+      let nextPage: number | null = 0;
+      // Loop until partial=false (in case the run hits the time/page cap)
+      for (let safety = 0; safety < 20; safety++) {
+        const res: Response = await fetch('/api/webhooks?action=iclosed-sync-business', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ startPage: nextPage }),
+        });
+        const json: any = await res.json();
+        if (!json?.ok) {
+          toast.error(json?.message || 'Erreur de synchronisation iClosed');
+          return;
+        }
+        totalImported += Number(json.imported || 0);
+        totalUpdated += Number(json.updated || 0);
+        if (!json.partial) break;
+        nextPage = Number(json.nextPage || 0);
+        if (!nextPage) break;
+      }
+      setIclosedSyncResult({ imported: totalImported, updated: totalUpdated });
+      toast.success(`${totalImported} importés, ${totalUpdated} mis à jour`);
+    } catch (err: any) {
+      console.error('Error syncing iClosed:', err);
+      toast.error('Échec de la synchronisation');
+    } finally {
+      setIclosedSyncing(false);
+    }
+  };
+
+  const handleTestIclosedPushKey = async () => {
+    setIclosedPushKeyTesting(true);
+    try {
+      const trimmed = (iclosedPushKey || '').trim();
+      if (trimmed && !trimmed.startsWith('iclosed_')) {
+        toast.error('La clé doit commencer par "iclosed_"');
+        return;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        toast.error('Session expirée — reconnectez-vous');
+        return;
+      }
+      const res = await fetch('/api/webhooks?action=iclosed-business-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ api_key: trimmed || undefined }),
+      });
+      const json = await res.json();
+      if (json?.ok) {
+        toast.success('Connexion iClosed OK');
+      } else {
+        const code = json?.code || 'unknown';
+        const msg =
+          code === 'auth' ? 'Clé iClosed invalide ou expirée' :
+          code === 'config' ? 'Aucune clé iClosed configurée' :
+          code === 'rate_limit' ? 'Limite iClosed atteinte, réessayez dans quelques secondes' :
+          (json?.message || 'Échec de la connexion iClosed');
+        toast.error(msg);
+      }
+    } catch (err: any) {
+      console.error('Error testing iClosed push key:', err);
+      toast.error('Échec du test de connexion');
+    } finally {
+      setIclosedPushKeyTesting(false);
+    }
+  };
+
+  // ─── CloseOS CRM tab handlers ─────────────────────────────────────────────
+  const handleCreateCloseosKey = async () => {
+    if (!user) return;
+    setCloseosCreatingKey(true);
+    try {
+      const arr = new Uint8Array(32);
+      crypto.getRandomValues(arr);
+      const newKey = 'cos_' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+      const { error } = await supabase
+        .from('business_webhook_keys')
+        .insert({ user_id: user.id, api_key: newKey, name: closeosNewKeyName.trim() || 'API CloseOS' });
+      if (error) throw error;
+      setCloseosNewKeyName('API CloseOS');
+      await refreshCloseosKeysAndSubs();
+      toast.success('Clé API générée');
+    } catch (err: any) {
+      console.error('createCloseosKey:', err);
+      toast.error('Impossible de générer la clé');
+    } finally {
+      setCloseosCreatingKey(false);
+    }
+  };
+
+  const handleDeleteCloseosKey = async (id: string) => {
+    if (!window.confirm('Supprimer cette clé API ? Les intégrations qui l\'utilisent ne fonctionneront plus.')) return;
+    try {
+      await supabase.from('business_webhook_keys').delete().eq('id', id);
+      await refreshCloseosKeysAndSubs();
+    } catch (err) {
+      console.error('deleteCloseosKey:', err);
+    }
+  };
+
+  const handleToggleCloseosNewSubEvent = (eventId: string) => {
+    setCloseosNewSubEvents(prev => prev.includes(eventId) ? prev.filter(e => e !== eventId) : [...prev, eventId]);
+  };
+
+  const handleCreateCloseosSub = async () => {
+    if (!user) return;
+    const url = (closeosNewSubUrl || '').trim();
+    if (!url) { toast.error('Renseignez une URL.'); return; }
+    if (!/^https?:\/\//i.test(url)) { toast.error('L\'URL doit commencer par http:// ou https://'); return; }
+    if (closeosNewSubEvents.length === 0) { toast.error('Sélectionnez au moins un évènement.'); return; }
+    setCloseosCreatingSub(true);
+    try {
+      const arr = new Uint8Array(32);
+      crypto.getRandomValues(arr);
+      const secret = Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+      const { error } = await supabase
+        .from('business_webhook_subscriptions')
+        .insert({ user_id: user.id, url, events: closeosNewSubEvents, secret, is_active: true });
+      if (error) throw error;
+      setCloseosNewSubUrl('');
+      setCloseosNewSubEvents(['prospect.created']);
+      await refreshCloseosKeysAndSubs();
+      toast.success('Webhook ajouté');
+    } catch (err: any) {
+      console.error('createCloseosSub:', err);
+      toast.error('Impossible d\'ajouter le webhook');
+    } finally {
+      setCloseosCreatingSub(false);
+    }
+  };
+
+  const handleDeleteCloseosSub = async (id: string) => {
+    if (!window.confirm('Supprimer ce webhook ?')) return;
+    try {
+      await supabase.from('business_webhook_subscriptions').delete().eq('id', id);
+      await refreshCloseosKeysAndSubs();
+    } catch (err) {
+      console.error('deleteCloseosSub:', err);
+    }
+  };
+
+  const handleTestCloseosSub = async (id: string) => {
+    setCloseosTesting(id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) { toast.error('Session expirée'); return; }
+      const res = await fetch('/api/business-test-webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ subscription_id: id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      await refreshCloseosKeysAndSubs();
+      if (data.error) toast.error(`Test : ${data.error}`); else toast.success(`Test : HTTP ${data.status}`);
+    } catch (err: any) {
+      console.error('testCloseosSub:', err);
+      toast.error('Erreur lors du test');
+    } finally {
+      setCloseosTesting(null);
+    }
+  };
+
+  const CLOSEOS_EVENT_CATALOG: Array<{ id: string; label: string; description: string }> = [
+    { id: 'prospect.created',       label: 'Prospect créé',             description: 'Un nouveau prospect a été ajouté.' },
+    { id: 'prospect.updated',       label: 'Prospect mis à jour',       description: 'Un champ du prospect a changé (hors stage).' },
+    { id: 'prospect.stage_changed', label: 'Stage modifié',             description: 'Le stage du prospect a changé.' },
+    { id: 'prospect.deleted',       label: 'Prospect supprimé',         description: 'Le prospect a été supprimé.' },
+    { id: 'campaign.lead_captured', label: 'Lead capturé via campagne', description: 'Lead arrivé via formulaire de capture.' },
+    { id: 'appointment.booked',     label: 'Rendez-vous réservé',       description: 'RDV réservé pour ce prospect.' },
+    { id: 'appointment.cancelled',  label: 'Rendez-vous annulé',        description: 'RDV annulé.' },
+    { id: 'appointment.completed',  label: 'Rendez-vous terminé',       description: 'RDV marqué comme terminé.' },
+    { id: 'deal.won',               label: 'Deal gagné',                description: 'Vente conclue (souscription Stripe active ou stage = won).' },
+    { id: 'deal.lost',              label: 'Deal perdu',                description: 'Souscription annulée ou stage = lost.' },
+  ];
+
   const handleGenerateZapierKey = async () => {
     if (!user) return;
     setZapierLoading(true);
@@ -648,8 +1022,23 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
   if (!isOpen) return null;
 
   const baseUrl = window.location.origin.includes('localhost') ? 'https://closeos.fr' : window.location.origin;
-  const webhookUrl = `${baseUrl}/api/webhook?source=business&user_id=${user?.id}`;
+  const iclosedWebhookUrl = iclosedApiKey ? `${baseUrl}/api/webhooks?action=iclosed-business-webhook&api_key=${iclosedApiKey}` : '';
   const systemeioWebhookUrl = `${baseUrl}/api/systemeio?action=webhook&type=business&user_id=${user?.id}`;
+
+  // CloseOS CRM tab: depend on baseUrl + closeosKeys, computed each render
+  const closeosFirstActiveKey = (closeosKeys.find(k => k.is_active) || closeosKeys[0]) as any | undefined;
+  const closeosCurlExample = `curl -X POST "${baseUrl}/api/zapier-webhook?type=business" \\
+  -H "Authorization: Bearer ${closeosFirstActiveKey?.api_key || 'YOUR_API_KEY'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "firstName":"Jean", "lastName":"Dupont",
+    "email":"jean@x.fr", "phone":"+33612345678",
+    "stage":"qualified", "status":"hot", "value":4900,
+    "external_id":"crm-12345", "campaign_id":7,
+    "answers":[{"question":"Budget?","answer":"5k+"}],
+    "metadata":{"utm_source":"linkedin","plan":"pro"},
+    "call_notes":[{"date":"2026-04-26","note":"premier appel ok"}]
+  }'`;
 
   const handleSave = async () => {
     setSaving(true);
@@ -725,12 +1114,6 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
     } catch (err) {
       console.error('Error saving mapping:', err);
     }
-  };
-
-  const handleCopyWebhook = () => {
-    navigator.clipboard.writeText(webhookUrl);
-    setWebhookCopied(true);
-    setTimeout(() => setWebhookCopied(false), 2000);
   };
 
   // ─── CSV Export ───
@@ -884,6 +1267,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
     (selected === 'make' && !!makeApiKey) ||
     (selected === 'n8n' && !!n8nApiKey) ||
     (selected === 'calendly' && !!calendlyApiKey) ||
+    (selected === 'iclosed' && !!iclosedApiKey) ||
     selected === 'closeos';
 
   const selectCls = "w-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/30 dark:border-neutral-700 rounded-xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-[#006c49]/20 focus:border-[#006c49] text-[#1b1c1b] dark:text-white";
@@ -967,27 +1351,560 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                 </div>
 
                 <div className="space-y-8">
-                  {/* ─── CloseOS ─── */}
+                  {/* ─── CloseOS CRM (native API + outbound webhooks) ─── */}
                   {selected === 'closeos' && (
-                    <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                      <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>CRM Intégré</h4>
-                      <p className="text-[#444748] dark:text-neutral-300 text-sm">Le CRM natif CloseOS est activé par défaut. Aucune configuration nécessaire.</p>
+                    <div className="space-y-6">
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>CRM Intégré CloseOS</h4>
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm">
+                          Activé par défaut — aucune configuration nécessaire. Vous pouvez aussi exposer une API REST entrante et configurer des webhooks sortants pour brancher vos automatisations.
+                        </p>
+                      </div>
+
+                      {!hasApiAccess && (
+                        <div className="relative overflow-hidden p-8 rounded-2xl bg-gradient-to-br from-[#1b1c1b] via-[#2a1538] to-[#1b1c1b] border border-[#d511fd]/30 text-white">
+                          <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-[#d511fd]/15 blur-3xl pointer-events-none" />
+                          <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-[#ff2f2f]/10 blur-3xl pointer-events-none" />
+                          <div className="relative">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 mb-4">
+                              <Sparkles className="h-3 w-3 text-[#d511fd]" />
+                              <span className="text-[10px] uppercase font-bold tracking-[0.15em] text-white/80">Fonctionnalité Pro</span>
+                            </div>
+                            <h4 className="font-extrabold text-2xl mb-3 tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                              L'API & les webhooks ne sont pas inclus dans la formule Business
+                            </h4>
+                            <p className="text-white/70 text-sm leading-relaxed mb-6 max-w-2xl">
+                              Pour accéder à l'API REST entrante, aux webhooks sortants signés HMAC et à la documentation développeur,
+                              passez à la formule <strong className="text-white">Business + Acquisition</strong>, <strong className="text-white">Solo</strong> ou <strong className="text-white">Enterprise</strong>.
+                              Le CRM intégré CloseOS reste disponible et fonctionnel sur votre formule actuelle.
+                            </p>
+                            <div className="flex flex-wrap gap-3">
+                              <a
+                                href="/tarifs"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-5 py-2.5 bg-white text-[#1b1c1b] rounded-full font-bold text-sm flex items-center gap-2 hover:bg-white/90 transition-colors"
+                              >
+                                <Sparkles className="h-4 w-4" />
+                                Voir les formules
+                              </a>
+                              <a
+                                href="/business/docs/api"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-5 py-2.5 border border-white/20 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-white/5 transition-colors"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                                Voir la documentation
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {hasApiAccess && (<>
+
+                      {/* ── Section A : Clés API entrantes ───────────────── */}
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-bold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Clés API entrantes</h4>
+                        </div>
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">
+                          Ces clés permettent à un service externe de pousser des prospects dans CloseOS via l'API REST.
+                        </p>
+
+                        <div className="flex gap-2 mb-6">
+                          <input
+                            type="text"
+                            value={closeosNewKeyName}
+                            onChange={e => setCloseosNewKeyName(e.target.value)}
+                            placeholder="Nom de la clé (ex. Mon backend)"
+                            className={inputCls + ' flex-1'}
+                          />
+                          <button
+                            onClick={handleCreateCloseosKey}
+                            disabled={closeosCreatingKey}
+                            className="px-5 py-2.5 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50"
+                          >
+                            {closeosCreatingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+                            Générer
+                          </button>
+                        </div>
+
+                        {closeosKeys.length === 0 ? (
+                          <p className="text-xs text-[#444748]/60 italic">Aucune clé. Générez-en une pour commencer.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {closeosKeys.map(k => {
+                              const masked = closeosShowKey[k.id]
+                                ? k.api_key
+                                : (k.api_key ? `${k.api_key.slice(0, 6)}••••••••${k.api_key.slice(-4)}` : '••••');
+                              return (
+                                <div key={k.id} className="bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 p-4">
+                                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                                    <div>
+                                      <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{k.name || 'Clé API'}</p>
+                                      <p className="text-[11px] text-[#444748]/60">Créée {new Date(k.created_at).toLocaleDateString('fr-FR')}</p>
+                                    </div>
+                                    <div className="flex gap-2 items-center">
+                                      <code className="text-xs font-mono px-3 py-2 rounded-lg bg-[#f5f3f2] dark:bg-neutral-800">{masked}</code>
+                                      <button
+                                        onClick={() => setCloseosShowKey(prev => ({ ...prev, [k.id]: !prev[k.id] }))}
+                                        className="p-2 rounded-lg hover:bg-[#eae8e7] transition-colors"
+                                        title={closeosShowKey[k.id] ? 'Masquer' : 'Afficher'}
+                                      >
+                                        {closeosShowKey[k.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                      </button>
+                                      <button
+                                        onClick={() => { navigator.clipboard.writeText(k.api_key); setCloseosCopiedKey(k.id); setTimeout(() => setCloseosCopiedKey(null), 2000); }}
+                                        className="p-2 rounded-lg hover:bg-[#eae8e7] transition-colors"
+                                        title="Copier"
+                                      >
+                                        {closeosCopiedKey === k.id ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4" />}
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteCloseosKey(k.id)}
+                                        className="p-2 rounded-lg hover:bg-[#eae8e7] text-[#444748] hover:text-[#ba1a1a] transition-colors"
+                                        title="Supprimer"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Section B : Endpoint entrant + cURL ──────────── */}
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Endpoint entrant</h4>
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4">
+                          POSTez sur cette URL avec votre clé API en <code className="text-xs font-mono">Authorization: Bearer &lt;clé&gt;</code>.
+                          Tous les champs ci-dessous sont supportés. Tout champ supplémentaire est conservé dans <code className="text-xs">metadata</code>.
+                          Si <code className="text-xs">external_id</code> est fourni, l'appel devient <strong>idempotent</strong> (création OU mise à jour).
+                        </p>
+                        <div className="rounded-xl overflow-hidden border border-[#c4c7c7]/20">
+                          <div className="flex items-center justify-between px-4 py-2 bg-[#1b1c1b] text-[#999]">
+                            <span className="text-[11px] font-mono uppercase">cURL</span>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(closeosCurlExample); setCloseosCopiedCurl(true); setTimeout(() => setCloseosCopiedCurl(false), 2000); }}
+                              className="text-[11px] font-bold text-white hover:text-[#ffb95f] flex items-center gap-1"
+                            >
+                              {closeosCopiedCurl ? <><Check className="h-3 w-3" /> Copié</> : <><Copy className="h-3 w-3" /> Copier</>}
+                            </button>
+                          </div>
+                          <pre className="bg-[#1b1c1b] text-[#e5e5e5] text-[12px] font-mono p-4 overflow-x-auto leading-relaxed whitespace-pre">{closeosCurlExample}</pre>
+                        </div>
+                      </div>
+
+                      {/* ── Section C : Webhooks sortants ────────────────── */}
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhooks sortants</h4>
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">
+                          CloseOS POSTera vers vos URLs à chaque évènement. Le payload est signé HMAC-SHA256 (header <code className="text-xs">X-CloseOS-Signature</code>).
+                        </p>
+
+                        {/* Add form */}
+                        <div className="space-y-3 mb-6 bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 p-4">
+                          <input
+                            type="url"
+                            value={closeosNewSubUrl}
+                            onChange={e => setCloseosNewSubUrl(e.target.value)}
+                            placeholder="https://votre-service.com/webhooks/closeos"
+                            className={inputCls}
+                          />
+                          <div className="flex flex-wrap gap-2">
+                            {CLOSEOS_EVENT_CATALOG.map(ev => {
+                              const active = closeosNewSubEvents.includes(ev.id);
+                              return (
+                                <button
+                                  key={ev.id}
+                                  onClick={() => handleToggleCloseosNewSubEvent(ev.id)}
+                                  className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+                                    active
+                                      ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                      : 'bg-transparent text-[#1b1c1b] dark:text-white border-[#c4c7c7]/40 hover:bg-[#f5f3f2]'
+                                  }`}
+                                  title={ev.description}
+                                >
+                                  {active && <Check className="inline h-3 w-3 mr-1" />}
+                                  {ev.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              onClick={handleCreateCloseosSub}
+                              disabled={closeosCreatingSub}
+                              className="px-5 py-2.5 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50"
+                            >
+                              {closeosCreatingSub ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
+                              Ajouter le webhook
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* List */}
+                        {closeosSubs.length === 0 ? (
+                          <p className="text-xs text-[#444748]/60 italic">Aucun webhook configuré.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {closeosSubs.map(s => {
+                              const showSecret = !!closeosShowSecret[s.id];
+                              const maskedSecret = showSecret
+                                ? s.secret
+                                : (s.secret ? `${s.secret.slice(0, 6)}••••••••${s.secret.slice(-4)}` : '••••');
+                              const status = s.last_status as number | null;
+                              const statusColor =
+                                status === null || status === undefined ? 'bg-[#c4c7c7]/30 text-[#444748]' :
+                                status >= 200 && status < 300 ? 'bg-[#006c49]/15 text-[#006c49]' :
+                                status === 0 ? 'bg-[#ffb95f]/30 text-[#b87500]' :
+                                'bg-[#ba1a1a]/15 text-[#ba1a1a]';
+                              return (
+                                <div key={s.id} className="bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 p-4 space-y-3">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-mono text-[#1b1c1b] dark:text-white break-all">{s.url}</p>
+                                      <div className="flex flex-wrap gap-1.5 mt-2">
+                                        {(s.events || []).map((ev: string) => (
+                                          <span key={ev} className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#f5f3f2] text-[#444748] border border-[#c4c7c7]/20">{ev}</span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {status !== null && status !== undefined && (
+                                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${statusColor}`}>
+                                          {status === 0 ? 'NETWORK' : `HTTP ${status}`}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-[10px] font-bold text-[#444748]/60 uppercase">Secret</span>
+                                    <code className="text-xs font-mono px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-800">{maskedSecret}</code>
+                                    <button
+                                      onClick={() => setCloseosShowSecret(prev => ({ ...prev, [s.id]: !prev[s.id] }))}
+                                      className="p-2 rounded-lg hover:bg-[#eae8e7] transition-colors"
+                                      title={showSecret ? 'Masquer' : 'Afficher'}
+                                    >
+                                      {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                    <button
+                                      onClick={() => { navigator.clipboard.writeText(s.secret); setCloseosCopiedSecret(s.id); setTimeout(() => setCloseosCopiedSecret(null), 2000); }}
+                                      className="p-2 rounded-lg hover:bg-[#eae8e7] transition-colors"
+                                      title="Copier"
+                                    >
+                                      {closeosCopiedSecret === s.id ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4" />}
+                                    </button>
+                                  </div>
+
+                                  {s.last_error && (
+                                    <p className="text-[11px] text-[#ba1a1a]">Dernière erreur : {s.last_error}</p>
+                                  )}
+                                  {s.last_triggered_at && (
+                                    <p className="text-[10px] text-[#444748]/60">Dernier envoi : {new Date(s.last_triggered_at).toLocaleString('fr-FR')}</p>
+                                  )}
+
+                                  <div className="flex justify-end gap-2">
+                                    <button
+                                      onClick={() => handleTestCloseosSub(s.id)}
+                                      disabled={closeosTesting === s.id}
+                                      className="px-4 py-2 border border-[#c4c7c7]/40 rounded-full font-bold text-xs text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                                    >
+                                      {closeosTesting === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+                                      Tester
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteCloseosSub(s.id)}
+                                      className="px-4 py-2 border border-[#c4c7c7]/40 rounded-full font-bold text-xs text-[#444748] hover:text-[#ba1a1a] hover:border-[#ba1a1a]/30 transition-colors flex items-center gap-1.5"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                      Supprimer
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Section D : Documentation inline ─────────────── */}
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
+                          <h4 className="font-bold text-lg text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Documentation</h4>
+                          <a
+                            href="/business/docs/api"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-[#1b1c1b] text-white rounded-full font-bold text-xs flex items-center gap-1.5 hover:bg-[#1b1c1b]/80 transition-colors"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Voir la documentation complète
+                          </a>
+                        </div>
+
+                        <div className="mb-6">
+                          <h5 className="font-bold text-sm mb-2 text-[#1b1c1b] dark:text-white">Évènements disponibles</h5>
+                          <ul className="text-sm space-y-1.5">
+                            {CLOSEOS_EVENT_CATALOG.map(ev => (
+                              <li key={ev.id} className="flex gap-2">
+                                <code className="text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-neutral-900 text-[#1b1c1b] dark:text-white border border-[#c4c7c7]/20 shrink-0">{ev.id}</code>
+                                <span className="text-[#444748] dark:text-neutral-300">{ev.description}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="mb-6">
+                          <h5 className="font-bold text-sm mb-2 text-[#1b1c1b] dark:text-white">Format du payload</h5>
+                          <pre className="bg-[#1b1c1b] text-[#e5e5e5] text-[12px] font-mono p-4 rounded-xl overflow-x-auto leading-relaxed">{`{
+  "event": "prospect.stage_changed",
+  "product": "business",
+  "user_id": "uuid",
+  "timestamp": "2026-04-26T12:00:00.000Z",
+  "data": {
+    /* Ligne complète business_prospects, plus pour stage_changed: */
+    "previous_stage": "qualified",
+    "new_stage": "won"
+  }
+}`}</pre>
+                        </div>
+
+                        <div>
+                          <h5 className="font-bold text-sm mb-2 text-[#1b1c1b] dark:text-white">Vérifier la signature HMAC</h5>
+                          <p className="text-sm text-[#444748] dark:text-neutral-300 mb-2">
+                            Le header <code className="text-[11px] font-mono">X-CloseOS-Signature</code> contient un HMAC-SHA256 hex de l'enveloppe complète.
+                          </p>
+                          <pre className="bg-[#1b1c1b] text-[#e5e5e5] text-[12px] font-mono p-4 rounded-xl overflow-x-auto leading-relaxed">{`import crypto from 'crypto'
+
+const sig = req.headers['x-closeos-signature']
+const expected = crypto.createHmac('sha256', SECRET)
+  .update(req.rawBody)         // exact JSON string envoyé
+  .digest('hex')
+
+if (sig !== expected) throw new Error('Invalid signature')`}</pre>
+                          <p className="text-[11px] text-[#444748]/70 mt-2">
+                            ⚠️ Ne JSON.stringifyez pas <code>req.body</code> côté receveur — utilisez le body brut tel qu'il est arrivé sur la socket. Sinon les espaces/ordres de clés peuvent diverger.
+                          </p>
+                        </div>
+                      </div>
+
+                      </>)}
                     </div>
                   )}
 
                   {/* ─── iClosed Config ─── */}
                   {selected === 'iclosed' && (
                     <div className="space-y-6">
-                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
-                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook URL</h4>
-                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-4">Collez cette URL dans <strong>iClosed → Paramètres → Développeur → Webhooks</strong></p>
-                        <div className="flex gap-2">
-                          <input type="text" value={webhookUrl} readOnly className={inputCls} />
-                          <button onClick={handleCopyWebhook} className="p-3 rounded-xl bg-[#1b1c1b] text-white hover:bg-[#1b1c1b]/80 transition-colors shrink-0">
-                            {webhookCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {!iclosedApiKey ? (
+                        <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                          <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Générer une clé API</h4>
+                          <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Quand un contact est créé ou mis à jour dans iClosed, le prospect sera créé/mis à jour automatiquement dans CloseOS.</p>
+                          <button onClick={handleGenerateIclosedKey} disabled={iclosedLoading} className="px-6 py-3 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50">
+                            {iclosedLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+                            Générer une clé API
                           </button>
                         </div>
+                      ) : (
+                        <>
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-lg mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Webhook & API Access</h4>
+                            <div className="space-y-5">
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase">Webhook URL</label>
+                                <div className="flex gap-2">
+                                  <input type="text" value={iclosedWebhookUrl} readOnly className={inputCls} />
+                                  <button onClick={() => { navigator.clipboard.writeText(iclosedWebhookUrl); setIclosedCopiedUrl(true); setTimeout(() => setIclosedCopiedUrl(false), 2000); }} className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0">
+                                    {iclosedCopiedUrl ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4 text-[#444748]" />}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-[#444748]/60 uppercase">API Key</label>
+                                <div className="flex gap-2">
+                                  <div className="relative flex-1">
+                                    <input type={iclosedShowKey ? 'text' : 'password'} value={iclosedApiKey} readOnly className={inputCls + ' pr-9'} />
+                                    <button onClick={() => setIclosedShowKey(!iclosedShowKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444748]/50 hover:text-[#1b1c1b]">
+                                      {iclosedShowKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                  </div>
+                                  <button onClick={() => { navigator.clipboard.writeText(iclosedApiKey!); setIclosedCopiedKey(true); setTimeout(() => setIclosedCopiedKey(false), 2000); }} className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0">
+                                    {iclosedCopiedKey ? <Check className="h-4 w-4 text-[#006c49]" /> : <Copy className="h-4 w-4 text-[#444748]" />}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Instructions */}
+                          <div className="border-t border-[#c4c7c7]/10 dark:border-neutral-700 pt-6">
+                            <h5 className="font-bold text-sm mb-4 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Instructions d'intégration</h5>
+                            <ul className="space-y-4">
+                              {[
+                                'Allez dans iClosed → Paramètres → Développeur → Webhooks.',
+                                'Cliquez "Add Webhook" et collez l\'URL ci-dessus.',
+                                'Sélectionnez les événements de contact (création / mise à jour de stage).',
+                              ].map((text, i) => (
+                                <li key={i} className="flex items-start gap-3">
+                                  <span className="w-5 h-5 rounded-full bg-[#efedec] text-[10px] font-bold flex items-center justify-center mt-0.5 shrink-0">{i + 1}</span>
+                                  <p className="text-sm text-[#444748]">{text}</p>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="p-4 rounded-2xl bg-[#ffb95f]/10 border border-[#ffb95f]/20">
+                            <p className="text-[11px] text-[#b87500] font-medium">
+                              Important : si le menu "Développeur" n'apparaît pas, c'est que vous n'avez pas les droits. Seul le <strong>Propriétaire</strong> de l'organisation iClosed peut configurer les Webhooks.
+                            </p>
+                          </div>
+
+                          {/* ─── Custom stage mapping ─── */}
+                          <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                            <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Mapping des stages personnalisés</h4>
+                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-2">Les stages standards iClosed (Customer, No Show, Qualified, etc.) sont reconnus automatiquement.</p>
+                            <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">Si vous avez créé des stages <strong>personnalisés</strong> dans iClosed (ex. "Demo Booked", "Hot Lead"), mappez-les ici vers un stage CloseOS — sinon ils seront classés dans <em>Prospect</em> par défaut.</p>
+
+                            <div className="space-y-3">
+                              {iclosedMappings.length === 0 && (
+                                <p className="text-xs text-[#444748]/60 italic">Aucun mapping personnalisé.</p>
+                              )}
+                              {iclosedMappings.map((m, i) => (
+                                <div key={i} className="flex gap-2 items-center">
+                                  <input
+                                    type="text"
+                                    value={m.name}
+                                    onChange={(e) => handleUpdateIclosedMapping(i, 'name', e.target.value)}
+                                    placeholder="Nom du stage iClosed (ex. Demo Booked)"
+                                    className={inputCls + ' flex-1'}
+                                  />
+                                  <span className="text-[#444748]/50 text-sm">→</span>
+                                  <select
+                                    value={m.stage}
+                                    onChange={(e) => handleUpdateIclosedMapping(i, 'stage', e.target.value)}
+                                    className={selectCls + ' w-44'}
+                                  >
+                                    <option value="prospect">Prospect</option>
+                                    <option value="qualified">Qualifié</option>
+                                    <option value="won">Gagné</option>
+                                    <option value="followup">Follow Up</option>
+                                    <option value="noshow">No Show</option>
+                                    <option value="lost">Perdu</option>
+                                  </select>
+                                  <button
+                                    onClick={() => handleRemoveIclosedMapping(i)}
+                                    className="p-3 rounded-xl hover:bg-[#eae8e7] transition-colors shrink-0 text-[#444748] hover:text-[#ba1a1a]"
+                                    title="Supprimer ce mapping"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex gap-2 mt-6">
+                              <button
+                                onClick={handleAddIclosedMapping}
+                                className="px-5 py-2.5 border border-[#c4c7c7]/30 rounded-full font-bold text-sm text-[#1b1c1b] dark:text-white hover:bg-white dark:hover:bg-neutral-700 transition-colors"
+                              >
+                                + Ajouter un mapping
+                              </button>
+                              <button
+                                onClick={handleSaveIclosedMappings}
+                                disabled={iclosedMappingSaving}
+                                className="px-5 py-2.5 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50"
+                              >
+                                {iclosedMappingSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                Enregistrer
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end">
+                            <button onClick={handleDeleteIclosedKey} disabled={iclosedLoading} className="text-xs text-[#444748] hover:text-[#ba1a1a] flex items-center gap-1 font-semibold transition-colors">
+                              <Trash2 className="h-3 w-3" /> Supprimer la clé
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {/* ─── Push key (CloseOS → iClosed) ─── */}
+                      <div className="p-8 rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/5 dark:border-neutral-700">
+                        <h4 className="font-bold text-lg mb-2 text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                          Push CloseOS → iClosed
+                        </h4>
+                        <p className="text-[#444748] dark:text-neutral-300 text-sm mb-6">
+                          Collez votre clé iClosed personnelle (commençant par <code>iclosed_</code>) pour que les changements de stage CloseOS remontent automatiquement vers iClosed (contact, deal, outcome).
+                        </p>
+
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-[#444748]/60 uppercase">Clé API iClosed</label>
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <input
+                                type={iclosedPushShowKey ? 'text' : 'password'}
+                                value={iclosedPushKey}
+                                onChange={(e) => setIclosedPushKey(e.target.value)}
+                                placeholder="iclosed_..."
+                                className={inputCls + ' pr-9'}
+                              />
+                              <button onClick={() => setIclosedPushShowKey(!iclosedPushShowKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444748]/50 hover:text-[#1b1c1b]">
+                                {iclosedPushShowKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 mt-6">
+                          <button
+                            onClick={handleTestIclosedPushKey}
+                            disabled={iclosedPushKeyTesting}
+                            className="px-5 py-2.5 border border-[#c4c7c7]/30 rounded-full font-bold text-sm text-[#1b1c1b] dark:text-white hover:bg-white dark:hover:bg-neutral-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {iclosedPushKeyTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                            Tester la connexion
+                          </button>
+                          <button
+                            onClick={handleSaveIclosedPushKey}
+                            disabled={iclosedPushKeySaving}
+                            className="px-5 py-2.5 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50"
+                          >
+                            {iclosedPushKeySaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                            Enregistrer
+                          </button>
+                        </div>
+
+                        <p className="text-[11px] text-[#444748]/70 mt-4">
+                          Trouvez cette clé dans iClosed → <strong>Settings</strong> → <strong>Developer</strong> → <strong>API Keys</strong> → <em>Create API Key</em>. Nécessite un plan Business ou Enterprise iClosed.
+                        </p>
+
+                        {/* Sync now */}
+                        <div className="mt-6 pt-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
+                          <h5 className="text-sm font-bold text-[#1b1c1b] dark:text-white mb-2">Synchronisation initiale</h5>
+                          <p className="text-[#444748] dark:text-neutral-300 text-xs mb-4">
+                            Importez les contacts et RDV iClosed déjà existants dans CloseOS. Les exécutions suivantes ne réimportent que les nouveautés (idempotent par <code>external_id</code>).
+                          </p>
+                          <button
+                            onClick={handleSyncIclosedNow}
+                            disabled={iclosedSyncing || !iclosedPushKey || !iclosedPushKey.startsWith('iclosed_')}
+                            className="px-5 py-2.5 bg-[#1b1c1b] text-white rounded-full font-bold text-sm flex items-center gap-2 hover:bg-[#1b1c1b]/80 transition-colors disabled:opacity-50"
+                          >
+                            {iclosedSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                            Synchroniser maintenant
+                          </button>
+                          {iclosedSyncResult && (
+                            <p className="text-[11px] text-[#006c49] font-semibold mt-3">
+                              ✓ {iclosedSyncResult.imported} importés, {iclosedSyncResult.updated} mis à jour
+                            </p>
+                          )}
+                        </div>
                       </div>
+
+                      <BusinessCRMAutoAssignBlock provider="iclosed" providerLabel="iClosed" />
                     </div>
                   )}
 
@@ -1024,6 +1941,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                           )}
                         </>
                       )}
+                      <BusinessCRMAutoAssignBlock provider="hubspot" providerLabel="HubSpot" />
                     </div>
                   )}
 
@@ -1089,6 +2007,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                           </div>
                         </>
                       )}
+                      <BusinessCRMAutoAssignBlock provider="pipedrive" providerLabel="Pipedrive" />
                     </div>
                   )}
 
@@ -1145,6 +2064,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                           ))}
                         </ul>
                       </div>
+                      <BusinessCRMAutoAssignBlock provider="systemeio" providerLabel="Systeme.io" />
                     </div>
                   )}
 
@@ -1197,6 +2117,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                           </div>
                         </>
                       )}
+                      <BusinessCRMAutoAssignBlock provider="zapier" providerLabel="Zapier" />
                     </div>
                   )}
 
@@ -1249,6 +2170,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                           </div>
                         </>
                       )}
+                      <BusinessCRMAutoAssignBlock provider="make" providerLabel="Make" />
                     </div>
                   )}
 
@@ -1318,6 +2240,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                           </div>
                         </>
                       )}
+                      <BusinessCRMAutoAssignBlock provider="n8n" providerLabel="n8n" />
                     </div>
                   )}
 
@@ -1391,6 +2314,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                           </div>
                         </>
                       )}
+                      <BusinessCRMAutoAssignBlock provider="calendly" providerLabel="Calendly" />
                     </div>
                   )}
 
@@ -1505,6 +2429,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                           )}
                         </>
                       )}
+                      <BusinessCRMAutoAssignBlock provider="airtable" providerLabel="Airtable" />
                     </div>
                   )}
                   {/* ─── GHL Config ─── */}
@@ -1582,6 +2507,7 @@ Le séparateur doit être une virgule. Les champs contenant des virgules doivent
                           </div>
                         </>
                       )}
+                      <BusinessCRMAutoAssignBlock provider="ghl" providerLabel="GoHighLevel" />
                     </div>
                   )}
 

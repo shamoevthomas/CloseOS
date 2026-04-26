@@ -6,7 +6,7 @@ import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
   ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save, Video, Globe,
   Settings, Trash2, Bell, Code2, FileText, ChevronRight, ToggleLeft, ToggleRight, Pencil, Phone, Hash, List, Type,
-  ClipboardList, ChevronUp,
+  ClipboardList, ChevronUp, CreditCard, Info, AlertTriangle, Minus,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -71,6 +71,15 @@ interface BookingLink {
   questionnaire_enabled: boolean
   questionnaire_required: boolean
   questionnaire_questions: BookingQuestion[]
+  stripe_enabled?: boolean
+  stripe_price?: number
+  stripe_currency?: string
+  refund_enabled?: boolean
+  refund_tiers?: { days: number; percent: number }[]
+  reschedule_enabled?: boolean
+  reschedule_paid?: boolean
+  reschedule_price?: number
+  reschedule_currency?: string
   created_at: string
 }
 
@@ -101,6 +110,263 @@ function parseBookingNotes(notes: string | null): { name: string; email?: string
 }
 
 const API_URL = '/api/business'
+
+interface PaymentConfigPopupProps {
+  open: boolean
+  onClose: () => void
+  stripeConnected: boolean
+  enabled: boolean
+  setEnabled: (v: boolean) => void
+  price: number
+  setPrice: (v: number) => void
+  currency: string
+  setCurrency: (v: string) => void
+  refundEnabled: boolean
+  setRefundEnabled: (v: boolean) => void
+  refundTiers: { days: number; percent: number }[]
+  setRefundTiers: (v: { days: number; percent: number }[]) => void
+  rescheduleEnabled: boolean
+  setRescheduleEnabled: (v: boolean) => void
+  reschedulePaid: boolean
+  setReschedulePaid: (v: boolean) => void
+  reschedulePrice: number
+  setReschedulePrice: (v: number) => void
+  rescheduleCurrency: string
+  setRescheduleCurrency: (v: string) => void
+}
+
+function PaymentConfigPopup(p: PaymentConfigPopupProps) {
+  if (!p.open) return null
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={p.onClose}>
+      <div className="bg-white dark:bg-neutral-900 rounded-[2rem] p-8 w-full max-w-lg mx-4 shadow-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6 shrink-0">
+          <h3 className="text-lg font-extrabold text-[#1b1c1b] dark:text-white flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <CreditCard className="h-5 w-5" /> Configurer le paiement
+          </h3>
+          <button onClick={p.onClose} className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/5">
+            <X className="w-4 h-4 text-neutral-400" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-6">
+          {/* Master toggle */}
+          <div className="flex items-center justify-between p-5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800">
+            <div className="flex items-center gap-3">
+              <CreditCard className="h-5 w-5 text-[#635bff]" />
+              <div>
+                <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">Activer le paiement Stripe</p>
+                {!p.stripeConnected && (
+                  <p className="text-[10px] text-[#ba1a1a] mt-0.5">Stripe non connecté — connecte-toi dans Paramètres</p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => { if (p.stripeConnected) p.setEnabled(!p.enabled) }}
+              className="relative"
+            >
+              <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${p.enabled && p.stripeConnected ? 'bg-[#635bff]/20' : 'bg-[#eae8e7] dark:bg-neutral-700'}`}>
+                <div className={`w-3 h-3 rounded-full absolute transition-all ${p.enabled && p.stripeConnected ? 'bg-[#635bff] right-1' : 'bg-[#747878] left-1'}`} />
+              </div>
+            </button>
+          </div>
+
+          {!p.stripeConnected && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-4 flex items-start gap-3">
+              <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+              <p className="text-xs text-amber-800 dark:text-amber-200">Connecte d'abord ton compte Stripe dans les paramètres pour activer les paiements sur ce lien de réservation.</p>
+            </div>
+          )}
+
+          {p.enabled && p.stripeConnected && (
+            <>
+              {/* Price + Currency */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Prix</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={p.price || ''}
+                    onChange={(e) => p.setPrice(parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Devise</label>
+                  <div className="relative">
+                    <select
+                      value={p.currency}
+                      onChange={(e) => p.setCurrency(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49] appearance-none"
+                    >
+                      <option value="eur">EUR (€)</option>
+                      <option value="usd">USD ($)</option>
+                      <option value="gbp">GBP (£)</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* 2% fee notice */}
+              <div className="flex items-center gap-2 rounded-xl bg-[#635bff]/5 dark:bg-[#635bff]/10 px-4 py-3">
+                <Info className="h-4 w-4 text-[#635bff] shrink-0" />
+                <p className="text-xs text-[#635bff] font-medium">Frais CloseOS : 2% sur chaque paiement (en plus des frais Stripe)</p>
+              </div>
+
+              {/* Refund */}
+              <div className="space-y-4 pt-2 border-t border-[#c4c7c7]/20 dark:border-neutral-700/30">
+                <div className="flex items-center justify-between pt-4">
+                  <label className="text-xs font-bold text-[#444748] dark:text-neutral-400">Remboursement automatique</label>
+                  <button onClick={() => p.setRefundEnabled(!p.refundEnabled)} className="relative">
+                    <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${p.refundEnabled ? 'bg-[#006c49]/20' : 'bg-[#eae8e7] dark:bg-neutral-700'}`}>
+                      <div className={`w-3 h-3 rounded-full absolute transition-all ${p.refundEnabled ? 'bg-[#006c49] right-1' : 'bg-[#747878] left-1'}`} />
+                    </div>
+                  </button>
+                </div>
+
+                {p.refundEnabled && (
+                  <div className="space-y-3 pl-1">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">Paliers de remboursement</label>
+                    {p.refundTiers.map((tier, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={tier.days}
+                          onChange={(e) => {
+                            const tiers = [...p.refundTiers]
+                            tiers[idx] = { ...tiers[idx], days: parseInt(e.target.value) || 0 }
+                            p.setRefundTiers(tiers)
+                          }}
+                          className="w-16 text-center px-2 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
+                        />
+                        <span className="text-[10px] text-[#444748] dark:text-neutral-400 whitespace-nowrap">jours avant</span>
+                        <span className="text-[#444748]/30">→</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={tier.percent}
+                          onChange={(e) => {
+                            const tiers = [...p.refundTiers]
+                            tiers[idx] = { ...tiers[idx], percent: parseInt(e.target.value) || 0 }
+                            p.setRefundTiers(tiers)
+                          }}
+                          className="w-16 text-center px-2 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
+                        />
+                        <span className="text-[10px] text-[#444748] dark:text-neutral-400">%</span>
+                        <button
+                          type="button"
+                          onClick={() => p.setRefundTiers(p.refundTiers.filter((_, i) => i !== idx))}
+                          className="p-1 text-[#ba1a1a]/60 hover:text-[#ba1a1a] transition-colors"
+                          title="Retirer ce palier"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => p.setRefundTiers([...p.refundTiers, { days: 7, percent: 100 }])}
+                      className="text-xs font-bold text-[#006c49] hover:underline flex items-center gap-1"
+                    >
+                      <Plus className="h-3 w-3" /> Ajouter un palier
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Reschedule */}
+              <div className="space-y-4 pt-2 border-t border-[#c4c7c7]/20 dark:border-neutral-700/30">
+                <div className="flex items-center justify-between pt-4">
+                  <label className="text-xs font-bold text-[#444748] dark:text-neutral-400">Replanification autorisée</label>
+                  <button onClick={() => p.setRescheduleEnabled(!p.rescheduleEnabled)} className="relative">
+                    <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${p.rescheduleEnabled ? 'bg-[#006c49]/20' : 'bg-[#eae8e7] dark:bg-neutral-700'}`}>
+                      <div className={`w-3 h-3 rounded-full absolute transition-all ${p.rescheduleEnabled ? 'bg-[#006c49] right-1' : 'bg-[#747878] left-1'}`} />
+                    </div>
+                  </button>
+                </div>
+
+                {p.rescheduleEnabled && (
+                  <div className="space-y-3 pl-1">
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => p.setReschedulePaid(false)}
+                        className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                          !p.reschedulePaid
+                            ? 'bg-[#006c49]/10 text-[#006c49] border-2 border-[#006c49]'
+                            : 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border border-[#c4c7c7]/30 dark:border-neutral-700'
+                        }`}
+                      >
+                        Gratuite
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => p.setReschedulePaid(true)}
+                        className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                          p.reschedulePaid
+                            ? 'bg-[#635bff]/10 text-[#635bff] border-2 border-[#635bff]'
+                            : 'bg-[#f5f3f2] dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border border-[#c4c7c7]/30 dark:border-neutral-700'
+                        }`}
+                      >
+                        Payante
+                      </button>
+                    </div>
+                    {p.reschedulePaid && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Prix replanif.</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={p.reschedulePrice || ''}
+                            onChange={(e) => p.setReschedulePrice(parseFloat(e.target.value) || 0)}
+                            placeholder="0.00"
+                            className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">Devise</label>
+                          <div className="relative">
+                            <select
+                              value={p.rescheduleCurrency}
+                              onChange={(e) => p.setRescheduleCurrency(e.target.value)}
+                              className="w-full px-4 py-2.5 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49] appearance-none"
+                            >
+                              <option value="eur">EUR (€)</option>
+                              <option value="usd">USD ($)</option>
+                              <option value="gbp">GBP (£)</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-[#c4c7c7]/20 dark:border-neutral-700/30 shrink-0">
+          <button
+            onClick={p.onClose}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1b1c1b] dark:bg-white dark:text-neutral-900 text-white text-xs font-bold hover:shadow-md transition-all"
+          >
+            <CheckCircle2 className="h-3 w-3" /> OK
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function BusinessAppointments() {
   const { user, isTeamMember, ownerUserId, teamMember, userTimezone, isSolo } = useBusinessAuth()
@@ -194,6 +460,17 @@ export function BusinessAppointments() {
   const [newLinkQuestionnaireRequired, setNewLinkQuestionnaireRequired] = useState(false)
   const [newLinkQuestionnaireQuestions, setNewLinkQuestionnaireQuestions] = useState<BookingQuestion[]>([])
   const [showNewLinkQuestionnairePopup, setShowNewLinkQuestionnairePopup] = useState(false)
+  const [newLinkStripeEnabled, setNewLinkStripeEnabled] = useState(false)
+  const [newLinkStripePrice, setNewLinkStripePrice] = useState(0)
+  const [newLinkStripeCurrency, setNewLinkStripeCurrency] = useState('eur')
+  const [newLinkRefundEnabled, setNewLinkRefundEnabled] = useState(false)
+  const [newLinkRefundTiers, setNewLinkRefundTiers] = useState<{ days: number; percent: number }[]>([])
+  const [newLinkRescheduleEnabled, setNewLinkRescheduleEnabled] = useState(false)
+  const [newLinkReschedulePaid, setNewLinkReschedulePaid] = useState(false)
+  const [newLinkReschedulePrice, setNewLinkReschedulePrice] = useState(0)
+  const [newLinkRescheduleCurrency, setNewLinkRescheduleCurrency] = useState('eur')
+  const [showNewLinkPaymentPopup, setShowNewLinkPaymentPopup] = useState(false)
+  const [stripeConnected, setStripeConnected] = useState(false)
   const [savingLink, setSavingLink] = useState(false)
 
   // Detail popup
@@ -231,6 +508,17 @@ export function BusinessAppointments() {
       .eq('business_owner_id', effectiveUserId)
       .order('created_at', { ascending: true })
       .then(({ data }) => setReminders(data || []))
+  }, [effectiveUserId])
+
+  // Fetch Stripe connected status
+  useEffect(() => {
+    if (!effectiveUserId) return
+    supabase
+      .from('profiles')
+      .select('stripe_connected')
+      .eq('id', effectiveUserId)
+      .maybeSingle()
+      .then(({ data }) => setStripeConnected(!!data?.stripe_connected))
   }, [effectiveUserId])
 
   const handleSaveReminder = async (reminder: ReminderConfig) => {
@@ -389,6 +677,15 @@ export function BusinessAppointments() {
         questionnaire_enabled: newLinkQuestionnaireEnabled,
         questionnaire_required: newLinkQuestionnaireRequired,
         questionnaire_questions: newLinkQuestionnaireQuestions,
+        stripe_enabled: newLinkStripeEnabled,
+        stripe_price: Math.round(newLinkStripePrice * 100),
+        stripe_currency: newLinkStripeCurrency,
+        refund_enabled: newLinkRefundEnabled,
+        refund_tiers: newLinkRefundTiers,
+        reschedule_enabled: newLinkRescheduleEnabled,
+        reschedule_paid: newLinkReschedulePaid,
+        reschedule_price: Math.round(newLinkReschedulePrice * 100),
+        reschedule_currency: newLinkRescheduleCurrency,
         link: bookingUrl,
         slug,
       })
@@ -412,6 +709,15 @@ export function BusinessAppointments() {
     setNewLinkQuestionnaireEnabled(false)
     setNewLinkQuestionnaireRequired(false)
     setNewLinkQuestionnaireQuestions([])
+    setNewLinkStripeEnabled(false)
+    setNewLinkStripePrice(0)
+    setNewLinkStripeCurrency('eur')
+    setNewLinkRefundEnabled(false)
+    setNewLinkRefundTiers([])
+    setNewLinkRescheduleEnabled(false)
+    setNewLinkReschedulePaid(false)
+    setNewLinkReschedulePrice(0)
+    setNewLinkRescheduleCurrency('eur')
     toast.success(t.appointments_booking_link_created)
   }
 
@@ -438,6 +744,16 @@ export function BusinessAppointments() {
   const [editQuestionnaireRequired, setEditQuestionnaireRequired] = useState(false)
   const [editQuestionnaireQuestions, setEditQuestionnaireQuestions] = useState<BookingQuestion[]>([])
   const [showQuestionnairePopup, setShowQuestionnairePopup] = useState(false)
+  const [editStripeEnabled, setEditStripeEnabled] = useState(false)
+  const [editStripePrice, setEditStripePrice] = useState(0)
+  const [editStripeCurrency, setEditStripeCurrency] = useState('eur')
+  const [editRefundEnabled, setEditRefundEnabled] = useState(false)
+  const [editRefundTiers, setEditRefundTiers] = useState<{ days: number; percent: number }[]>([])
+  const [editRescheduleEnabled, setEditRescheduleEnabled] = useState(false)
+  const [editReschedulePaid, setEditReschedulePaid] = useState(false)
+  const [editReschedulePrice, setEditReschedulePrice] = useState(0)
+  const [editRescheduleCurrency, setEditRescheduleCurrency] = useState('eur')
+  const [showEditPaymentPopup, setShowEditPaymentPopup] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
 
   const handleStartEdit = (bl: BookingLink) => {
@@ -456,34 +772,21 @@ export function BusinessAppointments() {
     setEditQuestionnaireEnabled(bl.questionnaire_enabled ?? false)
     setEditQuestionnaireRequired(bl.questionnaire_required ?? false)
     setEditQuestionnaireQuestions(bl.questionnaire_questions || [])
+    setEditStripeEnabled(bl.stripe_enabled ?? false)
+    setEditStripePrice((bl.stripe_price ?? 0) / 100)
+    setEditStripeCurrency(bl.stripe_currency || 'eur')
+    setEditRefundEnabled(bl.refund_enabled ?? false)
+    setEditRefundTiers(bl.refund_tiers || [])
+    setEditRescheduleEnabled(bl.reschedule_enabled ?? false)
+    setEditReschedulePaid(bl.reschedule_paid ?? false)
+    setEditReschedulePrice((bl.reschedule_price ?? 0) / 100)
+    setEditRescheduleCurrency(bl.reschedule_currency || 'eur')
   }
 
   const handleSaveEdit = async () => {
     if (!editingLink || !editLabel.trim()) return
     setSavingEdit(true)
-    const { error } = await supabase
-      .from('business_booking_links')
-      .update({
-        label: editLabel.trim(),
-        duration: editDuration,
-        description: editDescription.trim() || null,
-        redirect_url: editRedirectUrl.trim() || null,
-        team_member_id: editMemberId || null,
-        email_enabled: editEmailEnabled,
-        email_required: editEmailRequired,
-        phone_enabled: editPhoneEnabled,
-        phone_required: editPhoneRequired,
-        google_meet_enabled: editGoogleMeetEnabled,
-        custom_fields: editCustomFields,
-        questionnaire_enabled: editQuestionnaireEnabled,
-        questionnaire_required: editQuestionnaireRequired,
-        questionnaire_questions: editQuestionnaireQuestions,
-      })
-      .eq('id', editingLink.id)
-    setSavingEdit(false)
-    if (error) { toast.error(t.appointments_update_error); return }
-    setBookingLinks(prev => prev.map(l => l.id === editingLink.id ? {
-      ...l,
+    const updatePayload = {
       label: editLabel.trim(),
       duration: editDuration,
       description: editDescription.trim() || null,
@@ -498,7 +801,23 @@ export function BusinessAppointments() {
       questionnaire_enabled: editQuestionnaireEnabled,
       questionnaire_required: editQuestionnaireRequired,
       questionnaire_questions: editQuestionnaireQuestions,
-    } : l))
+      stripe_enabled: editStripeEnabled,
+      stripe_price: Math.round(editStripePrice * 100),
+      stripe_currency: editStripeCurrency,
+      refund_enabled: editRefundEnabled,
+      refund_tiers: editRefundTiers,
+      reschedule_enabled: editRescheduleEnabled,
+      reschedule_paid: editReschedulePaid,
+      reschedule_price: Math.round(editReschedulePrice * 100),
+      reschedule_currency: editRescheduleCurrency,
+    }
+    const { error } = await supabase
+      .from('business_booking_links')
+      .update(updatePayload)
+      .eq('id', editingLink.id)
+    setSavingEdit(false)
+    if (error) { toast.error(t.appointments_update_error); return }
+    setBookingLinks(prev => prev.map(l => l.id === editingLink.id ? { ...l, ...updatePayload } : l))
     setEditingLink(null)
     toast.success(t.appointments_link_updated)
   }
@@ -1858,6 +2177,24 @@ export function BusinessAppointments() {
                     )}
                   </div>
                 </div>
+                {/* Paiement */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Paiement</label>
+                  <button
+                    onClick={() => setShowNewLinkPaymentPopup(true)}
+                    className="w-full flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5 hover:bg-[#f5f3f2]/60 dark:hover:bg-neutral-800/70 transition-colors"
+                  >
+                    <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2">
+                      <CreditCard className="h-3.5 w-3.5 text-[#444748]/50" />Activer le paiement
+                    </span>
+                    <span className="text-xs font-bold flex items-center gap-2">
+                      {newLinkStripeEnabled
+                        ? <span className="text-[#635bff]">{newLinkStripePrice.toFixed(2).replace('.00', '')}{newLinkStripeCurrency === 'eur' ? '€' : ' ' + newLinkStripeCurrency.toUpperCase()}</span>
+                        : <span className="text-[#444748]/40">Désactivé</span>}
+                      <ChevronRight className="h-3.5 w-3.5 text-[#444748]/30" />
+                    </span>
+                  </button>
+                </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <button
                     onClick={() => setShowCreateLink(false)}
@@ -1876,6 +2213,31 @@ export function BusinessAppointments() {
                 </div>
               </div>
             )}
+
+            {/* New Link Payment Configuration Popup */}
+            <PaymentConfigPopup
+              open={showNewLinkPaymentPopup}
+              onClose={() => setShowNewLinkPaymentPopup(false)}
+              stripeConnected={stripeConnected}
+              enabled={newLinkStripeEnabled}
+              setEnabled={setNewLinkStripeEnabled}
+              price={newLinkStripePrice}
+              setPrice={setNewLinkStripePrice}
+              currency={newLinkStripeCurrency}
+              setCurrency={setNewLinkStripeCurrency}
+              refundEnabled={newLinkRefundEnabled}
+              setRefundEnabled={setNewLinkRefundEnabled}
+              refundTiers={newLinkRefundTiers}
+              setRefundTiers={setNewLinkRefundTiers}
+              rescheduleEnabled={newLinkRescheduleEnabled}
+              setRescheduleEnabled={setNewLinkRescheduleEnabled}
+              reschedulePaid={newLinkReschedulePaid}
+              setReschedulePaid={setNewLinkReschedulePaid}
+              reschedulePrice={newLinkReschedulePrice}
+              setReschedulePrice={setNewLinkReschedulePrice}
+              rescheduleCurrency={newLinkRescheduleCurrency}
+              setRescheduleCurrency={setNewLinkRescheduleCurrency}
+            />
 
             {/* New Link Questionnaire Configuration Popup */}
             {showNewLinkQuestionnairePopup && (
@@ -2009,7 +2371,7 @@ export function BusinessAppointments() {
                   </div>
                   <div className="mt-4 shrink-0 space-y-3">
                     <button
-                      onClick={() => setNewLinkQuestionnaireQuestions(prev => [...prev, { question_text: '', question_type: 'text', is_required: false, options: [], sort_order: prev.length }])}
+                      onClick={() => setNewLinkQuestionnaireQuestions(prev => [...prev, { question_text: '', question_type: 'text', is_required: true, options: [], sort_order: prev.length }])}
                       className="w-full flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700/30 py-2.5 text-xs font-bold text-[#444748] dark:text-neutral-400 hover:border-[#006c49]/30 hover:text-[#006c49] transition-all"
                     >
                       <Plus className="h-3.5 w-3.5" /> Ajouter une question
@@ -2317,6 +2679,24 @@ export function BusinessAppointments() {
                   )}
                 </div>
               </div>
+              {/* Paiement */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Paiement</label>
+                <button
+                  onClick={() => setShowEditPaymentPopup(true)}
+                  className="w-full flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5 hover:bg-[#f5f3f2]/60 dark:hover:bg-neutral-800/70 transition-colors"
+                >
+                  <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2">
+                    <CreditCard className="h-3.5 w-3.5 text-[#444748]/50" />Activer le paiement
+                  </span>
+                  <span className="text-xs font-bold flex items-center gap-2">
+                    {editStripeEnabled
+                      ? <span className="text-[#635bff]">{editStripePrice.toFixed(2).replace('.00', '')}{editStripeCurrency === 'eur' ? '€' : ' ' + editStripeCurrency.toUpperCase()}</span>
+                      : <span className="text-[#444748]/40">Désactivé</span>}
+                    <ChevronRight className="h-3.5 w-3.5 text-[#444748]/30" />
+                  </span>
+                </button>
+              </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   onClick={() => setEditingLink(null)}
@@ -2337,6 +2717,31 @@ export function BusinessAppointments() {
           </div>
         </div>
       )}
+
+      {/* Edit Payment Configuration Popup */}
+      <PaymentConfigPopup
+        open={showEditPaymentPopup}
+        onClose={() => setShowEditPaymentPopup(false)}
+        stripeConnected={stripeConnected}
+        enabled={editStripeEnabled}
+        setEnabled={setEditStripeEnabled}
+        price={editStripePrice}
+        setPrice={setEditStripePrice}
+        currency={editStripeCurrency}
+        setCurrency={setEditStripeCurrency}
+        refundEnabled={editRefundEnabled}
+        setRefundEnabled={setEditRefundEnabled}
+        refundTiers={editRefundTiers}
+        setRefundTiers={setEditRefundTiers}
+        rescheduleEnabled={editRescheduleEnabled}
+        setRescheduleEnabled={setEditRescheduleEnabled}
+        reschedulePaid={editReschedulePaid}
+        setReschedulePaid={setEditReschedulePaid}
+        reschedulePrice={editReschedulePrice}
+        setReschedulePrice={setEditReschedulePrice}
+        rescheduleCurrency={editRescheduleCurrency}
+        setRescheduleCurrency={setEditRescheduleCurrency}
+      />
 
       {/* Questionnaire Configuration Popup */}
       {showQuestionnairePopup && (
@@ -2473,7 +2878,7 @@ export function BusinessAppointments() {
             </div>
             <div className="mt-4 shrink-0 space-y-3">
               <button
-                onClick={() => setEditQuestionnaireQuestions(prev => [...prev, { question_text: '', question_type: 'text', is_required: false, options: [], sort_order: prev.length }])}
+                onClick={() => setEditQuestionnaireQuestions(prev => [...prev, { question_text: '', question_type: 'text', is_required: true, options: [], sort_order: prev.length }])}
                 className="w-full flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700/30 py-2.5 text-xs font-bold text-[#444748] dark:text-neutral-400 hover:border-[#006c49]/30 hover:text-[#006c49] transition-all"
               >
                 <Plus className="h-3.5 w-3.5" /> Ajouter une question

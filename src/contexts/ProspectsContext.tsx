@@ -595,6 +595,57 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Push to iClosed (Sales side, per-offer config)
+  const pushToIclosedIfNeeded = async (
+    prospect: any,
+    action: 'upsert' | 'stage_change' | 'delete' = 'stage_change',
+    previousStage?: string,
+  ) => {
+    if (!user) return
+    try {
+      let offerId: number | null = prospect.offer_id || null
+      let pushKey: string | null = null
+      if (offerId) {
+        const { data } = await supabase
+          .from('offers')
+          .select('crm_provider, iclosed_push_key')
+          .eq('id', offerId)
+          .maybeSingle()
+        if (data?.crm_provider !== 'iclosed') return
+        pushKey = data?.iclosed_push_key || null
+      } else if (prospect.offer) {
+        const offerName = prospect.offer.split(' - ')[0]?.trim()
+        if (offerName) {
+          const { data } = await supabase
+            .from('offers')
+            .select('id, crm_provider, iclosed_push_key')
+            .eq('user_id', user.id)
+            .ilike('name', offerName)
+            .maybeSingle()
+          if (data?.crm_provider !== 'iclosed') return
+          offerId = data?.id || null
+          pushKey = data?.iclosed_push_key || null
+        }
+      }
+      if (!offerId || !pushKey) return
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) return
+      void fetch('/api/webhooks?action=iclosed-sales-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ prospectId: prospect.id, offerId, action, previousStage }),
+      }).then(r => r.json()).then(json => {
+        if (json && json.ok === false && json.code === 'auth') {
+          toast.error(getLang() === 'fr' ? 'Clé iClosed invalide ou expirée' : 'Invalid or expired iClosed key', { id: 'iclosed-push-error' })
+        }
+      }).catch(err => console.error('[iClosed Sales] Push error:', err))
+    } catch (err) {
+      console.error('[iClosed Sales] Push check error:', err)
+    }
+  }
+
   const addProspect = async (prospect: Omit<Prospect, 'id' | 'user_id'>) => {
     if (!user) return
 
@@ -617,6 +668,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       pushToGhlIfNeeded(data[0])
       pushToSystemeioIfNeeded(data[0])
       pushToAirtableIfNeeded(data[0])
+      pushToIclosedIfNeeded(data[0], 'upsert')
     }
   }
 
@@ -646,11 +698,13 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       pushToGhlIfNeeded(data[0])
       pushToSystemeioIfNeeded(data[0], prevStage)
       pushToAirtableIfNeeded(data[0])
+      pushToIclosedIfNeeded(data[0], 'stage_change', prevStage)
     }
   }
 
   const deleteProspect = async (id: number) => {
     const previousProspects = prospects
+    const removed = previousProspects.find(p => p.id === id) || null
     setProspects(prev => prev.filter(p => p.id !== id))
 
     const { error } = await withRetry(
@@ -661,7 +715,11 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     if (error) {
       setProspects(previousProspects)
       toast.error(getLang() === 'fr' ? 'Impossible de supprimer le prospect. Veuillez réessayer.' : 'Unable to delete prospect. Please try again.')
+      return
     }
+
+    // Mirror to iClosed (sets contact status = DISQUALIFIED — iClosed has no DELETE)
+    if (removed) pushToIclosedIfNeeded(removed, 'delete')
   }
 
   return (

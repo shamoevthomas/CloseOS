@@ -140,6 +140,16 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const [n8nCopiedKey, setN8nCopiedKey] = useState(false)
   const [n8nShowKey, setN8nShowKey] = useState(false)
 
+  // États iClosed
+  const [iclosedTesting, setIclosedTesting] = useState(false)
+  const [iclosedRegenerating, setIclosedRegenerating] = useState(false)
+  const [iclosedShowPushKey, setIclosedShowPushKey] = useState(false)
+  const [iclosedCopiedUrl, setIclosedCopiedUrl] = useState(false)
+  const [iclosedCopiedKey, setIclosedCopiedKey] = useState(false)
+  const [iclosedMappingRows, setIclosedMappingRows] = useState<Array<{ name: string; stage: string }>>([])
+  const [iclosedSyncing, setIclosedSyncing] = useState(false)
+  const [iclosedSyncResult, setIclosedSyncResult] = useState<{ imported: number; updated: number } | null>(null)
+
   const [editedOffer, setEditedOffer] = useState<Offer>(() => {
     if (!offer.formulas || offer.formulas.length === 0) {
       return {
@@ -456,6 +466,125 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
     }
     load()
   }, [editedOffer.crmProvider, user])
+
+  // ── iClosed: load mapping rows from editedOffer when modal opens / provider changes ──
+  useEffect(() => {
+    if (editedOffer.crmProvider !== 'iclosed') return
+    const raw = editedOffer.iclosedStageMapping
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      setIclosedMappingRows(Object.entries(raw).map(([name, stage]) => ({ name, stage: String(stage) })))
+    } else {
+      setIclosedMappingRows([])
+    }
+  }, [editedOffer.crmProvider, editedOffer.id, editedOffer.iclosedStageMapping])
+
+  const iclosedInboundUrl = editedOffer.crmApiKey
+    ? `${baseUrl}/api/webhooks?action=iclosed-sales-webhook&offer_id=${editedOffer.id}&api_key=${editedOffer.crmApiKey}`
+    : ''
+
+  const handleRegenerateIclosedInboundKey = async () => {
+    setIclosedRegenerating(true)
+    try {
+      const arr = new Uint8Array(32)
+      crypto.getRandomValues(arr)
+      const newKey = 'ic_' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('')
+      setEditedOffer({ ...editedOffer, crmApiKey: newKey })
+      await supabase.from('offers').update({ crm_api_key: newKey }).eq('id', editedOffer.id)
+    } finally {
+      setIclosedRegenerating(false)
+    }
+  }
+
+  const handleTestIclosedPushKey = async () => {
+    setIclosedTesting(true)
+    try {
+      const candidate = (editedOffer.iclosedPushKey || '').trim()
+      if (candidate && !candidate.startsWith('iclosed_')) {
+        alert(lang === 'fr' ? 'La clé doit commencer par "iclosed_"' : 'Key must start with "iclosed_"')
+        return
+      }
+      const { data: { session } } = await supabase.auth.getSession()
+      const accessToken = session?.access_token
+      if (!accessToken) {
+        alert(lang === 'fr' ? 'Session expirée — reconnectez-vous' : 'Session expired — sign in again')
+        return
+      }
+      const res = await fetch('/api/webhooks?action=iclosed-sales-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ offer_id: editedOffer.id, api_key: candidate || undefined }),
+      })
+      const json = await res.json()
+      if (json?.ok) {
+        alert(lang === 'fr' ? 'Connexion iClosed OK' : 'iClosed connection OK')
+      } else {
+        const code = json?.code || 'unknown'
+        const msg =
+          code === 'auth' ? (lang === 'fr' ? 'Clé iClosed invalide ou expirée' : 'Invalid or expired iClosed key') :
+          code === 'config' ? (lang === 'fr' ? 'Aucune clé iClosed configurée' : 'No iClosed key configured') :
+          code === 'rate_limit' ? (lang === 'fr' ? 'Limite iClosed atteinte, réessayez' : 'iClosed rate-limited, retry') :
+          (json?.message || (lang === 'fr' ? 'Échec de la connexion' : 'Connection failed'))
+        alert(msg)
+      }
+    } finally {
+      setIclosedTesting(false)
+    }
+  }
+
+  const handleAddIclosedMappingRow = () => {
+    setIclosedMappingRows(prev => [...prev, { name: '', stage: 'prospect' }])
+  }
+  const handleRemoveIclosedMappingRow = (index: number) => {
+    setIclosedMappingRows(prev => prev.filter((_, i) => i !== index))
+  }
+  const handleUpdateIclosedMappingRow = (index: number, field: 'name' | 'stage', value: string) => {
+    setIclosedMappingRows(prev => prev.map((m, i) => i === index ? { ...m, [field]: value } : m))
+  }
+  const handleSaveIclosedMapping = () => {
+    const obj: Record<string, string> = {}
+    for (const m of iclosedMappingRows) {
+      const k = (m.name || '').trim()
+      if (!k) continue
+      obj[k] = m.stage
+    }
+    setEditedOffer({ ...editedOffer, iclosedStageMapping: obj })
+  }
+
+  const handleSyncIclosedNow = async () => {
+    setIclosedSyncing(true)
+    setIclosedSyncResult(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const accessToken = session?.access_token
+      if (!accessToken) {
+        alert(lang === 'fr' ? 'Session expirée — reconnectez-vous' : 'Session expired — sign in again')
+        return
+      }
+      let totalImported = 0
+      let totalUpdated = 0
+      let nextPage: number | null = 0
+      for (let safety = 0; safety < 20; safety++) {
+        const res = await fetch('/api/webhooks?action=iclosed-sync-sales', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ offer_id: editedOffer.id, startPage: nextPage }),
+        })
+        const json: any = await res.json()
+        if (!json?.ok) {
+          alert(json?.message || (lang === 'fr' ? 'Erreur synchronisation iClosed' : 'iClosed sync error'))
+          return
+        }
+        totalImported += Number(json.imported || 0)
+        totalUpdated += Number(json.updated || 0)
+        if (!json.partial) break
+        nextPage = Number(json.nextPage || 0)
+        if (!nextPage) break
+      }
+      setIclosedSyncResult({ imported: totalImported, updated: totalUpdated })
+    } finally {
+      setIclosedSyncing(false)
+    }
+  }
 
   const handleSaveSystemeioKey = async () => {
     if (!user) return
@@ -1887,65 +2016,216 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             )}
 
             {(editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
-              /* --- ICLOSED CONFIG (webhook) --- */
-              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-emerald-400 mt-0.5" />
-                  <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-emerald-100">{lang === 'fr' ? 'Configuration Webhook iClosed' : 'iClosed Webhook Configuration'}</h4>
+              <div className="space-y-4">
+                {/* ─── 1. Inbound (iClosed → CloseOS) ─── */}
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                  <h4 className="text-sm font-semibold text-emerald-100 flex items-center gap-2">
+                    <Database className="h-4 w-4" /> {lang === 'fr' ? 'Inbound (iClosed → CloseOS)' : 'Inbound (iClosed → CloseOS)'}
+                  </h4>
+                  <p className="mt-1 text-xs text-emerald-300/80 leading-relaxed">
+                    {lang === 'fr'
+                      ? <>Dans <strong>iClosed &gt; Settings &gt; Developer &gt; Webhooks</strong>, cliquez sur <em>Add Webhook</em> et collez cette URL. iClosed enverra les nouveaux contacts et les changements de stage à CloseOS.</>
+                      : <>In <strong>iClosed &gt; Settings &gt; Developer &gt; Webhooks</strong>, click <em>Add Webhook</em> and paste this URL. iClosed will send new contacts and stage changes to CloseOS.</>}
+                  </p>
 
-                    <p className="mt-1 text-xs text-emerald-300/80 leading-relaxed">
+                  <div className="mt-2 flex items-start gap-2 rounded border border-orange-500/20 bg-orange-500/10 p-2 text-[11px] text-orange-300">
+                    <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                    <span>
                       {lang === 'fr'
-                        ? <>Allez dans <strong>iClosed &gt; Paramètres &gt; Développeur &gt; Webhooks</strong> et collez l&apos;URL ci-dessous.</>
-                        : <>Go to <strong>iClosed &gt; Settings &gt; Developer &gt; Webhooks</strong> and paste the URL below.</>}
-                    </p>
+                        ? <><strong>Attention :</strong> Seul le <strong>Propriétaire</strong> de l&apos;organisation iClosed voit le menu &quot;Developer&quot;.</>
+                        : <><strong>Warning:</strong> Only the iClosed organization <strong>Owner</strong> sees the &quot;Developer&quot; menu.</>}
+                    </span>
+                  </div>
 
-                    <div className="mt-2 flex items-start gap-2 rounded border border-orange-500/20 bg-orange-500/10 p-2 text-[11px] text-orange-300">
-                      <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
-                      <span>
-                        {lang === 'fr'
-                          ? <><strong>Attention :</strong> Si le menu &quot;Développeur&quot; n&apos;apparaît pas, c&apos;est que vous n&apos;avez pas les droits. Seul le <strong>Propriétaire</strong> de l&apos;organisation iClosed peut configurer les Webhooks.</>
-                          : <><strong>Warning:</strong> If the &quot;Developer&quot; menu does not appear, you do not have the required permissions. Only the <strong>Owner</strong> of the iClosed organization can configure Webhooks.</>}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-2">
-                      <div className="flex-1 rounded border border-emerald-500/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
-                        {webhookUrl}
+                  <div className="mt-3">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1">
+                      {lang === 'fr' ? 'URL du webhook' : 'Webhook URL'}
+                    </label>
+                    {iclosedInboundUrl ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 rounded border border-emerald-500/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
+                          {iclosedInboundUrl}
+                        </div>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(iclosedInboundUrl); setIclosedCopiedUrl(true); setTimeout(() => setIclosedCopiedUrl(false), 1500); }}
+                          className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
+                          title={lang === 'fr' ? "Copier l'URL" : 'Copy URL'}
+                        >
+                          {iclosedCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                        </button>
                       </div>
-                      <button
-                        onClick={handleCopyWebhook}
-                        className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
-                        title={lang === 'fr' ? "Copier l'URL" : 'Copy URL'}
-                      >
-                        {hasCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    {editedOffer.defaultFormulaId && (
-                      <p className="mt-2 text-[10px] text-emerald-400/80 flex items-center gap-1">
-                        <Check className="h-3 w-3" /> {lang === 'fr' ? "L'ID de la formule a été ajouté à l'URL." : 'The formula ID has been added to the URL.'}
+                    ) : (
+                      <p className="text-[11px] text-white/50">
+                        {lang === 'fr' ? 'Générez une clé inbound pour activer le webhook.' : 'Generate an inbound key to activate the webhook.'}
                       </p>
                     )}
-
-                    {isEditing && (editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
-                      <div className="mt-4 rounded-lg border border-emerald-500/20 overflow-hidden bg-white/5">
-                        <div style={{ position: 'relative', boxSizing: 'content-box', width: '100%', aspectRatio: '1.86' }}>
-                          <iframe
-                            src="https://app.supademo.com/embed/cmla88ewa2sutvhwz09ss0nrs?embed_v=2&utm_source=embed&loop=1&autoplay=1"
-                            loading="lazy"
-                            title={lang === 'fr' ? 'Configurer le Webhook iClosed' : 'Configure iClosed Webhook'}
-                            allow="clipboard-write"
-                            frameBorder="0"
-                            webkitAllowFullScreen
-                            mozAllowFullScreen
-                            allowFullScreen
-                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
+                    <button
+                      onClick={handleRegenerateIclosedInboundKey}
+                      disabled={iclosedRegenerating}
+                      className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-white/60 hover:text-white"
+                    >
+                      {iclosedRegenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                      {editedOffer.crmApiKey
+                        ? (lang === 'fr' ? 'Régénérer la clé inbound' : 'Regenerate inbound key')
+                        : (lang === 'fr' ? 'Générer la clé inbound' : 'Generate inbound key')}
+                    </button>
                   </div>
+                </div>
+
+                {/* ─── 2. Outbound (CloseOS → iClosed) ─── */}
+                <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-4">
+                  <h4 className="text-sm font-semibold text-purple-100 flex items-center gap-2">
+                    <Zap className="h-4 w-4" /> {lang === 'fr' ? 'Outbound (CloseOS → iClosed)' : 'Outbound (CloseOS → iClosed)'}
+                  </h4>
+                  <p className="mt-1 text-xs text-purple-300/80 leading-relaxed">
+                    {lang === 'fr'
+                      ? <>Collez votre <strong>clé API iClosed personnelle</strong> (commence par <code>iclosed_</code>) pour pousser les changements de stage CloseOS vers iClosed.</>
+                      : <>Paste your <strong>personal iClosed API key</strong> (starts with <code>iclosed_</code>) so CloseOS stage changes flow back to iClosed.</>}
+                  </p>
+
+                  <div className="mt-3">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1">
+                      {lang === 'fr' ? 'Clé API iClosed' : 'iClosed API key'}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type={iclosedShowPushKey ? 'text' : 'password'}
+                          value={editedOffer.iclosedPushKey || ''}
+                          onChange={(e) => setEditedOffer({ ...editedOffer, iclosedPushKey: e.target.value })}
+                          placeholder="iclosed_..."
+                          disabled={!isEditing}
+                          className="w-full rounded border border-white/[0.08] bg-[#111111] px-3 py-2 pr-9 font-mono text-xs text-white focus:border-purple-500 focus:outline-none disabled:opacity-60"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIclosedShowPushKey(!iclosedShowPushKey)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                        >
+                          {iclosedShowPushKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                        </button>
+                      </div>
+                      {editedOffer.iclosedPushKey && (
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(editedOffer.iclosedPushKey || ''); setIclosedCopiedKey(true); setTimeout(() => setIclosedCopiedKey(false), 1500); }}
+                          className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white"
+                          title={lang === 'fr' ? 'Copier' : 'Copy'}
+                        >
+                          {iclosedCopiedKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleTestIclosedPushKey}
+                    disabled={iclosedTesting}
+                    className="mt-3 inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-xs font-bold text-purple-300 hover:bg-purple-500/20 disabled:opacity-50"
+                  >
+                    {iclosedTesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+                    {lang === 'fr' ? 'Tester la connexion' : 'Test connection'}
+                  </button>
+
+                  <p className="mt-3 text-[10px] text-white/40">
+                    {lang === 'fr'
+                      ? <>Trouvez cette clé dans <strong>iClosed → Settings → Developer → API Keys → Create API Key</strong>. Plan Business ou Enterprise iClosed requis.</>
+                      : <>Find this key in <strong>iClosed → Settings → Developer → API Keys → Create API Key</strong>. Requires an iClosed Business or Enterprise plan.</>}
+                  </p>
+                </div>
+
+                {/* ─── 3. Stage mapping ─── */}
+                <div className="rounded-lg border border-white/[0.08] bg-white/[0.03] p-4">
+                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Tag className="h-4 w-4" /> {lang === 'fr' ? 'Mapping des stages personnalisés' : 'Custom stage mapping'}
+                  </h4>
+                  <p className="mt-1 text-xs text-white/50">
+                    {lang === 'fr'
+                      ? <>Les stages standards (Customer, No Show, Qualified...) sont reconnus automatiquement. Si vous avez des stages <strong>personnalisés</strong> dans iClosed, mappez-les ici.</>
+                      : <>Standard iClosed stages (Customer, No Show, Qualified...) are auto-recognised. Map any <strong>custom</strong> iClosed stage to a CloseOS stage here.</>}
+                  </p>
+
+                  <div className="mt-3 space-y-2">
+                    {iclosedMappingRows.length === 0 && (
+                      <p className="text-[11px] italic text-white/40">{lang === 'fr' ? 'Aucun mapping personnalisé.' : 'No custom mapping.'}</p>
+                    )}
+                    {iclosedMappingRows.map((m, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={m.name}
+                          onChange={(e) => handleUpdateIclosedMappingRow(i, 'name', e.target.value)}
+                          placeholder={lang === 'fr' ? 'Nom du stage iClosed' : 'iClosed stage name'}
+                          disabled={!isEditing}
+                          className="flex-1 rounded border border-white/[0.08] bg-[#111111] px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none disabled:opacity-60"
+                        />
+                        <span className="text-white/40">→</span>
+                        <select
+                          value={m.stage}
+                          onChange={(e) => handleUpdateIclosedMappingRow(i, 'stage', e.target.value)}
+                          disabled={!isEditing}
+                          className="rounded border border-white/[0.08] bg-[#111111] px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none disabled:opacity-60"
+                        >
+                          <option value="prospect">Prospect</option>
+                          <option value="qualified">Qualified</option>
+                          <option value="won">Won</option>
+                          <option value="followup">Follow Up</option>
+                          <option value="noshow">No Show</option>
+                          <option value="lost">Lost</option>
+                        </select>
+                        {isEditing && (
+                          <button
+                            onClick={() => handleRemoveIclosedMappingRow(i)}
+                            className="rounded p-2 text-white/40 hover:text-red-400"
+                            title={lang === 'fr' ? 'Supprimer' : 'Remove'}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {isEditing && (
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={handleAddIclosedMappingRow}
+                        className="rounded-full border border-white/[0.12] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-white/5"
+                      >
+                        + {lang === 'fr' ? 'Ajouter un mapping' : 'Add mapping'}
+                      </button>
+                      <button
+                        onClick={handleSaveIclosedMapping}
+                        className="rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-white/20"
+                      >
+                        {lang === 'fr' ? 'Appliquer le mapping' : 'Apply mapping'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* ─── 4. Sync now ─── */}
+                <div className="rounded-lg border border-white/[0.08] bg-white/[0.03] p-4">
+                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4" /> {lang === 'fr' ? 'Synchronisation initiale' : 'Initial sync'}
+                  </h4>
+                  <p className="mt-1 text-xs text-white/50">
+                    {lang === 'fr'
+                      ? 'Importer les contacts et RDV iClosed existants dans cette offre. Idempotent : les exécutions suivantes ne réimportent que les nouveautés.'
+                      : 'Import existing iClosed contacts and event calls into this offer. Idempotent: subsequent runs only pull new items.'}
+                  </p>
+                  <button
+                    onClick={handleSyncIclosedNow}
+                    disabled={iclosedSyncing || !editedOffer.iclosedPushKey || !(editedOffer.iclosedPushKey || '').startsWith('iclosed_')}
+                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+                  >
+                    {iclosedSyncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {lang === 'fr' ? 'Synchroniser maintenant' : 'Sync now'}
+                  </button>
+                  {iclosedSyncResult && (
+                    <p className="mt-2 text-[11px] font-semibold text-emerald-400">
+                      ✓ {iclosedSyncResult.imported} {lang === 'fr' ? 'importés' : 'imported'}, {iclosedSyncResult.updated} {lang === 'fr' ? 'mis à jour' : 'updated'}
+                    </p>
+                  )}
                 </div>
               </div>
             )}

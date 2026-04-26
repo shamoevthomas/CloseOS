@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useParams } from 'react-router-dom'
-import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Globe, ArrowRight, Hash, List, Type, ChevronDown } from 'lucide-react'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Globe, ArrowRight, Hash, List, Type, ChevronDown, Lock } from 'lucide-react'
 import { toUTC, fromUTC, getTimezoneLabel } from '../lib/timezone'
 import { supabase } from '../lib/supabase'
+import { InlineStripePaymentModal } from '../components/InlineStripePayment'
 
 interface SlotData { date: string; time: string; datetime_utc?: string }
 interface CustomField {
@@ -36,6 +37,7 @@ interface BookingInfo {
   questionnaireRequired: boolean
   questionnaireQuestions: BookingQuestion[]
   slots?: SlotData[]
+  stripe: { enabled: true; price: number; currency: string } | null
 }
 
 interface CreatorInfo {
@@ -120,6 +122,7 @@ const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
 export function PublicBooking() {
   const lang = (localStorage.getItem('closeos_lang') || 'fr') as 'fr' | 'en'
   const { slug } = useParams<{ slug: string }>()
+  const [searchParams] = useSearchParams()
   const [info, setInfo] = useState<BookingInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -154,6 +157,8 @@ export function PublicBooking() {
   // Submit
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  const [inlinePayment, setInlinePayment] = useState<{ client_secret: string; payment_intent_id: string } | null>(null)
+  const [paidAppointment, setPaidAppointment] = useState<{ date: string; time: string; amount: number; currency: string } | null>(null)
 
   useEffect(() => {
     if (!slug) return
@@ -163,7 +168,7 @@ export function PublicBooking() {
         // Compléter avec données Supabase (description, redirect, creator)
         const { data: link } = await supabase
           .from('business_booking_links')
-          .select('description, redirect_url, business_owner_id, team_member_id, email_enabled, email_required, phone_enabled, phone_required, custom_fields, questionnaire_enabled, questionnaire_required, questionnaire_questions')
+          .select('description, redirect_url, business_owner_id, team_member_id, email_enabled, email_required, phone_enabled, phone_required, custom_fields, questionnaire_enabled, questionnaire_required, questionnaire_questions, stripe_enabled, stripe_price, stripe_currency')
           .eq('slug', slug)
           .maybeSingle()
         if (link) {
@@ -178,6 +183,11 @@ export function PublicBooking() {
           d.questionnaireEnabled = link.questionnaire_enabled ?? false
           d.questionnaireRequired = link.questionnaire_required ?? false
           d.questionnaireQuestions = ((link.questionnaire_questions as BookingQuestion[]) || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+          d.stripe = (link.stripe_enabled && link.stripe_price > 0) ? {
+            enabled: true,
+            price: link.stripe_price,
+            currency: link.stripe_currency || 'eur',
+          } : (d.stripe || null)
 
           // Fallback: compute slots client-side if API doesn't return them (deployed API still uses freeMode)
           if (!d.slots || d.slots.length === 0 || d.freeMode) {
@@ -326,6 +336,71 @@ export function PublicBooking() {
   const handleContactSubmit = () => {
     if (!name.trim()) return
     setStep(hasQuestionnaire ? 'questionnaire' : 'calendar')
+  }
+
+  // Handle 3DS redirect return from Stripe
+  useEffect(() => {
+    const piReturn = searchParams.get('payment_intent_return')
+    const piParam = searchParams.get('payment_intent')
+    const redirectStatus = searchParams.get('redirect_status')
+    if (piReturn === 'true' && piParam && redirectStatus === 'succeeded') {
+      const confirmWithRetry = async (attempts = 4): Promise<any> => {
+        for (let i = 0; i < attempts; i++) {
+          try {
+            const r = await fetch(`${API_URL}?action=booking-confirm-payment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ payment_intent_id: piParam }),
+            })
+            const d = await r.json()
+            if (d.success || d.already_completed) return d
+          } catch { /* transient — retry */ }
+          if (i < attempts - 1) await new Promise(res => setTimeout(res, (i + 1) * 1500))
+        }
+        return null
+      }
+      confirmWithRetry().then((data) => {
+        if (data) {
+          setDone(true)
+          window.history.replaceState({}, '', window.location.pathname)
+        }
+      })
+    }
+  }, [searchParams])
+
+  const handlePayAndBook = async () => {
+    if (!selectedDate || !selectedTime || !slug || !linkMeta || !info?.stripe) return
+    setSubmitting(true)
+    try {
+      const matchSlot = prospectSlots.find(s => s.date === selectedDate && s.time === selectedTime)
+      const datetimeUtc = matchSlot?.datetime_utc || toUTC(selectedDate, selectedTime, prospectTimezone).toISOString()
+      const fullPhone = phone.trim() ? `${countryCode} ${phone.trim()}` : ''
+      const r = await fetch(`${API_URL}?action=booking-init-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug, name, email, phone: fullPhone,
+          custom_data: customFieldValues,
+          date: selectedDate, time: selectedTime, datetime_utc: datetimeUtc,
+          prospect_timezone: prospectTimezone,
+          questionnaire_answers: hasQuestionnaire ? info.questionnaireQuestions.map(q => ({
+            question_text: q.question_text,
+            answer_value: questionnaireAnswers[q.question_text] || ''
+          })).filter(a => Array.isArray(a.answer_value) ? a.answer_value.length > 0 : a.answer_value !== '') : null,
+        }),
+      })
+      const data = await r.json()
+      if (data.client_secret && data.payment_intent_id) {
+        setInlinePayment({ client_secret: data.client_secret, payment_intent_id: data.payment_intent_id })
+        setPaidAppointment({ date: selectedDate, time: selectedTime, amount: info.stripe.price, currency: info.stripe.currency })
+      } else {
+        alert(data.error || (lang === 'fr' ? 'Erreur lors du paiement' : 'Payment error'))
+      }
+    } catch {
+      alert(lang === 'fr' ? 'Erreur réseau' : 'Network error')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -1041,14 +1116,17 @@ export function PublicBooking() {
                       Modifier
                     </button>
                     <button
-                      onClick={handleSubmit}
+                      onClick={info.stripe ? handlePayAndBook : handleSubmit}
                       disabled={submitting}
                       className="flex-1 flex items-center justify-center gap-2 rounded-full bg-[#1b1c1b] px-5 py-4 text-sm font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all shadow-xl"
                       style={{ fontFamily: 'Manrope, sans-serif' }}
                     >
                       {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                         <>
-                          <span>Confirmer</span>
+                          {info.stripe ? <Lock className="h-4 w-4" /> : null}
+                          <span>{info.stripe
+                            ? `Payer ${(info.stripe.price / 100).toFixed(2).replace('.00', '')}${info.stripe.currency === 'eur' ? '€' : ' ' + info.stripe.currency.toUpperCase()}`
+                            : 'Confirmer'}</span>
                           <ArrowRight className="h-4 w-4" />
                         </>
                       )}
@@ -1056,7 +1134,9 @@ export function PublicBooking() {
                   </div>
 
                   <p className="text-center text-[10px] text-[#444748]/40 mt-6 font-medium leading-relaxed">
-                    En confirmant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées.
+                    {info.stripe
+                      ? 'Paiement sécurisé par Stripe — Apple Pay / Google Pay / CB.'
+                      : "En confirmant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées."}
                   </p>
                 </div>
               )}
@@ -1064,6 +1144,28 @@ export function PublicBooking() {
           </div>
         </div>
       </div>
+
+      {/* Inline Stripe payment overlay */}
+      {inlinePayment && info?.stripe && (
+        <InlineStripePaymentModal
+          amount={info.stripe.price}
+          currency={info.stripe.currency}
+          lang={lang as 'fr' | 'en'}
+          paymentIntentId={inlinePayment.payment_intent_id}
+          clientSecret={inlinePayment.client_secret}
+          confirmEndpoint={`${API_URL}?action=booking-confirm-payment`}
+          cancelEndpoint={`${API_URL}?action=booking-cancel-payment`}
+          returnUrl={`${window.location.origin}/book/${slug || ''}?payment_intent_return=true`}
+          onSuccess={() => {
+            setInlinePayment(null)
+            setDone(true)
+          }}
+          onCancel={() => {
+            setInlinePayment(null)
+            setPaidAppointment(null)
+          }}
+        />
+      )}
     </div>
   )
 }

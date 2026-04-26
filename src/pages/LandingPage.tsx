@@ -567,7 +567,7 @@ export function LandingPage() {
     localStorage.setItem('closeos_lang', detected);
   }, []);
 
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'yearly'>('yearly');
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -579,6 +579,7 @@ export function LandingPage() {
 
   const calculatePrice = (price: number) => {
     if (billingCycle === 'yearly') return +(price * 0.75).toFixed(2);
+    if (billingCycle === 'quarterly') return +(price * (5 / 6)).toFixed(2);
     return price;
   };
 
@@ -1168,7 +1169,7 @@ export function LandingPage() {
                   <div className="pt-6 border-t border-white/5">
                     <p className="emerald-gradient-text text-sm font-bold uppercase tracking-[0.15em]" style={{ fontFamily: "'Manrope', sans-serif" }}>Pack Pro</p>
                     <div className="text-[3.2rem] font-black text-stone-50" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
-                      34€<span className="text-lg text-stone-600 font-medium">/mois</span>
+                      24€<span className="text-lg text-stone-600 font-medium">/mois</span>
                     </div>
                     <p className="text-emerald-400 text-[0.75rem] font-bold mt-2 flex items-center justify-center gap-1.5">
                       <Zap className="w-3.5 h-3.5" strokeWidth={1.5} />{t.comp_pack_tagline}
@@ -1193,15 +1194,27 @@ export function LandingPage() {
           </div>
 
           <div className="flex flex-col items-center mb-14">
-            <div className="flex items-center justify-center gap-4">
-              <span className={`text-sm font-medium cursor-pointer transition-colors ${billingCycle === 'monthly' ? 'text-stone-100' : 'text-stone-600'}`} onClick={() => setBillingCycle('monthly')}>{t.pricing_monthly}</span>
-              <button onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')} className="relative w-14 h-7 bg-white/10 rounded-full p-1 transition-colors duration-300 focus:outline-none border border-white/[0.08]">
-                <div className={`w-5 h-5 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(0,108,73,0.4)] transform transition-transform duration-300 ${billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'}`} />
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/5 border border-white/10">
+              <button
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billingCycle === 'monthly' ? 'bg-white text-[#111]' : 'text-stone-400 hover:text-stone-200'}`}
+              >
+                {t.pricing_monthly}
               </button>
-              <span className={`text-sm font-medium cursor-pointer transition-colors flex items-center gap-2 ${billingCycle === 'yearly' ? 'text-stone-100' : 'text-stone-600'}`} onClick={() => setBillingCycle('yearly')}>
+              <button
+                onClick={() => setBillingCycle('quarterly')}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${billingCycle === 'quarterly' ? 'bg-white text-[#111]' : 'text-stone-400 hover:text-stone-200'}`}
+              >
+                {t.pricing_quarterly}
+                <span className={`text-[0.65rem] font-bold px-2 py-0.5 rounded-full ${billingCycle === 'quarterly' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>-17%</span>
+              </button>
+              <button
+                onClick={() => setBillingCycle('yearly')}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-white text-[#111]' : 'text-stone-400 hover:text-stone-200'}`}
+              >
                 {t.pricing_yearly}
-                <span className="bg-emerald-500/10 text-emerald-400 text-[0.65rem] font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/20">-25%</span>
-              </span>
+                <span className={`text-[0.65rem] font-bold px-2 py-0.5 rounded-full ${billingCycle === 'yearly' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>-25%</span>
+              </button>
             </div>
           </div>
 
@@ -1221,11 +1234,12 @@ export function LandingPage() {
                   </div>
                   <p className="text-stone-400 text-sm">{t.pricing_pack_desc}</p>
                   <div className="mt-5 flex items-baseline gap-2.5">
-                    <span className="text-[3.5rem] font-extrabold text-stone-50" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{calculatePrice(34)}€</span>
-                    <span className="text-stone-600 line-through text-lg">69€</span>
+                    <span className="text-[3.5rem] font-extrabold text-stone-50" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{calculatePrice(24)}€</span>
+                    <span className="text-stone-600 line-through text-lg">34€</span>
                     <span className="text-stone-500">/mois</span>
                   </div>
                   {billingCycle === 'yearly' && <p className="text-[0.78rem] text-emerald-400 mt-2 font-semibold">{t.pricing_billed_yearly}</p>}
+                  {billingCycle === 'quarterly' && <p className="text-[0.78rem] text-emerald-400 mt-2 font-semibold">{t.pricing_billed_quarterly}</p>}
                 </div>
 
                 <ul className="space-y-4 mb-10 flex-1 relative z-10">
@@ -1298,7 +1312,6 @@ export function LandingPage() {
             <FAQItem question={t.faq1_q}><p>{t.faq1_a1}</p><p className="mt-3">{t.faq1_a2}</p></FAQItem>
             <FAQItem question={t.faq2_q}><p>{t.faq2_intro}</p><ul className="list-disc pl-5 mt-3 space-y-1.5"><li>{t.faq2_item1}</li><li>{t.faq2_item2}</li></ul></FAQItem>
             <FAQItem question={t.faq3_q}><p>{t.faq3_a1}</p><p className="mt-3">{t.faq3_a2}</p></FAQItem>
-            <FAQItem question={t.faq4_q}><p>{t.faq4_a1}</p><p className="mt-3">{t.faq4_a2}</p></FAQItem>
             <FAQItem question={t.faq5_q}><p>{t.faq5_a1}</p><p className="mt-3">{t.faq5_a2}</p></FAQItem>
           </div>
         </div>

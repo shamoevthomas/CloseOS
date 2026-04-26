@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, ty
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from './BusinessAuthContext'
 import { withRetry } from '../../lib/supabaseHelpers'
+import { emitClientEvent } from '../lib/emitWebhook'
 import toast from 'react-hot-toast'
 
 export interface BusinessProspect {
@@ -495,6 +496,40 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     }
   }
 
+  // Push to iClosed (CloseOS → iClosed). Requires a saved iclosed_api_key in
+  // business_settings. Echo guard against inbound webhooks runs server-side.
+  const pushToIclosedIfNeeded = async (
+    prospect: any,
+    action: 'upsert' | 'stage_change' | 'delete' = 'stage_change',
+    previousStage?: string,
+  ) => {
+    if (!user) return
+    if (crmProvider !== 'iclosed') return
+    const apiKey = (businessSettings as any)?.iclosed_api_key
+    if (!apiKey) return
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) return
+      void fetch('/api/webhooks?action=iclosed-business-push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ prospectId: prospect.id, action, previousStage }),
+      }).then(r => r.json()).then(json => {
+        if (json && json.ok === false && json.code === 'auth') {
+          toast.error('Clé iClosed invalide ou expirée', { id: 'iclosed-push-error' })
+        }
+      }).catch(err => {
+        console.error('[iClosed] Push error:', err)
+      })
+    } catch (err) {
+      console.error('[iClosed] Push check error:', err)
+    }
+  }
+
   const addProspect = async (prospect: Omit<BusinessProspect, 'id' | 'user_id'>) => {
     if (!user) return
 
@@ -517,10 +552,12 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
         if (prev.some(p => p.id === data[0].id)) return prev
         return [data[0], ...prev]
       })
+      emitClientEvent('prospect.created', data[0])
       pushToHubspotIfNeeded(data[0])
       pushToSystemeioIfNeeded(data[0])
       pushToAirtableIfNeeded(data[0])
       pushToGhlIfNeeded(data[0])
+      pushToIclosedIfNeeded(data[0], 'upsert')
 
       // Log creation history
       if (userId) {
@@ -624,6 +661,16 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       return
     }
 
+    // Emit outbound webhook — differentiate stage_changed vs generic update
+    if (data?.[0]) {
+      const wasStageChange = current?.stage && updates.stage && current.stage !== updates.stage
+      if (wasStageChange) {
+        emitClientEvent('prospect.stage_changed', { ...data[0], previous_stage: current?.stage })
+      } else {
+        emitClientEvent('prospect.updated', data[0])
+      }
+    }
+
     // Log history for tracked fields
     if (current && userId) {
       const changes: { field: string; old: any; new_: any; type?: string }[] = []
@@ -648,6 +695,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       pushToSystemeioIfNeeded(data[0], prevStage)
       pushToAirtableIfNeeded(data[0], prevStage)
       pushToGhlIfNeeded(data[0])
+      pushToIclosedIfNeeded(data[0], 'stage_change', prevStage)
 
       // Notify owner when prospect becomes won
       if (updates.stage === 'won' && prevStage !== 'won') {
@@ -727,6 +775,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
 
   const deleteProspect = async (id: number) => {
     const previousProspects = prospects
+    const removed = prospects.find(p => p.id === id) || null
     setProspects(prev => prev.filter(p => p.id !== id))
 
     const { error } = await withRetry(
@@ -737,7 +786,14 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     if (error) {
       setProspects(previousProspects)
       toast.error('Impossible de supprimer le prospect.')
+      return
     }
+
+    // Fire outbound webhook (the row no longer exists, so we send the snapshot we had)
+    emitClientEvent('prospect.deleted', removed || { id })
+
+    // Mirror to iClosed (sets contact status = DISQUALIFIED — iClosed has no DELETE)
+    if (removed) pushToIclosedIfNeeded(removed, 'delete')
   }
 
   return (

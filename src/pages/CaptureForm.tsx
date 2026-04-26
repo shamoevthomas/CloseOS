@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight, ChevronDown, CreditCard, XCircle } from 'lucide-react'
-import { loadStripe } from '@stripe/stripe-js'
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight, ChevronDown, XCircle } from 'lucide-react'
 import { toUTC, fromUTC } from '../lib/timezone'
 import { captureTranslations, detectCaptureLang } from './captureFormI18n'
 import type { CaptureFormLang } from './captureFormI18n'
 import { sanitizeRichHtml } from '../business/components/RichTextEditor'
+import { InlineStripePaymentModal } from '../components/InlineStripePayment'
 
 interface CustomField {
   label: string
@@ -32,7 +31,6 @@ interface Campaign {
   stripe_enabled?: boolean
   stripe_price?: number
   stripe_currency?: string
-  stripe_payment_timing?: 'before' | 'after'
 }
 
 const API_URL = '/api/business'
@@ -206,114 +204,6 @@ const COUNTRY_CODES = [
   { code: '+1', flag: '🇩🇴', name: 'République dominicaine' },
 ]
 
-const stripePromise = loadStripe('pk_live_51SxnxC33xpuYLywqRhYvxhWrChlI3Ckjj1AfJLqRQJQwaXNyVLuLAPaURbnEcrKRAQJTneB3ZjhUHSHuFQ9Xekdt00k1ho4IEt')
-
-const CAPTURE_STRIPE_APPEARANCE = {
-  theme: 'flat' as const,
-  variables: {
-    colorPrimary: '#006c49',
-    colorBackground: '#f5f3f2',
-    borderRadius: '12px',
-    fontFamily: 'Manrope, system-ui, sans-serif',
-  },
-}
-
-function CapturePaymentInner({ paymentIntentId, slug, onSuccess, amount, currency, lang }: {
-  paymentIntentId: string
-  slug: string
-  onSuccess: (paymentSessionId: string) => void
-  amount: number
-  currency: string
-  lang: CaptureFormLang
-}) {
-  const stripe = useStripe()
-  const elements = useElements()
-  const [processing, setProcessing] = useState(false)
-  const [ready, setReady] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleConfirm = async () => {
-    if (!stripe || !elements) return
-    setProcessing(true)
-    setError(null)
-
-    const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/capture/${slug}?payment_intent_return=true`,
-      },
-      redirect: 'if_required',
-    })
-
-    if (stripeError) {
-      setError(stripeError.message || (lang === 'fr' ? 'Erreur de paiement' : 'Payment error'))
-      setProcessing(false)
-      return
-    }
-
-    if (paymentIntent?.status === 'succeeded') {
-      try {
-        const r = await fetch(`${API_URL}?action=capture-verify-payment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ payment_intent_id: paymentIntentId }),
-        })
-        const data = await r.json()
-        if (data.success) {
-          onSuccess(data.payment_session_id)
-        } else {
-          setError(data.error || (lang === 'fr' ? 'Erreur de vérification' : 'Verification error'))
-        }
-      } catch {
-        setError(lang === 'fr' ? 'Erreur réseau' : 'Network error')
-      }
-    }
-    setProcessing(false)
-  }
-
-  const priceLabel = `${(amount / 100).toFixed(2).replace('.00', '')}${currency === 'eur' ? '\u20ac' : ' ' + currency.toUpperCase()}`
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 mb-2">
-        <CreditCard className="h-5 w-5 text-[#006c49]" />
-        <span className="text-sm font-bold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-          {lang === 'fr' ? 'Paiement sécurisé' : 'Secure payment'}
-        </span>
-      </div>
-      <div className="rounded-xl border border-[#c4c7c7]/20 p-4 bg-[#fbf9f8]">
-        <PaymentElement onChange={(e) => setReady(e.complete)} options={{ layout: 'tabs' }} />
-      </div>
-      {error && (
-        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-xl">
-          <XCircle className="h-4 w-4 flex-shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-      <button
-        onClick={handleConfirm}
-        disabled={!ready || processing || !stripe}
-        className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
-        style={{ fontFamily: 'Manrope, sans-serif' }}
-      >
-        {processing ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
-        ) : (
-          <>
-            <Lock className="h-4 w-4" />
-            <span>{lang === 'fr' ? `Payer ${priceLabel}` : `Pay ${priceLabel}`}</span>
-            <ArrowRight className="h-5 w-5" />
-          </>
-        )}
-      </button>
-      <div className="flex items-center justify-center gap-2 text-[10px] text-[#444748]/40 font-medium">
-        <Lock className="h-3 w-3" />
-        <span>{lang === 'fr' ? 'Paiement sécurisé par Stripe' : 'Secure payment by Stripe'}</span>
-      </div>
-    </div>
-  )
-}
-
 export function CaptureForm() {
   const { slug } = useParams<{ slug: string }>()
   const [searchParams] = useSearchParams()
@@ -352,8 +242,8 @@ export function CaptureForm() {
   // Paid on Stripe but our backend couldn't confirm synchronously — webhook will finish.
   const [paymentPendingSync, setPaymentPendingSync] = useState(false)
   const [paymentSessionId, setPaymentSessionId] = useState<string | null>(null)
-  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null)
-  const [stripePaymentIntentId, setStripePaymentIntentId] = useState<string | null>(null)
+  // Inline Stripe Elements state
+  const [inlinePayment, setInlinePayment] = useState<{ client_secret: string; payment_intent_id: string } | null>(null)
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -473,90 +363,28 @@ export function CaptureForm() {
     fetchCampaign()
   }, [slug])
 
-  // Handle payment return from Stripe (Checkout redirect OR 3DS redirect)
+  // Handle payment return from Stripe (3DS redirect for inline payment)
   useEffect(() => {
-    const paymentSuccess = searchParams.get('payment_success')
-    const sessionId = searchParams.get('session_id')
-    const paymentCancelled = searchParams.get('payment_cancelled')
-
-    // Handle 3DS redirect return (PaymentIntent inline flow)
-    const piReturn = searchParams.get('payment_intent')
+    const piReturn = searchParams.get('payment_intent_return')
+    const paymentIntentParam = searchParams.get('payment_intent')
     const redirectStatus = searchParams.get('redirect_status')
-    if (piReturn && redirectStatus === 'succeeded') {
-      // User was definitely charged by Stripe (redirect_status=succeeded is set by Stripe
-      // only after the PaymentIntent reaches succeeded). Never flash "Paiement refusé" here.
-      setPaymentProcessing(true)
-      const verifyWithRetry = async (attempts = 4): Promise<any> => {
-        for (let i = 0; i < attempts; i++) {
-          try {
-            const r = await fetch(`${API_URL}?action=capture-verify-payment`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ payment_intent_id: piReturn }),
-            })
-            const data = await r.json()
-            if (data.success) return data
-          } catch { /* transient network — retry */ }
-          if (i < attempts - 1) await new Promise(res => setTimeout(res, (i + 1) * 1500))
-        }
-        return null
-      }
-      verifyWithRetry()
-        .then(data => {
-          if (data) {
-            const pd = data.prospect_data
-            if (pd) {
-              const nameParts = (pd.name || '').split(' ')
-              setFirstName(nameParts[0] || '')
-              setLastName(nameParts.slice(1).join(' ') || '')
-              if (pd.email) setEmail(pd.email)
-              if (pd.phone) {
-                const parts = (pd.phone as string).split(' ')
-                if (parts.length >= 2) {
-                  const code = parts[0]
-                  if (COUNTRY_CODES.find(c => c.code === code)) {
-                    setCountryCode(code)
-                    setPhone(parts.slice(1).join(' '))
-                  }
-                }
-              }
-              if (pd.custom_data) setCustomData(pd.custom_data)
-              if (pd.answers && Array.isArray(pd.answers)) {
-                const ansObj: Record<string, any> = {}
-                pd.answers.forEach((a: any) => { ansObj[a.question_id] = a.answer_value })
-                setAnswers(ansObj)
-              }
-            }
-            setPaymentSessionId(data.payment_session_id)
-            window.history.replaceState({}, '', window.location.pathname)
-          } else {
-            // Charge succeeded on Stripe side but our API couldn't confirm after retries.
-            // The Stripe webhook (payment_intent.succeeded) will still mark the session
-            // completed server-side. Show the user they paid OK, booking is being processed.
-            setPaymentPendingSync(true)
-            window.history.replaceState({}, '', window.location.pathname)
-          }
-        })
-        .finally(() => setPaymentProcessing(false))
-      return
-    }
+    const paymentCancelled = searchParams.get('payment_cancelled')
 
     if (paymentCancelled === 'true') {
       setPaymentFailed(true)
       return
     }
 
-    if (paymentSuccess === 'true' && sessionId) {
-      // Stripe redirected with payment_success=true → user was charged. Retry with
-      // backoff to absorb propagation delay, and never flash "Paiement refusé".
+    // Inline 3DS return: confirm + display success
+    if (piReturn === 'true' && paymentIntentParam && redirectStatus === 'succeeded') {
       setPaymentProcessing(true)
-      const successWithRetry = async (attempts = 4): Promise<any> => {
+      const confirmWithRetry = async (attempts = 4): Promise<any> => {
         for (let i = 0; i < attempts; i++) {
           try {
-            const r = await fetch(`${API_URL}?action=campaign-payment-success`, {
+            const r = await fetch(`${API_URL}?action=capture-confirm-payment`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ session_id: sessionId }),
+              body: JSON.stringify({ payment_intent_id: paymentIntentParam }),
             })
             const d = await r.json()
             if (d.success || d.already_completed) return d
@@ -565,48 +393,15 @@ export function CaptureForm() {
         }
         return null
       }
-      successWithRetry()
+      confirmWithRetry()
         .then(data => {
           if (data) {
-            if (data.payment_type === 'pre_booking') {
-              // Pre-booking payment: restore form data and advance to calendar
-              const pd = data.prospect_data
-              if (pd) {
-                const nameParts = (pd.name || '').split(' ')
-                setFirstName(nameParts[0] || '')
-                setLastName(nameParts.slice(1).join(' ') || '')
-                if (pd.email) setEmail(pd.email)
-                if (pd.phone) {
-                  const parts = (pd.phone as string).split(' ')
-                  if (parts.length >= 2) {
-                    const code = parts[0]
-                    if (COUNTRY_CODES.find(c => c.code === code)) {
-                      setCountryCode(code)
-                      setPhone(parts.slice(1).join(' '))
-                    }
-                  }
-                }
-                if (pd.custom_data) setCustomData(pd.custom_data)
-                if (pd.answers && Array.isArray(pd.answers)) {
-                  const ansObj: Record<string, any> = {}
-                  pd.answers.forEach((a: any) => { ansObj[a.question_id] = a.answer_value })
-                  setAnswers(ansObj)
-                }
-              }
-              setPaymentSessionId(data.payment_session_id)
-              window.history.replaceState({}, '', window.location.pathname)
-            } else {
-              setSubmitted(true)
-              if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
-              const rUrl = data.redirect_url || campaign?.redirect_url
-              if (rUrl) {
-                setRedirectUrl(rUrl)
-                setTimeout(() => { window.location.href = rUrl }, 2000)
-              }
-            }
+            setSubmitted(true)
+            if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
+            const rUrl = data.redirect_url || campaign?.redirect_url
+            if (rUrl) setRedirectUrl(rUrl)
+            window.history.replaceState({}, '', window.location.pathname)
           } else {
-            // Charge succeeded on Stripe side but our API couldn't confirm after retries.
-            // The Stripe webhook will still complete the booking server-side.
             setPaymentPendingSync(true)
             window.history.replaceState({}, '', window.location.pathname)
           }
@@ -709,37 +504,6 @@ export function CaptureForm() {
   }, [email, phone, submitted, savePartialLead])
 
   const isInscriptionMode = campaign?.capture_type === 'without_rdv'
-  const needsPrePayment = !isInscriptionMode && !!campaign?.stripe_enabled && !!campaign?.stripe_price && campaign.stripe_price > 0 && campaign.stripe_payment_timing === 'before' && !paymentSessionId
-
-  const handlePrePayment = async () => {
-    setSubmitting(true)
-    try {
-      const name = `${firstName} ${lastName}`.trim()
-      const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData }
-      if (hasQuestionnaire && Object.keys(answers).length > 0) {
-        payload.answers = Object.entries(answers).map(([question_id, answer_value]) => ({ question_id, answer_value }))
-      }
-      const r = await fetch(`${API_URL}?action=capture-pre-payment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const data = await r.json()
-      if (data.client_secret) {
-        setStripeClientSecret(data.client_secret)
-        setStripePaymentIntentId(data.payment_intent_id)
-      } else {
-        alert(data.error || 'Payment error')
-      }
-    } catch { alert(t.error_network) }
-    finally { setSubmitting(false) }
-  }
-
-  const handlePaymentSuccess = useCallback((psId: string) => {
-    setPaymentSessionId(psId)
-    setStripeClientSecret(null)
-    setStripePaymentIntentId(null)
-  }, [])
 
   // Questionnaire completeness check
   const isQuestionnaireComplete = useMemo(() => {
@@ -760,76 +524,76 @@ export function CaptureForm() {
     if (!isInscriptionMode && isInfoComplete && currentStep === 1) {
       if (hasQuestionnaire) {
         setCurrentStep(2)
-      } else if (!needsPrePayment) {
+      } else {
         setCurrentStep(bookingStep as 2 | 3)
       }
-      // If needsPrePayment: stay on step 1 so user can click "Payer X€"
     }
-  }, [isInscriptionMode, isInfoComplete, currentStep, hasQuestionnaire, bookingStep, needsPrePayment])
+  }, [isInscriptionMode, isInfoComplete, currentStep, hasQuestionnaire, bookingStep])
 
-  // Auto-advance to calendar after pre-booking payment is verified
-  useEffect(() => {
-    if (paymentSessionId && campaign && currentStep < bookingStep) {
-      setCurrentStep(bookingStep as 2 | 3)
+  const buildSubmitPayload = () => {
+    const name = `${firstName} ${lastName}`.trim()
+    const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData }
+    if (hasQuestionnaire && Object.keys(answers).length > 0) {
+      payload.answers = Object.entries(answers).map(([question_id, answer_value]) => ({ question_id, answer_value }))
     }
-  }, [paymentSessionId, campaign, bookingStep, currentStep])
+    if (!isInscriptionMode && selectedDate && selectedTime) {
+      const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+      payload.date = dateStr
+      payload.time = selectedTime
+      payload.prospect_timezone = prospectTimezone
+      if (!freeMode) {
+        const matchSlot = prospectSlots.find(s => s.date === dateStr && s.time === selectedTime)
+        payload.datetime_utc = matchSlot?.datetime_utc || toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
+        if (matchSlot && matchSlot.member_ids.length > 0) {
+          payload.available_member_ids = matchSlot.member_ids
+        }
+      } else {
+        payload.datetime_utc = toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
+      }
+    }
+    return payload
+  }
 
   const handleSubmit = async () => {
     if (!isInfoComplete) return
     if (!isInscriptionMode && (!selectedDate || !selectedTime)) return
     setSubmitting(true)
     try {
-      const name = `${firstName} ${lastName}`.trim()
-      const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData, ...(paymentSessionId ? { payment_session_id: paymentSessionId } : {}) }
-      // Add questionnaire answers
-      if (hasQuestionnaire && Object.keys(answers).length > 0) {
-        payload.answers = Object.entries(answers).map(([question_id, answer_value]) => ({ question_id, answer_value }))
-      }
-      if (!isInscriptionMode && selectedDate && selectedTime) {
-        const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
-        payload.date = dateStr
-        payload.time = selectedTime
-        payload.prospect_timezone = prospectTimezone
+      const payload = buildSubmitPayload()
 
-        // For real slots, use the original datetime_utc; for freeMode, compute from prospect TZ
-        if (!freeMode) {
-          const matchSlot = prospectSlots.find(s => s.date === dateStr && s.time === selectedTime)
-          payload.datetime_utc = matchSlot?.datetime_utc || toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
-
-          // Send available members for this slot — server handles assignment
-          if (matchSlot && matchSlot.member_ids.length > 0) {
-            payload.available_member_ids = matchSlot.member_ids
-          }
+      // Stripe inline flow: init the PaymentIntent and reveal the Stripe Elements widget
+      const stripeRequired = !!campaign?.stripe_enabled && !!campaign?.stripe_price && campaign.stripe_price > 0
+      if (stripeRequired && !paymentSessionId) {
+        const initRes = await fetch(`${API_URL}?action=capture-init-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        const initData = await initRes.json()
+        if (initData.client_secret && initData.payment_intent_id) {
+          setInlinePayment({ client_secret: initData.client_secret, payment_intent_id: initData.payment_intent_id })
         } else {
-          payload.datetime_utc = toUTC(dateStr, selectedTime, prospectTimezone).toISOString()
+          alert(initData.error || t.error_generic)
         }
+        return
       }
+
+      // No-payment flow (or post-payment internal call): create everything synchronously
       const res = await fetch(`${API_URL}?action=capture-submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, ...(paymentSessionId ? { payment_session_id: paymentSessionId } : {}) }),
       })
       const data = await res.json()
-      // Handle payment redirect
-      if (data.requires_payment && data.checkout_url) {
-        window.location.href = data.checkout_url
-        return
-      }
       if (data.prospect) {
         if (data.disqualified && questionnaire?.qualifying !== false) {
           setDisqualifiedMsg(true)
           if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
         } else {
           setSubmitted(true)
-          // Notify parent window (for popup mode)
-          if (window.parent !== window) {
-            window.parent.postMessage('closeos-capture-done', '*')
-          }
+          if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
           const rUrl = data.redirect_url || campaign?.redirect_url
-          if (rUrl) {
-            setRedirectUrl(rUrl)
-            setTimeout(() => { window.location.href = rUrl }, 2000)
-          }
+          if (rUrl) setRedirectUrl(rUrl)
         }
       } else alert(data.error || t.error_generic)
     } catch { alert(t.error_network) }
@@ -951,12 +715,23 @@ export function CaptureForm() {
               <p className="text-sm text-[#444748] mt-1">
                 {selectedDate.toLocaleDateString(t.date_locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} {t.at_time} {selectedTime}
               </p>
+              {campaign?.stripe_enabled && campaign.stripe_price && campaign.stripe_price > 0 && (
+                <p className="text-xs text-[#006c49] font-bold mt-2">
+                  {lang === 'fr' ? 'Paiement reçu' : 'Payment received'} — {(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€
+                </p>
+              )}
             </div>
           )}
-          {redirectUrl ? (
-            <p className="text-xs text-[#444748]/60 animate-pulse">{t.success_redirect}</p>
-          ) : (
-            <p className="text-xs text-[#444748]/60">{t.success_email}</p>
+          <p className="text-xs text-[#444748]/60 mb-6">{t.success_email}</p>
+          {redirectUrl && (
+            <a
+              href={redirectUrl}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1b1c1b] px-6 py-3 text-sm font-extrabold text-white hover:scale-[1.02] active:scale-95 transition-all"
+              style={{ fontFamily: 'Manrope, sans-serif' }}
+            >
+              <span>{t.continue_btn}</span>
+              <ArrowRight className="h-4 w-4" />
+            </a>
           )}
         </div>
       </div>
@@ -1057,58 +832,6 @@ export function CaptureForm() {
               </div>
             )}
 
-            {needsPrePayment ? (
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white flex-shrink-0">
-                    <Lock className="h-4 w-4" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    {lang === 'fr' ? 'Paiement requis' : 'Payment required'}
-                  </h2>
-                </div>
-                <p className="text-sm text-[#444748]">
-                  {lang === 'fr'
-                    ? "Pour accéder au formulaire d'inscription, veuillez d'abord régler le paiement."
-                    : 'To access the registration form, please complete payment first.'}
-                </p>
-                <div className="flex items-center justify-center py-5 rounded-xl bg-[#006c49]/8">
-                  <span className="text-3xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                    {((campaign?.stripe_price ?? 0) / 100).toFixed(2).replace('.00', '')}€
-                  </span>
-                </div>
-                {stripeClientSecret && stripePaymentIntentId ? (
-                  <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, appearance: CAPTURE_STRIPE_APPEARANCE }}>
-                    <CapturePaymentInner
-                      paymentIntentId={stripePaymentIntentId}
-                      slug={slug || ''}
-                      onSuccess={handlePaymentSuccess}
-                      amount={campaign?.stripe_price || 0}
-                      currency={campaign?.stripe_currency || 'eur'}
-                      lang={lang}
-                    />
-                  </Elements>
-                ) : (
-                  <button
-                    onClick={handlePrePayment}
-                    disabled={submitting}
-                    className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
-                    style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
-                  >
-                    {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-                      <>
-                        <span>{lang === 'fr' ? `Payer ${((campaign?.stripe_price ?? 0) / 100).toFixed(2).replace('.00', '')}€` : `Pay ${((campaign?.stripe_price ?? 0) / 100).toFixed(2).replace('.00', '')}€`}</span>
-                        <ArrowRight className="h-5 w-5" />
-                      </>
-                    )}
-                  </button>
-                )}
-                <p className="text-center text-[10px] text-[#444748]/40 font-medium">
-                  {t.consent_text}
-                </p>
-              </div>
-            ) : (
-            <>
             {/* Horizontal layout wrapper */}
             <div className={isHorizontal && !isInscriptionMode ? (isEmbed ? 'flex flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
             {/* Left column in horizontal mode */}
@@ -1225,42 +948,21 @@ export function CaptureForm() {
                     </div>
                   ))}
 
-                  {/* Continue button → advance to questionnaire, payment, or booking */}
+                  {/* Continue button → advance to questionnaire or booking */}
                   {(!isInscriptionMode || hasQuestionnaire) && !isHorizontal && (
-                    stripeClientSecret && !paymentSessionId && !hasQuestionnaire && stripePaymentIntentId ? (
-                      <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, appearance: CAPTURE_STRIPE_APPEARANCE }}>
-                        <CapturePaymentInner
-                          paymentIntentId={stripePaymentIntentId}
-                          slug={slug || ''}
-                          onSuccess={handlePaymentSuccess}
-                          amount={campaign?.stripe_price || 0}
-                          currency={campaign?.stripe_currency || 'eur'}
-                          lang={lang}
-                        />
-                      </Elements>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          if (needsPrePayment && !hasQuestionnaire) {
-                            handlePrePayment()
-                          } else {
-                            setCurrentStep(hasQuestionnaire ? 2 : (bookingStep as 2 | 3))
-                          }
-                        }}
-                        disabled={!isInfoComplete || submitting}
-                        className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
-                        style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
-                      >
-                        {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-                          <>
-                            <span>{needsPrePayment && !hasQuestionnaire && campaign?.stripe_price
-                              ? (lang === 'fr' ? `Payer ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ et continuer` : `Pay ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ and continue`)
-                              : t.continue_btn}</span>
-                            <ArrowRight className="h-5 w-5" />
-                          </>
-                        )}
-                      </button>
-                    )
+                    <button
+                      onClick={() => setCurrentStep(hasQuestionnaire ? 2 : (bookingStep as 2 | 3))}
+                      disabled={!isInfoComplete || submitting}
+                      className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
+                      style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
+                    >
+                      {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+                        <>
+                          <span>{t.continue_btn}</span>
+                          <ArrowRight className="h-5 w-5" />
+                        </>
+                      )}
+                    </button>
                   )}
                 </div>
               )}
@@ -1359,59 +1061,30 @@ export function CaptureForm() {
                       </div>
                     ))}
 
-                    {/* Continue / Skip buttons OR inline payment */}
+                    {/* Continue / Skip buttons */}
                     {!isInscriptionMode && (
                       <div className="space-y-3">
-                        {stripeClientSecret && !paymentSessionId && stripePaymentIntentId ? (
-                          <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, appearance: CAPTURE_STRIPE_APPEARANCE }}>
-                            <CapturePaymentInner
-                              paymentIntentId={stripePaymentIntentId}
-                              slug={slug || ''}
-                              onSuccess={handlePaymentSuccess}
-                              amount={campaign?.stripe_price || 0}
-                              currency={campaign?.stripe_currency || 'eur'}
-                              lang={lang}
-                            />
-                          </Elements>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => {
-                                if (needsPrePayment) {
-                                  handlePrePayment()
-                                } else {
-                                  setCurrentStep(bookingStep as 2 | 3)
-                                }
-                              }}
-                              disabled={(questionnaire?.required && !isQuestionnaireComplete) || submitting}
-                              className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
-                              style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
-                            >
-                              {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-                                <>
-                                  <span>{needsPrePayment && campaign?.stripe_price
-                                    ? (lang === 'fr' ? `Payer ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ et continuer` : `Pay ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ and continue`)
-                                    : t.continue_btn}</span>
-                                  <ArrowRight className="h-5 w-5" />
-                                </>
-                              )}
-                            </button>
-                            {!questionnaire?.required && (
-                              <button
-                                onClick={() => {
-                                  if (needsPrePayment) {
-                                    handlePrePayment()
-                                  } else {
-                                    setCurrentStep(bookingStep as 2 | 3)
-                                  }
-                                }}
-                                disabled={submitting}
-                                className="w-full text-center text-xs text-[#006c49] font-bold py-2 hover:underline"
-                              >
-                                {t.questionnaire_skip || 'Passer et choisir un créneau'}
-                              </button>
-                            )}
-                          </>
+                        <button
+                          onClick={() => setCurrentStep(bookingStep as 2 | 3)}
+                          disabled={(questionnaire?.required && !isQuestionnaireComplete) || submitting}
+                          className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
+                          style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
+                        >
+                          {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+                            <>
+                              <span>{t.continue_btn}</span>
+                              <ArrowRight className="h-5 w-5" />
+                            </>
+                          )}
+                        </button>
+                        {!questionnaire?.required && (
+                          <button
+                            onClick={() => setCurrentStep(bookingStep as 2 | 3)}
+                            disabled={submitting}
+                            className="w-full text-center text-xs text-[#006c49] font-bold py-2 hover:underline"
+                          >
+                            {t.questionnaire_skip || 'Passer et choisir un créneau'}
+                          </button>
                         )}
                       </div>
                     )}
@@ -1693,9 +1366,7 @@ export function CaptureForm() {
                             {(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€
                           </span>
                           <span className="text-xs text-[#444748] font-medium">
-                            {campaign.stripe_payment_timing === 'before'
-                              ? (lang === 'fr' ? 'à payer avant confirmation' : 'to pay before confirmation')
-                              : (lang === 'fr' ? 'à payer après confirmation' : 'to pay after confirmation')}
+                            {lang === 'fr' ? 'à payer après confirmation' : 'to pay after confirmation'}
                           </span>
                         </>
                       )}
@@ -1718,8 +1389,6 @@ export function CaptureForm() {
             </div>}
 
             </div>{/* End horizontal layout wrapper */}
-            </>
-            )}
 
           </div>
         </div>
@@ -1735,6 +1404,31 @@ export function CaptureForm() {
             </div>
           </div>
         </footer>
+      )}
+
+      {/* Inline Stripe payment overlay */}
+      {inlinePayment && campaign && (
+        <InlineStripePaymentModal
+          amount={campaign.stripe_price || 0}
+          currency={campaign.stripe_currency || 'eur'}
+          lang={lang}
+          paymentIntentId={inlinePayment.payment_intent_id}
+          clientSecret={inlinePayment.client_secret}
+          confirmEndpoint={`${API_URL}?action=capture-confirm-payment`}
+          cancelEndpoint={`${API_URL}?action=capture-cancel-payment`}
+          returnUrl={`${window.location.origin}/capture/${slug || ''}?payment_intent_return=true`}
+          onSuccess={() => {
+            setInlinePayment(null)
+            setSubmitted(true)
+            if (window.parent !== window) window.parent.postMessage('closeos-capture-done', '*')
+            const rUrl = campaign?.redirect_url
+            if (rUrl) setRedirectUrl(rUrl)
+          }}
+          onCancel={() => {
+            setInlinePayment(null)
+            setSubmitting(false)
+          }}
+        />
       )}
     </div>
   )

@@ -69,6 +69,10 @@ export interface Offer {
   crmApiKey?: string
   crmMapping?: CrmMapping
   defaultFormulaId?: string
+  iclosedPushKey?: string
+  iclosedStageMapping?: Record<string, string>
+  iclosedHmacSecret?: string
+  iclosedLastSyncAt?: string
 }
 
 interface OffersContextType {
@@ -119,7 +123,11 @@ export function OffersProvider({ children }: { children: ReactNode }) {
       crmMapping: offer.crm_mapping || {},
       hasFixedFee: offer.has_fixed_fee || false,
       fixedFeeAmount: offer.fixed_fee_amount || '',
-      defaultFormulaId: offer.default_formula_id
+      defaultFormulaId: offer.default_formula_id,
+      iclosedPushKey: offer.iclosed_push_key || '',
+      iclosedStageMapping: offer.iclosed_stage_mapping || {},
+      iclosedHmacSecret: offer.iclosed_hmac_secret || '',
+      iclosedLastSyncAt: offer.iclosed_last_sync_at || undefined,
     }))
   }
 
@@ -139,12 +147,16 @@ export function OffersProvider({ children }: { children: ReactNode }) {
     if (offer.defaultFormulaId !== undefined) dbData.default_formula_id = offer.defaultFormulaId
     if (offer.hasFixedFee !== undefined) dbData.has_fixed_fee = offer.hasFixedFee
     if (offer.fixedFeeAmount !== undefined) dbData.fixed_fee_amount = offer.fixedFeeAmount
+    if (offer.iclosedPushKey !== undefined) dbData.iclosed_push_key = offer.iclosedPushKey || null
+    if (offer.iclosedStageMapping !== undefined) dbData.iclosed_stage_mapping = offer.iclosedStageMapping || {}
+    if (offer.iclosedHmacSecret !== undefined) dbData.iclosed_hmac_secret = offer.iclosedHmacSecret || null
 
     const keysToRemove = [
       'billingName', 'billingAddress', 'billingCity', 'billingZip',
       'billingCountry', 'billingEmail', 'billingPhone',
       'crmProvider', 'crmApiKey', 'crmMapping',
-      'defaultFormulaId', 'hasFixedFee', 'fixedFeeAmount'
+      'defaultFormulaId', 'hasFixedFee', 'fixedFeeAmount',
+      'iclosedPushKey', 'iclosedStageMapping', 'iclosedHmacSecret', 'iclosedLastSyncAt',
     ]
     keysToRemove.forEach(k => delete dbData[k])
 

@@ -121,23 +121,26 @@ async function handleWebhook(req: VercelRequest, res: VercelResponse) {
   }
 
   // Insert new prospect
+  const insertPayload: any = {
+    user_id: userId,
+    contact: contactName,
+    firstName,
+    lastName,
+    email,
+    phone,
+    stage: 'prospect',
+    notes,
+    offer: offerName || null,
+    offer_id: offerId,
+    formula_id: formulaId,
+    systemeio_contact_id: systemeioContactId,
+    status: 'new',
+  }
+  if (table === 'business_prospects') insertPayload.source = 'systemeio'
+
   const { data: prospect, error: insertError } = await supabase
-    .from('prospects')
-    .insert({
-      user_id: userId,
-      contact: contactName,
-      firstName,
-      lastName,
-      email,
-      phone,
-      stage: 'prospect',
-      notes,
-      offer: offerName || null,
-      offer_id: offerId,
-      formula_id: formulaId,
-      systemeio_contact_id: systemeioContactId,
-      status: 'new',
-    })
+    .from(table)
+    .insert(insertPayload)
     .select()
     .single()
 

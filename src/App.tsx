@@ -39,11 +39,25 @@ import { BusinessPolitiqueUtilisation } from './pages/BusinessPolitiqueUtilisati
 import { FounderOnlyGuard } from './components/FounderOnlyGuard'
 import NotFound from './pages/NotFound'
 import { BusinessLanding } from './pages/BusinessLanding'
+const BusinessDocsAPI = lazy(() => import('./pages/BusinessDocsAPI'))
 import { EcosystemChoice } from './pages/EcosystemChoice'
 import { CaptureForm } from './pages/CaptureForm'
+const CRMCapture = lazy(() => import('./pages/CRMCapture'))
 import { PublicBooking } from './pages/PublicBooking'
+import { OGPreview } from './pages/OGPreview'
 import { AppointmentManage } from './pages/AppointmentManage'
 import BusinessAdminReferral from './pages/BusinessAdminReferral'
+import CRMLanding from './pages/CRMLanding'
+const CRMLayout = lazy(() => import('./crm/layouts/CRMLayout').then(m => ({ default: m.CRMLayout })))
+const CRMLogin = lazy(() => import('./crm/pages/CRMLogin'))
+const CRMCheckout = lazy(() => import('./crm/pages/CRMCheckout'))
+const CRMIntegrations = lazy(() => import('./crm/pages/CRMIntegrations'))
+const CRMDashboard = lazy(() => import('./crm/pages/CRMDashboard'))
+const CRMContacts = lazy(() => import('./crm/pages/CRMContacts'))
+const CRMOffers = lazy(() => import('./crm/pages/CRMOffers'))
+const CRMPipeline = lazy(() => import('./crm/pages/CRMPipeline'))
+const CRMCampaigns = lazy(() => import('./crm/pages/CRMCampaigns'))
+const CRMAcquisition = lazy(() => import('./crm/pages/CRMAcquisition'))
 
 // Imports lazy (pages authentifiées — chargées à la demande)
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })))
@@ -205,6 +219,12 @@ function SmartHome() {
       navigate('/business', { replace: true })
       return
     }
+    // CRM produit suspendu — redirige vers Business Solo
+    if (params.has('crm')) {
+      localStorage.setItem('closeos_product', 'business')
+      navigate('/business', { replace: true })
+      return
+    }
 
     // 2. Wait for auth AND profile to finish before deciding
     if (loading || !profileReady) return
@@ -222,6 +242,7 @@ function SmartHome() {
     const saved = localStorage.getItem('closeos_product')
     if (saved === 'sales') { setProduct('sales'); return }
     if (saved === 'business') { navigate('/business', { replace: true }); return }
+    if (saved === 'crm') { localStorage.setItem('closeos_product', 'business'); navigate('/business', { replace: true }); return }
 
     // 5. No preference → show choice
     setProduct('choice')
@@ -239,10 +260,13 @@ function SmartHome() {
       k => k.startsWith('sb-') && k.endsWith('-auth-token')
     )
     if (hasCachedSession) {
-      // Show neutral loader if user might be a Business user (based on localStorage preference)
+      // Show neutral loader based on localStorage preference (Business / CRM / default Sales)
       const savedProduct = localStorage.getItem('closeos_product')
       if (savedProduct === 'business') {
         return <div className="flex items-center justify-center min-h-screen bg-[#f4f2f1] dark:bg-neutral-900"><div className="w-10 h-10 border-4 border-stone-300 border-t-stone-900 rounded-full animate-spin" /></div>
+      }
+      if (savedProduct === 'crm') {
+        return <div className="flex items-center justify-center min-h-screen bg-white"><div className="w-10 h-10 border-4 border-blue-100 border-t-[#3B82F6] rounded-full animate-spin" /></div>
       }
       return <LoadingScreen />
     }
@@ -260,6 +284,10 @@ function SmartHome() {
         onChooseBusiness={() => {
           localStorage.setItem('closeos_product', 'business')
           navigate('/business')
+        }}
+        onChooseCRM={() => {
+          localStorage.setItem('closeos_product', 'business')
+          navigate('/business/checkout?plan=solo')
         }}
       />
     )
@@ -348,7 +376,11 @@ function AuthenticatedApp() {
 
   // Plus de blocage global : la landing et les routes publiques s'affichent immédiatement.
   // Le spinner ne s'affiche que dans ProtectedRoute pour les pages nécessitant une connexion.
-  const suspenseFallback = location.pathname.startsWith('/business')
+  const isCrmPath = location.pathname.startsWith('/crm') || location.pathname.startsWith('/c/')
+  const isBusinessPath = location.pathname.startsWith('/business')
+  const suspenseFallback = isCrmPath
+    ? <div className="flex items-center justify-center min-h-screen bg-white"><div className="w-10 h-10 border-4 border-blue-100 border-t-[#3B82F6] rounded-full animate-spin" /></div>
+    : isBusinessPath
     ? <div className="flex items-center justify-center min-h-screen bg-[#f4f2f1] dark:bg-neutral-900"><div className="w-10 h-10 border-4 border-stone-300 border-t-stone-900 rounded-full animate-spin" /></div>
     : <LoadingScreen />
 
@@ -359,6 +391,10 @@ function AuthenticatedApp() {
         {/* Business Landing */}
         <Route path="/business" element={<BusinessLanding />} />
         <Route path="/buisness" element={<Navigate to="/business" replace />} />
+
+        {/* Business Public Docs (API) */}
+        <Route path="/business/docs/api" element={<BusinessDocsAPI />} />
+        <Route path="/docs/api" element={<Navigate to="/business/docs/api" replace />} />
 
         {/* Business Public Routes */}
         <Route path="/business/login" element={
@@ -430,11 +466,30 @@ function AuthenticatedApp() {
           </BusinessAuthProvider>
         } />
 
+        {/* ─── CloseOS CRM (3rd ecosystem) ─── */}
+        {/* CRM landing — visible mais inscription/connexion désactivées (produit suspendu) */}
+        <Route path="/crm" element={<CRMLanding />} />
+        <Route path="/crm/login" element={<Navigate to="/business/login" replace />} />
+        <Route path="/crm/checkout" element={<Navigate to="/business/checkout?plan=solo" replace />} />
+        <Route path="/crm/register" element={<Navigate to="/business/checkout?plan=solo" replace />} />
+
+        <Route path="/crm" element={<CRMLayout />}>
+          <Route path="dashboard" element={<CRMDashboard />} />
+          <Route path="contacts" element={<CRMContacts />} />
+          <Route path="offres" element={<CRMOffers />} />
+          <Route path="pipeline" element={<CRMPipeline />} />
+          <Route path="campagnes" element={<CRMCampaigns />} />
+          <Route path="acquisition" element={<CRMAcquisition />} />
+          <Route path="integrations" element={<CRMIntegrations />} />
+        </Route>
+
         {/* Routes Publiques */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/book/:slug" element={<PublicBooking />} />
         <Route path="/capture/:slug" element={<CaptureForm />} />
+        <Route path="/c/:slug" element={<CRMCapture />} />
+        <Route path="/og-preview" element={<OGPreview />} />
         <Route path="/appointment/:token" element={<AppointmentManage />} />
         <Route path="/view/:token" element={<SpectatorPage />} />
         <Route path="/mentions-legales" element={<Legal />} />
@@ -527,7 +582,7 @@ function AuthenticatedApp() {
       </Routes>
       </Suspense>
 
-      {user && (!isBusinessUser || profile) && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && !location.pathname.startsWith('/book') && (
+      {user && (!isBusinessUser || profile) && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && !location.pathname.startsWith('/c/') && !location.pathname.startsWith('/book') && (
         <>
           <TrialExpiredModal />
           <OnboardingWrapper onComplete={() => {

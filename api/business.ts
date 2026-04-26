@@ -222,6 +222,21 @@ async function getValidAirtableToken(supabase: any, userId: string): Promise<str
   return tokenData.access_token
 }
 
+// Buffered emit helper for sync loops — avoids serializing N HTTP calls.
+async function flushBusinessEmits(userId: string, pending: Array<{ event: string; payload: any }>) {
+  if (!pending || pending.length === 0) return
+  try {
+    const { emitWebhookEvent } = await import('./_lib/emit-webhook.js')
+    await Promise.allSettled(
+      pending.map(p =>
+        emitWebhookEvent({ product: 'business', userId, event: p.event, payload: p.payload }).catch(() => {})
+      )
+    )
+  } catch (err: any) {
+    console.error('[business] flushBusinessEmits load failed:', err?.message)
+  }
+}
+
 function getAirtableFieldValue(fields: Record<string, any>, fieldName: string | undefined): string {
   if (!fieldName) return ''
   const val = fields[fieldName]
@@ -274,6 +289,7 @@ async function syncAirtableBusiness(supabase: any, userId: string) {
   } while (offset)
 
   let imported = 0, updated = 0
+  const pendingEmits: Array<{ event: string; payload: any }> = []
 
   for (const record of allRecords) {
     const fields = record.fields || {}
@@ -292,8 +308,11 @@ async function syncAirtableBusiness(supabase: any, userId: string) {
     const { data: existing } = await supabase.from('business_prospects').select('id, stage').eq('user_id', userId).eq('airtable_record_id', record.id).maybeSingle()
     if (existing) {
       if (stage && existing.stage !== stage) {
-        await supabase.from('business_prospects').update({ contact: contactName, firstName, lastName, email, phone, company, stage, value: value || undefined }).eq('id', existing.id)
+        const { data: row } = await supabase.from('business_prospects').update({ contact: contactName, firstName, lastName, email, phone, company, stage, value: value || undefined }).eq('id', existing.id).select().single()
         updated++
+        if (row) pendingEmits.push({ event: 'prospect.stage_changed', payload: { ...row, previous_stage: existing.stage, new_stage: stage } })
+        if (row && stage === 'won')  pendingEmits.push({ event: 'deal.won',  payload: { ...row, previous_stage: existing.stage } })
+        if (row && stage === 'lost') pendingEmits.push({ event: 'deal.lost', payload: { ...row, previous_stage: existing.stage } })
       }
       continue
     }
@@ -307,14 +326,19 @@ async function syncAirtableBusiness(supabase: any, userId: string) {
       }
     }
 
-    await supabase.from('business_prospects').insert({
+    const { data: inserted } = await supabase.from('business_prospects').insert({
       user_id: userId, contact: contactName, firstName, lastName, email, phone, company,
       stage: stage || 'prospect', value: value || undefined,
       airtable_record_id: record.id, notes: 'Source: Airtable', status: 'new',
-    })
+      source: 'airtable',
+    }).select().single()
     imported++
+    if (inserted) pendingEmits.push({ event: 'prospect.created', payload: inserted })
+    if (inserted && (stage || 'prospect') === 'won')  pendingEmits.push({ event: 'deal.won',  payload: inserted })
+    if (inserted && (stage || 'prospect') === 'lost') pendingEmits.push({ event: 'deal.lost', payload: inserted })
   }
 
+  await flushBusinessEmits(userId, pendingEmits)
   return { imported, updated }
 }
 
@@ -530,6 +554,19 @@ async function syncGhlBusiness(supabase: any, userId: string) {
   })
 
   let imported = 0, updated = 0
+  const pendingEmits: Array<{ event: string; payload: any }> = []
+
+  // Need a richer existing map (with stage) for diffing
+  const { data: existingProspectsFull } = await supabase
+    .from('business_prospects')
+    .select('id, ghl_contact_id, email, stage')
+    .eq('user_id', userId)
+  const existingFullByGhlId = new Map<string, any>()
+  const existingFullByEmail = new Map<string, any>()
+  ;(existingProspectsFull || []).forEach((p: any) => {
+    if (p.ghl_contact_id) existingFullByGhlId.set(p.ghl_contact_id, p)
+    if (p.email) existingFullByEmail.set(p.email.toLowerCase(), p)
+  })
 
   for (const contact of allContacts) {
     const ghlId = contact.id
@@ -546,11 +583,12 @@ async function syncGhlBusiness(supabase: any, userId: string) {
     const value = opp?.monetaryValue || 0
     const oppId = opp?.id || null
 
-    const existingById = existingByGhlId.get(ghlId)
-    const existingByMail = email ? existingByEmail.get(email.toLowerCase()) : null
+    const existingById = existingFullByGhlId.get(ghlId)
+    const existingByMail = email ? existingFullByEmail.get(email.toLowerCase()) : null
     const existing = existingById || existingByMail
 
     if (existing) {
+      const previousStage = existing.stage || ''
       const updates: any = { ghl_contact_id: ghlId }
       if (oppId) updates.ghl_opportunity_id = oppId
       if (firstName && !existing.firstName) updates.firstName = firstName
@@ -561,11 +599,18 @@ async function syncGhlBusiness(supabase: any, userId: string) {
         updates.stage = stage
         if (value > 0) updates.value = value
       }
-      await supabase.from('business_prospects').update(updates).eq('id', existing.id)
+      const { data: row } = await supabase.from('business_prospects').update(updates).eq('id', existing.id).select().single()
       updated++
+      if (row && opp && previousStage !== stage) {
+        pendingEmits.push({ event: 'prospect.stage_changed', payload: { ...row, previous_stage: previousStage, new_stage: stage } })
+        if (stage === 'won')  pendingEmits.push({ event: 'deal.won',  payload: { ...row, previous_stage: previousStage } })
+        if (stage === 'lost') pendingEmits.push({ event: 'deal.lost', payload: { ...row, previous_stage: previousStage } })
+      } else if (row) {
+        pendingEmits.push({ event: 'prospect.updated', payload: row })
+      }
     } else {
       const fullName = `${firstName} ${lastName}`.trim() || email || 'Contact GHL'
-      await supabase.from('business_prospects').insert([{
+      const { data: inserted } = await supabase.from('business_prospects').insert([{
         user_id: userId,
         contact: fullName,
         firstName: firstName || null,
@@ -579,11 +624,16 @@ async function syncGhlBusiness(supabase: any, userId: string) {
         ghl_opportunity_id: oppId,
         notes: 'Source: GoHighLevel',
         status: 'new',
-      }])
+        source: 'ghl',
+      }]).select().single()
       imported++
+      if (inserted) pendingEmits.push({ event: 'prospect.created', payload: inserted })
+      if (inserted && (stage || 'prospect') === 'won')  pendingEmits.push({ event: 'deal.won',  payload: inserted })
+      if (inserted && (stage || 'prospect') === 'lost') pendingEmits.push({ event: 'deal.lost', payload: inserted })
     }
   }
 
+  await flushBusinessEmits(userId, pendingEmits)
   return { imported, updated, total: allContacts.length }
 }
 
@@ -754,6 +804,7 @@ async function syncHubspot(supabase: any, userId: string) {
   } while (after)
 
   let imported = 0, updated = 0
+  const pendingEmits: Array<{ event: string; payload: any }> = []
 
   for (const contact of allContacts) {
     const props = contact.properties || {}
@@ -771,41 +822,63 @@ async function syncHubspot(supabase: any, userId: string) {
       company: props.company || '',
       stage,
       hubspot_contact_id: contact.id,
+      source: 'hubspot',
     }
 
     // Check if exists by hubspot_contact_id
     const { data: existing } = await supabase
       .from('business_prospects')
-      .select('id')
+      .select('id, stage')
       .eq('user_id', userId)
       .eq('hubspot_contact_id', contact.id)
       .maybeSingle()
 
     if (existing) {
-      await supabase.from('business_prospects')
+      const previousStage = existing.stage || ''
+      const { data: row } = await supabase.from('business_prospects')
         .update({ ...prospectData, user_id: undefined })
-        .eq('id', existing.id)
+        .eq('id', existing.id).select().single()
       updated++
+      if (row && previousStage !== stage) {
+        pendingEmits.push({ event: 'prospect.stage_changed', payload: { ...row, previous_stage: previousStage, new_stage: stage } })
+        if (stage === 'won')  pendingEmits.push({ event: 'deal.won',  payload: { ...row, previous_stage: previousStage } })
+        if (stage === 'lost') pendingEmits.push({ event: 'deal.lost', payload: { ...row, previous_stage: previousStage } })
+      } else if (row) {
+        pendingEmits.push({ event: 'prospect.updated', payload: row })
+      }
     } else {
       // Check by email
       const { data: byEmail } = await supabase
         .from('business_prospects')
-        .select('id')
+        .select('id, stage')
         .eq('user_id', userId)
         .eq('email', email)
         .maybeSingle()
 
       if (byEmail) {
-        await supabase.from('business_prospects')
+        const previousStage = byEmail.stage || ''
+        const { data: row } = await supabase.from('business_prospects')
           .update({ ...prospectData, user_id: undefined })
-          .eq('id', byEmail.id)
+          .eq('id', byEmail.id).select().single()
         updated++
+        if (row && previousStage !== stage) {
+          pendingEmits.push({ event: 'prospect.stage_changed', payload: { ...row, previous_stage: previousStage, new_stage: stage } })
+          if (stage === 'won')  pendingEmits.push({ event: 'deal.won',  payload: { ...row, previous_stage: previousStage } })
+          if (stage === 'lost') pendingEmits.push({ event: 'deal.lost', payload: { ...row, previous_stage: previousStage } })
+        } else if (row) {
+          pendingEmits.push({ event: 'prospect.updated', payload: row })
+        }
       } else {
-        await supabase.from('business_prospects').insert(prospectData)
+        const { data: inserted } = await supabase.from('business_prospects').insert(prospectData).select().single()
         imported++
+        if (inserted) pendingEmits.push({ event: 'prospect.created', payload: inserted })
+        if (inserted && stage === 'won')  pendingEmits.push({ event: 'deal.won',  payload: inserted })
+        if (inserted && stage === 'lost') pendingEmits.push({ event: 'deal.lost', payload: inserted })
       }
     }
   }
+
+  await flushBusinessEmits(userId, pendingEmits)
 
   return { imported, updated }
 }
@@ -914,6 +987,7 @@ async function syncPipedrive(supabase: any, userId: string) {
   const data = await res.json()
 
   let imported = 0, updated = 0
+  const pendingEmits: Array<{ event: string; payload: any }> = []
 
   for (const deal of (data.data || [])) {
     const personId = deal.person_id?.value || deal.person_id
@@ -943,31 +1017,47 @@ async function syncPipedrive(supabase: any, userId: string) {
       company,
       value: deal.value || 0,
       stage,
+      source: 'pipedrive',
     }
 
     if (email) {
       const { data: existing } = await supabase
         .from('business_prospects')
-        .select('id')
+        .select('id, stage')
         .eq('user_id', userId)
         .eq('email', email)
         .maybeSingle()
 
       if (existing) {
-        await supabase.from('business_prospects')
+        const previousStage = existing.stage || ''
+        const { data: row } = await supabase.from('business_prospects')
           .update({ ...prospectData, user_id: undefined })
-          .eq('id', existing.id)
+          .eq('id', existing.id).select().single()
         updated++
+        if (row && previousStage !== stage) {
+          pendingEmits.push({ event: 'prospect.stage_changed', payload: { ...row, previous_stage: previousStage, new_stage: stage } })
+          if (stage === 'won')  pendingEmits.push({ event: 'deal.won',  payload: { ...row, previous_stage: previousStage } })
+          if (stage === 'lost') pendingEmits.push({ event: 'deal.lost', payload: { ...row, previous_stage: previousStage } })
+        } else if (row) {
+          pendingEmits.push({ event: 'prospect.updated', payload: row })
+        }
       } else {
-        await supabase.from('business_prospects').insert(prospectData)
+        const { data: inserted } = await supabase.from('business_prospects').insert(prospectData).select().single()
         imported++
+        if (inserted) pendingEmits.push({ event: 'prospect.created', payload: inserted })
+        if (inserted && stage === 'won')  pendingEmits.push({ event: 'deal.won',  payload: inserted })
+        if (inserted && stage === 'lost') pendingEmits.push({ event: 'deal.lost', payload: inserted })
       }
     } else {
-      await supabase.from('business_prospects').insert(prospectData)
+      const { data: inserted } = await supabase.from('business_prospects').insert(prospectData).select().single()
       imported++
+      if (inserted) pendingEmits.push({ event: 'prospect.created', payload: inserted })
+      if (inserted && stage === 'won')  pendingEmits.push({ event: 'deal.won',  payload: inserted })
+      if (inserted && stage === 'lost') pendingEmits.push({ event: 'deal.lost', payload: inserted })
     }
   }
 
+  await flushBusinessEmits(userId, pendingEmits)
   return { imported, updated }
 }
 
@@ -1073,6 +1163,108 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = req.query.action as string
 
   try {
+    // ─── Emit outbound webhook from the frontend (after local Supabase mutations) ───
+    if (action === 'emit-event' && req.method === 'POST') {
+      const authHeader = (req.headers['authorization'] || '') as string
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+      if (!token) return res.status(401).json({ error: 'Missing bearer token' })
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token)
+      if (userErr || !userData?.user) return res.status(401).json({ error: 'Invalid token' })
+      const userId = userData.user.id
+      const { event, payload } = (req.body || {}) as { event?: string; payload?: any }
+      if (!event) return res.status(400).json({ error: 'event is required' })
+      try {
+        const { emitWebhookEvent, detectProductForUser } = await import('./_lib/emit-webhook.js')
+        const product = await detectProductForUser(userId)
+        if (!product) return res.status(200).json({ skipped: 'no product for user' })
+        emitWebhookEvent({ product, userId, event, payload: payload || {} }).catch(() => {})
+        return res.status(200).json({ ok: true })
+      } catch (err: any) {
+        console.error('[emit-event] failed:', err?.message)
+        return res.status(500).json({ error: err?.message || 'Emit failed' })
+      }
+    }
+
+    // POST /api/business?action=test-webhook
+    // Sends a synthetic webhook.test event to a single subscription URL with the
+    // real HMAC signature, so the user can validate connectivity from the UI.
+    if (action === 'test-webhook' && req.method === 'POST') {
+      const authHeader = (req.headers['authorization'] || '') as string
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+      if (!token) return res.status(401).json({ error: 'Missing bearer token' })
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token)
+      if (userErr || !userData?.user) return res.status(401).json({ error: 'Invalid token' })
+      const userId = userData.user.id
+      const { subscription_id } = (req.body || {}) as { subscription_id?: string }
+      if (!subscription_id) return res.status(400).json({ error: 'subscription_id is required' })
+
+      const { data: sub } = await supabase
+        .from('business_webhook_subscriptions')
+        .select('id, url, secret, user_id')
+        .eq('id', subscription_id)
+        .eq('user_id', userId)
+        .single()
+      if (!sub) return res.status(404).json({ error: 'Subscription not found' })
+
+      const samplePayload = {
+        prospect: {
+          id: 0,
+          contact: 'Jane Doe (test)',
+          firstName: 'Jane',
+          lastName: 'Doe',
+          email: 'test@example.com',
+          phone: '+33000000000',
+          stage: 'prospect',
+          status: 'test',
+          value: null,
+          notes: 'Synthetic test event from CloseOS.',
+          lead_answers: [{ question: 'Is this a test?', answer: 'Yes' }],
+          metadata: { test: true },
+          external_id: 'test-webhook',
+          created_at: new Date().toISOString(),
+        },
+      }
+      const body = JSON.stringify({
+        event: 'webhook.test',
+        product: 'business',
+        user_id: userId,
+        timestamp: new Date().toISOString(),
+        data: samplePayload,
+      })
+      const signature = crypto.createHmac('sha256', sub.secret).update(body).digest('hex')
+
+      let status = 0
+      let errorText: string | null = null
+      try {
+        const r = await fetch(sub.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CloseOS-Event': 'webhook.test',
+            'X-CloseOS-Product': 'business',
+            'X-CloseOS-Signature': signature,
+          },
+          body,
+        })
+        status = r.status
+        if (!r.ok) errorText = `HTTP ${r.status}`
+      } catch (err: any) {
+        status = 0
+        errorText = (err?.message || 'Network error').slice(0, 500)
+      }
+
+      await supabase
+        .from('business_webhook_subscriptions')
+        .update({
+          last_triggered_at: new Date().toISOString(),
+          last_status: status,
+          last_error: errorText,
+        })
+        .eq('id', sub.id)
+
+      return res.status(200).json({ status, error: errorText })
+    }
+
     // ─── Invitation actions (method-based routing for backward compat) ───
     const PLAN_SEAT_LIMITS: Record<string, number> = { solo: 0, business: 3, business_acquisition: 5, enterprise: 999999 }
 
@@ -1473,7 +1665,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'formulas-create' && req.method === 'POST') {
-      const { user_id, name, price, description, resources, team_id, billing_type, yearly_price } = req.body
+      const { user_id, name, price, description, resources, team_id, billing_type, billing_interval, yearly_price } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -1502,6 +1694,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           is_active: true,
           team_id: team_id || null,
           billing_type: billing_type || 'one_time',
+          billing_interval: billing_interval ?? null,
           yearly_price: yearly_price ?? null,
         })
         .select()
@@ -1781,7 +1974,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'campaigns-create' && req.method === 'POST') {
-      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, team_id, stripe_enabled, stripe_price, stripe_currency, stripe_payment_timing, refund_enabled, refund_tiers, reschedule_enabled, reschedule_paid, reschedule_price, reschedule_currency } = req.body
+      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, team_id, stripe_enabled, stripe_price, stripe_currency, refund_enabled, refund_tiers, reschedule_enabled, reschedule_paid, reschedule_price, reschedule_currency } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -1830,7 +2023,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           stripe_enabled: stripe_enabled ?? false,
           stripe_price: stripe_price ?? 0,
           stripe_currency: stripe_currency || 'eur',
-          stripe_payment_timing: stripe_payment_timing || 'after',
           refund_enabled: refund_enabled ?? false,
           refund_tiers: refund_tiers || [],
           reschedule_enabled: reschedule_enabled ?? false,
@@ -2645,7 +2837,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { data: campaign, error } = await supabase
         .from('business_campaigns')
-        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url, capture_type, booking_duration, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, user_id, stripe_enabled, stripe_price, stripe_currency, stripe_payment_timing')
+        .select('id, name, description, custom_fields, slug, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, redirect_url, capture_type, booking_duration, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, user_id, stripe_enabled, stripe_price, stripe_currency')
         .eq('slug', slug)
         .eq('is_active', true)
         .single()
@@ -2883,6 +3075,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const ownerAppts = (ownerApptsRes.data || []).map((a: any) => ({ ...a, assigned_to: ownerId }))
       const allAppointments = [...(appointmentsRes.data || []), ...ownerAppts]
 
+      // ─── Soft lock: count pending payment sessions per slot (last 30 min) ───
+      // For multi-member campaigns, a slot accepts as many bookings as there are free members.
+      const pendingLockCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+      const { data: pendingPaymentSessions } = await supabase
+        .from('campaign_payment_sessions')
+        .select('prospect_data')
+        .eq('campaign_id', campaign.id)
+        .eq('status', 'pending')
+        .gte('created_at', pendingLockCutoff)
+      const pendingHeldCount = new Map<string, number>()
+      for (const s of (pendingPaymentSessions || [])) {
+        const dt = (s as any).prospect_data?.datetime_utc
+        if (dt) pendingHeldCount.set(dt, (pendingHeldCount.get(dt) || 0) + 1)
+      }
+
       // ─── Google Calendar conflict checking ───
       // Map member_id → auth user_id for Google Calendar token lookup
       const memberToAuthUserId: Record<string, string> = {}
@@ -3004,7 +3211,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Add all available time slots for this date (date/time will be derived from datetime_utc by client)
+        // Soft lock: subtract pending payment sessions from capacity. If 0 spots remain, drop the slot.
         for (const [datetimeUtc, info] of Object.entries(utcToMembers)) {
+          const heldCount = pendingHeldCount.get(datetimeUtc) || 0
+          if (heldCount >= info.member_ids.length) continue
           availableSlots.push({ date: '', time: '', member_ids: info.member_ids, datetime_utc: datetimeUtc })
         }
       }
@@ -3555,14 +3765,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : supabase.from('business_absences').select('start_date, end_date').eq('team_member_id', link.team_member_id).gte('end_date', today)
 
       const appointmentsQuery = isOwnerLink
-        ? supabase.from('business_appointments').select('date, time, duration').eq('user_id', ownerId).is('assigned_to', null).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
-        : supabase.from('business_appointments').select('date, time, duration').eq('assigned_to', link.team_member_id).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
+        ? supabase.from('business_appointments').select('date, time, duration, datetime_utc').eq('user_id', ownerId).is('assigned_to', null).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
+        : supabase.from('business_appointments').select('date, time, duration, datetime_utc').eq('assigned_to', link.team_member_id).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
 
-      const [slotsRes, absencesRes, appointmentsRes] = await Promise.all([slotsQuery, absencesQuery, appointmentsQuery])
+      // Soft lock: include pending booking payment sessions (last 30 min)
+      const pendingLockCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+      const pendingSessionsQuery = supabase
+        .from('campaign_payment_sessions')
+        .select('prospect_data')
+        .eq('booking_link_id', link.id)
+        .eq('status', 'pending')
+        .gte('created_at', pendingLockCutoff)
+
+      const [slotsRes, absencesRes, appointmentsRes, pendingSessionsRes] = await Promise.all([slotsQuery, absencesQuery, appointmentsQuery, pendingSessionsQuery])
 
       const weeklySlots = slotsRes.data || []
       const absences = absencesRes.data || []
       const existingAppointments = appointmentsRes.data || []
+      const pendingHeldUtc = new Set<string>(
+        ((pendingSessionsRes.data as any[]) || [])
+          .map((s: any) => s.prospect_data?.datetime_utc)
+          .filter((dt: any) => typeof dt === 'string')
+      )
 
       // Fetch Google Calendar events for conflict checking
       let googleEvents: { start: string; end: string }[] = []
@@ -3652,7 +3876,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             // Convert to UTC
             const utcDate = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz)
-            availableSlots.push({ date: dateStr, time: timeStr, datetime_utc: utcDate.toISOString() })
+            const utcIso = utcDate.toISOString()
+            // Soft lock: skip slots reserved by an active pending payment
+            if (pendingHeldUtc.has(utcIso)) continue
+            availableSlots.push({ date: dateStr, time: timeStr, datetime_utc: utcIso })
           }
         }
       }
@@ -3665,6 +3892,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         companyName: settings?.company_name || null,
         logoUrl: settings?.logo_url || null,
         slots: availableSlots,
+        stripe: link.stripe_enabled && link.stripe_price > 0 ? {
+          enabled: true,
+          price: link.stripe_price,
+          currency: link.stripe_currency || 'eur',
+        } : null,
       })
     }
 
@@ -4214,16 +4446,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (!paymentSession) return res.status(404).json({ error: 'Payment session not found' })
       if (paymentSession.status === 'completed') {
-        // For pre_booking, allow re-entry (user might refresh after Stripe return)
-        if (paymentSession.payment_type === 'pre_booking') {
-          return res.status(200).json({
-            success: true,
-            already_completed: true,
-            payment_type: 'pre_booking',
-            prospect_data: paymentSession.prospect_data,
-            payment_session_id: paymentSession.id,
-          })
-        }
         return res.status(200).json({ already_completed: true })
       }
 
@@ -4322,52 +4544,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ─── Verify pre-booking inline payment (PaymentIntent) ───
-    if (action === 'capture-verify-payment' && req.method === 'POST') {
-      const { payment_intent_id } = req.body
-      if (!payment_intent_id) return res.status(400).json({ error: 'payment_intent_id required' })
-
-      const { data: paymentSession } = await supabase
-        .from('campaign_payment_sessions')
-        .select('*')
-        .eq('stripe_checkout_session_id', payment_intent_id)
-        .single()
-
-      if (!paymentSession) return res.status(404).json({ error: 'Payment session not found' })
-
-      if (paymentSession.status === 'completed') {
-        return res.status(200).json({
-          success: true,
-          already_completed: true,
-          payment_type: paymentSession.payment_type,
-          prospect_data: paymentSession.prospect_data,
-          payment_session_id: paymentSession.id,
-        })
-      }
-
-      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
-      const pi = await stripeClient.paymentIntents.retrieve(payment_intent_id)
-
-      if (pi.status !== 'succeeded') {
-        return res.status(400).json({ error: 'Payment not completed' })
-      }
-
-      await supabase
-        .from('campaign_payment_sessions')
-        .update({ status: 'completed' })
-        .eq('id', paymentSession.id)
-
-      return res.status(200).json({
-        success: true,
-        payment_type: paymentSession.payment_type,
-        prospect_data: paymentSession.prospect_data,
-        payment_session_id: paymentSession.id,
-      })
-    }
-
-    // ─── Pre-booking payment: create PaymentIntent for inline payment ───
-    if (action === 'capture-pre-payment' && req.method === 'POST') {
-      const { slug, name, email, phone, custom_data, answers } = req.body
-      if (!slug) return res.status(400).json({ error: 'slug required' })
+    // ─── Public capture endpoint (no auth) ───
+    // ─── Inline payment init (PaymentIntent + slot soft-lock) ───
+    if (action === 'capture-init-payment' && req.method === 'POST') {
+      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers } = req.body
+      if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
 
       const { data: campaign, error: campErr } = await supabase
         .from('business_campaigns')
@@ -4380,6 +4561,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (!campaign.stripe_enabled || !campaign.stripe_price || campaign.stripe_price <= 0) {
         return res.status(400).json({ error: 'Payment not configured for this campaign' })
+      }
+
+      // For with_rdv campaigns, ensure the slot still has capacity.
+      // Capacity = number of members free at this slot (sent by the client as available_member_ids).
+      // Block only when (pending sessions + booked appointments) >= capacity.
+      if (campaign.capture_type !== 'without_rdv') {
+        if (!datetime_utc) return res.status(400).json({ error: 'datetime_utc required' })
+
+        const capacity = Array.isArray(available_member_ids) && available_member_ids.length > 0
+          ? available_member_ids.length
+          : 1
+
+        const lockCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+        const { data: pendingSessions } = await supabase
+          .from('campaign_payment_sessions')
+          .select('prospect_data')
+          .eq('campaign_id', campaign.id)
+          .eq('status', 'pending')
+          .gte('created_at', lockCutoff)
+        const pendingAtSlot = (pendingSessions || []).filter((s: any) => s.prospect_data?.datetime_utc === datetime_utc).length
+
+        const { data: existingAppts } = await supabase
+          .from('business_appointments')
+          .select('id')
+          .eq('campaign_id', campaign.id)
+          .eq('datetime_utc', datetime_utc)
+          .in('status', ['upcoming', 'pending', 'confirmed'])
+        const bookedAtSlot = (existingAppts || []).length
+
+        if (pendingAtSlot + bookedAtSlot >= capacity) {
+          return res.status(409).json({ error: 'Slot no longer available' })
+        }
       }
 
       const { data: stripeProfile } = await supabase
@@ -4401,7 +4614,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const commonParams: any = {
         amount,
         currency,
-        metadata: { campaign_id: campaign.id, payment_type: 'pre_booking', slug },
+        metadata: { campaign_id: campaign.id, payment_type: 'initial', slug },
         ...(email ? { receipt_email: email } : {}),
         automatic_payment_methods: { enabled: true },
       }
@@ -4423,9 +4636,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { error: insertErr } = await supabase.from('campaign_payment_sessions').insert({
         campaign_id: campaign.id,
-        stripe_checkout_session_id: paymentIntent.id,
-        prospect_data: { slug, name, email, phone, custom_data, answers },
-        payment_type: 'pre_booking',
+        stripe_checkout_session_id: paymentIntent.id, // legacy column name; stores PI id for inline flow
+        stripe_payment_intent_id: paymentIntent.id,
+        prospect_data: { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers },
+        payment_type: 'initial',
         amount,
       })
       if (insertErr) {
@@ -4439,7 +4653,398 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
-    // ─── Public capture endpoint (no auth) ───
+    // ─── Cancel inline payment (called by front when user closes modal / gives up) ───
+    // Releases the slot lock immediately by flipping the session to 'cancelled'.
+    // Best-effort cancel of the Stripe PaymentIntent so it doesn't linger 24h before auto-cancel.
+    if (action === 'capture-cancel-payment' && req.method === 'POST') {
+      const { payment_intent_id } = req.body
+      if (!payment_intent_id) return res.status(400).json({ error: 'payment_intent_id required' })
+
+      const { data: paymentSession } = await supabase
+        .from('campaign_payment_sessions')
+        .select('id, status')
+        .eq('stripe_payment_intent_id', payment_intent_id)
+        .single()
+
+      if (!paymentSession) return res.status(404).json({ error: 'Payment session not found' })
+      if (paymentSession.status !== 'pending') {
+        return res.status(200).json({ success: true, already_settled: true })
+      }
+
+      await supabase
+        .from('campaign_payment_sessions')
+        .update({ status: 'cancelled' })
+        .eq('id', paymentSession.id)
+        .eq('status', 'pending')
+
+      try {
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
+        await stripeClient.paymentIntents.cancel(payment_intent_id)
+      } catch (err: any) {
+        // PI may already be in a terminal state (succeeded/cancelled) — non-fatal
+        console.log(`[capture-cancel-payment] Stripe cancel skipped: ${err?.message}`)
+      }
+
+      return res.status(200).json({ success: true })
+    }
+
+    // ─── Confirm inline payment (called by front after Stripe confirmPayment succeeded) ───
+    if (action === 'capture-confirm-payment' && req.method === 'POST') {
+      const { payment_intent_id } = req.body
+      if (!payment_intent_id) return res.status(400).json({ error: 'payment_intent_id required' })
+
+      const { data: paymentSession } = await supabase
+        .from('campaign_payment_sessions')
+        .select('*')
+        .eq('stripe_payment_intent_id', payment_intent_id)
+        .single()
+
+      if (!paymentSession) return res.status(404).json({ error: 'Payment session not found' })
+
+      if (paymentSession.status === 'completed') {
+        return res.status(200).json({ success: true, already_completed: true })
+      }
+
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
+      const pi = await stripeClient.paymentIntents.retrieve(payment_intent_id)
+      if (pi.status !== 'succeeded') return res.status(400).json({ error: 'Payment not completed' })
+
+      // Atomic claim: only first caller (front OR webhook) does the post-payment work
+      const { data: claimed } = await supabase
+        .from('campaign_payment_sessions')
+        .update({ status: 'completed' })
+        .eq('id', paymentSession.id)
+        .eq('status', 'pending')
+        .select('*')
+        .maybeSingle()
+
+      if (!claimed) {
+        return res.status(200).json({ success: true, already_completed: true })
+      }
+
+      // Call capture-submit internally to create prospect + appointment
+      const pd = (claimed.prospect_data as any) || {}
+      const host = req.headers.host
+      const proto = (req.headers['x-forwarded-proto'] as string) || 'https'
+      try {
+        const submitRes = await fetch(`${proto}://${host}/api/business?action=capture-submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...pd, payment_session_id: claimed.id }),
+        })
+        const submitData: any = await submitRes.json().catch(() => ({}))
+
+        if (submitData?.appointment?.id) {
+          await supabase
+            .from('campaign_payment_sessions')
+            .update({ appointment_id: submitData.appointment.id })
+            .eq('id', claimed.id)
+          // Stamp Stripe info on the appointment
+          await supabase
+            .from('business_appointments')
+            .update({
+              stripe_payment_intent_id: pi.id,
+              stripe_payment_status: 'paid',
+              stripe_amount_paid: pi.amount_received || claimed.amount,
+              stripe_currency: pi.currency || 'eur',
+            })
+            .eq('id', submitData.appointment.id)
+          return res.status(200).json({
+            success: true,
+            appointment: submitData.appointment,
+            prospect: submitData.prospect,
+            redirect_url: submitData.redirect_url,
+          })
+        }
+
+        // capture-submit failed AFTER charge succeeded → auto-refund + alert owner
+        console.error('[capture-confirm-payment] internal submit failed:', submitData?.error)
+        try {
+          await stripeClient.refunds.create({
+            payment_intent: pi.id,
+            reason: 'requested_by_customer',
+          })
+          await supabase
+            .from('campaign_payment_sessions')
+            .update({ status: 'refunded' })
+            .eq('id', claimed.id)
+        } catch (refundErr: any) {
+          console.error('[capture-confirm-payment] refund failed:', refundErr?.message)
+        }
+        return res.status(500).json({
+          error: submitData?.error || 'Booking creation failed',
+          refunded: true,
+        })
+      } catch (err: any) {
+        console.error('[capture-confirm-payment] unexpected error:', err?.message)
+        return res.status(500).json({ error: 'Unexpected error', details: err?.message })
+      }
+    }
+
+    // ─── Booking link inline payment init (PaymentIntent + slot soft-lock) ───
+    if (action === 'booking-init-payment' && req.method === 'POST') {
+      const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, questionnaire_answers } = req.body
+      if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
+      if (!datetime_utc) return res.status(400).json({ error: 'datetime_utc required' })
+
+      const { data: link, error: linkErr } = await supabase
+        .from('business_booking_links')
+        .select('*')
+        .eq('slug', slug)
+        .single()
+
+      if (linkErr || !link) return res.status(404).json({ error: 'Booking link not found' })
+
+      if (!link.stripe_enabled || !link.stripe_price || link.stripe_price <= 0) {
+        return res.status(400).json({ error: 'Payment not configured for this booking link' })
+      }
+
+      // Soft lock: capacity = 1 per booking link (single member). Block if any pending or booked at this slot.
+      const lockCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+      const { data: pendingSessions } = await supabase
+        .from('campaign_payment_sessions')
+        .select('prospect_data')
+        .eq('booking_link_id', link.id)
+        .eq('status', 'pending')
+        .gte('created_at', lockCutoff)
+      const pendingAtSlot = (pendingSessions || []).filter((s: any) => s.prospect_data?.datetime_utc === datetime_utc).length
+
+      const conflictQuery = link.team_member_id
+        ? supabase.from('business_appointments').select('id').eq('assigned_to', link.team_member_id).eq('datetime_utc', datetime_utc).in('status', ['upcoming', 'pending', 'confirmed'])
+        : supabase.from('business_appointments').select('id').eq('user_id', link.business_owner_id).is('assigned_to', null).eq('datetime_utc', datetime_utc).in('status', ['upcoming', 'pending', 'confirmed'])
+      const { data: existingAppts } = await conflictQuery
+      const bookedAtSlot = (existingAppts || []).length
+
+      if (pendingAtSlot + bookedAtSlot >= 1) {
+        return res.status(409).json({ error: 'Slot no longer available' })
+      }
+
+      const { data: stripeProfile } = await supabase
+        .from('profiles')
+        .select('stripe_account_id, stripe_connected')
+        .eq('id', link.business_owner_id)
+        .single()
+
+      if (!stripeProfile?.stripe_account_id || !stripeProfile.stripe_connected) {
+        return res.status(400).json({ error: 'Stripe account not connected for this booking link' })
+      }
+
+      const amount = link.stripe_price
+      const currency = link.stripe_currency || 'eur'
+      const applicationFee = Math.round(amount * 0.02)
+
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
+
+      const commonParams: any = {
+        amount,
+        currency,
+        metadata: { booking_link_id: link.id, payment_type: 'booking', slug },
+        ...(email ? { receipt_email: email } : {}),
+        automatic_payment_methods: { enabled: true },
+      }
+
+      let paymentIntent
+      try {
+        paymentIntent = await stripeClient.paymentIntents.create({
+          ...commonParams,
+          application_fee_amount: applicationFee,
+          transfer_data: { destination: stripeProfile.stripe_account_id },
+        })
+      } catch (stripeErr: any) {
+        if (stripeErr.message?.includes('your own account')) {
+          paymentIntent = await stripeClient.paymentIntents.create(commonParams)
+        } else {
+          throw stripeErr
+        }
+      }
+
+      const { error: insertErr } = await supabase.from('campaign_payment_sessions').insert({
+        booking_link_id: link.id,
+        stripe_checkout_session_id: paymentIntent.id, // legacy column, also stores PI id
+        stripe_payment_intent_id: paymentIntent.id,
+        prospect_data: { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, questionnaire_answers },
+        payment_type: 'booking',
+        amount,
+      })
+      if (insertErr) {
+        console.error('Failed to store booking payment session:', insertErr)
+        return res.status(500).json({ error: 'Failed to initialize payment session' })
+      }
+
+      return res.status(200).json({
+        client_secret: paymentIntent.client_secret,
+        payment_intent_id: paymentIntent.id,
+      })
+    }
+
+    // ─── Booking link cancel payment (release slot lock) ───
+    if (action === 'booking-cancel-payment' && req.method === 'POST') {
+      const { payment_intent_id } = req.body
+      if (!payment_intent_id) return res.status(400).json({ error: 'payment_intent_id required' })
+
+      const { data: paymentSession } = await supabase
+        .from('campaign_payment_sessions')
+        .select('id, status, booking_link_id')
+        .eq('stripe_payment_intent_id', payment_intent_id)
+        .single()
+
+      if (!paymentSession || !paymentSession.booking_link_id) return res.status(404).json({ error: 'Payment session not found' })
+      if (paymentSession.status !== 'pending') {
+        return res.status(200).json({ success: true, already_settled: true })
+      }
+
+      await supabase
+        .from('campaign_payment_sessions')
+        .update({ status: 'cancelled' })
+        .eq('id', paymentSession.id)
+        .eq('status', 'pending')
+
+      try {
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
+        await stripeClient.paymentIntents.cancel(payment_intent_id)
+      } catch (err: any) {
+        console.log(`[booking-cancel-payment] Stripe cancel skipped: ${err?.message}`)
+      }
+
+      return res.status(200).json({ success: true })
+    }
+
+    // ─── Booking link confirm payment (creates appointment after PI succeeded) ───
+    if (action === 'booking-confirm-payment' && req.method === 'POST') {
+      const { payment_intent_id } = req.body
+      if (!payment_intent_id) return res.status(400).json({ error: 'payment_intent_id required' })
+
+      const { data: paymentSession } = await supabase
+        .from('campaign_payment_sessions')
+        .select('*')
+        .eq('stripe_payment_intent_id', payment_intent_id)
+        .single()
+
+      if (!paymentSession || !paymentSession.booking_link_id) return res.status(404).json({ error: 'Payment session not found' })
+
+      if (paymentSession.status === 'completed') {
+        // Lookup the appointment for redirect_url
+        let redirectUrl: string | null = null
+        if (paymentSession.appointment_id) {
+          const { data: link } = await supabase.from('business_booking_links').select('redirect_url').eq('id', paymentSession.booking_link_id).single()
+          redirectUrl = link?.redirect_url || null
+        }
+        return res.status(200).json({ success: true, already_completed: true, redirect_url: redirectUrl })
+      }
+
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
+      const pi = await stripeClient.paymentIntents.retrieve(payment_intent_id)
+      if (pi.status !== 'succeeded') return res.status(400).json({ error: 'Payment not completed' })
+
+      // Atomic claim
+      const { data: claimed } = await supabase
+        .from('campaign_payment_sessions')
+        .update({ status: 'completed' })
+        .eq('id', paymentSession.id)
+        .eq('status', 'pending')
+        .select('*')
+        .maybeSingle()
+
+      if (!claimed) {
+        return res.status(200).json({ success: true, already_completed: true })
+      }
+
+      const { data: link } = await supabase.from('business_booking_links').select('*').eq('id', claimed.booking_link_id).single()
+      if (!link) {
+        // Booking link disappeared — refund
+        try {
+          await stripeClient.refunds.create({ payment_intent: pi.id, reason: 'requested_by_customer' })
+          await supabase.from('campaign_payment_sessions').update({ status: 'refunded' }).eq('id', claimed.id)
+        } catch (e: any) { console.error('[booking-confirm-payment] refund failed:', e?.message) }
+        return res.status(500).json({ error: 'Booking link not found', refunded: true })
+      }
+
+      const pd = (claimed.prospect_data as any) || {}
+      const cancelToken = crypto.randomUUID()
+      const rescheduleToken = crypto.randomUUID()
+      const fullPhone = pd.phone || ''
+      const customDataObj = pd.custom_data || {}
+      const customDataNote = Object.entries(customDataObj).filter(([, v]: any) => typeof v === 'string' && v.trim()).map(([k, v]: any) => ` — ${k}: ${v}`).join('')
+
+      // Look up existing prospect by email
+      let matchedProspectId: number | null = null
+      if (pd.email) {
+        const { data: existingProspect } = await supabase
+          .from('business_prospects')
+          .select('id')
+          .eq('user_id', link.business_owner_id)
+          .eq('email', pd.email)
+          .maybeSingle()
+        if (existingProspect) matchedProspectId = existingProspect.id
+      }
+
+      const { data: appointment, error: apptErr } = await supabase
+        .from('business_appointments')
+        .insert({
+          user_id: link.business_owner_id,
+          prospect_id: matchedProspectId,
+          assigned_to: link.team_member_id || null,
+          date: pd.date,
+          time: pd.time,
+          duration: link.duration || 30,
+          status: 'upcoming',
+          datetime_utc: pd.datetime_utc,
+          timezone: pd.prospect_timezone,
+          cancel_token: cancelToken,
+          reschedule_token: rescheduleToken,
+          notes: `Booking: ${pd.name}${pd.email ? ` — ${pd.email}` : ''}${fullPhone ? ` — ${fullPhone}` : ''}${customDataNote}`,
+          questionnaire_answers: Array.isArray(pd.questionnaire_answers) ? pd.questionnaire_answers : null,
+          stripe_payment_intent_id: pi.id,
+          stripe_payment_status: 'paid',
+          stripe_amount_paid: pi.amount_received || claimed.amount,
+          stripe_currency: pi.currency || 'eur',
+        })
+        .select()
+        .single()
+
+      if (apptErr || !appointment) {
+        console.error('[booking-confirm-payment] appointment creation failed:', apptErr?.message)
+        try {
+          await stripeClient.refunds.create({ payment_intent: pi.id, reason: 'requested_by_customer' })
+          await supabase.from('campaign_payment_sessions').update({ status: 'refunded' }).eq('id', claimed.id)
+        } catch (e: any) { console.error('[booking-confirm-payment] refund failed:', e?.message) }
+        return res.status(500).json({ error: apptErr?.message || 'Appointment creation failed', refunded: true })
+      }
+
+      await supabase
+        .from('campaign_payment_sessions')
+        .update({ appointment_id: appointment.id })
+        .eq('id', claimed.id)
+
+      // Notifications + Google Calendar + emails delegated to booking-gcal-email (existing handler)
+      try {
+        const host = req.headers.host
+        const proto = (req.headers['x-forwarded-proto'] as string) || 'https'
+        await fetch(`${proto}://${host}/api/business?action=booking-gcal-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug: link.slug,
+            name: pd.name,
+            email: pd.email,
+            phone: fullPhone,
+            date: pd.date,
+            time: pd.time,
+            prospect_timezone: pd.prospect_timezone,
+            datetime_utc: pd.datetime_utc,
+            appointment_id: appointment.id,
+            questionnaire_answers: pd.questionnaire_answers,
+          }),
+        }).catch(() => {})
+      } catch { /* fire-and-forget */ }
+
+      return res.status(200).json({
+        success: true,
+        appointment,
+        redirect_url: link.redirect_url || null,
+      })
+    }
+
     if (action === 'capture-submit' && req.method === 'POST') {
       const { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers, payment_session_id } = req.body
       if (!slug || !name) return res.status(400).json({ error: 'slug and name required' })
@@ -4454,81 +5059,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (campErr || !campaign) return res.status(404).json({ error: 'Campaign not found or inactive' })
 
-      // ─── Stripe payment check ───
+      // ─── Stripe payment required: redirect frontend to inline init ───
       if (campaign.stripe_enabled && campaign.stripe_price > 0 && !payment_session_id) {
-        // Get owner's Stripe account
-        const { data: stripeProfile } = await supabase
-          .from('profiles')
-          .select('stripe_account_id, stripe_connected')
-          .eq('id', campaign.user_id)
-          .single()
-
-        if (!stripeProfile?.stripe_account_id || !stripeProfile.stripe_connected) {
-          return res.status(400).json({ error: 'Stripe account not connected for this campaign' })
-        }
-
-        const origin = req.headers.origin || 'https://www.closeos.fr'
-        const successUrl = `${origin}/capture/${slug}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`
-        const cancelUrl = `${origin}/capture/${slug}?payment_cancelled=true`
-
-        const amount = campaign.stripe_price
-        const currency = campaign.stripe_currency || 'eur'
-        const applicationFee = Math.round(amount * 0.02)
-
-        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' as any })
-
-        const commonParams: any = {
-          line_items: [{
-            price_data: {
-              currency,
-              product_data: { name: campaign.name || 'Paiement' },
-              unit_amount: amount,
-            },
-            quantity: 1,
-          }],
-          mode: 'payment' as const,
-          success_url: successUrl,
-          cancel_url: cancelUrl,
-          ...(email ? { customer_email: email } : {}),
-          metadata: { campaign_id: campaign.id, payment_type: 'initial', slug },
-        }
-
-        let session;
-        try {
-          session = await stripeClient.checkout.sessions.create({
-            ...commonParams,
-            payment_intent_data: {
-              application_fee_amount: applicationFee,
-              transfer_data: { destination: stripeProfile.stripe_account_id },
-            },
-          })
-        } catch (stripeErr: any) {
-          if (stripeErr.message?.includes('your own account')) {
-            session = await stripeClient.checkout.sessions.create(commonParams)
-          } else {
-            throw stripeErr
-          }
-        }
-
-        // Store prospect data for after payment
-        const { error: insertErr } = await supabase.from('campaign_payment_sessions').insert({
-          campaign_id: campaign.id,
-          stripe_checkout_session_id: session.id,
-          prospect_data: { slug, name, email, phone, custom_data, date, time, datetime_utc, prospect_timezone, available_member_ids, answers },
-          payment_type: 'initial',
-          amount,
-        })
-        if (insertErr) {
-          console.error('Failed to store payment session:', insertErr)
-          return res.status(500).json({ error: 'Failed to initialize payment session' })
-        }
-
-        return res.status(200).json({
-          requires_payment: true,
-          checkout_url: session.url,
-          session_id: session.id,
-          payment_timing: campaign.stripe_payment_timing,
-        })
+        return res.status(200).json({ requires_payment: true, inline: true })
       }
 
       // ─── Server-side assignment (round_robin / random) ───
@@ -4624,6 +5157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
+      let prospectIsNew = false
       if (!prospect) {
         const { data: inserted, error: prospErr } = await supabase
           .from('business_prospects')
@@ -4645,6 +5179,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (prospErr) return res.status(500).json({ error: prospErr.message })
         prospect = inserted
+        prospectIsNew = true
+      }
+
+      // Emit outbound webhooks (fire-and-forget; don't block capture-submit)
+      try {
+        const { emitWebhookEvent, detectProductForUser } = await import('./_lib/emit-webhook.js')
+        const product = await detectProductForUser(campaign.user_id)
+        if (product) {
+          if (prospectIsNew) {
+            emitWebhookEvent({ product, userId: campaign.user_id, event: 'prospect.created', payload: prospect }).catch(() => {})
+          }
+          emitWebhookEvent({
+            product,
+            userId: campaign.user_id,
+            event: 'campaign.lead_captured',
+            payload: { campaign_id: campaign.id, campaign_name: campaign.name, campaign_slug: campaign.slug, prospect },
+          }).catch(() => {})
+        }
+      } catch (err: any) {
+        console.error('[capture-submit] emit failed:', err?.message)
       }
 
       // ─── Remove "Incomplet" system tag (prospect completed the capture flow) ───
@@ -4889,6 +5443,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (apptErr) return res.status(500).json({ error: apptErr.message })
         appointment = appt
+
+        // Emit outbound webhook for booked appointment
+        try {
+          const { emitWebhookEvent, detectProductForUser } = await import('./_lib/emit-webhook.js')
+          const product = await detectProductForUser(campaign.user_id)
+          if (product) {
+            emitWebhookEvent({
+              product,
+              userId: campaign.user_id,
+              event: 'appointment.booked',
+              payload: { appointment, prospect, campaign_id: campaign.id, campaign_slug: campaign.slug },
+            }).catch(() => {})
+          }
+        } catch (err: any) {
+          console.error('[capture-submit/appt] emit failed:', err?.message)
+        }
 
         // ─── Create Google Calendar event for the assigned member ───
         if (assigned_member_id && campaign.capture_type === 'with_rdv') {

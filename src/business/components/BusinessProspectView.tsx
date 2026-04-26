@@ -1533,6 +1533,54 @@ export function BusinessProspectView({
                 )
               })()}
 
+              {/* Réponses du questionnaire externe (lead_answers) */}
+              {(() => {
+                const la = (local as any).lead_answers
+                const arr = Array.isArray(la) ? la : (la && typeof la === 'object' ? Object.entries(la).map(([q, a]) => ({ question: q, answer: a })) : [])
+                if (arr.length === 0) return null
+                return (
+                  <section className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5 dark:border-neutral-700">
+                    <h3 className={cn(LABEL_STYLE, 'text-xs mb-4')}>Réponses du questionnaire externe</h3>
+                    <ul className="space-y-3">
+                      {arr.map((qa: any, i: number) => {
+                        const q = qa?.question ?? qa?.q ?? qa?.question_text ?? '?'
+                        const a = qa?.answer ?? qa?.a ?? qa?.answer_value ?? ''
+                        const aText = a && typeof a === 'object' ? JSON.stringify(a) : String(a ?? '')
+                        return (
+                          <li key={i} className="border-l-2 border-[#c4c7c7]/30 pl-4">
+                            <p className="text-xs font-bold text-stone-500 dark:text-neutral-400">{String(q)}</p>
+                            <p className="text-sm text-[#1b1c1b] dark:text-white mt-0.5 whitespace-pre-wrap break-words">{aText}</p>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </section>
+                )
+              })()}
+
+              {/* Données additionnelles (metadata) */}
+              {(() => {
+                const md = (local as any).metadata
+                if (!md || typeof md !== 'object' || Array.isArray(md)) return null
+                const entries = Object.entries(md).filter(([, v]) => v !== null && v !== undefined && v !== '')
+                if (entries.length === 0) return null
+                return (
+                  <section className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5 dark:border-neutral-700">
+                    <h3 className={cn(LABEL_STYLE, 'text-xs mb-4')}>Données additionnelles</h3>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                      {entries.map(([k, v]) => (
+                        <div key={k}>
+                          <dt className="text-xs font-bold text-stone-500 dark:text-neutral-400">{k}</dt>
+                          <dd className="text-sm text-[#1b1c1b] dark:text-white mt-0.5 break-words">
+                            {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </section>
+                )
+              })()}
+
               {/* Fiche Client */}
               <section className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5 dark:border-neutral-700">
                 <div className="flex items-center justify-between mb-6">

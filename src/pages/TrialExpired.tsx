@@ -36,12 +36,13 @@ const PRO_FEATURES_EN = [
 
 // Price IDs — Pack Pro
 const PRICES: Record<string, string> = {
-    monthly: 'price_1TBghQ33xpuYLywqqw113Vxv',
-    yearly: 'price_1TBh2Y33xpuYLywqZaoPaqth',
+    monthly: 'price_1TQDp733xpuYLywqwXklwdS3',
+    quarterly: 'price_1TQTh533xpuYLywqscpvBiS0',
+    yearly: 'price_1TQDp833xpuYLywqsUwcNMpk',
 };
 
-const BASE_PRICES: Record<string, number> = { monthly: 34, yearly: 25.50 };
-const CROSSED_PRICES: Record<string, number> = { monthly: 69, yearly: 45 };
+const BASE_PRICES: Record<string, number> = { monthly: 24, quarterly: 20, yearly: 18 };
+const CROSSED_PRICES: Record<string, number> = { monthly: 34, quarterly: 28, yearly: 25.50 };
 
 export function TrialExpiredModal() {
     const navigate = useNavigate();
@@ -55,7 +56,7 @@ export function TrialExpiredModal() {
     const [step, setStep] = useState<'select' | 'checkout' | 'success'>('select');
     const [isExportOpen, setIsExportOpen] = useState(false);
     const selectedPlan = 'pro';
-    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
 
 
     // Stripe checkout
@@ -354,16 +355,23 @@ export function TrialExpiredModal() {
 
                             {/* Billing toggle */}
                             <div className="flex justify-center mb-5">
-                                <div className="bg-slate-900/50 p-1 rounded-xl border border-slate-800 flex items-center gap-1">
+                                <div className="bg-slate-900/50 p-1 rounded-xl border border-slate-800 flex items-center gap-1 flex-wrap">
                                     <button
                                         onClick={() => setBillingCycle('monthly')}
-                                        className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
                                         {lang === 'fr' ? 'Mensuel' : 'Monthly'}
                                     </button>
                                     <button
+                                        onClick={() => setBillingCycle('quarterly')}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'quarterly' ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        {lang === 'fr' ? 'Trimestriel' : 'Quarterly'}
+                                        <span className="bg-white text-slate-800 text-[9px] px-1.5 py-0.5 rounded-full font-black">-17%</span>
+                                    </button>
+                                    <button
                                         onClick={() => setBillingCycle('yearly')}
-                                        className={`px-5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white shadow-lg border border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white shadow-lg border border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
                                         {lang === 'fr' ? 'Annuel' : 'Yearly'}
                                         <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-25%</span>
@@ -424,7 +432,7 @@ export function TrialExpiredModal() {
                             {/* Plan summary */}
                             <div className="rounded-2xl p-6 border bg-blue-600/5 border-blue-500/20">
                                 <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">{lang === 'fr' ? '🔥 -51% Offre de lancement' : '🔥 -51% Launch offer'}</div>
-                                <h3 className="text-xl font-extrabold text-white mb-1">{planLabel} {billingCycle === 'yearly' && (lang === 'fr' ? '(Annuel)' : '(Yearly)')}</h3>
+                                <h3 className="text-xl font-extrabold text-white mb-1">{planLabel} {billingCycle === 'yearly' ? (lang === 'fr' ? '(Annuel)' : '(Yearly)') : billingCycle === 'quarterly' ? (lang === 'fr' ? '(Trimestriel)' : '(Quarterly)') : ''}</h3>
                                 <p className="text-slate-400 text-sm mb-4">{lang === 'fr' ? 'Accès complet & illimité' : 'Full & unlimited access'}</p>
 
                                 <div className="flex items-baseline gap-2 mb-4 flex-wrap">
@@ -442,13 +450,18 @@ export function TrialExpiredModal() {
                                     )}
                                     <span className="text-slate-400 text-sm">
                                         {billingCycle === 'yearly'
-                                            ? (lang === 'fr' ? '/mois (facturé 306€/an)' : '/mo (billed €306/yr)')
-                                            : (lang === 'fr' ? '/mois' : '/mo')}
+                                            ? (lang === 'fr' ? '/mois (facturé 216€/an)' : '/mo (billed €216/yr)')
+                                            : billingCycle === 'quarterly'
+                                                ? (lang === 'fr' ? '/mois (facturé 60€/trim.)' : '/mo (billed €60/quarter)')
+                                                : (lang === 'fr' ? '/mois' : '/mo')}
                                     </span>
                                 </div>
 
                                 {billingCycle === 'yearly' && (
                                     <p className="text-xs text-emerald-400 font-medium">{lang === 'fr' ? '✨ -25% avec la facturation annuelle' : '✨ -25% with yearly billing'}</p>
+                                )}
+                                {billingCycle === 'quarterly' && (
+                                    <p className="text-xs text-emerald-400 font-medium">{lang === 'fr' ? '✨ -17% avec la facturation trimestrielle' : '✨ -17% with quarterly billing'}</p>
                                 )}
 
                                 <div className="space-y-2.5 mt-4">
@@ -463,16 +476,23 @@ export function TrialExpiredModal() {
 
                             {/* Billing toggle small */}
                             <div className="flex justify-center">
-                                <div className="bg-slate-900/50 p-1 rounded-xl border border-slate-800 flex items-center gap-1">
+                                <div className="bg-slate-900/50 p-1 rounded-xl border border-slate-800 flex items-center gap-1 flex-wrap">
                                     <button
                                         onClick={() => setBillingCycle('monthly')}
-                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
                                         {lang === 'fr' ? 'Mensuel' : 'Monthly'}
                                     </button>
                                     <button
+                                        onClick={() => setBillingCycle('quarterly')}
+                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'quarterly' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        {lang === 'fr' ? 'Trimestriel' : 'Quarterly'}
+                                        <span className="bg-white text-slate-800 text-[9px] px-1.5 py-0.5 rounded-full font-black">-17%</span>
+                                    </button>
+                                    <button
                                         onClick={() => setBillingCycle('yearly')}
-                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
                                     >
                                         {lang === 'fr' ? 'Annuel' : 'Yearly'}
                                         <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-25%</span>

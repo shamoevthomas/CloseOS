@@ -40,6 +40,10 @@ import {
   Paperclip,
   Send,
   Handshake,
+  Code,
+  Lock,
+  Webhook,
+  Sparkles,
 } from 'lucide-react';
 import { translations, detectLang, LangContext, useLang } from './businessLandingI18n';
 import type { Lang } from './businessLandingI18n';
@@ -202,6 +206,14 @@ export const BusinessLanding: React.FC = () => {
         },
         {
           '@type': 'Question',
+          name: t.sd_faq_api_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_api_a,
+          },
+        },
+        {
+          '@type': 'Question',
           name: t.sd_faq_data_access_q,
           acceptedAnswer: {
             '@type': 'Answer',
@@ -349,6 +361,7 @@ export const BusinessLanding: React.FC = () => {
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
             <a href="#features" className="hover:text-[#111111] transition-colors">{t.nav_management}</a>
             <a href="#crm" className="hover:text-[#111111] transition-colors">{t.nav_crm}</a>
+            <a href="#api" className="hover:text-[#111111] transition-colors">{t.nav_api}</a>
             <a href="#roles" className="hover:text-[#111111] transition-colors">{t.nav_roles}</a>
             <a href="#demo" className="hover:text-[#111111] transition-colors">{t.nav_demo}</a>
             <a href="#pricing" className="hover:text-[#111111] transition-colors">{t.nav_pricing}</a>
@@ -590,7 +603,7 @@ export const BusinessLanding: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="px-6 md:px-20 py-32 bg-white border-y border-stone-200 relative overflow-hidden"
+          className="px-6 md:px-20 py-32 bg-white border-t border-stone-200 relative overflow-hidden"
           id="crm"
         >
           <div className="max-w-7xl mx-auto relative z-10">
@@ -638,6 +651,9 @@ export const BusinessLanding: React.FC = () => {
             </div>
           </div>
         </motion.section>
+
+        {/* API & Webhooks Section */}
+        <APISection />
 
         {/* Features by Role Section */}
         <FeaturesByRole />
@@ -1602,6 +1618,83 @@ const LeadProfile = () => {
   );
 };
 
+type RichFAQModules = NonNullable<typeof translations.fr.faqs[number]['modules']>;
+
+const RichFAQAnswer = ({ modules }: { modules: RichFAQModules }) => {
+  const blockStyles = [
+    {
+      card: 'bg-gradient-to-br from-violet-50/60 via-white to-white border-violet-200/70',
+      tagPill: 'bg-violet-100 text-violet-700',
+      icon: 'text-violet-600',
+      iconBg: 'bg-violet-100',
+      titleAccent: 'from-[#8a43e1] to-[#d511fd]',
+    },
+    {
+      card: 'bg-gradient-to-br from-stone-50 via-white to-white border-stone-200',
+      tagPill: 'bg-stone-900 text-white',
+      icon: 'text-stone-700',
+      iconBg: 'bg-stone-200/80',
+      titleAccent: 'from-stone-900 to-stone-700',
+    },
+  ];
+
+  const blockIcons = [
+    <Megaphone key="m" className="size-4" />,
+    <Users key="u" className="size-4" />,
+  ];
+
+  return (
+    <div className="space-y-6 pt-1">
+      <p className="text-stone-600 leading-relaxed">{modules.intro}</p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {modules.blocks.map((block, idx) => {
+          const style = blockStyles[idx % blockStyles.length];
+          return (
+            <div
+              key={idx}
+              className={`relative rounded-2xl border p-5 shadow-sm ${style.card}`}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className={`size-7 rounded-lg flex items-center justify-center ${style.iconBg} ${style.icon}`}>
+                  {blockIcons[idx % blockIcons.length]}
+                </div>
+                <span className={`px-2 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-[0.15em] ${style.tagPill}`}>
+                  {block.tag}
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                  {block.subtitle}
+                </span>
+              </div>
+              <h4 className={`text-lg font-bold tracking-tight mb-4 bg-gradient-to-r ${style.titleAccent} text-transparent bg-clip-text`}>
+                {block.title}
+              </h4>
+              <ul className="space-y-2.5">
+                {block.items.map((item, j) => (
+                  <li key={j} className="flex items-start gap-2">
+                    <Check className={`size-3.5 mt-1 shrink-0 ${style.icon}`} />
+                    <span className="text-xs text-stone-600 leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+
+      {modules.transverse && (
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-stone-200" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 whitespace-nowrap">
+            {modules.transverse}
+          </span>
+          <span className="h-px flex-1 bg-stone-200" />
+        </div>
+      )}
+    </div>
+  );
+};
+
 const FAQItem = ({ question, answer }: { question: string; answer: React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
@@ -1650,6 +1743,7 @@ const getPricingPlans = (lang: string) => [
       'Facturation',
       'Objectifs personnels',
       'Rapports',
+      'API REST & Webhooks sortants signés HMAC',
     ] : [
       'CRM & Visual Pipeline',
       'Full acquisition system (campaigns, embed/iframe, UTM tracking, KPIs per source)',
@@ -1662,6 +1756,7 @@ const getPricingPlans = (lang: string) => [
       'Invoicing',
       'Personal objectives',
       'Reports',
+      'REST API & HMAC-signed outbound webhooks',
     ],
   },
   {
@@ -1702,6 +1797,13 @@ const getPricingPlans = (lang: string) => [
       'Report with PDF export',
       'Availability & absence management per member',
     ],
+    notIncluded: lang === 'fr' ? [
+      'Système d\'acquisition',
+      'API REST & Webhooks sortants',
+    ] : [
+      'Acquisition system',
+      'REST API & outbound webhooks',
+    ],
   },
   {
     name: 'Business + Acquisition',
@@ -1730,6 +1832,7 @@ const getPricingPlans = (lang: string) => [
       'Tracking UTM + formule par défaut',
       'KPIs acquisition : vues, leads, taux de conversion par campagne',
       'Graphiques : camembert (campagnes les plus converties), barres (CA par campagne)',
+      'API REST & Webhooks sortants signés HMAC',
     ] : [
       'Campaign creation/management (appointment or sign-up mode)',
       'Configurable capture page (title, video, custom fields, redirect)',
@@ -1737,6 +1840,7 @@ const getPricingPlans = (lang: string) => [
       'UTM tracking + default plan',
       'Acquisition KPIs: views, leads, conversion rate per campaign',
       'Charts: pie (top converting campaigns), bar (revenue per campaign)',
+      'REST API & HMAC-signed outbound webhooks',
     ],
   },
   {
@@ -1753,6 +1857,7 @@ const getPricingPlans = (lang: string) => [
     features: lang === 'fr' ? [
       'Membres illimités',
       'Tout le système d\'acquisition inclus',
+      'API REST & Webhooks sortants signés HMAC',
       'Setup + Intégration inclus',
       'Support prioritaire dédié',
       'Accès one-shot limité à la durée du challenge',
@@ -1760,6 +1865,7 @@ const getPricingPlans = (lang: string) => [
     ] : [
       'Unlimited members',
       'Full acquisition system included',
+      'REST API & HMAC-signed outbound webhooks',
       'Setup + Integration included',
       'Dedicated priority support',
       'One-shot access limited to challenge duration',
@@ -1971,6 +2077,12 @@ const PricingSection = () => {
                     </ul>
                   </li>
                 )}
+                {Array.isArray((plan as any).notIncluded) && (plan as any).notIncluded.length > 0 && (plan as any).notIncluded.map((nf: string, k: number) => (
+                  <li key={`x-${k}`} className="flex items-start gap-2.5">
+                    <XCircle className={`size-4 mt-0.5 flex-shrink-0 ${plan.popular ? 'text-red-400' : 'text-red-500'}`} />
+                    <span className={`text-sm font-medium leading-relaxed line-through ${plan.popular ? 'text-red-400' : 'text-red-500'}`}>{nf}</span>
+                  </li>
+                ))}
               </ul>
             </motion.div>
           ))}
@@ -2341,6 +2453,237 @@ const PartnerSection = () => {
   );
 };
 
+const API_EVENT_CATALOG: { id: string; label_fr: string; label_en: string }[] = [
+  { id: 'prospect.created', label_fr: 'Prospect créé', label_en: 'Prospect created' },
+  { id: 'prospect.updated', label_fr: 'Prospect mis à jour', label_en: 'Prospect updated' },
+  { id: 'prospect.stage_changed', label_fr: 'Stage modifié', label_en: 'Stage changed' },
+  { id: 'prospect.deleted', label_fr: 'Prospect supprimé', label_en: 'Prospect deleted' },
+  { id: 'campaign.lead_captured', label_fr: 'Lead capturé', label_en: 'Lead captured' },
+  { id: 'appointment.booked', label_fr: 'RDV réservé', label_en: 'Appointment booked' },
+  { id: 'appointment.cancelled', label_fr: 'RDV annulé', label_en: 'Appointment cancelled' },
+  { id: 'appointment.completed', label_fr: 'RDV terminé', label_en: 'Appointment completed' },
+  { id: 'deal.won', label_fr: 'Deal gagné', label_en: 'Deal won' },
+  { id: 'deal.lost', label_fr: 'Deal perdu', label_en: 'Deal lost' },
+];
+
+const CodeBlock = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="rounded-2xl overflow-hidden border border-white/10 bg-[#0d1117] shadow-2xl shadow-black/40">
+    <div className="flex items-center justify-between px-4 py-2.5 bg-[#161b22] border-b border-white/5">
+      <div className="flex items-center gap-1.5">
+        <span className="size-2.5 rounded-full bg-[#ff5f57]" />
+        <span className="size-2.5 rounded-full bg-[#febc2e]" />
+        <span className="size-2.5 rounded-full bg-[#28c840]" />
+      </div>
+      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">{label}</span>
+      <span className="size-2.5" />
+    </div>
+    <pre className="p-5 text-[11.5px] md:text-[12px] leading-relaxed font-mono text-stone-300 overflow-x-auto">
+      {children}
+    </pre>
+  </div>
+);
+
+const APISection = () => {
+  const { t, lang } = useLang();
+
+  const curlExample = `curl -X POST https://api.closeos.fr/v1/prospects \\
+  -H "Authorization: Bearer sk_live_••••••••" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "email": "marie@example.com",
+    "first_name": "Marie",
+    "last_name": "Dubois",
+    "stage": "qualified",
+    "external_id": "crm_42",
+    "metadata": {
+      "source": "landing-audit",
+      "utm_campaign": "q2-launch"
+    }
+  }'`;
+
+  const webhookPayload = `POST https://votre-app.com/webhooks/closeos
+X-CloseOS-Signature: 7f3a9b2e1c4d...
+
+{
+  "event": "deal.won",
+  "product": "business",
+  "user_id": "8e1f...",
+  "timestamp": "2026-04-26T12:00:00.000Z",
+  "data": {
+    "id": "prospect_uuid",
+    "email": "marie@example.com",
+    "stage": "won",
+    "amount": 2400,
+    "closer_id": "closer_uuid"
+  }
+}`;
+
+  const restItems = [t.api_card_rest_item_1, t.api_card_rest_item_2, t.api_card_rest_item_3, t.api_card_rest_item_4];
+  const webhookItems = [t.api_card_webhook_item_1, t.api_card_webhook_item_2, t.api_card_webhook_item_3, t.api_card_webhook_item_4];
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-100px' }}
+      transition={{ duration: 0.8, ease: 'easeOut' }}
+      id="api"
+      className="relative overflow-hidden bg-[#111111] text-white px-6 md:px-20 pt-[280px] md:pt-[420px] pb-[280px] md:pb-[420px]"
+    >
+      {/* Long soft fade from previous (white) section into dark */}
+      <div
+        className="absolute top-0 inset-x-0 h-[280px] md:h-[420px] pointer-events-none z-[1]"
+        style={{
+          background:
+            'linear-gradient(to bottom, #ffffff 0%, rgba(255,255,255,0.92) 18%, rgba(255,255,255,0.7) 38%, rgba(255,255,255,0.42) 58%, rgba(255,255,255,0.18) 78%, rgba(255,255,255,0.04) 92%, rgba(255,255,255,0) 100%)',
+        }}
+      />
+      {/* Long soft fade from dark into next (beige page bg) section */}
+      <div
+        className="absolute bottom-0 inset-x-0 h-[280px] md:h-[420px] pointer-events-none z-[1]"
+        style={{
+          background:
+            'linear-gradient(to top, #f4f2f1 0%, rgba(244,242,241,0.92) 18%, rgba(244,242,241,0.7) 38%, rgba(244,242,241,0.42) 58%, rgba(244,242,241,0.18) 78%, rgba(244,242,241,0.04) 92%, rgba(244,242,241,0) 100%)',
+        }}
+      />
+
+      {/* Background blobs */}
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[#8a43e1]/20 to-[#d511fd]/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-gradient-to-tl from-[#ff2f2f]/15 to-[#ef7b16]/10 rounded-full blur-[120px] pointer-events-none" />
+
+      {/* Subtle grid pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+        }}
+      />
+
+      <div className="relative max-w-7xl mx-auto z-[5]">
+        {/* Header */}
+        <div className="text-center mb-16 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm mb-6">
+            <Sparkles className="size-3.5 text-[#d511fd]" />
+            <span className="text-xs font-bold uppercase tracking-[0.15em] bg-gradient-to-r from-[#ff2f2f] via-[#ef7b16] to-[#d511fd] text-transparent bg-clip-text">
+              {t.api_badge}
+            </span>
+          </div>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
+            {t.api_title}
+          </h2>
+          <p className="text-stone-400 text-lg leading-relaxed">{t.api_subtitle}</p>
+        </div>
+
+        {/* Two cards grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-16">
+          {/* REST API card */}
+          <div className="lg:col-span-7 rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-transparent backdrop-blur-sm p-8 md:p-10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#8a43e1]/15 to-transparent rounded-full blur-3xl pointer-events-none" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="size-12 rounded-xl bg-gradient-to-br from-[#8a43e1] to-[#d511fd] flex items-center justify-center shadow-lg shadow-[#8a43e1]/30">
+                  <Code className="size-5 text-white" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">REST · v1</span>
+                  <h3 className="text-2xl font-bold tracking-tight">{t.api_card_rest_title}</h3>
+                </div>
+              </div>
+              <p className="text-stone-400 mb-6">{t.api_card_rest_desc}</p>
+              <ul className="space-y-3 mb-8">
+                {restItems.map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-stone-300">
+                    <CheckCircle className="size-4 mt-0.5 text-[#d511fd] shrink-0" />
+                    <span className="leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <CodeBlock label={t.api_curl_label}>{curlExample}</CodeBlock>
+            </div>
+          </div>
+
+          {/* Webhooks card */}
+          <div className="lg:col-span-5 rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-transparent backdrop-blur-sm p-8 md:p-10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#ff2f2f]/15 to-transparent rounded-full blur-3xl pointer-events-none" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="size-12 rounded-xl bg-gradient-to-br from-[#ff2f2f] to-[#ef7b16] flex items-center justify-center shadow-lg shadow-[#ff2f2f]/30">
+                  <Webhook className="size-5 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">Outbound</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+                      <Lock className="size-3" /> HMAC-SHA256
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold tracking-tight">{t.api_card_webhook_title}</h3>
+                </div>
+              </div>
+              <p className="text-stone-400 mb-6">{t.api_card_webhook_desc}</p>
+              <ul className="space-y-3 mb-8">
+                {webhookItems.map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-stone-300">
+                    <CheckCircle className="size-4 mt-0.5 text-[#ef7b16] shrink-0" />
+                    <span className="leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <CodeBlock label={t.api_payload_label}>{webhookPayload}</CodeBlock>
+            </div>
+          </div>
+        </div>
+
+        {/* Events catalog */}
+        <div className="rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm p-8 md:p-10 mb-12">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 mb-2 block">{t.api_events_label}</span>
+              <h3 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">{t.api_events_title}</h3>
+              <p className="text-stone-400 text-sm max-w-xl">{t.api_events_subtitle}</p>
+            </div>
+            <div className="flex items-center gap-2 text-stone-500 text-xs font-bold uppercase tracking-widest">
+              <Zap className="size-4 text-[#d511fd]" />
+              {lang === 'fr' ? 'Temps réel' : 'Real time'}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {API_EVENT_CATALOG.map((ev) => (
+              <div
+                key={ev.id}
+                className="group flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/5 border border-white/10 hover:border-white/30 hover:bg-white/[0.07] transition-all"
+              >
+                <code className="text-[11px] font-mono text-[#d511fd]">{ev.id}</code>
+                <span className="text-xs text-stone-400">{lang === 'fr' ? ev.label_fr : ev.label_en}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTAs */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a
+            href="#pricing"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl h-14 px-8 text-[#0a0a0a] text-base font-semibold bg-white hover:bg-stone-100 hover:-translate-y-0.5 transition-all shadow-xl"
+          >
+            {t.api_cta_get_key}
+            <ArrowRight className="size-4" />
+          </a>
+          <a
+            href="/business/docs/api"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl h-14 px-8 text-white text-base font-semibold border border-white/15 bg-white/5 hover:bg-white/10 hover:-translate-y-0.5 transition-all backdrop-blur-sm"
+          >
+            {t.api_cta_docs}
+          </a>
+        </div>
+      </div>
+    </motion.section>
+  );
+};
+
 const FAQSection = () => {
   const { t } = useLang();
   return (
@@ -2362,7 +2705,11 @@ const FAQSection = () => {
         </div>
         <div className="space-y-4">
           {t.faqs.map((faq, i) => (
-            <FAQItem key={i} question={faq.question} answer={<p>{faq.answer}</p>} />
+            <FAQItem
+              key={i}
+              question={faq.question}
+              answer={faq.modules ? <RichFAQAnswer modules={faq.modules} /> : <p className="whitespace-pre-line">{faq.answer}</p>}
+            />
           ))}
         </div>
       </div>

@@ -199,18 +199,23 @@ async function handleCompleteRegistration(req: VercelRequest, res: VercelRespons
       return res.status(400).json({ error: 'SetupIntent not confirmed' });
     }
 
-    // Pre-check: refuse to create a Stripe subscription if the email is already taken in
-    // Supabase Auth. Without this, we would charge the card for an account that
-    // signUp() will later reject — leaving a dangling subscription on Stripe.
+    // Pre-check: refuse to create a Stripe subscription if the email is already taken
+    // anywhere in the ecosystem (Supabase Auth, CRM, or Sales). Without this, we could
+    // charge the card for an account that can never be created.
     try {
-      const { data: authList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
       const emailLower = user_email.toLowerCase();
-      const taken = (authList?.users || []).some((u: any) => (u.email || '').toLowerCase() === emailLower);
-      if (taken) {
+      const [authList, crmRow] = await Promise.all([
+        supabase.auth.admin.listUsers({ page: 1, perPage: 200 }),
+        supabase.from('crm_users').select('id').ilike('email', emailLower).maybeSingle(),
+      ]);
+      const takenInAuth = (authList?.data?.users || []).some((u: any) => (u.email || '').toLowerCase() === emailLower);
+      if (crmRow.data) {
+        return res.status(409).json({ error: 'Un compte CloseOS CRM existe déjà avec cet email. Connectez-vous sur /crm/login.' });
+      }
+      if (takenInAuth) {
         return res.status(409).json({ error: 'Un compte existe déjà avec cet email. Connectez-vous plutôt.' });
       }
     } catch (precheckErr: any) {
-      // Pre-check failure is non-fatal — proceed and let signUp surface the duplicate later
       console.warn('[complete-registration] email pre-check failed:', precheckErr?.message);
     }
 

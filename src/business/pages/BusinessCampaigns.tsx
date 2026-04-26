@@ -66,7 +66,6 @@ interface Campaign {
   stripe_enabled: boolean
   stripe_price: number
   stripe_currency: string
-  stripe_payment_timing: 'before' | 'after'
   refund_enabled: boolean
   refund_tiers: { days: number; percent: number }[]
   reschedule_enabled: boolean
@@ -182,7 +181,6 @@ export function BusinessCampaigns() {
   const [formStripeEnabled, setFormStripeEnabled] = useState(false)
   const [formStripePrice, setFormStripePrice] = useState(0)
   const [formStripeCurrency, setFormStripeCurrency] = useState('eur')
-  const [formStripePaymentTiming, setFormStripePaymentTiming] = useState<'before' | 'after'>('after')
   const [formRefundEnabled, setFormRefundEnabled] = useState(false)
   const [formRefundTiers, setFormRefundTiers] = useState<{ days: number; percent: number }[]>([])
   const [formRescheduleEnabled, setFormRescheduleEnabled] = useState(false)
@@ -325,7 +323,7 @@ export function BusinessCampaigns() {
     setFormQuestionnaireEnabled(false); setFormQuestionnaireRequired(false)
     setFormQuestionnaireQualifying(true); setFormMaxEliminatory(0); setFormQuestions([]); setQuestionnaireId(null)
     setFormStripeEnabled(false); setFormStripePrice(0); setFormStripeCurrency('eur')
-    setFormStripePaymentTiming('after'); setFormRefundEnabled(false); setFormRefundTiers([])
+    setFormRefundEnabled(false); setFormRefundTiers([])
     setFormRescheduleEnabled(false); setFormReschedulePaid(false); setFormReschedulePrice(0); setFormRescheduleCurrency('eur')
   }
 
@@ -357,7 +355,6 @@ export function BusinessCampaigns() {
     setFormStripeEnabled(campaign.stripe_enabled ?? false)
     setFormStripePrice((campaign.stripe_price ?? 0) / 100)
     setFormStripeCurrency(campaign.stripe_currency || 'eur')
-    setFormStripePaymentTiming(campaign.stripe_payment_timing || 'after')
     setFormRefundEnabled(campaign.refund_enabled ?? false)
     setFormRefundTiers(campaign.refund_tiers || [])
     setFormRescheduleEnabled(campaign.reschedule_enabled ?? false)
@@ -422,7 +419,6 @@ export function BusinessCampaigns() {
     stripe_enabled: formStripeEnabled,
     stripe_price: Math.round(formStripePrice * 100),
     stripe_currency: formStripeCurrency,
-    stripe_payment_timing: formStripePaymentTiming,
     refund_enabled: formRefundEnabled,
     refund_tiers: formRefundTiers,
     reschedule_enabled: formRescheduleEnabled,
@@ -613,7 +609,7 @@ window.addEventListener('message',function(e){
 
   // Questionnaire question helpers
   const addQuestion = () => {
-    setFormQuestions([...formQuestions, { question_text: '', question_type: 'text', is_required: false, options: [], expected_answer: null, eliminatory_answers: [], sort_order: formQuestions.length, counts_in_scoring: true }])
+    setFormQuestions([...formQuestions, { question_text: '', question_type: 'text', is_required: true, options: [], expected_answer: null, eliminatory_answers: [], sort_order: formQuestions.length, counts_in_scoring: true }])
   }
   const updateQuestion = (index: number, updates: Partial<QuestionConfig>) => {
     const qs = [...formQuestions]; qs[index] = { ...qs[index], ...updates }; setFormQuestions(qs)
@@ -1705,37 +1701,6 @@ window.addEventListener('message',function(e){
                       <div className="flex items-center gap-2 rounded-xl bg-[#635bff]/5 dark:bg-[#635bff]/10 px-4 py-3">
                         <Info className="h-4 w-4 text-[#635bff] shrink-0" />
                         <p className="text-xs text-[#635bff] font-medium">{t.campaigns_stripe_fee_notice}</p>
-                      </div>
-
-                      {/* Payment timing */}
-                      <div>
-                        <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">{t.campaigns_payment_timing}</label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setFormStripePaymentTiming('after')}
-                            className={`p-4 rounded-xl text-left transition-all ${
-                              formStripePaymentTiming === 'after'
-                                ? 'border-2 border-[#635bff] bg-[#635bff]/5'
-                                : 'border border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#747878]'
-                            }`}
-                          >
-                            <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_payment_after}</p>
-                            <p className="text-[10px] text-[#444748] dark:text-neutral-400 mt-1">{t.campaigns_payment_after_desc}</p>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setFormStripePaymentTiming('before')}
-                            className={`p-4 rounded-xl text-left transition-all ${
-                              formStripePaymentTiming === 'before'
-                                ? 'border-2 border-[#635bff] bg-[#635bff]/5'
-                                : 'border border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#747878]'
-                            }`}
-                          >
-                            <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_payment_before}</p>
-                            <p className="text-[10px] text-[#444748] dark:text-neutral-400 mt-1">{t.campaigns_payment_before_desc}</p>
-                          </button>
-                        </div>
                       </div>
 
                       {/* Refund section (only for with_rdv) */}

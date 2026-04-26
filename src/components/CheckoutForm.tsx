@@ -31,28 +31,38 @@ export const CheckoutForm = () => {
 
   // 👇 MODIFICATION ICI : On récupère aussi la fonction pour changer l'URL
   const [searchParams, setSearchParams] = useSearchParams();
-  const isYearly = searchParams.get('billing') === 'yearly';
+  const billingParam = searchParams.get('billing');
+  const billing: 'monthly' | 'quarterly' | 'yearly' =
+    billingParam === 'yearly' ? 'yearly'
+      : billingParam === 'quarterly' ? 'quarterly'
+        : 'monthly';
+  const isYearly = billing === 'yearly';
+  const isQuarterly = billing === 'quarterly';
 
   // 🚀 ÉTAT POUR LE POPUP DE SORTIE
   const [showExitModal, setShowExitModal] = useState(false);
   const navigate = useNavigate();
 
   // Fonction pour basculer le cycle de facturation
-  const handleBillingSwitch = (mode: 'monthly' | 'yearly') => {
+  const handleBillingSwitch = (mode: 'monthly' | 'quarterly' | 'yearly') => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set('billing', mode);
     setSearchParams(newParams);
   };
 
   // CONFIGURATION DES PRIX (PRO)
-  const PRICE_PRO = isYearly
-    ? "price_1TBh2Y33xpuYLywqZaoPaqth"
-    : "price_1TBghQ33xpuYLywqqw113Vxv";
-
-
+  const PRICE_BY_BILLING: Record<'monthly' | 'quarterly' | 'yearly', string> = {
+    monthly: 'price_1TQDp733xpuYLywqwXklwdS3',
+    quarterly: 'price_1TQTh533xpuYLywqscpvBiS0',
+    yearly: 'price_1TQDp833xpuYLywqsUwcNMpk',
+  };
+  const PRICE_PRO = PRICE_BY_BILLING[billing];
 
   // CALCUL VISUEL
-  const basePrice = isYearly ? 25.50 : 34;
+  const BASE_BY_BILLING: Record<'monthly' | 'quarterly' | 'yearly', number> = { monthly: 24, quarterly: 20, yearly: 18 };
+  const CROSSED_BY_BILLING: Record<'monthly' | 'quarterly' | 'yearly', number> = { monthly: 34, quarterly: 28, yearly: 25.50 };
+  const basePrice = BASE_BY_BILLING[billing];
+  const crossedPrice = CROSSED_BY_BILLING[billing];
   const finalPrice = displayDiscount > 0
     ? (basePrice * (1 - displayDiscount / 100)).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
     : basePrice;
@@ -113,7 +123,7 @@ export const CheckoutForm = () => {
 
   useEffect(() => {
     fetchClientSecret();
-  }, [isYearly, appliedCode]);
+  }, [billing, appliedCode]);
 
 
   const handleApplyCode = () => {
@@ -187,27 +197,35 @@ export const CheckoutForm = () => {
               <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-bold bg-blue-500/10 text-blue-300 border border-blue-500/20 mb-6">
                 <Sparkles className="w-3 h-3" /> {lang === 'fr' ? 'Offre de lancement' : 'Launch offer'}
               </span>
-              <h1 className="text-4xl font-extrabold text-white mb-4">Pack Pro {isYearly && (lang === 'fr' ? "(Annuel)" : "(Yearly)")}</h1>
+              <h1 className="text-4xl font-extrabold text-white mb-4">Pack Pro {isYearly ? (lang === 'fr' ? "(Annuel)" : "(Yearly)") : isQuarterly ? (lang === 'fr' ? "(Trimestriel)" : "(Quarterly)") : ''}</h1>
               <p className="text-slate-400 text-lg">
                 {lang === 'fr' ? "L'outil tout-en-un des closers. Accès complet & illimité." : 'The all-in-one closer tool. Full & unlimited access.'}
               </p>
             </div>
 
-            {/* 👇 AJOUT DU SWITCH MENSUEL / ANNUEL ICI 👇 */}
+            {/* 👇 AJOUT DU SWITCH MENSUEL / TRIMESTRIEL / ANNUEL ICI 👇 */}
             <div className="flex justify-start">
-              <div className="bg-slate-900/50 p-1.5 rounded-xl border border-slate-800 flex items-center relative gap-1">
+              <div className="bg-slate-900/50 p-1.5 rounded-xl border border-slate-800 flex items-center relative gap-1 flex-wrap">
                 <button
                   onClick={() => handleBillingSwitch('monthly')}
-                  className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${!isYearly ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${billing === 'monthly' ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
                 >
                   {lang === 'fr' ? 'Mensuel' : 'Monthly'}
                 </button>
                 <button
+                  onClick={() => handleBillingSwitch('quarterly')}
+                  className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${isQuarterly ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  {lang === 'fr' ? 'Trimestriel' : 'Quarterly'}
+                  <span className="bg-white text-slate-800 text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">
+                    -17%
+                  </span>
+                </button>
+                <button
                   onClick={() => handleBillingSwitch('yearly')}
-                  className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${isYearly ? 'bg-blue-600 text-white shadow-lg border border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${isYearly ? 'bg-blue-600 text-white shadow-lg border border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}
                 >
                   {lang === 'fr' ? 'Annuel' : 'Yearly'}
-                  {/* LA PETITE BULLE -15% */}
                   <span className="bg-white text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-black shadow-sm">
                     -25%
                   </span>
@@ -223,7 +241,7 @@ export const CheckoutForm = () => {
                 <span className="text-6xl font-black text-white">{finalPrice}€</span>
 
                 {displayDiscount === 0 && (
-                  <span className="text-2xl text-slate-500 line-through">{isYearly ? '45' : '69'}€</span>
+                  <span className="text-2xl text-slate-500 line-through">{crossedPrice}€</span>
                 )}
 
                 {displayDiscount > 0 && (
@@ -237,7 +255,11 @@ export const CheckoutForm = () => {
                 )}
 
                 <span className="text-slate-400 font-medium w-full sm:w-auto">
-                  {isYearly ? (lang === 'fr' ? "/mois (facturé 306€/an)" : "/mo (billed 306€/yr)") : (lang === 'fr' ? "/mois" : "/mo")}
+                  {isYearly
+                    ? (lang === 'fr' ? "/mois (facturé 216€/an)" : "/mo (billed 216€/yr)")
+                    : isQuarterly
+                      ? (lang === 'fr' ? "/mois (facturé 60€/trim.)" : "/mo (billed €60/quarter)")
+                      : (lang === 'fr' ? "/mois" : "/mo")}
                 </span>
               </div>
 

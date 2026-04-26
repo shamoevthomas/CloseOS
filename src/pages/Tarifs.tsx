@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowRight, Check, ChevronDown, Shield, Clock, Layers, Target, Star, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Shield, Clock, Layers, Target, Star, ShieldCheck, X as XIcon } from 'lucide-react';
 
 const salesPlans = [
   {
     name: 'Solo',
     badge: 'Closer indépendant',
-    monthlyPrice: 34,
-    annualPrice: 306,
-    annualMonthly: 25.5,
+    monthlyPrice: 24,
+    annualPrice: 216,
+    annualMonthly: 18,
     features: [
       'CRM complet avec pipeline visuel',
       'Callroom Google Meet',
@@ -38,6 +38,7 @@ const businessPlans = [
       'KPIs de closing et setting en temps réel',
       'Booking et agenda intégré',
       'Intégrations (iClosed, Pipedrive, Zapier…)',
+      'API REST & Webhooks sortants signés HMAC',
     ],
     cta: { label: 'Essai gratuit 20 jours', to: '/business#pricing' },
     highlighted: false,
@@ -60,6 +61,10 @@ const businessPlans = [
       'Objectifs assignables par membre',
       'Monday Morning Reporting automatique',
     ],
+    notIncluded: [
+      'Système d\'acquisition',
+      'API REST & Webhooks sortants',
+    ],
     cta: { label: 'Essai gratuit 20 jours', to: '/business#pricing' },
     highlighted: false,
     popularBadge: false,
@@ -78,6 +83,7 @@ const businessPlans = [
       'Campagnes d\'acquisition (RDV ou inscription)',
       'Page de capture configurable + embed/popup',
       'Tracking UTM + KPIs par campagne',
+      'API REST & Webhooks sortants signés HMAC',
     ],
     cta: { label: 'Essai gratuit 20 jours', to: '/business#pricing' },
     highlighted: true,
@@ -94,6 +100,7 @@ const businessPlans = [
     features: [
       'Membres illimités',
       'Tout le système d\'acquisition inclus',
+      'API REST & Webhooks sortants signés HMAC',
       'Setup + Intégration inclus',
       'Support prioritaire dédié',
       'Accès one-shot (durée du challenge) ou abonnement classique',
@@ -136,15 +143,15 @@ export default function Tarifs() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
-    document.title = 'Tarifs CloseOS — CRM closer dès 34€/mois';
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Solo dès 34€/mois, Business dès 59€/mois, Business + Acquisition dès 99€/mois. Essai gratuit 20 jours. Prix à vie.');
+    document.title = 'Tarifs CloseOS — CRM closer dès 24€/mois';
+    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Solo dès 24€/mois, Business dès 59€/mois, Business + Acquisition dès 99€/mois. Essai gratuit 20 jours. Prix à vie.');
     document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/tarifs');
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/tarifs');
-    document.getElementById('og-title')?.setAttribute('content', 'Tarifs CloseOS — CRM closer dès 34€/mois');
-    document.getElementById('og-description')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Solo dès 34€/mois, Business dès 59€/mois, Business + Acquisition dès 99€/mois. Essai gratuit 20 jours. Prix à vie.');
+    document.getElementById('og-title')?.setAttribute('content', 'Tarifs CloseOS — CRM closer dès 24€/mois');
+    document.getElementById('og-description')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Solo dès 24€/mois, Business dès 59€/mois, Business + Acquisition dès 99€/mois. Essai gratuit 20 jours. Prix à vie.');
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/tarifs');
-    document.getElementById('tw-title')?.setAttribute('content', 'Tarifs CloseOS — CRM closer dès 34€/mois');
-    document.getElementById('tw-description')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Solo dès 34€/mois, Business dès 59€/mois, Business + Acquisition dès 99€/mois. Essai gratuit 20 jours. Prix à vie.');
+    document.getElementById('tw-title')?.setAttribute('content', 'Tarifs CloseOS — CRM closer dès 24€/mois');
+    document.getElementById('tw-description')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Solo dès 24€/mois, Business dès 59€/mois, Business + Acquisition dès 99€/mois. Essai gratuit 20 jours. Prix à vie.');
     document.documentElement.lang = 'fr';
 
     document.querySelectorAll('script[data-tarifs-ld]').forEach(el => el.remove());
@@ -292,15 +299,15 @@ export default function Tarifs() {
                 </div>
                 <p className="mt-2 text-blue-200 text-sm">L'outil tout-en-un des closers. Accès complet & illimité.</p>
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-5xl font-extrabold text-white">{billing === 'annual' ? '25.5' : billing === 'quarterly' ? '28' : '34'}€</span>
-                  <span className="text-slate-400 line-through text-lg">69€</span>
+                  <span className="text-5xl font-extrabold text-white">{billing === 'annual' ? '18' : billing === 'quarterly' ? '20' : '24'}€</span>
+                  <span className="text-slate-400 line-through text-lg">34€</span>
                   <span className="text-slate-500">/mois</span>
                 </div>
                 {billing === 'quarterly' && (
-                  <p className="text-xs text-emerald-400 mt-2">Facturé trimestriellement (84€/trimestre)</p>
+                  <p className="text-xs text-emerald-400 mt-2">Facturé trimestriellement (60€/trimestre)</p>
                 )}
                 {billing === 'annual' && (
-                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement (306€/an)</p>
+                  <p className="text-xs text-emerald-400 mt-2">Facturé annuellement (216€/an)</p>
                 )}
               </div>
               <ul className="space-y-4 mb-4">
@@ -412,6 +419,12 @@ export default function Tarifs() {
                           </li>
                         ))}
                       </ul>
+                    </li>
+                  ))}
+                  {Array.isArray((plan as any).notIncluded) && (plan as any).notIncluded.length > 0 && (plan as any).notIncluded.map((f: string, fi: number) => (
+                    <li key={`x-${fi}`} className="flex items-start gap-2 text-sm text-red-400 line-through">
+                      <XIcon className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
+                      {f}
                     </li>
                   ))}
                 </ul>

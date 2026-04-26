@@ -144,11 +144,13 @@ export interface SalesTranslations {
   pricing_subtitle: string
   pricing_trial: string
   pricing_monthly: string
+  pricing_quarterly: string
   pricing_yearly: string
   pricing_launch_badge: string
   pricing_pack_name: string
   pricing_pack_desc: string
   pricing_billed_yearly: string
+  pricing_billed_quarterly: string
   pricing_feat1_bold: string
   pricing_feat1_rest: string
   pricing_feat2_bold: string
@@ -183,9 +185,6 @@ export interface SalesTranslations {
   faq3_q: string
   faq3_a1: string
   faq3_a2: string
-  faq4_q: string
-  faq4_a1: string
-  faq4_a2: string
   faq5_q: string
   faq5_a1: string
   faq5_a2: string
@@ -264,7 +263,7 @@ const fr: SalesTranslations = {
   ld_faq3_q: "Pourquoi payer CloseOS plutôt qu'utiliser Excel ou Notion ?",
   ld_faq3_a: "Parce que le bricolage coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio ni ne synchronise vos appels. CloseOS est un système actif qui élimine 80% de l'administratif. Le temps gagné est réinvesti pour signer des contrats.",
   ld_faq4_q: "Est-ce que iClosed est intégré à CloseOS ?",
-  ld_faq4_a: "Partiellement. Contrairement à HubSpot ou Pipedrive, iClosed ne dispose pas d'une API publique ouverte. CloseOS reçoit vos nouveaux leads et ventes venant d'iClosed via Webhook, mais la synchronisation est à sens unique (iClosed vers CloseOS). L'API complète arrivera prochainement.",
+  ld_faq4_a: "Oui, en synchronisation bidirectionnelle complète. Tout prospect, deal ou changement de stage modifié d'un côté est reflété en temps réel de l'autre. Vos leads et ventes iClosed remontent dans CloseOS, et vos mises à jour CloseOS (stage, tag, note, RDV) sont repoussées vers iClosed automatiquement.",
   ld_faq5_q: "C'est quoi CloseOS Sales ?",
   ld_faq5_a: "CloseOS Sales est le logiciel tout-en-un pour closers high ticket et freelance en France. Il regroupe CRM closer, pipeline de vente visuel, VoIP intégré, suivi calls closing, agenda & booking, facturation automatique et KPIs de closing. C'est l'outil qui remplace 10 logiciels différents pour les closers indépendants.",
 
@@ -392,11 +391,13 @@ const fr: SalesTranslations = {
   pricing_subtitle: "Un seul plan. Tout inclus. Sans engagement.",
   pricing_trial: "Testez gratuitement 10 jours. Aucune carte bancaire requise.",
   pricing_monthly: "Mensuel",
+  pricing_quarterly: "Trimestriel",
   pricing_yearly: "Annuel",
   pricing_launch_badge: "\u{1F525} -51% OFFRE DE LANCEMENT",
   pricing_pack_name: "PACK PRO",
   pricing_pack_desc: "L'outil tout-en-un des closers. Accès complet & illimité.",
-  pricing_billed_yearly: "Facturé annuellement (306€/an)",
+  pricing_billed_yearly: "Facturé annuellement (216€/an)",
+  pricing_billed_quarterly: "Facturé trimestriellement (60€/trim.)",
   pricing_feat1_bold: "CRM & Pipeline",
   pricing_feat1_rest: " illimité",
   pricing_feat2_bold: "Agenda & Booking",
@@ -431,12 +432,9 @@ const fr: SalesTranslations = {
   faq3_q: "Pourquoi payer CloseOS alors que je peux le faire moi-même sur Excel/Notion ?",
   faq3_a1: "Parce que le \"bricolage\" vous coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio et ne synchronise pas vos appels.",
   faq3_a2: "CloseOS n'est pas un simple tableau de note, c'est un système actif qui élimine 80% de votre administratif. Le temps que vous ne passez plus à configurer vos outils est du temps réinvesti pour signer des contrats.",
-  faq4_q: "Pourquoi le Pack Pro est-il à 34€ au lieu de 69€ ?",
-  faq4_a1: "C'est une offre de lancement. Nous récompensons nos premiers utilisateurs avec ce tarif préférentiel.",
-  faq4_a2: "Le prix standard passera à 69€/mois. En prenant votre accès maintenant, vous profitez du tarif de lancement.",
   faq5_q: "Est-ce que iClosed est intégré ?",
-  faq5_a1: "Partiellement. Contrairement aux standards du marché (HubSpot, Pipedrive), iClosed ne dispose pas d'une API publique ouverte permettant une synchronisation totale.",
-  faq5_a2: "Concrètement : CloseOS reçoit bien vos nouveaux leads et vos ventes venant d'iClosed (via Webhook), mais ne peut pas aller modifier des informations dans iClosed. La synchronisation se fait donc à sens unique (iClosed vers CloseOS). (L'API arrivera Prochainement)",
+  faq5_a1: "Oui, et désormais en synchronisation bidirectionnelle complète. Chaque prospect, deal ou changement de stage ajouté ou modifié d'un côté est instantanément reflété de l'autre — plus de double saisie, plus de désynchronisation.",
+  faq5_a2: "Concrètement : vos leads et ventes iClosed remontent automatiquement dans CloseOS, et toute mise à jour faite dans CloseOS (stage, tag, note, RDV) est repoussée vers iClosed en temps réel. Vous gardez votre setup iClosed existant et vous gagnez le cockpit CloseOS par-dessus, sans friction.",
 
   // CTA Final
   cta_title_line1: "Arrêtez de payer pour 10 outils.",
@@ -522,7 +520,7 @@ const en: SalesTranslations = {
   ld_faq3_q: "Why pay for CloseOS instead of using Excel or Notion?",
   ld_faq3_a: "Because DIY tools cost you deals. Excel doesn't send automatic reminders, Notion doesn't generate meeting links or sync your calls. CloseOS is an active system that eliminates 80% of admin work. The time saved is reinvested in closing contracts.",
   ld_faq4_q: "Is iClosed integrated with CloseOS?",
-  ld_faq4_a: "Partially. Unlike HubSpot or Pipedrive, iClosed does not have an open public API. CloseOS receives new leads and sales from iClosed via Webhook, but synchronization is one-way (iClosed to CloseOS). Full API integration is coming soon.",
+  ld_faq4_a: "Yes, with full bidirectional sync. Every prospect, deal or stage change updated on one side is reflected on the other in real time. Your iClosed leads and sales flow into CloseOS, and your CloseOS updates (stage, tag, note, appointment) are pushed back to iClosed automatically.",
   ld_faq5_q: "What is CloseOS Sales?",
   ld_faq5_a: "CloseOS Sales is the all-in-one software for high-ticket and freelance closers. It combines closer CRM, visual sales pipeline, built-in VoIP, call tracking, calendar & booking, automated invoicing and closing KPIs. It's the tool that replaces 10 different pieces of software for independent closers.",
 
@@ -650,11 +648,13 @@ const en: SalesTranslations = {
   pricing_subtitle: "One plan. Everything included. No commitment.",
   pricing_trial: "Try free for 10 days. No credit card required.",
   pricing_monthly: "Monthly",
+  pricing_quarterly: "Quarterly",
   pricing_yearly: "Yearly",
   pricing_launch_badge: "\u{1F525} -51% LAUNCH OFFER",
   pricing_pack_name: "PRO PACK",
   pricing_pack_desc: "The all-in-one closer tool. Full & unlimited access.",
-  pricing_billed_yearly: "Billed annually (\u{20AC}306/year)",
+  pricing_billed_yearly: "Billed annually (\u{20AC}216/year)",
+  pricing_billed_quarterly: "Billed quarterly (\u{20AC}60/quarter)",
   pricing_feat1_bold: "CRM & Pipeline",
   pricing_feat1_rest: " unlimited",
   pricing_feat2_bold: "Calendar & Booking",
@@ -689,12 +689,9 @@ const en: SalesTranslations = {
   faq3_q: "Why pay for CloseOS when I can do it myself on Excel/Notion?",
   faq3_a1: "Because the DIY approach costs you deals. Excel doesn't send automatic reminders, Notion doesn't generate meeting links or sync your calls.",
   faq3_a2: "CloseOS isn't just a note-taking tool, it's an active system that eliminates 80% of your admin work. The time you stop spending on configuring tools is time reinvested in closing deals.",
-  faq4_q: "Why is the Pro Pack \u{20AC}34 instead of \u{20AC}69?",
-  faq4_a1: "It's a launch offer. We're rewarding our early adopters with this preferential rate.",
-  faq4_a2: "The standard price will go up to \u{20AC}69/month. By signing up now, you lock in the launch price.",
   faq5_q: "Is iClosed integrated?",
-  faq5_a1: "Partially. Unlike industry standards (HubSpot, Pipedrive), iClosed doesn't have an open public API allowing full synchronization.",
-  faq5_a2: "In practice: CloseOS receives your new leads and sales from iClosed (via Webhook), but can't modify data inside iClosed. Sync is therefore one-way (iClosed to CloseOS). (Full API coming soon)",
+  faq5_a1: "Yes — and now with full bidirectional sync. Every prospect, deal or stage change added or updated on one side is instantly reflected on the other. No more double entry, no more drift.",
+  faq5_a2: "In practice: your iClosed leads and sales flow automatically into CloseOS, and any update made in CloseOS (stage, tag, note, appointment) is pushed back to iClosed in real time. Keep your existing iClosed setup and gain the CloseOS cockpit on top, without friction.",
 
   // CTA Final
   cta_title_line1: "Stop paying for 10 tools.",

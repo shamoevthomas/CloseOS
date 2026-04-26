@@ -108,6 +108,7 @@
     { "source": "/api/business-check-device", "destination": "/api/business?action=check-device" },
     { "source": "/api/business-revoke-device", "destination": "/api/business?action=revoke-device" },
     { "source": "/api/business-send-leave-code", "destination": "/api/business?action=send-leave-code" },
+    { "source": "/api/business-test-webhook", "destination": "/api/business?action=test-webhook" },
     { "source": "/api/business-leave-organization", "destination": "/api/business?action=leave-organization" },
     { "source": "/api/business-send-notification-email", "destination": "/api/business?action=send-notification-email" },
     { "source": "/api/business-send-invitation-email", "destination": "/api/business?action=send-invitation-email" },
@@ -134,6 +135,9 @@
     { "source": "/api/business-referral-update", "destination": "/api/business-referral?action=update" },
     { "source": "/api/business-referral-delete", "destination": "/api/business-referral?action=delete" },
     { "source": "/api/business-referral-track-view", "destination": "/api/business-referral?action=track-view" },
+
+    { "source": "/book/:slug", "destination": "/api/social-meta?type=booking&slug=:slug" },
+    { "source": "/capture/:slug", "destination": "/api/social-meta?type=capture&slug=:slug" },
 
     { "source": "/(.*)", "destination": "/index.html" }
   ]

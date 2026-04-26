@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, us
 import { supabase } from '../../lib/supabase';
 import { getBrowserTimezone } from '../../lib/timezone';
 
-const BusinessAuthContext = createContext<any>(null);
+export const BusinessAuthContext = createContext<any>(null);
 
 function getDeviceFingerprint(): string {
   const key = 'closeos_device_id';
@@ -480,6 +480,14 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
     return !plan || plan === 'solo' || plan === 'business_acquisition' || plan === 'enterprise'
   }, [businessSettings?.subscription_plan])
 
+  // API & outbound webhooks are gated. Available on every plan EXCEPT 'business'.
+  // (no plan / trial → permissive; same gate as hasAcquisition today, kept separate
+  // semantically so it can diverge later)
+  const hasApiAccess = useMemo(() => {
+    const plan = businessSettings?.subscription_plan
+    return !plan || plan === 'solo' || plan === 'business_acquisition' || plan === 'enterprise'
+  }, [businessSettings?.subscription_plan])
+
   const isLifetimeFree = useMemo(() => {
     return !!businessProfile?.is_lifetime_free
   }, [businessProfile?.is_lifetime_free])
@@ -511,6 +519,7 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
       isTeamMember,
       isSolo,
       hasAcquisition,
+      hasApiAccess,
       isLifetimeFree,
       isTrialActive,
       isSubscribed,

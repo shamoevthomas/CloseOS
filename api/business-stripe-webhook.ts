@@ -58,30 +58,63 @@ async function matchProspectByEmail(ownerUserId: string, email: string) {
 
 // ─── Helper: update prospect with subscription data ─────────────────────────
 
+// Returns the row + previous_stage so callers can decide which webhook events
+// to fire afterwards. Auto-flips stage = 'won' when the subscription is in an
+// active/trialing state and the prospect is not yet won.
 async function updateProspectStripeData(
     prospectId: number,
     subscription: Stripe.Subscription,
     customer: Stripe.Customer,
     matchedVia: string
-) {
+): Promise<{ row: any; previousStage: string; wonFlipped: boolean }> {
     const item = subscription.items.data[0];
-    await supabaseAdmin
+
+    const { data: before } = await supabaseAdmin
         .from('business_prospects')
-        .update({
-            stripe_customer_id: customer.id,
-            stripe_subscription_id: subscription.id,
-            subscription_status: subscription.status,
-            subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
-            subscription_interval: item?.price?.recurring?.interval || 'month',
-            matched_via: matchedVia,
-            last_payment_date: subscription.current_period_start
-                ? new Date(subscription.current_period_start * 1000).toISOString()
-                : null,
-            next_payment_date: subscription.current_period_end
-                ? new Date(subscription.current_period_end * 1000).toISOString()
-                : null,
-        })
-        .eq('id', prospectId);
+        .select('id, stage')
+        .eq('id', prospectId)
+        .maybeSingle();
+    const previousStage = (before?.stage as string) || '';
+
+    const isLive = subscription.status === 'active' || subscription.status === 'trialing';
+    const shouldFlipWon = isLive && previousStage !== 'won';
+
+    const updates: any = {
+        stripe_customer_id: customer.id,
+        stripe_subscription_id: subscription.id,
+        subscription_status: subscription.status,
+        subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+        subscription_interval: item?.price?.recurring?.interval || 'month',
+        matched_via: matchedVia,
+        last_payment_date: subscription.current_period_start
+            ? new Date(subscription.current_period_start * 1000).toISOString()
+            : null,
+        next_payment_date: subscription.current_period_end
+            ? new Date(subscription.current_period_end * 1000).toISOString()
+            : null,
+    };
+    if (shouldFlipWon) {
+        updates.stage = 'won';
+        updates.previous_stage = previousStage;
+    }
+
+    const { data: row } = await supabaseAdmin
+        .from('business_prospects')
+        .update(updates)
+        .eq('id', prospectId)
+        .select()
+        .single();
+
+    return { row, previousStage, wonFlipped: shouldFlipWon };
+}
+
+async function fireBusinessEmit(userId: string, event: string, payload: any) {
+    try {
+        const { emitWebhookEvent } = await import('./_lib/emit-webhook.js');
+        emitWebhookEvent({ product: 'business', userId, event, payload }).catch(() => {});
+    } catch (err: any) {
+        console.error('[business-stripe-webhook] emit load failed:', err?.message);
+    }
 }
 
 // ─── Email helpers ──────────────────────────────────────────────────────────
@@ -216,7 +249,11 @@ export default async function handler(req: Request) {
                     .eq('stripe_subscription_id', subscription.id)
                     .maybeSingle();
                 if (existingBySub) {
-                    await updateProspectStripeData(existingBySub.id, subscription, customer, 'webhook');
+                    const stripeRes = await updateProspectStripeData(existingBySub.id, subscription, customer, 'webhook');
+                    if (stripeRes.wonFlipped && stripeRes.row) {
+                        await fireBusinessEmit(ownerUserId, 'prospect.stage_changed', { ...stripeRes.row, previous_stage: stripeRes.previousStage, new_stage: 'won' });
+                        await fireBusinessEmit(ownerUserId, 'deal.won', { ...stripeRes.row, previous_stage: stripeRes.previousStage });
+                    }
                     console.log(`Subscription ${subscription.id} already linked to prospect ${existingBySub.id}, refreshed only`);
                     break;
                 }
@@ -224,7 +261,11 @@ export default async function handler(req: Request) {
                 const prospect = await matchProspectByEmail(ownerUserId, customer.email);
                 if (prospect) {
                     const isFirstMatch = !prospect.stripe_subscription_id;
-                    await updateProspectStripeData(prospect.id, subscription, customer, 'webhook');
+                    const stripeRes = await updateProspectStripeData(prospect.id, subscription, customer, 'webhook');
+                    if (stripeRes.wonFlipped && stripeRes.row) {
+                        await fireBusinessEmit(ownerUserId, 'prospect.stage_changed', { ...stripeRes.row, previous_stage: stripeRes.previousStage, new_stage: 'won' });
+                        await fireBusinessEmit(ownerUserId, 'deal.won', { ...stripeRes.row, previous_stage: stripeRes.previousStage });
+                    }
                     console.log(`Matched prospect ${prospect.id} with subscription ${subscription.id}`);
 
                     // On first match, create an initial payment record so we don't lose the first payment
@@ -294,10 +335,14 @@ export default async function handler(req: Request) {
                                 ? new Date(subscription.current_period_end * 1000).toISOString()
                                 : null,
                         })
-                        .select('id')
+                        .select()
                         .single();
 
                     if (newProspect) {
+                        // New prospect, stage already set to 'won' on insert
+                        await fireBusinessEmit(ownerUserId, 'prospect.created', newProspect);
+                        await fireBusinessEmit(ownerUserId, 'deal.won', newProspect);
+
                         // Create initial payment record (dedup against redelivered webhooks)
                         if (amount > 0) {
                             const initialInvoiceId = `initial_${subscription.id}`;
@@ -336,17 +381,25 @@ export default async function handler(req: Request) {
                 // Find prospect by subscription ID
                 const { data: prospect } = await supabaseAdmin
                     .from('business_prospects')
-                    .select('id')
+                    .select('id, subscription_status, stage')
                     .eq('user_id', ownerUserId)
                     .eq('stripe_subscription_id', subscription.id)
                     .maybeSingle();
 
                 if (prospect) {
-                    await supabaseAdmin
+                    const wasAlreadyCanceled = prospect.subscription_status === 'canceled';
+                    const { data: updated } = await supabaseAdmin
                         .from('business_prospects')
                         .update({ subscription_status: 'canceled' })
-                        .eq('id', prospect.id);
+                        .eq('id', prospect.id)
+                        .select()
+                        .single();
                     console.log(`Marked prospect ${prospect.id} subscription as canceled`);
+
+                    // Emit deal.lost only on the transition (anti-redelivery dup)
+                    if (!wasAlreadyCanceled && updated) {
+                        await fireBusinessEmit(ownerUserId, 'deal.lost', { ...updated, previous_stage: prospect.stage || null });
+                    }
                 }
                 break;
             }
@@ -582,16 +635,62 @@ export default async function handler(req: Request) {
                 break;
             }
 
-            // ─── PaymentIntent succeeded (inline capture flow, "paiement avant inscription") ─
+            // ─── PaymentIntent succeeded (inline flow: capture + booking) ─
+            // Webhook is a fallback if the frontend confirm-payment didn't fire (network glitch).
+            // Delegate to the right confirm endpoint — atomic claim is done there.
             case 'payment_intent.succeeded': {
                 const pi = event.data.object as Stripe.PaymentIntent;
-                // Only touch pre_booking sessions (campaign_payment_sessions stores pi.id here)
+                const { data: sess } = await supabaseAdmin
+                    .from('campaign_payment_sessions')
+                    .select('id, status, booking_link_id, campaign_id, appointment_id')
+                    .eq('stripe_payment_intent_id', pi.id)
+                    .maybeSingle();
+                if (!sess) {
+                    // Legacy fallback
+                    await supabaseAdmin
+                        .from('campaign_payment_sessions')
+                        .update({ status: 'completed' })
+                        .eq('stripe_checkout_session_id', pi.id)
+                        .eq('status', 'pending');
+                    console.log(`PaymentIntent succeeded (legacy): ${pi.id}`);
+                    break;
+                }
+                if (sess.status === 'completed' || sess.appointment_id) {
+                    console.log(`PaymentIntent already processed: ${pi.id}`);
+                    break;
+                }
+                const piHost = req.headers.get('host') || 'www.closeos.fr';
+                const piProto = req.headers.get('x-forwarded-proto') || 'https';
+                const action = sess.booking_link_id ? 'booking-confirm-payment' : 'capture-confirm-payment';
+                try {
+                    const r = await fetch(`${piProto}://${piHost}/api/business?action=${action}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ payment_intent_id: pi.id }),
+                    });
+                    const data: any = await r.json().catch(() => ({}));
+                    if (!data?.success && !data?.already_completed) {
+                        console.error(`[webhook] ${action} failed: ${data?.error}`);
+                    }
+                } catch (err: any) {
+                    console.error(`[webhook payment_intent.succeeded] ${action} call failed: ${err?.message}`);
+                }
+                console.log(`PaymentIntent succeeded: ${pi.id}`);
+                break;
+            }
+
+            // ─── PaymentIntent canceled (24h auto-expiry or explicit cancel) — release the slot lock ─
+            // NOTE: we deliberately do NOT release the lock on 'payment_intent.payment_failed'
+            // because the PI stays in 'requires_payment_method' and the user may retry with a different card.
+            // The lock either expires after 30 min, or is released by capture-cancel-payment when the user gives up.
+            case 'payment_intent.canceled': {
+                const pi = event.data.object as Stripe.PaymentIntent;
                 await supabaseAdmin
                     .from('campaign_payment_sessions')
-                    .update({ status: 'completed' })
-                    .eq('stripe_checkout_session_id', pi.id)
+                    .update({ status: 'cancelled' })
+                    .eq('stripe_payment_intent_id', pi.id)
                     .eq('status', 'pending');
-                console.log(`PaymentIntent succeeded: ${pi.id}`);
+                console.log(`PaymentIntent canceled: ${pi.id} — slot lock released`);
                 break;
             }
 

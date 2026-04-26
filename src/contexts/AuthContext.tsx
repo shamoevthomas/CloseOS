@@ -196,8 +196,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // --- GESTION DÉCONNEXION AUTO 4H DU MATIN ---
+  // Déconnecte l'utilisateur s'il ne s'est pas connecté depuis le dernier 4h du matin
+  // ET que le tab est resté caché >= 5 min en continu (vraie inactivité, pas un changement d'onglet rapide).
   useEffect(() => {
     if (!user) return;
+
+    let hiddenSince: number | null = document.visibilityState === 'hidden' ? Date.now() : null;
+    const HIDDEN_THRESHOLD_MS = 5 * 60 * 1000; // 5 min cachée avant de considérer "inactif"
 
     const check4amReset = () => {
       try {
@@ -205,7 +210,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const resetTime = new Date();
         resetTime.setHours(4, 0, 0, 0);
 
-        // Si on est avant 4h du matin, le dernier reset "valide" était hier à 4h
         if (now < resetTime) {
           resetTime.setDate(resetTime.getDate() - 1);
         }
@@ -214,19 +218,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const currentResetTimestamp = resetTime.getTime().toString();
 
         if (lastReset && parseInt(lastReset) < resetTime.getTime()) {
-          // On est après un 4h qui n'a pas été traité
-          // On ne déconnecte QUE si l'utilisateur n'est pas activement sur l'outil
-          if (document.visibilityState === 'hidden') {
-            console.log("Auto-logout at 4am triggered (background/inactive)");
+          // 4h passé non encore traité — uniquement si tab caché en continu depuis HIDDEN_THRESHOLD_MS
+          const hiddenLongEnough = hiddenSince !== null && Date.now() - hiddenSince >= HIDDEN_THRESHOLD_MS;
+          if (hiddenLongEnough) {
+            console.log("Auto-logout at 4am triggered (tab hidden ≥5 min)");
             logout();
             localStorage.setItem('last_4am_reset', currentResetTimestamp);
-          } else {
-            // S'il est sur l'outil (visible), on ne fait rien pour l'instant.
-            // Le check se relancera soit à la prochaine minute, soit dès qu'il change d'onglet.
-            console.log("4am reset pending: user is working on the tool.");
           }
         } else if (!lastReset) {
-          // Première fois qu'on voit le système, on initialise le flag
           localStorage.setItem('last_4am_reset', currentResetTimestamp);
         }
       } catch (e) {
@@ -234,18 +233,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Vérification initiale
+    const handleVisibilityChange = () => {
+      hiddenSince = document.visibilityState === 'hidden' ? Date.now() : null;
+    };
+
     check4amReset();
 
-    // Vérification toutes les minutes
+    // Vérification toutes les minutes (la condition hiddenSince filtre les changements rapides)
     const interval = setInterval(check4amReset, 60000);
-
-    // Déclenchement dès que l'utilisateur quitte l'onglet
-    document.addEventListener('visibilitychange', check4amReset);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       clearInterval(interval);
-      document.removeEventListener('visibilitychange', check4amReset);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [user, logout]);
 
