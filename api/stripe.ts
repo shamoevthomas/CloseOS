@@ -78,9 +78,10 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
 
         if (promoCodes.data.length > 0) {
           const promo = promoCodes.data[0];
-          const coupon = typeof promo.coupon === 'string'
-            ? await stripe.coupons.retrieve(promo.coupon)
-            : promo.coupon;
+          const promoCoupon = (promo as any).coupon;
+          const coupon = typeof promoCoupon === 'string'
+            ? await stripe.coupons.retrieve(promoCoupon)
+            : promoCoupon;
           console.log("✅ Code Stripe trouvé:", promo.id, "| percent_off:", coupon?.percent_off);
           discounts.push({ promotion_code: promo.id });
           percentOff = coupon?.percent_off || 0;

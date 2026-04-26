@@ -1,5 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
-import crypto from 'crypto'
+
+async function hmacSha256Hex(secret: string, body: string): Promise<string> {
+  const enc = new TextEncoder()
+  const key = await globalThis.crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const sig = await globalThis.crypto.subtle.sign('HMAC', key, enc.encode(body))
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -46,7 +58,7 @@ export async function emitWebhookEvent(opts: EmitOptions): Promise<void> {
     })
 
     await Promise.allSettled(matching.map(async (sub: any) => {
-      const signature = crypto.createHmac('sha256', sub.secret).update(body).digest('hex')
+      const signature = await hmacSha256Hex(sub.secret, body)
       try {
         const res = await fetch(sub.url, {
           method: 'POST',

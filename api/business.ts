@@ -2268,7 +2268,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         type: 'booking',
         time: new Date().toISOString(),
         read: false,
-      }).catch(() => {})
+      }).then(undefined, () => undefined)
 
       // 2. Send email to owner
       const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
@@ -3024,7 +3024,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const now = new Date()
 
       // Fetch availability, absences, and appointments for ALL members in parallel
-      const fetchPromises: Promise<any>[] = []
+      const fetchPromises: PromiseLike<any>[] = []
 
       // Slots: team members + owner (owner has team_member_id IS NULL)
       if (teamMemberIds.length > 0) {
@@ -3690,7 +3690,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .insert({ owner_id: campaign.user_id, name: 'Incomplet', color: '#f59e0b', is_system: true })
             .select('id').single().then(r => r.data?.id))
           if (tagId) {
-            await supabase.from('business_prospect_tags').insert({ prospect_id: newProspect.id, tag_id: tagId }).catch(() => {})
+            await supabase.from('business_prospect_tags').insert({ prospect_id: newProspect.id, tag_id: tagId }).then(undefined, () => undefined)
           }
         }
       }
@@ -5360,7 +5360,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               .insert({ owner_id: campaign.user_id, name: 'Éliminé', color: '#ef4444', is_system: true })
               .select('id').single().then(r => r.data?.id))
             if (elimTagId) {
-              await supabase.from('business_prospect_tags').insert({ prospect_id: prospect.id, tag_id: elimTagId }).catch(() => {})
+              await supabase.from('business_prospect_tags').insert({ prospect_id: prospect.id, tag_id: elimTagId }).then(undefined, () => undefined)
             }
           }
           } // end qualifying branch
@@ -6755,8 +6755,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
         subscription_interval: item?.price?.recurring?.interval || 'month',
         matched_via: 'auto_won',
-        last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
-        next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+        last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
+        next_payment_date: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
       }).eq('id', prospect_id)
 
       return res.status(200).json({
@@ -6767,8 +6767,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
         subscription_interval: item?.price?.recurring?.interval || 'month',
         matched_via: 'auto_won',
-        last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
-        next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+        last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
+        next_payment_date: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
       })
     }
 
@@ -6929,7 +6929,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.log(`[stripe-sync-all] Sub ${sub.id}: base=${baseAmount}, after_discount=${amount}`)
         } catch {
           // Fallback: try subscription.discount or customer.discount
-          const discount = sub.discount
+          const discount = (sub as any).discount
           if (discount?.coupon) {
             if (discount.coupon.percent_off) {
               amount = Math.round(baseAmount * (1 - discount.coupon.percent_off / 100) * 100) / 100
@@ -6948,8 +6948,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               subscription_amount: amount,
               subscription_status: sub.status,
               subscription_interval: interval,
-              last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
-              next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+              last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
+              next_payment_date: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
             }).eq('id', prospectId)
             // Also update the payment amount if exists
             await supabase.from('business_payments').update({ amount }).eq('stripe_invoice_id', `sync_${sub.id}`)
@@ -6973,8 +6973,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           subscription_amount: amount,
           subscription_interval: interval,
           matched_via: 'sync',
-          last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
-          next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+          last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
+          next_payment_date: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
         }
 
         const existingId = existingByEmail.get(customer.email.toLowerCase())
@@ -6997,7 +6997,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 stripe_invoice_id: syncInvoiceId,
                 amount,
                 currency: item?.price?.currency || 'eur',
-                paid_at: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : new Date().toISOString(),
+                paid_at: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : new Date().toISOString(),
                 assigned_to: fullP?.assigned_to || null,
                 assigned_setter: fullP?.assigned_setter || null,
               })
@@ -7034,7 +7034,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 stripe_invoice_id: `sync_${sub.id}`,
                 amount,
                 currency: item?.price?.currency || 'eur',
-                paid_at: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : new Date().toISOString(),
+                paid_at: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : new Date().toISOString(),
                 assigned_to: null,
                 assigned_setter: null,
               })
@@ -7080,7 +7080,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 status: sub.status,
                 amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
                 interval: item?.price?.recurring?.interval || 'month',
-                current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+                current_period_end: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
               }
             })
           }
@@ -7118,8 +7118,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
           subscription_interval: item?.price?.recurring?.interval || 'month',
           matched_via: 'manual',
-          last_payment_date: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
-          next_payment_date: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+          last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
+          next_payment_date: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
         }).eq('id', prospect_id)
 
         return res.status(200).json({

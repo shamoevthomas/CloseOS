@@ -761,7 +761,7 @@ export default async function handler(req: Request) {
                 const deleteExternal = deleteAll || scope.includes('external');
                 const deletePersonal = deleteAll || scope.includes('personal');
 
-                const deleteTasks: Promise<any>[] = [];
+                const deleteTasks: PromiseLike<any>[] = [];
 
                 if (deleteBilling) {
                     deleteTasks.push(

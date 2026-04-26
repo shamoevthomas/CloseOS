@@ -174,7 +174,7 @@ async function handleRequestDeletion(req: Request) {
                 const sub = activeSubs.data[0] || trialingSubs.data[0];
                 if (sub) {
                     hasActiveSubscription = true;
-                    periodEndDate = new Date(sub.current_period_end * 1000);
+                    periodEndDate = new Date((sub as any).current_period_end * 1000);
 
                     // Schedule cancellation at end of period (not immediate)
                     await stripe.subscriptions.update(sub.id, {

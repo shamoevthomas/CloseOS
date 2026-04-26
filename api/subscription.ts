@@ -177,10 +177,11 @@ async function handleStatus(req: Request): Promise<Response> {
             });
         }
 
+        const subAny = sub as any;
         return new Response(JSON.stringify({
             cancel_at_period_end: sub.cancel_at_period_end,
-            current_period_end: sub.current_period_end
-                ? new Date((typeof sub.current_period_end === 'number' ? sub.current_period_end * 1000 : new Date(sub.current_period_end).getTime())).toISOString()
+            current_period_end: subAny.current_period_end
+                ? new Date((typeof subAny.current_period_end === 'number' ? subAny.current_period_end * 1000 : new Date(subAny.current_period_end).getTime())).toISOString()
                 : null,
         }), {
             headers: { 'Content-Type': 'application/json' }

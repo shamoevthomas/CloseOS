@@ -86,11 +86,11 @@ async function updateProspectStripeData(
         subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
         subscription_interval: item?.price?.recurring?.interval || 'month',
         matched_via: matchedVia,
-        last_payment_date: subscription.current_period_start
-            ? new Date(subscription.current_period_start * 1000).toISOString()
+        last_payment_date: (subscription as any).current_period_start
+            ? new Date((subscription as any).current_period_start * 1000).toISOString()
             : null,
-        next_payment_date: subscription.current_period_end
-            ? new Date(subscription.current_period_end * 1000).toISOString()
+        next_payment_date: (subscription as any).current_period_end
+            ? new Date((subscription as any).current_period_end * 1000).toISOString()
             : null,
     };
     if (shouldFlipWon) {
@@ -296,8 +296,8 @@ export default async function handler(req: Request) {
                                         stripe_invoice_id: initialInvoiceId,
                                         amount,
                                         currency: item?.price?.currency || 'eur',
-                                        paid_at: subscription.current_period_start
-                                            ? new Date(subscription.current_period_start * 1000).toISOString()
+                                        paid_at: (subscription as any).current_period_start
+                                            ? new Date((subscription as any).current_period_start * 1000).toISOString()
                                             : new Date().toISOString(),
                                         assigned_to: fullProspect?.assigned_to || null,
                                         assigned_setter: fullProspect?.assigned_setter || null,
@@ -328,11 +328,11 @@ export default async function handler(req: Request) {
                             subscription_amount: amount,
                             subscription_interval: item?.price?.recurring?.interval || 'month',
                             matched_via: 'auto-created',
-                            last_payment_date: subscription.current_period_start
-                                ? new Date(subscription.current_period_start * 1000).toISOString()
+                            last_payment_date: (subscription as any).current_period_start
+                                ? new Date((subscription as any).current_period_start * 1000).toISOString()
                                 : null,
-                            next_payment_date: subscription.current_period_end
-                                ? new Date(subscription.current_period_end * 1000).toISOString()
+                            next_payment_date: (subscription as any).current_period_end
+                                ? new Date((subscription as any).current_period_end * 1000).toISOString()
                                 : null,
                         })
                         .select()
@@ -360,8 +360,8 @@ export default async function handler(req: Request) {
                                         stripe_invoice_id: initialInvoiceId,
                                         amount,
                                         currency: item?.price?.currency || 'eur',
-                                        paid_at: subscription.current_period_start
-                                            ? new Date(subscription.current_period_start * 1000).toISOString()
+                                        paid_at: (subscription as any).current_period_start
+                                            ? new Date((subscription as any).current_period_start * 1000).toISOString()
                                             : new Date().toISOString(),
                                         assigned_to: null,
                                         assigned_setter: null,
@@ -407,9 +407,10 @@ export default async function handler(req: Request) {
             // ─── Invoice payment succeeded ──────────────────────────────
             case 'invoice.payment_succeeded': {
                 const invoice = event.data.object as Stripe.Invoice;
-                const subscriptionId = typeof invoice.subscription === 'string'
-                    ? invoice.subscription
-                    : invoice.subscription?.id;
+                const invSub = (invoice as any).subscription;
+                const subscriptionId = typeof invSub === 'string'
+                    ? invSub
+                    : invSub?.id;
 
                 if (!subscriptionId) break;
 
@@ -475,7 +476,7 @@ export default async function handler(req: Request) {
                             old_value: null,
                             new_value: `${paymentAmount} ${invoice.currency || 'eur'}`,
                             metadata: { invoice_id: invoice.id, amount: paymentAmount },
-                        }).catch(() => {});
+                        }).then(undefined, () => undefined);
                     }
 
                     console.log(`Updated last_payment_date for prospect ${prospect.id}`);
@@ -697,9 +698,10 @@ export default async function handler(req: Request) {
             // ─── Invoice payment failed (prospect subscription renewal) ─
             case 'invoice.payment_failed': {
                 const invoice = event.data.object as Stripe.Invoice;
-                const subscriptionId = typeof invoice.subscription === 'string'
-                    ? invoice.subscription
-                    : (invoice.subscription as any)?.id;
+                const invSub = (invoice as any).subscription;
+                const subscriptionId = typeof invSub === 'string'
+                    ? invSub
+                    : invSub?.id;
 
                 if (!subscriptionId) break;
 
@@ -735,7 +737,7 @@ export default async function handler(req: Request) {
                         old_value: 'active',
                         new_value: 'past_due',
                         metadata: { invoice_id: invoice.id },
-                    }).catch(() => {});
+                    }).then(undefined, () => undefined);
 
                     // Notify the Business owner by email
                     const { data: { user: ownerAuth } } = await supabaseAdmin.auth.admin.getUserById(ownerUserId);
