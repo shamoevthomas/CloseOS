@@ -463,13 +463,13 @@ export function Pipeline() {
 
       {/* HEADER */}
       <div className="relative z-10 mb-12 shrink-0">
-        <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4">
           {/* Onglets des Offres (Filtrés) */}
-          <div className="flex gap-1 overflow-x-auto pb-2 md:pb-0 no-scrollbar bg-white/[0.03] backdrop-blur-[16px] border-[0.5px] border-white/[0.08] rounded-full p-1.5">
+          <div className="flex w-full gap-1 overflow-x-auto pb-2 no-scrollbar bg-white/[0.03] backdrop-blur-[16px] border-[0.5px] border-white/[0.08] rounded-full p-1.5">
             <button
               onClick={() => { setCurrentOfferTab('global'); setFormulaFilter('all') }}
               className={cn(
-                'flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all whitespace-nowrap',
+                'flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all whitespace-nowrap',
                 currentOfferTab === 'global'
                   ? 'bg-emerald-500 text-black'
                   : 'text-white/40 hover:bg-white/5 hover:text-white'
@@ -484,7 +484,7 @@ export function Pipeline() {
                 key={offer.name}
                 onClick={() => { setCurrentOfferTab(offer.name); setFormulaFilter('all') }}
                 className={cn(
-                  'flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all whitespace-nowrap',
+                  'flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all whitespace-nowrap',
                   currentOfferTab === offer.name
                     ? 'bg-emerald-500 text-black'
                     : 'text-white/40 hover:bg-white/5 hover:text-white'
@@ -499,7 +499,7 @@ export function Pipeline() {
           </div>
 
           {/* Contrôles Secondaires */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <SharePerformanceButton />
 
             <button

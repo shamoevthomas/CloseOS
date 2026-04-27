@@ -249,6 +249,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user, logout]);
 
+  // User role (Sales) — drives sidebar, KPI page, dashboard widgets, available stages
+  const rawRole = (user?.user_metadata?.role || profile?.role || '') as string;
+  const role: 'Closer' | 'Setter' | 'Setter-Closer' =
+    rawRole === 'Setter' || rawRole === 'Setter-Closer' ? rawRole : 'Closer';
+  const isCloserRole = role === 'Closer';
+  const isSetterRole = role === 'Setter';
+  const isSetterCloserRole = role === 'Setter-Closer';
+  const showsSetterFeatures = isSetterRole || isSetterCloserRole;
+  const showsCloserFeatures = isCloserRole || isSetterCloserRole;
+
   return (
     <AuthContext.Provider value={{
       isAuthenticated: !!user,
@@ -264,6 +274,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       isBusinessUser,
       profileReady,
+      role,
+      isCloserRole,
+      isSetterRole,
+      isSetterCloserRole,
+      showsSetterFeatures,
+      showsCloserFeatures,
       login,
       register,
       loginWithGoogle,

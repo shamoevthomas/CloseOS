@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
+import { DMRBadge } from '../components/DMRBadge'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { ExportProspectsModal } from '../components/ExportProspectsModal'
@@ -804,6 +805,7 @@ export function BusinessCRM() {
                           <User className="h-4 w-4 text-stone-500" />
                         </div>
                         <span className="text-sm font-semibold text-stone-900 dark:text-white truncate max-w-[120px] md:max-w-[180px]">{getDisplayName(deal)}</span>
+                        <DMRBadge prospect={deal} />
                       </div>
                     </td>
                     <td className="px-3 md:px-4 py-3">

@@ -21,6 +21,7 @@ import {
   Bell,
   Building2,
   User,
+  TrendingUp,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useState, useEffect } from 'react'
@@ -30,19 +31,32 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { sidebarTranslations } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
 
-// Navigation keys — labels resolved from translations
-const navigationKeys = [
-  { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { key: 'pipeline', href: '/pipeline', icon: GitBranch },
-  { key: 'contacts', href: '/contacts', icon: Users },
-  { key: 'offers', href: '/offers', icon: Briefcase },
-  { key: 'agenda', href: '/agenda', icon: Calendar },
-  { key: 'appointments', href: '/rendez-vous', icon: CalendarCheck },
-  { key: 'calls', href: '/appels', icon: Video },
-  { key: 'invoices', href: '/factures', icon: CreditCard },
-  { key: 'kpi', href: '/kpi', icon: BarChart3 },
-  { key: 'reminders', href: '/reminders', icon: Bell },
-]
+// Build navigation keys based on user role.
+// - Closer (default): single "KPI" entry → /kpi
+// - Setter: single "Setter KPI" entry → /setter-kpi
+// - Setter-Closer: two entries — "Closer KPI" → /kpi AND "Setter KPI" → /setter-kpi
+const buildNavigationKeys = (role: 'Closer' | 'Setter' | 'Setter-Closer') => {
+  const base = [
+    { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { key: 'pipeline', href: '/pipeline', icon: GitBranch },
+    { key: 'contacts', href: '/contacts', icon: Users },
+    { key: 'offers', href: '/offers', icon: Briefcase },
+    { key: 'agenda', href: '/agenda', icon: Calendar },
+    { key: 'appointments', href: '/rendez-vous', icon: CalendarCheck },
+    { key: 'calls', href: '/appels', icon: Video },
+    { key: 'invoices', href: '/factures', icon: CreditCard },
+  ] as const
+  const kpis =
+    role === 'Setter-Closer'
+      ? [
+          { key: 'closer_kpi', href: '/kpi', icon: BarChart3 },
+          { key: 'setter_kpi', href: '/setter-kpi', icon: TrendingUp },
+        ]
+      : role === 'Setter'
+        ? [{ key: 'setter_kpi', href: '/setter-kpi', icon: BarChart3 }]
+        : [{ key: 'kpi', href: '/kpi', icon: BarChart3 }]
+  return [...base, ...kpis, { key: 'reminders', href: '/reminders', icon: Bell }]
+}
 
 interface SidebarProps {
   onOpenSettings: () => void
@@ -52,11 +66,11 @@ interface SidebarProps {
 
 export function Sidebar({ onOpenSettings, isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
-  const { logout, user } = useAuth()
+  const { logout, user, role } = useAuth()
   const { isInOrganization, organizations, switchOrganization } = useOrganization()
   const { lang } = useLanguage()
   const t = sidebarTranslations[lang]
-  const navigation = navigationKeys.map(n => ({ ...n, name: t[n.key] }))
+  const navigation = buildNavigationKeys(role).map(n => ({ ...n, name: t[n.key] }))
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLogoDropdownOpen, setIsLogoDropdownOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)

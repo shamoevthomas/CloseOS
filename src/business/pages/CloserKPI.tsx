@@ -8,6 +8,7 @@ import {
   TrendingUp, DollarSign, ShoppingCart, Target, Award,
   Ban, Users, Briefcase, UserX, Settings, X, Save, Loader2, Package,
   Download, CalendarDays, ArrowRight, Filter, Plus, Trash2, AlertTriangle,
+  Repeat, Repeat2,
 } from 'lucide-react'
 import {
   AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -90,6 +91,7 @@ export function CloserKPI() {
   const [periodFrom, setPeriodFrom] = useState('')
   const [periodTo, setPeriodTo] = useState('')
   const [formulaBillingTypes, setFormulaBillingTypes] = useState<Record<string, string>>({})
+  const [followupHistoryIds, setFollowupHistoryIds] = useState<Set<number>>(new Set())
 
   // Autre modal
   const [showAutreModal, setShowAutreModal] = useState(false)
@@ -151,6 +153,24 @@ export function CloserKPI() {
         }
       })
       .catch(() => {})
+  }, [effectiveOwnerId])
+
+  // Load business_prospect_history rows where prospects transitioned into the 'followup' stage
+  useEffect(() => {
+    if (!effectiveOwnerId) return
+    let cancelled = false
+    supabase
+      .from('business_prospect_history')
+      .select('prospect_id')
+      .eq('business_owner_id', effectiveOwnerId)
+      .eq('field_name', 'stage')
+      .eq('new_value', 'followup')
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) { console.error('Erreur chargement followup history:', error); return }
+        setFollowupHistoryIds(new Set((data || []).map((r: any) => r.prospect_id)))
+      })
+    return () => { cancelled = true }
   }, [effectiveOwnerId])
 
   // Load team closers + Owner/HoS for member selector
@@ -329,7 +349,17 @@ export function CloserKPI() {
     // No-show rate: denominator = all qualified prospects who had an appointment (excludes prospect, unqualified, noanswer)
     const qualifiedWithRdv = src.filter((p: any) => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
     const noShowRate = qualifiedWithRdv.length > 0 ? (noShow.length / qualifiedWithRdv.length) * 100 : 0
-    return { won, noShow, lost, revenue, closedTotal, conversionRate, noShowRate }
+    // Follow-up rate: % of prospects in scope who passed through the 'followup' stage at any point
+    const everInFollowup = src.filter((p: any) =>
+      p.stage === 'followup'
+      || p.previous_stage === 'followup'
+      || followupHistoryIds.has(p.id)
+    )
+    const followupRate = src.length > 0 ? (everInFollowup.length / src.length) * 100 : 0
+    // R2 closing rate: % of follow-up prospects who ended up won
+    const wonAfterFollowup = everInFollowup.filter((p: any) => p.stage === 'won')
+    const r2ClosingRate = everInFollowup.length > 0 ? (wonAfterFollowup.length / everInFollowup.length) * 100 : 0
+    return { won, noShow, lost, revenue, closedTotal, conversionRate, noShowRate, followupRate, r2ClosingRate }
   }
 
   // Unique sources from campaigns
@@ -451,6 +481,7 @@ export function CloserKPI() {
     const makeVals = (kpis: ReturnType<typeof computeCloserKpis>, comm: number, src: any[]) => ({
       revenue: kpis.revenue, sales: kpis.won.length, conversion: kpis.conversionRate,
       commission: comm, noShowRate: kpis.noShowRate, lost: kpis.lost.length,
+      followupRate: kpis.followupRate, r2ClosingRate: kpis.r2ClosingRate,
       leads: src.length, deals: src.filter(p => !['won', 'lost', 'noshow', 'noanswer'].includes(p.stage)).length,
     })
     if (activeTab === 'org') return makeVals(org, orgCommission, orgProspects)
@@ -771,13 +802,15 @@ export function CloserKPI() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard title={t.kpi_ca_generated} value={`${formatCurrency(v.revenue)} €`} icon={DollarSign} color="emerald" />
         <KpiCard title={t.kpi_total_sales} value={v.sales} icon={ShoppingCart} color="blue" />
         <KpiCard title={t.kpi_closing_rate} value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" />
         {!isFixedComp && !isSolo && <KpiCard title={isOwnerView ? t.kpi_commissions : t.kpi_my_commissions} value={`${formatCurrency(v.commission)} €`} icon={Award} color="stone" highlight />}
         <KpiCard title={t.kpi_noshow_rate} value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" />
         <KpiCard title={t.kpi_deals_lost} value={v.lost} icon={Ban} color="stone" />
+        <KpiCard title={t.kpi_followup_rate} value={`${formatPercent(v.followupRate)}%`} icon={Repeat} color="amber" />
+        <KpiCard title={t.kpi_r2_closing_rate} value={`${formatPercent(v.r2ClosingRate)}%`} icon={Repeat2} color="purple" />
       </div>
 
       {/* Charts */}

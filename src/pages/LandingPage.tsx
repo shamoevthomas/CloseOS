@@ -719,6 +719,7 @@ export function LandingPage() {
 
           <div className="hidden md:flex items-center gap-8 text-[0.82rem] font-semibold">
             <a href="#features" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_features}</a>
+            <a href="#roles" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_roles}</a>
             <a href="#comparison" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_comparison}</a>
             <a href="#pricing" className="text-emerald-500 font-bold">{t.nav_pricing}</a>
             <a href="#partners" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_partners}</a>
@@ -748,6 +749,7 @@ export function LandingPage() {
           <div className="mx-4 glass-card rounded-2xl px-6 py-5 flex flex-col gap-1">
             {[
               { href: '#features', label: t.nav_features },
+              { href: '#roles', label: t.nav_roles },
               { href: '#comparison', label: t.nav_comparison },
               { href: '#pricing', label: t.nav_pricing },
               { href: '#partners', label: t.nav_partners },
@@ -1078,6 +1080,83 @@ export function LandingPage() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </motion.section>
+
+      {/* ═══ ROLES ═══ */}
+      <motion.section id="roles" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 border-t border-white/5 relative overflow-hidden">
+        <div className="absolute top-1/2 left-[-5%] -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/5 blur-[150px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 right-[-5%] -translate-y-1/2 w-[500px] h-[500px] bg-secondary/5 blur-[150px] rounded-full pointer-events-none" />
+
+        <div className="mx-auto max-w-7xl px-6 relative z-10">
+          <div className="text-center mb-16">
+            <p className="text-emerald-400 text-[0.7rem] font-extrabold uppercase tracking-[0.2em] mb-4" style={{ fontFamily: "'Manrope', sans-serif" }}>{t.roles_eyebrow}</p>
+            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-stone-50 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.roles_title}</h2>
+            <p className="text-stone-500 mt-5 text-lg max-w-3xl mx-auto">{t.roles_subtitle}</p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
+            {[
+              {
+                name: t.role_closer_name,
+                tag: t.role_closer_tag,
+                desc: t.role_closer_desc,
+                icon: <Phone className="w-6 h-6" strokeWidth={1.5} />,
+                accent: 'emerald',
+                bullets: [t.role_closer_b1, t.role_closer_b2, t.role_closer_b3],
+              },
+              {
+                name: t.role_setter_name,
+                tag: t.role_setter_tag,
+                desc: t.role_setter_desc,
+                icon: <CalendarCheck className="w-6 h-6" strokeWidth={1.5} />,
+                accent: 'cyan',
+                bullets: [t.role_setter_b1, t.role_setter_b2, t.role_setter_b3],
+              },
+              {
+                name: t.role_sc_name,
+                tag: t.role_sc_tag,
+                desc: t.role_sc_desc,
+                icon: <Layers className="w-6 h-6" strokeWidth={1.5} />,
+                accent: 'amber',
+                featured: true,
+                bullets: [t.role_sc_b1, t.role_sc_b2, t.role_sc_b3, t.role_sc_b4],
+              },
+            ].map((role, idx) => {
+              const accentMap: Record<string, { bg: string; text: string; border: string; glow: string; tag: string }> = {
+                emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', glow: 'bg-emerald-500/10', tag: 'text-emerald-400' },
+                cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20', glow: 'bg-cyan-500/10', tag: 'text-cyan-400' },
+                amber: { bg: 'bg-[#ffb95f]/10', text: 'text-[#ffb95f]', border: 'border-[#ffb95f]/30', glow: 'bg-[#ffb95f]/10', tag: 'text-[#ffb95f]' },
+              }
+              const a = accentMap[role.accent]
+              return (
+                <div key={idx} className={`relative rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border ${role.featured ? a.border : 'border-white/[0.08]'} flex flex-col overflow-hidden transition-all hover:bg-white/[0.05] ${role.featured ? 'shadow-[0_0_40px_rgba(255,185,95,0.08)]' : ''}`}>
+                  <div className={`absolute -right-8 -top-8 w-32 h-32 ${a.glow} rounded-full blur-[60px] pointer-events-none`} />
+
+                  <div className="flex items-center gap-4 mb-5 relative z-10">
+                    <div className={`p-3 rounded-xl ${a.bg} ${a.text}`}>{role.icon}</div>
+                    <div>
+                      <h3 className="text-[1.5rem] font-extrabold text-stone-100 leading-tight" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{role.name}</h3>
+                      <p className={`text-[0.75rem] font-bold uppercase tracking-[0.12em] mt-0.5 ${a.tag}`} style={{ fontFamily: "'Manrope', sans-serif" }}>{role.tag}</p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-stone-400 leading-[1.65] mb-7 relative z-10">{role.desc}</p>
+
+                  <ul className="space-y-3 flex-1 relative z-10">
+                    {role.bullets.map((b, bIdx) => (
+                      <li key={bIdx} className="flex items-start gap-3 text-[0.875rem] text-stone-300">
+                        <CheckCircle2 className={`w-4 h-4 ${a.text} shrink-0 mt-[3px]`} strokeWidth={2} />
+                        <span className="leading-snug">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
+          </div>
+
+          <p className="text-center text-stone-500 mt-12 text-sm">{t.roles_footer}</p>
         </div>
       </motion.section>
 

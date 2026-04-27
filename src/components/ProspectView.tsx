@@ -440,22 +440,6 @@ export function ProspectView({
     return value
   }, [getStageInfo, lang])
 
-  // --- Log history entry helper ---
-  const logHistory = useCallback(async (change_type: string, field_name: string, old_value: string | null, new_value: string | null) => {
-    if (!user?.id) return
-    const { error } = await supabase.from('prospect_history').insert([{
-      prospect_id: prospect.id,
-      user_id: user.id,
-      change_type,
-      field_name,
-      old_value,
-      new_value,
-    }])
-    if (!error && activeTab === 'historique') {
-      fetchHistory()
-    }
-  }, [user?.id, prospect.id, activeTab, fetchHistory])
-
   const selectedOfferObj = editedOfferId
     ? availableOffers.find(o => String(o.id) === editedOfferId)
     : availableOffers.find(o => o.name === (localProspect.offer?.split(' - ')[0] || localProspect.offer))
@@ -479,10 +463,7 @@ export function ProspectView({
   }
 
   const handleOptimisticUpdate = (updates: Partial<ExtendedProspect>) => {
-    // Log stage changes to history
-    if (updates.stage && updates.stage !== localProspect.stage) {
-      logHistory('stage_change', 'stage', localProspect.stage, updates.stage)
-    }
+    // History logging is centralized in ProspectsContext.updateProspect
     setLocalProspect(prev => ({ ...prev, ...updates }))
     const dbUpdates: any = { ...updates }
     if (updates.callNotes) {
@@ -971,9 +952,7 @@ export function ProspectView({
                             <select
                               value={localProspect.loss_reason || ''}
                               onChange={(e) => {
-                                const prev = localProspect.loss_reason || ''
                                 handleOptimisticUpdate({ loss_reason: e.target.value } as any)
-                                logHistory('field_update', 'loss_reason', prev, e.target.value)
                               }}
                               className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none appearance-none"
                             >

@@ -42,7 +42,8 @@ const PRICES: Record<string, string> = {
 };
 
 const BASE_PRICES: Record<string, number> = { monthly: 24, quarterly: 20, yearly: 18 };
-const CROSSED_PRICES: Record<string, number> = { monthly: 34, quarterly: 28, yearly: 25.50 };
+// Crossed price is always 34€ (original launch price) to match the "-51% offre de lancement" effect on Tarifs + Landing
+const CROSSED_PRICES: Record<string, number> = { monthly: 34, quarterly: 34, yearly: 34 };
 
 export function TrialExpiredModal() {
     const navigate = useNavigate();

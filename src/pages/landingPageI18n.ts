@@ -26,6 +26,7 @@ export interface SalesTranslations {
   // Navbar
   nav_features: string
   nav_integrations: string
+  nav_roles: string
   nav_comparison: string
   nav_pricing: string
   nav_faq: string
@@ -138,6 +139,33 @@ export interface SalesTranslations {
   comp_pack_label: string
   comp_pack_price_suffix: string
   comp_pack_tagline: string
+
+  // Roles section
+  roles_eyebrow: string
+  roles_title: string
+  roles_subtitle: string
+  role_closer_name: string
+  role_closer_tag: string
+  role_closer_desc: string
+  role_closer_b1: string
+  role_closer_b2: string
+  role_closer_b3: string
+  role_closer_b4: string
+  role_setter_name: string
+  role_setter_tag: string
+  role_setter_desc: string
+  role_setter_b1: string
+  role_setter_b2: string
+  role_setter_b3: string
+  role_setter_b4: string
+  role_sc_name: string
+  role_sc_tag: string
+  role_sc_desc: string
+  role_sc_b1: string
+  role_sc_b2: string
+  role_sc_b3: string
+  role_sc_b4: string
+  roles_footer: string
 
   // Pricing
   pricing_title: string
@@ -272,6 +300,7 @@ const fr: SalesTranslations = {
 
   // Navbar
   nav_features: "Fonctionnalités",
+  nav_roles: "Rôles",
   nav_integrations: "Intégrations",
   nav_comparison: "Comparatif",
   nav_pricing: "Tarifs",
@@ -385,6 +414,33 @@ const fr: SalesTranslations = {
   comp_pack_label: "Pack Pro",
   comp_pack_price_suffix: "/mois",
   comp_pack_tagline: "Récupérez 1h de vie / jour",
+
+  // Roles section
+  roles_eyebrow: "Adapté à votre rôle",
+  roles_title: "Un seul outil. Trois manières de l'utiliser.",
+  roles_subtitle: "Closer, Setter ou les deux ? CloseOS adapte automatiquement votre pipeline, vos KPI et votre dashboard à votre métier.",
+  role_closer_name: "Closer",
+  role_closer_tag: "Vous fermez les deals",
+  role_closer_desc: "Pipeline focalisé sur la conversion. Vos KPI mesurent ce qui compte : closing rate, CA, commissions.",
+  role_closer_b1: "Pipeline 6 stages : Prospect → Qualifié → Follow-up → Gagné...",
+  role_closer_b2: "KPI : CA, Taux de conversion, Commissions, Closing après R2...",
+  role_closer_b3: "Dashboard : Cash généré, Commissions, Pipeline value...",
+  role_closer_b4: "Recap des appels, scripts AI, suivi des objections...",
+  role_setter_name: "Setter",
+  role_setter_tag: "Vous prenez les RDV",
+  role_setter_desc: "Pipeline étendu avec les statuts \"Pas de réponse\" et \"Non qualifié\". KPI taillés pour mesurer votre prospection.",
+  role_setter_b1: "Pipeline 8 stages : + Pas de réponse, Non qualifié...",
+  role_setter_b2: "KPI dédiés : Taux de réponse, Taux de booking...",
+  role_setter_b3: "Dashboard : Contactés, Bookings, Conversions de RDV...",
+  role_setter_b4: "Page KPI Setter avec historique de booking par offre...",
+  role_sc_name: "Setter + Closer",
+  role_sc_tag: "Vous faites les deux",
+  role_sc_desc: "Le meilleur des deux mondes. Deux pages KPI distinctes, deux vues dans le dashboard, un seul pipeline complet.",
+  role_sc_b1: "Pipeline 8 stages avec tous les statuts setter",
+  role_sc_b2: "2 pages KPI : KPI Closer + KPI Setter",
+  role_sc_b3: "Dashboard avec sections empilées Setter et Closer",
+  role_sc_b4: "Suivi clair de vos commissions setter ET closer",
+  roles_footer: "Modifiable à tout moment depuis vos paramètres — l'app s'adapte instantanément.",
 
   // Pricing
   pricing_title: "Tarifs CloseOS — l'outil tout-en-un des closers",
@@ -529,6 +585,7 @@ const en: SalesTranslations = {
 
   // Navbar
   nav_features: "Features",
+  nav_roles: "Roles",
   nav_integrations: "Integrations",
   nav_comparison: "Compare",
   nav_pricing: "Pricing",
@@ -642,6 +699,33 @@ const en: SalesTranslations = {
   comp_pack_label: "Pro Pack",
   comp_pack_price_suffix: "/mo",
   comp_pack_tagline: "Get 1 hour of your life back / day",
+
+  // Roles section
+  roles_eyebrow: "Tailored to your role",
+  roles_title: "One tool. Three ways to use it.",
+  roles_subtitle: "Closer, Setter, or both? CloseOS automatically adapts your pipeline, KPIs and dashboard to your job.",
+  role_closer_name: "Closer",
+  role_closer_tag: "You close the deals",
+  role_closer_desc: "Pipeline focused on conversion. Your KPIs measure what matters: closing rate, revenue, commissions.",
+  role_closer_b1: "6-stage pipeline: Prospect → Qualified → Follow-up → Won...",
+  role_closer_b2: "KPIs: Revenue, Conversion rate, Commissions, R2 closing...",
+  role_closer_b3: "Dashboard: Cash generated, Commissions, Pipeline value...",
+  role_closer_b4: "Call summaries, AI scripts, objection tracking...",
+  role_setter_name: "Setter",
+  role_setter_tag: "You book the meetings",
+  role_setter_desc: "Extended pipeline with \"No Answer\" and \"Unqualified\" stages. KPIs tailored to measure your outreach.",
+  role_setter_b1: "8-stage pipeline: + No Answer, Unqualified...",
+  role_setter_b2: "Dedicated KPIs: Response rate, Booking rate...",
+  role_setter_b3: "Dashboard: Contacted, Bookings, Meeting conversion...",
+  role_setter_b4: "Setter KPI page with booking history per offer...",
+  role_sc_name: "Setter + Closer",
+  role_sc_tag: "You do both",
+  role_sc_desc: "Best of both worlds. Two distinct KPI pages, two dashboard views, one complete pipeline.",
+  role_sc_b1: "8-stage pipeline with all setter statuses",
+  role_sc_b2: "2 KPI pages: Closer KPI + Setter KPI",
+  role_sc_b3: "Dashboard with stacked Setter and Closer sections",
+  role_sc_b4: "Clear tracking of your setter AND closer commissions",
+  roles_footer: "Editable anytime from your settings — the app adapts instantly.",
 
   // Pricing
   pricing_title: "CloseOS Pricing — the all-in-one closer tool",

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
+import { DMRBadge } from './DMRBadge'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useCustomStages } from '../hooks/useCustomStages'
@@ -799,9 +800,12 @@ export function BusinessProspectView({
                 })()}
               </div>
               <div className="min-w-0">
-                <h2 className="text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
-                  {local.contact || t.prospect_no_name}
-                </h2>
+                <div className="flex items-center gap-2 min-w-0">
+                  <h2 className="text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
+                    {local.contact || t.prospect_no_name}
+                  </h2>
+                  <DMRBadge prospect={local} size="sm" />
+                </div>
                 {local.company && (
                   <p className="text-stone-500 dark:text-neutral-400 font-medium truncate">{local.company}</p>
                 )}

@@ -71,6 +71,7 @@ const TelephonyPage = lazy(() => import('./pages/TelephonyPage').then(m => ({ de
 const AICoachPage = lazy(() => import('./pages/AICoachPage').then(m => ({ default: m.AICoachPage })))
 const InvoicesPage = lazy(() => import('./pages/InvoicesPage').then(m => ({ default: m.InvoicesPage })))
 const KPIPage = lazy(() => import('./pages/KPIPage').then(m => ({ default: m.KPIPage })))
+const SetterKPIPage = lazy(() => import('./pages/SetterKPIPage').then(m => ({ default: m.SetterKPIPage })))
 const RendezVous = lazy(() => import('./pages/RendezVous').then(m => ({ default: m.RendezVous })))
 const MessagesPage = lazy(() => import('./pages/MessagesPage').then(m => ({ default: m.MessagesPage })))
 const BookingSettings = lazy(() => import('./pages/BookingSettings').then(m => ({ default: m.BookingSettings })))
@@ -311,6 +312,18 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/business/login" replace />
   }
 
+  return <>{children}</>
+}
+
+// Routes /kpi and /setter-kpi follow the user's role:
+// - Closer: only /kpi (visiting /setter-kpi → redirect to /kpi)
+// - Setter: only /setter-kpi (visiting /kpi → redirect to /setter-kpi)
+// - Setter-Closer: both pages accessible
+function RoleKpiGuard({ children, target }: { children: React.ReactNode; target: 'closer' | 'setter' }) {
+  const { role } = useAuth()
+  if (role === 'Setter-Closer') return <>{children}</>
+  if (target === 'closer' && role === 'Setter') return <Navigate to="/setter-kpi" replace />
+  if (target === 'setter' && role === 'Closer') return <Navigate to="/kpi" replace />
   return <>{children}</>
 }
 
@@ -567,7 +580,8 @@ function AuthenticatedApp() {
           <Route path="telephony" element={<TelephonyPage />} />
           <Route path="ai-coach" element={<AICoachPage />} />
           <Route path="factures" element={<InvoicesPage />} />
-          <Route path="kpi" element={<KPIPage />} />
+          <Route path="kpi" element={<RoleKpiGuard target="closer"><KPIPage /></RoleKpiGuard>} />
+          <Route path="setter-kpi" element={<RoleKpiGuard target="setter"><SetterKPIPage /></RoleKpiGuard>} />
           <Route path="rendez-vous" element={<RendezVous />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="reminders" element={<RemindersPage />} />

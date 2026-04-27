@@ -44,6 +44,7 @@ import {
   Lock,
   Webhook,
   Sparkles,
+  Star,
 } from 'lucide-react';
 import { translations, detectLang, LangContext, useLang } from './businessLandingI18n';
 import type { Lang } from './businessLandingI18n';
@@ -484,9 +485,16 @@ export const BusinessLanding: React.FC = () => {
               <span className="text-green-500">📲</span>
               <span className="underline underline-offset-4 decoration-stone-300 group-hover:decoration-[#111111] transition-all">{lang === 'fr' ? 'Rejoindre le canal WhatsApp' : 'Join the WhatsApp channel'}</span>
             </a>
-            <p className="text-sm text-stone-500 font-medium mt-1">
-              {t.hero_social_proof.split('{count}')[0]}<span className="font-bold text-[#111111]">{t.hero_social_proof_count}</span>{t.hero_social_proof.split('{count}')[1]}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-0.5">
+                {[0, 1, 2, 3, 4].map(i => (
+                  <Star key={i} className="h-4 w-4 text-[#facc15] fill-[#facc15]" strokeWidth={1.5} />
+                ))}
+              </div>
+              <p className="text-sm text-stone-500 font-medium">
+                {t.hero_social_proof.split('{count}')[0]}<span className="font-bold text-[#111111]">{t.hero_social_proof_count}</span>{t.hero_social_proof.split('{count}')[1]}
+              </p>
+            </div>
 
           </motion.div>
         </section>

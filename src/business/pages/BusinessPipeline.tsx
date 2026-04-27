@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
+import { DMRBadge } from '../components/DMRBadge'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
@@ -802,7 +803,10 @@ export function BusinessPipeline() {
                                             <User className="h-3.5 w-3.5 text-stone-500" />
                                           </div>
                                           <div className="min-w-0">
-                                            <p className="text-sm font-extrabold text-stone-900 dark:text-white leading-tight truncate">{getDisplayName(deal)}</p>
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                              <p className="text-sm font-extrabold text-stone-900 dark:text-white leading-tight truncate">{getDisplayName(deal)}</p>
+                                              <DMRBadge prospect={deal} />
+                                            </div>
                                             {deal.company && <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">{deal.company}</p>}
                                           </div>
                                         </div>
@@ -904,7 +908,10 @@ export function BusinessPipeline() {
                                       )}
                                     >
                                       <div className="flex items-center justify-between gap-2">
-                                        <p className="text-sm font-medium text-stone-600 truncate">{getDisplayName(deal)}</p>
+                                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                          <p className="text-sm font-medium text-stone-600 truncate">{getDisplayName(deal)}</p>
+                                          <DMRBadge prospect={deal} />
+                                        </div>
                                         <button
                                           onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
                                           className="p-1 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-colors"
@@ -1002,7 +1009,10 @@ export function BusinessPipeline() {
                                               <User className="h-3.5 w-3.5 text-stone-500" />
                                             </div>
                                             <div className="min-w-0">
-                                              <p className="text-sm font-extrabold text-stone-900 dark:text-white leading-tight truncate">{getDisplayName(deal)}</p>
+                                              <div className="flex items-center gap-1.5 min-w-0">
+                                                <p className="text-sm font-extrabold text-stone-900 dark:text-white leading-tight truncate">{getDisplayName(deal)}</p>
+                                                <DMRBadge prospect={deal} />
+                                              </div>
                                               {deal.company && <p className="text-xs text-stone-500 dark:text-neutral-400 truncate">{deal.company}</p>}
                                             </div>
                                           </div>
@@ -1096,7 +1106,10 @@ export function BusinessPipeline() {
                             <User className="h-4 w-4 text-stone-500" />
                           </div>
                           <div>
-                            <span className="text-sm font-extrabold text-stone-900 dark:text-white">{getDisplayName(deal)}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-extrabold text-stone-900 dark:text-white">{getDisplayName(deal)}</span>
+                              <DMRBadge prospect={deal} />
+                            </div>
                             {deal.email && <p className="text-xs text-stone-400 dark:text-neutral-500 truncate max-w-[180px]">{deal.email}</p>}
                           </div>
                         </div>

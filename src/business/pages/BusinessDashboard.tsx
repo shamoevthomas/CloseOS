@@ -404,6 +404,16 @@ export function BusinessDashboard() {
   const healthOk = closingRate >= 30
   const healthWarn = closingRate >= 15 && closingRate < 30
 
+  const avgDMR = useMemo(() => {
+    const inProspect = baseProspects.filter(p => p.stage === 'prospect' && p.created_at)
+    if (inProspect.length === 0) return 0
+    const totalDays = inProspect.reduce((sum, p) => {
+      const days = Math.floor((Date.now() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      return sum + Math.max(0, days)
+    }, 0)
+    return totalDays / inProspect.length
+  }, [baseProspects])
+
   const activeCampaigns = useMemo(() => {
     return campaigns.map(c => {
       const leadCount = baseProspects.filter(p => p.campaign_id === c.id).length
@@ -615,6 +625,10 @@ export function BusinessDashboard() {
           </Link>
         </KpiTooltip>
       </div>
+
+      <p className="text-xs text-neutral-400 dark:text-neutral-500 -mt-2">
+        DMR en moyenne&nbsp;: <span className="text-red-500 font-bold">{avgDMR.toFixed(1)}j</span>
+      </p>
 
       {/* ─── Campaigns + Objectives ─── */}
       <div className="grid grid-cols-12 gap-6">

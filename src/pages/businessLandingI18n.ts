@@ -431,7 +431,7 @@ const fr: Translations = {
 
   // Hero badges
   hero_badge_rgpd: 'RGPD',
-  hero_badge_closers: '+150 closers',
+  hero_badge_closers: '+270 closers',
   hero_badge_closers_text: 'Déjà {count} qui valident CloseOS Sales',
   hero_badge_eco: 'Eco-responsable',
 
@@ -441,7 +441,7 @@ const fr: Translations = {
   hero_subtitle: "CRM, équipe, campagnes, KPIs — tout ce dont un infopreneur a besoin pour structurer son acquisition et scaler.",
   hero_cta: "Rejoindre la liste d'attente — Tarifs early adopters le 4 avril",
   hero_social_proof: 'Validé par {count} francophones',
-  hero_social_proof_count: '+12 infopreneurs',
+  hero_social_proof_count: '+17 infopreneurs',
 
   // Integrations strip
   integrations_header: 'Integrations natives',
@@ -553,9 +553,9 @@ const fr: Translations = {
   crm_kpi_performance_title: 'KPI CRM \u2022 Performance',
   crm_kpi_performance_value: '4,850\u20AC',
   crm_kpi_performance_desc: 'Deal moyen encaissé',
-  crm_kpi_velocity_title: 'KPI CRM \u2022 Vélocité',
-  crm_kpi_velocity_value: '12 Jours',
-  crm_kpi_velocity_desc: 'Cycle de vente moyen (Lead to Close)',
+  crm_kpi_velocity_title: 'KPI CRM \u2022 DMR',
+  crm_kpi_velocity_value: '5 Jours',
+  crm_kpi_velocity_desc: 'Délai moyen avant prise en charge d’un prospect',
   crm_book_demo: 'Réserver une démo',
 
   // API Section
@@ -1051,7 +1051,7 @@ const en: Translations = {
 
   // Hero badges
   hero_badge_rgpd: 'GDPR',
-  hero_badge_closers: '+150 closers',
+  hero_badge_closers: '+270 closers',
   hero_badge_closers_text: 'Already {count} validating CloseOS Sales',
   hero_badge_eco: 'Eco-friendly',
 
@@ -1061,7 +1061,7 @@ const en: Translations = {
   hero_subtitle: 'CRM, team, campaigns, KPIs \u2014 everything an entrepreneur needs to structure acquisition and scale.',
   hero_cta: 'Join the waitlist \u2014 Early adopter pricing on April 4th',
   hero_social_proof: 'Validated by {count}',
-  hero_social_proof_count: '+12 French-speaking entrepreneurs',
+  hero_social_proof_count: '+17 French-speaking entrepreneurs',
 
   // Integrations strip
   integrations_header: 'Native integrations',
@@ -1173,9 +1173,9 @@ const en: Translations = {
   crm_kpi_performance_title: 'CRM KPI \u2022 Performance',
   crm_kpi_performance_value: '\u20AC4,850',
   crm_kpi_performance_desc: 'Average deal collected',
-  crm_kpi_velocity_title: 'CRM KPI \u2022 Velocity',
-  crm_kpi_velocity_value: '12 Days',
-  crm_kpi_velocity_desc: 'Average sales cycle (Lead to Close)',
+  crm_kpi_velocity_title: 'CRM KPI \u2022 DMR',
+  crm_kpi_velocity_value: '5 Days',
+  crm_kpi_velocity_desc: 'Average time before a prospect is handled',
   crm_book_demo: 'Book a demo',
 
   // API Section

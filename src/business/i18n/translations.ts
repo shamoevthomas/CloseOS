@@ -1030,6 +1030,8 @@ export interface BusinessTranslations {
   kpi_active_prospects: string;
   kpi_noshow_rate: string;
   kpi_deals_lost: string;
+  kpi_followup_rate: string;
+  kpi_r2_closing_rate: string;
   kpi_total_leads: string;
   kpi_deals_in_progress: string;
   kpi_avg_value: string;
@@ -3374,6 +3376,8 @@ export const fr: BusinessTranslations = {
   kpi_active_prospects: 'Prospects Actifs',
   kpi_noshow_rate: 'Taux de No Show',
   kpi_deals_lost: 'Deals Perdus',
+  kpi_followup_rate: 'Taux de Follow-up',
+  kpi_r2_closing_rate: 'Closing après R2',
   kpi_total_leads: 'Total Leads',
   kpi_deals_in_progress: 'Deals en Cours',
   kpi_avg_value: 'Valeur Moyenne',
@@ -6397,6 +6401,8 @@ export const en: BusinessTranslations = {
   kpi_active_prospects: 'Active Prospects',
   kpi_noshow_rate: 'No Show Rate',
   kpi_deals_lost: 'Deals Lost',
+  kpi_followup_rate: 'Follow-up Rate',
+  kpi_r2_closing_rate: 'Closing after R2',
   kpi_total_leads: 'Total Leads',
   kpi_deals_in_progress: 'Deals in Progress',
   kpi_avg_value: 'Average Value',

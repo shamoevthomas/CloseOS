@@ -6,7 +6,9 @@ import {
   Video,
   Sparkles,
   Calendar as CalendarIcon,
-  ArrowUpRight
+  ArrowUpRight,
+  PhoneIncoming,
+  CalendarCheck,
 } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -20,6 +22,7 @@ import { useOffers } from '../contexts/OffersContext'
 import { useMeetings } from '../contexts/MeetingsContext'
 import { useGoogleCalendar } from '../contexts/GoogleCalendarContext'
 import { useOrganization } from '../contexts/OrganizationContext'
+import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { dashboardTranslations } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
@@ -110,6 +113,7 @@ export function Dashboard() {
   const { meetings } = useMeetings()
   const { googleEvents } = useGoogleCalendar()
   const { isInOrganization, organization } = useOrganization()
+  const { showsSetterFeatures, showsCloserFeatures, isSetterCloserRole } = useAuth()
   const { lang } = useLanguage()
   const t = dashboardTranslations[lang]
   const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
@@ -210,6 +214,21 @@ export function Dashboard() {
       pipelineValue
     }
   }, [prospects, offers, bizProspects])
+
+  // Setter metrics (only computed/displayed for Setter and Setter-Closer)
+  const setterMetrics = useMemo(() => {
+    const all = [...prospects, ...bizProspects]
+    const contacted = all.filter(p => p.stage && p.stage !== 'prospect')
+    const responded = contacted.filter(p => p.stage !== 'noanswer')
+    const booked = contacted.filter(p => p.stage !== 'noanswer' && p.stage !== 'unqualified')
+    return {
+      contacted: contacted.length,
+      responded: responded.length,
+      booked: booked.length,
+      responseRate: contacted.length > 0 ? (responded.length / contacted.length) * 100 : 0,
+      bookingRate: contacted.length > 0 ? (booked.length / contacted.length) * 100 : 0,
+    }
+  }, [prospects, bizProspects])
 
   // Calculate pipeline stages distribution (Sales + Business)
   const pipelineStages = useMemo(() => {
@@ -313,7 +332,7 @@ export function Dashboard() {
     }
   }, [meetings, googleEvents, bizAppointments])
 
-  const kpis = [
+  const closerKpis = [
     {
       name: t.cash_generated,
       value: `${metrics.cashGenere.toLocaleString(locale)}€`,
@@ -331,6 +350,33 @@ export function Dashboard() {
       value: `${metrics.tauxConversion.toFixed(1)}%`,
       icon: Target,
       color: 'text-emerald-400',
+    },
+  ]
+
+  const setterKpis = [
+    {
+      name: lang === 'fr' ? 'Contactés' : 'Contacted',
+      value: `${setterMetrics.contacted}`,
+      icon: PhoneIncoming,
+      color: 'text-cyan-400',
+    },
+    {
+      name: lang === 'fr' ? 'Taux de réponse' : 'Response Rate',
+      value: `${setterMetrics.responseRate.toFixed(1)}%`,
+      icon: Target,
+      color: 'text-purple-400',
+    },
+    {
+      name: lang === 'fr' ? 'Bookings' : 'Bookings',
+      value: `${setterMetrics.booked}`,
+      icon: CalendarCheck,
+      color: 'text-emerald-400',
+    },
+    {
+      name: lang === 'fr' ? 'Taux de booking' : 'Booking Rate',
+      value: `${setterMetrics.bookingRate.toFixed(1)}%`,
+      icon: TrendingUp,
+      color: 'text-amber-400',
     },
   ]
 
@@ -391,26 +437,64 @@ export function Dashboard() {
           </div>
         </header>
 
-        {/* KPI Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-16">
-          {kpis.map((kpi) => (
-            <div
-              key={kpi.name}
-              className="group relative overflow-hidden rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-300 hover:bg-white/[0.05]"
-            >
-              <div className="absolute -right-4 -top-4 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all" />
-              <div className="flex justify-between items-start mb-6 relative z-10">
-                <span className="p-3 rounded-xl bg-white/5">
-                  <kpi.icon className={cn("h-7 w-7", kpi.color)} />
-                </span>
-              </div>
-              <p className="text-white/40 font-medium mb-2 relative z-10">{kpi.name}</p>
-              <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight relative z-10">
-                <MaskedText value={kpi.value} type="number" />
-              </h3>
+        {/* KPI Cards — role-based: Closer | Setter | Setter-Closer (both stacked) */}
+        {showsSetterFeatures && (
+          <section className="mb-12 md:mb-16">
+            {isSetterCloserRole && (
+              <h2 className="text-xs font-bold uppercase tracking-widest text-cyan-400/80 mb-4">
+                {lang === 'fr' ? 'Vue Setter' : 'Setter View'}
+              </h2>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+              {setterKpis.map((kpi) => (
+                <div
+                  key={kpi.name}
+                  className="group relative overflow-hidden rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-300 hover:bg-white/[0.05]"
+                >
+                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-all" />
+                  <div className="flex justify-between items-start mb-6 relative z-10">
+                    <span className="p-3 rounded-xl bg-white/5">
+                      <kpi.icon className={cn("h-7 w-7", kpi.color)} />
+                    </span>
+                  </div>
+                  <p className="text-white/40 font-medium mb-2 relative z-10">{kpi.name}</p>
+                  <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight relative z-10">
+                    <MaskedText value={kpi.value} type="number" />
+                  </h3>
+                </div>
+              ))}
             </div>
-          ))}
-        </section>
+          </section>
+        )}
+
+        {showsCloserFeatures && (
+          <section className="mb-12 md:mb-16">
+            {isSetterCloserRole && (
+              <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-400/80 mb-4">
+                {lang === 'fr' ? 'Vue Closer' : 'Closer View'}
+              </h2>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              {closerKpis.map((kpi) => (
+                <div
+                  key={kpi.name}
+                  className="group relative overflow-hidden rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-300 hover:bg-white/[0.05]"
+                >
+                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all" />
+                  <div className="flex justify-between items-start mb-6 relative z-10">
+                    <span className="p-3 rounded-xl bg-white/5">
+                      <kpi.icon className={cn("h-7 w-7", kpi.color)} />
+                    </span>
+                  </div>
+                  <p className="text-white/40 font-medium mb-2 relative z-10">{kpi.name}</p>
+                  <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight relative z-10">
+                    <MaskedText value={kpi.value} type="number" />
+                  </h3>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Main Body Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

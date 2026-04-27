@@ -951,7 +951,7 @@ const en: Translations = {
 
   // Hero badges
   hero_badge_rgpd: 'GDPR',
-  hero_badge_closers: '+150 closers',
+  hero_badge_closers: '+270 closers',
   hero_badge_closers_text: 'Already {count} validating CloseOS Sales',
   hero_badge_eco: 'Eco-friendly',
 

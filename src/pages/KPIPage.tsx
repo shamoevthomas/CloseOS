@@ -19,7 +19,9 @@ import {
   AlertTriangle,
   Save,
   Plus,
-  Trash2
+  Trash2,
+  Repeat,
+  Repeat2
 } from 'lucide-react';
 import {
   AreaChart,
@@ -215,6 +217,25 @@ export function KPIPage() {
   const [configTab, setConfigTab] = useState<string>('global');
   const [kpiConfigs, setKpiConfigs] = useState<Record<string, KpiConfigEntry>>({});
   const [savingConfig, setSavingConfig] = useState(false);
+  const [followupHistoryIds, setFollowupHistoryIds] = useState<Set<number>>(new Set());
+
+  // Load prospect_history rows where prospects transitioned into the 'followup' stage
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase
+      .from('prospect_history')
+      .select('prospect_id')
+      .eq('user_id', user.id)
+      .eq('change_type', 'stage_change')
+      .eq('new_value', 'followup')
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) { console.error('Erreur chargement followup history:', error); return; }
+        setFollowupHistoryIds(new Set((data || []).map((r: any) => r.prospect_id)));
+      });
+    return () => { cancelled = true; };
+  }, [user]);
 
   const defaultConfig = (key: string): KpiConfigEntry => ({
     offer_id: key === 'global' ? null : parseInt(key),
@@ -401,6 +422,12 @@ export function KPIPage() {
   const noShowProspects = filteredProspects.filter(p => (p?.status || p?.stage || '').toLowerCase().match(/no show|absent|noshow/));
   const ctxOutcomes = wonProspects.length + lostProspects.length + noShowProspects.length + filteredProspects.filter(p => (p.stage || '').match(/follow/)).length;
   const ctxNoShowRate = ctxOutcomes > 0 ? (noShowProspects.length / ctxOutcomes) * 100 : 0;
+
+  // Follow-up & R2 Closing rates (history-driven)
+  const everInFollowup = filteredProspects.filter(p => p?.stage === 'followup' || followupHistoryIds.has(p.id));
+  const followupRate = filteredProspects.length > 0 ? (everInFollowup.length / filteredProspects.length) * 100 : 0;
+  const wonAfterFollowup = everInFollowup.filter(p => p?.stage === 'won');
+  const r2ClosingRate = everInFollowup.length > 0 ? (wonAfterFollowup.length / everInFollowup.length) * 100 : 0;
 
 
   // ==================================================================================
@@ -645,13 +672,15 @@ export function KPIPage() {
         </div>
 
         {/* CARDS KPI */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KpiCard title={t.cash_generated} value={`${formatCurrency(finalRevenue)} €`} icon={DollarSign} color="emerald" glow />
           <KpiCard title={lang === 'fr' ? 'Ventes Totales' : 'Total Sales'} value={finalSales.toString()} icon={ShoppingCart} color="blue" />
           <KpiCard title={t.conversion_rate} value={`${formatPercent(finalConversion)} %`} icon={Target} color="purple" />
           <KpiCard title={t.commissions} value={`${formatCurrency(finalCommissions)} €`} icon={Award} color="amber" glow />
           <KpiCard title={lang === 'fr' ? 'Taux de No Show' : 'No Show Rate'} value={`${finalNoShowRate.toFixed(1)} %`} icon={UserX} color="rose" />
           <KpiCard title={t.deals_lost} value={finalLost.toString()} icon={Ban} color="slate" />
+          <KpiCard title={lang === 'fr' ? 'Taux de Follow-up' : 'Follow-up Rate'} value={`${followupRate.toFixed(1)} %`} icon={Repeat} color="amber" />
+          <KpiCard title={lang === 'fr' ? 'Closing après R2' : 'Closing after R2'} value={`${r2ClosingRate.toFixed(1)} %`} icon={Repeat2} color="purple" />
         </div>
 
         {/* GRAPHIQUES RECHARTS */}

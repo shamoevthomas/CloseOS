@@ -21,8 +21,8 @@ export interface StageDefinition {
   position: number
 }
 
-// Stages par défaut Sales — ordre fixe, non modifiables
-const DEFAULT_STAGES: StageDefinition[] = [
+// Stages par défaut Sales (Closer) — ordre fixe, non modifiables
+const DEFAULT_STAGES_BASE: StageDefinition[] = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', isDefault: true, position: 0 },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', isDefault: true, position: 1 },
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500', isDefault: true, position: 2 },
@@ -31,9 +31,20 @@ const DEFAULT_STAGES: StageDefinition[] = [
   { id: 'lost', name: 'Perdu', color: 'bg-red-500', isDefault: true, position: 5 },
 ]
 
+// Stages additionnels pour les rôles Setter / Setter-Closer (alignés avec Business)
+const EXTRA_SETTER_STAGES: StageDefinition[] = [
+  { id: 'noanswer', name: 'Pas de réponse', color: 'bg-cyan-500', isDefault: true, position: 6 },
+  { id: 'unqualified', name: 'Non qualifié', color: 'bg-yellow-500', isDefault: true, position: 7 },
+]
+
 // Stages par défaut "actifs" (colonnes principales du Kanban)
-const DEFAULT_ACTIVE_IDS = new Set(['prospect', 'qualified', 'won', 'followup'])
-const DEFAULT_INACTIVE_IDS = new Set(['noshow', 'lost'])
+const DEFAULT_ACTIVE_IDS_BASE = new Set(['prospect', 'qualified', 'won', 'followup'])
+const DEFAULT_INACTIVE_IDS_BASE = new Set(['noshow', 'lost'])
+
+// Pour rétrocompat (anciens imports)
+const DEFAULT_STAGES = DEFAULT_STAGES_BASE
+const DEFAULT_ACTIVE_IDS = DEFAULT_ACTIVE_IDS_BASE
+const DEFAULT_INACTIVE_IDS = DEFAULT_INACTIVE_IDS_BASE
 
 function slugify(name: string): string {
   return name
@@ -45,9 +56,25 @@ function slugify(name: string): string {
 }
 
 export function useCustomStages() {
-  const { user } = useAuth()
+  const { user, showsSetterFeatures } = useAuth()
   const [customStages, setCustomStages] = useState<CustomStage[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Default stages depend on the user's role (Setter / Setter-Closer get noanswer + unqualified)
+  const defaultStages = useMemo<StageDefinition[]>(() =>
+    showsSetterFeatures ? [...DEFAULT_STAGES_BASE, ...EXTRA_SETTER_STAGES] : DEFAULT_STAGES_BASE,
+    [showsSetterFeatures]
+  )
+  const activeIds = useMemo<Set<string>>(() => {
+    const s = new Set(DEFAULT_ACTIVE_IDS_BASE)
+    if (showsSetterFeatures) s.add('noanswer')
+    return s
+  }, [showsSetterFeatures])
+  const inactiveIds = useMemo<Set<string>>(() => {
+    const s = new Set(DEFAULT_INACTIVE_IDS_BASE)
+    if (showsSetterFeatures) s.add('unqualified')
+    return s
+  }, [showsSetterFeatures])
 
   const fetchCustomStages = useCallback(async () => {
     if (!user?.id) return
@@ -70,21 +97,21 @@ export function useCustomStages() {
       name: s.name,
       color: s.color,
       isDefault: false,
-      position: DEFAULT_STAGES.length + i,
+      position: defaultStages.length + i,
     }))
-    return [...DEFAULT_STAGES, ...customs]
-  }, [customStages])
+    return [...defaultStages, ...customs]
+  }, [customStages, defaultStages])
 
   // Active stages for Kanban (defaults active + all custom)
   const activeStages = useMemo(() =>
-    allStages.filter(s => DEFAULT_ACTIVE_IDS.has(s.id) || !s.isDefault),
-    [allStages]
+    allStages.filter(s => activeIds.has(s.id) || !s.isDefault),
+    [allStages, activeIds]
   )
 
-  // Inactive stages for Kanban (noshow, lost)
+  // Inactive stages for Kanban
   const inactiveStages = useMemo(() =>
-    allStages.filter(s => DEFAULT_INACTIVE_IDS.has(s.id)),
-    [allStages]
+    allStages.filter(s => inactiveIds.has(s.id)),
+    [allStages, inactiveIds]
   )
 
   const addCustomStage = async (stage: { name: string; description?: string; color: string }) => {
@@ -131,7 +158,7 @@ export function useCustomStages() {
     allStages,
     activeStages,
     inactiveStages,
-    defaultStages: DEFAULT_STAGES,
+    defaultStages,
     customStages,
     loading,
     addCustomStage,

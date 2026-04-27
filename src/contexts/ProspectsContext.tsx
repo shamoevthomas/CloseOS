@@ -646,6 +646,38 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // ─── History logging ────────────────────────────────────────────────
+  const TRACKED_FIELDS: Record<string, string> = {
+    firstName: 'Prénom', lastName: 'Nom', contact: 'Contact',
+    email: 'Email', phone: 'Téléphone', company: 'Entreprise', title: 'Poste',
+    stage: 'Étape', value: 'Montant',
+    offer: 'Offre', offer_id: 'Offre ID', formula_id: 'Formule',
+    payment_type: 'Mode de paiement', installments: 'Mensualités',
+    probability: 'Probabilité', notes: 'Notes',
+    loss_reason: 'Raison de perte', loss_details: 'Détails de perte',
+  }
+
+  const logProspectHistory = useCallback(async (
+    prospectId: number,
+    changes: { field: string; old: any; new_: any; type?: string }[],
+  ) => {
+    if (!user?.id) return
+    const rows = changes
+      .filter(c => String(c.old ?? '') !== String(c.new_ ?? ''))
+      .map(c => ({
+        prospect_id: prospectId,
+        user_id: user.id,
+        change_type: c.type || (c.field === 'stage' ? 'stage_change' : 'field_update'),
+        field_name: c.field,
+        old_value: c.old != null ? String(c.old) : null,
+        new_value: c.new_ != null ? String(c.new_) : null,
+      }))
+    if (rows.length > 0) {
+      const { error } = await supabase.from('prospect_history').insert(rows)
+      if (error) console.error('[History] Insert error:', error.message)
+    }
+  }, [user?.id])
+
   const addProspect = async (prospect: Omit<Prospect, 'id' | 'user_id'>) => {
     if (!user) return
 
@@ -669,12 +701,31 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       pushToSystemeioIfNeeded(data[0])
       pushToAirtableIfNeeded(data[0])
       pushToIclosedIfNeeded(data[0], 'upsert')
+
+      // Log creation history with initial field snapshot
+      const initialFields: Record<string, string> = {}
+      for (const key of Object.keys(TRACKED_FIELDS)) {
+        const val = (data[0] as any)[key]
+        if (val != null && val !== '') initialFields[key] = String(val)
+      }
+      supabase.from('prospect_history').insert({
+        prospect_id: data[0].id,
+        user_id: user.id,
+        change_type: 'created',
+        field_name: null,
+        old_value: null,
+        new_value: null,
+        metadata: initialFields,
+      }).then(({ error: histErr }) => {
+        if (histErr) console.error('[History] Creation log error:', histErr.message)
+      })
     }
   }
 
   const updateProspect = async (id: number, updates: Partial<Prospect>) => {
     // Sauvegarder l'etat precedent pour rollback
     const previousProspects = prospects
+    const current = previousProspects.find(p => p.id === id)
 
     // Optimistic update
     setProspects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
@@ -689,6 +740,22 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       setProspects(previousProspects)
       toast.error(getLang() === 'fr' ? 'Impossible de modifier le prospect. Veuillez réessayer.' : 'Unable to update prospect. Please try again.')
       return
+    }
+
+    // Log history for tracked fields
+    if (current && data?.[0]) {
+      const changes: { field: string; old: any; new_: any; type?: string }[] = []
+      for (const key of Object.keys(TRACKED_FIELDS)) {
+        if (key in updates && (current as any)[key] !== (updates as any)[key]) {
+          changes.push({
+            field: key,
+            old: (current as any)[key],
+            new_: (updates as any)[key],
+            type: key === 'stage' ? 'stage_change' : 'field_update',
+          })
+        }
+      }
+      if (changes.length > 0) logProspectHistory(id, changes)
     }
 
     if (updates.stage && data?.[0]) {
