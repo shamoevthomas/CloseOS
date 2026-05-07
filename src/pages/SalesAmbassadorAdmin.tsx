@@ -475,9 +475,10 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
             />
 
             {/* Preview */}
-            <div className="grid grid-cols-2 gap-3">
-              <PreviewCard label="Filleul mensuel (24€/mo)" pool={poolMonthly} discount={monthlyDisc} commission={monthlyComm} filleulPrice={24} />
-              <PreviewCard label="Filleul trim. (60€/trim)" pool={poolQy} discount={qyDisc} commission={qyComm} filleulPrice={60} />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <PreviewCard label="Mensuel" priceLabel="24€/mo" pool={poolMonthly} discount={monthlyDisc} commission={monthlyComm} filleulPrice={24} />
+              <PreviewCard label="Trimestriel" priceLabel="60€/trim" pool={poolQy} discount={qyDisc} commission={qyComm} filleulPrice={60} />
+              <PreviewCard label="Annuel" priceLabel="216€/an" pool={poolQy} discount={qyDisc} commission={qyComm} filleulPrice={216} />
             </div>
           </FormSection>
 
@@ -612,14 +613,17 @@ function CheckboxField({ label, checked, onChange }: { label: string; checked: b
   );
 }
 
-function PreviewCard({ label, pool, discount, commission, filleulPrice }: {
-  label: string; pool: number; discount: number; commission: number; filleulPrice: number;
+function PreviewCard({ label, priceLabel, pool, discount, commission, filleulPrice }: {
+  label: string; priceLabel?: string; pool: number; discount: number; commission: number; filleulPrice: number;
 }) {
   const filleulPays = Math.round(filleulPrice * (1 - discount / 100) * 100) / 100;
   const ambGets = Math.round(filleulPays * commission) / 100;
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-      <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2">{label}</div>
+      <div className="flex items-baseline justify-between mb-2">
+        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">{label}</div>
+        {priceLabel && <div className="text-[10px] text-slate-500 tabular-nums">{priceLabel}</div>}
+      </div>
       <div className="space-y-1 text-xs">
         <Row label="Pool" value={`${pool}%`} muted />
         <Row label="Filleul" value={`-${discount}%`} accent="text-blue-300" />

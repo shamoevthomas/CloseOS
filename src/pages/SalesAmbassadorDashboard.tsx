@@ -594,20 +594,30 @@ function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, qyP
             <span>100% (filleul prend tout)</span>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <PreviewCard
-              label="Filleul mensuel"
+              label="Mensuel"
+              priceLabel="24€/mo"
               pool={monthlyPool}
               discount={monthlyDisc}
               commission={monthlyComm}
               filleulPrice={24}
             />
             <PreviewCard
-              label="Filleul trim/annuel"
+              label="Trimestriel"
+              priceLabel="60€/trim"
               pool={qyPool}
               discount={qyDisc}
               commission={qyComm}
-              filleulPrice={20}
+              filleulPrice={60}
+            />
+            <PreviewCard
+              label="Annuel"
+              priceLabel="216€/an"
+              pool={qyPool}
+              discount={qyDisc}
+              commission={qyComm}
+              filleulPrice={216}
             />
           </div>
 
@@ -632,11 +642,14 @@ function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, qyP
   );
 }
 
-function PreviewCard({ label, pool, discount, commission, filleulPrice }: { label: string; pool: number; discount: number; commission: number; filleulPrice: number }) {
+function PreviewCard({ label, priceLabel, pool, discount, commission, filleulPrice }: { label: string; priceLabel?: string; pool: number; discount: number; commission: number; filleulPrice: number }) {
   const filleulPays = Math.round(filleulPrice * (1 - discount / 100) * 100) / 100;
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-3">
-      <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2">{label}</div>
+      <div className="flex items-baseline justify-between mb-2">
+        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">{label}</div>
+        {priceLabel && <div className="text-[10px] text-slate-500 tabular-nums">{priceLabel}</div>}
+      </div>
       <div className="space-y-1.5 text-xs">
         <Row label="Pool partagé" value={`${pool}%`} muted />
         <Row label="Discount filleul" value={`-${discount}%`} accent="text-blue-300" />
