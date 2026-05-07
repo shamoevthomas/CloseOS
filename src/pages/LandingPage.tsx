@@ -591,6 +591,17 @@ export function LandingPage() {
       localStorage.setItem('closeos_ref', ref);
       document.cookie = `closeos_ref=${encodeURIComponent(ref)};max-age=${30 * 24 * 60 * 60};path=/;SameSite=Lax`;
     }
+
+    // Ambassador attribution (?amb=<slug>) — server sets a 30d cookie
+    const amb = params.get('amb');
+    if (amb) {
+      localStorage.setItem('closeos_amb', amb);
+      fetch('/api/amb-track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: amb }),
+      }).catch(() => {});
+    }
   }, []);
 
   useEffect(() => {

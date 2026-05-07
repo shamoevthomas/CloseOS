@@ -1,5 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import {
+    detectBillingCycleFromInterval,
+    mapReferralReward,
+    type BillingCycle,
+} from './_lib/referral-rewards';
 
 export const config = {
     runtime: 'edge', // Using Edge Runtime for better performance on Vercel
@@ -9,7 +14,8 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 const brevoApiKey = process.env.BREVO_API_KEY!;
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!; // Needed for verification
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!; // Platform events
+const webhookSecretConnect = process.env.STRIPE_WEBHOOK_SECRET_CONNECT || ''; // Connect events (optional, for ambassador account.updated)
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
@@ -189,7 +195,15 @@ export default async function handler(req: Request) {
     try {
         const body = await req.text();
         if (webhookSecret) {
-            event = await stripe.webhooks.constructEventAsync(body, signature!, webhookSecret);
+            // Try platform secret first; if it fails AND a Connect secret is configured, try that.
+            // This lets the same endpoint URL serve both the platform webhook and a separate
+            // Connect webhook (for events like account.updated on connected ambassador accounts).
+            try {
+                event = await stripe.webhooks.constructEventAsync(body, signature!, webhookSecret);
+            } catch (platformErr) {
+                if (!webhookSecretConnect) throw platformErr;
+                event = await stripe.webhooks.constructEventAsync(body, signature!, webhookSecretConnect);
+            }
         } else {
             // Fallback for dev without secret verification (not recommended for prod)
             event = JSON.parse(body);
@@ -289,16 +303,15 @@ export default async function handler(req: Request) {
                 break;
             }
 
-            // Récupérer les infos de la subscription pour avoir le vrai statut et le cycle
+            // Récupérer les infos de la subscription pour avoir le vrai statut et le cycle (3-cycles)
             let realStatus = 'active';
-            let billingCycle: string | null = null;
+            let billingCycle: BillingCycle | null = null;
             if (subscriptionId) {
                 try {
                     const sub = await stripe.subscriptions.retrieve(subscriptionId);
                     realStatus = sub.status; // 'active' ou 'trialing'
-                    // Déterminer le cycle depuis l'intervalle du prix
-                    const interval = (sub as any).items?.data?.[0]?.price?.recurring?.interval;
-                    billingCycle = interval === 'year' ? 'yearly' : 'monthly';
+                    const recurring = (sub as any).items?.data?.[0]?.price?.recurring;
+                    billingCycle = detectBillingCycleFromInterval(recurring?.interval, recurring?.interval_count);
                 } catch (e) {
                     console.error('⚠️ Could not retrieve subscription details:', e);
                 }
@@ -325,11 +338,9 @@ export default async function handler(req: Request) {
                     })
                     .eq('id', profile.id);
 
-                // ─── Enregistrer le parrainage interne ───
+                // ─── Enregistrer le parrainage interne (V2 : pending + J+14) ───
                 const internalReferrerId = session.metadata?.internal_referrer_id;
                 if (internalReferrerId) {
-                    const isYearly = billingCycle === 'yearly';
-
                     // Vérifier qu'il n'existe pas déjà un parrainage pour ce filleul
                     const { data: existingRef } = await supabaseAdmin
                         .from('referrals')
@@ -338,14 +349,31 @@ export default async function handler(req: Request) {
                         .limit(1);
 
                     if (!existingRef || existingRef.length === 0) {
+                        // Récupérer le cycle de facturation du parrain pour calculer la récompense
+                        const { data: referrerProfile } = await supabaseAdmin
+                            .from('profiles')
+                            .select('billing_cycle')
+                            .eq('id', internalReferrerId)
+                            .single();
+
+                        const referrerBillingCycle: BillingCycle =
+                            (referrerProfile?.billing_cycle as BillingCycle) || 'monthly';
+                        const refereeBillingCycle: BillingCycle = billingCycle || 'monthly';
+
+                        const reward = mapReferralReward(referrerBillingCycle, refereeBillingCycle);
+
+                        // J+14 anti-fraude : récompense activée 14 jours après checkout
+                        const scheduledAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
                         await supabaseAdmin.from('referrals').insert({
                             referrer_id: internalReferrerId,
                             referee_id: profile.id,
-                            referee_billing_cycle: billingCycle || 'monthly',
-                            referrer_reward_type: isYearly ? 'free_month' : 'monthly_discount',
-                            referrer_months_remaining: isYearly ? 1 : 2,
-                            status: 'active',
-                            activated_at: new Date().toISOString(),
+                            referee_billing_cycle: refereeBillingCycle,
+                            referrer_billing_cycle: referrerBillingCycle,
+                            coupon_id: reward.couponId,
+                            manual_payout_amount_cents: reward.manualPayoutCents,
+                            scheduled_at: scheduledAt,
+                            status: 'pending',
                         });
 
                         await supabaseAdmin
@@ -353,13 +381,15 @@ export default async function handler(req: Request) {
                             .update({ referred_by: internalReferrerId })
                             .eq('id', profile.id);
 
-                        console.log(`🤝 Parrainage enregistré: ${internalReferrerId} → ${profile.id} (${isYearly ? 'annuel' : 'mensuel'})`);
-                        // Les crédits seront appliqués automatiquement via invoice.created
+                        console.log(`🤝 Parrainage en attente: ${internalReferrerId} (${referrerBillingCycle}) → ${profile.id} (${refereeBillingCycle}) | Activation prévue: ${scheduledAt}`);
                     }
                 }
                 // ─── Email de confirmation de paiement ───
                 const userName = session.customer_details?.name || customerEmail?.split('@')[0] || 'Closer';
-                const priceLabel = billingCycle === 'yearly' ? '25,50€/mois (annuel)' : '34€/mois';
+                const priceLabel =
+                    billingCycle === 'yearly' ? '18€/mois (216€/an)' :
+                    billingCycle === 'quarterly' ? '20€/mois (60€/trimestre)' :
+                    '24€/mois';
                 await sendBrevoEmail(customerEmail!, 'Bienvenue dans l\'aventure CloseOS 🚀', emailWrap(
                     'Confirmation', '#042f2e', '#14b8a6',
                     'Bienvenue dans l\'aventure CloseOS \u{1F680}',
@@ -390,82 +420,12 @@ export default async function handler(req: Request) {
             break;
         }
 
-        // 2. FACTURE CRÉÉE (avant paiement) — Appliquer les crédits parrainage
+        // 2. FACTURE CRÉÉE — Plus aucune action côté parrainage (V2)
+        // Les coupons parrains sont désormais appliqués sur la subscription par le cron
+        // process-referrals (voir api/cron/process-referrals.ts)
         case 'invoice.created': {
             const invoice = event.data.object as any;
-            const customerId = invoice.customer as string;
-            const subscriptionId = invoice.subscription as string;
-
-            // Ne pas traiter la première facture (c'est le checkout) ni les factures manuelles
-            if (!subscriptionId || invoice.billing_reason === 'subscription_create') {
-                console.log(`📄 Invoice created (initial/manual) ${invoice.id} — skip referral credits`);
-                break;
-            }
-
-            console.log(`📄 Invoice created ${invoice.id} for customer ${customerId}`);
-
-            try {
-                const { data: payer } = await supabaseAdmin
-                    .from('profiles')
-                    .select('id, stripe_subscription_id')
-                    .eq('stripe_customer_id', customerId)
-                    .single();
-
-                if (payer) {
-                    const { data: activeRefs } = await supabaseAdmin
-                        .from('referrals')
-                        .select('*')
-                        .eq('referrer_id', payer.id)
-                        .eq('status', 'active')
-                        .gt('referrer_months_remaining', 0);
-
-                    if (activeRefs && activeRefs.length > 0) {
-                        // Calculer le prix mensuel du parrain
-                        let parrainMonthlyCents = 3400;
-                        if (payer.stripe_subscription_id) {
-                            const sub = await stripe.subscriptions.retrieve(payer.stripe_subscription_id);
-                            const priceAmount = (sub as any).items?.data?.[0]?.price?.unit_amount || 3400;
-                            const interval = (sub as any).items?.data?.[0]?.price?.recurring?.interval;
-                            parrainMonthlyCents = interval === 'year' ? Math.round(priceAmount / 12) : priceAmount;
-                        }
-
-                        // Calculer le crédit total
-                        let totalCredit = 0;
-                        for (const ref of activeRefs) {
-                            totalCredit += ref.referrer_reward_type === 'free_month' ? parrainMonthlyCents : 700;
-                        }
-
-                        // Plancher 18€ : le parrain ne paie jamais moins de 18€/mois
-                        const maxDiscount = Math.max(0, parrainMonthlyCents - 1800);
-                        const applied = Math.min(totalCredit, maxDiscount);
-
-                        if (applied > 0) {
-                            await stripe.invoiceItems.create({
-                                customer: customerId,
-                                amount: -applied,
-                                currency: 'eur',
-                                invoice: invoice.id,
-                                description: `Parrainage : réduction (${activeRefs.length} filleul${activeRefs.length > 1 ? 's' : ''})`,
-                            });
-                            console.log(`🎁 Crédit parrain ${payer.id}: -${applied / 100}€ appliqué sur facture ${invoice.id}`);
-                        }
-
-                        // Décrémenter les mois restants
-                        for (const ref of activeRefs) {
-                            const newMonths = ref.referrer_months_remaining - 1;
-                            await supabaseAdmin
-                                .from('referrals')
-                                .update({
-                                    referrer_months_remaining: newMonths,
-                                    status: newMonths <= 0 ? 'expired' : 'active',
-                                })
-                                .eq('id', ref.id);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('⚠️ Erreur crédits parrainage sur invoice.created:', e);
-            }
+            console.log(`📄 Invoice created ${invoice.id} (V2: aucune action parrainage ici)`);
             break;
         }
 
@@ -528,6 +488,154 @@ export default async function handler(req: Request) {
                             .eq('id', refConversion.id);
                     }
                 }
+            }
+
+            // ─── Sales Ambassador: track paid conversion + create commission ledger + transfer ───
+            try {
+                const subscriptionId = (invoice as any).subscription as string | undefined;
+                const invoiceId = (invoice as any).id as string;
+                const amountPaidCents = (invoice as any).amount_paid ? Number((invoice as any).amount_paid) : 0;
+
+                // Try to resolve ambassador from subscription metadata first (most reliable)
+                let ambMeta: Record<string, string> | null = null;
+                let subInterval: 'day' | 'week' | 'month' | 'year' | undefined;
+                let subIntervalCount: number | undefined;
+                if (subscriptionId) {
+                    try {
+                        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+                        ambMeta = (sub.metadata || {}) as Record<string, string>;
+                        subInterval = sub.items.data[0]?.price.recurring?.interval;
+                        subIntervalCount = sub.items.data[0]?.price.recurring?.interval_count;
+                    } catch (e) {
+                        console.error('amb: cannot retrieve subscription', subscriptionId, (e as any)?.message);
+                    }
+                }
+
+                // Resolve conversion: prefer customer_id match, fallback to email
+                let conversion: any = null;
+                {
+                    const { data: byCustomer } = await supabaseAdmin
+                        .from('sales_amb_conversions')
+                        .select('*')
+                        .eq('stripe_customer_id', customerId)
+                        .maybeSingle();
+                    conversion = byCustomer || null;
+                }
+                if (!conversion) {
+                    const { data: salesProfile } = await supabaseAdmin
+                        .from('profiles')
+                        .select('id, email')
+                        .eq('stripe_customer_id', customerId)
+                        .maybeSingle();
+                    if (salesProfile?.email) {
+                        const { data: byEmail } = await supabaseAdmin
+                            .from('sales_amb_conversions')
+                            .select('*')
+                            .eq('email', salesProfile.email)
+                            .maybeSingle();
+                        conversion = byEmail || null;
+                    }
+                }
+                // Last-resort: if metadata has ambassador_id and no conversion exists yet, create one
+                if (!conversion && ambMeta?.ambassador_id) {
+                    const { data: salesProfile } = await supabaseAdmin
+                        .from('profiles')
+                        .select('id, email')
+                        .eq('stripe_customer_id', customerId)
+                        .maybeSingle();
+                    if (salesProfile?.email) {
+                        const { data: created } = await supabaseAdmin
+                            .from('sales_amb_conversions')
+                            .insert({
+                                ambassador_id: ambMeta.ambassador_id,
+                                user_id: salesProfile.id,
+                                email: salesProfile.email,
+                                status: 'signup',
+                                stripe_customer_id: customerId,
+                            })
+                            .select()
+                            .single();
+                        conversion = created || null;
+                    }
+                }
+
+                if (conversion) {
+                    // Lock rates on conversion if not yet set (first payment defines lifetime rates)
+                    const cycle = (() => {
+                        if (subInterval) {
+                            if (subInterval === 'year') return 'yearly';
+                            if (subInterval === 'month' && subIntervalCount === 3) return 'quarterly';
+                            return 'monthly';
+                        }
+                        return conversion.billing_cycle || 'monthly';
+                    })();
+
+                    const update: Record<string, any> = {
+                        total_paid_cents: (conversion.total_paid_cents || 0) + amountPaidCents,
+                        stripe_customer_id: customerId,
+                    };
+                    if (subscriptionId) update.stripe_subscription_id = subscriptionId;
+                    if (conversion.status === 'signup') {
+                        update.status = 'paid';
+                        update.paid_at = new Date().toISOString();
+                    }
+                    if (!conversion.billing_cycle) update.billing_cycle = cycle;
+
+                    // Lock pool/discount/commission on conversion if not set yet
+                    if (conversion.commission_pct == null && ambMeta?.ambassador_commission_pct != null) {
+                        update.pool_pct = Number(ambMeta.ambassador_pool_pct || 0);
+                        update.discount_pct = Number(ambMeta.ambassador_discount_pct || 0);
+                        update.commission_pct = Number(ambMeta.ambassador_commission_pct || 0);
+                        if (ambMeta.ambassador_coupon_id) update.coupon_id_used = ambMeta.ambassador_coupon_id;
+                        if (ambMeta.ambassador_promo_code) update.promo_code_used = ambMeta.ambassador_promo_code;
+                    }
+
+                    await supabaseAdmin
+                        .from('sales_amb_conversions')
+                        .update(update)
+                        .eq('id', conversion.id);
+
+                    // ─── Commission ledger (pending only — transfers handled by cron/manual) ───
+                    // A4: We never call stripe.transfers.create here. Commissions are always
+                    // created as 'pending' and paid out by api/cron/process-ambassador-payouts.ts
+                    // (scheduled by ambassador.payout_day_of_month) or manual admin action.
+                    const lockedCommissionPct =
+                        conversion.commission_pct != null
+                            ? Number(conversion.commission_pct)
+                            : Number(update.commission_pct || 0);
+
+                    // A9: explicit warn if cycle fallback used
+                    if (!subInterval && !conversion.billing_cycle) {
+                        console.warn(`⚠️ amb cycle fallback to monthly for invoice ${invoiceId} (no subscription metadata)`);
+                    }
+
+                    if (lockedCommissionPct > 0 && amountPaidCents > 0) {
+                        const commissionCents = Math.round((amountPaidCents * lockedCommissionPct) / 100);
+
+                        // Idempotency via unique index on stripe_invoice_id — INSERT may conflict harmlessly
+                        const { error: insertErr } = await supabaseAdmin
+                            .from('sales_amb_commissions')
+                            .insert({
+                                ambassador_id: conversion.ambassador_id,
+                                conversion_id: conversion.id,
+                                stripe_invoice_id: invoiceId,
+                                stripe_subscription_id: subscriptionId || null,
+                                stripe_customer_id: customerId,
+                                invoice_amount_cents: amountPaidCents,
+                                commission_pct: lockedCommissionPct,
+                                commission_cents: commissionCents,
+                                status: 'pending',
+                            });
+
+                        if (insertErr && !/duplicate|unique/i.test(insertErr.message)) {
+                            console.error('amb commission insert error:', insertErr.message);
+                        } else if (!insertErr) {
+                            console.log(`📝 Commission pending: ${commissionCents}c → ambassadeur ${conversion.ambassador_id} (invoice ${invoiceId})`);
+                        }
+                    }
+                }
+            } catch (e: any) {
+                console.error('sales-amb paid hook error:', e?.message || e);
             }
             break;
         }
@@ -701,10 +809,10 @@ export default async function handler(req: Request) {
 
             console.log(`🔄 Subscription updated: ${subscription.status}`);
 
-            // Récupérer le plan et le cycle depuis les metadata et l'intervalle
+            // Récupérer le plan et le cycle depuis les metadata et l'intervalle (3-cycles)
             const updatedPlan = subscription.metadata?.plan;
-            const interval = subscription.items?.data?.[0]?.price?.recurring?.interval;
-            const updatedCycle = interval === 'year' ? 'yearly' : 'monthly';
+            const recurring = subscription.items?.data?.[0]?.price?.recurring;
+            const updatedCycle = detectBillingCycleFromInterval(recurring?.interval, recurring?.interval_count);
 
             await supabaseAdmin
                 .from('profiles')
@@ -732,6 +840,19 @@ export default async function handler(req: Request) {
                 if (profile?.email) {
                     await sendRetentionEmail(profile.email, profile.id, profile.full_name || 'utilisateur');
                 }
+
+                // Anti-fraude parrainage : annuler les récompenses pending dont ce user est le filleul
+                if (profile?.id) {
+                    const { data: canceledRefs } = await supabaseAdmin
+                        .from('referrals')
+                        .update({ status: 'canceled', canceled_reason: 'subscription_canceled' })
+                        .eq('referee_id', profile.id)
+                        .eq('status', 'pending')
+                        .select('id');
+                    if (canceledRefs && canceledRefs.length > 0) {
+                        console.log(`🚫 ${canceledRefs.length} parrainage(s) pending annulé(s) (filleul ${profile.id} a annulé)`);
+                    }
+                }
             }
             break;
         }
@@ -742,6 +863,39 @@ export default async function handler(req: Request) {
             const customerId = subscription.customer as string;
 
             console.log(`🚫 Subscription deleted for customer ${customerId}`);
+
+            // ─── Sales Ambassador: mark paid conversion as canceled ───
+            try {
+                const { data: ambCanceled } = await supabaseAdmin
+                    .from('sales_amb_conversions')
+                    .update({ status: 'canceled', canceled_at: new Date().toISOString() })
+                    .eq('stripe_customer_id', customerId)
+                    .eq('status', 'paid')
+                    .select('id');
+                if (ambCanceled && ambCanceled.length > 0) {
+                    console.log(`📉 ${ambCanceled.length} conversion(s) ambassadeur marquée(s) canceled`);
+                }
+            } catch (e: any) {
+                console.error('sales-amb cancel hook error:', e?.message || e);
+            }
+
+            // Anti-fraude parrainage : annuler les pendings dont ce user est filleul
+            const { data: subDeletedProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('stripe_customer_id', customerId)
+                .single();
+            if (subDeletedProfile?.id) {
+                const { data: canceledRefs } = await supabaseAdmin
+                    .from('referrals')
+                    .update({ status: 'canceled', canceled_reason: 'subscription_canceled' })
+                    .eq('referee_id', subDeletedProfile.id)
+                    .eq('status', 'pending')
+                    .select('id');
+                if (canceledRefs && canceledRefs.length > 0) {
+                    console.log(`🚫 ${canceledRefs.length} parrainage(s) pending annulé(s) (filleul ${subDeletedProfile.id} subscription deleted)`);
+                }
+            }
 
             // Check if user has a pending deletion request
             const { data: deletionProfile } = await supabaseAdmin
@@ -855,6 +1009,41 @@ export default async function handler(req: Request) {
                 .update({ status: 'churned' })
                 .eq('stripe_customer_id', customerId);
 
+            break;
+        }
+
+        // ─── Stripe Connect: ambassador account status changes ───
+        case 'account.updated': {
+            const account = event.data.object as Stripe.Account;
+            try {
+                const { data: amb } = await supabaseAdmin
+                    .from('sales_ambassadors')
+                    .select('id, stripe_account_status')
+                    .eq('stripe_account_id', account.id)
+                    .maybeSingle();
+
+                if (!amb) break;
+
+                let newStatus = amb.stripe_account_status as string;
+                if (account.payouts_enabled && account.charges_enabled) newStatus = 'onboarded';
+                else if (account.details_submitted) newStatus = 'restricted';
+                else newStatus = 'onboarding';
+
+                if (newStatus !== amb.stripe_account_status) {
+                    await supabaseAdmin
+                        .from('sales_ambassadors')
+                        .update({ stripe_account_status: newStatus })
+                        .eq('id', amb.id);
+                    if (newStatus === 'onboarded') {
+                        console.log(`✅ Ambassadeur ${amb.id} onboardé sur Stripe Connect — pending commissions seront versées au prochain payout day`);
+                    }
+                }
+                // Note: pending commissions are paid by api/cron/process-ambassador-payouts.ts
+                // on each ambassador's payout_day_of_month, or via the admin "manual payout" button.
+                // We no longer retry transfers here to avoid race conditions (audit A4, A8).
+            } catch (e: any) {
+                console.error('account.updated handler error:', e?.message || e);
+            }
             break;
         }
     }

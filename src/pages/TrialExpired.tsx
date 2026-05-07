@@ -81,7 +81,12 @@ export function TrialExpiredModal() {
     const hasSubscription = profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing';
     const isPaymentFailed = profile?.subscription_status === 'past_due' || profile?.subscription_status === 'unpaid';
     const created = user?.created_at ? new Date(user.created_at) : null;
-    const trialEnd = created ? new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000) : null;
+    // Priority: profile.trial_ends_at (explicit override) → fallback created_at + 10 days.
+    const trialEnd = profile?.trial_ends_at
+        ? new Date(profile.trial_ends_at)
+        : created
+            ? new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000)
+            : null;
     const isTrialExpired = trialEnd ? new Date() > trialEnd : false;
     const isTrialExpiredShow = !isOnHiddenPath && !isAdmin && !hasSubscription && !isPaymentFailed && !!user?.created_at && !!profile && isTrialExpired;
     const isPaymentFailedShow = !isOnHiddenPath && !isAdmin && isPaymentFailed && !!profile;
@@ -129,6 +134,10 @@ export function TrialExpiredModal() {
         const cookieRef = document.cookie.match(/closeos_ref=([^;]+)/)?.[1] || '';
         const internalRef = decodeURIComponent(cookieRef) || localStorage.getItem('closeos_ref') || '';
 
+        // Cookie ambassadeur
+        const cookieAmb = document.cookie.match(/closeos_amb=([^;]+)/)?.[1] || '';
+        const ambassadorSlug = decodeURIComponent(cookieAmb) || localStorage.getItem('closeos_amb') || '';
+
         fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -139,6 +148,7 @@ export function TrialExpiredModal() {
                 promotekitReferral,
                 referral_code: localStorage.getItem('referral_code') ?? '',
                 internalReferral: internalRef,
+                ambassadorSlug,
                 userId: user?.id,
                 customerEmail: user?.email,
                 existingUser: true,

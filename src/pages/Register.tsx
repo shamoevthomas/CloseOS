@@ -135,6 +135,20 @@ export default function Register() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email }),
         }).catch(() => {});
+
+        // Ambassador attribution (cookie set on landing) — record signup conversion
+        const ambSlug = (() => {
+          const m = document.cookie.match(/(?:^|; )closeos_amb=([^;]+)/);
+          return m ? decodeURIComponent(m[1]) : localStorage.getItem('closeos_amb');
+        })();
+        if (ambSlug) {
+          const { data: { user: ambUser } } = await supabase.auth.getUser();
+          fetch('/api/amb-signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug: ambSlug, user_id: ambUser?.id || null, email }),
+          }).catch(() => {});
+        }
         navigate('/dashboard');
       }
     } catch (err: any) {

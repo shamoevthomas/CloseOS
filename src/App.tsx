@@ -47,6 +47,8 @@ import { PublicBooking } from './pages/PublicBooking'
 import { OGPreview } from './pages/OGPreview'
 import { AppointmentManage } from './pages/AppointmentManage'
 import BusinessAdminReferral from './pages/BusinessAdminReferral'
+const SalesAmbassadorAdmin = lazy(() => import('./pages/SalesAmbassadorAdmin'))
+const SalesAmbassadorDashboard = lazy(() => import('./pages/SalesAmbassadorDashboard'))
 import CRMLanding from './pages/CRMLanding'
 const CRMLayout = lazy(() => import('./crm/layouts/CRMLayout').then(m => ({ default: m.CRMLayout })))
 const CRMLogin = lazy(() => import('./crm/pages/CRMLogin'))
@@ -428,6 +430,8 @@ function AuthenticatedApp() {
         } />
         <Route path="/business/invitation/:token" element={<BusinessInvitation />} />
         <Route path="/business/admin-referral" element={<BusinessAdminReferral />} />
+        <Route path="/sales/amb" element={<Suspense fallback={<LoadingScreen />}><SalesAmbassadorAdmin /></Suspense>} />
+        <Route path="/sales/amb/d/:token" element={<Suspense fallback={<LoadingScreen />}><SalesAmbassadorDashboard /></Suspense>} />
 
         {/* Business Protected Routes */}
         <Route path="/business" element={

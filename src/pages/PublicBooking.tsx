@@ -438,7 +438,7 @@ export function PublicBooking() {
       // Build full phone with country code
       const fullPhone = phone.trim() ? `${countryCode} ${phone.trim()}` : ''
 
-      // Look up existing prospect by email in the CRM
+      // Look up existing prospect by email in the CRM, create if missing
       let matchedProspectId: number | null = null
       if (email.trim()) {
         const { data: existingProspect } = await supabase
@@ -447,7 +447,30 @@ export function PublicBooking() {
           .eq('user_id', linkMeta.business_owner_id)
           .eq('email', email.trim())
           .maybeSingle()
-        if (existingProspect) matchedProspectId = existingProspect.id
+        if (existingProspect) {
+          matchedProspectId = existingProspect.id
+        } else {
+          const nameParts = name.trim().split(/\s+/)
+          const firstName = nameParts[0] || ''
+          const lastName = nameParts.slice(1).join(' ') || ''
+          const { data: created } = await supabase
+            .from('business_prospects')
+            .insert({
+              user_id: linkMeta.business_owner_id,
+              email: email.trim(),
+              contact: name.trim(),
+              firstName,
+              lastName,
+              phone: fullPhone || null,
+              source: 'booking_link',
+              stage: 'lead',
+              status: 'new',
+              assigned_to: linkMeta.team_member_id || null,
+            })
+            .select('id')
+            .single()
+          if (created) matchedProspectId = created.id
+        }
       }
 
       // Create appointment

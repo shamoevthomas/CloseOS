@@ -127,9 +127,10 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
       .eq('referrer_id', user.id)
       .then(({ data }) => {
         if (data) {
+          // total = tous les filleuls hors annulés ; active = récompenses en cours ou en file d'attente
           setReferralStats({
-            total: data.length,
-            active: data.filter(r => r.status === 'active').length,
+            total: data.filter(r => r.status !== 'canceled').length,
+            active: data.filter(r => r.status === 'active' || r.status === 'queued' || r.status === 'pending').length,
           })
         }
       })
@@ -963,16 +964,49 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                 )}
                 
                 <div className={!isPaying ? "space-y-8 blur-[8px] select-none pointer-events-none" : "space-y-8"}>
-                  {/* Avantages */}
+                  {/* Avantages — adaptés au cycle de l'utilisateur courant */}
                 <div className="p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                   <h3 className="text-white font-bold text-base mb-3 flex items-center gap-2">
                     <Gift className="h-5 w-5 text-emerald-400" />
                     {st.referral_how}
                   </h3>
-                  <div className="space-y-2 text-sm text-white/60">
-                    <p><strong className="text-white">{st.referral_you}</strong> {st.referral_you_desc}</p>
-                    <p><strong className="text-white">{st.referral_them_monthly}</strong> {st.referral_them_monthly_desc}</p>
-                    <p><strong className="text-white">{st.referral_them_yearly}</strong> {st.referral_them_yearly_desc}</p>
+                  <p className="text-xs text-white/40 mb-4">{st.referral_rules_intro}</p>
+                  <div className="space-y-3 text-sm text-white/60">
+                    <div>
+                      <p className="font-bold text-white mb-1">{st.referral_you}</p>
+                      {(() => {
+                        const cycle = profile?.billing_cycle === 'yearly' ? 'yearly' : profile?.billing_cycle === 'quarterly' ? 'quarterly' : 'monthly';
+                        if (cycle === 'monthly') return (
+                          <ul className="space-y-1 ml-3 text-white/70">
+                            <li>• {st.referral_you_monthly_fm}</li>
+                            <li>• {st.referral_you_monthly_ft}</li>
+                            <li>• {st.referral_you_monthly_fa}</li>
+                          </ul>
+                        );
+                        if (cycle === 'quarterly') return (
+                          <ul className="space-y-1 ml-3 text-white/70">
+                            <li>• {st.referral_you_quarterly_fm}</li>
+                            <li>• {st.referral_you_quarterly_ft}</li>
+                            <li>• {st.referral_you_quarterly_fa}</li>
+                          </ul>
+                        );
+                        return (
+                          <ul className="space-y-1 ml-3 text-white/70">
+                            <li>• {st.referral_you_yearly_fm}</li>
+                            <li>• {st.referral_you_yearly_ft}</li>
+                            <li>• {st.referral_you_yearly_fa}</li>
+                          </ul>
+                        );
+                      })()}
+                    </div>
+                    <div>
+                      <p className="font-bold text-white mb-1">{st.referral_them}</p>
+                      <ul className="space-y-1 ml-3 text-white/70">
+                        <li>• {st.referral_them_monthly}</li>
+                        <li>• {st.referral_them_quarterly}</li>
+                        <li>• {st.referral_them_yearly}</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
 

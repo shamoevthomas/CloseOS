@@ -585,6 +585,7 @@ function CreateReminderModal({
   onSubmit: (data: { title: string; description: string; reminder_date: string; prospect_id: number | null }) => Promise<void>
   defaultProspectId?: number
 }) {
+  const { lang } = useLanguage()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')

@@ -84,6 +84,10 @@ export const CheckoutForm = () => {
     const cookieRef = document.cookie.match(/closeos_ref=([^;]+)/)?.[1] || '';
     const internalRef = decodeURIComponent(cookieRef) || localStorage.getItem('closeos_ref') || '';
 
+    // Lire le cookie ambassadeur (posé par /api/amb-track)
+    const cookieAmb = document.cookie.match(/closeos_amb=([^;]+)/)?.[1] || '';
+    const ambassadorSlug = decodeURIComponent(cookieAmb) || localStorage.getItem('closeos_amb') || '';
+
     fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -94,6 +98,7 @@ export const CheckoutForm = () => {
         promotekitReferral,
         referral_code: localStorage.getItem('referral_code') ?? '',
         internalReferral: internalRef,
+        ambassadorSlug,
       }),
     })
       .then(async (res) => {

@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { detectBillingCycleFromPriceId, getFilleulCoupon } from './_lib/referral-rewards';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
@@ -18,7 +19,7 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode, customerEmail, existingUser, internalReferral } = req.body;
+    const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode, customerEmail, existingUser, internalReferral, ambassadorSlug } = req.body;
 
     // Cascade de priorité pour le code affilié : Supabase > localStorage > Promotekit
     let supabaseReferral = null;
@@ -43,6 +44,9 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
     let internalReferrerId: string | null = null;
     let isInternalCodeUsed = false;
 
+    // Détection du cycle de facturation choisi par le filleul à partir du price ID
+    const refereeBillingCycle = detectBillingCycleFromPriceId(lineItems[0]?.price);
+
     // ─── 1. Vérifier si le code saisi est un code de parrainage interne ───
     if (referralCode) {
       const cleanCode = referralCode.trim().toUpperCase();
@@ -54,12 +58,12 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
         .single();
 
       if (referrer && referrer.id !== userId) {
-        // Code interne trouvé → appliquer coupon filleul
+        // Code interne trouvé → appliquer coupon filleul selon son cycle
         internalReferrerId = referrer.id;
         isInternalCodeUsed = true;
-        const isYearly = lineItems[0]?.price === 'price_1TQDp833xpuYLywqsUwcNMpk';
-        discounts.push({ coupon: isYearly ? 'aEg3N6xK' : '7Dt4fsPe' });
-        console.log('🤝 Code parrainage interne:', cleanCode, '| Parrain:', referrer.id, '| Annuel:', isYearly);
+        const filleulCoupon = getFilleulCoupon(refereeBillingCycle);
+        discounts.push({ coupon: filleulCoupon });
+        console.log('🤝 Code parrainage interne:', cleanCode, '| Parrain:', referrer.id, '| Cycle filleul:', refereeBillingCycle, '| Coupon:', filleulCoupon);
       } else if (!referrer) {
         // Pas un code interne → chercher dans Stripe
         let promoCodes = await stripe.promotionCodes.list({
@@ -121,8 +125,46 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
       } catch {}
     }
 
-    // Grandfathering: users registered before March 16, 2026 get 5€ off first month
-    if (existingUser && userId && discounts.length === 0) {
+    // ─── Ambassador attribution: auto-apply coupon from cookie/slug ───
+    // Skipped if any other discount (referral interne, code Stripe tapé) is already applied
+    let ambassadorMatched: { id: string; slug: string; couponId: string | null; promoCode: string | null; pool: number; commissionPct: number; discountPct: number } | null = null;
+    if (ambassadorSlug && discounts.length === 0) {
+      try {
+        const { data: amb } = await supabase
+          .from('sales_ambassadors')
+          .select('id, slug, current_coupon_id_monthly, current_promo_code_monthly, current_coupon_id_qy, current_promo_code_qy, split_to_filleul_pct, pool_pct_monthly, pool_pct_qy')
+          .eq('slug', String(ambassadorSlug).trim())
+          .maybeSingle();
+        if (amb) {
+          const { resolveSplit, getPoolForCycle } = await import('./_lib/ambassador-commission');
+          const cycle = refereeBillingCycle as 'monthly' | 'quarterly' | 'yearly';
+          const splitPct = Number(amb.split_to_filleul_pct || 0);
+          const poolForCycle = getPoolForCycle(amb, cycle);
+          const resolved = resolveSplit(poolForCycle, splitPct);
+          const couponId = cycle === 'monthly' ? amb.current_coupon_id_monthly : amb.current_coupon_id_qy;
+          const promoCode = cycle === 'monthly' ? amb.current_promo_code_monthly : amb.current_promo_code_qy;
+          if (couponId) {
+            discounts.push({ coupon: couponId });
+          }
+          ambassadorMatched = {
+            id: amb.id,
+            slug: amb.slug,
+            couponId,
+            promoCode,
+            pool: poolForCycle,
+            commissionPct: resolved.commissionPct,
+            discountPct: resolved.discountPct,
+          };
+          console.log('🎟️ Ambassadeur match:', amb.slug, '| cycle:', cycle, '| pool:', poolForCycle, '| coupon:', couponId || 'none', '| commission:', resolved.commissionPct, '%');
+        }
+      } catch (e) {
+        console.error('ambassador checkout lookup failed:', (e as any)?.message || e);
+      }
+    }
+
+    // Grandfathering: users registered before March 16, 2026 get 5€ off forever coupon
+    // ⚠️ Pas de cumul avec parrainage : si un code parrainage interne a été appliqué, on skip le legacy
+    if (existingUser && userId && discounts.length === 0 && !isInternalCodeUsed) {
       try {
         const { data: authUser } = await supabase.auth.admin.getUserById(userId);
         if (authUser?.user?.created_at) {
@@ -159,19 +201,39 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
       metadata: {
         plan: plan || 'pro',
         voip: isVoip ? 'true' : 'false',
+        referee_billing_cycle: refereeBillingCycle,
         ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
         ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
         ...(internalReferrerId ? { internal_referrer_id: internalReferrerId } : {}),
         ...(isInternalCodeUsed ? { internal_code_used: 'true' } : {}),
+        ...(ambassadorMatched ? {
+          ambassador_id: ambassadorMatched.id,
+          ambassador_slug: ambassadorMatched.slug,
+          ambassador_pool_pct: String(ambassadorMatched.pool),
+          ambassador_commission_pct: String(ambassadorMatched.commissionPct),
+          ambassador_discount_pct: String(ambassadorMatched.discountPct),
+          ...(ambassadorMatched.couponId ? { ambassador_coupon_id: ambassadorMatched.couponId } : {}),
+          ...(ambassadorMatched.promoCode ? { ambassador_promo_code: ambassadorMatched.promoCode } : {}),
+        } : {}),
       },
 
       subscription_data: {
         metadata: {
           plan: plan || 'pro',
           voip: isVoip ? 'true' : 'false',
+          referee_billing_cycle: refereeBillingCycle,
           ...(finalReferral ? { referral_code: String(finalReferral) } : {}),
           ...(promotekitReferral ? { promotekit_referral: String(promotekitReferral) } : {}),
           ...(internalReferrerId ? { internal_referrer_id: internalReferrerId } : {}),
+          ...(ambassadorMatched ? {
+            ambassador_id: ambassadorMatched.id,
+            ambassador_slug: ambassadorMatched.slug,
+            ambassador_pool_pct: String(ambassadorMatched.pool),
+            ambassador_commission_pct: String(ambassadorMatched.commissionPct),
+            ambassador_discount_pct: String(ambassadorMatched.discountPct),
+            ...(ambassadorMatched.couponId ? { ambassador_coupon_id: ambassadorMatched.couponId } : {}),
+            ...(ambassadorMatched.promoCode ? { ambassador_promo_code: ambassadorMatched.promoCode } : {}),
+          } : {}),
         },
       },
     });

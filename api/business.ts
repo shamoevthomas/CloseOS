@@ -3502,46 +3502,67 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const newCancelToken = crypto.randomBytes(16).toString('hex')
       const newRescheduleToken = crypto.randomBytes(16).toString('hex')
 
-      // Update Google Calendar event if exists
-      if (appt.google_calendar_event_id && appt.assigned_to) {
+      // Resolve member timezone (used for Google Calendar + datetime_utc fallback)
+      let memberTz = 'Europe/Paris'
+      let authUserId: string | null = null
+      if (appt.assigned_to) {
+        if (appt.assigned_to === appt.user_id) {
+          authUserId = appt.user_id
+          const { data: ownerData } = await supabase.from('business_users').select('timezone').eq('id', appt.user_id).single()
+          memberTz = ownerData?.timezone || 'Europe/Paris'
+        } else {
+          const { data: tm } = await supabase.from('business_team_members').select('user_id, timezone').eq('id', appt.assigned_to).single()
+          authUserId = tm?.user_id || null
+          memberTz = tm?.timezone || 'Europe/Paris'
+        }
+      }
+
+      // Compute effective datetime_utc — prefer client value, fallback to converting from prospect TZ (or member TZ)
+      let effectiveDatetimeUtc: string | null = datetime_utc || null
+      if (!effectiveDatetimeUtc) {
         try {
-          let authUserId = appt.assigned_to === appt.user_id ? appt.user_id : null
-          let memberTz = 'Europe/Paris'
-          if (!authUserId) {
-            const { data: tm } = await supabase.from('business_team_members').select('user_id, timezone').eq('id', appt.assigned_to).single()
-            authUserId = tm?.user_id
-            memberTz = tm?.timezone || 'Europe/Paris'
-          } else {
-            const { data: ownerData } = await supabase.from('business_users').select('timezone').eq('id', appt.user_id).single()
-            memberTz = ownerData?.timezone || 'Europe/Paris'
-          }
-          if (authUserId) {
-            const gcalToken = await getGoogleAccessToken(supabase, authUserId)
-            if (gcalToken) {
+          const tzForConversion = prospect_timezone || memberTz
+          effectiveDatetimeUtc = fromZonedTime(`${date}T${time}:00`, tzForConversion).toISOString()
+        } catch {}
+      }
+
+      // Update Google Calendar event if exists — use UTC ISO so timeZone display is correct
+      if (appt.google_calendar_event_id && authUserId) {
+        try {
+          const gcalToken = await getGoogleAccessToken(supabase, authUserId)
+          if (gcalToken) {
+            const newCancelLink = `https://www.closeos.fr/appointment/${newCancelToken}?action=cancel`
+            const newRescheduleLink = `https://www.closeos.fr/appointment/${newRescheduleToken}?action=reschedule`
+            let startIso: string
+            let endIso: string
+            if (effectiveDatetimeUtc) {
+              startIso = new Date(effectiveDatetimeUtc).toISOString()
+              endIso = new Date(new Date(effectiveDatetimeUtc).getTime() + apptDuration * 60_000).toISOString()
+            } else {
               const [hh, mm] = time.split(':').map(Number)
               const endMins = hh * 60 + mm + apptDuration
               const endH = String(Math.floor(endMins / 60)).padStart(2, '0')
               const endM = String(endMins % 60).padStart(2, '0')
-              const newCancelLink = `https://www.closeos.fr/appointment/${newCancelToken}?action=cancel`
-              const newRescheduleLink = `https://www.closeos.fr/appointment/${newRescheduleToken}?action=reschedule`
-              await updateGoogleCalendarEvent(gcalToken, appt.google_calendar_event_id, {
-                startDateTime: `${date}T${time}:00`,
-                endDateTime: `${date}T${endH}:${endM}:00`,
-                timeZone: memberTz,
-                description: `Rendez-vous reprogrammé\n\n─────────────────\n📅 Reprogrammer : ${newRescheduleLink}\n❌ Annuler : ${newCancelLink}`,
-              })
+              startIso = `${date}T${time}:00`
+              endIso = `${date}T${endH}:${endM}:00`
             }
+            await updateGoogleCalendarEvent(gcalToken, appt.google_calendar_event_id, {
+              startDateTime: startIso,
+              endDateTime: endIso,
+              timeZone: memberTz,
+              description: `Rendez-vous reprogrammé\n\n─────────────────\n📅 Reprogrammer : ${newRescheduleLink}\n❌ Annuler : ${newCancelLink}`,
+            })
           }
         } catch {}
       }
 
       // Update appointment with new date/time and new tokens
-      const { data: updated } = await supabase
+      const { data: updated, error: updateErr } = await supabase
         .from('business_appointments')
         .update({
           date,
           time,
-          datetime_utc: datetime_utc || null,
+          datetime_utc: effectiveDatetimeUtc,
           timezone: prospect_timezone || null,
           status: 'pending',
           cancel_token: newCancelToken,
@@ -3550,6 +3571,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .eq('id', appt.id)
         .select()
         .single()
+
+      if (updateErr) return res.status(500).json({ error: updateErr.message })
+
+      // Reset reminder logs so cron re-sends rappels for the new date/time
+      await supabase
+        .from('business_appointment_reminder_logs')
+        .delete()
+        .eq('appointment_id', appt.id)
 
       // Get prospect info
       const { data: prospect } = await supabase

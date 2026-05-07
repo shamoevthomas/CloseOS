@@ -22,10 +22,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isPro = isPaying && (profile?.plan === 'pro' || profile?.plan === 'founder');
   const isFounder = isPro; // Alias rétrocompat
 
-  // Trial: user exists, no active subscription, account < 10 days old
+  // Trial: user exists, no active subscription, trial still running.
+  // Priority: profile.trial_ends_at (explicit override) → fallback created_at + 10 days.
   const hasSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
   const created = user?.created_at ? new Date(user.created_at) : null;
-  const trialEnd = created ? new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000) : null;
+  const trialEnd = profile?.trial_ends_at
+    ? new Date(profile.trial_ends_at)
+    : created
+      ? new Date(created.getTime() + 10 * 24 * 60 * 60 * 1000)
+      : null;
   const isInTrial = trialEnd ? new Date() < trialEnd && !hasSubscription : false;
 
   const fetchProfile = useCallback(async (userId: string) => {
@@ -48,8 +53,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .maybeSingle();
 
-      if (!error && data && isMountedRef.current) {
-        setProfile(data);
+      let profileData = data;
+
+      // Activate a pending trial reset on first connection: posts trial_ends_at = NOW + 10d
+      // and clears the flag so it only fires once.
+      if (!error && profileData?.trial_reset_pending) {
+        const newTrialEnd = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ trial_ends_at: newTrialEnd, trial_reset_pending: false })
+          .eq('id', userId);
+        if (!updateError) {
+          profileData = { ...profileData, trial_ends_at: newTrialEnd, trial_reset_pending: false };
+        }
+      }
+
+      if (!error && profileData && isMountedRef.current) {
+        setProfile(profileData);
       }
 
       // Only set localStorage to business if user is Business-only (no Sales profile)
