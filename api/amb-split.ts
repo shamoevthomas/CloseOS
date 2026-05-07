@@ -84,22 +84,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const monthly = resolveSplit(Number(amb.pool_pct_monthly || 25), ratio);
   const qy = resolveSplit(Number(amb.pool_pct_qy || 30), ratio);
 
-  const [newMonthly, newQy] = await Promise.all([
-    createSplitCoupon(stripe, {
-      slug: amb.slug,
-      discountPct: monthly.discountPct,
-      cycleLabel: 'monthly',
-      ambassadorId: amb.id,
-    }),
-    createSplitCoupon(stripe, {
-      slug: amb.slug,
-      discountPct: qy.discountPct,
-      cycleLabel: 'qy',
-      ambassadorId: amb.id,
-    }),
-  ]);
+  let newMonthly, newQy;
+  try {
+    [newMonthly, newQy] = await Promise.all([
+      createSplitCoupon(stripe, {
+        slug: amb.slug,
+        discountPct: monthly.discountPct,
+        cycleLabel: 'monthly',
+        ambassadorId: amb.id,
+      }),
+      createSplitCoupon(stripe, {
+        slug: amb.slug,
+        discountPct: qy.discountPct,
+        cycleLabel: 'qy',
+        ambassadorId: amb.id,
+      }),
+    ]);
+  } catch (e: any) {
+    console.error('amb-split coupon creation failed:', e?.message || e, e?.raw?.code, e?.raw?.param);
+    return res.status(502).json({
+      error: e?.message || 'Stripe coupon creation failed',
+      stripeCode: e?.raw?.code || null,
+      stripeParam: e?.raw?.param || null,
+    });
+  }
 
-  await supabase
+  const { error: updateErr } = await supabase
     .from('sales_ambassadors')
     .update({
       split_to_filleul_pct: ratio,
@@ -110,6 +120,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       current_promo_code_qy: newQy.promoCode,
     })
     .eq('id', amb.id);
+
+  if (updateErr) {
+    console.error('amb-split DB update failed:', updateErr.message);
+    return res.status(500).json({ error: `DB update failed: ${updateErr.message}` });
+  }
 
   return res.json({
     ok: true,

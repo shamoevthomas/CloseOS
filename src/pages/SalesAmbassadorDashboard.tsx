@@ -611,6 +611,8 @@ function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, qyP
             />
           </div>
 
+          <EarningsProjection monthlyComm={monthlyComm} qyComm={qyComm} />
+
           <p className="text-[11px] text-slate-500 mt-4 leading-relaxed">
             💡 Vos filleuls actuels gardent leur taux à vie. Ce changement ne s'applique qu'aux nouveaux filleuls qui s'inscrivent à partir de maintenant.
           </p>
@@ -651,6 +653,58 @@ function Row({ label, value, accent, muted, bold }: { label: string; value: stri
     <div className="flex items-center justify-between">
       <span className={muted ? 'text-slate-500' : 'text-slate-400'}>{label}</span>
       <span className={`tabular-nums ${bold ? 'font-bold' : ''} ${accent || (muted ? 'text-slate-300' : 'text-white')}`}>{value}</span>
+    </div>
+  );
+}
+
+// Earnings projection: how much the ambassador earns per year for 1, 5, 10 filleuls
+// across each billing cycle. Uses CloseOS Sales pricing (24/mo, 60/trim, 216/yr).
+function EarningsProjection({ monthlyComm, qyComm }: { monthlyComm: number; qyComm: number }) {
+  // Annual revenue per single filleul
+  const yMonthly = (24 * 12 * monthlyComm) / 100;   // 12 paiements/an × 24€ × commission %
+  const yQuarterly = (60 * 4 * qyComm) / 100;       // 4 paiements/an × 60€ × commission %
+  const yAnnual = (216 * qyComm) / 100;             // 1 paiement/an × 216€ × commission %
+
+  const fmt = (n: number) => `${n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}€`;
+
+  const rows: Array<{ label: string; sub: string; perClient: number; accent: string }> = [
+    { label: 'Mensuel', sub: '24€/mo × 12', perClient: yMonthly, accent: 'text-blue-300' },
+    { label: 'Trimestriel', sub: '60€/trim × 4', perClient: yQuarterly, accent: 'text-purple-300' },
+    { label: 'Annuel', sub: '216€/an × 1', perClient: yAnnual, accent: 'text-emerald-300' },
+  ];
+
+  return (
+    <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+        <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">💰 Projection de gains annuels</div>
+        <div className="text-[10px] text-slate-500">par filleul actif</div>
+      </div>
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+            <th className="text-left px-4 py-2">Cycle filleul</th>
+            <th className="text-right px-3 py-2">1 client</th>
+            <th className="text-right px-3 py-2">5 clients</th>
+            <th className="text-right px-4 py-2">10 clients</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-800">
+          {rows.map((r) => (
+            <tr key={r.label}>
+              <td className="px-4 py-2">
+                <div className={`font-bold ${r.accent}`}>{r.label}</div>
+                <div className="text-[10px] text-slate-500">{r.sub}</div>
+              </td>
+              <td className="px-3 py-2 text-right tabular-nums text-slate-300">{fmt(r.perClient)}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-slate-200 font-bold">{fmt(r.perClient * 5)}</td>
+              <td className="px-4 py-2 text-right tabular-nums text-emerald-300 font-bold">{fmt(r.perClient * 10)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="px-4 py-2 text-[10px] text-slate-500 border-t border-slate-800 leading-relaxed">
+        À vie tant que vos filleuls restent abonnés. Les commissions cumulent quand vos filleuls renouvellent.
+      </div>
     </div>
   );
 }

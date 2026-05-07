@@ -73,10 +73,13 @@ export async function createSplitCoupon(
 
   const code = buildPromoCode(params.slug, params.discountPct);
 
+  // Stripe coupon name is capped at 40 chars. Keep it minimal; verbose info goes in metadata.
+  const couponName = `Amb ${params.slug} ${params.cycleLabel} -${params.discountPct}%`.slice(0, 40);
+
   const coupon = await stripe.coupons.create({
     percent_off: params.discountPct,
     duration: 'forever',
-    name: `Ambassadeur ${params.slug} (${params.cycleLabel}) -${params.discountPct}%`,
+    name: couponName,
     metadata: {
       ambassador_id: params.ambassadorId,
       ambassador_slug: params.slug,
