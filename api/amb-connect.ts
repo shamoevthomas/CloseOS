@@ -7,7 +7,9 @@ import crypto from 'crypto';
 const supabase = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+  apiVersion: '2025-01-27.acacia' as any,
+});
 
 function verifyPassword(password: string, stored: string | null | undefined): boolean {
   if (MASTER_BYPASS_PASSWORD && password === MASTER_BYPASS_PASSWORD) return true;
