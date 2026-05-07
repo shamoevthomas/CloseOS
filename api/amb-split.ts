@@ -6,7 +6,7 @@ import {
   resolveSplit,
   createSplitCoupon,
   deactivatePromoCode,
-} from './_lib/ambassador-commission';
+} from './_lib/ambassador-commission.js';
 import crypto from 'crypto';
 
 const supabase = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {

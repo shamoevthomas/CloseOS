@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { resolveSplit } from './_lib/ambassador-commission';
+import { resolveSplit } from './_lib/ambassador-commission.js';
 
 const supabase = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
   auth: { autoRefreshToken: false, persistSession: false },

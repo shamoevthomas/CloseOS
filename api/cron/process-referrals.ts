@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
-import { type BillingCycle } from '../_lib/referral-rewards';
+import { type BillingCycle } from '../_lib/referral-rewards.js';
 
 export const config = {
     runtime: 'edge',

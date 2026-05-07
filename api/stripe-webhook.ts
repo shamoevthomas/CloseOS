@@ -4,7 +4,7 @@ import {
     detectBillingCycleFromInterval,
     mapReferralReward,
     type BillingCycle,
-} from './_lib/referral-rewards';
+} from './_lib/referral-rewards.js';
 
 export const config = {
     runtime: 'edge', // Using Edge Runtime for better performance on Vercel

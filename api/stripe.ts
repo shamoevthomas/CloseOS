@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { detectBillingCycleFromPriceId, getFilleulCoupon } from './_lib/referral-rewards';
+import { detectBillingCycleFromPriceId, getFilleulCoupon } from './_lib/referral-rewards.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
@@ -136,7 +136,7 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
           .eq('slug', String(ambassadorSlug).trim())
           .maybeSingle();
         if (amb) {
-          const { resolveSplit, getPoolForCycle } = await import('./_lib/ambassador-commission');
+          const { resolveSplit, getPoolForCycle } = await import('./_lib/ambassador-commission.js');
           const cycle = refereeBillingCycle as 'monthly' | 'quarterly' | 'yearly';
           const splitPct = Number(amb.split_to_filleul_pct || 0);
           const poolForCycle = getPoolForCycle(amb, cycle);

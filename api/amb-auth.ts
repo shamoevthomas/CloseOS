@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-import { MASTER_BYPASS_PASSWORD } from './_lib/ambassador-commission';
+import { MASTER_BYPASS_PASSWORD } from './_lib/ambassador-commission.js';
 
 const supabase = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
   auth: { autoRefreshToken: false, persistSession: false },
