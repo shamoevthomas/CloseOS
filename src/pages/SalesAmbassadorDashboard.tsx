@@ -555,8 +555,8 @@ function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, qyP
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-lg rounded-3xl border border-slate-800 bg-[#0B1121] overflow-hidden">
-        <div className="p-6 border-b border-slate-800 flex items-start justify-between">
+      <div className="w-full max-w-lg max-h-[90vh] rounded-3xl border border-slate-800 bg-[#0B1121] flex flex-col">
+        <div className="p-5 border-b border-slate-800 flex items-start justify-between flex-shrink-0">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-full bg-blue-500/15 flex items-center justify-center flex-shrink-0">
               <Sparkles className="w-5 h-5 text-blue-300" />
@@ -575,7 +575,7 @@ function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, qyP
           )}
         </div>
 
-        <div className="p-6">
+        <div className="p-5 overflow-y-auto flex-1 min-h-0">
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">Part redistribuée au filleul</div>
             <div className="text-3xl font-extrabold tabular-nums text-blue-300">{pct}%</div>
