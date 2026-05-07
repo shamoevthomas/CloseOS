@@ -27,11 +27,15 @@ export function resolveSplit(poolPct: number, splitToFilleulPct: number) {
 
 /**
  * Resolve pool for a given cycle from an ambassador record.
- * monthly → pool_pct_monthly. quarterly/yearly → pool_pct_qy.
+ * Each cycle has its own pool: monthly / quarterly / yearly.
  */
-export function getPoolForCycle(amb: { pool_pct_monthly?: number | null; pool_pct_qy?: number | null }, cycle: Cycle): number {
-  if (cycle === 'monthly') return Number(amb.pool_pct_monthly ?? 25);
-  return Number(amb.pool_pct_qy ?? 30);
+export function getPoolForCycle(
+  amb: { pool_pct_monthly?: number | null; pool_pct_quarterly?: number | null; pool_pct_yearly?: number | null },
+  cycle: Cycle
+): number {
+  if (cycle === 'monthly') return Number(amb.pool_pct_monthly ?? 30);
+  if (cycle === 'quarterly') return Number(amb.pool_pct_quarterly ?? 25);
+  return Number(amb.pool_pct_yearly ?? 20);
 }
 
 export function detectCycleFromInterval(
@@ -65,7 +69,7 @@ export function buildPromoCode(slug: string, discountPct: number): string {
  */
 export async function createSplitCoupon(
   stripe: Stripe,
-  params: { slug: string; discountPct: number; cycleLabel: 'monthly' | 'qy'; ambassadorId: string }
+  params: { slug: string; discountPct: number; cycleLabel: 'monthly' | 'quarterly' | 'yearly'; ambassadorId: string }
 ): Promise<{ couponId: string | null; promoCode: string | null }> {
   if (params.discountPct <= 0) {
     return { couponId: null, promoCode: null };

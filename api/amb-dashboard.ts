@@ -50,8 +50,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const totalPendingCents = comms.filter(c => c.status === 'pending').reduce((s, c) => s + Number(c.commission_cents || 0), 0);
 
   const splitPct = Number(amb.split_to_filleul_pct || 0);
-  const monthlyResolved = resolveSplit(Number(amb.pool_pct_monthly || 25), splitPct);
-  const qyResolved = resolveSplit(Number(amb.pool_pct_qy || 30), splitPct);
+  const monthlyResolved = resolveSplit(Number(amb.pool_pct_monthly || 30), splitPct);
+  const quarterlyResolved = resolveSplit(Number(amb.pool_pct_quarterly || 25), splitPct);
+  const yearlyResolved = resolveSplit(Number(amb.pool_pct_yearly || 20), splitPct);
 
   return res.json({
     ambassador: {
@@ -67,7 +68,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       toFilleulPct: splitPct,
       lockedByAdmin: !!amb.split_locked_by_admin,
       monthly: { ...monthlyResolved, code: amb.current_promo_code_monthly },
-      qy: { ...qyResolved, code: amb.current_promo_code_qy },
+      quarterly: { ...quarterlyResolved, code: amb.current_promo_code_quarterly },
+      yearly: { ...yearlyResolved, code: amb.current_promo_code_yearly },
     },
     connect: {
       connected: !!amb.stripe_account_id,

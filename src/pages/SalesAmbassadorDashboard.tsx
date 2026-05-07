@@ -14,7 +14,8 @@ type DashboardData = {
     toFilleulPct: number;
     lockedByAdmin: boolean;
     monthly: { pool: number; discountPct: number; commissionPct: number; code: string | null };
-    qy: { pool: number; discountPct: number; commissionPct: number; code: string | null };
+    quarterly: { pool: number; discountPct: number; commissionPct: number; code: string | null };
+    yearly: { pool: number; discountPct: number; commissionPct: number; code: string | null };
   };
   connect: { connected: boolean; status: string };
   stats: {
@@ -112,7 +113,8 @@ export default function SalesAmbassadorDashboard() {
           initialPct={data.split.toFilleulPct}
           isFirstTime={!data.auth.hasSplit}
           monthlyPool={data.split.monthly.pool}
-          qyPool={data.split.qy.pool}
+          quarterlyPool={data.split.quarterly.pool}
+          yearlyPool={data.split.yearly.pool}
           onClose={() => setShowSplitModal(false)}
           onSaved={() => { setShowSplitModal(false); load(); }}
         />
@@ -271,7 +273,7 @@ function Dashboard({ token, password, data, onReload, onOpenSplit, onLogout }: {
               <CopyButton value={refLink} />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <CodeCard
                 label="Code mensuel"
                 code={data.split.monthly.code}
@@ -279,10 +281,16 @@ function Dashboard({ token, password, data, onReload, onOpenSplit, onLogout }: {
                 commissionPct={data.split.monthly.commissionPct}
               />
               <CodeCard
-                label="Code trimestriel / annuel"
-                code={data.split.qy.code}
-                discountPct={data.split.qy.discountPct}
-                commissionPct={data.split.qy.commissionPct}
+                label="Code trimestriel"
+                code={data.split.quarterly.code}
+                discountPct={data.split.quarterly.discountPct}
+                commissionPct={data.split.quarterly.commissionPct}
+              />
+              <CodeCard
+                label="Code annuel"
+                code={data.split.yearly.code}
+                discountPct={data.split.yearly.discountPct}
+                commissionPct={data.split.yearly.commissionPct}
               />
             </div>
 
@@ -527,18 +535,21 @@ function cycleLabel(c: string | null) {
 
 // ─── Split modal ───
 
-function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, qyPool, onClose, onSaved }: {
-  token: string; password: string; initialPct: number; isFirstTime: boolean; monthlyPool: number; qyPool: number; onClose: () => void; onSaved: () => void;
+function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, quarterlyPool, yearlyPool, onClose, onSaved }: {
+  token: string; password: string; initialPct: number; isFirstTime: boolean; monthlyPool: number; quarterlyPool: number; yearlyPool: number; onClose: () => void; onSaved: () => void;
 }) {
   const [pct, setPct] = useState(initialPct);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Live preview (uses the ambassador's actual pool, not hardcoded constants)
-  const monthlyDisc = Math.round(monthlyPool * (pct / 100) * 100) / 100;
-  const qyDisc = Math.round(qyPool * (pct / 100) * 100) / 100;
+  // Live preview (uses the ambassador's actual pools)
+  const ratio = pct / 100;
+  const monthlyDisc = Math.round(monthlyPool * ratio * 100) / 100;
+  const quarterlyDisc = Math.round(quarterlyPool * ratio * 100) / 100;
+  const yearlyDisc = Math.round(yearlyPool * ratio * 100) / 100;
   const monthlyComm = Math.round((monthlyPool - monthlyDisc) * 100) / 100;
-  const qyComm = Math.round((qyPool - qyDisc) * 100) / 100;
+  const quarterlyComm = Math.round((quarterlyPool - quarterlyDisc) * 100) / 100;
+  const yearlyComm = Math.round((yearlyPool - yearlyDisc) * 100) / 100;
 
   const save = async () => {
     setBusy(true); setErr(null);
@@ -565,7 +576,7 @@ function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, qyP
               <h2 className="text-lg font-extrabold">{isFirstTime ? 'Bienvenue !' : 'Modifier ma répartition'}</h2>
               <p className="text-sm text-slate-400 mt-1">
                 {isFirstTime
-                  ? `${qyPool}% (annuel/trim) ou ${monthlyPool}% (mensuel) sont à votre disposition. Comment voulez-vous les utiliser ?`
+                  ? `Jusqu'à ${monthlyPool}% (mensuel), ${quarterlyPool}% (trim) ou ${yearlyPool}% (annuel) sont à votre disposition. Comment voulez-vous les utiliser ?`
                   : 'Ajustez la part que vous donnez à vos filleuls.'}
               </p>
             </div>
@@ -606,22 +617,22 @@ function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, qyP
             <PreviewCard
               label="Trimestriel"
               priceLabel="60€/trim"
-              pool={qyPool}
-              discount={qyDisc}
-              commission={qyComm}
+              pool={quarterlyPool}
+              discount={quarterlyDisc}
+              commission={quarterlyComm}
               filleulPrice={60}
             />
             <PreviewCard
               label="Annuel"
               priceLabel="216€/an"
-              pool={qyPool}
-              discount={qyDisc}
-              commission={qyComm}
+              pool={yearlyPool}
+              discount={yearlyDisc}
+              commission={yearlyComm}
               filleulPrice={216}
             />
           </div>
 
-          <EarningsProjection monthlyComm={monthlyComm} qyComm={qyComm} />
+          <EarningsProjection monthlyComm={monthlyComm} quarterlyComm={quarterlyComm} yearlyComm={yearlyComm} />
 
           <p className="text-[11px] text-slate-500 mt-4 leading-relaxed">
             💡 Vos filleuls actuels gardent leur taux à vie. Ce changement ne s'applique qu'aux nouveaux filleuls qui s'inscrivent à partir de maintenant.
@@ -672,11 +683,11 @@ function Row({ label, value, accent, muted, bold }: { label: string; value: stri
 
 // Earnings projection: how much the ambassador earns per year for 1, 5, 10 filleuls
 // across each billing cycle. Uses CloseOS Sales pricing (24/mo, 60/trim, 216/yr).
-function EarningsProjection({ monthlyComm, qyComm }: { monthlyComm: number; qyComm: number }) {
+function EarningsProjection({ monthlyComm, quarterlyComm, yearlyComm }: { monthlyComm: number; quarterlyComm: number; yearlyComm: number }) {
   // Annual revenue per single filleul
   const yMonthly = (24 * 12 * monthlyComm) / 100;   // 12 paiements/an × 24€ × commission %
-  const yQuarterly = (60 * 4 * qyComm) / 100;       // 4 paiements/an × 60€ × commission %
-  const yAnnual = (216 * qyComm) / 100;             // 1 paiement/an × 216€ × commission %
+  const yQuarterly = (60 * 4 * quarterlyComm) / 100; // 4 paiements/an × 60€ × commission %
+  const yAnnual = (216 * yearlyComm) / 100;          // 1 paiement/an × 216€ × commission %
 
   const fmt = (n: number) => `${n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}€`;
 

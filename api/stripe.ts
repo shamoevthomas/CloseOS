@@ -132,7 +132,7 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
       try {
         const { data: amb } = await supabase
           .from('sales_ambassadors')
-          .select('id, slug, current_coupon_id_monthly, current_promo_code_monthly, current_coupon_id_qy, current_promo_code_qy, split_to_filleul_pct, pool_pct_monthly, pool_pct_qy')
+          .select('id, slug, current_coupon_id_monthly, current_promo_code_monthly, current_coupon_id_quarterly, current_promo_code_quarterly, current_coupon_id_yearly, current_promo_code_yearly, split_to_filleul_pct, pool_pct_monthly, pool_pct_quarterly, pool_pct_yearly')
           .eq('slug', String(ambassadorSlug).trim())
           .maybeSingle();
         if (amb) {
@@ -141,8 +141,14 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
           const splitPct = Number(amb.split_to_filleul_pct || 0);
           const poolForCycle = getPoolForCycle(amb, cycle);
           const resolved = resolveSplit(poolForCycle, splitPct);
-          const couponId = cycle === 'monthly' ? amb.current_coupon_id_monthly : amb.current_coupon_id_qy;
-          const promoCode = cycle === 'monthly' ? amb.current_promo_code_monthly : amb.current_promo_code_qy;
+          const couponId =
+            cycle === 'monthly' ? amb.current_coupon_id_monthly :
+            cycle === 'quarterly' ? amb.current_coupon_id_quarterly :
+            amb.current_coupon_id_yearly;
+          const promoCode =
+            cycle === 'monthly' ? amb.current_promo_code_monthly :
+            cycle === 'quarterly' ? amb.current_promo_code_quarterly :
+            amb.current_promo_code_yearly;
           if (couponId) {
             discounts.push({ coupon: couponId });
           }

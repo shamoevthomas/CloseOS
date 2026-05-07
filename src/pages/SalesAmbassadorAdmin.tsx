@@ -21,14 +21,16 @@ type Ambassador = {
   admin_notes: string | null;
   created_at: string;
   pool_pct_monthly: number;
-  pool_pct_qy: number;
+  pool_pct_quarterly: number;
+  pool_pct_yearly: number;
   payout_threshold_cents: number;
   split: {
     toFilleulPct: number;
     hasSet: boolean;
     locked: boolean;
     monthly: { pool: number; commissionPct: number; discountPct: number; code: string | null };
-    qy: { pool: number; commissionPct: number; discountPct: number; code: string | null };
+    quarterly: { pool: number; commissionPct: number; discountPct: number; code: string | null };
+    yearly: { pool: number; commissionPct: number; discountPct: number; code: string | null };
   };
   connect: { connected: boolean; status: string };
   payout: { dayOfMonth: number; method: 'stripe' | 'offline' | 'revolut'; thresholdCents: number };
@@ -282,7 +284,7 @@ function AmbassadorCard({ amb, origin, onDelete, onEdit, onPayout }: {
       </div>
 
       {/* Codes & rates */}
-      <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
         <RateBlock
           label={`Mensuel — pool ${amb.pool_pct_monthly}%`}
           code={amb.split.monthly.code}
@@ -290,10 +292,16 @@ function AmbassadorCard({ amb, origin, onDelete, onEdit, onPayout }: {
           commission={amb.split.monthly.commissionPct}
         />
         <RateBlock
-          label={`Trim. / Annuel — pool ${amb.pool_pct_qy}%`}
-          code={amb.split.qy.code}
-          discount={amb.split.qy.discountPct}
-          commission={amb.split.qy.commissionPct}
+          label={`Trimestriel — pool ${amb.pool_pct_quarterly}%`}
+          code={amb.split.quarterly.code}
+          discount={amb.split.quarterly.discountPct}
+          commission={amb.split.quarterly.commissionPct}
+        />
+        <RateBlock
+          label={`Annuel — pool ${amb.pool_pct_yearly}%`}
+          code={amb.split.yearly.code}
+          discount={amb.split.yearly.discountPct}
+          commission={amb.split.yearly.commissionPct}
         />
       </div>
 
@@ -376,8 +384,9 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
   const [slug, setSlug] = useState(ambassador?.slug || '');
   const [notes, setNotes] = useState(ambassador?.notes || '');
   const [adminNotes, setAdminNotes] = useState(ambassador?.admin_notes || '');
-  const [poolMonthly, setPoolMonthly] = useState(ambassador?.pool_pct_monthly ?? 25);
-  const [poolQy, setPoolQy] = useState(ambassador?.pool_pct_qy ?? 30);
+  const [poolMonthly, setPoolMonthly] = useState(ambassador?.pool_pct_monthly ?? 30);
+  const [poolQuarterly, setPoolQuarterly] = useState(ambassador?.pool_pct_quarterly ?? 25);
+  const [poolYearly, setPoolYearly] = useState(ambassador?.pool_pct_yearly ?? 20);
   const [splitToFilleul, setSplitToFilleul] = useState(ambassador?.split.toFilleulPct ?? 0);
   const [splitLocked, setSplitLocked] = useState(ambassador?.split.locked ?? false);
   const [payoutDay, setPayoutDay] = useState(ambassador?.payout.dayOfMonth ?? 1);
@@ -389,9 +398,11 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
   // Live preview
   const ratio = splitToFilleul / 100;
   const monthlyDisc = Math.round(poolMonthly * ratio * 100) / 100;
-  const qyDisc = Math.round(poolQy * ratio * 100) / 100;
+  const quarterlyDisc = Math.round(poolQuarterly * ratio * 100) / 100;
+  const yearlyDisc = Math.round(poolYearly * ratio * 100) / 100;
   const monthlyComm = Math.round((poolMonthly - monthlyDisc) * 100) / 100;
-  const qyComm = Math.round((poolQy - qyDisc) * 100) / 100;
+  const quarterlyComm = Math.round((poolQuarterly - quarterlyDisc) * 100) / 100;
+  const yearlyComm = Math.round((poolYearly - yearlyDisc) * 100) / 100;
 
   const submit = async () => {
     if (!name.trim()) { setErr('Nom requis'); return; }
@@ -404,7 +415,8 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
       notes: notes.trim() || null,
       adminNotes: adminNotes.trim() || null,
       poolMonthlyPct: poolMonthly,
-      poolQyPct: poolQy,
+      poolQuarterlyPct: poolQuarterly,
+      poolYearlyPct: poolYearly,
       initialSplitToFilleulPct: splitToFilleul,
       splitLocked,
       payoutDayOfMonth: payoutDay,
@@ -439,25 +451,41 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
           </FormSection>
 
           {/* 2. Pool & split */}
-          <FormSection title="Pool & répartition" subtitle="Définissez le pool % disponible et la part redistribuée au filleul">
+          <FormSection title="Pool par cycle" subtitle="Définissez le pool % disponible pour chaque cycle de facturation. Plus le pool est élevé, plus l'ambassadeur (et/ou son filleul) gagne sur chaque vente.">
             <SliderField
-              label="Pool mensuel (% du prix payé)"
+              label="Pool MENSUEL (24€/mo)"
               value={poolMonthly}
               onChange={setPoolMonthly}
               min={0}
               max={100}
               suffix="%"
-              hint="Total dispo à partager entre vous et l'ambassadeur sur les abos mensuels"
+              hint="Recommandé : 30% — abos mensuels génèrent plus de revenu sur la durée"
+              accent="text-blue-300"
             />
             <SliderField
-              label="Pool trimestriel/annuel (% du prix payé)"
-              value={poolQy}
-              onChange={setPoolQy}
+              label="Pool TRIMESTRIEL (60€/trim)"
+              value={poolQuarterly}
+              onChange={setPoolQuarterly}
               min={0}
               max={100}
               suffix="%"
-              hint="Total dispo sur les abos trim/annuels"
+              hint="Recommandé : 25%"
+              accent="text-purple-300"
             />
+            <SliderField
+              label="Pool ANNUEL (216€/an)"
+              value={poolYearly}
+              onChange={setPoolYearly}
+              min={0}
+              max={100}
+              suffix="%"
+              hint="Recommandé : 20% — paiement unique, marge plus tendue"
+              accent="text-emerald-300"
+            />
+          </FormSection>
+
+          {/* 3. Split filleul */}
+          <FormSection title="Répartition ambassadeur ↔ filleul" subtitle="Du pool ci-dessus, combien revient au filleul (en discount) vs à l'ambassadeur (en commission)">
             <SliderField
               label="Part redistribuée au filleul (% du pool)"
               value={splitToFilleul}
@@ -465,7 +493,7 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
               min={0}
               max={100}
               suffix="%"
-              hint="0% = ambassadeur garde tout. 100% = tout au filleul (0 commission ambass.)"
+              hint="0% = ambassadeur garde tout le pool. 100% = tout va en discount au filleul (0 commission ambass.)"
               accent="text-blue-300"
             />
             <CheckboxField
@@ -477,12 +505,12 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
             {/* Preview */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <PreviewCard label="Mensuel" priceLabel="24€/mo" pool={poolMonthly} discount={monthlyDisc} commission={monthlyComm} filleulPrice={24} />
-              <PreviewCard label="Trimestriel" priceLabel="60€/trim" pool={poolQy} discount={qyDisc} commission={qyComm} filleulPrice={60} />
-              <PreviewCard label="Annuel" priceLabel="216€/an" pool={poolQy} discount={qyDisc} commission={qyComm} filleulPrice={216} />
+              <PreviewCard label="Trimestriel" priceLabel="60€/trim" pool={poolQuarterly} discount={quarterlyDisc} commission={quarterlyComm} filleulPrice={60} />
+              <PreviewCard label="Annuel" priceLabel="216€/an" pool={poolYearly} discount={yearlyDisc} commission={yearlyComm} filleulPrice={216} />
             </div>
           </FormSection>
 
-          {/* 3. Versements */}
+          {/* 4. Versements */}
           <FormSection title="Versement des commissions" subtitle="Le cron quotidien déclenche les versements automatiquement">
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -519,7 +547,7 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
             />
           </FormSection>
 
-          {/* 4. Notes admin */}
+          {/* 5. Notes admin */}
           <FormSection title="Notes admin" subtitle="Internes — invisibles côté ambassadeur">
             <Field label="" value={adminNotes} onChange={setAdminNotes} placeholder="IBAN si offline, contrat, conditions négociées…" textarea />
           </FormSection>

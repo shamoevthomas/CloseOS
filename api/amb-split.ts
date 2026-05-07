@@ -43,14 +43,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // GET = read current split
   if (req.method === 'GET') {
     const splitPct = Number(amb.split_to_filleul_pct || 0);
-    const monthly = resolveSplit(Number(amb.pool_pct_monthly || 25), splitPct);
-    const qy = resolveSplit(Number(amb.pool_pct_qy || 30), splitPct);
+    const monthly = resolveSplit(Number(amb.pool_pct_monthly || 30), splitPct);
+    const quarterly = resolveSplit(Number(amb.pool_pct_quarterly || 25), splitPct);
+    const yearly = resolveSplit(Number(amb.pool_pct_yearly || 20), splitPct);
     return res.json({
       splitToFilleulPct: splitPct,
       hasSet: !!amb.split_set_at,
       lockedByAdmin: !!amb.split_locked_by_admin,
       monthly: { pool: monthly.pool, discount: monthly.discountPct, commission: monthly.commissionPct, code: amb.current_promo_code_monthly },
-      qy: { pool: qy.pool, discount: qy.discountPct, commission: qy.commissionPct, code: amb.current_promo_code_qy },
+      quarterly: { pool: quarterly.pool, discount: quarterly.discountPct, commission: quarterly.commissionPct, code: amb.current_promo_code_quarterly },
+      yearly: { pool: yearly.pool, discount: yearly.discountPct, commission: yearly.commissionPct, code: amb.current_promo_code_yearly },
     });
   }
 
@@ -78,29 +80,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // A5: deactivate previous codes BEFORE creating new ones; if Stripe API fails, abort entirely
   const dActOk1 = await deactivatePromoCode(stripe, amb.current_promo_code_monthly);
-  const dActOk2 = await deactivatePromoCode(stripe, amb.current_promo_code_qy);
-  if (!dActOk1 || !dActOk2) {
+  const dActOk2 = await deactivatePromoCode(stripe, amb.current_promo_code_quarterly);
+  const dActOk3 = await deactivatePromoCode(stripe, amb.current_promo_code_yearly);
+  if (!dActOk1 || !dActOk2 || !dActOk3) {
     return res.status(502).json({ error: 'Stripe API indisponible — réessayez dans quelques instants' });
   }
 
-  const monthly = resolveSplit(Number(amb.pool_pct_monthly || 25), ratio);
-  const qy = resolveSplit(Number(amb.pool_pct_qy || 30), ratio);
+  const monthly = resolveSplit(Number(amb.pool_pct_monthly || 30), ratio);
+  const quarterly = resolveSplit(Number(amb.pool_pct_quarterly || 25), ratio);
+  const yearly = resolveSplit(Number(amb.pool_pct_yearly || 20), ratio);
 
-  let newMonthly, newQy;
+  let newMonthly, newQuarterly, newYearly;
   try {
-    [newMonthly, newQy] = await Promise.all([
-      createSplitCoupon(stripe, {
-        slug: amb.slug,
-        discountPct: monthly.discountPct,
-        cycleLabel: 'monthly',
-        ambassadorId: amb.id,
-      }),
-      createSplitCoupon(stripe, {
-        slug: amb.slug,
-        discountPct: qy.discountPct,
-        cycleLabel: 'qy',
-        ambassadorId: amb.id,
-      }),
+    [newMonthly, newQuarterly, newYearly] = await Promise.all([
+      createSplitCoupon(stripe, { slug: amb.slug, discountPct: monthly.discountPct, cycleLabel: 'monthly', ambassadorId: amb.id }),
+      createSplitCoupon(stripe, { slug: amb.slug, discountPct: quarterly.discountPct, cycleLabel: 'quarterly', ambassadorId: amb.id }),
+      createSplitCoupon(stripe, { slug: amb.slug, discountPct: yearly.discountPct, cycleLabel: 'yearly', ambassadorId: amb.id }),
     ]);
   } catch (e: any) {
     console.error('amb-split coupon creation failed:', e?.message || e, e?.raw?.code, e?.raw?.param);
@@ -118,8 +113,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       split_set_at: new Date().toISOString(),
       current_coupon_id_monthly: newMonthly.couponId,
       current_promo_code_monthly: newMonthly.promoCode,
-      current_coupon_id_qy: newQy.couponId,
-      current_promo_code_qy: newQy.promoCode,
+      current_coupon_id_quarterly: newQuarterly.couponId,
+      current_promo_code_quarterly: newQuarterly.promoCode,
+      current_coupon_id_yearly: newYearly.couponId,
+      current_promo_code_yearly: newYearly.promoCode,
     })
     .eq('id', amb.id);
 
@@ -132,6 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ok: true,
     splitToFilleulPct: ratio,
     monthly: { ...monthly, code: newMonthly.promoCode },
-    qy: { ...qy, code: newQy.promoCode },
+    quarterly: { ...quarterly, code: newQuarterly.promoCode },
+    yearly: { ...yearly, code: newYearly.promoCode },
   });
 }

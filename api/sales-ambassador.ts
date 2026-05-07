@@ -43,36 +43,33 @@ function clampDay(v: any, def: number): number {
   return Math.max(1, Math.min(28, n));
 }
 
-async function rotateCouponsForAmb(amb: any, splitToFilleulPct: number): Promise<{ ok: true; codes: { monthly: string | null; qy: string | null }; couponIds: { monthly: string | null; qy: string | null } } | { ok: false; error: string }> {
-  // A5: deactivate previous codes first; if Stripe API fails, abort to avoid leaving 2 codes active
+type RotateResult =
+  | { ok: true; codes: { monthly: string | null; quarterly: string | null; yearly: string | null }; couponIds: { monthly: string | null; quarterly: string | null; yearly: string | null } }
+  | { ok: false; error: string };
+
+async function rotateCouponsForAmb(amb: any, splitToFilleulPct: number): Promise<RotateResult> {
+  // A5: deactivate previous codes first; if Stripe API fails, abort to avoid leaving N codes active
   const dActOk1 = await deactivatePromoCode(stripe, amb.current_promo_code_monthly);
-  const dActOk2 = await deactivatePromoCode(stripe, amb.current_promo_code_qy);
-  if (!dActOk1 || !dActOk2) {
+  const dActOk2 = await deactivatePromoCode(stripe, amb.current_promo_code_quarterly);
+  const dActOk3 = await deactivatePromoCode(stripe, amb.current_promo_code_yearly);
+  if (!dActOk1 || !dActOk2 || !dActOk3) {
     return { ok: false, error: 'Stripe API indisponible — impossible de désactiver les anciens codes. Réessayez.' };
   }
 
-  const monthlyResolved = resolveSplit(Number(amb.pool_pct_monthly ?? 25), splitToFilleulPct);
-  const qyResolved = resolveSplit(Number(amb.pool_pct_qy ?? 30), splitToFilleulPct);
+  const monthlyResolved = resolveSplit(Number(amb.pool_pct_monthly ?? 30), splitToFilleulPct);
+  const quarterlyResolved = resolveSplit(Number(amb.pool_pct_quarterly ?? 25), splitToFilleulPct);
+  const yearlyResolved = resolveSplit(Number(amb.pool_pct_yearly ?? 20), splitToFilleulPct);
 
-  const [newMonthly, newQy] = await Promise.all([
-    createSplitCoupon(stripe, {
-      slug: amb.slug,
-      discountPct: monthlyResolved.discountPct,
-      cycleLabel: 'monthly',
-      ambassadorId: amb.id,
-    }),
-    createSplitCoupon(stripe, {
-      slug: amb.slug,
-      discountPct: qyResolved.discountPct,
-      cycleLabel: 'qy',
-      ambassadorId: amb.id,
-    }),
+  const [newMonthly, newQuarterly, newYearly] = await Promise.all([
+    createSplitCoupon(stripe, { slug: amb.slug, discountPct: monthlyResolved.discountPct, cycleLabel: 'monthly', ambassadorId: amb.id }),
+    createSplitCoupon(stripe, { slug: amb.slug, discountPct: quarterlyResolved.discountPct, cycleLabel: 'quarterly', ambassadorId: amb.id }),
+    createSplitCoupon(stripe, { slug: amb.slug, discountPct: yearlyResolved.discountPct, cycleLabel: 'yearly', ambassadorId: amb.id }),
   ]);
 
   return {
     ok: true,
-    codes: { monthly: newMonthly.promoCode, qy: newQy.promoCode },
-    couponIds: { monthly: newMonthly.couponId, qy: newQy.couponId },
+    codes: { monthly: newMonthly.promoCode, quarterly: newQuarterly.promoCode, yearly: newYearly.promoCode },
+    couponIds: { monthly: newMonthly.couponId, quarterly: newQuarterly.couponId, yearly: newYearly.couponId },
   };
 }
 
@@ -133,8 +130,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const s = statsByAmb.get(a.id) || { signup: 0, paid: 0, canceled: 0 };
       const c = commByAmb.get(a.id) || { paidCents: 0, pendingCents: 0, failedCents: 0 };
       const splitPct = Number(a.split_to_filleul_pct || 0);
-      const monthly = resolveSplit(Number(a.pool_pct_monthly || 25), splitPct);
-      const qy = resolveSplit(Number(a.pool_pct_qy || 30), splitPct);
+      const monthly = resolveSplit(Number(a.pool_pct_monthly || 30), splitPct);
+      const quarterly = resolveSplit(Number(a.pool_pct_quarterly || 25), splitPct);
+      const yearly = resolveSplit(Number(a.pool_pct_yearly || 20), splitPct);
       return {
         ...a,
         split: {
@@ -142,7 +140,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           hasSet: !!a.split_set_at,
           locked: !!a.split_locked_by_admin,
           monthly: { pool: monthly.pool, commissionPct: monthly.commissionPct, discountPct: monthly.discountPct, code: a.current_promo_code_monthly },
-          qy: { pool: qy.pool, commissionPct: qy.commissionPct, discountPct: qy.discountPct, code: a.current_promo_code_qy },
+          quarterly: { pool: quarterly.pool, commissionPct: quarterly.commissionPct, discountPct: quarterly.discountPct, code: a.current_promo_code_quarterly },
+          yearly: { pool: yearly.pool, commissionPct: yearly.commissionPct, discountPct: yearly.discountPct, code: a.current_promo_code_yearly },
         },
         connect: {
           connected: !!a.stripe_account_id,
@@ -172,7 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (action === 'create' && req.method === 'POST') {
     const {
       name, email, slug: providedSlug, notes,
-      poolMonthlyPct, poolQyPct,
+      poolMonthlyPct, poolQuarterlyPct, poolYearlyPct,
       initialSplitToFilleulPct, splitLocked,
       payoutDayOfMonth, payoutMethod, payoutThresholdCents,
       adminNotes,
@@ -194,8 +193,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
     }
 
-    const poolM = clampPct(poolMonthlyPct, 25);
-    const poolQ = clampPct(poolQyPct, 30);
+    const poolM = clampPct(poolMonthlyPct, 30);
+    const poolQ = clampPct(poolQuarterlyPct, 25);
+    const poolY = clampPct(poolYearlyPct, 20);
     const split = clampPct(initialSplitToFilleulPct, 0);
     const day = clampDay(payoutDayOfMonth, 1);
     const method = payoutMethod === 'offline' ? 'offline' : payoutMethod === 'revolut' ? 'revolut' : 'stripe';
@@ -209,7 +209,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         slug,
         notes: notes || null,
         pool_pct_monthly: poolM,
-        pool_pct_qy: poolQ,
+        pool_pct_quarterly: poolQ,
+        pool_pct_yearly: poolY,
         split_to_filleul_pct: split,
         split_set_at: split > 0 ? new Date().toISOString() : null,
         split_locked_by_admin: !!splitLocked,
@@ -223,7 +224,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (createErr || !created) return res.status(500).json({ error: createErr?.message || 'create failed' });
 
-    // If split > 0, immediately create coupons for both cycles
+    // If split > 0, immediately create coupons for the 3 cycles
     if (split > 0) {
       const result = await rotateCouponsForAmb(created, split);
       if (!result.ok) {
@@ -239,8 +240,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .update({
           current_coupon_id_monthly: result.couponIds.monthly,
           current_promo_code_monthly: result.codes.monthly,
-          current_coupon_id_qy: result.couponIds.qy,
-          current_promo_code_qy: result.codes.qy,
+          current_coupon_id_quarterly: result.couponIds.quarterly,
+          current_promo_code_quarterly: result.codes.quarterly,
+          current_coupon_id_yearly: result.couponIds.yearly,
+          current_promo_code_yearly: result.codes.yearly,
         })
         .eq('id', created.id);
     }
@@ -275,9 +278,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const v = clampPct(body.poolMonthlyPct, Number(amb.pool_pct_monthly));
       if (v !== Number(amb.pool_pct_monthly)) { update.pool_pct_monthly = v; recreateCoupons = true; }
     }
-    if (body.poolQyPct != null) {
-      const v = clampPct(body.poolQyPct, Number(amb.pool_pct_qy));
-      if (v !== Number(amb.pool_pct_qy)) { update.pool_pct_qy = v; recreateCoupons = true; }
+    if (body.poolQuarterlyPct != null) {
+      const v = clampPct(body.poolQuarterlyPct, Number(amb.pool_pct_quarterly));
+      if (v !== Number(amb.pool_pct_quarterly)) { update.pool_pct_quarterly = v; recreateCoupons = true; }
+    }
+    if (body.poolYearlyPct != null) {
+      const v = clampPct(body.poolYearlyPct, Number(amb.pool_pct_yearly));
+      if (v !== Number(amb.pool_pct_yearly)) { update.pool_pct_yearly = v; recreateCoupons = true; }
     }
     let newSplit = Number(amb.split_to_filleul_pct || 0);
     if (body.initialSplitToFilleulPct != null) {
@@ -306,8 +313,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .update({
             current_coupon_id_monthly: result.couponIds.monthly,
             current_promo_code_monthly: result.codes.monthly,
-            current_coupon_id_qy: result.couponIds.qy,
-            current_promo_code_qy: result.codes.qy,
+            current_coupon_id_quarterly: result.couponIds.quarterly,
+            current_promo_code_quarterly: result.codes.quarterly,
+            current_coupon_id_yearly: result.couponIds.yearly,
+            current_promo_code_yearly: result.codes.yearly,
           })
           .eq('id', id);
       }
