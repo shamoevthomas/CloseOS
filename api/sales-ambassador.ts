@@ -196,7 +196,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const poolQ = clampPct(poolQyPct, 30);
     const split = clampPct(initialSplitToFilleulPct, 0);
     const day = clampDay(payoutDayOfMonth, 1);
-    const method = payoutMethod === 'offline' ? 'offline' : 'stripe';
+    const method = payoutMethod === 'offline' ? 'offline' : payoutMethod === 'revolut' ? 'revolut' : 'stripe';
     const threshold = Math.max(0, Math.floor(Number(payoutThresholdCents) || 0));
 
     const { data: created, error: createErr } = await supabase
@@ -285,7 +285,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (body.splitLocked != null) update.split_locked_by_admin = !!body.splitLocked;
 
     if (body.payoutDayOfMonth != null) update.payout_day_of_month = clampDay(body.payoutDayOfMonth, amb.payout_day_of_month || 1);
-    if (body.payoutMethod != null) update.payout_method = body.payoutMethod === 'offline' ? 'offline' : 'stripe';
+    if (body.payoutMethod != null) update.payout_method = body.payoutMethod === 'offline' ? 'offline' : body.payoutMethod === 'revolut' ? 'revolut' : 'stripe';
     if (body.payoutThresholdCents != null) update.payout_threshold_cents = Math.max(0, Math.floor(Number(body.payoutThresholdCents) || 0));
 
     if (Object.keys(update).length > 0) {
@@ -362,7 +362,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (action === 'manual-payout' && req.method === 'POST') {
     const { ambassadorId, mode, commissionIds } = req.body || {};
     if (!ambassadorId) return res.status(400).json({ error: 'ambassadorId required' });
-    if (mode !== 'stripe' && mode !== 'offline') return res.status(400).json({ error: 'mode must be stripe|offline' });
+    if (mode !== 'stripe' && mode !== 'offline' && mode !== 'revolut') return res.status(400).json({ error: 'mode must be stripe|offline|revolut' });
 
     const { data: amb } = await supabase.from('sales_ambassadors').select('*').eq('id', ambassadorId).maybeSingle();
     if (!amb) return res.status(404).json({ error: 'ambassador not found' });
@@ -423,18 +423,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // mode === 'offline'
+    // mode === 'offline' or 'revolut' — both are manual transfers handled outside Stripe
     await supabase
       .from('sales_amb_commissions')
       .update({
         status: 'paid',
         paid_at: new Date().toISOString(),
-        payout_method: 'offline',
+        payout_method: mode,
         error_message: null,
       })
       .in('id', ids);
 
-    return res.json({ ok: true, mode: 'offline', transferred: pendings.length, totalCents });
+    return res.json({ ok: true, mode, transferred: pendings.length, totalCents });
   }
 
   return res.status(400).json({ error: 'Unknown action' });

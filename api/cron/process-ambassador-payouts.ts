@@ -43,13 +43,13 @@ async function sendEmail(to: string, subject: string, htmlContent: string) {
   }
 }
 
-function offlinePayoutEmail(ambName: string, ambSlug: string, ambEmail: string | null, totalEur: number, count: number): string {
+function offlinePayoutEmail(ambName: string, ambSlug: string, ambEmail: string | null, totalEur: number, count: number, channelLabel: string = 'Virement bancaire'): string {
   return `<!DOCTYPE html>
 <html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f8fafc;margin:0;padding:32px;">
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:auto;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.06);overflow:hidden;">
   <tr><td style="padding:32px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;">
     <h1 style="margin:0 0 8px 0;font-size:22px;">💸 Versement ambassadeur à effectuer</h1>
-    <p style="margin:0;opacity:0.85;font-size:14px;">Montant : <strong style="color:#34d399;">${totalEur.toFixed(2)} €</strong> · ${count} commission${count > 1 ? 's' : ''}</p>
+    <p style="margin:0;opacity:0.85;font-size:14px;">Montant : <strong style="color:#34d399;">${totalEur.toFixed(2)} €</strong> · ${count} commission${count > 1 ? 's' : ''} · via <strong>${channelLabel}</strong></p>
   </td></tr>
   <tr><td style="padding:32px;color:#1e293b;">
     <h2 style="margin:0 0 12px 0;font-size:16px;color:#475569;text-transform:uppercase;letter-spacing:0.05em;">Ambassadeur</h2>
@@ -58,8 +58,8 @@ function offlinePayoutEmail(ambName: string, ambSlug: string, ambEmail: string |
       <tr><td style="padding:6px 0;"><strong>Slug :</strong> ${ambSlug}</td></tr>
       <tr><td style="padding:6px 0;"><strong>Email :</strong> ${ambEmail || '—'}</td></tr>
     </table>
-    <p style="font-size:14px;color:#475569;margin:16px 0;">Méthode : virement bancaire offline (mode <code>offline</code>).<br/>
-    Une fois le virement fait, les commissions sont déjà marquées comme <code>paid</code> en base — pas d'action nécessaire après le virement.</p>
+    <p style="font-size:14px;color:#475569;margin:16px 0;">Méthode : <strong>${channelLabel}</strong>.<br/>
+    Une fois le versement fait, les commissions sont déjà marquées comme <code>paid</code> en base — pas d'action nécessaire après.</p>
   </td></tr>
 </table>
 </body></html>`;
@@ -124,24 +124,26 @@ export default async function handler(req: Request) {
       }
 
       // 4. Pay out based on method
-      if (amb.payout_method === 'offline') {
-        // Mark all as paid, send admin email
+      if (amb.payout_method === 'offline' || amb.payout_method === 'revolut') {
+        // Mark all as paid, send admin email reminder
         const totalEur = total / 100;
+        const method = amb.payout_method as 'offline' | 'revolut';
         await supabaseAdmin
           .from('sales_amb_commissions')
           .update({
             status: 'paid',
             paid_at: new Date().toISOString(),
-            payout_method: 'offline',
+            payout_method: method,
             error_message: null,
           })
           .in('id', ids);
+        const channelLabel = method === 'revolut' ? 'Revolut' : 'Virement bancaire';
         await sendEmail(
           MANUAL_PAYOUT_RECIPIENT,
-          `💸 Versement ambassadeur à effectuer — ${amb.name} (${totalEur.toFixed(2)} €)`,
-          offlinePayoutEmail(amb.name, amb.slug, amb.email, totalEur, claimed.length)
+          `💸 Versement ambassadeur à effectuer — ${amb.name} (${totalEur.toFixed(2)} € via ${channelLabel})`,
+          offlinePayoutEmail(amb.name, amb.slug, amb.email, totalEur, claimed.length, channelLabel)
         );
-        results.push(`✉️ ${amb.slug}: offline ${totalEur.toFixed(2)}€ (${claimed.length} commissions, email envoyé)`);
+        results.push(`✉️ ${amb.slug}: ${method} ${totalEur.toFixed(2)}€ (${claimed.length} commissions, email envoyé)`);
         continue;
       }
 

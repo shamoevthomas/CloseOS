@@ -31,7 +31,7 @@ type Ambassador = {
     qy: { pool: number; commissionPct: number; discountPct: number; code: string | null };
   };
   connect: { connected: boolean; status: string };
-  payout: { dayOfMonth: number; method: 'stripe' | 'offline'; thresholdCents: number };
+  payout: { dayOfMonth: number; method: 'stripe' | 'offline' | 'revolut'; thresholdCents: number };
   stats: Stats;
 };
 
@@ -237,7 +237,7 @@ function AmbassadorCard({ amb, origin, onDelete, onEdit, onPayout }: {
               <Calendar className="w-3 h-3" /> Versement le {amb.payout.dayOfMonth}
             </span>
             <span className="px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-300 text-[10px] font-bold uppercase tracking-wide">
-              {amb.payout.method === 'stripe' ? 'Stripe' : 'Offline'}
+              {amb.payout.method === 'stripe' ? 'Stripe' : amb.payout.method === 'revolut' ? 'Revolut' : 'Offline'}
             </span>
           </div>
           {amb.email && <p className="text-sm text-slate-400 mt-0.5">{amb.email}</p>}
@@ -381,7 +381,7 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
   const [splitToFilleul, setSplitToFilleul] = useState(ambassador?.split.toFilleulPct ?? 0);
   const [splitLocked, setSplitLocked] = useState(ambassador?.split.locked ?? false);
   const [payoutDay, setPayoutDay] = useState(ambassador?.payout.dayOfMonth ?? 1);
-  const [payoutMethod, setPayoutMethod] = useState<'stripe' | 'offline'>(ambassador?.payout.method ?? 'stripe');
+  const [payoutMethod, setPayoutMethod] = useState<'stripe' | 'offline' | 'revolut'>(ambassador?.payout.method ?? 'stripe');
   const [thresholdEur, setThresholdEur] = useState((ambassador?.payout.thresholdCents ?? 0) / 100);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -422,14 +422,14 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-[#0B1121] my-8">
-        <div className="flex items-center justify-between p-6 border-b border-slate-800">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl max-h-[90vh] rounded-2xl border border-slate-800 bg-[#0B1121] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-slate-800 flex-shrink-0">
           <h2 className="text-lg font-bold">{mode === 'create' ? 'Nouvel ambassadeur' : `Modifier ${ambassador?.name}`}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"><X className="w-5 h-5" /></button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-5 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* 1. Identité */}
           <FormSection title="Identité">
             <Field label="Nom *" value={name} onChange={setName} placeholder="Thomas Dupont" />
@@ -500,11 +500,12 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
                 <div className="text-xs font-bold text-slate-400 mb-1.5">Méthode</div>
                 <select
                   value={payoutMethod}
-                  onChange={e => setPayoutMethod(e.target.value as 'stripe' | 'offline')}
+                  onChange={e => setPayoutMethod(e.target.value as 'stripe' | 'offline' | 'revolut')}
                   className="w-full rounded-xl border border-slate-700 bg-slate-900/60 py-2.5 px-3 text-sm text-white outline-none focus:ring-2 focus:ring-blue-500/40"
                 >
                   <option value="stripe">Stripe Connect (auto)</option>
-                  <option value="offline">Offline (virement bancaire)</option>
+                  <option value="offline">Virement bancaire (offline)</option>
+                  <option value="revolut">Revolut</option>
                 </select>
               </div>
             </div>
@@ -530,7 +531,7 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
           )}
         </div>
 
-        <div className="p-6 border-t border-slate-800 flex justify-end gap-2">
+        <div className="p-5 border-t border-slate-800 flex justify-end gap-2 flex-shrink-0">
           <button onClick={onClose} className="px-5 py-2.5 rounded-full border border-slate-700 text-sm font-bold text-slate-300 hover:bg-slate-800 transition">Annuler</button>
           <button
             onClick={submit}
@@ -651,7 +652,7 @@ type CommissionRow = {
   stripe_invoice_id: string;
   stripe_subscription_id: string | null;
   stripe_transfer_id: string | null;
-  payout_method: 'stripe' | 'offline' | null;
+  payout_method: 'stripe' | 'offline' | 'revolut' | null;
   error_message: string | null;
   created_at: string;
   paid_at: string | null;
@@ -692,13 +693,11 @@ function PayoutModal({ ambassador, password, onClose, onPaid }: {
     else setSelectedIds(new Set(pending.map(r => r.id)));
   };
 
-  const pay = async (mode: 'stripe' | 'offline') => {
+  const pay = async (mode: 'stripe' | 'offline' | 'revolut') => {
     if (selectedRows.length === 0) return;
-    if (mode === 'offline') {
-      if (!confirm(`Vous confirmez avoir effectué le virement bancaire de ${formatEur(totalSelectedCents)} à ${ambassador.name} ?`)) return;
-    } else {
-      if (!confirm(`Lancer le transfer Stripe de ${formatEur(totalSelectedCents)} vers ${ambassador.name} maintenant ?`)) return;
-    }
+    const label = mode === 'stripe' ? 'transfer Stripe' : mode === 'revolut' ? 'virement Revolut' : 'virement bancaire';
+    const verb = mode === 'stripe' ? `Lancer le ${label}` : `Vous confirmez avoir effectué le ${label}`;
+    if (!confirm(`${verb} de ${formatEur(totalSelectedCents)} ${mode === 'stripe' ? 'vers' : 'à'} ${ambassador.name} ?`)) return;
     setBusy(true); setErr(null);
     const { ok, data } = await api('manual-payout', password, {
       method: 'POST',
@@ -710,9 +709,9 @@ function PayoutModal({ ambassador, password, onClose, onPaid }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-[#0B1121] my-8">
-        <div className="flex items-center justify-between p-6 border-b border-slate-800">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl max-h-[90vh] rounded-2xl border border-slate-800 bg-[#0B1121] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-slate-800 flex-shrink-0">
           <div>
             <h2 className="text-lg font-bold">Versement manuel</h2>
             <p className="text-xs text-slate-400 mt-0.5">{ambassador.name} · {ambassador.slug}</p>
@@ -720,7 +719,7 @@ function PayoutModal({ ambassador, password, onClose, onPaid }: {
           <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"><X className="w-5 h-5" /></button>
         </div>
 
-        <div className="p-6">
+        <div className="p-5 overflow-y-auto flex-1 min-h-0">
           {loading ? (
             <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-slate-500" /></div>
           ) : pending.length === 0 ? (
@@ -769,7 +768,7 @@ function PayoutModal({ ambassador, password, onClose, onPaid }: {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
                   onClick={() => pay('stripe')}
                   disabled={busy || selectedRows.length === 0 || !canStripe}
@@ -780,7 +779,7 @@ function PayoutModal({ ambassador, password, onClose, onPaid }: {
                     <CreditCard className="w-4 h-4" />
                     <span>Stripe Connect</span>
                   </div>
-                  <p className="text-xs text-slate-400">{canStripe ? 'Transfer immédiat sur le compte Stripe de l\'ambassadeur' : 'Stripe Connect non finalisé'}</p>
+                  <p className="text-xs text-slate-400">{canStripe ? 'Transfer immédiat sur le compte Stripe' : 'Connect non finalisé'}</p>
                 </button>
                 <button
                   onClick={() => pay('offline')}
@@ -789,9 +788,20 @@ function PayoutModal({ ambassador, password, onClose, onPaid }: {
                 >
                   <div className="flex items-center gap-2 text-emerald-200 font-bold mb-1">
                     <Banknote className="w-4 h-4" />
-                    <span>Offline (virement bancaire)</span>
+                    <span>Virement bancaire</span>
                   </div>
-                  <p className="text-xs text-slate-400">Marque comme versé. Tu fais le virement toi-même.</p>
+                  <p className="text-xs text-slate-400">Marque comme versé, tu fais le virement.</p>
+                </button>
+                <button
+                  onClick={() => pay('revolut')}
+                  disabled={busy || selectedRows.length === 0}
+                  className="rounded-xl border border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/10 p-4 text-left transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-2 text-purple-200 font-bold mb-1">
+                    <Banknote className="w-4 h-4" />
+                    <span>Revolut</span>
+                  </div>
+                  <p className="text-xs text-slate-400">Marque comme versé via Revolut.</p>
                 </button>
               </div>
             </>
@@ -817,7 +827,7 @@ function PayoutModal({ ambassador, password, onClose, onPaid }: {
           )}
         </div>
 
-        <div className="p-6 border-t border-slate-800 flex justify-end">
+        <div className="p-5 border-t border-slate-800 flex justify-end flex-shrink-0">
           <button onClick={onClose} className="px-5 py-2.5 rounded-full border border-slate-700 text-sm font-bold text-slate-300 hover:bg-slate-800 transition">Fermer</button>
         </div>
       </div>
