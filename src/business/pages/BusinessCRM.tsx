@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { PhoneInput } from '../components/PhoneInput'
+import { CommissionApprovalModal } from '../components/CommissionApprovalModal'
 import {
   User,
   Search,
@@ -100,6 +102,8 @@ export function BusinessCRM() {
   }), [t])
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const approveId = searchParams.get('approve')
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [selectedPeriod, setSelectedPeriod] = useState(0)
@@ -806,6 +810,12 @@ export function BusinessCRM() {
                         </div>
                         <span className="text-sm font-semibold text-stone-900 dark:text-white truncate max-w-[120px] md:max-w-[180px]">{getDisplayName(deal)}</span>
                         <DMRBadge prospect={deal} />
+                        {deal.commission_approval_status === 'pending' && (
+                          <span title="Commission inhabituelle en attente de validation" className="inline-flex items-center gap-1 rounded-full bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-wider">
+                            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                            {t.approval_prospect_badge}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-3 md:px-4 py-3">
@@ -902,6 +912,17 @@ export function BusinessCRM() {
         isOpen={isIntegrationModalOpen}
         onClose={() => setIsIntegrationModalOpen(false)}
       />
+
+      {/* Commission Approval Modal (deep-link ?approve=<id>) */}
+      {approveId && (
+        <CommissionApprovalModal
+          approvalId={approveId}
+          onClose={() => {
+            searchParams.delete('approve')
+            setSearchParams(searchParams, { replace: true })
+          }}
+        />
+      )}
 
       {/* Prospect View (Fiche) */}
       {selectedProspect && (

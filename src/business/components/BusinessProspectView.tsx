@@ -7,8 +7,11 @@ import {
   Bell, Check, Loader2, FileText, ClipboardList,
   Package, ExternalLink, PhoneCall, Tag, Camera,
   CreditCard, Wallet, Link2, Search, Zap, CheckCircle2,
+  Award, AlertCircle, XCircle, Settings2, CalendarPlus,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { CommissionApprovalModal } from './CommissionApprovalModal'
+import { InstallmentScheduleEditor } from '../../components/InstallmentScheduleEditor'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { DMRBadge } from './DMRBadge'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
@@ -153,6 +156,11 @@ export function BusinessProspectView({
 
   // Payment details
   const [editingPayment, setEditingPayment] = useState(false)
+  const [showApprovalModal, setShowApprovalModal] = useState(false)
+  const [editCustomCommissionEnabled, setEditCustomCommissionEnabled] = useState(false)
+  const [editCustomCommissionRate, setEditCustomCommissionRate] = useState<number>(0)
+  const [editScheduleMode, setEditScheduleMode] = useState<'equal' | 'custom'>('equal')
+  const [editCustomSchedule, setEditCustomSchedule] = useState<{ month: number; amount: number }[]>([])
 
   // Stripe linking (3 modes)
   const [stripeConnected, setStripeConnected] = useState(false)
@@ -209,6 +217,19 @@ export function BusinessProspectView({
       })
   }, [isTeamMember, teamMember?.id])
 
+  // Sync custom commission + custom schedule edit state when prospect changes
+  useEffect(() => {
+    setEditCustomCommissionEnabled(local.custom_commission_rate != null)
+    setEditCustomCommissionRate(local.custom_commission_rate != null ? Number(local.custom_commission_rate) : 0)
+    if (Array.isArray(local.installments_schedule) && local.installments_schedule.length > 0) {
+      setEditScheduleMode('custom')
+      setEditCustomSchedule(local.installments_schedule)
+    } else {
+      setEditScheduleMode('equal')
+      setEditCustomSchedule([])
+    }
+  }, [prospect.id, local.custom_commission_rate, local.installments_schedule])
+
   // Sync payment state when prospect changes
   useEffect(() => {
     setEditedValue(prospect.value || 0)
@@ -222,20 +243,67 @@ export function BusinessProspectView({
 
   // Payment calculations
   const closerIsOwner = teamMembers.some(tm => tm.id === (local as any).assigned_to && tm.role === 'Owner')
-  const commissionRate = memberCommissionRate
-  const commissionAmount = (editedValue * commissionRate) / 100
+  const standardCommissionRate = memberCommissionRate
+  const commissionRate = editCustomCommissionEnabled ? editCustomCommissionRate : standardCommissionRate
+  // Effective edited amount: when custom schedule is used, the sale total = sum of installments
+  const editCustomScheduleTotal = editCustomSchedule.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+  const effectiveEditedValue = editScheduleMode === 'custom' ? editCustomScheduleTotal : editedValue
+  const commissionAmount = (effectiveEditedValue * commissionRate) / 100
   const savedInstallments = local.installments || 1
-  const savedCommission = (local.value || 0) * (commissionRate / 100)
+  const savedCommissionRate = local.custom_commission_rate != null ? Number(local.custom_commission_rate) : memberCommissionRate
+  const savedCommission = (local.value || 0) * (savedCommissionRate / 100)
   const savedMonthlyPayment = (local.value || 0) / savedInstallments
   const savedMonthlyCommission = savedCommission / savedInstallments
   const isPayingInInstallments = local.payment_type === 'installments' || (savedInstallments > 1)
+  const hasCustomException = editCustomCommissionEnabled || editScheduleMode === 'custom'
 
-  const handleSavePayment = () => {
-    handleUpdate({
-      value: editedValue,
+  const handleSavePayment = async () => {
+    const updates: any = {
+      value: effectiveEditedValue,
       payment_type: paymentMode,
-      installments: paymentMode === 'installments' ? editedInstallments : 1,
-    } as any)
+    }
+    if (paymentMode === 'installments') {
+      if (editScheduleMode === 'custom') {
+        updates.installments = editCustomSchedule.length
+        updates.installments_schedule = editCustomSchedule
+      } else {
+        updates.installments = editedInstallments
+        updates.installments_schedule = null
+      }
+    } else {
+      updates.installments = 1
+      updates.installments_schedule = null
+    }
+    updates.custom_commission_rate = editCustomCommissionEnabled ? editCustomCommissionRate : null
+    handleUpdate(updates)
+
+    // Business: trigger commission approval workflow if closer uses exception
+    if (hasCustomException && isTeamMember && teamMember?.id && (ownerUserId || user?.id)) {
+      const { createCommissionApproval } = await import('../services/commissionApproval')
+      const reason: 'commission' | 'schedule' | 'both' =
+        editCustomCommissionEnabled && editScheduleMode === 'custom'
+          ? 'both'
+          : editCustomCommissionEnabled
+            ? 'commission'
+            : 'schedule'
+      await createCommissionApproval(
+        {
+          business_owner_id: ownerUserId || user!.id,
+          prospect_id: prospect.id,
+          closer_id: teamMember.id,
+          reason,
+          sale_amount: effectiveEditedValue,
+          standard_commission_rate: standardCommissionRate,
+          custom_commission_rate: editCustomCommissionEnabled ? editCustomCommissionRate : null,
+          installments_schedule: editScheduleMode === 'custom' ? editCustomSchedule : null,
+        },
+        {
+          closerName: `${teamMember.first_name || ''} ${teamMember.last_name || ''}`.trim() || 'Un closer',
+          prospectName: local.contact || `${local.firstName || ''} ${local.lastName || ''}`.trim() || 'Prospect',
+          offerName: local.offer,
+        }
+      )
+    }
     setEditingPayment(false)
   }
 
@@ -296,6 +364,15 @@ export function BusinessProspectView({
   const [remindersLoading, setRemindersLoading] = useState(false)
   const [reminderActionLoading, setReminderActionLoading] = useState<number | null>(null)
 
+  // Quick booking
+  const [showBookModal, setShowBookModal] = useState(false)
+  const [bookDate, setBookDate] = useState('')
+  const [bookTime, setBookTime] = useState('')
+  const [bookDuration, setBookDuration] = useState(30)
+  const [bookTitle, setBookTitle] = useState('')
+  const [bookAssigneeId, setBookAssigneeId] = useState<string>('')
+  const [bookSubmitting, setBookSubmitting] = useState(false)
+
   // Tags
   const [allTags, setAllTags] = useState<{ id: string; name: string; color: string; is_system?: boolean }[]>([])
   const [prospectTagIds, setProspectTagIds] = useState<string[]>([])
@@ -312,7 +389,11 @@ export function BusinessProspectView({
 
   const handleToggleTag = async (tagId: string) => {
     const tag = allTags.find(t => t.id === tagId)
-    if (tag?.is_system && prospectTagIds.includes(tagId)) return // Cannot remove system tags
+    if (tag?.is_system && prospectTagIds.includes(tagId)) {
+      await supabase.rpc('remove_system_tag_from_prospect', { p_prospect_id: prospect.id, p_tag_id: tagId })
+      setProspectTagIds(prev => prev.filter(id => id !== tagId))
+      return
+    }
     if (prospectTagIds.includes(tagId)) {
       await supabase.from('business_prospect_tags').delete().eq('prospect_id', prospect.id).eq('tag_id', tagId)
       setProspectTagIds(prev => prev.filter(id => id !== tagId))
@@ -725,6 +806,63 @@ export function BusinessProspectView({
     if (confirm(t.prospect_confirm_delete.replace('{name}', local.contact))) { onDelete(prospect.id); onClose() }
   }
 
+  const openBookModal = () => {
+    const now = new Date()
+    const nextHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    setBookDate(`${nextHour.getFullYear()}-${pad(nextHour.getMonth() + 1)}-${pad(nextHour.getDate())}`)
+    setBookTime(`${pad(nextHour.getHours())}:${pad(nextHour.getMinutes())}`)
+    setBookDuration(30)
+    setBookTitle(`RDV avec ${local.contact || ''}`.trim())
+    const defaultAssigneeId = isTeamMember ? (teamMember?.id || '') : (user?.id || '')
+    setBookAssigneeId(defaultAssigneeId)
+    setShowBookModal(true)
+  }
+
+  const handleBookSubmit = async () => {
+    if (!bookDate || !bookTime || !bookAssigneeId) return
+    setBookSubmitting(true)
+    try {
+      const ownerId = isTeamMember ? ownerUserId : user?.id
+      if (!ownerId) throw new Error('No owner id')
+      const isOwnerAssignee = bookAssigneeId === ownerId
+      const payload = {
+        owner_id: ownerId,
+        prospect_id: prospect.id,
+        assignee_type: isOwnerAssignee ? 'owner' : 'team_member',
+        assignee_team_member_id: isOwnerAssignee ? null : bookAssigneeId,
+        date: bookDate,
+        time: bookTime,
+        duration: bookDuration,
+        title: bookTitle.trim() || `RDV avec ${local.contact || 'prospect'}`,
+        timezone: userTimezone || 'Europe/Paris',
+      }
+      const res = await fetch(`${API_URL}?action=appointments-book-quick`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data?.error || t.prospect_book_error)
+        return
+      }
+      const warnings: string[] = data.warnings || []
+      const noMeet = warnings.includes('no_google_calendar') || warnings.includes('gcal_failed')
+      const noEmail = warnings.includes('no_prospect_email') || warnings.includes('email_failed')
+      if (noMeet && noEmail) toast.success(t.prospect_book_success_no_meet_no_email)
+      else if (noMeet) toast.success(t.prospect_book_success_no_meet)
+      else if (noEmail) toast.success(t.prospect_book_success_no_email)
+      else toast.success(t.prospect_book_success)
+      setShowBookModal(false)
+    } catch (err) {
+      console.error(err)
+      toast.error(t.prospect_book_error)
+    } finally {
+      setBookSubmitting(false)
+    }
+  }
+
   // Parse capture custom data from notes
   const getCaptureData = (): Record<string, string> | null => {
     if (!local.notes) return null
@@ -827,13 +965,15 @@ export function BusinessProspectView({
                 if (!tag) return null
                 if (tag.is_system) {
                   return (
-                    <span
+                    <button
                       key={tagId}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold pl-2.5 pr-2.5 py-1 rounded-full text-white"
+                      onClick={() => handleToggleTag(tagId)}
+                      className="group inline-flex items-center gap-1.5 text-xs font-bold pl-2.5 pr-2 py-1 rounded-full text-white transition-all hover:opacity-90"
                       style={{ backgroundColor: tag.color }}
                     >
                       {tag.name}
-                    </span>
+                      <X className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
+                    </button>
                   )
                 }
                 return (
@@ -903,6 +1043,13 @@ export function BusinessProspectView({
           >
             <Bell className="h-4 w-4" strokeWidth={1.5} />
             {t.prospect_create_reminder}
+          </button>
+          <button
+            onClick={openBookModal}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 rounded-full font-business-display font-bold text-sm transition-all hover:brightness-105 active:scale-95"
+          >
+            <CalendarPlus className="h-4 w-4" strokeWidth={1.5} />
+            {t.prospect_book_appointment}
           </button>
           <div className="flex gap-2">
             <button
@@ -1057,41 +1204,126 @@ export function BusinessProspectView({
                           <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">{t.prospect_payment_final_amount}</label>
                           <input
                             type="number"
-                            value={editedValue}
+                            value={editScheduleMode === 'custom' ? effectiveEditedValue : editedValue}
                             onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
-                            className="mt-1.5 w-full rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-3 text-sm font-bold text-stone-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all"
+                            readOnly={editScheduleMode === 'custom'}
+                            className={cn("mt-1.5 w-full rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-3 text-sm font-bold text-stone-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all", editScheduleMode === 'custom' && 'opacity-60 cursor-not-allowed')}
                           />
+                          {editScheduleMode === 'custom' && (
+                            <p className="mt-1.5 text-[10px] text-stone-500 dark:text-neutral-400">{t.schedule_custom_amount_locked}</p>
+                          )}
                         </div>
                       ) : (
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-stone-500 dark:text-neutral-400">{t.prospect_payment_sale_amount}</span>
-                          <span className="text-sm font-extrabold text-stone-900 dark:text-white">{(editedValue).toLocaleString()}€</span>
+                          <span className="text-sm font-extrabold text-stone-900 dark:text-white">{effectiveEditedValue.toLocaleString()}€</span>
                         </div>
                       )}
                       <div className="flex rounded-xl bg-stone-100 dark:bg-neutral-800 p-1">
-                        <button type="button" onClick={() => { setPaymentMode('cash'); setEditedInstallments(1); }} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>{t.prospect_payment_cash}</button>
+                        <button type="button" onClick={() => { setPaymentMode('cash'); setEditedInstallments(1); setEditScheduleMode('equal'); }} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>{t.prospect_payment_cash}</button>
                         <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-lg py-2 text-xs font-bold transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow-md" : "text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white")}>{t.prospect_payment_installments}</button>
                       </div>
                       {paymentMode === 'installments' && (
-                        <div className="animate-in fade-in slide-in-from-top-1">
+                        <div className="animate-in fade-in slide-in-from-top-1 space-y-3">
                           <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">{t.prospect_payment_nb_installments}</label>
-                          <select value={editedInstallments} onChange={(e) => setEditedInstallments(parseInt(e.target.value))} className="mt-1.5 w-full rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-3 text-sm font-medium text-stone-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all">
-                            {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{t.prospect_payment_times_per_month.replace('{n}', String(n)).replace('{amount}', `${(editedValue / n).toFixed(2)}€`)}</option>)}
+                          <select
+                            value={editScheduleMode === 'custom' ? 'custom' : String(editedInstallments)}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              if (v === 'custom') {
+                                setEditScheduleMode('custom')
+                                if (editCustomSchedule.length === 0) {
+                                  const base = editedValue > 0 ? editedValue / editedInstallments : 0
+                                  setEditCustomSchedule(Array.from({ length: editedInstallments }, (_, i) => ({ month: i + 1, amount: Math.round(base * 100) / 100 })))
+                                }
+                              } else {
+                                setEditScheduleMode('equal')
+                                setEditedInstallments(parseInt(v))
+                              }
+                            }}
+                            className="mt-1.5 w-full rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-4 py-3 text-sm font-medium text-stone-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all"
+                          >
+                            <option value="custom">{t.schedule_custom_option}</option>
+                            {[2, 3, 4, 5, 6, 10, 12].map(n => (
+                              <option key={n} value={n}>
+                                {t.prospect_payment_times_per_month.replace('{n}', String(n)).replace('{amount}', `${(editedValue / n).toFixed(2)}€`)}
+                              </option>
+                            ))}
                           </select>
+                          {editScheduleMode === 'custom' && (
+                            <div className="rounded-xl border border-stone-200 dark:border-neutral-700 bg-white/40 dark:bg-neutral-800/40 p-3">
+                              <InstallmentScheduleEditor
+                                value={editCustomSchedule}
+                                onChange={setEditCustomSchedule}
+                                labels={{
+                                  monthsCount: t.schedule_custom_months_label,
+                                  month: t.schedule_custom_month,
+                                  amount: t.schedule_custom_amount,
+                                  total: t.schedule_custom_total,
+                                  addRow: t.schedule_custom_add_row,
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                       )}
                       {!closerIsOwner && (
-                      <div className="rounded-xl bg-emerald-500/10 p-4 border border-emerald-500/20">
+                      <div className="rounded-xl bg-emerald-500/10 p-4 border border-emerald-500/20 space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" /> {t.prospect_payment_commission.replace('{rate}', String(commissionRate))}</span>
-                          <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{commissionAmount.toFixed(2)}€</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (editCustomCommissionEnabled) {
+                                  setEditCustomCommissionEnabled(false)
+                                  setEditCustomCommissionRate(0)
+                                } else {
+                                  setEditCustomCommissionEnabled(true)
+                                  setEditCustomCommissionRate(standardCommissionRate)
+                                }
+                              }}
+                              className={cn(
+                                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold transition-all',
+                                editCustomCommissionEnabled
+                                  ? 'border-amber-500/60 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                                  : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 hover:border-amber-500 hover:text-amber-700'
+                              )}
+                            >
+                              <Settings2 className="h-2.5 w-2.5" />
+                              {editCustomCommissionEnabled ? t.custom_commission_cancel : t.custom_commission_btn}
+                            </button>
+                            <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{commissionAmount.toFixed(2)}€</span>
+                          </div>
                         </div>
-                        {paymentMode === 'installments' && (
+                        {editCustomCommissionEnabled && (
+                          <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-500/10 p-2.5">
+                            <label className="text-[10px] font-bold text-amber-800 dark:text-amber-400 mb-1 block">
+                              {t.custom_commission_rate_label} <span className="font-normal text-stone-500">(standard : {standardCommissionRate}%)</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number" min="0" max="100" step="0.1"
+                                value={editCustomCommissionRate || ''}
+                                onChange={(e) => setEditCustomCommissionRate(parseFloat(e.target.value) || 0)}
+                                className="w-full rounded-lg border border-amber-300 bg-white dark:bg-neutral-800 px-3 py-2 pr-7 text-sm text-stone-900 dark:text-white focus:border-amber-500 focus:outline-none"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-700 text-xs">%</span>
+                            </div>
+                          </div>
+                        )}
+                        {paymentMode === 'installments' && editScheduleMode === 'equal' && (
                           <p className="mt-1 text-[10px] text-emerald-500/70 dark:text-emerald-300/70">
                             {t.prospect_payment_you_receive.replace('{amount}', `${(commissionAmount / editedInstallments).toFixed(2)}€`)}
                           </p>
                         )}
                       </div>
+                      )}
+                      {hasCustomException && isTeamMember && (
+                        <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-500/10 p-3 flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                          <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">{t.custom_commission_banner_business}</p>
+                        </div>
                       )}
                       <button onClick={handleSavePayment} className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-business-display font-bold text-white hover:bg-emerald-500 transition-colors">{t.prospect_payment_validate}</button>
                     </div>
@@ -1131,6 +1363,77 @@ export function BusinessProspectView({
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* SECTION COMMISSION INHABITUELLE + ÉCHÉANCIER CUSTOM */}
+              {local.stage === 'won' && (local.custom_commission_rate != null || (local.installments_schedule && local.installments_schedule.length > 0)) && (
+                <div className="animate-in slide-in-from-top-4 fade-in duration-300 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-amber-600 dark:text-amber-400">
+                      <Award className="h-4 w-4" /> Détails inhabituels
+                    </h3>
+                    {local.commission_approval_status === 'pending' && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-500/15 border border-amber-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-amber-700">
+                        <AlertCircle className="h-3 w-3" /> {t.custom_commission_status_pending}
+                      </span>
+                    )}
+                    {local.commission_approval_status === 'approved' && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                        <CheckCircle2 className="h-3 w-3" /> {t.custom_commission_status_approved}
+                      </span>
+                    )}
+                    {local.commission_approval_status === 'rejected' && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 dark:bg-red-500/15 border border-red-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-red-700">
+                        <XCircle className="h-3 w-3" /> {t.custom_commission_status_rejected}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl border border-amber-300/60 bg-amber-50/60 dark:bg-amber-500/5 p-4 space-y-2">
+                    {local.custom_commission_rate != null && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-stone-600 dark:text-neutral-300">{t.custom_commission_rate_label}</span>
+                        <span className="font-bold text-amber-700 dark:text-amber-400">{local.custom_commission_rate}%</span>
+                      </div>
+                    )}
+                    {local.installments_schedule && local.installments_schedule.length > 0 && (
+                      <div className="pt-2 border-t border-amber-300/40">
+                        <div className="text-xs font-bold uppercase tracking-widest text-amber-700 mb-1.5">{t.approval_modal_schedule_title}</div>
+                        <div className="space-y-1 max-h-40 overflow-y-auto">
+                          {local.installments_schedule.map((entry) => (
+                            <div key={entry.month} className="flex justify-between text-xs">
+                              <span className="text-stone-600 dark:text-neutral-300">{t.schedule_custom_month} {entry.month}</span>
+                              <span className="font-semibold text-stone-900 dark:text-white">{Number(entry.amount).toFixed(2)} €</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bouton de validation visible pour HOS/Admin/Owner sur status pending */}
+                  {local.commission_approval_status === 'pending' && local.commission_approval_id && (isOwner || isHosOrAdmin) && (
+                    <button
+                      onClick={() => setShowApprovalModal(true)}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 px-4 py-3 text-sm font-bold text-white transition-all"
+                    >
+                      <Check className="h-4 w-4" /> Examiner et valider
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Modal de validation */}
+              {showApprovalModal && local.commission_approval_id && (
+                <CommissionApprovalModal
+                  approvalId={local.commission_approval_id}
+                  onClose={() => setShowApprovalModal(false)}
+                  onDecided={async () => {
+                    // Refresh local state from DB
+                    const { data } = await supabase.from('business_prospects').select('*').eq('id', local.id).maybeSingle()
+                    if (data) setLocal(data as BusinessProspect)
+                  }}
+                />
               )}
 
               {/* SECTION STRIPE — visible quand prospect lié à Stripe ET Stripe connecté */}
@@ -1973,6 +2276,120 @@ export function BusinessProspectView({
             </div>
           )}
         </div>
+
+        {/* Quick booking modal */}
+        {showBookModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => !bookSubmitting && setShowBookModal(false)} />
+            <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+                <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">{t.prospect_book_modal_title}</h3>
+                <button onClick={() => !bookSubmitting && setShowBookModal(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                  <X className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+              </div>
+              <div className="px-6 py-5 space-y-4">
+                <div>
+                  <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_book_title_label}</label>
+                  <input
+                    type="text"
+                    value={bookTitle}
+                    onChange={(e) => setBookTitle(e.target.value)}
+                    className={INPUT_CLS}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_book_date}</label>
+                    <input
+                      type="date"
+                      value={bookDate}
+                      onChange={(e) => setBookDate(e.target.value)}
+                      className={INPUT_CLS}
+                    />
+                  </div>
+                  <div>
+                    <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_book_time}</label>
+                    <input
+                      type="time"
+                      value={bookTime}
+                      onChange={(e) => setBookTime(e.target.value)}
+                      className={INPUT_CLS}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_book_duration}</label>
+                  <div className="relative">
+                    <select
+                      value={bookDuration}
+                      onChange={(e) => setBookDuration(Number(e.target.value))}
+                      className={SELECT_CLS}
+                    >
+                      <option value={15}>15 min</option>
+                      <option value={30}>30 min</option>
+                      <option value={45}>45 min</option>
+                      <option value={60}>60 min</option>
+                      <option value={90}>90 min</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
+                  </div>
+                </div>
+                <div>
+                  <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_book_assignee}</label>
+                  <div className="relative">
+                    <select
+                      value={bookAssigneeId}
+                      onChange={(e) => setBookAssigneeId(e.target.value)}
+                      className={SELECT_CLS}
+                    >
+                      {(() => {
+                        const ownerId = isTeamMember ? ownerUserId : user?.id
+                        const currentId = isTeamMember ? teamMember?.id : user?.id
+                        const seen = new Set<string>()
+                        const options: { id: string; label: string }[] = []
+                        // Owner self-assignment is always allowed when current user IS the owner.
+                        // For team members, owner appears only if owner_assignable is enabled (already handled in teamMembers fetch).
+                        if (!isTeamMember && ownerId) {
+                          options.push({ id: ownerId, label: `${t.prospect_book_assignee_you} ${t.prospect_book_assignee_owner_suffix}` })
+                          seen.add(ownerId)
+                        }
+                        for (const m of teamMembers) {
+                          if (seen.has(m.id)) continue
+                          seen.add(m.id)
+                          const isMe = m.id === currentId
+                          const isOwnerRow = m.role === 'Owner'
+                          const name = `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Sans nom'
+                          const suffix = isOwnerRow ? ` ${t.prospect_book_assignee_owner_suffix}` : (m.role ? ` (${m.role})` : '')
+                          const label = isMe ? `${t.prospect_book_assignee_you}${suffix}` : `${name}${suffix}`
+                          options.push({ id: m.id, label })
+                        }
+                        return options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)
+                      })()}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
+                <button
+                  onClick={() => !bookSubmitting && setShowBookModal(false)}
+                  disabled={bookSubmitting}
+                  className="px-4 py-2 rounded-full text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                >
+                  {t.prospect_book_cancel}
+                </button>
+                <button
+                  onClick={handleBookSubmit}
+                  disabled={!bookDate || !bookTime || !bookAssigneeId || bookSubmitting}
+                  className="px-5 py-2 rounded-full text-sm font-business-display font-bold bg-stone-900 text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {bookSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> {t.prospect_book_submitting}</> : t.prospect_book_submit}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Reminder creation modal */}
         {showReminderForm && (

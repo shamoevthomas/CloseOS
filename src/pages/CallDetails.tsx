@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom' // Ajout useLocation
-import { ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign, Calendar, Award, UserPlus, X, Tag, LayoutList, PenTool, Bell, Loader2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign, Calendar, Award, UserPlus, X, Tag, LayoutList, PenTool, Bell, Loader2, Settings2 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { InstallmentScheduleEditor, type ScheduleEntry } from '../components/InstallmentScheduleEditor'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useCalls } from '../contexts/CallsContext'
 import { useProspects, type Prospect } from '../contexts/ProspectsContext'
@@ -170,6 +171,12 @@ export function CallDetails() {
   // Payment terms (for Won)
   const [paymentType, setPaymentType] = useState<'comptant' | 'installments'>('comptant')
   const [installmentsCount, setInstallmentsCount] = useState(3)
+
+  // Custom commission + custom installment schedule
+  const [customCommissionEnabled, setCustomCommissionEnabled] = useState(false)
+  const [customCommissionRate, setCustomCommissionRate] = useState<number>(0)
+  const [scheduleMode, setScheduleMode] = useState<'equal' | 'custom'>('equal')
+  const [customSchedule, setCustomSchedule] = useState<ScheduleEntry[]>([])
 
   // Follow up fields
   const [followupDate, setFollowupDate] = useState('')
@@ -384,10 +391,22 @@ export function CallDetails() {
     return match ? parseFloat(match[1]) : 10 // Default to 10% if not found
   }
 
-  const commissionRate = prospectOffer ? parseCommissionRate(prospectOffer.commission) : 10
+  const standardRate = prospectOffer ? parseCommissionRate(prospectOffer.commission) : 10
+  const commissionRate = customCommissionEnabled ? customCommissionRate : standardRate
+
+  // Effective amount: when schedule is custom, the sale total equals the sum of installments
+  const customScheduleTotal = customSchedule.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+  const effectiveAmount = scheduleMode === 'custom' ? customScheduleTotal : amount
+
+  // Sync displayed amount when in custom mode
+  useEffect(() => {
+    if (scheduleMode === 'custom' && customScheduleTotal !== amount) {
+      setAmount(customScheduleTotal)
+    }
+  }, [scheduleMode, customScheduleTotal])
 
   // Commission calculations
-  const totalCommission = amount > 0 ? (amount * commissionRate) / 100 : 0
+  const totalCommission = effectiveAmount > 0 ? (effectiveAmount * commissionRate) / 100 : 0
   const monthlyCommission = paymentType === 'installments' && installmentsCount > 0
     ? totalCommission / installmentsCount
     : 0
@@ -471,15 +490,23 @@ export function CallDetails() {
       }
 
       // Update amount and payment details if won
-      if (selectedOutcome === 'won' && amount > 0) {
-        updates.value = amount
-        // --- FIX : AJOUT SAUVEGARDE TYPE PAIEMENT ET MENSUALITES ---
+      if (selectedOutcome === 'won' && effectiveAmount > 0) {
+        updates.value = effectiveAmount
         updates.payment_type = paymentType
         if (paymentType === 'installments') {
-            updates.installments = installmentsCount
+            if (scheduleMode === 'custom') {
+              updates.installments = customSchedule.length
+              updates.installments_schedule = customSchedule
+            } else {
+              updates.installments = installmentsCount
+              updates.installments_schedule = null
+            }
         } else {
             updates.installments = null
+            updates.installments_schedule = null
         }
+        // Commission inhabituelle (Sales = pas de validation, on enregistre directement)
+        updates.custom_commission_rate = customCommissionEnabled ? customCommissionRate : null
       }
 
       // Update follow up date if applicable
@@ -845,12 +872,18 @@ export function CallDetails() {
                         value={amount || ''}
                         onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
                         placeholder="Ex: 5000"
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 pr-12 text-lg text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
+                        readOnly={scheduleMode === 'custom'}
+                        className={cn("w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 pr-12 text-lg text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all", scheduleMode === 'custom' && 'opacity-60 cursor-not-allowed')}
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">
                         €
                     </div>
                     </div>
+                    {scheduleMode === 'custom' && (
+                      <p className="mt-2 text-xs text-white/50">
+                        {lang === 'fr' ? 'Montant calculé depuis l\'échéancier ci-dessous' : 'Amount calculated from the schedule below'}
+                      </p>
+                    )}
                 </div>
 
                 {/* Payment Type Toggle */}
@@ -891,37 +924,121 @@ export function CallDetails() {
                         {lang === 'fr' ? 'Nombre de mensualités' : 'Number of installments'}
                     </label>
                     <select
-                        value={installmentsCount}
-                        onChange={(e) => setInstallmentsCount(parseInt(e.target.value))}
+                        value={scheduleMode === 'custom' ? 'custom' : String(installmentsCount)}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          if (v === 'custom') {
+                            setScheduleMode('custom')
+                            if (customSchedule.length === 0) {
+                              const base = amount > 0 ? amount / installmentsCount : 0
+                              setCustomSchedule(Array.from({ length: installmentsCount }, (_, i) => ({ month: i + 1, amount: Math.round(base * 100) / 100 })))
+                            }
+                          } else {
+                            setScheduleMode('equal')
+                            setInstallmentsCount(parseInt(v))
+                          }
+                        }}
                         className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
                     >
+                        <option value="custom">{lang === 'fr' ? 'Autre (montants personnalisés)' : 'Other (custom amounts)'}</option>
                         {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
                         <option key={num} value={num}>{num} {lang === 'fr' ? 'mois' : 'months'}</option>
                         ))}
                     </select>
-                    <p className="mt-2 text-sm text-white/40">
-                        {lang === 'fr' ? 'Montant par mois:' : 'Monthly amount:'} <span className="text-emerald-400 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
-                    </p>
+                    {scheduleMode === 'equal' ? (
+                      <p className="mt-2 text-sm text-white/40">
+                          {lang === 'fr' ? 'Montant par mois:' : 'Monthly amount:'} <span className="text-emerald-400 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
+                      </p>
+                    ) : (
+                      <div className="mt-3">
+                        <InstallmentScheduleEditor
+                          value={customSchedule}
+                          onChange={setCustomSchedule}
+                          dark
+                          labels={{
+                            monthsCount: lang === 'fr' ? 'Nombre de mois' : 'Number of months',
+                            month: lang === 'fr' ? 'Mois' : 'Month',
+                            amount: lang === 'fr' ? 'Montant' : 'Amount',
+                            total: lang === 'fr' ? 'Total :' : 'Total:',
+                            addRow: lang === 'fr' ? 'Ajouter une échéance' : 'Add installment',
+                          }}
+                        />
+                      </div>
+                    )}
                     </div>
                 )}
 
                 {/* Commission Display */}
-                {amount > 0 && (
+                {effectiveAmount > 0 && (
                     <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
                         <Award className="h-4 w-4 text-emerald-400" />
                         <h4 className="text-sm font-semibold text-emerald-400">{lang === 'fr' ? 'Ta Commission' : 'Your Commission'}</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (customCommissionEnabled) {
+                            setCustomCommissionEnabled(false)
+                            setCustomCommissionRate(0)
+                          } else {
+                            setCustomCommissionEnabled(true)
+                            setCustomCommissionRate(standardRate)
+                          }
+                        }}
+                        className={cn(
+                          'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all',
+                          customCommissionEnabled
+                            ? 'border-amber-500/50 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
+                            : 'border-white/10 bg-white/5 text-white/60 hover:border-amber-500/40 hover:text-amber-300'
+                        )}
+                      >
+                        <Settings2 className="h-3 w-3" />
+                        {customCommissionEnabled
+                          ? (lang === 'fr' ? 'Revenir au taux standard' : 'Revert to standard rate')
+                          : (lang === 'fr' ? 'Commission inhabituelle' : 'Unusual commission')}
+                      </button>
                     </div>
+
+                    {customCommissionEnabled && (
+                      <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+                        <label className="mb-1.5 block text-xs font-medium text-amber-300">
+                          {lang === 'fr' ? 'Taux personnalisé' : 'Custom rate'}
+                          <span className="ml-2 text-white/40">
+                            ({lang === 'fr' ? 'standard' : 'standard'}: {standardRate}%)
+                          </span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={customCommissionRate || ''}
+                            onChange={(e) => setCustomCommissionRate(parseFloat(e.target.value) || 0)}
+                            className="w-full rounded-lg border border-amber-500/30 bg-white/5 px-3 py-2 pr-8 text-sm text-white focus:border-amber-500 focus:outline-none"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-300 text-sm">%</span>
+                        </div>
+                      </div>
+                    )}
+
                     <p className="text-2xl font-bold text-emerald-400">
                         {totalCommission.toFixed(2)} €
                     </p>
-                    {paymentType === 'installments' && (
+                    {paymentType === 'installments' && scheduleMode === 'equal' && (
                         <p className="mt-1 text-sm text-white/60">
                         {lang === 'fr' ? 'Tu recevras:' : "You'll receive:"} <span className="font-semibold text-emerald-400">{monthlyCommission.toFixed(2)}€/{lang === 'fr' ? 'mois' : 'mo'}</span>
                         </p>
                     )}
                     <p className="mt-2 text-xs text-white/40">
                         {lang === 'fr' ? 'Taux de commission:' : 'Commission rate:'} {commissionRate}%
+                        {customCommissionEnabled && (
+                          <span className="ml-2 text-amber-300">
+                            ({lang === 'fr' ? 'inhabituel' : 'unusual'})
+                          </span>
+                        )}
                     </p>
                     </div>
                 )}

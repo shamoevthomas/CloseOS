@@ -44,6 +44,9 @@ export interface Prospect {
     content: string
     author?: string
   }[]
+  // Commission inhabituelle + échéancier custom
+  custom_commission_rate?: number | null
+  installments_schedule?: { month: number; amount: number }[] | null
 }
 
 interface ProspectsContextType {

@@ -225,16 +225,39 @@ export default async function handler(req: Request) {
 
                 offerDeals.forEach((deal: any) => {
                     const isInstallment = deal.payment_type === 'installments' || (deal.installments && deal.installments > 1);
+                    const customSchedule: { month: number; amount: number }[] | null = Array.isArray(deal.installments_schedule)
+                        ? deal.installments_schedule
+                        : null;
+                    const hasCustomRate = deal.custom_commission_rate != null;
+                    const effectiveRate = hasCustomRate ? Number(deal.custom_commission_rate) / 100 : commissionRate;
+                    const ratePct = hasCustomRate ? `${deal.custom_commission_rate}%` : null;
+                    const rateSuffix = hasCustomRate ? ` (${ratePct})` : '';
+
                     const paymentLabel = isInstallment
-                        ? `Mensualité (${deal.installments}x)`
+                        ? (customSchedule ? `Plusieurs fois personnalisé (${deal.installments}x)` : `Mensualité (${deal.installments}x)`)
                         : 'Paiement Comptant';
-                    const key = `${offer.name}-${paymentLabel}`;
+                    const key = `${offer.name}-${paymentLabel}${rateSuffix}`;
                     const fullValue = deal.value || 0;
-                    const amountInPeriod = isInstallment ? fullValue / (deal.installments || 1) : fullValue;
-                    const dealCommission = amountInPeriod * commissionRate;
+                    const dealDate = new Date(deal.lastContact || deal.dateAdded || deal.created_at);
+
+                    let amountInPeriod: number;
+                    if (!isInstallment) {
+                        amountInPeriod = fullValue;
+                    } else if (customSchedule && customSchedule.length > 0) {
+                        // Sum custom installments whose due-date falls in [prevMonthStart, prevMonthEnd]
+                        amountInPeriod = customSchedule.reduce((s, e) => {
+                            const instDate = new Date(dealDate);
+                            instDate.setMonth(instDate.getMonth() + (e.month - 1));
+                            return s + (instDate >= prevMonthStart && instDate <= prevMonthEnd ? Number(e.amount) || 0 : 0);
+                        }, 0);
+                    } else {
+                        amountInPeriod = fullValue / (deal.installments || 1);
+                    }
+
+                    const dealCommission = amountInPeriod * effectiveRate;
 
                     if (!groups[key]) {
-                        groups[key] = { description: `${offer.name} - ${paymentLabel}`, count: 0, total: 0 };
+                        groups[key] = { description: `${offer.name} - ${paymentLabel}${rateSuffix}`, count: 0, total: 0 };
                     }
                     groups[key].count++;
                     groups[key].total += dealCommission;

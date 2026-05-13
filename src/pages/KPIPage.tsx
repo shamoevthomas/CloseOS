@@ -412,7 +412,11 @@ export function KPIPage() {
   const ctxConversion = ctxClosed > 0 ? (ctxSales / ctxClosed) * 100 : 0;
 
   // Commissions Context
-  const ctxCommissions = wonProspects.reduce((sum, deal) => {
+  const ctxCommissions = wonProspects.reduce((sum, deal: any) => {
+    // Commission inhabituelle prime sur le taux de l'offre
+    if (deal.custom_commission_rate != null) {
+      return sum + ((deal.value || 0) * Number(deal.custom_commission_rate) / 100);
+    }
     const dealOffer = allOffers.find(o => (deal.offerId && String(o.id) === String(deal.offerId)) || (deal.offer && o.name.toLowerCase() === deal.offer.toLowerCase()));
     const rate = dealOffer?.commission ? parseCommission(dealOffer.commission) : 0.10;
     return sum + (deal.value * rate);

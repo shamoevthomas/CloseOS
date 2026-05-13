@@ -1466,6 +1466,23 @@ export interface BusinessTranslations {
   prospect_no_name: string;
   prospect_open_callroom: string;
   prospect_create_reminder: string;
+  prospect_book_appointment: string;
+  prospect_book_modal_title: string;
+  prospect_book_date: string;
+  prospect_book_time: string;
+  prospect_book_duration: string;
+  prospect_book_title_label: string;
+  prospect_book_assignee: string;
+  prospect_book_assignee_you: string;
+  prospect_book_assignee_owner_suffix: string;
+  prospect_book_cancel: string;
+  prospect_book_submit: string;
+  prospect_book_submitting: string;
+  prospect_book_success: string;
+  prospect_book_success_no_meet: string;
+  prospect_book_success_no_email: string;
+  prospect_book_success_no_meet_no_email: string;
+  prospect_book_error: string;
   prospect_tab_info: string;
   prospect_tab_call_notes: string;
   prospect_tab_reminders: string;
@@ -3812,6 +3829,23 @@ export const fr: BusinessTranslations = {
   prospect_no_name: 'Sans nom',
   prospect_open_callroom: 'Ouvrir le Call Room',
   prospect_create_reminder: 'Creer un rappel',
+  prospect_book_appointment: 'Booker un RDV',
+  prospect_book_modal_title: 'Programmer un rendez-vous',
+  prospect_book_date: 'Date',
+  prospect_book_time: 'Heure',
+  prospect_book_duration: 'Duree',
+  prospect_book_title_label: 'Titre',
+  prospect_book_assignee: 'Assigne a',
+  prospect_book_assignee_you: 'Toi',
+  prospect_book_assignee_owner_suffix: '(Owner)',
+  prospect_book_cancel: 'Annuler',
+  prospect_book_submit: 'Booker',
+  prospect_book_submitting: 'Booking...',
+  prospect_book_success: 'Rendez-vous cree, Meet et email envoyes',
+  prospect_book_success_no_meet: 'Rendez-vous cree (connecte Google Calendar pour un Meet auto)',
+  prospect_book_success_no_email: 'Rendez-vous cree (pas d\'email prospect, rien envoye)',
+  prospect_book_success_no_meet_no_email: 'Rendez-vous cree (sans Meet ni email)',
+  prospect_book_error: 'Impossible de creer le rendez-vous',
   prospect_tab_info: 'Informations',
   prospect_tab_call_notes: 'Notes d\'Appel',
   prospect_tab_reminders: 'Rappels',
@@ -5385,6 +5419,41 @@ export const fr: BusinessTranslations = {
   closer_agenda_all_day_suffix: ', toute la journée', closer_agenda_from_to: ', de {start} à {end}', closer_agenda_day_label: 'Journée', closer_agenda_notes_section: 'Notes',
   closer_agenda_time_to: 'à',
   closer_agenda_booking_badge: 'Booking', closer_agenda_call_fallback: 'Appel', closer_agenda_copy_link: 'Copier le lien',
+
+  // ─── Commission inhabituelle + Échéancier custom ───
+  custom_commission_btn: 'Commission inhabituelle',
+  custom_commission_cancel: 'Revenir au taux standard',
+  custom_commission_rate_label: 'Taux personnalisé',
+  custom_commission_diff_standard: 'Différent du standard',
+  custom_commission_banner_business: 'Cette commission devra être validée par votre Head of Sales avant la génération de la facture.',
+  custom_commission_status_pending: 'En attente de validation',
+  custom_commission_status_approved: 'Validée',
+  custom_commission_status_rejected: 'Rejetée',
+  schedule_custom_option: 'Autre (montants personnalisés)',
+  schedule_custom_months_label: 'Nombre de mois',
+  schedule_custom_month: 'Mois',
+  schedule_custom_amount: 'Montant',
+  schedule_custom_total: 'Total :',
+  schedule_custom_add_row: 'Ajouter une échéance',
+  schedule_custom_amount_locked: 'Montant calculé depuis l\'échéancier',
+  approval_modal_title: 'Validation de commission inhabituelle',
+  approval_modal_closer: 'Closer',
+  approval_modal_prospect: 'Prospect',
+  approval_modal_amount: 'Montant de la vente',
+  approval_modal_standard_rate: 'Taux standard',
+  approval_modal_custom_rate: 'Taux demandé',
+  approval_modal_standard_amount: 'Commission standard',
+  approval_modal_custom_amount: 'Commission demandée',
+  approval_modal_schedule_title: 'Échéancier proposé',
+  approval_modal_rejection_reason: 'Raison du rejet (optionnel)',
+  approval_modal_rejection_placeholder: 'Expliquez pourquoi vous rejetez cette commission...',
+  approval_modal_approve: 'Approuver',
+  approval_modal_reject: 'Rejeter',
+  approval_modal_approving: 'Validation...',
+  approval_modal_rejecting: 'Rejet...',
+  approval_sidebar_badge: 'à valider',
+  approval_invoice_blocked_warning: 'vente(s) en attente de validation HOS — non incluses dans cette facture.',
+  approval_prospect_badge: 'À valider',
 };
 
 export const en: BusinessTranslations = {
@@ -6880,6 +6949,23 @@ export const en: BusinessTranslations = {
   prospect_no_name: 'No name',
   prospect_open_callroom: 'Open Call Room',
   prospect_create_reminder: 'Create a reminder',
+  prospect_book_appointment: 'Book a meeting',
+  prospect_book_modal_title: 'Schedule a meeting',
+  prospect_book_date: 'Date',
+  prospect_book_time: 'Time',
+  prospect_book_duration: 'Duration',
+  prospect_book_title_label: 'Title',
+  prospect_book_assignee: 'Assigned to',
+  prospect_book_assignee_you: 'You',
+  prospect_book_assignee_owner_suffix: '(Owner)',
+  prospect_book_cancel: 'Cancel',
+  prospect_book_submit: 'Book',
+  prospect_book_submitting: 'Booking...',
+  prospect_book_success: 'Meeting booked, Meet and email sent',
+  prospect_book_success_no_meet: 'Meeting booked (connect Google Calendar for auto-Meet)',
+  prospect_book_success_no_email: 'Meeting booked (no prospect email, nothing sent)',
+  prospect_book_success_no_meet_no_email: 'Meeting booked (without Meet or email)',
+  prospect_book_error: 'Failed to book the meeting',
   prospect_tab_info: 'Information',
   prospect_tab_call_notes: 'Call Notes',
   prospect_tab_reminders: 'Reminders',
@@ -8257,4 +8343,39 @@ export const en: BusinessTranslations = {
   closer_agenda_all_day_suffix: ', all day', closer_agenda_from_to: ', from {start} to {end}', closer_agenda_day_label: 'Full day', closer_agenda_notes_section: 'Notes',
   closer_agenda_time_to: 'to',
   closer_agenda_booking_badge: 'Booking', closer_agenda_call_fallback: 'Call', closer_agenda_copy_link: 'Copy link',
+
+  // ─── Custom commission + custom installment schedule ───
+  custom_commission_btn: 'Unusual commission',
+  custom_commission_cancel: 'Revert to standard rate',
+  custom_commission_rate_label: 'Custom rate',
+  custom_commission_diff_standard: 'Different from standard',
+  custom_commission_banner_business: 'This commission will need to be approved by your Head of Sales before the invoice can be generated.',
+  custom_commission_status_pending: 'Awaiting approval',
+  custom_commission_status_approved: 'Approved',
+  custom_commission_status_rejected: 'Rejected',
+  schedule_custom_option: 'Other (custom amounts)',
+  schedule_custom_months_label: 'Number of months',
+  schedule_custom_month: 'Month',
+  schedule_custom_amount: 'Amount',
+  schedule_custom_total: 'Total:',
+  schedule_custom_add_row: 'Add installment',
+  schedule_custom_amount_locked: 'Amount calculated from schedule',
+  approval_modal_title: 'Unusual commission approval',
+  approval_modal_closer: 'Closer',
+  approval_modal_prospect: 'Prospect',
+  approval_modal_amount: 'Sale amount',
+  approval_modal_standard_rate: 'Standard rate',
+  approval_modal_custom_rate: 'Requested rate',
+  approval_modal_standard_amount: 'Standard commission',
+  approval_modal_custom_amount: 'Requested commission',
+  approval_modal_schedule_title: 'Proposed schedule',
+  approval_modal_rejection_reason: 'Rejection reason (optional)',
+  approval_modal_rejection_placeholder: 'Explain why you are rejecting this commission...',
+  approval_modal_approve: 'Approve',
+  approval_modal_reject: 'Reject',
+  approval_modal_approving: 'Approving...',
+  approval_modal_rejecting: 'Rejecting...',
+  approval_sidebar_badge: 'to approve',
+  approval_invoice_blocked_warning: 'sale(s) awaiting HOS approval — not included in this invoice.',
+  approval_prospect_badge: 'To approve',
 };

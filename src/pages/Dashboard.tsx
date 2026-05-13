@@ -180,7 +180,11 @@ export function Dashboard() {
       + bizWon.reduce((sum, p) => sum + (p.value || 0), 0)
 
     // 2. Commissions (Sales with offer rates + Business with default 10%)
-    const salesCommissions = wonProspects.reduce((sum, prospect) => {
+    const salesCommissions = wonProspects.reduce((sum, prospect: any) => {
+      // Commission inhabituelle prime sur le taux de l'offre
+      if (prospect.custom_commission_rate != null) {
+        return sum + ((prospect.value || 0) * Number(prospect.custom_commission_rate) / 100)
+      }
       const offer = offers.find(o =>
         (prospect.offerId && String(o.id) === String(prospect.offerId)) ||
         (prospect.offer && o.name.toLowerCase().trim() === prospect.offer.toLowerCase().trim())
@@ -191,7 +195,13 @@ export function Dashboard() {
       }
       return sum + ((prospect.value || 0) * rate)
     }, 0)
-    const bizCommissions = bizWon.reduce((sum, p) => sum + ((p.value || 0) * 0.10), 0)
+    const bizCommissions = bizWon.reduce((sum, p: any) => {
+      // Commission inhabituelle prime, sauf si rejet HOS
+      if (p.custom_commission_rate != null && p.commission_approval_status !== 'rejected') {
+        return sum + ((p.value || 0) * Number(p.custom_commission_rate) / 100)
+      }
+      return sum + ((p.value || 0) * 0.10)
+    }, 0)
     const totalCommissions = salesCommissions + bizCommissions
 
     // 3. Taux de Conversion

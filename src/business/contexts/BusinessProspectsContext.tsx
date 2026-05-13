@@ -55,6 +55,11 @@ export interface BusinessProspect {
   matched_via?: string
   last_payment_date?: string
   next_payment_date?: string
+  // Commission inhabituelle + échéancier custom + workflow validation
+  custom_commission_rate?: number | null
+  installments_schedule?: { month: number; amount: number }[] | null
+  commission_approval_status?: 'pending' | 'approved' | 'rejected' | null
+  commission_approval_id?: string | null
 }
 
 interface BusinessProspectsContextType {

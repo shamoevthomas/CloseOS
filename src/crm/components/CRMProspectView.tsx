@@ -322,6 +322,37 @@ export function CRMProspectView({ prospect, onClose, onUpdate, onDelete }: CRMPr
                 <Field label="Offre" value={local.offer || ''} onChange={v => setLocal(p => ({ ...p, offer: v }))} placeholder="Ex : Coaching premium" />
               </Section>
 
+              {/* Détails de la vente (affiché si données custom présentes) */}
+              {(local.custom_commission_rate != null || (local.installments_schedule && local.installments_schedule.length > 0) || local.payment_type === 'installments') && (
+                <Section title="Détails de la vente" icon={<DollarSign className="size-4 text-emerald-600" />}>
+                  {local.custom_commission_rate != null && (
+                    <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2.5">
+                      <span className="text-xs font-bold uppercase tracking-widest text-amber-700">Commission inhabituelle</span>
+                      <span className="text-sm font-bold text-amber-700">{local.custom_commission_rate}%</span>
+                    </div>
+                  )}
+                  {local.payment_type === 'installments' && (
+                    <div className="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/40 px-3 py-2.5">
+                      <span className="text-xs font-bold uppercase tracking-widest text-stone-500">Mode de paiement</span>
+                      <span className="text-sm font-semibold text-[#0A0E27]">{local.installments || 0}× {local.installments_schedule ? '(personnalisé)' : ''}</span>
+                    </div>
+                  )}
+                  {local.installments_schedule && local.installments_schedule.length > 0 && (
+                    <div className="rounded-xl border border-blue-100 bg-white p-3">
+                      <p className="text-xs font-bold uppercase tracking-widest text-stone-500 mb-2">Échéancier</p>
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {local.installments_schedule.map((entry) => (
+                          <div key={entry.month} className="flex items-center justify-between text-sm">
+                            <span className="text-stone-600">Mois {entry.month}</span>
+                            <span className="font-semibold text-[#0A0E27]">{entry.amount.toFixed(2)} €</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </Section>
+              )}
+
               {/* Source */}
               {(prospect.created_at || (prospect as any).utm_source) && (
                 <Section title="Source" icon={<Globe className="size-4 text-blue-600" />}>

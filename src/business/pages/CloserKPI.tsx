@@ -385,6 +385,11 @@ export function CloserKPI() {
     for (const p of wonProspects) {
       const value = getProspectCA(p, formulaBillingTypes)
       if (!value) continue
+      // Commission inhabituelle approved : prend toujours le taux custom
+      if (p.custom_commission_rate != null && p.commission_approval_status !== 'rejected') {
+        total += value * Number(p.custom_commission_rate) / 100
+        continue
+      }
       const formulaId = p.formula_id || p.offer_id
       const rates = formulaId ? formulaCommRates[formulaId] : null
       if (rates) {

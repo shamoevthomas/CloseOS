@@ -236,9 +236,15 @@ export function BusinessReport() {
   const showUpRate = totalAppts > 0 ? ((doneAppts / totalAppts) * 100) : 0
   const cancelRate = totalAppts > 0 ? ((cancelledAppts / totalAppts) * 100) : 0
 
-  // Commission estimate (10% default since no explicit rate field)
+  // Commission estimate (10% default + override par-prospect si commission inhabituelle)
   const COMMISSION_RATE = 10
-  const totalCommission = totalCA * (COMMISSION_RATE / 100)
+  const totalCommission = wonLeads.reduce((sum, p: any) => {
+    const ca = getProspectCA(p, formulaBillingTypes)
+    if (p.custom_commission_rate != null && p.commission_approval_status !== 'rejected') {
+      return sum + (ca * Number(p.custom_commission_rate) / 100)
+    }
+    return sum + (ca * (COMMISSION_RATE / 100))
+  }, 0)
 
   // ─── Campaign stats ───
   const campaignStats = useMemo(() => {

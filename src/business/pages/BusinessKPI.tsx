@@ -780,7 +780,13 @@ export function BusinessKPI() {
         const mDecided = mWon.length + mLost.length + mNoshow.length
         const mConversion = mDecided > 0 ? (mWon.length / mDecided) * 100 : 0
         const mNoShowRate = mDecided > 0 ? (mNoshow.length / mDecided) * 100 : 0
-        const mCommission = Math.round(mRevenue * 0.10)
+        const mCommission = Math.round(mWon.reduce((s, p: any) => {
+          const ca = getProspectCA(p, formulaBillingTypes)
+          if (p.custom_commission_rate != null && p.commission_approval_status !== 'rejected') {
+            return s + (ca * Number(p.custom_commission_rate) / 100)
+          }
+          return s + (ca * 0.10)
+        }, 0))
         const mAvgCommission = mWon.length > 0 ? Math.round(mCommission / mWon.length) : 0
 
         // Chart data

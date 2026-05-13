@@ -131,6 +131,7 @@ async function createGoogleCalendarEvent(accessToken: string, event: {
 
     const url = new URL(`${GOOGLE_CALENDAR_API}/calendars/primary/events`)
     if (event.withMeet) url.searchParams.set('conferenceDataVersion', '1')
+    if (event.attendeeEmail) url.searchParams.set('sendUpdates', 'all')
 
     const res = await fetch(url.toString(), {
       method: 'POST',
@@ -152,7 +153,9 @@ async function createGoogleCalendarEvent(accessToken: string, event: {
 
 async function deleteGoogleCalendarEvent(accessToken: string, eventId: string): Promise<boolean> {
   try {
-    const res = await fetch(`${GOOGLE_CALENDAR_API}/calendars/primary/events/${eventId}`, {
+    const url = new URL(`${GOOGLE_CALENDAR_API}/calendars/primary/events/${eventId}`)
+    url.searchParams.set('sendUpdates', 'all')
+    const res = await fetch(url.toString(), {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${accessToken}` },
     })
@@ -170,7 +173,9 @@ async function updateGoogleCalendarEvent(accessToken: string, eventId: string, e
     }
     if (event.summary) body.summary = event.summary
     if (event.description) body.description = event.description
-    const res = await fetch(`${GOOGLE_CALENDAR_API}/calendars/primary/events/${eventId}`, {
+    const url = new URL(`${GOOGLE_CALENDAR_API}/calendars/primary/events/${eventId}`)
+    url.searchParams.set('sendUpdates', 'all')
+    const res = await fetch(url.toString(), {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -2591,6 +2596,178 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ sent: true })
     }
 
+    // Quick booking from prospect view: creates appointment + GCal event (with Meet) + sends confirmation email.
+    if (action === 'appointments-book-quick' && req.method === 'POST') {
+      const {
+        owner_id,
+        prospect_id,
+        assignee_type,
+        assignee_team_member_id,
+        date,
+        time,
+        duration,
+        title,
+        timezone,
+      } = req.body || {}
+
+      if (!owner_id || !prospect_id || !date || !time) {
+        return res.status(400).json({ error: 'owner_id, prospect_id, date and time are required' })
+      }
+      if (assignee_type !== 'owner' && assignee_type !== 'team_member') {
+        return res.status(400).json({ error: 'assignee_type must be owner or team_member' })
+      }
+
+      // Resolve assignee → who's user_id we use for the GCal token, and the team_member id for assigned_to
+      let assigneeUserId: string = owner_id
+      let assignedToTeamMemberId: string | null = null
+      let assigneeDisplayName = ''
+      if (assignee_type === 'team_member') {
+        if (!assignee_team_member_id) return res.status(400).json({ error: 'assignee_team_member_id required' })
+        const { data: tm } = await supabase
+          .from('business_team_members')
+          .select('id, user_id, first_name, last_name, business_owner_id')
+          .eq('id', assignee_team_member_id)
+          .single()
+        if (!tm || tm.business_owner_id !== owner_id) {
+          return res.status(403).json({ error: 'Team member does not belong to this owner' })
+        }
+        assigneeUserId = tm.user_id || owner_id
+        assignedToTeamMemberId = tm.id
+        assigneeDisplayName = [tm.first_name, tm.last_name].filter(Boolean).join(' ')
+      } else {
+        // Owner: verify owner_assignable is enabled (unless caller IS the owner himself in single-seat mode)
+        const { data: ownerRow } = await supabase
+          .from('business_users')
+          .select('owner_assignable, full_name, business_name')
+          .eq('id', owner_id)
+          .single()
+        if (!ownerRow) return res.status(404).json({ error: 'Owner not found' })
+        // We still allow the owner to assign to themselves when owner_assignable is false (solo case).
+        assigneeDisplayName = ownerRow.full_name || ownerRow.business_name || 'Owner'
+      }
+
+      // Resolve prospect
+      const { data: prospect } = await supabase
+        .from('business_prospects')
+        .select('id, contact, email, user_id')
+        .eq('id', prospect_id)
+        .single()
+      if (!prospect || prospect.user_id !== owner_id) {
+        return res.status(404).json({ error: 'Prospect not found' })
+      }
+
+      const cancelToken = crypto.randomBytes(16).toString('hex')
+      const rescheduleToken = crypto.randomBytes(16).toString('hex')
+      const apptDuration = Number(duration) || 30
+      const apptTitle = title || `RDV avec ${prospect.contact || 'prospect'}`
+      const tz = timezone || 'Europe/Paris'
+
+      // Build datetime_utc from date + time interpreted in the chosen timezone
+      let datetimeUtc: string | null = null
+      try {
+        const local = new Date(`${date}T${time}:00`)
+        datetimeUtc = local.toISOString()
+      } catch { /* leave null */ }
+
+      const insertPayload: Record<string, any> = {
+        user_id: owner_id,
+        prospect_id,
+        date,
+        time,
+        duration: apptDuration,
+        status: 'confirmed',
+        title: apptTitle,
+        timezone: tz,
+        datetime_utc: datetimeUtc,
+        cancel_token: cancelToken,
+        reschedule_token: rescheduleToken,
+      }
+      if (assignedToTeamMemberId) insertPayload.assigned_to = assignedToTeamMemberId
+
+      const { data: appt, error: insertErr } = await supabase
+        .from('business_appointments')
+        .insert(insertPayload)
+        .select('*')
+        .single()
+      if (insertErr || !appt) {
+        return res.status(500).json({ error: insertErr?.message || 'Failed to create appointment' })
+      }
+
+      const warnings: string[] = []
+      let meetLink: string | null = null
+
+      // 1. Try Google Calendar event for the assignee
+      try {
+        const accessToken = await getGoogleAccessToken(supabase, assigneeUserId)
+        if (!accessToken) {
+          warnings.push('no_google_calendar')
+        } else {
+          const startIso = `${date}T${time.length === 5 ? time + ':00' : time}`
+          const endDate = new Date(`${date}T${time.length === 5 ? time + ':00' : time}`)
+          endDate.setMinutes(endDate.getMinutes() + apptDuration)
+          const pad = (n: number) => String(n).padStart(2, '0')
+          const endIso = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}:00`
+          const gcalRes = await createGoogleCalendarEvent(accessToken, {
+            summary: apptTitle,
+            description: `Rendez-vous CloseOS\n\nProspect: ${prospect.contact || ''}\nEmail: ${prospect.email || ''}\n\nReporter: https://www.closeos.fr/appointment/${rescheduleToken}?action=reschedule\nAnnuler: https://www.closeos.fr/appointment/${cancelToken}?action=cancel`,
+            startDateTime: startIso,
+            endDateTime: endIso,
+            timeZone: tz,
+            withMeet: true,
+            attendeeEmail: prospect.email || undefined,
+          })
+          if (gcalRes.success) {
+            meetLink = gcalRes.hangoutLink || null
+            const upd: Record<string, any> = {}
+            if (gcalRes.eventId) upd.google_calendar_event_id = gcalRes.eventId
+            if (meetLink) upd.google_meet_link = meetLink
+            if (Object.keys(upd).length > 0) {
+              await supabase.from('business_appointments').update(upd).eq('id', appt.id)
+            }
+          } else {
+            warnings.push('gcal_failed')
+          }
+        }
+      } catch (e) {
+        console.error('[appointments-book-quick] GCal error', e)
+        warnings.push('gcal_failed')
+      }
+
+      // 2. Send confirmation email to prospect (reuse existing flow)
+      let emailSent = false
+      if (prospect.email) {
+        try {
+          const proto = req.headers['x-forwarded-proto'] || 'https'
+          const host = req.headers['x-forwarded-host'] || req.headers.host
+          const baseUrl = `${proto}://${host}`
+          const confRes = await fetch(`${baseUrl}/api/business?action=appointment-send-confirmation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ appointment_id: appt.id, user_id: owner_id, google_meet_link: meetLink }),
+          })
+          if (confRes.ok) {
+            const j = await confRes.json().catch(() => ({}))
+            emailSent = !!j.sent
+          } else {
+            warnings.push('email_failed')
+          }
+        } catch (e) {
+          console.error('[appointments-book-quick] Email error', e)
+          warnings.push('email_failed')
+        }
+      } else {
+        warnings.push('no_prospect_email')
+      }
+
+      return res.status(200).json({
+        appointment: { ...appt, google_meet_link: meetLink || appt.google_meet_link || null },
+        meet_link: meetLink,
+        email_sent: emailSent,
+        assignee_display_name: assigneeDisplayName,
+        warnings,
+      })
+    }
+
     if (action === 'appointments-update' && req.method === 'PUT') {
       const { user_id, id, status, notes, google_meet_link } = req.body
       if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
@@ -3409,19 +3586,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // Delete Google Calendar event if exists
-      if (appt.google_calendar_event_id && appt.assigned_to) {
+      // Delete Google Calendar event if exists — fallback to owner when assigned_to is null
+      if (appt.google_calendar_event_id) {
         try {
-          let authUserId = appt.assigned_to === appt.user_id ? appt.user_id : null
-          if (!authUserId) {
+          let authUserId: string | null = null
+          if (!appt.assigned_to || appt.assigned_to === appt.user_id) {
+            authUserId = appt.user_id
+          } else {
             const { data: tm } = await supabase.from('business_team_members').select('user_id').eq('id', appt.assigned_to).single()
-            authUserId = tm?.user_id
+            authUserId = tm?.user_id || null
           }
           if (authUserId) {
             const gcalToken = await getGoogleAccessToken(supabase, authUserId)
             if (gcalToken) await deleteGoogleCalendarEvent(gcalToken, appt.google_calendar_event_id)
           }
-        } catch {}
+        } catch (gcalErr) {
+          console.error('[appointment-cancel] GCal delete failed:', gcalErr)
+        }
       }
 
       // Get prospect info for notification
@@ -3503,18 +3684,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const newRescheduleToken = crypto.randomBytes(16).toString('hex')
 
       // Resolve member timezone (used for Google Calendar + datetime_utc fallback)
+      // Fallback to owner when assigned_to is null (owner is the assignee in that case)
       let memberTz = 'Europe/Paris'
       let authUserId: string | null = null
-      if (appt.assigned_to) {
-        if (appt.assigned_to === appt.user_id) {
-          authUserId = appt.user_id
-          const { data: ownerData } = await supabase.from('business_users').select('timezone').eq('id', appt.user_id).single()
-          memberTz = ownerData?.timezone || 'Europe/Paris'
-        } else {
-          const { data: tm } = await supabase.from('business_team_members').select('user_id, timezone').eq('id', appt.assigned_to).single()
-          authUserId = tm?.user_id || null
-          memberTz = tm?.timezone || 'Europe/Paris'
-        }
+      if (!appt.assigned_to || appt.assigned_to === appt.user_id) {
+        authUserId = appt.user_id
+        const { data: ownerData } = await supabase.from('business_users').select('timezone').eq('id', appt.user_id).single()
+        memberTz = ownerData?.timezone || 'Europe/Paris'
+      } else {
+        const { data: tm } = await supabase.from('business_team_members').select('user_id, timezone').eq('id', appt.assigned_to).single()
+        authUserId = tm?.user_id || null
+        memberTz = tm?.timezone || 'Europe/Paris'
       }
 
       // Compute effective datetime_utc — prefer client value, fallback to converting from prospect TZ (or member TZ)
@@ -3553,7 +3733,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               description: `Rendez-vous reprogrammé\n\n─────────────────\n📅 Reprogrammer : ${newRescheduleLink}\n❌ Annuler : ${newCancelLink}`,
             })
           }
-        } catch {}
+        } catch (gcalErr) {
+          console.error('[appointment-reschedule] GCal update failed:', gcalErr)
+        }
       }
 
       // Update appointment with new date/time and new tokens

@@ -31,6 +31,7 @@ import { useTheme } from '../contexts/BusinessThemeContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import type { BusinessTranslations } from '../i18n/translations'
+import { usePendingApprovalsCount } from '../hooks/usePendingApprovalsCount'
 
 interface NavItem {
   name: string
@@ -125,6 +126,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
   const hasAcknowledgedOnboarding = !isTeamMember || !!teamMember?.onboarding_acknowledged
   const isHeadOfSales = isTeamMember && teamMember?.role === 'Head of Sales'
   const isAdmin = isTeamMember && teamMember?.role === 'Admin'
+  const pendingApprovalsCount = usePendingApprovalsCount()
 
   const SOLO_HIDDEN_ROUTES = ['/business/team', '/business/factures', '/business/report']
   const ACQUISITION_ROUTES = ['/business/campagnes', '/business/acquisition']
@@ -351,10 +353,22 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
                 }
                 title={collapsed ? item.name : undefined}
               >
-                <item.icon className="h-5 w-5 shrink-0" />
+                <div className="relative shrink-0">
+                  <item.icon className="h-5 w-5" />
+                  {item.href === '/business/crm' && pendingApprovalsCount > 0 && collapsed && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-neutral-900">
+                      {pendingApprovalsCount > 9 ? '9+' : pendingApprovalsCount}
+                    </span>
+                  )}
+                </div>
                 {!collapsed && (
-                  <span className="text-sm font-extrabold tracking-tight uppercase truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  <span className="text-sm font-extrabold tracking-tight uppercase truncate flex-1" style={{ fontFamily: 'Manrope, sans-serif' }}>
                     {item.name}
+                  </span>
+                )}
+                {!collapsed && item.href === '/business/crm' && pendingApprovalsCount > 0 && (
+                  <span className="mr-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                    {pendingApprovalsCount}
                   </span>
                 )}
               </NavLink>

@@ -29,8 +29,10 @@ import {
   Check,
   Loader2,
   Building2,
+  Settings2,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { InstallmentScheduleEditor, type ScheduleEntry } from './InstallmentScheduleEditor'
 import { MaskedText } from '../components/MaskedText'
 import { type Prospect } from '../contexts/ProspectsContext'
 import { useMeetings } from '../contexts/MeetingsContext'
@@ -144,6 +146,12 @@ export function ProspectView({
   const [installments, setInstallments] = useState(1)
   const [commissionRate, setCommissionRate] = useState(10)
 
+  // Custom commission + custom installment schedule (édition fiche)
+  const [editCustomCommissionEnabled, setEditCustomCommissionEnabled] = useState(false)
+  const [editCustomCommissionRate, setEditCustomCommissionRate] = useState<number>(0)
+  const [editScheduleMode, setEditScheduleMode] = useState<'equal' | 'custom'>('equal')
+  const [editCustomSchedule, setEditCustomSchedule] = useState<ScheduleEntry[]>([])
+
   // --- LOGIQUE INTELLIGENTE DE DÉTECTION DU PRIX ---
   useEffect(() => {
     const loadedProspect = { ...prospect } as ExtendedProspect
@@ -185,6 +193,19 @@ export function ProspectView({
     } else {
       setPaymentMode('cash')
       setInstallments(1)
+    }
+
+    // Hydrate custom commission + custom schedule
+    const customRate = (loadedProspect as any).custom_commission_rate
+    setEditCustomCommissionEnabled(customRate != null)
+    setEditCustomCommissionRate(customRate != null ? Number(customRate) : 0)
+    const schedule = (loadedProspect as any).installments_schedule
+    if (Array.isArray(schedule) && schedule.length > 0) {
+      setEditScheduleMode('custom')
+      setEditCustomSchedule(schedule)
+    } else {
+      setEditScheduleMode('equal')
+      setEditCustomSchedule([])
     }
 
   }, [prospect, offers])
@@ -580,11 +601,26 @@ export function ProspectView({
   }
 
   const handleSavePayment = () => {
-    handleOptimisticUpdate({
-      value: editedValue,
+    const editCustomScheduleTotal = editCustomSchedule.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+    const effectiveValue = editScheduleMode === 'custom' ? editCustomScheduleTotal : editedValue
+    const updates: any = {
+      value: effectiveValue,
       payment_type: paymentMode,
-      installments: paymentMode === 'installments' ? installments : null
-    })
+    }
+    if (paymentMode === 'installments') {
+      if (editScheduleMode === 'custom') {
+        updates.installments = editCustomSchedule.length
+        updates.installments_schedule = editCustomSchedule
+      } else {
+        updates.installments = installments
+        updates.installments_schedule = null
+      }
+    } else {
+      updates.installments = null
+      updates.installments_schedule = null
+    }
+    updates.custom_commission_rate = editCustomCommissionEnabled ? editCustomCommissionRate : null
+    handleOptimisticUpdate(updates)
     setEditingPayment(false)
   }
 
@@ -612,11 +648,19 @@ export function ProspectView({
     }
   }
 
-  const monthlyAmount = editedValue / (installments || 1)
-  const commissionAmount = (editedValue * commissionRate) / 100
+  // Effective values with custom schedule + custom commission
+  const editCustomScheduleTotal = editCustomSchedule.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+  const effectiveEditedValue = editScheduleMode === 'custom' ? editCustomScheduleTotal : editedValue
+  const standardCommissionRate = commissionRate
+  const effectiveCommissionRate = editCustomCommissionEnabled ? editCustomCommissionRate : standardCommissionRate
+  const monthlyAmount = effectiveEditedValue / (installments || 1)
+  const commissionAmount = (effectiveEditedValue * effectiveCommissionRate) / 100
 
   const savedInstallments = localProspect.installments || 1
-  const savedCommission = (localProspect.value || 0) * (commissionRate / 100)
+  const savedCommissionRate = (localProspect as any).custom_commission_rate != null
+    ? Number((localProspect as any).custom_commission_rate)
+    : commissionRate
+  const savedCommission = (localProspect.value || 0) * (savedCommissionRate / 100)
   const savedMonthlyPayment = (localProspect.value || 0) / savedInstallments
   const savedMonthlyCommission = savedCommission / savedInstallments
 
@@ -875,29 +919,107 @@ export function ProspectView({
                             <label className="text-xs text-white/40">{lang === 'fr' ? 'Montant final (€)' : 'Final amount (€)'}</label>
                             <input
                               type="number"
-                              value={editedValue}
+                              value={editScheduleMode === 'custom' ? effectiveEditedValue : editedValue}
                               onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
-                              className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
+                              readOnly={editScheduleMode === 'custom'}
+                              className={cn("mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none", editScheduleMode === 'custom' && 'opacity-60 cursor-not-allowed')}
                             />
+                            {editScheduleMode === 'custom' && (
+                              <p className="mt-1.5 text-[10px] text-white/40">{lang === 'fr' ? 'Montant calculé depuis l\'échéancier' : 'Amount calculated from schedule'}</p>
+                            )}
                           </div>
                           <div className="flex rounded-lg bg-white/[0.03] p-1">
-                            <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>{lang === 'fr' ? 'Comptant' : 'Cash'}</button>
+                            <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); setEditScheduleMode('equal'); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>{lang === 'fr' ? 'Comptant' : 'Cash'}</button>
                             <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>{lang === 'fr' ? 'Plusieurs fois' : 'Installments'}</button>
                           </div>
                           {paymentMode === 'installments' && (
-                            <div className="animate-in fade-in slide-in-from-top-1">
+                            <div className="animate-in fade-in slide-in-from-top-1 space-y-3">
                               <label className="text-xs text-white/40">{lang === 'fr' ? 'Nombre de mensualités' : 'Number of installments'}</label>
-                              <select value={installments} onChange={(e) => setInstallments(parseInt(e.target.value))} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none">
+                              <select
+                                value={editScheduleMode === 'custom' ? 'custom' : String(installments)}
+                                onChange={(e) => {
+                                  const v = e.target.value
+                                  if (v === 'custom') {
+                                    setEditScheduleMode('custom')
+                                    if (editCustomSchedule.length === 0) {
+                                      const base = editedValue > 0 ? editedValue / installments : 0
+                                      setEditCustomSchedule(Array.from({ length: installments }, (_, i) => ({ month: i + 1, amount: Math.round(base * 100) / 100 })))
+                                    }
+                                  } else {
+                                    setEditScheduleMode('equal')
+                                    setInstallments(parseInt(v))
+                                  }
+                                }}
+                                className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                              >
+                                <option value="custom">{lang === 'fr' ? 'Autre (montants personnalisés)' : 'Other (custom amounts)'}</option>
                                 {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{n} {lang === 'fr' ? 'fois' : 'times'} ({(editedValue / n).toFixed(2)}€/{lang === 'fr' ? 'mois' : 'mo'})</option>)}
                               </select>
+                              {editScheduleMode === 'custom' && (
+                                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                                  <InstallmentScheduleEditor
+                                    value={editCustomSchedule}
+                                    onChange={setEditCustomSchedule}
+                                    dark
+                                    labels={{
+                                      monthsCount: lang === 'fr' ? 'Nombre de mois' : 'Number of months',
+                                      month: lang === 'fr' ? 'Mois' : 'Month',
+                                      amount: lang === 'fr' ? 'Montant' : 'Amount',
+                                      total: lang === 'fr' ? 'Total :' : 'Total:',
+                                      addRow: lang === 'fr' ? 'Ajouter une échéance' : 'Add installment',
+                                    }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           )}
-                          <div className="rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20">
+                          <div className="rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20 space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-emerald-400 flex items-center gap-1"><Wallet className="h-3 w-3" /> {lang === 'fr' ? 'Ta Commission' : 'Your Commission'} ({commissionRate}%)</span>
-                              <span className="text-lg font-bold text-emerald-400">{commissionAmount.toFixed(2)}€</span>
+                              <span className="text-xs font-medium text-emerald-400 flex items-center gap-1"><Wallet className="h-3 w-3" /> {lang === 'fr' ? 'Ta Commission' : 'Your Commission'} ({effectiveCommissionRate}%)</span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (editCustomCommissionEnabled) {
+                                      setEditCustomCommissionEnabled(false)
+                                      setEditCustomCommissionRate(0)
+                                    } else {
+                                      setEditCustomCommissionEnabled(true)
+                                      setEditCustomCommissionRate(standardCommissionRate)
+                                    }
+                                  }}
+                                  className={cn(
+                                    'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold transition-all',
+                                    editCustomCommissionEnabled
+                                      ? 'border-amber-500/60 bg-amber-500/15 text-amber-300'
+                                      : 'border-white/15 bg-white/[0.03] text-white/50 hover:border-amber-500/40 hover:text-amber-300'
+                                  )}
+                                >
+                                  <Settings2 className="h-2.5 w-2.5" />
+                                  {editCustomCommissionEnabled
+                                    ? (lang === 'fr' ? 'Revenir au standard' : 'Revert to standard')
+                                    : (lang === 'fr' ? 'Commission inhabituelle' : 'Unusual commission')}
+                                </button>
+                                <span className="text-lg font-bold text-emerald-400">{commissionAmount.toFixed(2)}€</span>
+                              </div>
                             </div>
-                            {paymentMode === 'installments' && (
+                            {editCustomCommissionEnabled && (
+                              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5">
+                                <label className="text-[10px] font-bold text-amber-300 mb-1 block">
+                                  {lang === 'fr' ? 'Taux personnalisé' : 'Custom rate'} <span className="font-normal text-white/40">(standard : {standardCommissionRate}%)</span>
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="number" min="0" max="100" step="0.1"
+                                    value={editCustomCommissionRate || ''}
+                                    onChange={(e) => setEditCustomCommissionRate(parseFloat(e.target.value) || 0)}
+                                    className="w-full rounded-lg border border-amber-500/40 bg-white/5 px-3 py-2 pr-7 text-sm text-white focus:border-amber-500 focus:outline-none"
+                                  />
+                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-300 text-xs">%</span>
+                                </div>
+                              </div>
+                            )}
+                            {paymentMode === 'installments' && editScheduleMode === 'equal' && (
                               <p className="mt-1 text-[10px] text-emerald-300/70">
                                 {lang === 'fr' ? 'Tu recevras' : "You'll receive"} : {(commissionAmount / installments).toFixed(2)}€ / {lang === 'fr' ? 'mois' : 'mo'}
                               </p>
@@ -912,7 +1034,7 @@ export function ProspectView({
                             <span className="text-sm font-bold text-white">{(localProspect.value || 0).toLocaleString()}€</span>
                           </div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-white/40">{lang === 'fr' ? 'Commission Totale' : 'Total Commission'} ({commissionRate}%)</span>
+                            <span className="text-xs text-white/40">{lang === 'fr' ? 'Commission Totale' : 'Total Commission'} ({savedCommissionRate}%)</span>
                             <span className="text-sm font-bold text-emerald-400">+{savedCommission.toFixed(2)}€</span>
                           </div>
 

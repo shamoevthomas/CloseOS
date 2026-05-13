@@ -136,20 +136,27 @@ export function BusinessInvoiceGeneratorModal({
     return fallbackRate
   }, [formulaCommRates, memberId, memberRole, fallbackRate])
 
+  // Exclude prospects pending HOS approval (commission custom non encore validée)
+  const eligibleDeals = useMemo(() =>
+    deals.filter(d => d.commission_approval_status !== 'pending'),
+    [deals]
+  )
+  const pendingApprovalCount = deals.length - eligibleDeals.length
+
   // Closer deals: assigned_to = teamMember.id
   const closerDeals = useMemo(() =>
-    deals.filter(d => d.assigned_to === teamMember?.id),
-    [deals, teamMember?.id]
+    eligibleDeals.filter(d => d.assigned_to === teamMember?.id),
+    [eligibleDeals, teamMember?.id]
   )
 
   // Setter deals: for Setter-Closer, include deals they also closed
   const setterDeals = useMemo(() =>
-    deals.filter(d => {
+    eligibleDeals.filter(d => {
       if (d.assigned_setter !== teamMember?.id) return false
       if (isSetterCloser) return true
       return d.assigned_to !== teamMember?.id
     }),
-    [deals, teamMember?.id, isSetterCloser]
+    [eligibleDeals, teamMember?.id, isSetterCloser]
   )
 
   // Group deals into line items (like Sales), with period-aware installment proration
@@ -162,16 +169,34 @@ export function BusinessInvoiceGeneratorModal({
     dealList.forEach((deal) => {
       const isInstallment = deal.payment_type === 'installments' || (deal.installments && deal.installments > 1)
       const offerLabel = deal.offer || 'Commission'
+      const hasCustomRate = deal.custom_commission_rate != null
+      const ratePct = hasCustomRate
+        ? `${deal.custom_commission_rate}%`
+        : null
+      const customSchedule: { month: number; amount: number }[] | null = Array.isArray((deal as any).installments_schedule)
+        ? ((deal as any).installments_schedule as { month: number; amount: number }[])
+        : null
       const paymentLabel = isInstallment
-        ? (lang === 'en' ? `Installment (${deal.installments}x payment)` : `Mensualite (Paiement en ${deal.installments}x)`)
+        ? (customSchedule
+            ? (lang === 'en' ? `Custom installments (${deal.installments}x)` : `Plusieurs fois personnalisé (${deal.installments}x)`)
+            : (lang === 'en' ? `Installment (${deal.installments}x payment)` : `Mensualite (Paiement en ${deal.installments}x)`))
         : (lang === 'en' ? 'Lump Sum Payment' : 'Paiement Comptant')
+      const rateSuffix = hasCustomRate ? ` (${ratePct})` : ''
+      const key = `${offerLabel}-${paymentLabel}${rateSuffix}`
 
-      const key = `${offerLabel}-${paymentLabel}`
       const fullValue = deal.value || 0
 
       let amountInPeriod: number
       if (!isInstallment) {
         amountInPeriod = fullValue
+      } else if (customSchedule && customSchedule.length > 0) {
+        // Custom schedule: sum installments falling in [pStart, pEnd]
+        const dealDate = new Date(deal.last_contact || deal.created_at || '')
+        amountInPeriod = customSchedule.reduce((s, e) => {
+          const instDate = new Date(dealDate)
+          instDate.setMonth(instDate.getMonth() + (e.month - 1))
+          return s + (instDate >= pStart && instDate <= pEnd ? Number(e.amount) || 0 : 0)
+        }, 0)
       } else {
         const months = deal.installments || 1
         const monthlyValue = fullValue / months
@@ -185,11 +210,13 @@ export function BusinessInvoiceGeneratorModal({
         amountInPeriod = monthlyValue * count
       }
 
-      const dealCommission = amountInPeriod * getRateFn(deal)
+      // Custom commission rate override
+      const effectiveRate = hasCustomRate ? Number(deal.custom_commission_rate) / 100 : getRateFn(deal)
+      const dealCommission = amountInPeriod * effectiveRate
 
       if (!groups[key]) {
         groups[key] = {
-          description: `${offerLabel} - ${paymentLabel}`,
+          description: `${offerLabel} - ${paymentLabel}${rateSuffix}`,
           count: 0,
           total: 0,
           unitPrice: dealCommission,
@@ -995,6 +1022,16 @@ export function BusinessInvoiceGeneratorModal({
                     <input type="text" value={editableEcheance} onChange={e => setEditableEcheance(e.target.value)} className={inputCls} placeholder="A reception" />
                   </div>
                 </div>
+
+                {/* Warning : prospects en attente de validation HOS exclus */}
+                {pendingApprovalCount > 0 && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-500/10 p-3 flex items-start gap-2">
+                    <span className="text-amber-700 dark:text-amber-300 mt-0.5">⚠️</span>
+                    <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                      <strong>{pendingApprovalCount}</strong> {t.approval_invoice_blocked_warning}
+                    </p>
+                  </div>
+                )}
 
                 {/* Closer Items */}
                 {editableCloserItems.length > 0 && (

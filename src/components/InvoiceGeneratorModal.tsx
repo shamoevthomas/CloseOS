@@ -113,27 +113,68 @@ export function InvoiceGeneratorModal({
   const lineItems = useMemo(() => {
     const groups: Record<string, { description: string; count: number; total: number; unitPrice: number }> = {}
 
-    deals.forEach((deal) => {
+    // Standard commission rate from the offer
+    let standardRate = 0.10
+    const commissionStr = String(offer.commission || '10')
+    const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
+    if (match) standardRate = parseFloat(match[1]) / 100
+
+    // Period bounds for installment proration
+    const pStart = new Date(startDate)
+    const pEnd = new Date(endDate); pEnd.setHours(23, 59, 59, 999)
+
+    deals.forEach((deal: any) => {
       const isInstallment = deal.payment_type === 'installments' || (deal.installments && deal.installments > 1)
       const formulaName = deal.offer || offer.name
+
+      // Commission inhabituelle: ligne séparée
+      const dealRate = deal.custom_commission_rate != null ? Number(deal.custom_commission_rate) / 100 : standardRate
+      const hasCustomRate = deal.custom_commission_rate != null
+      const customSchedule: { month: number; amount: number }[] | null = Array.isArray(deal.installments_schedule)
+        ? deal.installments_schedule
+        : null
+      const ratePct = (dealRate * 100).toFixed(dealRate * 100 % 1 === 0 ? 0 : 1)
+
       const paymentLabel = isInstallment
-        ? (lang === 'fr' ? `Mensualite (Paiement en ${deal.installments}x)` : `Installment (Payment in ${deal.installments}x)`)
+        ? (customSchedule
+            ? (lang === 'fr' ? `Plusieurs fois personnalisé (${deal.installments}x)` : `Custom installments (${deal.installments}x)`)
+            : (lang === 'fr' ? `Mensualite (Paiement en ${deal.installments}x)` : `Installment (Payment in ${deal.installments}x)`))
         : (lang === 'fr' ? 'Paiement Comptant' : 'Full Payment')
+      const rateLabel = hasCustomRate ? ` (${ratePct}%)` : ''
+      const key = `${formulaName}-${paymentLabel}${rateLabel}`
 
-      const key = `${formulaName}-${paymentLabel}`
       const fullValue = deal.value || 0
-      const amountInPeriod = isInstallment ? fullValue / (deal.installments || 1) : fullValue
+      // Compute amount that falls in [pStart, pEnd]
+      let amountInPeriod: number
+      if (!isInstallment) {
+        amountInPeriod = fullValue
+      } else {
+        const dealDate = new Date(deal.last_contact || deal.created_at || '')
+        if (customSchedule && customSchedule.length > 0) {
+          // Sum of custom installments whose due-date falls in [pStart, pEnd]
+          amountInPeriod = customSchedule.reduce((s, e) => {
+            const instDate = new Date(dealDate)
+            instDate.setMonth(instDate.getMonth() + (e.month - 1))
+            return s + (instDate >= pStart && instDate <= pEnd ? Number(e.amount) || 0 : 0)
+          }, 0)
+        } else {
+          const months = deal.installments || 1
+          const monthlyValue = fullValue / months
+          let count = 0
+          for (let i = 0; i < months; i++) {
+            const instDate = new Date(dealDate)
+            instDate.setMonth(instDate.getMonth() + i)
+            if (instDate >= pStart && instDate <= pEnd) count++
+          }
+          amountInPeriod = monthlyValue * count
+        }
+      }
 
-      let rate = 0.10
-      const commissionStr = String(offer.commission || '10')
-      const match = commissionStr.match(/(\d+(?:\.\d+)?)/)
-      if (match) rate = parseFloat(match[1]) / 100
-
-      const dealCommission = amountInPeriod * rate
+      const dealCommission = amountInPeriod * dealRate
 
       if (!groups[key]) {
         groups[key] = {
-          description: `${formulaName} - ${paymentLabel}`,
+          description: `${formulaName} - ${paymentLabel}${rateLabel}`,
           count: 0,
           total: 0,
           unitPrice: dealCommission,
@@ -145,7 +186,7 @@ export function InvoiceGeneratorModal({
     })
 
     return Object.values(groups)
-  }, [deals, offer, lang])
+  }, [deals, offer, lang, startDate, endDate])
 
   const fixedFeeAmount = offer.hasFixedFee ? parseFloat(offer.fixedFeeAmount || '0') || 0 : 0
   const commissionHT = lineItems.reduce((acc, item) => acc + item.total, 0) + fixedFeeAmount

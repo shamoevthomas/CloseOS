@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign,
-  Calendar, Award, Bell, Loader2,
+  Calendar, Award, Bell, Loader2, Settings2,
   User, Shuffle, ArrowRightCircle, CalendarCheck, AlertCircle,
   ChevronLeft, ChevronRight, PhoneMissed, UserPlus, Lock,
   CreditCard, Search, Link2, Zap,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { InstallmentScheduleEditor, type ScheduleEntry } from '../../components/InstallmentScheduleEditor'
+import { createCommissionApproval } from '../services/commissionApproval'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
@@ -108,6 +110,13 @@ export function CloserCallDetails() {
   // Payment terms
   const [paymentType, setPaymentType] = useState<'comptant' | 'installments'>('comptant')
   const [installmentsCount, setInstallmentsCount] = useState(3)
+
+  // Custom commission + custom installment schedule
+  const [customCommissionEnabled, setCustomCommissionEnabled] = useState(false)
+  const [customCommissionRate, setCustomCommissionRate] = useState<number>(0)
+  const [scheduleMode, setScheduleMode] = useState<'equal' | 'custom'>('equal')
+  const [customSchedule, setCustomSchedule] = useState<ScheduleEntry[]>([])
+  const [memberCommissionRate, setMemberCommissionRate] = useState<number | null>(null)
 
   // Follow up fields
   const [followupDate, setFollowupDate] = useState('')
@@ -260,11 +269,39 @@ export function CloserCallDetails() {
     }
   }, [selectedOutcome, prospectFormula, amount, isReadonly])
 
-  // Commission calc
-  const commissionRate = 10
-  const totalCommission = amount > 0 ? (amount * commissionRate) / 100 : 0
+  // Fetch closer's standard commission rate from business_team_members
+  useEffect(() => {
+    if (!teamMember?.id) return
+    supabase
+      .from('business_team_members')
+      .select('commission_rate')
+      .eq('id', teamMember.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.commission_rate != null) setMemberCommissionRate(Number(data.commission_rate))
+      })
+  }, [teamMember?.id])
+
+  // Commission calc (standard from team member; custom if enabled)
+  const standardRate = memberCommissionRate ?? 10
+  const commissionRate = customCommissionEnabled ? customCommissionRate : standardRate
+
+  // Effective amount: when schedule is custom, the sale total = sum of installments
+  const customScheduleTotal = customSchedule.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+  const effectiveAmount = scheduleMode === 'custom' ? customScheduleTotal : amount
+
+  // Sync displayed amount when in custom mode
+  useEffect(() => {
+    if (scheduleMode === 'custom' && customScheduleTotal !== amount) {
+      setAmount(customScheduleTotal)
+    }
+  }, [scheduleMode, customScheduleTotal])
+
+  const totalCommission = effectiveAmount > 0 ? (effectiveAmount * commissionRate) / 100 : 0
   const monthlyCommission = paymentType === 'installments' && installmentsCount > 0
     ? totalCommission / installmentsCount : 0
+
+  const hasCustomException = customCommissionEnabled || scheduleMode === 'custom'
 
   // Stripe: auto-match by email
   const handleStripeAutoMatch = useCallback(async () => {
@@ -533,10 +570,22 @@ export function CloserCallDetails() {
           stage: stageMap[selectedOutcome],
           last_contact: new Date().toISOString(),
         }
-        if (selectedOutcome === 'won' && amount > 0) {
-          updates.value = amount
+        if (selectedOutcome === 'won' && effectiveAmount > 0) {
+          updates.value = effectiveAmount
           updates.payment_type = paymentType
-          updates.installments = paymentType === 'installments' ? installmentsCount : null
+          if (paymentType === 'installments') {
+            if (scheduleMode === 'custom') {
+              updates.installments = customSchedule.length
+              updates.installments_schedule = customSchedule
+            } else {
+              updates.installments = installmentsCount
+              updates.installments_schedule = null
+            }
+          } else {
+            updates.installments = null
+            updates.installments_schedule = null
+          }
+          updates.custom_commission_rate = customCommissionEnabled ? customCommissionRate : null
         }
         if (selectedOutcome === 'lost') {
           updates.loss_reason = lostReason
@@ -562,6 +611,39 @@ export function CloserCallDetails() {
         }]
 
         await updateProspect(prospect.id, updates)
+
+        // Trigger commission approval workflow if closer used exception (commission and/or schedule)
+        if (
+          selectedOutcome === 'won' &&
+          hasCustomException &&
+          isTeamMember &&
+          teamMember?.id &&
+          effectiveOwnerId
+        ) {
+          const reason: 'commission' | 'schedule' | 'both' =
+            customCommissionEnabled && scheduleMode === 'custom'
+              ? 'both'
+              : customCommissionEnabled
+                ? 'commission'
+                : 'schedule'
+          await createCommissionApproval(
+            {
+              business_owner_id: effectiveOwnerId,
+              prospect_id: prospect.id,
+              closer_id: teamMember.id,
+              reason,
+              sale_amount: effectiveAmount,
+              standard_commission_rate: standardRate,
+              custom_commission_rate: customCommissionEnabled ? customCommissionRate : null,
+              installments_schedule: scheduleMode === 'custom' ? customSchedule : null,
+            },
+            {
+              closerName: `${teamMember.first_name || ''} ${teamMember.last_name || ''}`.trim() || 'Un closer',
+              prospectName: (prospect as any).contact || (prospect as any).firstName || 'Prospect',
+              offerName: prospectFormula?.name,
+            }
+          )
+        }
       }
 
       // Create follow-up appointment if needed (closer outcome)
@@ -1008,10 +1090,14 @@ export function CloserCallDetails() {
                       value={amount || ''}
                       onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
                       placeholder="Ex: 5000"
-                      className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-3 pr-12 text-lg text-stone-900 dark:text-white placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                      readOnly={scheduleMode === 'custom'}
+                      className={cn("w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-3 pr-12 text-lg text-stone-900 dark:text-white placeholder-stone-400 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10", scheduleMode === 'custom' && 'opacity-60 cursor-not-allowed')}
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 font-medium">€</div>
                   </div>
+                  {scheduleMode === 'custom' && (
+                    <p className="mt-2 text-xs text-stone-500 dark:text-neutral-400">{t.schedule_custom_amount_locked}</p>
+                  )}
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_payment_mode}</label>
@@ -1031,30 +1117,116 @@ export function CloserCallDetails() {
                 {paymentType === 'installments' && (
                   <div>
                     <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-neutral-200">{t.closer_calldetails_installments_count}</label>
-                    <select value={installmentsCount} onChange={(e) => setInstallmentsCount(parseInt(e.target.value))}
-                      className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10">
+                    <select
+                      value={scheduleMode === 'custom' ? 'custom' : String(installmentsCount)}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v === 'custom') {
+                          setScheduleMode('custom')
+                          if (customSchedule.length === 0) {
+                            const base = amount > 0 ? amount / installmentsCount : 0
+                            setCustomSchedule(Array.from({ length: installmentsCount }, (_, i) => ({ month: i + 1, amount: Math.round(base * 100) / 100 })))
+                          }
+                        } else {
+                          setScheduleMode('equal')
+                          setInstallmentsCount(parseInt(v))
+                        }
+                      }}
+                      className="w-full rounded-lg border border-stone-200 dark:border-neutral-700 bg-stone-50/50 dark:bg-neutral-800/50 px-4 py-2.5 text-sm text-stone-900 dark:text-white focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    >
+                      <option value="custom">{t.schedule_custom_option}</option>
                       {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
                         <option key={num} value={num}>{num} {t.closer_calldetails_months}</option>
                       ))}
                     </select>
-                    <p className="mt-2 text-sm text-stone-500 dark:text-neutral-400">
-                      {t.closer_calldetails_amount_per_month} <span className="text-emerald-600 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
-                    </p>
+                    {scheduleMode === 'equal' ? (
+                      <p className="mt-2 text-sm text-stone-500 dark:text-neutral-400">
+                        {t.closer_calldetails_amount_per_month} <span className="text-emerald-600 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
+                      </p>
+                    ) : (
+                      <div className="mt-3">
+                        <InstallmentScheduleEditor
+                          value={customSchedule}
+                          onChange={setCustomSchedule}
+                          labels={{
+                            monthsCount: t.schedule_custom_months_label,
+                            month: t.schedule_custom_month,
+                            amount: t.schedule_custom_amount,
+                            total: t.schedule_custom_total,
+                            addRow: t.schedule_custom_add_row,
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
-                {amount > 0 && (
+                {effectiveAmount > 0 && (
                   <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Award className="h-4 w-4 text-emerald-600" />
-                      <h4 className="text-sm font-bold text-emerald-700 font-['Manrope']">{t.closer_calldetails_your_commission}</h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-emerald-600" />
+                        <h4 className="text-sm font-bold text-emerald-700 font-['Manrope']">{t.closer_calldetails_your_commission}</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (customCommissionEnabled) {
+                            setCustomCommissionEnabled(false)
+                            setCustomCommissionRate(0)
+                          } else {
+                            setCustomCommissionEnabled(true)
+                            setCustomCommissionRate(standardRate)
+                          }
+                        }}
+                        className={cn(
+                          'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all',
+                          customCommissionEnabled
+                            ? 'border-amber-500/60 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                            : 'border-stone-300 bg-white text-stone-600 hover:border-amber-500 hover:text-amber-700'
+                        )}
+                      >
+                        <Settings2 className="h-3 w-3" />
+                        {customCommissionEnabled ? t.custom_commission_cancel : t.custom_commission_btn}
+                      </button>
                     </div>
+
+                    {customCommissionEnabled && (
+                      <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
+                        <label className="mb-1.5 block text-xs font-medium text-amber-800">
+                          {t.custom_commission_rate_label}
+                          <span className="ml-2 text-stone-500">(standard : {standardRate}%)</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number" min="0" max="100" step="0.1"
+                            value={customCommissionRate || ''}
+                            onChange={(e) => setCustomCommissionRate(parseFloat(e.target.value) || 0)}
+                            className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 pr-8 text-sm text-stone-900 focus:border-amber-500 focus:outline-none"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-700 text-sm">%</span>
+                        </div>
+                      </div>
+                    )}
+
                     <p className="text-2xl font-extrabold text-emerald-600 font-['Manrope']">{totalCommission.toFixed(2)} €</p>
-                    {paymentType === 'installments' && (
+                    {paymentType === 'installments' && scheduleMode === 'equal' && (
                       <p className="mt-1 text-sm text-stone-600 dark:text-neutral-300">
                         {t.closer_calldetails_you_will_receive} <span className="font-semibold text-emerald-600">{monthlyCommission.toFixed(2)}€/{t.closer_calldetails_stripe_month}</span>
                       </p>
                     )}
-                    <p className="mt-2 text-xs text-stone-400 dark:text-neutral-500">{t.closer_calldetails_commission_rate} {commissionRate}%</p>
+                    <p className="mt-2 text-xs text-stone-400 dark:text-neutral-500">
+                      {t.closer_calldetails_commission_rate} {commissionRate}%
+                      {customCommissionEnabled && (
+                        <span className="ml-2 text-amber-700">({t.custom_commission_diff_standard})</span>
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                {hasCustomException && isTeamMember && (
+                  <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-4 flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-800 leading-relaxed">{t.custom_commission_banner_business}</p>
                   </div>
                 )}
               </section>

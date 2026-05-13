@@ -45,6 +45,11 @@ export interface CRMProspect {
   pipeline_visible?: boolean | null
   created_at?: string | null
   updated_at?: string | null
+  // Commission inhabituelle + échéancier custom
+  custom_commission_rate?: number | null
+  installments_schedule?: { month: number; amount: number }[] | null
+  payment_type?: string | null
+  installments?: number | null
 }
 
 export interface CRMCampaign {
