@@ -937,6 +937,7 @@ export function BusinessCRM() {
             deleteProspect(id)
             setSelectedProspect(null)
           }}
+          onTagsChange={(id, tagIds) => setProspectTags(prev => ({ ...prev, [id]: tagIds }))}
         />
       )}
 

@@ -65,6 +65,7 @@ interface BusinessProspectViewProps {
   onDelete: (id: number) => void
   inline?: boolean
   onDismissFromPipeline?: (prospectId: number, dismissed: boolean) => void
+  onTagsChange?: (prospectId: number, tagIds: string[]) => void
 }
 
 const API_URL = '/api/business'
@@ -76,6 +77,7 @@ export function BusinessProspectView({
   onDelete,
   inline = false,
   onDismissFromPipeline,
+  onTagsChange,
 }: BusinessProspectViewProps) {
   const navigate = useNavigate()
   const { user, isTeamMember, teamMember, ownerUserId, userTimezone } = useBusinessAuth()
@@ -391,15 +393,21 @@ export function BusinessProspectView({
     const tag = allTags.find(t => t.id === tagId)
     if (tag?.is_system && prospectTagIds.includes(tagId)) {
       await supabase.rpc('remove_system_tag_from_prospect', { p_prospect_id: prospect.id, p_tag_id: tagId })
-      setProspectTagIds(prev => prev.filter(id => id !== tagId))
+      const next = prospectTagIds.filter(id => id !== tagId)
+      setProspectTagIds(next)
+      onTagsChange?.(prospect.id, next)
       return
     }
     if (prospectTagIds.includes(tagId)) {
       await supabase.from('business_prospect_tags').delete().eq('prospect_id', prospect.id).eq('tag_id', tagId)
-      setProspectTagIds(prev => prev.filter(id => id !== tagId))
+      const next = prospectTagIds.filter(id => id !== tagId)
+      setProspectTagIds(next)
+      onTagsChange?.(prospect.id, next)
     } else {
       await supabase.from('business_prospect_tags').insert({ prospect_id: prospect.id, tag_id: tagId })
-      setProspectTagIds(prev => [...prev, tagId])
+      const next = [...prospectTagIds, tagId]
+      setProspectTagIds(next)
+      onTagsChange?.(prospect.id, next)
     }
   }
 

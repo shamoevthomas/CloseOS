@@ -930,7 +930,22 @@ export function ProspectView({
                           </div>
                           <div className="flex rounded-lg bg-white/[0.03] p-1">
                             <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); setEditScheduleMode('equal'); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>{lang === 'fr' ? 'Comptant' : 'Cash'}</button>
-                            <button type="button" onClick={() => setPaymentMode('installments')} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>{lang === 'fr' ? 'Plusieurs fois' : 'Installments'}</button>
+                            <button type="button" onClick={() => {
+                              setPaymentMode('installments')
+                              const savedSchedule = (localProspect as any).installments_schedule
+                              const savedCount = localProspect.installments || 0
+                              if (Array.isArray(savedSchedule) && savedSchedule.length > 0) {
+                                setEditScheduleMode('custom')
+                                setEditCustomSchedule(savedSchedule)
+                                setInstallments(savedSchedule.length)
+                              } else if (savedCount > 1) {
+                                setEditScheduleMode('equal')
+                                setInstallments(savedCount)
+                              } else if (installments < 2) {
+                                setEditScheduleMode('equal')
+                                setInstallments(2)
+                              }
+                            }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>{lang === 'fr' ? 'Plusieurs fois' : 'Installments'}</button>
                           </div>
                           {paymentMode === 'installments' && (
                             <div className="animate-in fade-in slide-in-from-top-1 space-y-3">
