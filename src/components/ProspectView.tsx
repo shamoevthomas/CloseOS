@@ -145,6 +145,7 @@ export function ProspectView({
   const [paymentMode, setPaymentMode] = useState<'cash' | 'installments'>('cash')
   const [installments, setInstallments] = useState(1)
   const [commissionRate, setCommissionRate] = useState(10)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
 
   // Custom commission + custom installment schedule (édition fiche)
   const [editCustomCommissionEnabled, setEditCustomCommissionEnabled] = useState(false)
@@ -661,6 +662,19 @@ export function ProspectView({
     ? Number((localProspect as any).custom_commission_rate)
     : commissionRate
   const savedCommission = (localProspect.value || 0) * (savedCommissionRate / 100)
+  const savedSchedule = (localProspect as any).installments_schedule as ScheduleEntry[] | null | undefined
+  const hasCustomSchedule = Array.isArray(savedSchedule) && savedSchedule.length > 0
+  const scheduleBreakdown = hasCustomSchedule
+    ? savedSchedule!.map((entry) => ({
+        month: entry.month,
+        clientAmount: Number(entry.amount) || 0,
+        commission: ((Number(entry.amount) || 0) * savedCommissionRate) / 100,
+      }))
+    : Array.from({ length: savedInstallments }, (_, i) => ({
+        month: i + 1,
+        clientAmount: (localProspect.value || 0) / savedInstallments,
+        commission: savedCommission / savedInstallments,
+      }))
   const savedMonthlyPayment = (localProspect.value || 0) / savedInstallments
   const savedMonthlyCommission = savedCommission / savedInstallments
 
@@ -1055,14 +1069,28 @@ export function ProspectView({
 
                           {isPayingInInstallments && (
                             <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
-                              <div className="flex justify-between items-center">
+                              <button
+                                type="button"
+                                onClick={() => setShowScheduleModal(true)}
+                                className="group flex w-full justify-between items-center rounded-md -mx-1 px-1 py-0.5 hover:bg-white/[0.03] transition-colors"
+                              >
                                 <span className="text-xs text-white/60">{lang === 'fr' ? `Client paie (x${savedInstallments})` : `Client pays (x${savedInstallments})`} :</span>
-                                <span className="text-sm font-semibold text-white">{savedMonthlyPayment.toFixed(2)}€ / {lang === 'fr' ? 'mois' : 'mo'}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
+                                <span className="flex items-center gap-1 text-sm font-semibold text-white">
+                                  {hasCustomSchedule ? (lang === 'fr' ? 'Voir détail' : 'View detail') : `${savedMonthlyPayment.toFixed(2)}€ / ${lang === 'fr' ? 'mois' : 'mo'}`}
+                                  <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-white/70 transition-colors" />
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowScheduleModal(true)}
+                                className="group flex w-full justify-between items-center rounded-md -mx-1 px-1 py-0.5 hover:bg-emerald-500/[0.06] transition-colors"
+                              >
                                 <span className="text-xs text-emerald-400/80">{lang === 'fr' ? 'Tu reçois' : 'You receive'} :</span>
-                                <span className="text-sm font-bold text-emerald-400">{savedMonthlyCommission.toFixed(2)}€ / {lang === 'fr' ? 'mois' : 'mo'}</span>
-                              </div>
+                                <span className="flex items-center gap-1 text-sm font-bold text-emerald-400">
+                                  {hasCustomSchedule ? (lang === 'fr' ? 'Voir détail' : 'View detail') : `${savedMonthlyCommission.toFixed(2)}€ / ${lang === 'fr' ? 'mois' : 'mo'}`}
+                                  <ChevronRight className="h-3 w-3 text-emerald-400/50 group-hover:text-emerald-400/80 transition-colors" />
+                                </span>
+                              </button>
                             </div>
                           )}
 
@@ -1737,6 +1765,63 @@ export function ProspectView({
           </div>
         </div>
       </div>
+
+      {showScheduleModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => setShowScheduleModal(false)}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0d1117] p-5 shadow-2xl animate-in zoom-in-95 fade-in duration-200"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-emerald-400" />
+                  {lang === 'fr' ? `Échéancier (${savedInstallments} mois)` : `Schedule (${savedInstallments} months)`}
+                </h3>
+                <p className="mt-0.5 text-[11px] text-white/40">
+                  {lang === 'fr' ? `Commission ${savedCommissionRate}% par échéance` : `${savedCommissionRate}% commission per installment`}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
+              <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-b border-white/10 bg-white/[0.03]">
+                <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{lang === 'fr' ? 'Mois' : 'Month'}</span>
+                <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider text-right">{lang === 'fr' ? 'Client paie' : 'Client pays'}</span>
+                <span className="text-[10px] font-bold text-emerald-400/70 uppercase tracking-wider text-right">{lang === 'fr' ? 'Tu reçois' : 'You receive'}</span>
+              </div>
+              <div className="max-h-[50vh] overflow-y-auto">
+                {scheduleBreakdown.map((row) => (
+                  <div key={row.month} className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-b border-white/5 last:border-b-0">
+                    <span className="text-xs font-medium text-white/70">{lang === 'fr' ? `Mois ${row.month}` : `Month ${row.month}`}</span>
+                    <span className="text-xs font-semibold text-white text-right">{row.clientAmount.toFixed(2)}€</span>
+                    <span className="text-xs font-bold text-emerald-400 text-right">{row.commission.toFixed(2)}€</span>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2.5 border-t border-white/10 bg-emerald-500/5">
+                <span className="text-xs font-bold text-white">Total</span>
+                <span className="text-xs font-bold text-white text-right">{scheduleBreakdown.reduce((s, r) => s + r.clientAmount, 0).toFixed(2)}€</span>
+                <span className="text-xs font-bold text-emerald-400 text-right">{scheduleBreakdown.reduce((s, r) => s + r.commission, 0).toFixed(2)}€</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowScheduleModal(false)}
+              className="mt-4 w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500 transition-colors"
+            >
+              {lang === 'fr' ? 'Fermer' : 'Close'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
