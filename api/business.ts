@@ -2638,12 +2638,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Owner: verify owner_assignable is enabled (unless caller IS the owner himself in single-seat mode)
         const { data: ownerRow } = await supabase
           .from('business_users')
-          .select('owner_assignable, full_name, business_name')
+          .select('owner_assignable, full_name')
           .eq('id', owner_id)
           .single()
         if (!ownerRow) return res.status(404).json({ error: 'Owner not found' })
         // We still allow the owner to assign to themselves when owner_assignable is false (solo case).
-        assigneeDisplayName = ownerRow.full_name || ownerRow.business_name || 'Owner'
+        assigneeDisplayName = ownerRow.full_name || 'Owner'
       }
 
       // Resolve prospect
@@ -4157,8 +4157,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             let assigneeName = ''
             if (isOwnerLink) {
-              const { data: ownerProfile } = await supabase.from('business_users').select('business_name, full_name').eq('id', ownerId).single()
-              assigneeName = ownerProfile?.full_name || ownerProfile?.business_name || ''
+              const { data: ownerProfile } = await supabase.from('business_users').select('full_name').eq('id', ownerId).single()
+              assigneeName = ownerProfile?.full_name || ''
             } else {
               const { data: tmProfile } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', link.team_member_id).single()
               assigneeName = tmProfile ? `${tmProfile.first_name} ${tmProfile.last_name}` : ''
@@ -4215,8 +4215,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let memberDisplayName = ''
       if (isOwnerLink) {
-        const { data: ownerP } = await supabase.from('business_users').select('full_name, business_name').eq('id', ownerId).single()
-        memberDisplayName = ownerP?.full_name || ownerP?.business_name || 'Owner'
+        const { data: ownerP } = await supabase.from('business_users').select('full_name').eq('id', ownerId).single()
+        memberDisplayName = ownerP?.full_name || 'Owner'
       } else {
         const { data: tmP } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', link.team_member_id).single()
         memberDisplayName = tmP ? `${tmP.first_name} ${tmP.last_name}` : ''
@@ -4435,8 +4435,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Get assignee name
             let assigneeName = ''
             if (isOwnerLink) {
-              const { data: ownerProfile } = await supabase.from('business_users').select('business_name, full_name').eq('id', ownerId).single()
-              assigneeName = ownerProfile?.full_name || ownerProfile?.business_name || ''
+              const { data: ownerProfile } = await supabase.from('business_users').select('full_name').eq('id', ownerId).single()
+              assigneeName = ownerProfile?.full_name || ''
             } else {
               const { data: tmProfile } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', link.team_member_id).single()
               assigneeName = tmProfile ? `${tmProfile.first_name} ${tmProfile.last_name}` : ''
@@ -4492,8 +4492,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Get assignee display name for emails
       let memberDisplayName = ''
       if (isOwnerLink) {
-        const { data: ownerP } = await supabase.from('business_users').select('full_name, business_name').eq('id', ownerId).single()
-        memberDisplayName = ownerP?.full_name || ownerP?.business_name || 'Owner'
+        const { data: ownerP } = await supabase.from('business_users').select('full_name').eq('id', ownerId).single()
+        memberDisplayName = ownerP?.full_name || 'Owner'
       } else {
         const { data: tmP } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', link.team_member_id).single()
         memberDisplayName = tmP ? `${tmP.first_name} ${tmP.last_name}` : ''
@@ -5721,8 +5721,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 // Récupérer le nom du membre assigné pour les variables
                 let assigneeName = ''
                 if (assigned_member_id === campaign.user_id) {
-                  const { data: ownerProfile } = await supabase.from('business_users').select('business_name').eq('id', campaign.user_id).single()
-                  assigneeName = ownerProfile?.business_name || ''
+                  const { data: ownerProfile } = await supabase.from('business_users').select('full_name').eq('id', campaign.user_id).single()
+                  assigneeName = ownerProfile?.full_name || ''
                 } else {
                   const { data: tmProfile } = await supabase.from('business_team_members').select('name').eq('id', assigned_member_id).single()
                   assigneeName = tmProfile?.name || ''
@@ -5796,8 +5796,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Récupérer le nom du membre assigné
         let memberDisplayName = ''
         if (assigned_member_id === campaign.user_id) {
-          const { data: ownerP } = await supabase.from('business_users').select('full_name, business_name').eq('id', campaign.user_id).single()
-          memberDisplayName = ownerP?.full_name || ownerP?.business_name || 'Owner'
+          const { data: ownerP } = await supabase.from('business_users').select('full_name').eq('id', campaign.user_id).single()
+          memberDisplayName = ownerP?.full_name || 'Owner'
         } else if (assigned_member_id) {
           const { data: tmP } = await supabase.from('business_team_members').select('first_name, last_name').eq('id', assigned_member_id).single()
           memberDisplayName = tmP ? `${tmP.first_name} ${tmP.last_name}` : ''

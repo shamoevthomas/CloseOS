@@ -1158,7 +1158,7 @@ export function BusinessCRM() {
                 </button>
                 <button
                   onClick={handleAddProspect}
-                  disabled={addLoading || !newContact || (isOwnerView && !newSetterId)}
+                  disabled={addLoading || !newContact || (!isSolo && isOwnerView && !newSetterId)}
                   className="flex-1 rounded-full bg-stone-900 py-2.5 font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
                 >
                   {addLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : t.common_add}
