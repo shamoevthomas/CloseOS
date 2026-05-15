@@ -240,12 +240,12 @@ export function Contacts() {
     contact: string
     firstName: string
     lastName: string
-    email: string
-    phone: string
-    company: string
+    email: string | null
+    phone: string | null
+    company: string | null
     offer: string
+    offer_id?: number
     value: number
-    source: string
     stage: string
   }) => {
     // 🔄 MODIFICATION : Suppression de l'alerte "Mode Déconnecté" pour forcer l'ajout dans Supabase

@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X, Building2, Tag } from 'lucide-react'
 import { useOffers, type Offer } from '../contexts/OffersContext'
 import { useLanguage } from '../contexts/LanguageContext'
-import { prospectTranslations } from '../i18n/translations'
 
 // Helper to parse price
 const parsePrice = (priceString: string): number => {
@@ -21,13 +20,12 @@ interface CreateProspectModalProps {
     firstName: string
     lastName: string
     contact: string // On garde le champ complet pour compatibilité affichage
-    email: string
-    phone: string
-    company: string
+    email: string | null
+    phone: string | null
+    company: string | null
     offer: string
-    offerId?: number // AJOUT : ID de l'offre
+    offer_id?: number // AJOUT : ID de l'offre
     value: number
-    source: string // AJOUT : Source du prospect
     stage: string
   }) => void
 }
@@ -35,7 +33,6 @@ interface CreateProspectModalProps {
 export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspectModalProps) {
   const { offers } = useOffers()
   const { lang } = useLanguage()
-  const t = prospectTranslations[lang]
 
   // Filtre offres actives
   const isExpired = (offer: Offer) => {
@@ -127,12 +124,12 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
     }
 
     onSubmit({
-      firstName: formData.firstName,
-      lastName: formData.lastName,
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
       contact: fullName, // On garde la compatibilité
-      email: formData.email,
-      phone: formData.phone,
-      company: formData.company || '',
+      email: formData.email.trim() || null,
+      phone: formData.phone.trim() || null,
+      company: formData.company.trim() || null,
       offer: finalOfferName,
       offer_id: formData.offerId ? parseInt(formData.offerId) : undefined,
       value: selectedOfferPrice,

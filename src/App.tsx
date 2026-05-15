@@ -23,6 +23,8 @@ import { OnboardingTutorial } from './components/OnboardingTutorial'
 import { Layout } from './layouts/Layout'
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 import { LoadingScreen } from './components/LoadingScreen'
+import { ErrorReportModal } from './components/ErrorReportModal'
+import { ErrorReportTrigger } from './components/ErrorReportTrigger'
 import { CheckoutForm } from './components/CheckoutForm'
 // CheckoutStarter supprimé — un seul plan Pro maintenant
 import { Return } from './components/Return'
@@ -654,6 +656,8 @@ function App() {
                           <AuthenticatedApp />
                         </UpgradeProvider>
                         <Analytics />
+                        <ErrorReportModal />
+                        <ErrorReportTrigger />
                         <Toaster
                           position="top-right"
                           toastOptions={{
