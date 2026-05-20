@@ -37,6 +37,7 @@ export interface BusinessProspect {
   ghl_contact_id?: string
   ghl_opportunity_id?: string
   avatar_url?: string
+  timezone?: string | null
   call_notes?: {
     id: string
     date: string

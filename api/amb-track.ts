@@ -27,6 +27,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const slug = (req.body?.slug as string) || (req.query.slug as string) || '';
   if (!slug) return res.status(400).json({ error: 'slug required' });
+  const tierRaw = (req.body?.tier as string) || (req.query.tier as string) || 'a';
+  const tier = tierRaw === 'b' ? 'b' : 'a';
 
   const { data: amb } = await supabase
     .from('sales_ambassadors')
@@ -69,10 +71,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Always (re)set the cookie even on dedup — attribution must work for repeat visitors
-  res.setHeader(
-    'Set-Cookie',
-    `closeos_amb=${encodeURIComponent(amb.slug)}; Max-Age=${COOKIE_MAX_AGE_SECONDS}; Path=/; SameSite=Lax; Secure`
-  );
+  res.setHeader('Set-Cookie', [
+    `closeos_amb=${encodeURIComponent(amb.slug)}; Max-Age=${COOKIE_MAX_AGE_SECONDS}; Path=/; SameSite=Lax; Secure`,
+    `closeos_amb_tier=${tier}; Max-Age=${COOKIE_MAX_AGE_SECONDS}; Path=/; SameSite=Lax; Secure`,
+  ]);
 
   return res.json({ ok: true });
 }

@@ -739,7 +739,7 @@ export function SetterKPI() {
           </div>
         </div>
 
-        {!hideSetterCommission && (
+        {!hideSetterCommission && !isSolo && (
         <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
           <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">Historique Commissions</h3>
           <div className="h-56">
@@ -769,7 +769,7 @@ export function SetterKPI() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <SummaryItem label="Total Leads" value={v.leads} icon={Users} color="indigo" dark />
           <SummaryItem label="Deals en Cours" value={v.deals} icon={Briefcase} color="cyan" dark />
-          {!hideSetterCommission && <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />}
+          {!hideSetterCommission && !isSolo && <SummaryItem label="Commission Moy." value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />}
         </div>
       </div>
       </div>{/* end pdfRef */}

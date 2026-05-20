@@ -3,20 +3,24 @@ import { useParams, Link } from 'react-router-dom';
 import {
   Loader2, MousePointerClick, Users, CreditCard, UserMinus, Copy, Check,
   Lock, Eye, EyeOff, Sparkles, ExternalLink, Settings2, Wallet, AlertCircle, Banknote, ArrowRight, X,
+  ChevronDown, ChevronRight, UserX, Heart,
 } from 'lucide-react';
 
 const STORAGE_PW = 'amb_dash_pw';
 
+type SplitDisplay = {
+  toFilleulPct: number;
+  lockedByAdmin: boolean;
+  monthly: { pool: number; discountPct: number; commissionPct: number; code: string | null };
+  quarterly: { pool: number; discountPct: number; commissionPct: number; code: string | null };
+  yearly: { pool: number; discountPct: number; commissionPct: number; code: string | null };
+};
+
 type DashboardData = {
   ambassador: { name: string; slug: string; created_at: string };
-  auth: { hasPassword: boolean; hasSplit: boolean };
-  split: {
-    toFilleulPct: number;
-    lockedByAdmin: boolean;
-    monthly: { pool: number; discountPct: number; commissionPct: number; code: string | null };
-    quarterly: { pool: number; discountPct: number; commissionPct: number; code: string | null };
-    yearly: { pool: number; discountPct: number; commissionPct: number; code: string | null };
-  };
+  auth: { hasPassword: boolean; hasSplit: boolean; hasSplitB?: boolean };
+  split: SplitDisplay;
+  splitB: SplitDisplay;
   connect: { connected: boolean; status: string };
   stats: {
     clicks: number; signups: number; paid: number; canceled: number;
@@ -110,13 +114,14 @@ export default function SalesAmbassadorDashboard() {
         <SplitModal
           token={token!}
           password={password}
-          initialPct={data.split.toFilleulPct}
-          isFirstTime={!data.auth.hasSplit}
-          monthlyPool={data.split.monthly.pool}
-          quarterlyPool={data.split.quarterly.pool}
-          yearlyPool={data.split.yearly.pool}
+          initialPctA={data.split.toFilleulPct}
+          initialPctB={data.splitB.toFilleulPct}
+          isFirstTime={!data.auth.hasSplit && !data.auth.hasSplitB}
+          poolsA={{ monthly: data.split.monthly.pool, quarterly: data.split.quarterly.pool, yearly: data.split.yearly.pool }}
+          poolsB={{ monthly: data.splitB.monthly.pool, quarterly: data.splitB.quarterly.pool, yearly: data.splitB.yearly.pool }}
           onClose={() => setShowSplitModal(false)}
-          onSaved={() => { setShowSplitModal(false); load(); }}
+          onReload={load}
+          onDone={() => { setShowSplitModal(false); load(); }}
         />
       )}
     </>
@@ -222,6 +227,7 @@ function Dashboard({ token, password, data, onReload, onOpenSplit, onLogout }: {
 }) {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.closeos.fr';
   const refLink = `${origin}/?amb=${data.ambassador.slug}`;
+  const refLinkB = `${origin}/?amb=${data.ambassador.slug}&t=b`;
   const conversionRate = data.stats.signups > 0 ? Math.round((data.stats.paid / data.stats.signups) * 100) : 0;
 
   const [connectBusy, setConnectBusy] = useState(false);
@@ -261,52 +267,67 @@ function Dashboard({ token, password, data, onReload, onOpenSplit, onLogout }: {
           <button onClick={onLogout} className="text-xs text-slate-500 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800/40 transition">Déconnexion</button>
         </div>
 
-        {/* Hero card: ref link + main code */}
+        {/* Hero card: 2 ref links + 6 codes (set A inconnus / set B amis) */}
         <div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-[#0F172A] to-[#0B1121] p-6 mb-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-72 h-72 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
-          <div className="relative">
-            <div className="flex items-start justify-between gap-4 mb-5">
-              <div>
-                <div className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-1">Votre lien de parrainage</div>
-                <div className="text-sm text-slate-200 font-mono break-all">{refLink}</div>
+          <div className="relative space-y-5">
+
+            {/* SET A — Inconnus */}
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-blue-300 font-bold mb-2 flex items-center gap-1.5">
+                <UserX className="w-3.5 h-3.5" /> Pour les inconnus / contacts froids
               </div>
-              <CopyButton value={refLink} />
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Lien de parrainage</div>
+                  <div className="text-sm text-slate-200 font-mono break-all">{refLink}</div>
+                </div>
+                <CopyButton value={refLink} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <CodeCard label="Mensuel" code={data.split.monthly.code} discountPct={data.split.monthly.discountPct} commissionPct={data.split.monthly.commissionPct} />
+                <CodeCard label="Trimestriel" code={data.split.quarterly.code} discountPct={data.split.quarterly.discountPct} commissionPct={data.split.quarterly.commissionPct} />
+                <CodeCard label="Annuel" code={data.split.yearly.code} discountPct={data.split.yearly.discountPct} commissionPct={data.split.yearly.commissionPct} />
+              </div>
+              <div className="mt-2 text-[11px] text-slate-500">
+                Vous redistribuez <span className="text-blue-300 font-bold">{data.split.toFilleulPct}%</span> du pool aux inconnus
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <CodeCard
-                label="Code mensuel"
-                code={data.split.monthly.code}
-                discountPct={data.split.monthly.discountPct}
-                commissionPct={data.split.monthly.commissionPct}
-              />
-              <CodeCard
-                label="Code trimestriel"
-                code={data.split.quarterly.code}
-                discountPct={data.split.quarterly.discountPct}
-                commissionPct={data.split.quarterly.commissionPct}
-              />
-              <CodeCard
-                label="Code annuel"
-                code={data.split.yearly.code}
-                discountPct={data.split.yearly.discountPct}
-                commissionPct={data.split.yearly.commissionPct}
-              />
+            <div className="border-t border-slate-800/60" />
+
+            {/* SET B — Amis */}
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-pink-300 font-bold mb-2 flex items-center gap-1.5">
+                <Heart className="w-3.5 h-3.5" /> Pour vos amis closers
+              </div>
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Lien de parrainage</div>
+                  <div className="text-sm text-slate-200 font-mono break-all">{refLinkB}</div>
+                </div>
+                <CopyButton value={refLinkB} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <CodeCard label="Mensuel" code={data.splitB.monthly.code} discountPct={data.splitB.monthly.discountPct} commissionPct={data.splitB.monthly.commissionPct} accent="pink" />
+                <CodeCard label="Trimestriel" code={data.splitB.quarterly.code} discountPct={data.splitB.quarterly.discountPct} commissionPct={data.splitB.quarterly.commissionPct} accent="pink" />
+                <CodeCard label="Annuel" code={data.splitB.yearly.code} discountPct={data.splitB.yearly.discountPct} commissionPct={data.splitB.yearly.commissionPct} accent="pink" />
+              </div>
+              <div className="mt-2 text-[11px] text-slate-500">
+                Vous redistribuez <span className="text-pink-300 font-bold">{data.splitB.toFilleulPct}%</span> du pool aux amis
+              </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between text-xs">
-              <div className="text-slate-400">
-                Vous redistribuez <span className="text-white font-bold">{data.split.toFilleulPct}%</span> du pool à vos filleuls
-              </div>
+            <div className="border-t border-slate-800/60 pt-3 flex items-center justify-end text-xs">
               {data.split.lockedByAdmin ? (
                 <div className="inline-flex items-center gap-1.5 text-slate-500 italic">
                   <Settings2 className="w-3.5 h-3.5" />
-                  Répartition définie par l'équipe CloseOS
+                  Répartitions définies par l'équipe CloseOS
                 </div>
               ) : (
                 <button onClick={onOpenSplit} className="inline-flex items-center gap-1.5 text-blue-300 hover:text-blue-200 font-bold">
                   <Settings2 className="w-3.5 h-3.5" />
-                  Modifier ma répartition
+                  Modifier mes répartitions
                 </button>
               )}
             </div>
@@ -466,20 +487,21 @@ function ConnectBanner({ connected, status, pendingCents, busy, onConnect, onDas
 
 // ─── Code card ───
 
-function CodeCard({ label, code, discountPct, commissionPct }: { label: string; code: string | null; discountPct: number; commissionPct: number }) {
+function CodeCard({ label, code, discountPct, commissionPct, accent }: { label: string; code: string | null; discountPct: number; commissionPct: number; accent?: 'pink' }) {
+  const border = accent === 'pink' ? 'border-pink-500/20 bg-pink-500/5' : 'border-slate-800 bg-slate-900/40';
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+    <div className={`rounded-2xl border ${border} p-4`}>
       <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">{label}</div>
       <div className="flex items-center justify-between gap-2">
         {code ? (
-          <div className="flex-1">
-            <div className="font-mono text-lg font-extrabold tracking-wide">{code}</div>
-            <div className="text-xs text-slate-400 mt-0.5">-{discountPct}% pour le filleul · {commissionPct}% pour vous</div>
+          <div className="flex-1 min-w-0">
+            <div className="font-mono text-lg font-extrabold tracking-wide truncate">{code}</div>
+            <div className="text-xs text-slate-400 mt-0.5">-{discountPct}% filleul · {commissionPct}% vous</div>
           </div>
         ) : (
           <div className="flex-1">
-            <div className="text-sm text-slate-500">Pas de code (0% au filleul)</div>
-            <div className="text-xs text-slate-400 mt-0.5">Vous touchez {commissionPct}% du prix</div>
+            <div className="text-sm text-slate-500">Pas de code</div>
+            <div className="text-xs text-slate-400 mt-0.5">{commissionPct}% pour vous</div>
           </div>
         )}
         {code && <CopyButton value={code} small />}
@@ -533,35 +555,33 @@ function cycleLabel(c: string | null) {
   return '—';
 }
 
-// ─── Split modal ───
+// ─── Split modal (accordion: set A inconnus / set B amis) ───
 
-function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, quarterlyPool, yearlyPool, onClose, onSaved }: {
-  token: string; password: string; initialPct: number; isFirstTime: boolean; monthlyPool: number; quarterlyPool: number; yearlyPool: number; onClose: () => void; onSaved: () => void;
+type Pools = { monthly: number; quarterly: number; yearly: number };
+
+function SplitModal({ token, password, initialPctA, initialPctB, isFirstTime, poolsA, poolsB, onClose, onReload, onDone }: {
+  token: string; password: string; initialPctA: number; initialPctB: number; isFirstTime: boolean; poolsA: Pools; poolsB: Pools; onClose: () => void; onReload: () => void; onDone: () => void;
 }) {
-  const [pct, setPct] = useState(initialPct);
-  const [busy, setBusy] = useState(false);
+  const [openSet, setOpenSet] = useState<'a' | 'b'>('a');
+  const [pctA, setPctA] = useState(initialPctA);
+  const [pctB, setPctB] = useState(initialPctB);
+  const [busy, setBusy] = useState<null | 'a' | 'b'>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [savedTiers, setSavedTiers] = useState<Set<'a' | 'b'>>(new Set());
 
-  // Live preview (uses the ambassador's actual pools)
-  const ratio = pct / 100;
-  const monthlyDisc = Math.round(monthlyPool * ratio * 100) / 100;
-  const quarterlyDisc = Math.round(quarterlyPool * ratio * 100) / 100;
-  const yearlyDisc = Math.round(yearlyPool * ratio * 100) / 100;
-  const monthlyComm = Math.round((monthlyPool - monthlyDisc) * 100) / 100;
-  const quarterlyComm = Math.round((quarterlyPool - quarterlyDisc) * 100) / 100;
-  const yearlyComm = Math.round((yearlyPool - yearlyDisc) * 100) / 100;
-
-  const save = async () => {
-    setBusy(true); setErr(null);
+  const saveTier = async (tier: 'a' | 'b') => {
+    setBusy(tier); setErr(null);
+    const pct = tier === 'a' ? pctA : pctB;
     const r = await fetch('/api/amb-split', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, password, splitToFilleulPct: pct }),
+      body: JSON.stringify({ token, password, splitToFilleulPct: pct, tier }),
     });
     const d = await r.json().catch(() => ({}));
-    setBusy(false);
+    setBusy(null);
     if (!r.ok) { setErr(d?.error || 'Erreur'); return; }
-    onSaved();
+    setSavedTiers(prev => new Set(prev).add(tier));
+    onReload();
   };
 
   return (
@@ -573,11 +593,9 @@ function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, qua
               <Sparkles className="w-5 h-5 text-blue-300" />
             </div>
             <div>
-              <h2 className="text-lg font-extrabold">{isFirstTime ? 'Bienvenue !' : 'Modifier ma répartition'}</h2>
+              <h2 className="text-lg font-extrabold">{isFirstTime ? 'Bienvenue !' : 'Modifier mes répartitions'}</h2>
               <p className="text-sm text-slate-400 mt-1">
-                {isFirstTime
-                  ? `Jusqu'à ${monthlyPool}% (mensuel), ${quarterlyPool}% (trim) ou ${yearlyPool}% (annuel) sont à votre disposition. Comment voulez-vous les utiliser ?`
-                  : 'Ajustez la part que vous donnez à vos filleuls.'}
+                Vous avez 2 jeux de codes : un pour les inconnus (vous gardez la commission), un pour vos amis (vous leur faites un cadeau).
               </p>
             </div>
           </div>
@@ -586,69 +604,130 @@ function SplitModal({ token, password, initialPct, isFirstTime, monthlyPool, qua
           )}
         </div>
 
-        <div className="p-5 overflow-y-auto flex-1 min-h-0">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">Part redistribuée au filleul</div>
-            <div className="text-3xl font-extrabold tabular-nums text-blue-300">{pct}%</div>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={pct}
-            onChange={e => setPct(Number(e.target.value))}
-            className="w-full accent-blue-500"
-          />
-          <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-            <span>0% (vous gardez tout)</span>
-            <span>100% (filleul prend tout)</span>
-          </div>
+        <div className="p-5 overflow-y-auto flex-1 min-h-0 space-y-3">
+          <DashAccordionPanel
+            title="Set 1 — Inconnus / contacts froids"
+            icon={<UserX className="w-4 h-4" />}
+            accentColor="text-blue-300"
+            borderColor="border-blue-500/30"
+            isOpen={openSet === 'a'}
+            onToggle={() => setOpenSet('a')}
+            summary={`${pctA}% au filleul`}
+          >
+            <SplitEditor pct={pctA} setPct={setPctA} pools={poolsA} accentClass="text-blue-300" rangeAccent="accent-blue-500" />
+            {err && busy === null && openSet === 'a' && (
+              <p className="text-xs text-red-400 mt-3 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{err}</p>
+            )}
+            <button
+              onClick={() => saveTier('a')}
+              disabled={busy !== null}
+              className="w-full mt-4 rounded-full bg-white py-2.5 text-sm font-bold text-slate-900 hover:bg-slate-200 transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
+            >
+              {busy === 'a' ? <Loader2 className="w-4 h-4 animate-spin" /> : savedTiers.has('a') ? <><Check className="w-4 h-4" />Enregistré · Réenregistrer</> : 'Enregistrer Set Inconnus'}
+            </button>
+          </DashAccordionPanel>
 
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <PreviewCard
-              label="Mensuel"
-              priceLabel="24€/mo"
-              pool={monthlyPool}
-              discount={monthlyDisc}
-              commission={monthlyComm}
-              filleulPrice={24}
-            />
-            <PreviewCard
-              label="Trimestriel"
-              priceLabel="60€/trim"
-              pool={quarterlyPool}
-              discount={quarterlyDisc}
-              commission={quarterlyComm}
-              filleulPrice={60}
-            />
-            <PreviewCard
-              label="Annuel"
-              priceLabel="216€/an"
-              pool={yearlyPool}
-              discount={yearlyDisc}
-              commission={yearlyComm}
-              filleulPrice={216}
-            />
-          </div>
+          <DashAccordionPanel
+            title="Set 2 — Amis closers"
+            icon={<Heart className="w-4 h-4" />}
+            accentColor="text-pink-300"
+            borderColor="border-pink-500/30"
+            isOpen={openSet === 'b'}
+            onToggle={() => setOpenSet('b')}
+            summary={`${pctB}% au filleul`}
+          >
+            <SplitEditor pct={pctB} setPct={setPctB} pools={poolsB} accentClass="text-pink-300" rangeAccent="accent-pink-500" />
+            {err && busy === null && openSet === 'b' && (
+              <p className="text-xs text-red-400 mt-3 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{err}</p>
+            )}
+            <button
+              onClick={() => saveTier('b')}
+              disabled={busy !== null}
+              className="w-full mt-4 rounded-full bg-white py-2.5 text-sm font-bold text-slate-900 hover:bg-slate-200 transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
+            >
+              {busy === 'b' ? <Loader2 className="w-4 h-4 animate-spin" /> : savedTiers.has('b') ? <><Check className="w-4 h-4" />Enregistré · Réenregistrer</> : 'Enregistrer Set Amis'}
+            </button>
+          </DashAccordionPanel>
 
-          <EarningsProjection monthlyComm={monthlyComm} quarterlyComm={quarterlyComm} yearlyComm={yearlyComm} />
-
-          <p className="text-[11px] text-slate-500 mt-4 leading-relaxed">
-            💡 Vos filleuls actuels gardent leur taux à vie. Ce changement ne s'applique qu'aux nouveaux filleuls qui s'inscrivent à partir de maintenant.
+          <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+            💡 Vos filleuls actuels gardent leur taux à vie. Les changements ne s'appliquent qu'aux nouveaux filleuls.
           </p>
 
-          {err && <p className="text-xs text-red-400 mt-3 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{err}</p>}
-
-          <button
-            onClick={save}
-            disabled={busy}
-            className="w-full mt-5 rounded-full bg-white py-3 text-sm font-bold text-slate-900 hover:bg-slate-200 transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
-          >
-            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : isFirstTime ? 'Valider et accéder à mon dashboard' : 'Enregistrer'}
-          </button>
+          {savedTiers.size > 0 && (
+            <button
+              onClick={onDone}
+              className="w-full mt-3 rounded-full border border-slate-700 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-800 transition"
+            >
+              {isFirstTime ? 'Accéder à mon dashboard' : 'Fermer'}
+            </button>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function DashAccordionPanel({ title, icon, accentColor, borderColor, isOpen, onToggle, summary, children }: {
+  title: string; icon: React.ReactNode; accentColor: string; borderColor: string; isOpen: boolean; onToggle: () => void; summary: string; children: React.ReactNode;
+}) {
+  return (
+    <div className={`rounded-2xl border ${isOpen ? borderColor : 'border-slate-800'} bg-slate-900/30 overflow-hidden transition`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800/30 transition text-left"
+      >
+        <span className={`${accentColor} flex-shrink-0`}>{icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className={`text-sm font-extrabold ${accentColor}`}>{title}</div>
+          {!isOpen && <div className="text-[11px] text-slate-500 mt-0.5 truncate">{summary}</div>}
+        </div>
+        {isOpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-500" />}
+      </button>
+      {isOpen && (
+        <div className="px-4 pb-4 pt-1 border-t border-slate-800/60">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SplitEditor({ pct, setPct, pools, accentClass, rangeAccent }: {
+  pct: number; setPct: (v: number) => void; pools: Pools; accentClass: string; rangeAccent: string;
+}) {
+  const ratio = pct / 100;
+  const mDisc = Math.round(pools.monthly * ratio * 100) / 100;
+  const qDisc = Math.round(pools.quarterly * ratio * 100) / 100;
+  const yDisc = Math.round(pools.yearly * ratio * 100) / 100;
+  const mComm = Math.round((pools.monthly - mDisc) * 100) / 100;
+  const qComm = Math.round((pools.quarterly - qDisc) * 100) / 100;
+  const yComm = Math.round((pools.yearly - yDisc) * 100) / 100;
+  return (
+    <div className="mt-2">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">Part redistribuée au filleul</div>
+        <div className={`text-3xl font-extrabold tabular-nums ${accentClass}`}>{pct}%</div>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={1}
+        value={pct}
+        onChange={e => setPct(Number(e.target.value))}
+        className={`w-full ${rangeAccent}`}
+      />
+      <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+        <span>0% (vous gardez tout)</span>
+        <span>100% (filleul prend tout)</span>
+      </div>
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <PreviewCard label="Mensuel" priceLabel="24€/mo" pool={pools.monthly} discount={mDisc} commission={mComm} filleulPrice={24} />
+        <PreviewCard label="Trimestriel" priceLabel="60€/trim" pool={pools.quarterly} discount={qDisc} commission={qComm} filleulPrice={60} />
+        <PreviewCard label="Annuel" priceLabel="216€/an" pool={pools.yearly} discount={yDisc} commission={yComm} filleulPrice={216} />
+      </div>
+      <EarningsProjection monthlyComm={mComm} quarterlyComm={qComm} yearlyComm={yComm} />
     </div>
   );
 }

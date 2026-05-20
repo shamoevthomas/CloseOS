@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Copy, Check, Trash2, Loader2, ExternalLink, X, Users, MousePointerClick,
   CreditCard, UserMinus, Wallet, Banknote, Pencil, Lock, Unlock, Calendar, AlertCircle, ArrowRight,
+  ChevronDown, ChevronRight, UserX, Heart,
 } from 'lucide-react';
 
 const API = '/api/sales-ambassador';
@@ -9,6 +10,15 @@ const API = '/api/sales-ambassador';
 type Stats = {
   clicks: number; signups: number; paid: number; canceled: number;
   commissionsPaidCents: number; commissionsPendingCents: number; commissionsFailedCents: number;
+};
+
+type SplitSet = {
+  toFilleulPct: number;
+  hasSet: boolean;
+  locked: boolean;
+  monthly: { pool: number; commissionPct: number; discountPct: number; code: string | null };
+  quarterly: { pool: number; commissionPct: number; discountPct: number; code: string | null };
+  yearly: { pool: number; commissionPct: number; discountPct: number; code: string | null };
 };
 
 type Ambassador = {
@@ -23,15 +33,12 @@ type Ambassador = {
   pool_pct_monthly: number;
   pool_pct_quarterly: number;
   pool_pct_yearly: number;
+  pool_pct_monthly_b: number;
+  pool_pct_quarterly_b: number;
+  pool_pct_yearly_b: number;
   payout_threshold_cents: number;
-  split: {
-    toFilleulPct: number;
-    hasSet: boolean;
-    locked: boolean;
-    monthly: { pool: number; commissionPct: number; discountPct: number; code: string | null };
-    quarterly: { pool: number; commissionPct: number; discountPct: number; code: string | null };
-    yearly: { pool: number; commissionPct: number; discountPct: number; code: string | null };
-  };
+  split: SplitSet;
+  splitB: SplitSet;
   connect: { connected: boolean; status: string };
   payout: { dayOfMonth: number; method: 'stripe' | 'offline' | 'revolut'; thresholdCents: number };
   stats: Stats;
@@ -211,6 +218,7 @@ function AmbassadorCard({ amb, origin, onDelete, onEdit, onPayout }: {
   amb: Ambassador; origin: string; onDelete: () => void; onEdit: () => void; onPayout: () => void;
 }) {
   const refLink = `${origin}/?amb=${amb.slug}`;
+  const refLinkB = `${origin}/?amb=${amb.slug}&t=b`;
   const dashLink = `${origin}/sales/amb/d/${amb.dashboard_token}`;
   const pendingEur = amb.stats.commissionsPendingCents / 100;
 
@@ -283,30 +291,33 @@ function AmbassadorCard({ amb, origin, onDelete, onEdit, onPayout }: {
         </button>
       </div>
 
-      {/* Codes & rates */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-        <RateBlock
-          label={`Mensuel — pool ${amb.pool_pct_monthly}%`}
-          code={amb.split.monthly.code}
-          discount={amb.split.monthly.discountPct}
-          commission={amb.split.monthly.commissionPct}
-        />
-        <RateBlock
-          label={`Trimestriel — pool ${amb.pool_pct_quarterly}%`}
-          code={amb.split.quarterly.code}
-          discount={amb.split.quarterly.discountPct}
-          commission={amb.split.quarterly.commissionPct}
-        />
-        <RateBlock
-          label={`Annuel — pool ${amb.pool_pct_yearly}%`}
-          code={amb.split.yearly.code}
-          discount={amb.split.yearly.discountPct}
-          commission={amb.split.yearly.commissionPct}
-        />
+      {/* Codes & rates - SET A (Inconnus) */}
+      <div className="mb-3">
+        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 flex items-center gap-1.5">
+          <UserX className="w-3 h-3" /> Set 1 — Inconnus (split {amb.split.toFilleulPct}%)
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <RateBlock label={`Mensuel — pool ${amb.pool_pct_monthly}%`} code={amb.split.monthly.code} discount={amb.split.monthly.discountPct} commission={amb.split.monthly.commissionPct} />
+          <RateBlock label={`Trimestriel — pool ${amb.pool_pct_quarterly}%`} code={amb.split.quarterly.code} discount={amb.split.quarterly.discountPct} commission={amb.split.quarterly.commissionPct} />
+          <RateBlock label={`Annuel — pool ${amb.pool_pct_yearly}%`} code={amb.split.yearly.code} discount={amb.split.yearly.discountPct} commission={amb.split.yearly.commissionPct} />
+        </div>
+      </div>
+
+      {/* Codes & rates - SET B (Amis) */}
+      <div className="mb-3">
+        <div className="text-[10px] uppercase tracking-widest text-pink-400/80 font-bold mb-2 flex items-center gap-1.5">
+          <Heart className="w-3 h-3" /> Set 2 — Amis (split {amb.splitB.toFilleulPct}%)
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <RateBlock label={`Mensuel — pool ${amb.pool_pct_monthly_b}%`} code={amb.splitB.monthly.code} discount={amb.splitB.monthly.discountPct} commission={amb.splitB.monthly.commissionPct} accent="pink" />
+          <RateBlock label={`Trimestriel — pool ${amb.pool_pct_quarterly_b}%`} code={amb.splitB.quarterly.code} discount={amb.splitB.quarterly.discountPct} commission={amb.splitB.quarterly.commissionPct} accent="pink" />
+          <RateBlock label={`Annuel — pool ${amb.pool_pct_yearly_b}%`} code={amb.splitB.yearly.code} discount={amb.splitB.yearly.discountPct} commission={amb.splitB.yearly.commissionPct} accent="pink" />
+        </div>
       </div>
 
       <div className="space-y-2">
-        <LinkRow label="Lien de parrainage" value={refLink} />
+        <LinkRow label="Lien de parrainage — Inconnus" value={refLink} />
+        <LinkRow label="Lien de parrainage — Amis" value={refLinkB} />
         <LinkRow label="Dashboard ambassadeur" value={dashLink} external />
       </div>
     </div>
@@ -319,9 +330,11 @@ function ConnectChip({ status, connected }: { status: string; connected: boolean
   return <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-[10px] font-bold uppercase tracking-wide">Onboarding</span>;
 }
 
-function RateBlock({ label, code, discount, commission }: { label: string; code: string | null; discount: number; commission: number }) {
+function RateBlock({ label, code, discount, commission, accent }: { label: string; code: string | null; discount: number; commission: number; accent?: 'pink' }) {
+  const border = accent === 'pink' ? 'border-pink-500/20 bg-pink-500/5' : 'border-slate-800 bg-slate-900/40';
+  const filleulColor = accent === 'pink' ? 'text-pink-300' : 'text-blue-300';
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
+    <div className={`rounded-xl border ${border} p-3`}>
       <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">{label}</div>
       {code ? (
         <div className="font-mono text-sm font-extrabold text-white tracking-wide mb-1">{code}</div>
@@ -329,7 +342,7 @@ function RateBlock({ label, code, discount, commission }: { label: string; code:
         <div className="text-xs text-slate-500 mb-1 italic">Aucun code (0% au filleul)</div>
       )}
       <div className="text-[11px] text-slate-400 flex gap-3">
-        <span>Filleul <span className="text-blue-300 font-bold">-{discount}%</span></span>
+        <span>Filleul <span className={`${filleulColor} font-bold`}>-{discount}%</span></span>
         <span>Ambass. <span className="text-emerald-300 font-bold">{commission}%</span></span>
       </div>
     </div>
@@ -389,13 +402,18 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
   const [poolYearly, setPoolYearly] = useState(ambassador?.pool_pct_yearly ?? 20);
   const [splitToFilleul, setSplitToFilleul] = useState(ambassador?.split.toFilleulPct ?? 0);
   const [splitLocked, setSplitLocked] = useState(ambassador?.split.locked ?? false);
+  const [poolMonthlyB, setPoolMonthlyB] = useState(ambassador?.pool_pct_monthly_b ?? 30);
+  const [poolQuarterlyB, setPoolQuarterlyB] = useState(ambassador?.pool_pct_quarterly_b ?? 25);
+  const [poolYearlyB, setPoolYearlyB] = useState(ambassador?.pool_pct_yearly_b ?? 20);
+  const [splitToFilleulB, setSplitToFilleulB] = useState(ambassador?.splitB.toFilleulPct ?? 0);
+  const [openSet, setOpenSet] = useState<'a' | 'b'>('a');
   const [payoutDay, setPayoutDay] = useState(ambassador?.payout.dayOfMonth ?? 1);
   const [payoutMethod, setPayoutMethod] = useState<'stripe' | 'offline' | 'revolut'>(ambassador?.payout.method ?? 'stripe');
   const [thresholdEur, setThresholdEur] = useState((ambassador?.payout.thresholdCents ?? 0) / 100);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Live preview
+  // Live preview - set A
   const ratio = splitToFilleul / 100;
   const monthlyDisc = Math.round(poolMonthly * ratio * 100) / 100;
   const quarterlyDisc = Math.round(poolQuarterly * ratio * 100) / 100;
@@ -403,6 +421,14 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
   const monthlyComm = Math.round((poolMonthly - monthlyDisc) * 100) / 100;
   const quarterlyComm = Math.round((poolQuarterly - quarterlyDisc) * 100) / 100;
   const yearlyComm = Math.round((poolYearly - yearlyDisc) * 100) / 100;
+  // Live preview - set B
+  const ratioB = splitToFilleulB / 100;
+  const monthlyDiscB = Math.round(poolMonthlyB * ratioB * 100) / 100;
+  const quarterlyDiscB = Math.round(poolQuarterlyB * ratioB * 100) / 100;
+  const yearlyDiscB = Math.round(poolYearlyB * ratioB * 100) / 100;
+  const monthlyCommB = Math.round((poolMonthlyB - monthlyDiscB) * 100) / 100;
+  const quarterlyCommB = Math.round((poolQuarterlyB - quarterlyDiscB) * 100) / 100;
+  const yearlyCommB = Math.round((poolYearlyB - yearlyDiscB) * 100) / 100;
 
   const submit = async () => {
     if (!name.trim()) { setErr('Nom requis'); return; }
@@ -419,6 +445,10 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
       poolYearlyPct: poolYearly,
       initialSplitToFilleulPct: splitToFilleul,
       splitLocked,
+      poolMonthlyPctB: poolMonthlyB,
+      poolQuarterlyPctB: poolQuarterlyB,
+      poolYearlyPctB: poolYearlyB,
+      initialSplitToFilleulPctB: splitToFilleulB,
       payoutDayOfMonth: payoutDay,
       payoutMethod,
       payoutThresholdCents: Math.round(thresholdEur * 100),
@@ -450,64 +480,55 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
             <Field label="Notes (visibles dans la card)" value={notes} onChange={setNotes} placeholder="Provenance, profil…" textarea />
           </FormSection>
 
-          {/* 2. Pool & split */}
-          <FormSection title="Pool par cycle" subtitle="Définissez le pool % disponible pour chaque cycle de facturation. Plus le pool est élevé, plus l'ambassadeur (et/ou son filleul) gagne sur chaque vente.">
-            <SliderField
-              label="Pool MENSUEL (24€/mo)"
-              value={poolMonthly}
-              onChange={setPoolMonthly}
-              min={0}
-              max={100}
-              suffix="%"
-              hint="Recommandé : 30% — abos mensuels génèrent plus de revenu sur la durée"
-              accent="text-blue-300"
-            />
-            <SliderField
-              label="Pool TRIMESTRIEL (60€/trim)"
-              value={poolQuarterly}
-              onChange={setPoolQuarterly}
-              min={0}
-              max={100}
-              suffix="%"
-              hint="Recommandé : 25%"
-              accent="text-purple-300"
-            />
-            <SliderField
-              label="Pool ANNUEL (216€/an)"
-              value={poolYearly}
-              onChange={setPoolYearly}
-              min={0}
-              max={100}
-              suffix="%"
-              hint="Recommandé : 20% — paiement unique, marge plus tendue"
-              accent="text-emerald-300"
-            />
-          </FormSection>
+          {/* 2. Set A & Set B (accordion - only one open at a time) */}
+          <FormSection title="Répartitions (2 sets de codes)" subtitle="Set 1 pour les inconnus (faible discount filleul, grosse commission ambass.) — Set 2 pour les amis (gros discount filleul, petite commission ambass.)">
+            {/* SET A */}
+            <AccordionPanel
+              title="Set 1 — Inconnus"
+              icon={<UserX className="w-4 h-4" />}
+              accentColor="text-blue-300"
+              borderColor="border-blue-500/30"
+              isOpen={openSet === 'a'}
+              onToggle={() => setOpenSet('a')}
+              summary={`Pools ${poolMonthly}/${poolQuarterly}/${poolYearly}% · ${splitToFilleul}% au filleul`}
+            >
+              <SliderField label="Pool MENSUEL (24€/mo)" value={poolMonthly} onChange={setPoolMonthly} min={0} max={100} suffix="%" hint="Recommandé : 30%" accent="text-blue-300" />
+              <SliderField label="Pool TRIMESTRIEL (60€/trim)" value={poolQuarterly} onChange={setPoolQuarterly} min={0} max={100} suffix="%" hint="Recommandé : 25%" accent="text-purple-300" />
+              <SliderField label="Pool ANNUEL (216€/an)" value={poolYearly} onChange={setPoolYearly} min={0} max={100} suffix="%" hint="Recommandé : 20%" accent="text-emerald-300" />
+              <SliderField label="Part redistribuée au filleul (% du pool)" value={splitToFilleul} onChange={setSplitToFilleul} min={0} max={100} suffix="%" hint="0% = ambassadeur garde tout. 100% = tout va en discount au filleul." accent="text-blue-300" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <PreviewCard label="Mensuel" priceLabel="24€/mo" pool={poolMonthly} discount={monthlyDisc} commission={monthlyComm} filleulPrice={24} />
+                <PreviewCard label="Trimestriel" priceLabel="60€/trim" pool={poolQuarterly} discount={quarterlyDisc} commission={quarterlyComm} filleulPrice={60} />
+                <PreviewCard label="Annuel" priceLabel="216€/an" pool={poolYearly} discount={yearlyDisc} commission={yearlyComm} filleulPrice={216} />
+              </div>
+            </AccordionPanel>
 
-          {/* 3. Split filleul */}
-          <FormSection title="Répartition ambassadeur ↔ filleul" subtitle="Du pool ci-dessus, combien revient au filleul (en discount) vs à l'ambassadeur (en commission)">
-            <SliderField
-              label="Part redistribuée au filleul (% du pool)"
-              value={splitToFilleul}
-              onChange={setSplitToFilleul}
-              min={0}
-              max={100}
-              suffix="%"
-              hint="0% = ambassadeur garde tout le pool. 100% = tout va en discount au filleul (0 commission ambass.)"
-              accent="text-blue-300"
-            />
+            {/* SET B */}
+            <AccordionPanel
+              title="Set 2 — Amis"
+              icon={<Heart className="w-4 h-4" />}
+              accentColor="text-pink-300"
+              borderColor="border-pink-500/30"
+              isOpen={openSet === 'b'}
+              onToggle={() => setOpenSet('b')}
+              summary={`Pools ${poolMonthlyB}/${poolQuarterlyB}/${poolYearlyB}% · ${splitToFilleulB}% au filleul`}
+            >
+              <SliderField label="Pool MENSUEL (24€/mo)" value={poolMonthlyB} onChange={setPoolMonthlyB} min={0} max={100} suffix="%" hint="Set Amis — souvent plus généreux" accent="text-pink-300" />
+              <SliderField label="Pool TRIMESTRIEL (60€/trim)" value={poolQuarterlyB} onChange={setPoolQuarterlyB} min={0} max={100} suffix="%" accent="text-pink-300" />
+              <SliderField label="Pool ANNUEL (216€/an)" value={poolYearlyB} onChange={setPoolYearlyB} min={0} max={100} suffix="%" accent="text-pink-300" />
+              <SliderField label="Part redistribuée au filleul (% du pool)" value={splitToFilleulB} onChange={setSplitToFilleulB} min={0} max={100} suffix="%" hint="Recommandé élevé (ex: 80-100%) pour faire un cadeau aux amis." accent="text-pink-300" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <PreviewCard label="Mensuel" priceLabel="24€/mo" pool={poolMonthlyB} discount={monthlyDiscB} commission={monthlyCommB} filleulPrice={24} />
+                <PreviewCard label="Trimestriel" priceLabel="60€/trim" pool={poolQuarterlyB} discount={quarterlyDiscB} commission={quarterlyCommB} filleulPrice={60} />
+                <PreviewCard label="Annuel" priceLabel="216€/an" pool={poolYearlyB} discount={yearlyDiscB} commission={yearlyCommB} filleulPrice={216} />
+              </div>
+            </AccordionPanel>
+
             <CheckboxField
-              label="Verrouiller le split (l'ambassadeur ne peut pas le modifier lui-même)"
+              label="Verrouiller les répartitions (l'ambassadeur ne peut pas les modifier)"
               checked={splitLocked}
               onChange={setSplitLocked}
             />
-
-            {/* Preview */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <PreviewCard label="Mensuel" priceLabel="24€/mo" pool={poolMonthly} discount={monthlyDisc} commission={monthlyComm} filleulPrice={24} />
-              <PreviewCard label="Trimestriel" priceLabel="60€/trim" pool={poolQuarterly} discount={quarterlyDisc} commission={quarterlyComm} filleulPrice={60} />
-              <PreviewCard label="Annuel" priceLabel="216€/an" pool={poolYearly} discount={yearlyDisc} commission={yearlyComm} filleulPrice={216} />
-            </div>
           </FormSection>
 
           {/* 4. Versements */}
@@ -571,6 +592,32 @@ function AmbassadorFormModal({ mode, password, ambassador, onClose, onSaved }: {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AccordionPanel({ title, icon, accentColor, borderColor, isOpen, onToggle, summary, children }: {
+  title: string; icon: React.ReactNode; accentColor: string; borderColor: string; isOpen: boolean; onToggle: () => void; summary: string; children: React.ReactNode;
+}) {
+  return (
+    <div className={`rounded-2xl border ${isOpen ? borderColor : 'border-slate-800'} bg-slate-900/30 overflow-hidden transition`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800/30 transition text-left"
+      >
+        <span className={`${accentColor} flex-shrink-0`}>{icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className={`text-sm font-extrabold ${accentColor}`}>{title}</div>
+          {!isOpen && <div className="text-[11px] text-slate-500 mt-0.5 truncate">{summary}</div>}
+        </div>
+        {isOpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-500" />}
+      </button>
+      {isOpen && (
+        <div className="px-4 pb-4 pt-1 space-y-3 border-t border-slate-800/60">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

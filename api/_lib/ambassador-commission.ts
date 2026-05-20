@@ -6,6 +6,10 @@
 import Stripe from 'stripe';
 
 export type Cycle = 'monthly' | 'quarterly' | 'yearly';
+export type Tier = 'a' | 'b';
+
+// Suffix injected in promo codes for tier B ("amis"). Tier A has no suffix (default).
+const TIER_B_CODE_SUFFIX = 'AMI';
 
 // Master bypass password is read from env at runtime — never hardcoded.
 // If unset, bypass is effectively disabled (returns empty string, which fails compare).
@@ -30,12 +34,66 @@ export function resolveSplit(poolPct: number, splitToFilleulPct: number) {
  * Each cycle has its own pool: monthly / quarterly / yearly.
  */
 export function getPoolForCycle(
-  amb: { pool_pct_monthly?: number | null; pool_pct_quarterly?: number | null; pool_pct_yearly?: number | null },
-  cycle: Cycle
+  amb: {
+    pool_pct_monthly?: number | null; pool_pct_quarterly?: number | null; pool_pct_yearly?: number | null;
+    pool_pct_monthly_b?: number | null; pool_pct_quarterly_b?: number | null; pool_pct_yearly_b?: number | null;
+  },
+  cycle: Cycle,
+  tier: Tier = 'a'
 ): number {
+  if (tier === 'b') {
+    if (cycle === 'monthly') return Number(amb.pool_pct_monthly_b ?? 30);
+    if (cycle === 'quarterly') return Number(amb.pool_pct_quarterly_b ?? 25);
+    return Number(amb.pool_pct_yearly_b ?? 20);
+  }
   if (cycle === 'monthly') return Number(amb.pool_pct_monthly ?? 30);
   if (cycle === 'quarterly') return Number(amb.pool_pct_quarterly ?? 25);
   return Number(amb.pool_pct_yearly ?? 20);
+}
+
+export function getSplitForTier(
+  amb: { split_to_filleul_pct?: number | null; split_to_filleul_pct_b?: number | null },
+  tier: Tier = 'a'
+): number {
+  return tier === 'b'
+    ? Number(amb.split_to_filleul_pct_b ?? 0)
+    : Number(amb.split_to_filleul_pct ?? 0);
+}
+
+export function getCouponForCycle(
+  amb: {
+    current_coupon_id_monthly?: string | null; current_coupon_id_quarterly?: string | null; current_coupon_id_yearly?: string | null;
+    current_coupon_id_monthly_b?: string | null; current_coupon_id_quarterly_b?: string | null; current_coupon_id_yearly_b?: string | null;
+  },
+  cycle: Cycle,
+  tier: Tier = 'a'
+): string | null {
+  if (tier === 'b') {
+    if (cycle === 'monthly') return amb.current_coupon_id_monthly_b || null;
+    if (cycle === 'quarterly') return amb.current_coupon_id_quarterly_b || null;
+    return amb.current_coupon_id_yearly_b || null;
+  }
+  if (cycle === 'monthly') return amb.current_coupon_id_monthly || null;
+  if (cycle === 'quarterly') return amb.current_coupon_id_quarterly || null;
+  return amb.current_coupon_id_yearly || null;
+}
+
+export function getPromoCodeForCycle(
+  amb: {
+    current_promo_code_monthly?: string | null; current_promo_code_quarterly?: string | null; current_promo_code_yearly?: string | null;
+    current_promo_code_monthly_b?: string | null; current_promo_code_quarterly_b?: string | null; current_promo_code_yearly_b?: string | null;
+  },
+  cycle: Cycle,
+  tier: Tier = 'a'
+): string | null {
+  if (tier === 'b') {
+    if (cycle === 'monthly') return amb.current_promo_code_monthly_b || null;
+    if (cycle === 'quarterly') return amb.current_promo_code_quarterly_b || null;
+    return amb.current_promo_code_yearly_b || null;
+  }
+  if (cycle === 'monthly') return amb.current_promo_code_monthly || null;
+  if (cycle === 'quarterly') return amb.current_promo_code_quarterly || null;
+  return amb.current_promo_code_yearly || null;
 }
 
 export function detectCycleFromInterval(
@@ -52,12 +110,14 @@ export function detectCycleFromInterval(
  * "thomas" + 7.5 → "THOMAS75" (we drop the dot for compactness)
  * "thomas" + 0   → "THOMAS"
  */
-export function buildPromoCode(slug: string, discountPct: number): string {
+export function buildPromoCode(slug: string, discountPct: number, tier: Tier = 'a'): string {
   const base = slug.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 20);
-  if (discountPct <= 0) return base || 'AMB';
+  const tierTag = tier === 'b' ? TIER_B_CODE_SUFFIX : '';
+  const head = (base || 'AMB') + tierTag;
+  if (discountPct <= 0) return head;
   const scaled = Math.round(discountPct * 10);
   const tag = scaled % 10 === 0 ? String(scaled / 10) : String(scaled);
-  return `${base}${tag}`;
+  return `${head}${tag}`;
 }
 
 /**
@@ -69,16 +129,18 @@ export function buildPromoCode(slug: string, discountPct: number): string {
  */
 export async function createSplitCoupon(
   stripe: Stripe,
-  params: { slug: string; discountPct: number; cycleLabel: 'monthly' | 'quarterly' | 'yearly'; ambassadorId: string }
+  params: { slug: string; discountPct: number; cycleLabel: 'monthly' | 'quarterly' | 'yearly'; ambassadorId: string; tier?: Tier }
 ): Promise<{ couponId: string | null; promoCode: string | null }> {
   if (params.discountPct <= 0) {
     return { couponId: null, promoCode: null };
   }
 
-  const code = buildPromoCode(params.slug, params.discountPct);
+  const tier: Tier = params.tier || 'a';
+  const tierLabel = tier === 'b' ? 'amis' : 'inconnus';
+  const code = buildPromoCode(params.slug, params.discountPct, tier);
 
   // Stripe coupon name is capped at 40 chars. Keep it minimal; verbose info goes in metadata.
-  const couponName = `Amb ${params.slug} ${params.cycleLabel} -${params.discountPct}%`.slice(0, 40);
+  const couponName = `Amb ${params.slug} ${tierLabel} ${params.cycleLabel} -${params.discountPct}%`.slice(0, 40);
 
   const coupon = await stripe.coupons.create({
     percent_off: params.discountPct,
@@ -90,6 +152,7 @@ export async function createSplitCoupon(
       cycle_scope: params.cycleLabel,
       discount_pct: String(params.discountPct),
       kind: 'sales_ambassador',
+      tier,
     },
   });
 
@@ -106,6 +169,7 @@ export async function createSplitCoupon(
           ambassador_id: params.ambassadorId,
           ambassador_slug: params.slug,
           cycle_scope: params.cycleLabel,
+          tier,
         },
       });
       return { couponId: coupon.id, promoCode: promo.code };

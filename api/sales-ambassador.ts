@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
-import { createSplitCoupon, deactivatePromoCode, resolveSplit } from './_lib/ambassador-commission.js';
+import { createSplitCoupon, deactivatePromoCode, resolveSplit, type Tier } from './_lib/ambassador-commission.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -47,29 +47,49 @@ type RotateResult =
   | { ok: true; codes: { monthly: string | null; quarterly: string | null; yearly: string | null }; couponIds: { monthly: string | null; quarterly: string | null; yearly: string | null } }
   | { ok: false; error: string };
 
-async function rotateCouponsForAmb(amb: any, splitToFilleulPct: number): Promise<RotateResult> {
+async function rotateCouponsForAmb(amb: any, splitToFilleulPct: number, tier: Tier = 'a'): Promise<RotateResult> {
+  const suffix = tier === 'b' ? '_b' : '';
+  const promoMonthly = amb[`current_promo_code_monthly${suffix}`];
+  const promoQuarterly = amb[`current_promo_code_quarterly${suffix}`];
+  const promoYearly = amb[`current_promo_code_yearly${suffix}`];
+  const poolMonthly = Number(amb[`pool_pct_monthly${suffix}`] ?? 30);
+  const poolQuarterly = Number(amb[`pool_pct_quarterly${suffix}`] ?? 25);
+  const poolYearly = Number(amb[`pool_pct_yearly${suffix}`] ?? 20);
+
   // A5: deactivate previous codes first; if Stripe API fails, abort to avoid leaving N codes active
-  const dActOk1 = await deactivatePromoCode(stripe, amb.current_promo_code_monthly);
-  const dActOk2 = await deactivatePromoCode(stripe, amb.current_promo_code_quarterly);
-  const dActOk3 = await deactivatePromoCode(stripe, amb.current_promo_code_yearly);
+  const dActOk1 = await deactivatePromoCode(stripe, promoMonthly);
+  const dActOk2 = await deactivatePromoCode(stripe, promoQuarterly);
+  const dActOk3 = await deactivatePromoCode(stripe, promoYearly);
   if (!dActOk1 || !dActOk2 || !dActOk3) {
     return { ok: false, error: 'Stripe API indisponible — impossible de désactiver les anciens codes. Réessayez.' };
   }
 
-  const monthlyResolved = resolveSplit(Number(amb.pool_pct_monthly ?? 30), splitToFilleulPct);
-  const quarterlyResolved = resolveSplit(Number(amb.pool_pct_quarterly ?? 25), splitToFilleulPct);
-  const yearlyResolved = resolveSplit(Number(amb.pool_pct_yearly ?? 20), splitToFilleulPct);
+  const monthlyResolved = resolveSplit(poolMonthly, splitToFilleulPct);
+  const quarterlyResolved = resolveSplit(poolQuarterly, splitToFilleulPct);
+  const yearlyResolved = resolveSplit(poolYearly, splitToFilleulPct);
 
   const [newMonthly, newQuarterly, newYearly] = await Promise.all([
-    createSplitCoupon(stripe, { slug: amb.slug, discountPct: monthlyResolved.discountPct, cycleLabel: 'monthly', ambassadorId: amb.id }),
-    createSplitCoupon(stripe, { slug: amb.slug, discountPct: quarterlyResolved.discountPct, cycleLabel: 'quarterly', ambassadorId: amb.id }),
-    createSplitCoupon(stripe, { slug: amb.slug, discountPct: yearlyResolved.discountPct, cycleLabel: 'yearly', ambassadorId: amb.id }),
+    createSplitCoupon(stripe, { slug: amb.slug, discountPct: monthlyResolved.discountPct, cycleLabel: 'monthly', ambassadorId: amb.id, tier }),
+    createSplitCoupon(stripe, { slug: amb.slug, discountPct: quarterlyResolved.discountPct, cycleLabel: 'quarterly', ambassadorId: amb.id, tier }),
+    createSplitCoupon(stripe, { slug: amb.slug, discountPct: yearlyResolved.discountPct, cycleLabel: 'yearly', ambassadorId: amb.id, tier }),
   ]);
 
   return {
     ok: true,
     codes: { monthly: newMonthly.promoCode, quarterly: newQuarterly.promoCode, yearly: newYearly.promoCode },
     couponIds: { monthly: newMonthly.couponId, quarterly: newQuarterly.couponId, yearly: newYearly.couponId },
+  };
+}
+
+function couponUpdatePayload(tier: Tier, result: { codes: { monthly: string | null; quarterly: string | null; yearly: string | null }; couponIds: { monthly: string | null; quarterly: string | null; yearly: string | null } }) {
+  const suffix = tier === 'b' ? '_b' : '';
+  return {
+    [`current_coupon_id_monthly${suffix}`]: result.couponIds.monthly,
+    [`current_promo_code_monthly${suffix}`]: result.codes.monthly,
+    [`current_coupon_id_quarterly${suffix}`]: result.couponIds.quarterly,
+    [`current_promo_code_quarterly${suffix}`]: result.codes.quarterly,
+    [`current_coupon_id_yearly${suffix}`]: result.couponIds.yearly,
+    [`current_promo_code_yearly${suffix}`]: result.codes.yearly,
   };
 }
 
@@ -133,6 +153,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const monthly = resolveSplit(Number(a.pool_pct_monthly || 30), splitPct);
       const quarterly = resolveSplit(Number(a.pool_pct_quarterly || 25), splitPct);
       const yearly = resolveSplit(Number(a.pool_pct_yearly || 20), splitPct);
+      const splitPctB = Number(a.split_to_filleul_pct_b || 0);
+      const monthlyB = resolveSplit(Number(a.pool_pct_monthly_b || 30), splitPctB);
+      const quarterlyB = resolveSplit(Number(a.pool_pct_quarterly_b || 25), splitPctB);
+      const yearlyB = resolveSplit(Number(a.pool_pct_yearly_b || 20), splitPctB);
       return {
         ...a,
         split: {
@@ -142,6 +166,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           monthly: { pool: monthly.pool, commissionPct: monthly.commissionPct, discountPct: monthly.discountPct, code: a.current_promo_code_monthly },
           quarterly: { pool: quarterly.pool, commissionPct: quarterly.commissionPct, discountPct: quarterly.discountPct, code: a.current_promo_code_quarterly },
           yearly: { pool: yearly.pool, commissionPct: yearly.commissionPct, discountPct: yearly.discountPct, code: a.current_promo_code_yearly },
+        },
+        splitB: {
+          toFilleulPct: splitPctB,
+          hasSet: !!a.split_b_set_at,
+          locked: !!a.split_locked_by_admin,
+          monthly: { pool: monthlyB.pool, commissionPct: monthlyB.commissionPct, discountPct: monthlyB.discountPct, code: a.current_promo_code_monthly_b },
+          quarterly: { pool: quarterlyB.pool, commissionPct: quarterlyB.commissionPct, discountPct: quarterlyB.discountPct, code: a.current_promo_code_quarterly_b },
+          yearly: { pool: yearlyB.pool, commissionPct: yearlyB.commissionPct, discountPct: yearlyB.discountPct, code: a.current_promo_code_yearly_b },
         },
         connect: {
           connected: !!a.stripe_account_id,
@@ -173,6 +205,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       name, email, slug: providedSlug, notes,
       poolMonthlyPct, poolQuarterlyPct, poolYearlyPct,
       initialSplitToFilleulPct, splitLocked,
+      poolMonthlyPctB, poolQuarterlyPctB, poolYearlyPctB,
+      initialSplitToFilleulPctB,
       payoutDayOfMonth, payoutMethod, payoutThresholdCents,
       adminNotes,
     } = req.body || {};
@@ -197,6 +231,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const poolQ = clampPct(poolQuarterlyPct, 25);
     const poolY = clampPct(poolYearlyPct, 20);
     const split = clampPct(initialSplitToFilleulPct, 0);
+    const poolMb = clampPct(poolMonthlyPctB, 30);
+    const poolQb = clampPct(poolQuarterlyPctB, 25);
+    const poolYb = clampPct(poolYearlyPctB, 20);
+    const splitB = clampPct(initialSplitToFilleulPctB, 0);
     const day = clampDay(payoutDayOfMonth, 1);
     const method = payoutMethod === 'offline' ? 'offline' : payoutMethod === 'revolut' ? 'revolut' : 'stripe';
     const threshold = Math.max(0, Math.floor(Number(payoutThresholdCents) || 0));
@@ -214,6 +252,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         split_to_filleul_pct: split,
         split_set_at: split > 0 ? new Date().toISOString() : null,
         split_locked_by_admin: !!splitLocked,
+        pool_pct_monthly_b: poolMb,
+        pool_pct_quarterly_b: poolQb,
+        pool_pct_yearly_b: poolYb,
+        split_to_filleul_pct_b: splitB,
+        split_b_set_at: splitB > 0 ? new Date().toISOString() : null,
         payout_day_of_month: day,
         payout_method: method,
         payout_threshold_cents: threshold,
@@ -226,7 +269,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // If split > 0, immediately create coupons for the 3 cycles
     if (split > 0) {
-      const result = await rotateCouponsForAmb(created, split);
+      const result = await rotateCouponsForAmb(created, split, 'a');
       if (!result.ok) {
         // Roll back the row to keep state consistent (no coupons but split_set_at already set)
         await supabase
@@ -237,14 +280,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       await supabase
         .from('sales_ambassadors')
-        .update({
-          current_coupon_id_monthly: result.couponIds.monthly,
-          current_promo_code_monthly: result.codes.monthly,
-          current_coupon_id_quarterly: result.couponIds.quarterly,
-          current_promo_code_quarterly: result.codes.quarterly,
-          current_coupon_id_yearly: result.couponIds.yearly,
-          current_promo_code_yearly: result.codes.yearly,
-        })
+        .update(couponUpdatePayload('a', result))
+        .eq('id', created.id);
+    }
+
+    if (splitB > 0) {
+      const fresh = (await supabase.from('sales_ambassadors').select('*').eq('id', created.id).single()).data || created;
+      const result = await rotateCouponsForAmb(fresh, splitB, 'b');
+      if (!result.ok) {
+        await supabase
+          .from('sales_ambassadors')
+          .update({ split_b_set_at: null, split_to_filleul_pct_b: 0 })
+          .eq('id', created.id);
+        return res.status(502).json({ error: result.error });
+      }
+      await supabase
+        .from('sales_ambassadors')
+        .update(couponUpdatePayload('b', result))
         .eq('id', created.id);
     }
 
@@ -267,7 +319,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const body = req.body || {};
     const update: Record<string, any> = {};
-    let recreateCoupons = false;
+    let recreateCouponsA = false;
+    let recreateCouponsB = false;
 
     if (body.name != null) update.name = String(body.name);
     if (body.email !== undefined) update.email = body.email || null;
@@ -276,22 +329,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (body.poolMonthlyPct != null) {
       const v = clampPct(body.poolMonthlyPct, Number(amb.pool_pct_monthly));
-      if (v !== Number(amb.pool_pct_monthly)) { update.pool_pct_monthly = v; recreateCoupons = true; }
+      if (v !== Number(amb.pool_pct_monthly)) { update.pool_pct_monthly = v; recreateCouponsA = true; }
     }
     if (body.poolQuarterlyPct != null) {
       const v = clampPct(body.poolQuarterlyPct, Number(amb.pool_pct_quarterly));
-      if (v !== Number(amb.pool_pct_quarterly)) { update.pool_pct_quarterly = v; recreateCoupons = true; }
+      if (v !== Number(amb.pool_pct_quarterly)) { update.pool_pct_quarterly = v; recreateCouponsA = true; }
     }
     if (body.poolYearlyPct != null) {
       const v = clampPct(body.poolYearlyPct, Number(amb.pool_pct_yearly));
-      if (v !== Number(amb.pool_pct_yearly)) { update.pool_pct_yearly = v; recreateCoupons = true; }
+      if (v !== Number(amb.pool_pct_yearly)) { update.pool_pct_yearly = v; recreateCouponsA = true; }
     }
     let newSplit = Number(amb.split_to_filleul_pct || 0);
     if (body.initialSplitToFilleulPct != null) {
       const v = clampPct(body.initialSplitToFilleulPct, newSplit);
-      if (v !== newSplit) { update.split_to_filleul_pct = v; update.split_set_at = new Date().toISOString(); recreateCoupons = true; newSplit = v; }
+      if (v !== newSplit) { update.split_to_filleul_pct = v; update.split_set_at = new Date().toISOString(); recreateCouponsA = true; newSplit = v; }
     }
     if (body.splitLocked != null) update.split_locked_by_admin = !!body.splitLocked;
+
+    if (body.poolMonthlyPctB != null) {
+      const v = clampPct(body.poolMonthlyPctB, Number(amb.pool_pct_monthly_b));
+      if (v !== Number(amb.pool_pct_monthly_b)) { update.pool_pct_monthly_b = v; recreateCouponsB = true; }
+    }
+    if (body.poolQuarterlyPctB != null) {
+      const v = clampPct(body.poolQuarterlyPctB, Number(amb.pool_pct_quarterly_b));
+      if (v !== Number(amb.pool_pct_quarterly_b)) { update.pool_pct_quarterly_b = v; recreateCouponsB = true; }
+    }
+    if (body.poolYearlyPctB != null) {
+      const v = clampPct(body.poolYearlyPctB, Number(amb.pool_pct_yearly_b));
+      if (v !== Number(amb.pool_pct_yearly_b)) { update.pool_pct_yearly_b = v; recreateCouponsB = true; }
+    }
+    let newSplitB = Number(amb.split_to_filleul_pct_b || 0);
+    if (body.initialSplitToFilleulPctB != null) {
+      const v = clampPct(body.initialSplitToFilleulPctB, newSplitB);
+      if (v !== newSplitB) { update.split_to_filleul_pct_b = v; update.split_b_set_at = new Date().toISOString(); recreateCouponsB = true; newSplitB = v; }
+    }
 
     if (body.payoutDayOfMonth != null) update.payout_day_of_month = clampDay(body.payoutDayOfMonth, amb.payout_day_of_month || 1);
     if (body.payoutMethod != null) update.payout_method = body.payoutMethod === 'offline' ? 'offline' : body.payoutMethod === 'revolut' ? 'revolut' : 'stripe';
@@ -302,22 +373,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (updErr) return res.status(500).json({ error: updErr.message });
     }
 
-    if (recreateCoupons) {
+    if (recreateCouponsA) {
       // Refetch to get latest pools
       const { data: fresh } = await supabase.from('sales_ambassadors').select('*').eq('id', id).single();
       if (fresh) {
-        const result = await rotateCouponsForAmb(fresh, newSplit);
+        const result = await rotateCouponsForAmb(fresh, newSplit, 'a');
         if (!result.ok) return res.status(502).json({ error: result.error });
         await supabase
           .from('sales_ambassadors')
-          .update({
-            current_coupon_id_monthly: result.couponIds.monthly,
-            current_promo_code_monthly: result.codes.monthly,
-            current_coupon_id_quarterly: result.couponIds.quarterly,
-            current_promo_code_quarterly: result.codes.quarterly,
-            current_coupon_id_yearly: result.couponIds.yearly,
-            current_promo_code_yearly: result.codes.yearly,
-          })
+          .update(couponUpdatePayload('a', result))
+          .eq('id', id);
+      }
+    }
+
+    if (recreateCouponsB) {
+      const { data: fresh } = await supabase.from('sales_ambassadors').select('*').eq('id', id).single();
+      if (fresh) {
+        const result = await rotateCouponsForAmb(fresh, newSplitB, 'b');
+        if (!result.ok) return res.status(502).json({ error: result.error });
+        await supabase
+          .from('sales_ambassadors')
+          .update(couponUpdatePayload('b', result))
           .eq('id', id);
       }
     }

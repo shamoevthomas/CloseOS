@@ -53,6 +53,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const monthlyResolved = resolveSplit(Number(amb.pool_pct_monthly || 30), splitPct);
   const quarterlyResolved = resolveSplit(Number(amb.pool_pct_quarterly || 25), splitPct);
   const yearlyResolved = resolveSplit(Number(amb.pool_pct_yearly || 20), splitPct);
+  const splitPctB = Number(amb.split_to_filleul_pct_b || 0);
+  const monthlyResolvedB = resolveSplit(Number(amb.pool_pct_monthly_b || 30), splitPctB);
+  const quarterlyResolvedB = resolveSplit(Number(amb.pool_pct_quarterly_b || 25), splitPctB);
+  const yearlyResolvedB = resolveSplit(Number(amb.pool_pct_yearly_b || 20), splitPctB);
 
   return res.json({
     ambassador: {
@@ -63,6 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     auth: {
       hasPassword: !!amb.password_hash,
       hasSplit: !!amb.split_set_at,
+      hasSplitB: !!amb.split_b_set_at,
     },
     split: {
       toFilleulPct: splitPct,
@@ -70,6 +75,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       monthly: { ...monthlyResolved, code: amb.current_promo_code_monthly },
       quarterly: { ...quarterlyResolved, code: amb.current_promo_code_quarterly },
       yearly: { ...yearlyResolved, code: amb.current_promo_code_yearly },
+    },
+    splitB: {
+      toFilleulPct: splitPctB,
+      lockedByAdmin: !!amb.split_locked_by_admin,
+      monthly: { ...monthlyResolvedB, code: amb.current_promo_code_monthly_b },
+      quarterly: { ...quarterlyResolvedB, code: amb.current_promo_code_quarterly_b },
+      yearly: { ...yearlyResolvedB, code: amb.current_promo_code_yearly_b },
     },
     connect: {
       connected: !!amb.stripe_account_id,

@@ -19,7 +19,7 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode, customerEmail, existingUser, internalReferral, ambassadorSlug } = req.body;
+    const { lineItems, plan, referralCode, isVoip, promotekitReferral, userId, referral_code: frontendReferralCode, customerEmail, existingUser, internalReferral, ambassadorSlug, ambassadorTier } = req.body;
 
     // Cascade de priorité pour le code affilié : Supabase > localStorage > Promotekit
     let supabaseReferral = null;
@@ -127,41 +127,38 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
 
     // ─── Ambassador attribution: auto-apply coupon from cookie/slug ───
     // Skipped if any other discount (referral interne, code Stripe tapé) is already applied
-    let ambassadorMatched: { id: string; slug: string; couponId: string | null; promoCode: string | null; pool: number; commissionPct: number; discountPct: number } | null = null;
+    // ambassadorTier ('a' or 'b') picks the répartition set; defaults to 'a' (inconnus)
+    let ambassadorMatched: { id: string; slug: string; tier: 'a' | 'b'; couponId: string | null; promoCode: string | null; pool: number; commissionPct: number; discountPct: number } | null = null;
     if (ambassadorSlug && discounts.length === 0) {
       try {
         const { data: amb } = await supabase
           .from('sales_ambassadors')
-          .select('id, slug, current_coupon_id_monthly, current_promo_code_monthly, current_coupon_id_quarterly, current_promo_code_quarterly, current_coupon_id_yearly, current_promo_code_yearly, split_to_filleul_pct, pool_pct_monthly, pool_pct_quarterly, pool_pct_yearly')
+          .select('id, slug, current_coupon_id_monthly, current_promo_code_monthly, current_coupon_id_quarterly, current_promo_code_quarterly, current_coupon_id_yearly, current_promo_code_yearly, split_to_filleul_pct, pool_pct_monthly, pool_pct_quarterly, pool_pct_yearly, current_coupon_id_monthly_b, current_promo_code_monthly_b, current_coupon_id_quarterly_b, current_promo_code_quarterly_b, current_coupon_id_yearly_b, current_promo_code_yearly_b, split_to_filleul_pct_b, pool_pct_monthly_b, pool_pct_quarterly_b, pool_pct_yearly_b')
           .eq('slug', String(ambassadorSlug).trim())
           .maybeSingle();
         if (amb) {
-          const { resolveSplit, getPoolForCycle } = await import('./_lib/ambassador-commission.js');
+          const { resolveSplit, getPoolForCycle, getSplitForTier, getCouponForCycle, getPromoCodeForCycle } = await import('./_lib/ambassador-commission.js');
+          const tier: 'a' | 'b' = ambassadorTier === 'b' ? 'b' : 'a';
           const cycle = refereeBillingCycle as 'monthly' | 'quarterly' | 'yearly';
-          const splitPct = Number(amb.split_to_filleul_pct || 0);
-          const poolForCycle = getPoolForCycle(amb, cycle);
+          const splitPct = getSplitForTier(amb, tier);
+          const poolForCycle = getPoolForCycle(amb, cycle, tier);
           const resolved = resolveSplit(poolForCycle, splitPct);
-          const couponId =
-            cycle === 'monthly' ? amb.current_coupon_id_monthly :
-            cycle === 'quarterly' ? amb.current_coupon_id_quarterly :
-            amb.current_coupon_id_yearly;
-          const promoCode =
-            cycle === 'monthly' ? amb.current_promo_code_monthly :
-            cycle === 'quarterly' ? amb.current_promo_code_quarterly :
-            amb.current_promo_code_yearly;
+          const couponId = getCouponForCycle(amb, cycle, tier);
+          const promoCode = getPromoCodeForCycle(amb, cycle, tier);
           if (couponId) {
             discounts.push({ coupon: couponId });
           }
           ambassadorMatched = {
             id: amb.id,
             slug: amb.slug,
+            tier,
             couponId,
             promoCode,
             pool: poolForCycle,
             commissionPct: resolved.commissionPct,
             discountPct: resolved.discountPct,
           };
-          console.log('🎟️ Ambassadeur match:', amb.slug, '| cycle:', cycle, '| pool:', poolForCycle, '| coupon:', couponId || 'none', '| commission:', resolved.commissionPct, '%');
+          console.log('🎟️ Ambassadeur match:', amb.slug, '| tier:', tier, '| cycle:', cycle, '| pool:', poolForCycle, '| coupon:', couponId || 'none', '| commission:', resolved.commissionPct, '%');
         }
       } catch (e) {
         console.error('ambassador checkout lookup failed:', (e as any)?.message || e);
@@ -215,6 +212,7 @@ async function handleCheckout(req: VercelRequest, res: VercelResponse) {
         ...(ambassadorMatched ? {
           ambassador_id: ambassadorMatched.id,
           ambassador_slug: ambassadorMatched.slug,
+          ambassador_tier: ambassadorMatched.tier,
           ambassador_pool_pct: String(ambassadorMatched.pool),
           ambassador_commission_pct: String(ambassadorMatched.commissionPct),
           ambassador_discount_pct: String(ambassadorMatched.discountPct),

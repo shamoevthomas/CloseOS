@@ -6,7 +6,7 @@ import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
   ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save, Video, Globe,
   Settings, Trash2, Bell, Code2, FileText, ChevronRight, ToggleLeft, ToggleRight, Pencil, Phone, Hash, List, Type,
-  ClipboardList, ChevronUp, CreditCard, Info, AlertTriangle, Minus,
+  ClipboardList, ChevronUp, CreditCard, Info, AlertTriangle, Minus, CalendarPlus,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
@@ -25,7 +25,7 @@ interface Appointment {
   google_meet_link?: string | null
   created_at: string
   assigned_to?: string
-  prospect: { id: number; contact: string; email: string; phone: string } | null
+  prospect: { id: number; contact: string; email: string; phone: string; timezone?: string | null } | null
   campaign: { id: string; name: string } | null
   questionnaire_answers?: { question_text: string; answer_value: string | string[] }[] | null
 }
@@ -880,6 +880,74 @@ export function BusinessAppointments() {
     }
   }
 
+  // Cancel (sends Brevo email + deletes GCal event)
+  const [cancelLoadingId, setCancelLoadingId] = useState<string | null>(null)
+  const handleCancelAppt = async (id: string) => {
+    if (!effectiveUserId) return
+    if (!window.confirm('Annuler ce rendez-vous ? Le prospect recevra un email de notification.')) return
+    setCancelLoadingId(id)
+    try {
+      const res = await fetch(`${API_URL}?action=appointment-cancel-internal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: effectiveUserId, appointment_id: id }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data?.error || 'Erreur lors de l\'annulation')
+        return
+      }
+      toast.success(data.email_sent ? 'Rendez-vous annulé, email envoyé au prospect' : 'Rendez-vous annulé')
+      setSelectedAppointment(null)
+      fetchAppointments()
+    } catch {
+      toast.error('Erreur lors de l\'annulation')
+    } finally {
+      setCancelLoadingId(null)
+    }
+  }
+
+  // Reschedule (updates GCal + sends Brevo email)
+  const [rescheduleAppt, setRescheduleAppt] = useState<any | null>(null)
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleTime, setRescheduleTime] = useState('')
+  const [rescheduleLoading, setRescheduleLoading] = useState(false)
+  const openReschedule = (appt: any) => {
+    setRescheduleAppt(appt)
+    setRescheduleDate(appt.date || '')
+    setRescheduleTime((appt.time || '').slice(0, 5))
+  }
+  const handleRescheduleSubmit = async () => {
+    if (!rescheduleAppt || !effectiveUserId || !rescheduleDate || !rescheduleTime) return
+    setRescheduleLoading(true)
+    try {
+      const res = await fetch(`${API_URL}?action=appointment-reschedule-internal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: effectiveUserId,
+          appointment_id: rescheduleAppt.id,
+          date: rescheduleDate,
+          time: rescheduleTime,
+          timezone: rescheduleAppt.timezone || userTimezone || 'Europe/Paris',
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data?.error || 'Erreur lors de la reprogrammation')
+        return
+      }
+      toast.success(data.email_sent ? 'Rendez-vous reprogrammé, email envoyé au prospect' : 'Rendez-vous reprogrammé')
+      setRescheduleAppt(null)
+      setSelectedAppointment(null)
+      fetchAppointments()
+    } catch {
+      toast.error('Erreur lors de la reprogrammation')
+    } finally {
+      setRescheduleLoading(false)
+    }
+  }
+
   const handleDeleteAppointment = async (id: string) => {
     if (!effectiveUserId) return
     try {
@@ -1026,6 +1094,14 @@ export function BusinessAppointments() {
     if (!member?.timezone || member.timezone === userTimezone) return null
     const memberLocal = fromUTC(appt.datetime_utc, member.timezone)
     return { time: memberLocal.time, timezone: member.timezone, name: `${member.first_name} ${member.last_name}` }
+  }
+
+  /** Get the prospect's local time (if different timezone) */
+  const getProspectLocalTime = (appt: Appointment) => {
+    const tz = appt.prospect?.timezone || appt.timezone
+    if (!appt.datetime_utc || !tz || tz === userTimezone) return null
+    const local = fromUTC(appt.datetime_utc, tz)
+    return { date: local.date, time: local.time, timezone: tz }
   }
 
   /** When booking for someone else, compute their local time */
@@ -1742,6 +1818,7 @@ export function BusinessAppointments() {
               const memberName = getMemberName((appt as any).assigned_to)
               const localDt = getLocalDateTime(appt)
               const memberTime = getMemberLocalTime(appt)
+              const prospectTime = getProspectLocalTime(appt)
               const endTime = getEndTime(localDt.time, appt.duration)
 
               // Temporal tag: passé / bientôt / futur
@@ -1781,6 +1858,12 @@ export function BusinessAppointments() {
                         <span className="inline-flex items-center gap-1 text-xs text-[#747878] mt-0.5" title={`Heure locale de ${memberTime.name} (${getTimezoneLabel(memberTime.timezone)})`}>
                           <Globe className="h-3 w-3" />
                           {memberTime.time} chez {memberTime.name}
+                        </span>
+                      )}
+                      {prospectTime && (
+                        <span className="inline-flex items-center gap-1 text-xs text-[#747878] mt-0.5" title={`Heure locale du prospect (${getTimezoneLabel(prospectTime.timezone)})`}>
+                          <Globe className="h-3 w-3" />
+                          {formatDate(prospectTime.date)} à {prospectTime.time} chez le prospect
                         </span>
                       )}
                     </div>
@@ -1883,20 +1966,46 @@ export function BusinessAppointments() {
                             Confirmer
                           </button>
                           <button
-                            onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'cancelled') }}
-                            className="px-6 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:bg-neutral-900 transition-all"
+                            onClick={(e) => { e.stopPropagation(); openReschedule(appt) }}
+                            className="px-5 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all flex items-center gap-1.5"
                           >
+                            <CalendarPlus className="h-3.5 w-3.5" />
+                            Reprogrammer
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleCancelAppt(appt.id) }}
+                            disabled={cancelLoadingId === appt.id}
+                            className="px-6 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                          >
+                            {cancelLoadingId === appt.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                             Annuler
                           </button>
                         </>
                       )}
                       {isOwnerOrHoS && appt.status === 'confirmed' && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'done') }}
-                          className="px-6 py-2 rounded-full bg-[#006c49] text-white text-sm font-bold hover:shadow-md transition-all"
-                        >
-                          Terminer
-                        </button>
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); updateStatus(appt.id, 'done') }}
+                            className="px-6 py-2 rounded-full bg-[#006c49] text-white text-sm font-bold hover:shadow-md transition-all"
+                          >
+                            Terminer
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openReschedule(appt) }}
+                            className="px-5 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all flex items-center gap-1.5"
+                          >
+                            <CalendarPlus className="h-3.5 w-3.5" />
+                            Reprogrammer
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleCancelAppt(appt.id) }}
+                            disabled={cancelLoadingId === appt.id}
+                            className="px-6 py-2 rounded-full border border-red-200 dark:border-red-900/30 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                          >
+                            {cancelLoadingId === appt.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                            Annuler
+                          </button>
+                        </>
                       )}
                       {(appt.status === 'cancelled' || appt.status === 'done') && (
                         <>
@@ -2964,6 +3073,17 @@ export function BusinessAppointments() {
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
                       {localDt.time} — {endMinutes} ({appt.duration || 30}min)
                     </p>
+                    {(() => {
+                      const pt = getProspectLocalTime(appt)
+                      if (!pt) return null
+                      const pDate = new Date(pt.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })
+                      return (
+                        <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1" title={`Heure locale du prospect (${getTimezoneLabel(pt.timezone)})`}>
+                          <Globe className="h-3 w-3" />
+                          {pDate} à {pt.time} chez le prospect
+                        </p>
+                      )
+                    })()}
                   </div>
                 </div>
 
@@ -3046,19 +3166,28 @@ export function BusinessAppointments() {
                 )}
 
                 {/* Status actions */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   {isOwnerOrHoS && appt.status === 'pending' && (
                     <>
                       <button
                         onClick={() => { updateStatus(appt.id, 'confirmed'); setSelectedAppointment(null) }}
-                        className="flex-1 px-6 py-3 rounded-full bg-[#006c49] text-white text-sm font-bold hover:shadow-md transition-all"
+                        className="flex-1 min-w-[120px] px-6 py-3 rounded-full bg-[#006c49] text-white text-sm font-bold hover:shadow-md transition-all"
                       >
                         Confirmer
                       </button>
                       <button
-                        onClick={() => { updateStatus(appt.id, 'cancelled'); setSelectedAppointment(null) }}
-                        className="flex-1 px-6 py-3 rounded-full border border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 transition-all"
+                        onClick={() => openReschedule(appt)}
+                        className="flex-1 min-w-[120px] px-5 py-3 rounded-full border border-[#c4c7c7]/30 text-[#1b1c1b] dark:text-white text-sm font-bold hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all flex items-center justify-center gap-1.5"
                       >
+                        <CalendarPlus className="h-4 w-4" />
+                        Reprogrammer
+                      </button>
+                      <button
+                        onClick={() => handleCancelAppt(appt.id)}
+                        disabled={cancelLoadingId === appt.id}
+                        className="flex-1 min-w-[100px] px-6 py-3 rounded-full border border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        {cancelLoadingId === appt.id && <Loader2 className="h-4 w-4 animate-spin" />}
                         Annuler
                       </button>
                     </>
@@ -3067,14 +3196,23 @@ export function BusinessAppointments() {
                     <>
                       <button
                         onClick={() => { updateStatus(appt.id, 'done'); setSelectedAppointment(null) }}
-                        className="flex-1 px-6 py-3 rounded-full bg-[#006c49] text-white text-sm font-bold hover:shadow-md transition-all"
+                        className="flex-1 min-w-[120px] px-6 py-3 rounded-full bg-[#006c49] text-white text-sm font-bold hover:shadow-md transition-all"
                       >
                         Terminer
                       </button>
                       <button
-                        onClick={() => { updateStatus(appt.id, 'cancelled'); setSelectedAppointment(null) }}
-                        className="flex-1 px-6 py-3 rounded-full border border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 transition-all"
+                        onClick={() => openReschedule(appt)}
+                        className="flex-1 min-w-[120px] px-5 py-3 rounded-full border border-[#c4c7c7]/30 text-[#1b1c1b] dark:text-white text-sm font-bold hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all flex items-center justify-center gap-1.5"
                       >
+                        <CalendarPlus className="h-4 w-4" />
+                        Reprogrammer
+                      </button>
+                      <button
+                        onClick={() => handleCancelAppt(appt.id)}
+                        disabled={cancelLoadingId === appt.id}
+                        className="flex-1 min-w-[100px] px-6 py-3 rounded-full border border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        {cancelLoadingId === appt.id && <Loader2 className="h-4 w-4 animate-spin" />}
                         Annuler
                       </button>
                     </>
@@ -3101,6 +3239,66 @@ export function BusinessAppointments() {
           </div>
         )
       })()}
+
+      {/* Reschedule modal */}
+      {rescheduleAppt && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-stone-900/30 backdrop-blur-sm" onClick={() => !rescheduleLoading && setRescheduleAppt(null)} />
+          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+              <h3 className="font-bold text-[#1b1c1b] dark:text-white">Reprogrammer le rendez-vous</h3>
+              <button onClick={() => !rescheduleLoading && setRescheduleAppt(null)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-xs text-[#444748] dark:text-neutral-400">Le prospect recevra automatiquement un email avec la nouvelle date.</p>
+              {rescheduleAppt.prospect?.contact && (
+                <div className="px-3 py-2 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 text-xs text-[#1b1c1b] dark:text-neutral-200">
+                  <span className="opacity-60">Prospect : </span><strong>{rescheduleAppt.prospect.contact}</strong>
+                  {rescheduleAppt.prospect.email && <span className="opacity-60"> — {rescheduleAppt.prospect.email}</span>}
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#444748] dark:text-neutral-400 mb-2">Date</label>
+                  <input
+                    type="date"
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#c4c7c7]/30 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#1b1c1b]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#444748] dark:text-neutral-400 mb-2">Heure</label>
+                  <input
+                    type="time"
+                    value={rescheduleTime}
+                    onChange={(e) => setRescheduleTime(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#c4c7c7]/30 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#1b1c1b]"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
+              <button
+                onClick={() => !rescheduleLoading && setRescheduleAppt(null)}
+                disabled={rescheduleLoading}
+                className="px-4 py-2 rounded-full text-sm font-bold text-stone-500 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleRescheduleSubmit}
+                disabled={!rescheduleDate || !rescheduleTime || rescheduleLoading}
+                className="px-5 py-2 rounded-full text-sm font-bold bg-[#1b1c1b] text-white hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {rescheduleLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Envoi…</> : 'Confirmer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

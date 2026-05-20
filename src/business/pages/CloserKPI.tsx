@@ -841,7 +841,7 @@ export function CloserKPI() {
           </div>
         </div>
 
-        {!isFixedComp && (
+        {!isFixedComp && !isSolo && (
         <div className="bg-white dark:bg-white/5 rounded-2xl border border-stone-200 dark:border-neutral-700/50 p-5 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
           <h3 className="text-sm font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400 mb-4">{t.kpi_commission_chart}</h3>
           <div className="h-56">
@@ -997,7 +997,7 @@ export function CloserKPI() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <SummaryItem label={t.kpi_total_leads} value={v.leads} icon={Users} color="indigo" dark />
           <SummaryItem label={t.kpi_deals_in_progress} value={v.deals} icon={Briefcase} color="cyan" dark />
-          {!isFixedComp && <SummaryItem label={t.kpi_avg_comm} value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />}
+          {!isFixedComp && !isSolo && <SummaryItem label={t.kpi_avg_comm} value={`${formatCurrency(avgCommission)} €`} icon={Award} color="stone" dark />}
         </div>
       </div>
       </div>{/* end pdfRef */}

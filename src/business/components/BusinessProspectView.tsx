@@ -7,9 +7,11 @@ import {
   Bell, Check, Loader2, FileText, ClipboardList,
   Package, ExternalLink, PhoneCall, Tag, Camera,
   CreditCard, Wallet, Link2, Search, Zap, CheckCircle2,
-  Award, AlertCircle, XCircle, Settings2, CalendarPlus,
+  Award, AlertCircle, XCircle, Settings2, CalendarPlus, Copy, Globe,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { TimezonePicker } from './TimezonePicker'
+import { getTimezoneLabel, getCurrentLocalTime, getTimezoneOffsetHours, fromUTC } from '../../lib/timezone'
 import { CommissionApprovalModal } from './CommissionApprovalModal'
 import { InstallmentScheduleEditor } from '../../components/InstallmentScheduleEditor'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -18,7 +20,6 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
-import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
 
 const GLASS_PANEL = 'bg-white/70 dark:bg-white/5 backdrop-blur-xl'
@@ -310,14 +311,15 @@ export function BusinessProspectView({
   }
 
   // Next appointment
-  const [nextAppointment, setNextAppointment] = useState<{ date: string; time: string; status: string } | null>(null)
+  const [nextAppointment, setNextAppointment] = useState<{ id: string; date: string; time: string; status: string; datetime_utc?: string | null } | null>(null)
+  const [apptRefreshKey, setApptRefreshKey] = useState(0)
   useEffect(() => {
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId || !prospect.id) return
     const nowUtc = new Date().toISOString()
     supabase
       .from('business_appointments')
-      .select('date, time, status, datetime_utc')
+      .select('id, date, time, status, datetime_utc')
       .eq('prospect_id', prospect.id)
       .in('status', ['pending', 'confirmed'])
       .order('date', { ascending: true })
@@ -332,12 +334,86 @@ export function BusinessProspectView({
         })
         if (future && future.datetime_utc) {
           const local = fromUTC(future.datetime_utc, userTimezone)
-          setNextAppointment({ date: local.date, time: local.time, status: future.status })
+          setNextAppointment({ id: future.id, date: local.date, time: local.time, status: future.status, datetime_utc: future.datetime_utc })
         } else {
-          setNextAppointment(future ? { date: future.date, time: future.time?.slice(0, 5), status: future.status } : null)
+          setNextAppointment(future ? { id: future.id, date: future.date, time: future.time?.slice(0, 5), status: future.status, datetime_utc: null } : null)
         }
       })
-  }, [prospect.id, user?.id, ownerUserId, isTeamMember, userTimezone])
+  }, [prospect.id, user?.id, ownerUserId, isTeamMember, userTimezone, apptRefreshKey])
+
+  // Cancel / Reschedule next appointment (internal flow)
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleTime, setRescheduleTime] = useState('')
+  const [rescheduleLoading, setRescheduleLoading] = useState(false)
+
+  const handleCancelAppointment = async () => {
+    if (!nextAppointment) return
+    const ownerId = isTeamMember ? ownerUserId : user?.id
+    if (!ownerId) return
+    if (!window.confirm('Annuler ce rendez-vous ? Le prospect recevra un email de notification.')) return
+    setCancelLoading(true)
+    try {
+      const res = await fetch(`${API_URL}?action=appointment-cancel-internal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: ownerId, appointment_id: nextAppointment.id }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data?.error || 'Erreur lors de l\'annulation')
+        return
+      }
+      toast.success(data.email_sent ? 'Rendez-vous annulé, email envoyé au prospect' : 'Rendez-vous annulé')
+      setApptRefreshKey(k => k + 1)
+    } catch (e) {
+      console.error(e)
+      toast.error('Erreur lors de l\'annulation')
+    } finally {
+      setCancelLoading(false)
+    }
+  }
+
+  const openRescheduleModal = () => {
+    if (!nextAppointment) return
+    setRescheduleDate(nextAppointment.date)
+    setRescheduleTime(nextAppointment.time || '')
+    setShowRescheduleModal(true)
+  }
+
+  const handleRescheduleSubmit = async () => {
+    if (!nextAppointment || !rescheduleDate || !rescheduleTime) return
+    const ownerId = isTeamMember ? ownerUserId : user?.id
+    if (!ownerId) return
+    setRescheduleLoading(true)
+    try {
+      const res = await fetch(`${API_URL}?action=appointment-reschedule-internal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: ownerId,
+          appointment_id: nextAppointment.id,
+          date: rescheduleDate,
+          time: rescheduleTime,
+          timezone: userTimezone || 'Europe/Paris',
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data?.error || 'Erreur lors de la reprogrammation')
+        return
+      }
+      toast.success(data.email_sent ? 'Rendez-vous reprogrammé, email envoyé au prospect' : 'Rendez-vous reprogrammé')
+      setShowRescheduleModal(false)
+      setApptRefreshKey(k => k + 1)
+    } catch (e) {
+      console.error(e)
+      toast.error('Erreur lors de la reprogrammation')
+    } finally {
+      setRescheduleLoading(false)
+    }
+  }
 
   // Client edit
   const [editingClient, setEditingClient] = useState(false)
@@ -345,6 +421,14 @@ export function BusinessProspectView({
   const [editedCompany, setEditedCompany] = useState(prospect.company)
   const [editedEmail, setEditedEmail] = useState(prospect.email)
   const [editedPhone, setEditedPhone] = useState(prospect.phone)
+  const [editedTimezone, setEditedTimezone] = useState<string>(prospect.timezone || '')
+
+  // Re-render once a minute so the prospect's current local time stays fresh
+  const [, setNowTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(t => t + 1), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   // Notes internes
   const [editingNotes, setEditingNotes] = useState(false)
@@ -726,7 +810,7 @@ export function BusinessProspectView({
     const nameParts = editedContact.trim().split(' ')
     const firstName = nameParts[0] || ''
     const lastName = nameParts.slice(1).join(' ') || ''
-    handleUpdate({ contact: editedContact, firstName, lastName, company: editedCompany, email: editedEmail, phone: editedPhone })
+    handleUpdate({ contact: editedContact, firstName, lastName, company: editedCompany, email: editedEmail, phone: editedPhone, timezone: editedTimezone || null })
     setEditingClient(false)
   }
 
@@ -1910,9 +1994,13 @@ export function BusinessProspectView({
                     <input type="text" value={editedCompany} onChange={e => setEditedCompany(e.target.value)} className={INPUT_CLS} placeholder={t.prospect_field_company} />
                     <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className={INPUT_CLS} placeholder="Email" />
                     <PhoneInput value={editedPhone} onChange={setEditedPhone} />
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 ml-1">Fuseau horaire</label>
+                      <TimezonePicker value={editedTimezone} onChange={setEditedTimezone} />
+                    </div>
                     <div className="flex gap-2 pt-2">
                       <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">{t.prospect_sauvegarder}</button>
-                      <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone) }} className="rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">{t.prospect_cancel_btn}</button>
+                      <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone); setEditedTimezone(local.timezone || '') }} className="rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">{t.prospect_cancel_btn}</button>
                     </div>
                   </div>
                 ) : (
@@ -1925,6 +2013,16 @@ export function BusinessProspectView({
                         <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Email</p>
                         <button onClick={handleOpenGmail} className="text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] truncate text-left transition-colors">{local.email || '—'}</button>
                       </div>
+                      {local.email && (
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(local.email!); toast.success(t.common_copied) }}
+                          className="shrink-0 p-2 rounded-full text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
+                          title={t.common_copy}
+                          aria-label={t.common_copy}
+                        >
+                          <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
+                        </button>
+                      )}
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
@@ -1934,7 +2032,56 @@ export function BusinessProspectView({
                         <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{t.prospect_phone}</p>
                         <button onClick={handleOpenWhatsApp} className="text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] text-left transition-colors">{local.phone || '—'}</button>
                       </div>
+                      {local.phone && (
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(local.phone!); toast.success(t.common_copied) }}
+                          className="shrink-0 p-2 rounded-full text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
+                          title={t.common_copy}
+                          aria-label={t.common_copy}
+                        >
+                          <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
+                        </button>
+                      )}
                     </div>
+                    {(() => {
+                      const tz = local.timezone
+                      if (!tz) {
+                        return (
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
+                              <Globe className="h-5 w-5" strokeWidth={1.5} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Fuseau horaire</p>
+                              <button onClick={() => setEditingClient(true)} className="text-sm font-medium text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 italic transition-colors">Non renseigné — cliquer pour ajouter</button>
+                            </div>
+                          </div>
+                        )
+                      }
+                      const local2 = getCurrentLocalTime(tz)
+                      const offset = getTimezoneOffsetHours(tz, userTimezone)
+                      const sign = offset > 0 ? '+' : ''
+                      const offsetTxt = Number.isInteger(offset) ? `${sign}${offset}h` : `${sign}${offset.toFixed(1)}h`
+                      return (
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
+                            <Globe className="h-5 w-5" strokeWidth={1.5} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Fuseau horaire</p>
+                            <p className="text-sm font-semibold text-stone-900 dark:text-white">{getTimezoneLabel(tz)}</p>
+                            <p className="text-[11px] text-stone-500 dark:text-neutral-400 mt-0.5">
+                              Il est <span className="font-semibold text-stone-700 dark:text-neutral-200">{local2.time}</span> chez le prospect ({local2.day})
+                            </p>
+                            {tz !== userTimezone && (
+                              <p className="text-[11px] text-stone-500 dark:text-neutral-400">
+                                <span className="font-semibold text-stone-700 dark:text-neutral-200">{offsetTxt}</span> par rapport à toi
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
                         <Calendar className="h-5 w-5" strokeWidth={1.5} />
@@ -1949,17 +2096,49 @@ export function BusinessProspectView({
                       </div>
                     </div>
                     {nextAppointment && (
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
-                          <Calendar className="h-5 w-5" strokeWidth={1.5} />
+                      <div>
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
+                            <Calendar className="h-5 w-5" strokeWidth={1.5} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-[#006c49] uppercase tracking-wider">{t.prospect_next_appointment}</p>
+                            <p className="text-sm font-semibold text-stone-900 dark:text-white">
+                              {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
+                                weekday: 'short', day: 'numeric', month: 'long'
+                              })} {lang === 'en' ? 'at' : 'à'} {nextAppointment.time?.slice(0, 5)}
+                            </p>
+                            {(() => {
+                              const ptz = local.timezone
+                              if (!ptz || ptz === userTimezone || !nextAppointment.datetime_utc) return null
+                              const pl = fromUTC(nextAppointment.datetime_utc, ptz)
+                              const pdate = new Date(pl.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })
+                              return (
+                                <p className="text-[11px] text-stone-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1" title={`Heure locale du prospect (${getTimezoneLabel(ptz)})`}>
+                                  <Globe className="h-3 w-3" strokeWidth={1.5} />
+                                  {pdate} {lang === 'en' ? 'at' : 'à'} {pl.time} chez le prospect
+                                </p>
+                              )
+                            })()}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-[#006c49] uppercase tracking-wider">{t.prospect_next_appointment}</p>
-                          <p className="text-sm font-semibold text-stone-900 dark:text-white">
-                            {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
-                              weekday: 'short', day: 'numeric', month: 'long'
-                            })} {lang === 'en' ? 'at' : 'à'} {nextAppointment.time?.slice(0, 5)}
-                          </p>
+                        <div className="flex items-center gap-2 mt-3 pl-14">
+                          <button
+                            onClick={openRescheduleModal}
+                            disabled={cancelLoading || rescheduleLoading}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-stone-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors disabled:opacity-50"
+                          >
+                            <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                            Reprogrammer
+                          </button>
+                          <button
+                            onClick={handleCancelAppointment}
+                            disabled={cancelLoading || rescheduleLoading}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-3 py-1.5 text-xs font-business-display font-bold text-rose-600 dark:text-rose-400 transition-colors disabled:opacity-50"
+                          >
+                            {cancelLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} /> : <XCircle className="h-3.5 w-3.5" strokeWidth={1.5} />}
+                            Annuler
+                          </button>
                         </div>
                       </div>
                     )}
@@ -2393,6 +2572,60 @@ export function BusinessProspectView({
                   className="px-5 py-2 rounded-full text-sm font-business-display font-bold bg-stone-900 text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {bookSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> {t.prospect_book_submitting}</> : t.prospect_book_submit}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reschedule modal */}
+        {showRescheduleModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => !rescheduleLoading && setShowRescheduleModal(false)} />
+            <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+                <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">Reprogrammer le rendez-vous</h3>
+                <button onClick={() => !rescheduleLoading && setShowRescheduleModal(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                  <X className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+              </div>
+              <div className="px-6 py-5 space-y-4">
+                <p className="text-xs text-stone-500 dark:text-neutral-400">Le prospect recevra automatiquement un email avec la nouvelle date.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Date</label>
+                    <input
+                      type="date"
+                      value={rescheduleDate}
+                      onChange={(e) => setRescheduleDate(e.target.value)}
+                      className={INPUT_CLS}
+                    />
+                  </div>
+                  <div>
+                    <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Heure</label>
+                    <input
+                      type="time"
+                      value={rescheduleTime}
+                      onChange={(e) => setRescheduleTime(e.target.value)}
+                      className={INPUT_CLS}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
+                <button
+                  onClick={() => !rescheduleLoading && setShowRescheduleModal(false)}
+                  disabled={rescheduleLoading}
+                  className="px-4 py-2 rounded-full text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleRescheduleSubmit}
+                  disabled={!rescheduleDate || !rescheduleTime || rescheduleLoading}
+                  className="px-5 py-2 rounded-full text-sm font-business-display font-bold bg-stone-900 text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {rescheduleLoading ? <><Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> Envoi…</> : 'Confirmer'}
                 </button>
               </div>
             </div>

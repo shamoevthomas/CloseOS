@@ -137,6 +137,8 @@ export function TrialExpiredModal() {
         // Cookie ambassadeur
         const cookieAmb = document.cookie.match(/closeos_amb=([^;]+)/)?.[1] || '';
         const ambassadorSlug = decodeURIComponent(cookieAmb) || localStorage.getItem('closeos_amb') || '';
+        const cookieAmbTier = document.cookie.match(/closeos_amb_tier=([^;]+)/)?.[1] || '';
+        const ambassadorTier = (decodeURIComponent(cookieAmbTier) || localStorage.getItem('closeos_amb_tier') || 'a') === 'b' ? 'b' : 'a';
 
         fetch('/api/checkout', {
             method: 'POST',
@@ -149,6 +151,7 @@ export function TrialExpiredModal() {
                 referral_code: localStorage.getItem('referral_code') ?? '',
                 internalReferral: internalRef,
                 ambassadorSlug,
+                ambassadorTier,
                 userId: user?.id,
                 customerEmail: user?.email,
                 existingUser: true,

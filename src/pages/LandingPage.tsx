@@ -592,14 +592,18 @@ export function LandingPage() {
       document.cookie = `closeos_ref=${encodeURIComponent(ref)};max-age=${30 * 24 * 60 * 60};path=/;SameSite=Lax`;
     }
 
-    // Ambassador attribution (?amb=<slug>) — server sets a 30d cookie
+    // Ambassador attribution (?amb=<slug>[&t=a|b]) — server sets a 30d cookie
     const amb = params.get('amb');
     if (amb) {
+      const tierRaw = (params.get('t') || params.get('tier') || 'a').toLowerCase();
+      const tier = tierRaw === 'b' ? 'b' : 'a';
       localStorage.setItem('closeos_amb', amb);
+      localStorage.setItem('closeos_amb_tier', tier);
+      document.cookie = `closeos_amb_tier=${tier};max-age=${30 * 24 * 60 * 60};path=/;SameSite=Lax`;
       fetch('/api/amb-track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: amb }),
+        body: JSON.stringify({ slug: amb, tier }),
       }).catch(() => {});
     }
   }, []);
