@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { TimezonePicker } from './TimezonePicker'
-import { getTimezoneLabel, getCurrentLocalTime, getTimezoneOffsetHours, fromUTC } from '../../lib/timezone'
+import { getTimezoneLabel, getCurrentLocalTime, getTimezoneOffsetHours, fromUTC, toUTC } from '../../lib/timezone'
 import { CommissionApprovalModal } from './CommissionApprovalModal'
 import { InstallmentScheduleEditor } from '../../components/InstallmentScheduleEditor'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
@@ -456,6 +456,7 @@ export function BusinessProspectView({
   const [bookTime, setBookTime] = useState('')
   const [bookDuration, setBookDuration] = useState(30)
   const [bookTitle, setBookTitle] = useState('')
+  const [bookDescription, setBookDescription] = useState('')
   const [bookAssigneeId, setBookAssigneeId] = useState<string>('')
   const [bookSubmitting, setBookSubmitting] = useState(false)
 
@@ -906,6 +907,7 @@ export function BusinessProspectView({
     setBookTime(`${pad(nextHour.getHours())}:${pad(nextHour.getMinutes())}`)
     setBookDuration(30)
     setBookTitle(`RDV avec ${local.contact || ''}`.trim())
+    setBookDescription('')
     const defaultAssigneeId = isTeamMember ? (teamMember?.id || '') : (user?.id || '')
     setBookAssigneeId(defaultAssigneeId)
     setShowBookModal(true)
@@ -928,6 +930,7 @@ export function BusinessProspectView({
         duration: bookDuration,
         title: bookTitle.trim() || `RDV avec ${local.contact || 'prospect'}`,
         timezone: userTimezone || 'Europe/Paris',
+        description: bookDescription.trim(),
       }
       const res = await fetch(`${API_URL}?action=appointments-book-quick`, {
         method: 'POST',
@@ -2485,6 +2488,30 @@ export function BusinessProspectView({
                     className={INPUT_CLS}
                   />
                 </div>
+                {(() => {
+                  const ptz = local.timezone
+                  if (!ptz || ptz === userTimezone || !bookDate || !bookTime) return null
+                  let prospectDate: string, prospectTime: string
+                  try {
+                    const utc = toUTC(bookDate, bookTime, userTimezone)
+                    const pl = fromUTC(utc, ptz)
+                    prospectDate = pl.date
+                    prospectTime = pl.time
+                  } catch { return null }
+                  const offset = getTimezoneOffsetHours(ptz, userTimezone)
+                  const sign = offset > 0 ? '+' : ''
+                  const offsetTxt = Number.isInteger(offset) ? `${sign}${offset}h` : `${sign}${offset.toFixed(1)}h`
+                  const pDateFr = new Date(prospectDate + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })
+                  return (
+                    <div className="rounded-xl bg-[#006c49]/5 dark:bg-[#006c49]/10 border border-[#006c49]/15 px-3 py-2 flex items-center gap-2 text-xs text-stone-700 dark:text-neutral-200" title={getTimezoneLabel(ptz)}>
+                      <Globe className="h-3.5 w-3.5 text-[#006c49] shrink-0" strokeWidth={1.5} />
+                      <span>
+                        Chez le prospect : <strong className="font-semibold">{pDateFr} {lang === 'en' ? 'at' : 'à'} {prospectTime}</strong>
+                        <span className="text-stone-500 dark:text-neutral-400"> ({offsetTxt} vs toi)</span>
+                      </span>
+                    </div>
+                  )
+                })()}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_book_date}</label>
@@ -2556,6 +2583,16 @@ export function BusinessProspectView({
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                   </div>
+                </div>
+                <div>
+                  <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>Description</label>
+                  <textarea
+                    value={bookDescription}
+                    onChange={(e) => setBookDescription(e.target.value)}
+                    placeholder="Ajoutez une description pour ce rendez-vous (optionnel)…"
+                    rows={3}
+                    className={cn(INPUT_CLS, 'resize-none')}
+                  />
                 </div>
               </div>
               <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">

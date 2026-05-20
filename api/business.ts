@@ -164,6 +164,118 @@ async function deleteGoogleCalendarEvent(accessToken: string, eventId: string): 
   } catch { return false }
 }
 
+async function getGoogleCalendarEventDescription(accessToken: string, eventId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${GOOGLE_CALENDAR_API}/calendars/primary/events/${eventId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!res.ok) return null
+    const data: any = await res.json()
+    return typeof data?.description === 'string' ? data.description : null
+  } catch { return null }
+}
+
+/**
+ * Strip a previous "Rendez-vous reprogrammé" header, any trailing
+ * action-links section (delimiter `─────` style OR legacy `Reporter:` lines)
+ * AND any inline `📋 Questionnaire :` block — so we can rebuild fresh.
+ */
+function extractBaseEventDescription(existing: string | null | undefined): string {
+  if (!existing) return ''
+  let s = existing
+  // Drop the reprogrammé header if present
+  s = s.replace(/^Rendez-vous reprogrammé\s*\n+/, '')
+  // Drop everything after the first box-drawing delimiter (catches questionnaire + action links)
+  const delimIdx = s.search(/\n[\s]*─{5,}/)
+  if (delimIdx !== -1) s = s.slice(0, delimIdx)
+  // Defensive: strip any orphan "📋 Questionnaire :" block (no delimiter)
+  s = s.replace(/\n*📋\s*Questionnaire\s*:[\s\S]*$/i, '')
+  // Strip legacy reschedule/cancel link lines
+  const cleaned = s.split('\n').filter(line => {
+    const l = line.trim()
+    if (/^(Reporter|Reprogrammer|Annuler|Cancel)\s*:/i.test(l)) return false
+    if (/^📅\s/.test(l) || /^❌\s/.test(l)) return false
+    return true
+  })
+  return cleaned.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+/** Format a "📋 Questionnaire :" block from a list of { question_text, answer_value } items. */
+function formatQuestionnaireSection(items: Array<{ question_text?: string | null; answer_value?: any }>): string {
+  if (!Array.isArray(items) || items.length === 0) return ''
+  const lines = items
+    .map(qa => {
+      const q = (qa.question_text || '').toString().trim()
+      const raw = qa.answer_value ?? ''
+      const v = Array.isArray(raw) ? raw.filter(Boolean).join(', ') : String(raw).trim()
+      if (!q || !v) return ''
+      return `• ${q} : ${v}`
+    })
+    .filter(Boolean)
+  if (lines.length === 0) return ''
+  return '📋 Questionnaire :\n' + lines.join('\n')
+}
+
+/**
+ * Load questionnaire answers for an appointment and return the formatted section.
+ * Prefers `business_appointments.questionnaire_answers` (booking-link flow stores
+ * pre-resolved {question_text, answer_value}); falls back to joining
+ * `prospect_answers` × `campaign_questions` (campaign capture flow).
+ */
+async function buildQuestionnaireSectionForAppointment(supabase: any, appointmentId: string): Promise<string> {
+  const { data: appt } = await supabase
+    .from('business_appointments')
+    .select('prospect_id, questionnaire_answers')
+    .eq('id', appointmentId)
+    .single()
+  if (!appt) return ''
+  if (Array.isArray(appt.questionnaire_answers) && appt.questionnaire_answers.length > 0) {
+    return formatQuestionnaireSection(appt.questionnaire_answers)
+  }
+  if (!appt.prospect_id) return ''
+  const { data: answers } = await supabase
+    .from('prospect_answers')
+    .select('answer_value, campaign_questions(question_text, sort_order)')
+    .eq('prospect_id', appt.prospect_id)
+  if (!Array.isArray(answers) || answers.length === 0) return ''
+  const items = answers
+    .map((a: any) => ({
+      question_text: a.campaign_questions?.question_text || '',
+      answer_value: a.answer_value,
+      sort: a.campaign_questions?.sort_order ?? 0,
+    }))
+    .filter((x: any) => x.question_text)
+    .sort((a: any, b: any) => a.sort - b.sort)
+  return formatQuestionnaireSection(items)
+}
+
+/**
+ * Build the GCal description we set on a reschedule: header on top, original
+ * base description preserved, questionnaire section (optional), action links at bottom.
+ */
+function buildRescheduledEventDescription(
+  baseDescription: string,
+  rescheduleLink: string,
+  cancelLink: string,
+  questionnaireSection?: string,
+): string {
+  const parts = ['Rendez-vous reprogrammé']
+  if (baseDescription) {
+    parts.push('')
+    parts.push(baseDescription)
+  }
+  if (questionnaireSection) {
+    parts.push('')
+    parts.push('─────────────────')
+    parts.push(questionnaireSection)
+  }
+  parts.push('')
+  parts.push('─────────────────')
+  parts.push(`📅 Reprogrammer : ${rescheduleLink}`)
+  parts.push(`❌ Annuler : ${cancelLink}`)
+  return parts.join('\n')
+}
+
 async function updateGoogleCalendarEvent(accessToken: string, eventId: string, event: {
   summary?: string; description?: string; startDateTime: string; endDateTime: string; timeZone: string;
 }): Promise<boolean> {
@@ -267,6 +379,40 @@ function buildProspectAppointmentDate(
   const timeFr = formatInTimeZone(utc, tz, 'HH:mm')
   const dateLong = `${dateFr} ${timeFr}`
   return { tz, dateFr, timeFr, dateLong }
+}
+
+/**
+ * Find an existing prospect for `ownerId` by email (case-insensitive) and
+ * fall back to a unique match on contact (full name). Returns null when no
+ * unambiguous match is found.
+ */
+async function matchExistingProspect(
+  supabase: any,
+  ownerId: string,
+  { email, name }: { email?: string | null; name?: string | null },
+): Promise<{ id: number; timezone?: string | null } | null> {
+  if (email && email.trim()) {
+    const { data } = await supabase
+      .from('business_prospects')
+      .select('id, timezone')
+      .eq('user_id', ownerId)
+      .ilike('email', email.trim())
+      .order('id', { ascending: true })
+      .limit(1)
+    if (data && data[0]) return data[0]
+  }
+  const cleanName = (name || '').trim()
+  if (cleanName.length >= 3) {
+    const { data } = await supabase
+      .from('business_prospects')
+      .select('id, timezone')
+      .eq('user_id', ownerId)
+      .ilike('contact', cleanName)
+      .limit(2)
+    // Only auto-link when the name match is unambiguous
+    if (data && data.length === 1) return data[0]
+  }
+  return null
 }
 
 function getAirtableFieldValue(fields: Record<string, any>, fieldName: string | undefined): string {
@@ -2638,6 +2784,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         duration,
         title,
         timezone,
+        description: customDescription,
       } = req.body || {}
 
       if (!owner_id || !prospect_id || !date || !time) {
@@ -2679,7 +2826,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Resolve prospect
       const { data: prospect } = await supabase
         .from('business_prospects')
-        .select('id, contact, email, user_id')
+        .select('id, contact, email, phone, user_id')
         .eq('id', prospect_id)
         .single()
       if (!prospect || prospect.user_id !== owner_id) {
@@ -2737,9 +2884,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           endDate.setMinutes(endDate.getMinutes() + apptDuration)
           const pad = (n: number) => String(n).padStart(2, '0')
           const endIso = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}:00`
+          const rescheduleUrl = `https://www.closeos.fr/appointment/${rescheduleToken}?action=reschedule`
+          const cancelUrl = `https://www.closeos.fr/appointment/${cancelToken}?action=cancel`
+          const contactLines = [
+            prospect.email ? `📧 ${prospect.email}` : '',
+            prospect.phone ? `📞 ${prospect.phone}` : '',
+          ].filter(Boolean).join('\n')
+          const cleanCustomDesc = typeof customDescription === 'string' ? customDescription.trim() : ''
+          const description = [
+            contactLines || null,
+            cleanCustomDesc ? '' : null,
+            cleanCustomDesc ? '─────────────────' : null,
+            cleanCustomDesc || null,
+            '',
+            '─────────────────',
+            `📅 Reprogrammer : ${rescheduleUrl}`,
+            `❌ Annuler : ${cancelUrl}`,
+          ].filter(l => l !== null).join('\n')
           const gcalRes = await createGoogleCalendarEvent(accessToken, {
             summary: apptTitle,
-            description: `Rendez-vous CloseOS\n\nProspect: ${prospect.contact || ''}\nEmail: ${prospect.email || ''}\n\nReporter: https://www.closeos.fr/appointment/${rescheduleToken}?action=reschedule\nAnnuler: https://www.closeos.fr/appointment/${cancelToken}?action=cancel`,
+            description,
             startDateTime: startIso,
             endDateTime: endIso,
             timeZone: tz,
@@ -2970,11 +3134,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               startIso = `${date}T${time}:00`
               endIso = `${date}T${endH}:${endM}:00`
             }
+            // Preserve the original event description + re-inject the questionnaire
+            const currentDesc = await getGoogleCalendarEventDescription(gcalToken, appt.google_calendar_event_id)
+            const baseDesc = extractBaseEventDescription(currentDesc)
+            const qaSection = await buildQuestionnaireSectionForAppointment(supabase, appt.id)
             await updateGoogleCalendarEvent(gcalToken, appt.google_calendar_event_id, {
               startDateTime: startIso,
               endDateTime: endIso,
               timeZone: memberTz,
-              description: `Rendez-vous reprogrammé\n\n─────────────────\n📅 Reprogrammer : ${newRescheduleLink}\n❌ Annuler : ${newCancelLink}`,
+              description: buildRescheduledEventDescription(baseDesc, newRescheduleLink, newCancelLink, qaSection),
             })
           }
         } catch (e) {
@@ -4007,11 +4175,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               startIso = `${date}T${time}:00`
               endIso = `${date}T${endH}:${endM}:00`
             }
+            // Preserve the original event description + re-inject the questionnaire
+            const currentDesc = await getGoogleCalendarEventDescription(gcalToken, appt.google_calendar_event_id)
+            const baseDesc = extractBaseEventDescription(currentDesc)
+            const qaSection = await buildQuestionnaireSectionForAppointment(supabase, appt.id)
             await updateGoogleCalendarEvent(gcalToken, appt.google_calendar_event_id, {
               startDateTime: startIso,
               endDateTime: endIso,
               timeZone: memberTz,
-              description: `Rendez-vous reprogrammé\n\n─────────────────\n📅 Reprogrammer : ${newRescheduleLink}\n❌ Annuler : ${newCancelLink}`,
+              description: buildRescheduledEventDescription(baseDesc, newRescheduleLink, newCancelLink, qaSection),
             })
           }
         } catch (gcalErr) {
@@ -4466,13 +4638,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const summary = replaceBookingLinkVars(rawTitle)
             const cancelLink = `https://www.closeos.fr/appointment/${appointment.cancel_token}?action=cancel`
             const rescheduleLink = `https://www.closeos.fr/appointment/${appointment.reschedule_token}?action=reschedule`
-            const rawDesc = link.description
-              ? `${link.description}\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
-              : `Rendez-vous CloseOS\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
+            const contactLines = [
+              email ? `📧 ${email}` : '',
+              phone ? `📞 ${phone}` : '',
+            ].filter(Boolean).join('\n')
+            const headerDesc = link.description
+              ? `${link.description}${contactLines ? `\n\n${contactLines}` : ''}`
+              : contactLines
             const qaSection = (questionnaire_answers && Array.isArray(questionnaire_answers) && questionnaire_answers.length > 0)
-              ? '\n\n─────────────────\n📋 Questionnaire:\n' + questionnaire_answers.map((qa: any) => `• ${qa.question_text}: ${Array.isArray(qa.answer_value) ? qa.answer_value.join(', ') : qa.answer_value}`).join('\n')
+              ? '\n\n─────────────────\n📋 Questionnaire :\n' + questionnaire_answers.map((qa: any) => `• ${qa.question_text} : ${Array.isArray(qa.answer_value) ? qa.answer_value.join(', ') : qa.answer_value}`).join('\n')
               : ''
-            const description = replaceBookingLinkVars(rawDesc) + qaSection + `\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
+            const description = replaceBookingLinkVars(headerDesc) + qaSection + `\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
 
             const gcalResult = await createGoogleCalendarEvent(gcalToken, {
               summary,
@@ -4669,11 +4845,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
         if (hasConflict) return res.status(409).json({ error: 'Ce créneau vient d\'être réservé. Veuillez en choisir un autre.' })
 
+        // Match existing prospect: email first, then full name
+        const matched = await matchExistingProspect(supabase, ownerId, { email, name })
+        const matchedProspectId = matched?.id ?? null
+        if (matched && !matched.timezone && prospect_timezone) {
+          await supabase.from('business_prospects').update({ timezone: prospect_timezone }).eq('id', matched.id)
+        }
+
         const { data: apptData, error: apptErr } = await supabase
           .from('business_appointments')
           .insert({
             user_id: ownerId,
-            prospect_id: null,
+            prospect_id: matchedProspectId,
             assigned_to: assignedTo,
             date,
             time,
@@ -4744,10 +4927,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const summary = replaceSubmitVars(rawSummary)
             const cancelLink = `https://www.closeos.fr/appointment/${appointment.cancel_token}?action=cancel`
             const rescheduleLink = `https://www.closeos.fr/appointment/${appointment.reschedule_token}?action=reschedule`
-            const rawDesc = link.description
-              ? `${link.description}\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
-              : `Rendez-vous CloseOS\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
-            const description = replaceSubmitVars(rawDesc) + `\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
+            const contactLines = [
+              email ? `📧 ${email}` : '',
+              phone ? `📞 ${phone}` : '',
+            ].filter(Boolean).join('\n')
+            const headerDesc = link.description
+              ? `${link.description}${contactLines ? `\n\n${contactLines}` : ''}`
+              : contactLines
+            const qaSection = await buildQuestionnaireSectionForAppointment(supabase, appointment.id)
+            const description = replaceSubmitVars(headerDesc)
+              + (qaSection ? `\n\n─────────────────\n${qaSection}` : '')
+              + `\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
 
             const gcalResult = await createGoogleCalendarEvent(gcalToken, {
               summary,
@@ -5466,21 +5656,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const customDataObj = pd.custom_data || {}
       const customDataNote = Object.entries(customDataObj).filter(([, v]: any) => typeof v === 'string' && v.trim()).map(([k, v]: any) => ` — ${k}: ${v}`).join('')
 
-      // Look up existing prospect by email
+      // Match existing prospect: email first, then fallback to full name
       let matchedProspectId: number | null = null
-      if (pd.email) {
-        const { data: existingProspect } = await supabase
-          .from('business_prospects')
-          .select('id, timezone')
-          .eq('user_id', link.business_owner_id)
-          .eq('email', pd.email)
-          .maybeSingle()
-        if (existingProspect) {
-          matchedProspectId = existingProspect.id
-          // Backfill timezone only when not already set (don't clobber a manual edit)
-          if (!existingProspect.timezone && pd.prospect_timezone) {
-            await supabase.from('business_prospects').update({ timezone: pd.prospect_timezone }).eq('id', existingProspect.id)
-          }
+      const matched = await matchExistingProspect(supabase, link.business_owner_id, {
+        email: pd.email,
+        name: pd.name,
+      })
+      if (matched) {
+        matchedProspectId = matched.id
+        // Backfill timezone only when not already set (don't clobber a manual edit)
+        if (!matched.timezone && pd.prospect_timezone) {
+          await supabase.from('business_prospects').update({ timezone: pd.prospect_timezone }).eq('id', matched.id)
         }
       }
 
@@ -6046,10 +6232,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const summary = replaceVars(rawTitle)
                 const cancelLink = `https://www.closeos.fr/appointment/${appointment.cancel_token}?action=cancel`
                 const rescheduleLink = `https://www.closeos.fr/appointment/${appointment.reschedule_token}?action=reschedule`
-                const rawDesc = campaign.booking_description
-                  ? `${campaign.booking_description}\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
-                  : `Rendez-vous CloseOS\n\nProspect: ${name}\nEmail: ${email || ''}\nTél: ${phone || ''}`
-                const description = replaceVars(rawDesc) + `\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
+                const contactLines = [
+                  email ? `📧 ${email}` : '',
+                  phone ? `📞 ${phone}` : '',
+                ].filter(Boolean).join('\n')
+                const headerDesc = campaign.booking_description
+                  ? `${campaign.booking_description}${contactLines ? `\n\n${contactLines}` : ''}`
+                  : contactLines
+                const qaSection = await buildQuestionnaireSectionForAppointment(supabase, appointment.id)
+                const description = replaceVars(headerDesc)
+                  + (qaSection ? `\n\n─────────────────\n${qaSection}` : '')
+                  + `\n\n─────────────────\n📅 Reprogrammer : ${rescheduleLink}\n❌ Annuler : ${cancelLink}`
 
                 const gcalResult = await createGoogleCalendarEvent(gcalToken, {
                   summary,

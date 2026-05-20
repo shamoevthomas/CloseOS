@@ -438,39 +438,57 @@ export function PublicBooking() {
       // Build full phone with country code
       const fullPhone = phone.trim() ? `${countryCode} ${phone.trim()}` : ''
 
-      // Look up existing prospect by email in the CRM, create if missing
+      // Look up existing prospect in the CRM by email, then by full name,
+      // before falling back to creating a new lead.
       let matchedProspectId: number | null = null
+      const cleanName = name.trim()
+
+      // 1) Email match (case-insensitive)
       if (email.trim()) {
-        const { data: existingProspect } = await supabase
+        const { data: byEmail } = await supabase
           .from('business_prospects')
           .select('id')
           .eq('user_id', linkMeta.business_owner_id)
-          .eq('email', email.trim())
-          .maybeSingle()
-        if (existingProspect) {
-          matchedProspectId = existingProspect.id
-        } else {
-          const nameParts = name.trim().split(/\s+/)
-          const firstName = nameParts[0] || ''
-          const lastName = nameParts.slice(1).join(' ') || ''
-          const { data: created } = await supabase
-            .from('business_prospects')
-            .insert({
-              user_id: linkMeta.business_owner_id,
-              email: email.trim(),
-              contact: name.trim(),
-              firstName,
-              lastName,
-              phone: fullPhone || null,
-              source: 'booking_link',
-              stage: 'lead',
-              status: 'new',
-              assigned_to: linkMeta.team_member_id || null,
-            })
-            .select('id')
-            .single()
-          if (created) matchedProspectId = created.id
-        }
+          .ilike('email', email.trim())
+          .order('id', { ascending: true })
+          .limit(1)
+        if (byEmail && byEmail[0]) matchedProspectId = byEmail[0].id
+      }
+
+      // 2) Fallback: unambiguous match on contact (full name, case-insensitive)
+      if (!matchedProspectId && cleanName.length >= 3) {
+        const { data: byName } = await supabase
+          .from('business_prospects')
+          .select('id')
+          .eq('user_id', linkMeta.business_owner_id)
+          .ilike('contact', cleanName)
+          .limit(2)
+        if (byName && byName.length === 1) matchedProspectId = byName[0].id
+      }
+
+      // 3) Still no match → create a new lead (only when we have an email)
+      if (!matchedProspectId && email.trim()) {
+        const nameParts = cleanName.split(/\s+/)
+        const firstName = nameParts[0] || ''
+        const lastName = nameParts.slice(1).join(' ') || ''
+        const { data: created } = await supabase
+          .from('business_prospects')
+          .insert({
+            user_id: linkMeta.business_owner_id,
+            email: email.trim(),
+            contact: cleanName,
+            firstName,
+            lastName,
+            phone: fullPhone || null,
+            source: 'booking_link',
+            stage: 'lead',
+            status: 'new',
+            assigned_to: linkMeta.team_member_id || null,
+            timezone: prospectTimezone || null,
+          })
+          .select('id')
+          .single()
+        if (created) matchedProspectId = created.id
       }
 
       // Create appointment
