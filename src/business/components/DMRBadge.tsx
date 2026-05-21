@@ -1,17 +1,19 @@
 import type { BusinessProspect } from '../contexts/BusinessProspectsContext'
 
 interface Props {
-  prospect: Pick<BusinessProspect, 'stage' | 'created_at'>
+  prospect: Pick<BusinessProspect, 'stage' | 'created_at' | 'prospect_stage_entered_at'>
   size?: 'xs' | 'sm'
   className?: string
 }
 
 export function DMRBadge({ prospect, size = 'xs', className = '' }: Props) {
-  if (prospect.stage !== 'prospect' || !prospect.created_at) return null
+  if (prospect.stage !== 'prospect') return null
+  const startAt = prospect.prospect_stage_entered_at || prospect.created_at
+  if (!startAt) return null
 
   const days = Math.max(
     0,
-    Math.floor((Date.now() - new Date(prospect.created_at).getTime()) / (1000 * 60 * 60 * 24)),
+    Math.floor((Date.now() - new Date(startAt).getTime()) / (1000 * 60 * 60 * 24)),
   )
 
   let colorClass = 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400'

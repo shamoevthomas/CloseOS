@@ -38,6 +38,8 @@ export interface BusinessProspect {
   ghl_opportunity_id?: string
   avatar_url?: string
   timezone?: string | null
+  prospect_stage_entered_at?: string | null
+  prospect_stage_total_seconds?: number | null
   call_notes?: {
     id: string
     date: string

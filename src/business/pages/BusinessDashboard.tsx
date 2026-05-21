@@ -405,13 +405,27 @@ export function BusinessDashboard() {
   const healthWarn = closingRate >= 15 && closingRate < 30
 
   const avgDMR = useMemo(() => {
-    const inProspect = baseProspects.filter(p => p.stage === 'prospect' && p.created_at)
-    if (inProspect.length === 0) return 0
-    const totalDays = inProspect.reduce((sum, p) => {
-      const days = Math.floor((Date.now() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24))
-      return sum + Math.max(0, days)
+    // DMR averages time-in-'prospect' across every prospect that has ever been in
+    // that stage. Past visits are frozen in prospect_stage_total_seconds (locked
+    // when stage leaves 'prospect' via the SQL trigger). Current visit (if stage
+    // is still 'prospect') adds (now - prospect_stage_entered_at) live on top.
+    // Result: when a prospect converts, the average doesn't jump — their value
+    // is locked at the conversion moment and they keep contributing the same.
+    const ever = baseProspects.filter(p =>
+      (p.prospect_stage_total_seconds || 0) > 0 ||
+      (p.stage === 'prospect' && (p.prospect_stage_entered_at || p.created_at))
+    )
+    if (ever.length === 0) return 0
+    const now = Date.now()
+    const totalDays = ever.reduce((sum, p) => {
+      let seconds = p.prospect_stage_total_seconds || 0
+      if (p.stage === 'prospect') {
+        const startAt = p.prospect_stage_entered_at || p.created_at
+        if (startAt) seconds += Math.max(0, (now - new Date(startAt).getTime()) / 1000)
+      }
+      return sum + seconds / 86400
     }, 0)
-    return totalDays / inProspect.length
+    return totalDays / ever.length
   }, [baseProspects])
 
   const activeCampaigns = useMemo(() => {
