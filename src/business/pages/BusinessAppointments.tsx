@@ -6,11 +6,21 @@ import {
   Calendar, Loader2, CheckCircle2, XCircle, Clock, Filter,
   ChevronDown, User, Mail, Megaphone, Users, Link2, Copy, Plus, X, Save, Video, Globe,
   Settings, Trash2, Bell, Code2, FileText, ChevronRight, ToggleLeft, ToggleRight, Pencil, Phone, Hash, List, Type,
-  ClipboardList, ChevronUp, CreditCard, Info, AlertTriangle, Minus, CalendarPlus,
+  ClipboardList, CreditCard, Info, AlertTriangle, Minus, CalendarPlus,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
 import { toUTC, fromUTC, getTimezoneLabel } from '../../lib/timezone'
+import { BookingQuestionCard } from '../components/BookingQuestionCard'
+import type { ConditionalRule } from '../../lib/questionnaireConditions'
+
+function genClientId(): string {
+  return (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function ensureClientIds(qs: BookingQuestion[]): BookingQuestion[] {
+  return qs.map(q => q.client_id ? q : { ...q, client_id: genClientId() })
+}
 
 interface Appointment {
   id: string
@@ -46,11 +56,13 @@ interface CustomField {
 }
 
 interface BookingQuestion {
+  client_id: string
   question_text: string
   question_type: 'text' | 'select' | 'multiple_choice' | 'number'
   is_required: boolean
   options: string[]
   sort_order: number
+  conditional?: ConditionalRule | null
 }
 
 interface BookingLink {
@@ -771,7 +783,7 @@ export function BusinessAppointments() {
     setEditCustomFields(bl.custom_fields || [])
     setEditQuestionnaireEnabled(bl.questionnaire_enabled ?? false)
     setEditQuestionnaireRequired(bl.questionnaire_required ?? false)
-    setEditQuestionnaireQuestions(bl.questionnaire_questions || [])
+    setEditQuestionnaireQuestions(ensureClientIds(bl.questionnaire_questions || []))
     setEditStripeEnabled(bl.stripe_enabled ?? false)
     setEditStripePrice((bl.stripe_price ?? 0) / 100)
     setEditStripeCurrency(bl.stripe_currency || 'eur')
@@ -2365,122 +2377,30 @@ export function BusinessAppointments() {
                       <p className="text-xs text-[#747878] dark:text-neutral-500 italic text-center py-6">Aucune question configurée</p>
                     )}
                     {newLinkQuestionnaireQuestions.map((q, idx) => (
-                      <div key={idx} className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-4 space-y-3 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
-                        <div className="flex items-start gap-2">
-                          <span className="text-xs font-bold text-[#747878] dark:text-neutral-500 mt-2.5 flex-shrink-0 w-5">{idx + 1}.</span>
-                          <input
-                            type="text"
-                            value={q.question_text}
-                            onChange={e => { const qs = [...newLinkQuestionnaireQuestions]; qs[idx] = { ...qs[idx], question_text: e.target.value }; setNewLinkQuestionnaireQuestions(qs) }}
-                            placeholder="Votre question..."
-                            className="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
-                          />
-                          <button
-                            onClick={() => { const qs = [...newLinkQuestionnaireQuestions]; qs[idx] = { ...qs[idx], is_required: !qs[idx].is_required }; setNewLinkQuestionnaireQuestions(qs) }}
-                            className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap mt-1 ${q.is_required ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
-                          >
-                            {q.is_required ? 'Requis' : 'Optionnel'}
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-2 ml-7">
-                          <label className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide flex-shrink-0">Type</label>
-                          {(['text', 'select', 'multiple_choice', 'number'] as const).map(tp => {
-                            const labels: Record<string, string> = { text: 'Texte', select: 'Choix unique', multiple_choice: 'Choix multiples', number: 'Nombre' }
-                            return (
-                              <button
-                                key={tp}
-                                onClick={() => {
-                                  const qs = [...newLinkQuestionnaireQuestions]
-                                  const updates: Partial<BookingQuestion> = { question_type: tp }
-                                  if (tp === 'text' || tp === 'number') updates.options = []
-                                  else if ((tp === 'select' || tp === 'multiple_choice') && qs[idx].options.length === 0) updates.options = ['']
-                                  qs[idx] = { ...qs[idx], ...updates }
-                                  setNewLinkQuestionnaireQuestions(qs)
-                                }}
-                                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors ${q.question_type === tp ? 'bg-[#006c49] text-white' : 'bg-white dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
-                              >
-                                {labels[tp]}
-                              </button>
-                            )
-                          })}
-                        </div>
-                        {(q.question_type === 'select' || q.question_type === 'multiple_choice') && (
-                          <div className="ml-7 border-l-2 border-[#c4c7c7]/30 dark:border-neutral-700 pl-3 space-y-1.5">
-                            <p className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">Options</p>
-                            {(q.options.length > 0 ? q.options : ['']).map((opt, oi) => (
-                              <div key={oi} className="flex items-center gap-1.5">
-                                <input
-                                  type="text"
-                                  value={opt}
-                                  onChange={e => {
-                                    const qs = [...newLinkQuestionnaireQuestions]
-                                    const opts = [...qs[idx].options]; opts[oi] = e.target.value
-                                    qs[idx] = { ...qs[idx], options: opts }
-                                    setNewLinkQuestionnaireQuestions(qs)
-                                  }}
-                                  placeholder={`Option ${oi + 1}`}
-                                  className="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-700 border border-[#c4c7c7]/20 dark:border-neutral-600 text-xs text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
-                                />
-                                {q.options.length > 1 && (
-                                  <button onClick={() => {
-                                    const qs = [...newLinkQuestionnaireQuestions]
-                                    qs[idx] = { ...qs[idx], options: qs[idx].options.filter((_, i) => i !== oi) }
-                                    setNewLinkQuestionnaireQuestions(qs)
-                                  }} className="text-red-400 hover:text-red-600">
-                                    <X className="h-3.5 w-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                            <button
-                              onClick={() => {
-                                const qs = [...newLinkQuestionnaireQuestions]
-                                qs[idx] = { ...qs[idx], options: [...qs[idx].options, ''] }
-                                setNewLinkQuestionnaireQuestions(qs)
-                              }}
-                              className="text-[10px] font-bold text-[#006c49] hover:underline"
-                            >
-                              + Ajouter une option
-                            </button>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between ml-7 pt-2 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => {
-                                if (idx === 0) return
-                                const qs = [...newLinkQuestionnaireQuestions]
-                                ;[qs[idx], qs[idx - 1]] = [qs[idx - 1], qs[idx]]
-                                setNewLinkQuestionnaireQuestions(qs)
-                              }}
-                              disabled={idx === 0}
-                              className="p-1 text-[#747878] hover:text-[#1b1c1b] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
-                            >
-                              <ChevronUp className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (idx === newLinkQuestionnaireQuestions.length - 1) return
-                                const qs = [...newLinkQuestionnaireQuestions]
-                                ;[qs[idx], qs[idx + 1]] = [qs[idx + 1], qs[idx]]
-                                setNewLinkQuestionnaireQuestions(qs)
-                              }}
-                              disabled={idx === newLinkQuestionnaireQuestions.length - 1}
-                              className="p-1 text-[#747878] hover:text-[#1b1c1b] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rotate-180"
-                            >
-                              <ChevronUp className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <button onClick={() => setNewLinkQuestionnaireQuestions(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-600 p-1">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
+                      <BookingQuestionCard
+                        key={q.client_id || idx}
+                        question={q}
+                        idx={idx}
+                        allQuestions={newLinkQuestionnaireQuestions}
+                        onUpdate={(updates) => {
+                          const qs = [...newLinkQuestionnaireQuestions]
+                          qs[idx] = { ...qs[idx], ...updates }
+                          setNewLinkQuestionnaireQuestions(qs)
+                        }}
+                        onRemove={() => setNewLinkQuestionnaireQuestions(prev => prev.filter((_, i) => i !== idx))}
+                        onMove={(direction) => {
+                          const next = idx + direction
+                          if (next < 0 || next >= newLinkQuestionnaireQuestions.length) return
+                          const qs = [...newLinkQuestionnaireQuestions]
+                          ;[qs[idx], qs[next]] = [qs[next], qs[idx]]
+                          setNewLinkQuestionnaireQuestions(qs)
+                        }}
+                      />
                     ))}
                   </div>
                   <div className="mt-4 shrink-0 space-y-3">
                     <button
-                      onClick={() => setNewLinkQuestionnaireQuestions(prev => [...prev, { question_text: '', question_type: 'text', is_required: true, options: [], sort_order: prev.length }])}
+                      onClick={() => setNewLinkQuestionnaireQuestions(prev => [...prev, { client_id: genClientId(), question_text: '', question_type: 'text', is_required: true, options: [], sort_order: prev.length, conditional: null }])}
                       className="w-full flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700/30 py-2.5 text-xs font-bold text-[#444748] dark:text-neutral-400 hover:border-[#006c49]/30 hover:text-[#006c49] transition-all"
                     >
                       <Plus className="h-3.5 w-3.5" /> Ajouter une question
@@ -2869,125 +2789,30 @@ export function BusinessAppointments() {
                 <p className="text-xs text-[#747878] dark:text-neutral-500 italic text-center py-6">Aucune question configurée</p>
               )}
               {editQuestionnaireQuestions.map((q, idx) => (
-                <div key={idx} className="rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-4 space-y-3 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs font-bold text-[#747878] dark:text-neutral-500 mt-2.5 flex-shrink-0 w-5">{idx + 1}.</span>
-                    <input
-                      type="text"
-                      value={q.question_text}
-                      onChange={e => { const qs = [...editQuestionnaireQuestions]; qs[idx] = { ...qs[idx], question_text: e.target.value }; setEditQuestionnaireQuestions(qs) }}
-                      placeholder="Votre question..."
-                      className="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 text-sm text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
-                    />
-                    <button
-                      onClick={() => { const qs = [...editQuestionnaireQuestions]; qs[idx] = { ...qs[idx], is_required: !qs[idx].is_required }; setEditQuestionnaireQuestions(qs) }}
-                      className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap mt-1 ${q.is_required ? 'bg-[#1b1c1b] text-white dark:bg-white dark:text-neutral-900' : 'bg-[#f5f3f2] text-[#747878] dark:bg-neutral-800 dark:text-neutral-500'}`}
-                    >
-                      {q.is_required ? 'Requis' : 'Optionnel'}
-                    </button>
-                  </div>
-                  {/* Type selector */}
-                  <div className="flex items-center gap-2 ml-7">
-                    <label className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide flex-shrink-0">Type</label>
-                    {(['text', 'select', 'multiple_choice', 'number'] as const).map(tp => {
-                      const labels: Record<string, string> = { text: 'Texte', select: 'Choix unique', multiple_choice: 'Choix multiples', number: 'Nombre' }
-                      return (
-                        <button
-                          key={tp}
-                          onClick={() => {
-                            const qs = [...editQuestionnaireQuestions]
-                            const updates: Partial<BookingQuestion> = { question_type: tp }
-                            if (tp === 'text' || tp === 'number') updates.options = []
-                            else if ((tp === 'select' || tp === 'multiple_choice') && qs[idx].options.length === 0) updates.options = ['']
-                            qs[idx] = { ...qs[idx], ...updates }
-                            setEditQuestionnaireQuestions(qs)
-                          }}
-                          className={`text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors ${q.question_type === tp ? 'bg-[#006c49] text-white' : 'bg-white dark:bg-neutral-700 text-[#444748] dark:text-neutral-300'}`}
-                        >
-                          {labels[tp]}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  {/* Options for select / multiple_choice */}
-                  {(q.question_type === 'select' || q.question_type === 'multiple_choice') && (
-                    <div className="ml-7 border-l-2 border-[#c4c7c7]/30 dark:border-neutral-700 pl-3 space-y-1.5">
-                      <p className="text-[10px] font-bold text-[#747878] dark:text-neutral-500 uppercase tracking-wide">Options</p>
-                      {(q.options.length > 0 ? q.options : ['']).map((opt, oi) => (
-                        <div key={oi} className="flex items-center gap-1.5">
-                          <input
-                            type="text"
-                            value={opt}
-                            onChange={e => {
-                              const qs = [...editQuestionnaireQuestions]
-                              const opts = [...qs[idx].options]; opts[oi] = e.target.value
-                              qs[idx] = { ...qs[idx], options: opts }
-                              setEditQuestionnaireQuestions(qs)
-                            }}
-                            placeholder={`Option ${oi + 1}`}
-                            className="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-700 border border-[#c4c7c7]/20 dark:border-neutral-600 text-xs text-[#1b1c1b] dark:text-white focus:outline-none focus:border-[#006c49]"
-                          />
-                          {q.options.length > 1 && (
-                            <button onClick={() => {
-                              const qs = [...editQuestionnaireQuestions]
-                              qs[idx] = { ...qs[idx], options: qs[idx].options.filter((_, i) => i !== oi) }
-                              setEditQuestionnaireQuestions(qs)
-                            }} className="text-red-400 hover:text-red-600">
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => {
-                          const qs = [...editQuestionnaireQuestions]
-                          qs[idx] = { ...qs[idx], options: [...qs[idx].options, ''] }
-                          setEditQuestionnaireQuestions(qs)
-                        }}
-                        className="text-[10px] font-bold text-[#006c49] hover:underline"
-                      >
-                        + Ajouter une option
-                      </button>
-                    </div>
-                  )}
-                  {/* Move + delete */}
-                  <div className="flex items-center justify-between ml-7 pt-2 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => {
-                          if (idx === 0) return
-                          const qs = [...editQuestionnaireQuestions]
-                          ;[qs[idx], qs[idx - 1]] = [qs[idx - 1], qs[idx]]
-                          setEditQuestionnaireQuestions(qs)
-                        }}
-                        disabled={idx === 0}
-                        className="p-1 text-[#747878] hover:text-[#1b1c1b] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
-                      >
-                        <ChevronUp className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (idx === editQuestionnaireQuestions.length - 1) return
-                          const qs = [...editQuestionnaireQuestions]
-                          ;[qs[idx], qs[idx + 1]] = [qs[idx + 1], qs[idx]]
-                          setEditQuestionnaireQuestions(qs)
-                        }}
-                        disabled={idx === editQuestionnaireQuestions.length - 1}
-                        className="p-1 text-[#747878] hover:text-[#1b1c1b] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed rotate-180"
-                      >
-                        <ChevronUp className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <button onClick={() => setEditQuestionnaireQuestions(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-600 p-1">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
+                <BookingQuestionCard
+                  key={q.client_id || idx}
+                  question={q}
+                  idx={idx}
+                  allQuestions={editQuestionnaireQuestions}
+                  onUpdate={(updates) => {
+                    const qs = [...editQuestionnaireQuestions]
+                    qs[idx] = { ...qs[idx], ...updates }
+                    setEditQuestionnaireQuestions(qs)
+                  }}
+                  onRemove={() => setEditQuestionnaireQuestions(prev => prev.filter((_, i) => i !== idx))}
+                  onMove={(direction) => {
+                    const next = idx + direction
+                    if (next < 0 || next >= editQuestionnaireQuestions.length) return
+                    const qs = [...editQuestionnaireQuestions]
+                    ;[qs[idx], qs[next]] = [qs[next], qs[idx]]
+                    setEditQuestionnaireQuestions(qs)
+                  }}
+                />
               ))}
             </div>
             <div className="mt-4 shrink-0 space-y-3">
               <button
-                onClick={() => setEditQuestionnaireQuestions(prev => [...prev, { question_text: '', question_type: 'text', is_required: true, options: [], sort_order: prev.length }])}
+                onClick={() => setEditQuestionnaireQuestions(prev => [...prev, { client_id: genClientId(), question_text: '', question_type: 'text', is_required: true, options: [], sort_order: prev.length, conditional: null }])}
                 className="w-full flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#c4c7c7]/30 dark:border-neutral-700/30 py-2.5 text-xs font-bold text-[#444748] dark:text-neutral-400 hover:border-[#006c49]/30 hover:text-[#006c49] transition-all"
               >
                 <Plus className="h-3.5 w-3.5" /> Ajouter une question

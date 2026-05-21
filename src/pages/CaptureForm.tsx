@@ -6,6 +6,7 @@ import { captureTranslations, detectCaptureLang } from './captureFormI18n'
 import type { CaptureFormLang } from './captureFormI18n'
 import { sanitizeRichHtml } from '../business/components/RichTextEditor'
 import { InlineStripePaymentModal } from '../components/InlineStripePayment'
+import { computeVisibleQuestionIds, type ConditionalRule } from '../lib/questionnaireConditions'
 
 interface CustomField {
   label: string
@@ -294,7 +295,7 @@ export function CaptureForm() {
 
   // Questionnaire state
   const [questionnaire, setQuestionnaire] = useState<{ id: string; enabled: boolean; required: boolean; qualifying?: boolean; max_eliminatory: number } | null>(null)
-  const [captureQuestions, setCaptureQuestions] = useState<{ id: string; question_text: string; question_type: string; is_required: boolean; options: string[]; sort_order: number }[]>([])
+  const [captureQuestions, setCaptureQuestions] = useState<{ id: string; question_text: string; question_type: string; is_required: boolean; options: string[]; sort_order: number; conditional?: ConditionalRule | null }[]>([])
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [disqualifiedMsg, setDisqualifiedMsg] = useState(false)
 
@@ -505,11 +506,39 @@ export function CaptureForm() {
 
   const isInscriptionMode = campaign?.capture_type === 'without_rdv'
 
+  const visibleQuestionIds = useMemo(() => {
+    return computeVisibleQuestionIds(
+      captureQuestions.map((q, i) => ({
+        client_id: q.id,
+        question_type: q.question_type as 'text' | 'select' | 'multiple_choice' | 'number',
+        sort_order: q.sort_order ?? i,
+        conditional: q.conditional ?? null,
+      })),
+      answers,
+    )
+  }, [captureQuestions, answers])
+
+  // Clear answers for hidden questions (so reappearing starts fresh + nothing stale is submitted/scored)
+  useEffect(() => {
+    setAnswers(prev => {
+      let changed = false
+      const next = { ...prev }
+      for (const q of captureQuestions) {
+        if (!visibleQuestionIds.has(q.id) && next[q.id] !== undefined) {
+          delete next[q.id]
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [visibleQuestionIds, captureQuestions])
+
   // Questionnaire completeness check
   const isQuestionnaireComplete = useMemo(() => {
     if (!hasQuestionnaire) return true
     if (!questionnaire?.required) return true
     for (const q of captureQuestions) {
+      if (!visibleQuestionIds.has(q.id)) continue
       if (q.is_required) {
         const ans = answers[q.id]
         if (ans === undefined || ans === null || ans === '') return false
@@ -517,7 +546,7 @@ export function CaptureForm() {
       }
     }
     return true
-  }, [hasQuestionnaire, questionnaire, captureQuestions, answers])
+  }, [hasQuestionnaire, questionnaire, captureQuestions, answers, visibleQuestionIds])
 
   // Auto-advance when info is complete (vertical + horizontal)
   useEffect(() => {
@@ -534,7 +563,9 @@ export function CaptureForm() {
     const name = `${firstName} ${lastName}`.trim()
     const payload: any = { slug, name, email, phone: fullPhone, custom_data: customData }
     if (hasQuestionnaire && Object.keys(answers).length > 0) {
-      payload.answers = Object.entries(answers).map(([question_id, answer_value]) => ({ question_id, answer_value }))
+      payload.answers = Object.entries(answers)
+        .filter(([question_id]) => visibleQuestionIds.has(question_id))
+        .map(([question_id, answer_value]) => ({ question_id, answer_value }))
     }
     if (!isInscriptionMode && selectedDate && selectedTime) {
       const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
@@ -992,7 +1023,7 @@ export function CaptureForm() {
                     </div>
 
                     {/* Questions */}
-                    {captureQuestions.map((q) => (
+                    {captureQuestions.filter(q => visibleQuestionIds.has(q.id)).map((q) => (
                       <div key={q.id} className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">
                           {q.question_text} {q.is_required ? '*' : ''}

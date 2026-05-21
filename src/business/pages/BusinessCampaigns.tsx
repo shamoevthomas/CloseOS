@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectModal'
 import { RichTextEditor } from '../components/RichTextEditor'
+import { QuestionConditionalEditor } from '../components/QuestionConditionalEditor'
+import type { ConditionalRule } from '../../lib/questionnaireConditions'
 import toast from 'react-hot-toast'
 
 interface CustomField {
@@ -21,6 +23,7 @@ interface CustomField {
 
 interface QuestionConfig {
   id?: string
+  client_id: string
   question_text: string
   question_type: 'text' | 'multiple_choice' | 'select' | 'number'
   is_required: boolean
@@ -29,6 +32,7 @@ interface QuestionConfig {
   eliminatory_answers: any[]
   sort_order: number
   counts_in_scoring: boolean
+  conditional?: ConditionalRule | null
 }
 
 interface Campaign {
@@ -377,6 +381,7 @@ export function BusinessCampaigns() {
           setFormMaxEliminatory(qData.questionnaire.max_eliminatory ?? 0)
           setFormQuestions((qData.questions || []).map((q: any) => ({
             id: q.id,
+            client_id: q.id,
             question_text: q.question_text || '',
             question_type: q.question_type || 'text',
             is_required: q.is_required ?? false,
@@ -385,6 +390,7 @@ export function BusinessCampaigns() {
             eliminatory_answers: q.eliminatory_answers || [],
             sort_order: q.sort_order ?? 0,
             counts_in_scoring: q.counts_in_scoring ?? true,
+            conditional: q.conditional ?? null,
           })))
         }
       })
@@ -609,7 +615,8 @@ window.addEventListener('message',function(e){
 
   // Questionnaire question helpers
   const addQuestion = () => {
-    setFormQuestions([...formQuestions, { question_text: '', question_type: 'text', is_required: true, options: [], expected_answer: null, eliminatory_answers: [], sort_order: formQuestions.length, counts_in_scoring: true }])
+    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    setFormQuestions([...formQuestions, { id: newId, client_id: newId, question_text: '', question_type: 'text', is_required: true, options: [], expected_answer: null, eliminatory_answers: [], sort_order: formQuestions.length, counts_in_scoring: true, conditional: null }])
   }
   const updateQuestion = (index: number, updates: Partial<QuestionConfig>) => {
     const qs = [...formQuestions]; qs[index] = { ...qs[index], ...updates }; setFormQuestions(qs)
@@ -1500,6 +1507,27 @@ window.addEventListener('message',function(e){
                                   </div>
                                 )}
                               </div>
+
+                              {/* Conditional display rule */}
+                              <QuestionConditionalEditor
+                                question={{
+                                  client_id: question.client_id,
+                                  question_text: question.question_text,
+                                  question_type: question.question_type,
+                                  options: question.options,
+                                  sort_order: idx,
+                                  conditional: question.conditional ?? null,
+                                }}
+                                allQuestions={formQuestions.map((q, i) => ({
+                                  client_id: q.client_id,
+                                  question_text: q.question_text,
+                                  question_type: q.question_type,
+                                  options: q.options,
+                                  sort_order: i,
+                                  conditional: q.conditional ?? null,
+                                }))}
+                                onChange={(rule) => updateQuestion(idx, { conditional: rule })}
+                              />
 
                               {/* Row 4: Move + delete */}
                               <div className="flex items-center justify-between ml-7 pt-2 border-t border-[#c4c7c7]/10 dark:border-neutral-700">

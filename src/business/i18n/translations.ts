@@ -612,6 +612,18 @@ export interface BusinessTranslations {
   campaigns_eliminatory_value: string;
   campaigns_value_or_min: string;
   campaigns_max_optional: string;
+  campaigns_conditional_title: string;
+  campaigns_conditional_show_if: string;
+  campaigns_conditional_no_eligible: string;
+  campaigns_conditional_always_show: string;
+  campaigns_conditional_op_in: string;
+  campaigns_conditional_op_gte: string;
+  campaigns_conditional_op_lte: string;
+  campaigns_conditional_op_between: string;
+  campaigns_conditional_orphan_warning: string;
+  campaigns_conditional_clear_rule: string;
+  campaigns_conditional_pick_source: string;
+  campaigns_conditional_pick_values: string;
   campaigns_booking_duration: string;
   campaigns_booking_title_label: string;
   campaigns_booking_desc_label: string;
@@ -2969,6 +2981,18 @@ export const fr: BusinessTranslations = {
   campaigns_eliminatory_value: 'Valeur eliminatoire (ou range)',
   campaigns_value_or_min: 'Valeur ou Min',
   campaigns_max_optional: 'Max (optionnel)',
+  campaigns_conditional_title: 'Affichage conditionnel',
+  campaigns_conditional_show_if: 'Afficher si',
+  campaigns_conditional_no_eligible: 'Aucune question eligible avant celle-ci (Choix unique, Choix multiples ou Nombre)',
+  campaigns_conditional_always_show: 'Toujours afficher',
+  campaigns_conditional_op_in: 'la reponse est',
+  campaigns_conditional_op_gte: 'au moins',
+  campaigns_conditional_op_lte: 'au plus',
+  campaigns_conditional_op_between: 'entre',
+  campaigns_conditional_orphan_warning: 'La question source n\'existe plus ou n\'est plus eligible — regle ignoree',
+  campaigns_conditional_clear_rule: 'Effacer la regle',
+  campaigns_conditional_pick_source: 'Choisir une question',
+  campaigns_conditional_pick_values: 'Choisir les valeurs',
   campaigns_booking_duration: 'Duree du rendez-vous',
   campaigns_booking_title_label: 'Titre du rendez-vous',
   campaigns_booking_desc_label: 'Description du rendez-vous',
@@ -5971,6 +5995,18 @@ export const en: BusinessTranslations = {
   campaigns_eliminatory_value: 'Eliminatory value (or range)',
   campaigns_value_or_min: 'Value or Min',
   campaigns_max_optional: 'Max (optional)',
+  campaigns_conditional_title: 'Conditional display',
+  campaigns_conditional_show_if: 'Show if',
+  campaigns_conditional_no_eligible: 'No eligible question before this one (Single select, Multiple choice or Number)',
+  campaigns_conditional_always_show: 'Always show',
+  campaigns_conditional_op_in: 'answer is',
+  campaigns_conditional_op_gte: 'at least',
+  campaigns_conditional_op_lte: 'at most',
+  campaigns_conditional_op_between: 'between',
+  campaigns_conditional_orphan_warning: 'Source question no longer exists or is no longer eligible — rule ignored',
+  campaigns_conditional_clear_rule: 'Clear rule',
+  campaigns_conditional_pick_source: 'Pick a question',
+  campaigns_conditional_pick_values: 'Pick values',
   campaigns_booking_duration: 'Appointment duration',
   campaigns_booking_title_label: 'Appointment title',
   campaigns_booking_desc_label: 'Appointment description',

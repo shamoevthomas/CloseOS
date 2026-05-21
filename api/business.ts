@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz'
 import { fr as frLocale } from 'date-fns/locale'
 import Stripe from 'stripe'
+import { computeVisibleQuestionIds } from './_lib/questionnaireConditions.js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -2306,7 +2307,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await supabase.from('campaign_questions').delete().in('id', toDelete)
       }
 
-      // Upsert all questions
+      // Upsert all questions — id may be a client-generated UUID for new questions
       const upsertData = (questions || []).map((q: any, i: number) => ({
         id: q.id || undefined,
         questionnaire_id: questionnaire.id,
@@ -2318,13 +2319,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         eliminatory_answers: q.eliminatory_answers || [],
         sort_order: i,
         counts_in_scoring: q.counts_in_scoring ?? true,
+        conditional: q.conditional ?? null,
       }))
 
       let savedQuestions: any[] = []
       if (upsertData.length > 0) {
-        // Insert new (no id) and update existing (with id) separately
-        const toInsert = upsertData.filter((q: any) => !q.id).map(({ id, ...rest }: any) => rest)
-        const toUpdate = upsertData.filter((q: any) => q.id)
+        // Split by "exists in DB?" — preserves client-supplied UUIDs on insert so
+        // conditional rules referencing those UUIDs remain valid after save.
+        const existingIdSet = new Set(existingIds)
+        const toInsert = upsertData.filter((q: any) => !q.id || !existingIdSet.has(q.id))
+        const toUpdate = upsertData.filter((q: any) => q.id && existingIdSet.has(q.id))
 
         if (toInsert.length > 0) {
           const { data: inserted } = await supabase.from('campaign_questions').insert(toInsert).select()
@@ -2839,11 +2843,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const apptTitle = title || `RDV avec ${prospect.contact || 'prospect'}`
       const tz = timezone || 'Europe/Paris'
 
-      // Build datetime_utc from date + time interpreted in the chosen timezone
+      // Build datetime_utc from date + time interpreted in the chosen timezone.
+      // We must NOT rely on `new Date('YYYY-MM-DDTHH:MM:SS')` because Node interprets
+      // that as the server's local TZ (UTC on Vercel), which would silently shift
+      // the appointment by the closer's offset. fromZonedTime resolves correctly.
+      const timeForUtc = time.length === 5 ? `${time}:00` : time
       let datetimeUtc: string | null = null
       try {
-        const local = new Date(`${date}T${time}:00`)
-        datetimeUtc = local.toISOString()
+        datetimeUtc = fromZonedTime(`${date}T${timeForUtc}`, tz).toISOString()
       } catch { /* leave null */ }
 
       const insertPayload: Record<string, any> = {
@@ -3482,7 +3489,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (qData) {
         const { data: qs } = await supabase
           .from('campaign_questions')
-          .select('id, question_text, question_type, is_required, options, sort_order')
+          .select('id, question_text, question_type, is_required, options, sort_order, conditional')
           .eq('questionnaire_id', qData.id)
           .order('sort_order')
         if (qs && qs.length > 0) {
@@ -5928,28 +5935,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (qConfig) {
           const isQualifying = qConfig.qualifying !== false
 
+          // Fetch ALL questions of the questionnaire (needed to evaluate conditional visibility
+          // — a malicious client could submit answers for hidden questions, we must ignore them).
+          const { data: allQuestionsData } = await supabase
+            .from('campaign_questions')
+            .select('id, question_type, expected_answer, eliminatory_answers, counts_in_scoring, conditional, sort_order')
+            .eq('questionnaire_id', qConfig.id)
+            .order('sort_order')
+
+          const answersByClientId: Record<string, unknown> = {}
+          for (const a of rawAnswers) answersByClientId[a.question_id] = a.answer_value
+
+          const visibleIds = computeVisibleQuestionIds(
+            (allQuestionsData || []).map((q: any) => ({
+              client_id: q.id,
+              question_type: q.question_type,
+              conditional: q.conditional ?? null,
+            })),
+            answersByClientId,
+          )
+
           if (!isQualifying) {
-            // Non-qualifying: save answers with score=null and is_eliminatory=false
-            const neutralAnswers = rawAnswers.map((a: any) => ({
-              prospect_id: prospect.id, question_id: a.question_id, answer_value: a.answer_value, score: null, is_eliminatory: false
-            }))
+            // Non-qualifying: save answers with score=null, is_eliminatory=false — only for visible questions
+            const neutralAnswers = rawAnswers
+              .filter((a: any) => visibleIds.has(a.question_id))
+              .map((a: any) => ({
+                prospect_id: prospect.id, question_id: a.question_id, answer_value: a.answer_value, score: null, is_eliminatory: false
+              }))
             if (neutralAnswers.length > 0) {
               await supabase.from('prospect_answers').insert(neutralAnswers)
             }
           } else {
-          // Fetch all questions with expected/eliminatory answers
-          const questionIds = rawAnswers.map((a: any) => a.question_id)
-          const { data: questionsData } = await supabase
-            .from('campaign_questions')
-            .select('id, question_type, expected_answer, eliminatory_answers, counts_in_scoring')
-            .in('id', questionIds)
-
-          const questionsMap = new Map((questionsData || []).map((q: any) => [q.id, q]))
+          const questionsMap = new Map((allQuestionsData || []).map((q: any) => [q.id, q]))
 
           // Score each answer
           const scoredAnswers = rawAnswers.map((a: any) => {
             const q = questionsMap.get(a.question_id)
             if (!q) return { prospect_id: prospect.id, question_id: a.question_id, answer_value: a.answer_value, score: null, is_eliminatory: false }
+
+            // Question hidden by conditional rule: save answer but don't score / not eliminatory
+            if (!visibleIds.has(a.question_id)) {
+              return { prospect_id: prospect.id, question_id: a.question_id, answer_value: a.answer_value, score: null, is_eliminatory: false }
+            }
 
             // Question excluded from scoring: save answer but don't score
             if (q.counts_in_scoring === false) {

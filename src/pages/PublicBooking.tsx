@@ -4,6 +4,7 @@ import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User
 import { toUTC, fromUTC, getTimezoneLabel } from '../lib/timezone'
 import { supabase } from '../lib/supabase'
 import { InlineStripePaymentModal } from '../components/InlineStripePayment'
+import { computeVisibleQuestionIds, type ConditionalRule } from '../lib/questionnaireConditions'
 
 interface SlotData { date: string; time: string; datetime_utc?: string }
 interface CustomField {
@@ -14,11 +15,13 @@ interface CustomField {
 }
 
 interface BookingQuestion {
+  client_id: string
   question_text: string
   question_type: 'text' | 'select' | 'multiple_choice' | 'number'
   is_required: boolean
   options: string[]
   sort_order: number
+  conditional?: ConditionalRule | null
 }
 
 interface BookingInfo {
@@ -182,7 +185,13 @@ export function PublicBooking() {
           d.customFields = (link.custom_fields as CustomField[]) || []
           d.questionnaireEnabled = link.questionnaire_enabled ?? false
           d.questionnaireRequired = link.questionnaire_required ?? false
-          d.questionnaireQuestions = ((link.questionnaire_questions as BookingQuestion[]) || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+          d.questionnaireQuestions = ((link.questionnaire_questions as BookingQuestion[]) || [])
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+            .map((q, i) => ({
+              ...q,
+              client_id: q.client_id || `legacy-${i}`,
+              sort_order: i,
+            }))
           d.stripe = (link.stripe_enabled && link.stripe_price > 0) ? {
             enabled: true,
             price: link.stripe_price,
@@ -322,16 +331,55 @@ export function PublicBooking() {
 
   const hasQuestionnaire = !!(info?.questionnaireEnabled && info.questionnaireQuestions?.length > 0)
 
+  // Map client_id -> answer (answers state is keyed by question_text for backward compat with payload shape)
+  const answersByClientId = useMemo(() => {
+    const map: Record<string, unknown> = {}
+    for (const q of info?.questionnaireQuestions || []) {
+      if (q.client_id) map[q.client_id] = questionnaireAnswers[q.question_text]
+    }
+    return map
+  }, [info?.questionnaireQuestions, questionnaireAnswers])
+
+  const visibleQuestionIds = useMemo(() => {
+    if (!info?.questionnaireQuestions) return new Set<string>()
+    return computeVisibleQuestionIds(
+      info.questionnaireQuestions.map((q, i) => ({
+        client_id: q.client_id,
+        question_type: q.question_type,
+        sort_order: i,
+        conditional: q.conditional ?? null,
+      })),
+      answersByClientId,
+    )
+  }, [info?.questionnaireQuestions, answersByClientId])
+
+  // Clear answers for questions that became hidden (so reappearing starts fresh + nothing stale is submitted)
+  useEffect(() => {
+    if (!info?.questionnaireQuestions) return
+    setQuestionnaireAnswers(prev => {
+      let changed = false
+      const next = { ...prev }
+      for (const q of info.questionnaireQuestions) {
+        if (!visibleQuestionIds.has(q.client_id) && next[q.question_text] !== undefined) {
+          delete next[q.question_text]
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [visibleQuestionIds, info?.questionnaireQuestions])
+
   const isQuestionnaireComplete = useMemo(() => {
     if (!info?.questionnaireQuestions) return true
     return info.questionnaireQuestions.every(q => {
+      if (!visibleQuestionIds.has(q.client_id)) return true
       if (!q.is_required) return true
       const answer = questionnaireAnswers[q.question_text]
       if (!answer) return false
       if (Array.isArray(answer)) return answer.length > 0
       return answer.toString().trim() !== ''
     })
-  }, [info?.questionnaireQuestions, questionnaireAnswers])
+  }, [info?.questionnaireQuestions, questionnaireAnswers, visibleQuestionIds])
 
   const handleContactSubmit = () => {
     if (!name.trim()) return
@@ -383,7 +431,7 @@ export function PublicBooking() {
           custom_data: customFieldValues,
           date: selectedDate, time: selectedTime, datetime_utc: datetimeUtc,
           prospect_timezone: prospectTimezone,
-          questionnaire_answers: hasQuestionnaire ? info.questionnaireQuestions.map(q => ({
+          questionnaire_answers: hasQuestionnaire ? info.questionnaireQuestions.filter(q => visibleQuestionIds.has(q.client_id)).map(q => ({
             question_text: q.question_text,
             answer_value: questionnaireAnswers[q.question_text] || ''
           })).filter(a => Array.isArray(a.answer_value) ? a.answer_value.length > 0 : a.answer_value !== '') : null,
@@ -507,7 +555,7 @@ export function PublicBooking() {
           cancel_token: cancelToken,
           reschedule_token: rescheduleToken,
           notes: `Booking: ${name}${email ? ` — ${email}` : ''}${fullPhone ? ` — ${fullPhone}` : ''}${Object.entries(customFieldValues).filter(([, v]) => v.trim()).map(([k, v]) => ` — ${k}: ${v}`).join('')}`,
-          questionnaire_answers: hasQuestionnaire ? info.questionnaireQuestions.map(q => ({
+          questionnaire_answers: hasQuestionnaire ? info.questionnaireQuestions.filter(q => visibleQuestionIds.has(q.client_id)).map(q => ({
             question_text: q.question_text,
             answer_value: questionnaireAnswers[q.question_text] || ''
           })).filter(a => {
@@ -566,7 +614,7 @@ export function PublicBooking() {
           datetime_utc: datetimeUtc,
           prospect_timezone: prospectTimezone,
           appointment_id: appointment.id,
-          questionnaire_answers: hasQuestionnaire ? info.questionnaireQuestions.map(q => ({
+          questionnaire_answers: hasQuestionnaire ? info.questionnaireQuestions.filter(q => visibleQuestionIds.has(q.client_id)).map(q => ({
             question_text: q.question_text,
             answer_value: questionnaireAnswers[q.question_text] || ''
           })).filter(a => {
@@ -939,8 +987,8 @@ export function PublicBooking() {
                     <h2 className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Quelques questions</h2>
                   </div>
                   <div className="space-y-6">
-                    {info!.questionnaireQuestions.map((q, idx) => (
-                      <div key={idx} className="space-y-2">
+                    {info!.questionnaireQuestions.filter(q => visibleQuestionIds.has(q.client_id)).map((q, idx) => (
+                      <div key={q.client_id || idx} className="space-y-2">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">
                           {q.question_text} {q.is_required ? '*' : ''}
                         </label>
