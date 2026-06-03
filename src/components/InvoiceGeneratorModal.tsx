@@ -135,6 +135,14 @@ export function InvoiceGeneratorModal({
         : null
       const ratePct = (dealRate * 100).toFixed(dealRate * 100 % 1 === 0 ? 0 : 1)
 
+      // Acompte
+      const depositAmount = deal.deposit_amount != null ? Number(deal.deposit_amount) : 0
+      const hasDeposit = depositAmount > 0
+      const depositToRefund = !!deal.deposit_to_refund
+      const depositKept = hasDeposit && !depositToRefund
+      const depositDate = deal.deposit_date ? new Date(deal.deposit_date) : null
+      const depositInPeriod = !!(depositDate && depositDate >= pStart && depositDate <= pEnd)
+
       const paymentLabel = isInstallment
         ? (customSchedule
             ? (lang === 'fr' ? `Plusieurs fois personnalisé (${deal.installments}x)` : `Custom installments (${deal.installments}x)`)
@@ -144,10 +152,17 @@ export function InvoiceGeneratorModal({
       const key = `${formulaName}-${paymentLabel}${rateLabel}`
 
       const fullValue = deal.value || 0
+
+      // Plan de paiement effectif (hors acompte conservé)
+      const planFullValue = depositKept ? Math.max(0, fullValue - depositAmount) : fullValue
+      const planMonths = (isInstallment && depositKept) ? Math.max(1, (deal.installments || 1) - 1) : (deal.installments || 1)
+
       // Compute amount that falls in [pStart, pEnd]
       let amountInPeriod: number
       if (!isInstallment) {
-        amountInPeriod = fullValue
+        // Comptant : si acompte conservé, le solde comptant = fullValue - depositAmount
+        // Sa date "d'arrivée" reste la date du deal
+        amountInPeriod = planFullValue
       } else {
         const dealDate = new Date(deal.last_contact || deal.created_at || '')
         if (customSchedule && customSchedule.length > 0) {
@@ -158,10 +173,9 @@ export function InvoiceGeneratorModal({
             return s + (instDate >= pStart && instDate <= pEnd ? Number(e.amount) || 0 : 0)
           }, 0)
         } else {
-          const months = deal.installments || 1
-          const monthlyValue = fullValue / months
+          const monthlyValue = planMonths > 0 ? planFullValue / planMonths : 0
           let count = 0
-          for (let i = 0; i < months; i++) {
+          for (let i = 0; i < planMonths; i++) {
             const instDate = new Date(dealDate)
             instDate.setMonth(instDate.getMonth() + i)
             if (instDate >= pStart && instDate <= pEnd) count++
@@ -172,17 +186,37 @@ export function InvoiceGeneratorModal({
 
       const dealCommission = amountInPeriod * dealRate
 
-      if (!groups[key]) {
-        groups[key] = {
-          description: `${formulaName} - ${paymentLabel}${rateLabel}`,
-          count: 0,
-          total: 0,
-          unitPrice: dealCommission,
+      if (amountInPeriod > 0) {
+        if (!groups[key]) {
+          groups[key] = {
+            description: `${formulaName} - ${paymentLabel}${rateLabel}`,
+            count: 0,
+            total: 0,
+            unitPrice: dealCommission,
+          }
         }
+        groups[key].count++
+        groups[key].total += dealCommission
       }
 
-      groups[key].count++
-      groups[key].total += dealCommission
+      // Ligne acompte (si versé dans la période)
+      if (hasDeposit && depositInPeriod) {
+        const depositLabel = depositToRefund
+          ? (lang === 'fr' ? 'Acompte (à rembourser)' : 'Deposit (to refund)')
+          : (lang === 'fr' ? 'Acompte' : 'Deposit')
+        const depositKey = `${formulaName}-${depositLabel}${rateLabel}`
+        const depositCommission = depositKept ? depositAmount * dealRate : 0
+        if (!groups[depositKey]) {
+          groups[depositKey] = {
+            description: `${formulaName} - ${depositLabel}${rateLabel}`,
+            count: 0,
+            total: 0,
+            unitPrice: depositCommission,
+          }
+        }
+        groups[depositKey].count++
+        groups[depositKey].total += depositCommission
+      }
     })
 
     return Object.values(groups)

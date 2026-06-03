@@ -4595,6 +4595,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const isOwnerLink = !link.team_member_id
       const apptDuration = link.duration || 30
 
+      // Link the appointment to an EXISTING CRM prospect (email first, then unambiguous name).
+      // Done server-side (service role) because the public booking page can't read
+      // business_prospects under RLS. Link only — never create a new prospect.
+      if (!appointment.prospect_id) {
+        const matched = await matchExistingProspect(supabase, ownerId, { email, name })
+        if (matched) {
+          await supabase.from('business_appointments').update({ prospect_id: matched.id }).eq('id', appointment.id)
+          appointment.prospect_id = matched.id
+          if (!matched.timezone && prospect_timezone) {
+            await supabase.from('business_prospects').update({ timezone: prospect_timezone }).eq('id', matched.id)
+          }
+        }
+      }
+
       // ─── Google Calendar event + Google Meet ───
       try {
         let authUserId: string | null = null
@@ -4829,7 +4843,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .select('*')
           .eq('id', appointment_id)
           .single()
-        if (existingAppt) appointment = existingAppt
+        if (existingAppt) {
+          appointment = existingAppt
+          // Link to an EXISTING CRM prospect if not already linked (link only, never create).
+          // The public booking page can't match itself under RLS, so we do it server-side.
+          if (!appointment.prospect_id) {
+            const matched = await matchExistingProspect(supabase, ownerId, { email, name })
+            if (matched) {
+              await supabase.from('business_appointments').update({ prospect_id: matched.id }).eq('id', appointment.id)
+              appointment.prospect_id = matched.id
+              if (!matched.timezone && prospect_timezone) {
+                await supabase.from('business_prospects').update({ timezone: prospect_timezone }).eq('id', matched.id)
+              }
+            }
+          }
+        }
       }
 
       // If no existing appointment, create one (fallback for direct API calls)
@@ -7442,6 +7470,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch { return false }
     }
 
+    // Helper: compute the amount a customer is ACTUALLY paying right now (after discounts).
+    // Prefers the latest real invoice — this reflects one-time ("duration: once") discounts
+    // that no longer appear on the *upcoming* invoice. Falls back to the upcoming invoice
+    // preview (good for trials / no invoice yet), then the subscription discount object,
+    // then the raw base price.
+    async function getSubscriptionEffectiveAmount(
+      s: Stripe,
+      sub: Stripe.Subscription,
+      baseAmount: number,
+      selfConnect: boolean,
+      connectedAccountId: string,
+    ): Promise<number> {
+      const reqOpts = selfConnect ? undefined : { stripeAccount: connectedAccountId }
+      const customerId = typeof sub.customer === 'string' ? sub.customer : (sub.customer as any).id
+
+      // 1. Latest real invoice = what they actually paid this period (incl. one-time discounts)
+      try {
+        const invoices = reqOpts
+          ? await s.invoices.list({ subscription: sub.id, limit: 1 }, reqOpts)
+          : await s.invoices.list({ subscription: sub.id, limit: 1 })
+        const latest = invoices.data[0]
+        if (latest && typeof latest.total === 'number' && latest.total > 0) {
+          return Math.max(0, latest.total / 100)
+        }
+      } catch {}
+
+      // 2. Upcoming invoice preview (trials / no paid invoice yet)
+      try {
+        const preview = reqOpts
+          ? await s.invoices.createPreview({ customer: customerId, subscription: sub.id }, reqOpts)
+          : await s.invoices.createPreview({ customer: customerId, subscription: sub.id })
+        if (typeof preview.total === 'number' && preview.total > 0) {
+          return Math.max(0, preview.total / 100)
+        }
+      } catch {}
+
+      // 3. Subscription discount object fallback
+      const discount = (sub as any).discount
+      if (discount?.coupon) {
+        if (discount.coupon.percent_off) {
+          return Math.round(baseAmount * (1 - discount.coupon.percent_off / 100) * 100) / 100
+        }
+        if (discount.coupon.amount_off) {
+          return Math.max(0, baseAmount - discount.coupon.amount_off / 100)
+        }
+      }
+
+      return baseAmount
+    }
+
     // ─── Auto-match prospect to Stripe on stage=won (Method 2) ───
     if (action === 'auto-match-stripe' && req.method === 'POST') {
       const { user_id, prospect_id, email } = req.body
@@ -7474,12 +7552,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const sub = subs.data[0]
       const item = sub.items.data[0]
+      const baseAmount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0
+      const amount = await getSubscriptionEffectiveAmount(s, sub, baseAmount, selfConnect, profile.stripe_account_id)
 
       await supabase.from('business_prospects').update({
         stripe_customer_id: customer.id,
         stripe_subscription_id: sub.id,
         subscription_status: sub.status,
-        subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+        subscription_amount: amount,
         subscription_interval: item?.price?.recurring?.interval || 'month',
         matched_via: 'auto_won',
         last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
@@ -7491,7 +7571,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         stripe_customer_id: customer.id,
         stripe_subscription_id: sub.id,
         subscription_status: sub.status,
-        subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+        subscription_amount: amount,
         subscription_interval: item?.price?.recurring?.interval || 'month',
         matched_via: 'auto_won',
         last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
@@ -7643,28 +7723,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const baseAmount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0
         const interval = item?.price?.recurring?.interval || 'month'
 
-        // Get the real amount after all discounts via upcoming invoice preview
-        let amount = baseAmount
-        try {
-          const preview = await s.invoices.createPreview({
-            customer: customerId,
-            subscription: sub.id,
-          })
-          if (typeof preview.total === 'number') {
-            amount = Math.max(0, preview.total / 100)
-          }
-          console.log(`[stripe-sync-all] Sub ${sub.id}: base=${baseAmount}, after_discount=${amount}`)
-        } catch {
-          // Fallback: try subscription.discount or customer.discount
-          const discount = (sub as any).discount
-          if (discount?.coupon) {
-            if (discount.coupon.percent_off) {
-              amount = Math.round(baseAmount * (1 - discount.coupon.percent_off / 100) * 100) / 100
-            } else if (discount.coupon.amount_off) {
-              amount = Math.max(0, baseAmount - discount.coupon.amount_off / 100)
-            }
-          }
-        }
+        // Get the real amount the customer is actually paying right now (after discounts).
+        // Uses the latest real invoice so one-time ("duration: once") discounts are reflected too.
+        const amount = await getSubscriptionEffectiveAmount(s, sub, baseAmount, useDirectQuery, accountId)
+        console.log(`[stripe-sync-all] Sub ${sub.id}: base=${baseAmount}, effective=${amount}`)
 
         // If already linked, just update the amount/status (handles discount changes)
         if (existingBySub.has(sub.id)) {
@@ -7837,12 +7899,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ? await s.subscriptions.retrieve(stripe_subscription_id)
           : await s.subscriptions.retrieve(stripe_subscription_id, { stripeAccount: profile.stripe_account_id })
         const item = sub.items.data[0]
+        const baseAmount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0
+        const amount = await getSubscriptionEffectiveAmount(s, sub, baseAmount, selfConnect, profile.stripe_account_id)
 
         await supabase.from('business_prospects').update({
           stripe_customer_id,
           stripe_subscription_id,
           subscription_status: sub.status,
-          subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+          subscription_amount: amount,
           subscription_interval: item?.price?.recurring?.interval || 'month',
           matched_via: 'manual',
           last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
@@ -7852,7 +7916,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({
           matched: true,
           subscription_status: sub.status,
-          subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+          subscription_amount: amount,
           subscription_interval: item?.price?.recurring?.interval || 'month',
         })
       }

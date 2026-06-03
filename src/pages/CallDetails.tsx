@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom' // Ajout useLocation
-import { ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign, Calendar, Award, UserPlus, X, Tag, LayoutList, PenTool, Bell, Loader2, Settings2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, XCircle, Clock, FileText, DollarSign, Calendar, Award, UserPlus, X, Tag, LayoutList, PenTool, Bell, Loader2, Settings2, Wallet } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { InstallmentScheduleEditor, type ScheduleEntry } from '../components/InstallmentScheduleEditor'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -177,6 +177,11 @@ export function CallDetails() {
   const [customCommissionRate, setCustomCommissionRate] = useState<number>(0)
   const [scheduleMode, setScheduleMode] = useState<'equal' | 'custom'>('equal')
   const [customSchedule, setCustomSchedule] = useState<ScheduleEntry[]>([])
+
+  // Acompte (deposit)
+  const [depositAmount, setDepositAmount] = useState<number>(0)
+  const [depositToRefund, setDepositToRefund] = useState<boolean>(false)
+  const [depositDate, setDepositDate] = useState<string>('')
 
   // Follow up fields
   const [followupDate, setFollowupDate] = useState('')
@@ -394,18 +399,32 @@ export function CallDetails() {
   const standardRate = prospectOffer ? parseCommissionRate(prospectOffer.commission) : 10
   const commissionRate = customCommissionEnabled ? customCommissionRate : standardRate
 
-  // Effective amount: when schedule is custom, the sale total equals the sum of installments
+  // Acompte (deposit) — règles métier :
+  // - Conservé (deposit_to_refund=false) : compte comme 1 des N versements, déduit du plan
+  // - Remboursé (deposit_to_refund=true) : versé en plus puis rendu, n'impacte pas le plan
+  const hasDeposit = depositAmount > 0
+  const depositKept = hasDeposit && !depositToRefund
+
+  // Effective amount: when schedule is custom, the sale total equals the sum of installments (+ acompte si conservé)
   const customScheduleTotal = customSchedule.reduce((s, e) => s + (Number(e.amount) || 0), 0)
-  const effectiveAmount = scheduleMode === 'custom' ? customScheduleTotal : amount
+  const customEffectiveTotal = customScheduleTotal + (depositKept ? depositAmount : 0)
+  const effectiveAmount = scheduleMode === 'custom' ? customEffectiveTotal : amount
 
   // Sync displayed amount when in custom mode
   useEffect(() => {
-    if (scheduleMode === 'custom' && customScheduleTotal !== amount) {
-      setAmount(customScheduleTotal)
+    if (scheduleMode === 'custom' && customEffectiveTotal !== amount) {
+      setAmount(customEffectiveTotal)
     }
-  }, [scheduleMode, customScheduleTotal])
+  }, [scheduleMode, customEffectiveTotal])
 
-  // Commission calculations
+  // Plan de paiement (mode équitable)
+  // - Conservé : N saisis = total versements (acompte inclus) → mensualités = (total - acompte) / (N-1)
+  // - Remboursé : N saisis = nb de mensualités (acompte exclu) → mensualités = total / N
+  const realInstallmentsCount = depositKept ? Math.max(1, installmentsCount - 1) : installmentsCount
+  const remainingForInstallments = depositKept ? Math.max(0, amount - depositAmount) : amount
+  const monthlyAmount = realInstallmentsCount > 0 ? remainingForInstallments / realInstallmentsCount : 0
+
+  // Commission calculations — base = total (acompte n'impacte JAMAIS la base de commission)
   const totalCommission = effectiveAmount > 0 ? (effectiveAmount * commissionRate) / 100 : 0
   const monthlyCommission = paymentType === 'installments' && installmentsCount > 0
     ? totalCommission / installmentsCount
@@ -416,6 +435,13 @@ export function CallDetails() {
     const otherLabel = lang === 'fr' ? 'Autre' : 'Other'
     if (!selectedOutcome) return false
     if (selectedOutcome === 'won' && (!amount || amount <= 0)) return false
+    if (selectedOutcome === 'won' && hasDeposit) {
+      if (depositAmount < 0) return false
+      if (depositAmount > amount) return false
+      if (!depositDate) return false
+      // Conservé en plusieurs fois : l'acompte = 1 versement parmi N, donc N >= 2
+      if (depositKept && paymentType === 'installments' && installmentsCount < 2) return false
+    }
     if (selectedOutcome === 'followup') {
       if (!followupDate || !followupReason) return false
       if (followupReason === otherLabel && !followupReasonOther.trim()) return false
@@ -449,6 +475,12 @@ export function CallDetails() {
       if (selectedOutcome === 'won') {
         technicalSummary += `\n- ${lang === 'fr' ? 'Montant' : 'Amount'}: ${amount}€ (${paymentType === 'comptant' ? (lang === 'fr' ? 'Comptant' : 'Cash') : `${installmentsCount}x`})`
         technicalSummary += `\n- Commission: ${totalCommission.toFixed(2)}€${paymentType === 'installments' ? ` (${monthlyCommission.toFixed(2)}€/${lang === 'fr' ? 'mois' : 'mo'})` : ''}`
+        if (hasDeposit) {
+          const depositLabel = depositToRefund
+            ? (lang === 'fr' ? 'à rembourser' : 'to refund')
+            : (lang === 'fr' ? 'conservé' : 'kept')
+          technicalSummary += `\n- ${lang === 'fr' ? 'Acompte' : 'Deposit'}: ${depositAmount}€ (${depositLabel}, ${depositDate})`
+        }
       }
 
       if (selectedOutcome === 'followup') {
@@ -507,6 +539,10 @@ export function CallDetails() {
         }
         // Commission inhabituelle (Sales = pas de validation, on enregistre directement)
         updates.custom_commission_rate = customCommissionEnabled ? customCommissionRate : null
+        // Acompte
+        updates.deposit_amount = hasDeposit ? depositAmount : null
+        updates.deposit_to_refund = hasDeposit ? depositToRefund : false
+        updates.deposit_date = hasDeposit ? depositDate : null
       }
 
       // Update follow up date if applicable
@@ -930,8 +966,9 @@ export function CallDetails() {
                           if (v === 'custom') {
                             setScheduleMode('custom')
                             if (customSchedule.length === 0) {
-                              const base = amount > 0 ? amount / installmentsCount : 0
-                              setCustomSchedule(Array.from({ length: installmentsCount }, (_, i) => ({ month: i + 1, amount: Math.round(base * 100) / 100 })))
+                              const count = realInstallmentsCount
+                              const base = count > 0 && remainingForInstallments > 0 ? remainingForInstallments / count : 0
+                              setCustomSchedule(Array.from({ length: count }, (_, i) => ({ month: i + 1, amount: Math.round(base * 100) / 100 })))
                             }
                           } else {
                             setScheduleMode('equal')
@@ -947,7 +984,12 @@ export function CallDetails() {
                     </select>
                     {scheduleMode === 'equal' ? (
                       <p className="mt-2 text-sm text-white/40">
-                          {lang === 'fr' ? 'Montant par mois:' : 'Monthly amount:'} <span className="text-emerald-400 font-semibold">{(amount / installmentsCount).toFixed(2)}€</span>
+                          {lang === 'fr' ? 'Montant par mois:' : 'Monthly amount:'} <span className="text-emerald-400 font-semibold">{monthlyAmount.toFixed(2)}€</span>
+                          {depositKept && (
+                            <span className="ml-2 text-xs text-white/40">
+                              ({lang === 'fr' ? `acompte ${depositAmount}€ + ${realInstallmentsCount} × ${monthlyAmount.toFixed(2)}€` : `deposit ${depositAmount}€ + ${realInstallmentsCount} × ${monthlyAmount.toFixed(2)}€`})
+                            </span>
+                          )}
                       </p>
                     ) : (
                       <div className="mt-3">
@@ -967,6 +1009,105 @@ export function CallDetails() {
                     )}
                     </div>
                 )}
+
+                {/* Acompte (optionnel) */}
+                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-emerald-400" />
+                      <h4 className="text-sm font-semibold text-white">
+                        {lang === 'fr' ? 'Acompte' : 'Deposit'}
+                        <span className="ml-2 text-xs font-normal text-white/40">
+                          {lang === 'fr' ? '(optionnel)' : '(optional)'}
+                        </span>
+                      </h4>
+                    </div>
+                    {hasDeposit && (
+                      <button
+                        type="button"
+                        onClick={() => { setDepositAmount(0); setDepositToRefund(false); setDepositDate('') }}
+                        className="text-xs text-white/40 hover:text-white/70 underline underline-offset-2"
+                      >
+                        {lang === 'fr' ? 'Retirer' : 'Remove'}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-white/60">
+                        {lang === 'fr' ? 'Montant' : 'Amount'}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={depositAmount || ''}
+                          onChange={(e) => setDepositAmount(parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-8 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">€</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-white/60">
+                        {lang === 'fr' ? 'Date de versement' : 'Payment date'}
+                        {hasDeposit && <span className="text-red-400 ml-1">*</span>}
+                      </label>
+                      <input
+                        type="date"
+                        value={depositDate}
+                        onChange={(e) => setDepositDate(e.target.value)}
+                        disabled={!hasDeposit}
+                        className={cn(
+                          "w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none",
+                          !hasDeposit && "opacity-40 cursor-not-allowed"
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  {hasDeposit && (
+                    <div className="mt-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={depositToRefund}
+                          onChange={(e) => setDepositToRefund(e.target.checked)}
+                          className="h-4 w-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+                        />
+                        <span className="text-sm text-white">
+                          {lang === 'fr' ? 'Acompte à rembourser' : 'Deposit to refund'}
+                        </span>
+                      </label>
+                      <p className="mt-2 text-xs text-white/40">
+                        {depositToRefund
+                          ? (lang === 'fr'
+                              ? `Cet acompte sera rendu au client. Plan de paiement : ${amount}€ (acompte en plus).`
+                              : `This deposit will be returned to the client. Payment plan: ${amount}€ (deposit on top).`)
+                          : (lang === 'fr'
+                              ? `Acompte conservé. Plan de paiement : ${(amount - depositAmount).toFixed(2)}€ restants${paymentType === 'installments' && installmentsCount >= 2 ? ` sur ${realInstallmentsCount} mensualités` : ''}.`
+                              : `Deposit kept. Payment plan: ${(amount - depositAmount).toFixed(2)}€ remaining${paymentType === 'installments' && installmentsCount >= 2 ? ` over ${realInstallmentsCount} installments` : ''}.`)}
+                      </p>
+                      {depositKept && paymentType === 'installments' && installmentsCount < 2 && (
+                        <p className="mt-2 text-xs text-red-400">
+                          {lang === 'fr'
+                            ? 'Avec un acompte conservé, le nombre de mensualités doit être au moins 2.'
+                            : 'With a kept deposit, the number of installments must be at least 2.'}
+                        </p>
+                      )}
+                      {depositAmount > amount && (
+                        <p className="mt-2 text-xs text-red-400">
+                          {lang === 'fr'
+                            ? "L'acompte ne peut pas dépasser le montant total de la vente."
+                            : 'The deposit cannot exceed the total sale amount.'}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Commission Display */}
                 {effectiveAmount > 0 && (

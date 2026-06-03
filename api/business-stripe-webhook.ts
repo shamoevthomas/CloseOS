@@ -32,6 +32,56 @@ async function isSelfConnect(connectedAccountId: string): Promise<boolean> {
     } catch { return false; }
 }
 
+// ─── Helper: amount the customer is ACTUALLY paying right now (after discounts) ──
+// Prefers the latest real invoice — reflects one-time ("duration: once") discounts
+// that no longer appear on the upcoming invoice. Falls back to the upcoming invoice
+// preview (trials), then the subscription discount object, then the raw base price.
+async function getEffectiveSubscriptionAmount(
+    subscription: Stripe.Subscription,
+    baseAmount: number,
+    stripeOpts?: { stripeAccount: string }
+): Promise<number> {
+    const customerId = typeof subscription.customer === 'string'
+        ? subscription.customer
+        : (subscription.customer as any)?.id;
+
+    // 1. Latest real invoice = what they actually paid this period
+    try {
+        const invoices = stripeOpts
+            ? await stripe.invoices.list({ subscription: subscription.id, limit: 1 }, stripeOpts)
+            : await stripe.invoices.list({ subscription: subscription.id, limit: 1 });
+        const latest = invoices.data[0];
+        if (latest && typeof latest.total === 'number' && latest.total > 0) {
+            return Math.max(0, latest.total / 100);
+        }
+    } catch {}
+
+    // 2. Upcoming invoice preview (trials / no paid invoice yet)
+    if (customerId) {
+        try {
+            const preview = stripeOpts
+                ? await stripe.invoices.createPreview({ customer: customerId, subscription: subscription.id }, stripeOpts)
+                : await stripe.invoices.createPreview({ customer: customerId, subscription: subscription.id });
+            if (typeof preview.total === 'number' && preview.total > 0) {
+                return Math.max(0, preview.total / 100);
+            }
+        } catch {}
+    }
+
+    // 3. Subscription discount object fallback
+    const discount = (subscription as any).discount;
+    if (discount?.coupon) {
+        if (discount.coupon.percent_off) {
+            return Math.round(baseAmount * (1 - discount.coupon.percent_off / 100) * 100) / 100;
+        }
+        if (discount.coupon.amount_off) {
+            return Math.max(0, baseAmount - discount.coupon.amount_off / 100);
+        }
+    }
+
+    return baseAmount;
+}
+
 // ─── Helper: find owner by connected account ID ─────────────────────────────
 
 async function findOwnerByStripeAccount(accountId: string): Promise<string | null> {
@@ -65,9 +115,12 @@ async function updateProspectStripeData(
     prospectId: number,
     subscription: Stripe.Subscription,
     customer: Stripe.Customer,
-    matchedVia: string
+    matchedVia: string,
+    stripeOpts?: { stripeAccount: string }
 ): Promise<{ row: any; previousStage: string; wonFlipped: boolean }> {
     const item = subscription.items.data[0];
+    const baseAmount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0;
+    const amount = await getEffectiveSubscriptionAmount(subscription, baseAmount, stripeOpts);
 
     const { data: before } = await supabaseAdmin
         .from('business_prospects')
@@ -83,7 +136,7 @@ async function updateProspectStripeData(
         stripe_customer_id: customer.id,
         stripe_subscription_id: subscription.id,
         subscription_status: subscription.status,
-        subscription_amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
+        subscription_amount: amount,
         subscription_interval: item?.price?.recurring?.interval || 'month',
         matched_via: matchedVia,
         last_payment_date: (subscription as any).current_period_start
@@ -249,7 +302,7 @@ export default async function handler(req: Request) {
                     .eq('stripe_subscription_id', subscription.id)
                     .maybeSingle();
                 if (existingBySub) {
-                    const stripeRes = await updateProspectStripeData(existingBySub.id, subscription, customer, 'webhook');
+                    const stripeRes = await updateProspectStripeData(existingBySub.id, subscription, customer, 'webhook', stripeOpts);
                     if (stripeRes.wonFlipped && stripeRes.row) {
                         await fireBusinessEmit(ownerUserId, 'prospect.stage_changed', { ...stripeRes.row, previous_stage: stripeRes.previousStage, new_stage: 'won' });
                         await fireBusinessEmit(ownerUserId, 'deal.won', { ...stripeRes.row, previous_stage: stripeRes.previousStage });
@@ -261,7 +314,7 @@ export default async function handler(req: Request) {
                 const prospect = await matchProspectByEmail(ownerUserId, customer.email);
                 if (prospect) {
                     const isFirstMatch = !prospect.stripe_subscription_id;
-                    const stripeRes = await updateProspectStripeData(prospect.id, subscription, customer, 'webhook');
+                    const stripeRes = await updateProspectStripeData(prospect.id, subscription, customer, 'webhook', stripeOpts);
                     if (stripeRes.wonFlipped && stripeRes.row) {
                         await fireBusinessEmit(ownerUserId, 'prospect.stage_changed', { ...stripeRes.row, previous_stage: stripeRes.previousStage, new_stage: 'won' });
                         await fireBusinessEmit(ownerUserId, 'deal.won', { ...stripeRes.row, previous_stage: stripeRes.previousStage });
@@ -271,7 +324,8 @@ export default async function handler(req: Request) {
                     // On first match, create an initial payment record so we don't lose the first payment
                     if (isFirstMatch) {
                         const item = subscription.items.data[0];
-                        const amount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0;
+                        const baseAmount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0;
+                        const amount = await getEffectiveSubscriptionAmount(subscription, baseAmount, stripeOpts);
                         if (amount > 0) {
                             const initialInvoiceId = `initial_${subscription.id}`;
                             // Dedup against redelivered webhooks
@@ -309,7 +363,8 @@ export default async function handler(req: Request) {
                 } else {
                     // No matching prospect — auto-create one with stage 'won'
                     const item = subscription.items.data[0];
-                    const amount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0;
+                    const baseAmount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0;
+                    const amount = await getEffectiveSubscriptionAmount(subscription, baseAmount, stripeOpts);
                     const customerName = customer.name || customer.email || 'Client Stripe';
 
                     const { data: newProspect } = await supabaseAdmin
@@ -516,7 +571,7 @@ export default async function handler(req: Request) {
                                 ? await stripe.customers.retrieve(customerId)
                                 : await stripe.customers.retrieve(customerId, { stripeAccount: connectedAccountId })
                             ) as Stripe.Customer;
-                            await updateProspectStripeData(existingByEmail.id, sub, cust, 'webhook');
+                            await updateProspectStripeData(existingByEmail.id, sub, cust, 'webhook', stripeOpts);
 
                             await supabaseAdmin
                                 .from('business_payments')

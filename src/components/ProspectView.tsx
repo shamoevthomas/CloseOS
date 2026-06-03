@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { InstallmentScheduleEditor, type ScheduleEntry } from './InstallmentScheduleEditor'
+import { CreateEventModal } from './CreateEventModal'
 import { MaskedText } from '../components/MaskedText'
 import { type Prospect } from '../contexts/ProspectsContext'
 import { useMeetings } from '../contexts/MeetingsContext'
@@ -153,6 +154,14 @@ export function ProspectView({
   const [editScheduleMode, setEditScheduleMode] = useState<'equal' | 'custom'>('equal')
   const [editCustomSchedule, setEditCustomSchedule] = useState<ScheduleEntry[]>([])
 
+  // Acompte (deposit) — édition fiche
+  const [editDepositAmount, setEditDepositAmount] = useState<number>(0)
+  const [editDepositToRefund, setEditDepositToRefund] = useState<boolean>(false)
+  const [editDepositDate, setEditDepositDate] = useState<string>('')
+
+  // Popup RDV ouvert auto au passage en follow-up
+  const [showFollowupRdv, setShowFollowupRdv] = useState(false)
+
   // --- LOGIQUE INTELLIGENTE DE DÉTECTION DU PRIX ---
   useEffect(() => {
     const loadedProspect = { ...prospect } as ExtendedProspect
@@ -208,6 +217,14 @@ export function ProspectView({
       setEditScheduleMode('equal')
       setEditCustomSchedule([])
     }
+
+    // Hydrate acompte
+    const depAmount = (loadedProspect as any).deposit_amount
+    const depRefund = (loadedProspect as any).deposit_to_refund
+    const depDate = (loadedProspect as any).deposit_date
+    setEditDepositAmount(depAmount != null ? Number(depAmount) : 0)
+    setEditDepositToRefund(!!depRefund)
+    setEditDepositDate(depDate ? String(depDate).slice(0, 10) : '')
 
   }, [prospect, offers])
   // --------------------------------------------------
@@ -602,8 +619,33 @@ export function ProspectView({
   }
 
   const handleSavePayment = () => {
+    const hasDep = editDepositAmount > 0
+    const depKept = hasDep && !editDepositToRefund
     const editCustomScheduleTotal = editCustomSchedule.reduce((s, e) => s + (Number(e.amount) || 0), 0)
-    const effectiveValue = editScheduleMode === 'custom' ? editCustomScheduleTotal : editedValue
+    const editCustomEffective = editCustomScheduleTotal + (depKept ? editDepositAmount : 0)
+    const effectiveValue = editScheduleMode === 'custom' ? editCustomEffective : editedValue
+
+    // Validations bloquantes
+    if (hasDep) {
+      if (editDepositAmount < 0) {
+        setErrorMessage(lang === 'fr' ? "L'acompte ne peut pas être négatif." : "Deposit cannot be negative.")
+        return
+      }
+      if (editDepositAmount > effectiveValue) {
+        setErrorMessage(lang === 'fr' ? "L'acompte ne peut pas dépasser le montant total." : "Deposit cannot exceed total amount.")
+        return
+      }
+      if (!editDepositDate) {
+        setErrorMessage(lang === 'fr' ? "La date de l'acompte est obligatoire." : "Deposit date is required.")
+        return
+      }
+      if (depKept && paymentMode === 'installments' && installments < 2) {
+        setErrorMessage(lang === 'fr' ? "Avec un acompte conservé, le nombre de mensualités doit être au moins 2." : "With a kept deposit, installments must be at least 2.")
+        return
+      }
+    }
+    setErrorMessage(null)
+
     const updates: any = {
       value: effectiveValue,
       payment_type: paymentMode,
@@ -621,6 +663,10 @@ export function ProspectView({
       updates.installments_schedule = null
     }
     updates.custom_commission_rate = editCustomCommissionEnabled ? editCustomCommissionRate : null
+    // Acompte
+    updates.deposit_amount = hasDep ? editDepositAmount : null
+    updates.deposit_to_refund = hasDep ? editDepositToRefund : false
+    updates.deposit_date = hasDep ? editDepositDate : null
     handleOptimisticUpdate(updates)
     setEditingPayment(false)
   }
@@ -649,12 +695,18 @@ export function ProspectView({
     }
   }
 
-  // Effective values with custom schedule + custom commission
+  // Effective values with custom schedule + custom commission + acompte
+  const hasEditDeposit = editDepositAmount > 0
+  const editDepositKept = hasEditDeposit && !editDepositToRefund
   const editCustomScheduleTotal = editCustomSchedule.reduce((s, e) => s + (Number(e.amount) || 0), 0)
-  const effectiveEditedValue = editScheduleMode === 'custom' ? editCustomScheduleTotal : editedValue
+  const editCustomEffectiveTotal = editCustomScheduleTotal + (editDepositKept ? editDepositAmount : 0)
+  const effectiveEditedValue = editScheduleMode === 'custom' ? editCustomEffectiveTotal : editedValue
   const standardCommissionRate = commissionRate
   const effectiveCommissionRate = editCustomCommissionEnabled ? editCustomCommissionRate : standardCommissionRate
-  const monthlyAmount = effectiveEditedValue / (installments || 1)
+  // Acompte conservé : N saisi = total versements (acompte inclus) → mensualités = (total - acompte) / (N - 1)
+  const editRealInstallments = editDepositKept ? Math.max(1, installments - 1) : installments
+  const editRemainingForInstallments = editDepositKept ? Math.max(0, effectiveEditedValue - editDepositAmount) : effectiveEditedValue
+  const monthlyAmount = editRealInstallments > 0 ? editRemainingForInstallments / editRealInstallments : 0
   const commissionAmount = (effectiveEditedValue * effectiveCommissionRate) / 100
 
   const savedInstallments = localProspect.installments || 1
@@ -664,19 +716,34 @@ export function ProspectView({
   const savedCommission = (localProspect.value || 0) * (savedCommissionRate / 100)
   const savedSchedule = (localProspect as any).installments_schedule as ScheduleEntry[] | null | undefined
   const hasCustomSchedule = Array.isArray(savedSchedule) && savedSchedule.length > 0
+
+  // Acompte saved values
+  const savedDepositAmount = (localProspect as any).deposit_amount != null ? Number((localProspect as any).deposit_amount) : 0
+  const savedDepositToRefund = !!(localProspect as any).deposit_to_refund
+  const savedDepositDate = (localProspect as any).deposit_date as string | undefined
+  const hasSavedDeposit = savedDepositAmount > 0
+  const savedDepositKept = hasSavedDeposit && !savedDepositToRefund
+
+  // Plan de paiement réel (mensualités hors acompte)
+  // - Conservé : N saisi inclut l'acompte, donc plan = N-1 mensualités de (value - acompte)/(N-1)
+  // - Remboursé ou pas d'acompte : N mensualités de value/N
+  const planInstallmentsCount = savedDepositKept ? Math.max(1, savedInstallments - 1) : savedInstallments
+  const planTotal = savedDepositKept ? Math.max(0, (localProspect.value || 0) - savedDepositAmount) : (localProspect.value || 0)
+  const planCommission = savedDepositKept ? Math.max(0, savedCommission - (savedDepositAmount * savedCommissionRate) / 100) : savedCommission
+
   const scheduleBreakdown = hasCustomSchedule
     ? savedSchedule!.map((entry) => ({
         month: entry.month,
         clientAmount: Number(entry.amount) || 0,
         commission: ((Number(entry.amount) || 0) * savedCommissionRate) / 100,
       }))
-    : Array.from({ length: savedInstallments }, (_, i) => ({
+    : Array.from({ length: planInstallmentsCount }, (_, i) => ({
         month: i + 1,
-        clientAmount: (localProspect.value || 0) / savedInstallments,
-        commission: savedCommission / savedInstallments,
+        clientAmount: planTotal / planInstallmentsCount,
+        commission: planCommission / planInstallmentsCount,
       }))
-  const savedMonthlyPayment = (localProspect.value || 0) / savedInstallments
-  const savedMonthlyCommission = savedCommission / savedInstallments
+  const savedMonthlyPayment = planTotal / planInstallmentsCount
+  const savedMonthlyCommission = planCommission / planInstallmentsCount
 
   const isPayingInInstallments = localProspect.payment_type === 'installments' || (savedInstallments > 1);
 
@@ -904,7 +971,14 @@ export function ProspectView({
                     <label className="mb-2 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Étape actuelle' : 'Current stage'}</label>
                     <select
                       value={localProspect.stage}
-                      onChange={(e) => handleOptimisticUpdate({ stage: e.target.value })}
+                      onChange={(e) => {
+                        const newStage = e.target.value
+                        const wasFollowup = localProspect.stage === 'followup'
+                        handleOptimisticUpdate({ stage: newStage })
+                        if (newStage === 'followup' && !wasFollowup) {
+                          setShowFollowupRdv(true)
+                        }
+                      }}
                       className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     >
                       {allStages.map((stage) => (
@@ -1002,6 +1076,70 @@ export function ProspectView({
                               )}
                             </div>
                           )}
+
+                          {/* Acompte */}
+                          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-white flex items-center gap-1">
+                                <Wallet className="h-3 w-3 text-emerald-400" />
+                                {lang === 'fr' ? 'Acompte' : 'Deposit'}
+                                <span className="ml-1 font-normal text-white/40">({lang === 'fr' ? 'optionnel' : 'optional'})</span>
+                              </span>
+                              {hasEditDeposit && (
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditDepositAmount(0); setEditDepositToRefund(false); setEditDepositDate('') }}
+                                  className="text-[10px] text-white/40 hover:text-white/70 underline underline-offset-2"
+                                >
+                                  {lang === 'fr' ? 'Retirer' : 'Remove'}
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[10px] text-white/40">{lang === 'fr' ? 'Montant (€)' : 'Amount (€)'}</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={editDepositAmount || ''}
+                                  onChange={(e) => setEditDepositAmount(parseFloat(e.target.value) || 0)}
+                                  placeholder="0"
+                                  className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-white/40">
+                                  {lang === 'fr' ? 'Date' : 'Date'}
+                                  {hasEditDeposit && <span className="text-red-400 ml-0.5">*</span>}
+                                </label>
+                                <input
+                                  type="date"
+                                  value={editDepositDate}
+                                  onChange={(e) => setEditDepositDate(e.target.value)}
+                                  disabled={!hasEditDeposit}
+                                  className={cn(
+                                    "mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none",
+                                    !hasEditDeposit && "opacity-40 cursor-not-allowed"
+                                  )}
+                                />
+                              </div>
+                            </div>
+                            {hasEditDeposit && (
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={editDepositToRefund}
+                                  onChange={(e) => setEditDepositToRefund(e.target.checked)}
+                                  className="h-3.5 w-3.5 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+                                />
+                                <span className="text-xs text-white">
+                                  {lang === 'fr' ? 'Acompte à rembourser' : 'Deposit to refund'}
+                                </span>
+                              </label>
+                            )}
+                          </div>
+
                           <div className="rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20 space-y-3">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-medium text-emerald-400 flex items-center gap-1"><Wallet className="h-3 w-3" /> {lang === 'fr' ? 'Ta Commission' : 'Your Commission'} ({effectiveCommissionRate}%)</span>
@@ -1066,6 +1204,30 @@ export function ProspectView({
                             <span className="text-xs text-white/40">{lang === 'fr' ? 'Commission Totale' : 'Total Commission'} ({savedCommissionRate}%)</span>
                             <span className="text-sm font-bold text-emerald-400">+{savedCommission.toFixed(2)}€</span>
                           </div>
+
+                          {hasSavedDeposit && (
+                            <div className="mt-2 pt-2 border-t border-emerald-500/20 flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Wallet className="h-3 w-3 text-emerald-400 shrink-0" />
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-xs text-white/60 truncate">
+                                    {lang === 'fr' ? 'Acompte' : 'Deposit'}
+                                    {savedDepositDate && (
+                                      <span className="ml-1 text-white/40">
+                                        ({new Date(savedDepositDate).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')})
+                                      </span>
+                                    )}
+                                  </span>
+                                  {savedDepositToRefund && (
+                                    <span className="text-[10px] font-medium text-amber-300">
+                                      {lang === 'fr' ? 'À rembourser' : 'To refund'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="text-sm font-bold text-white shrink-0">{savedDepositAmount.toFixed(2)}€</span>
+                            </div>
+                          )}
 
                           {isPayingInInstallments && (
                             <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
@@ -1798,6 +1960,32 @@ export function ProspectView({
                 <span className="text-[10px] font-bold text-emerald-400/70 uppercase tracking-wider text-right">{lang === 'fr' ? 'Tu reçois' : 'You receive'}</span>
               </div>
               <div className="max-h-[50vh] overflow-y-auto">
+                {hasSavedDeposit && (
+                  <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-b border-white/5 bg-white/[0.02]">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium text-white flex items-center gap-1">
+                        <Wallet className="h-3 w-3 text-emerald-400" />
+                        {lang === 'fr' ? 'Acompte' : 'Deposit'}
+                      </span>
+                      <span className="text-[10px] text-white/40">
+                        {savedDepositDate
+                          ? new Date(savedDepositDate).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')
+                          : '—'}
+                        {savedDepositToRefund && (
+                          <span className="ml-1 text-amber-300">
+                            {lang === 'fr' ? '· à rembourser' : '· to refund'}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <span className="text-xs font-semibold text-white text-right">{savedDepositAmount.toFixed(2)}€</span>
+                    <span className="text-xs font-bold text-emerald-400 text-right">
+                      {savedDepositKept
+                        ? `${((savedDepositAmount * savedCommissionRate) / 100).toFixed(2)}€`
+                        : '0.00€'}
+                    </span>
+                  </div>
+                )}
                 {scheduleBreakdown.map((row) => (
                   <div key={row.month} className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-b border-white/5 last:border-b-0">
                     <span className="text-xs font-medium text-white/70">{lang === 'fr' ? `Mois ${row.month}` : `Month ${row.month}`}</span>
@@ -1808,9 +1996,22 @@ export function ProspectView({
               </div>
               <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2.5 border-t border-white/10 bg-emerald-500/5">
                 <span className="text-xs font-bold text-white">Total</span>
-                <span className="text-xs font-bold text-white text-right">{scheduleBreakdown.reduce((s, r) => s + r.clientAmount, 0).toFixed(2)}€</span>
-                <span className="text-xs font-bold text-emerald-400 text-right">{scheduleBreakdown.reduce((s, r) => s + r.commission, 0).toFixed(2)}€</span>
+                <span className="text-xs font-bold text-white text-right">
+                  {(scheduleBreakdown.reduce((s, r) => s + r.clientAmount, 0) + (hasSavedDeposit ? savedDepositAmount : 0)).toFixed(2)}€
+                </span>
+                <span className="text-xs font-bold text-emerald-400 text-right">
+                  {(scheduleBreakdown.reduce((s, r) => s + r.commission, 0) + (savedDepositKept ? (savedDepositAmount * savedCommissionRate) / 100 : 0)).toFixed(2)}€
+                </span>
               </div>
+              {hasSavedDeposit && savedDepositToRefund && (
+                <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-t border-white/10 bg-amber-500/5">
+                  <span className="text-[10px] font-medium text-amber-300 col-span-3">
+                    {lang === 'fr'
+                      ? `Acompte de ${savedDepositAmount.toFixed(2)}€ rendu au client après mise en place du plan.`
+                      : `Deposit of ${savedDepositAmount.toFixed(2)}€ returned to client once the plan is in place.`}
+                  </span>
+                </div>
+              )}
             </div>
 
             <button
@@ -1822,6 +2023,13 @@ export function ProspectView({
           </div>
         </div>
       )}
+
+      <CreateEventModal
+        isOpen={showFollowupRdv}
+        onClose={() => setShowFollowupRdv(false)}
+        prospectId={localProspect.id}
+        prospectName={localProspect.contact}
+      />
     </div>
   )
 }

@@ -1203,7 +1203,14 @@ export function BusinessProspectView({
                 <div className="relative">
                   <select
                     value={local.stage}
-                    onChange={(e) => handleUpdate({ stage: e.target.value })}
+                    onChange={(e) => {
+                      const newStage = e.target.value
+                      const wasFollowup = local.stage === 'followup'
+                      handleUpdate({ stage: newStage })
+                      if (newStage === 'followup' && !wasFollowup) {
+                        openBookModal()
+                      }
+                    }}
                     className={cn(SELECT_CLS, 'py-4 px-5')}
                   >
                     {ALL_STAGES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}

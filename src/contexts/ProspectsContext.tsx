@@ -47,6 +47,10 @@ export interface Prospect {
   // Commission inhabituelle + échéancier custom
   custom_commission_rate?: number | null
   installments_schedule?: { month: number; amount: number }[] | null
+  // Acompte
+  deposit_amount?: number | null
+  deposit_to_refund?: boolean | null
+  deposit_date?: string | null
 }
 
 interface ProspectsContextType {
