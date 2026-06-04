@@ -76,8 +76,10 @@ const getMonthDates = (date: Date): Date[] => {
   const month = date.getMonth()
   const firstDay = new Date(year, month, 1)
   const startDay = firstDay.getDay()
+  // startOffset is relative to the 1st of the month (0 when the 1st is a Monday),
+  // so the absolute day passed to Date must be 1 + startOffset (day is 1-based).
   const startOffset = startDay === 0 ? -6 : 1 - startDay
-  const start = new Date(year, month, startOffset)
+  const start = new Date(year, month, 1 + startOffset)
   const dates: Date[] = []
   for (let i = 0; i < 42; i++) {
     const d = new Date(start)

@@ -5,7 +5,6 @@ import {
   ConditionalRule,
   ConditionalOperator,
   EvaluableQuestion,
-  isRuleValid,
   isEligibleSourceType,
 } from '../../lib/questionnaireConditions'
 
@@ -43,8 +42,12 @@ export function QuestionConditionalEditor({ question, allQuestions, onChange }: 
   }, [allQuestions])
 
   const rule = question.conditional ?? null
-  const ruleValid = isRuleValid(rule, byId)
-  const ruleOrphan = !!rule && rule.enabled && !ruleValid
+  // Orphan = the rule's SOURCE is broken: it no longer exists, was moved after this
+  // question, or its type is no longer an eligible source. This is independent of
+  // whether the answer values are filled in yet — an enabled-but-incomplete rule
+  // (source picked, values not chosen yet) must still show its config UI, not the
+  // "source missing" warning. eligibleSources already encodes exists + before + type.
+  const ruleOrphan = !!rule && rule.enabled && !eligibleSources.some(s => s.client_id === rule.source_id)
 
   // No eligible source AND no existing rule => show inert hint
   if (eligibleSources.length === 0 && !rule) {
