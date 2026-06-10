@@ -543,7 +543,7 @@ async function sendSignatureEmail(opts: { to: string; name: string; title: strin
         <tr><td style="padding:0 32px 28px;">
           <p style="color:#6b7280;font-size:11px;line-height:1.6;margin:0;">
             Ou copiez ce lien : <a href="${opts.link}" style="color:#CEFF8F;">${opts.link}</a><br/>
-            Signature sécurisée — conformité eIDAS &amp; RGPD.
+            Signature sécurisée — conformité RGPD.
           </p>
         </td></tr>
       </table>

@@ -258,7 +258,7 @@ export default function SignHome() {
       </div>
 
       <div className="mt-8 flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#A1A9A9]">
-        <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> Chaque signature scellée par un faisceau de preuves — conforme eIDAS &amp; RGPD
+        <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> Chaque signature scellée par un faisceau de preuves — conforme RGPD
       </div>
     </div>
   );

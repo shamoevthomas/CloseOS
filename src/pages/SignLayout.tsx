@@ -108,7 +108,7 @@ export default function SignLayout() {
             {/* Bas */}
             <div className="mt-2 border-t border-[#3A4242] pt-3">
               <div className="mb-2 flex items-center gap-2 px-2 text-[10px] text-[#A1A9A9]">
-                <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> eIDAS &amp; RGPD
+                <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> Sécurisé &amp; RGPD
               </div>
               <div className="flex items-center justify-between rounded-xl border border-[#3A4242] bg-[#191E1E] px-3 py-2">
                 <button

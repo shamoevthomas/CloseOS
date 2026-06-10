@@ -43,7 +43,7 @@ qui le remplissent, vérifient leur identité (selon le mode choisi), paient si 
   Stripe Connect (paiement) ; Brevo (emails) ; ClickSend (SMS).
 - **DA** : fond sombre `#191E1E`, accent **lime** `#CEFF8F` (signataire) / **mint** `#A0E7EC` (propriétaire). Voir `Sign.md`.
 - **Génération PDF** : côté client (`jspdf` + `html2canvas` + `jspdf-autotable` + `qrcode`).
-- **Niveau de signature** : **signature électronique simple documentée** (eIDAS — SES). Pas de PAdES/horodatage qualifié.
+- **Niveau de signature** : **signature électronique simple documentée**. Pas de signature qualifiée / horodatage qualifié.
 
 ### Rôles
 - **Propriétaire (émetteur)** : crée et configure le contrat, place ses propres champs, suit la signature.
@@ -263,7 +263,7 @@ Supportés. Le « document signé » est un **raster fidèle de ce que le signat
 - **Traces techniques** : **IP** + **appareil** par action.
 - **Preuve de paiement** (si « Payé + signé ») : montant, date, identifiant de transaction.
 - **Événements de sécurité** (échecs, blocages) — coordonnées tentées **masquées**.
-- **Pied** : attestation, QR vers la **page de vérification publique**, mention « signature électronique simple documentée (eIDAS — SES) ».
+- **Pied** : attestation, QR vers la **page de vérification publique**, mention « signature électronique simple documentée ».
 
 ### Vérification publique
 Page `/sign/verify/:certificateId` (`sign-certificate verify`) → affiche les **empreintes enregistrées**
@@ -373,7 +373,7 @@ Un contrat n'est `signed` **que lorsque tous ses signataires sont `signed`** (ce
 - **Auth Sign** : MVP bypass (compte unique, localStorage) — pas de vraie auth multi-utilisateurs.
 - **Webhook Stripe** : absent (v1). Échéances/échecs d'abonnement non suivis dans CloseOS.
 - **Cron de purge RGPD** + **cascade Storage** à la suppression d'un contrat : à construire (politique définie, §12).
-- **Niveau de signature** : SES documentée. Pas de PAdES / cachet serveur / horodatage qualifié eIDAS.
+- **Niveau de signature** : signature électronique simple documentée. Pas de signature qualifiée / cachet serveur / horodatage qualifié.
 - **PDF importés** : rendu **raster** (≈ écran) dans le certificat, pas vectoriel (choix v1, fidèle à ce qui a été vu).
 - **RLS** : permissive (MVP) ; durcissement possible (vues security-barrier, table deny-all pour les whitelists).
 - **Stripe en live** : les vrais paiements/onboarding Connect ne sont testables qu'en HTTPS (pas sur `localhost`).

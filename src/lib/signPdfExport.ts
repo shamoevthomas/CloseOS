@@ -233,7 +233,7 @@ export async function emailSignedPdf(opts: GenOpts & { to: string; title: string
           <h1 style="color:#fff;font-size:20px;margin:14px 0 8px;">Votre copie signée</h1>
           <p style="color:#A1A9A9;font-size:14px;line-height:1.6;margin:0;">
             ${greeting}Veuillez trouver ci-joint la copie PDF du document signé : <strong style="color:#F3F4F6;">${opts.title}</strong>.<br/>
-            Signature sécurisée — conformité eIDAS &amp; RGPD.
+            Signature sécurisée — conformité RGPD.
           </p>
         </td></tr>
       </table>

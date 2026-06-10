@@ -45,7 +45,7 @@ export default function SignLanding() {
     document.title = 'CloseOS Sign | Signez le contrat, encaissez l’acompte';
     document.querySelector('meta[name="description"]')?.setAttribute(
       'content',
-      "CloseOS Sign : la signature électronique pensée pour les closers. Faites signer le contrat ET encaissez l'acompte dans le même geste, avec un faisceau de preuves opposable (email, OTP SMS, horodatage eIDAS, IP, hash).",
+      "CloseOS Sign : la signature électronique pensée pour les closers. Faites signer le contrat ET encaissez l'acompte dans le même geste, avec un faisceau de preuves opposable (email, OTP SMS, horodatage, IP, hash).",
     );
     document.getElementById('canonical')?.setAttribute('href', 'https://sign.closeos.fr/');
     document.getElementById('og-url')?.setAttribute('content', 'https://sign.closeos.fr/');
@@ -322,11 +322,11 @@ export default function SignLanding() {
                 <div className="flex h-8 w-8 items-center justify-center rounded border border-[#3A4242] bg-[#191E1E]">
                   <Clock className="h-4 w-4 text-[#CEFF8F]" />
                 </div>
-                <h4 className="text-base font-medium text-white">Horodatage eIDAS</h4>
+                <h4 className="text-base font-medium text-white">Horodatage serveur</h4>
               </div>
               <p className="text-xs text-[#A1A9A9]">
-                Le temps n’est pas basé sur l’horloge locale, mais via un jeton d’horodatage qualifié universel garantissant la
-                date et l’heure exactes.
+                Le temps n’est pas basé sur l’horloge locale du signataire, mais horodaté côté serveur (UTC) à chaque
+                étape, pour une chronologie fiable.
               </p>
             </div>
 
@@ -351,7 +351,7 @@ export default function SignLanding() {
       <section className="overflow-hidden bg-[#CEFF8F] py-8">
         <div className="flex animate-[pulse_10s_ease-in-out_infinite] flex-wrap justify-center gap-x-12 gap-y-3 text-[#191E1E] opacity-90">
           {[
-            { icon: ShieldCheck, label: 'Conformité eIDAS' },
+            { icon: ShieldCheck, label: 'Faisceau de preuves' },
             { icon: Scale, label: 'Valeur probante européenne' },
             { icon: Archive, label: 'Archivage sécurisé 10 ans' },
             { icon: Lock, label: 'RGPD Compliant' },
@@ -447,7 +447,7 @@ export default function SignLanding() {
               <span className="ml-2 text-sm font-semibold tracking-tight text-[#A1A9A9]">CloseOS Sign</span>
             </div>
             <p className="max-w-xs text-[11px] leading-relaxed text-[#A1A9A9]">
-              Le standard de signature électronique pensé pour les cycles de vente rapides. Sécurisation juridique eIDAS
+              Le standard de signature électronique pensé pour les cycles de vente rapides. Sécurisation juridique
               couplée au paiement instantané.
             </p>
           </div>
@@ -457,7 +457,7 @@ export default function SignLanding() {
             <ul className="space-y-3">
               <li><a href="#concept" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Fonctionnalités Bêta</a></li>
               <li><a href="#concept" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Intégration Stripe</a></li>
-              <li><a href="#preuve" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Preuve légale (Dossier eIDAS)</a></li>
+              <li><a href="#preuve" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Preuve légale (Dossier de preuves)</a></li>
               <li><a href="#attente" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">API (Bientôt)</a></li>
             </ul>
           </div>

@@ -198,7 +198,7 @@ export default function SignProfile() {
               <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> Sécurité & conformité
             </div>
             <p className="text-sm leading-relaxed text-[#A1A9A9]">
-              Signature électronique conforme eIDAS & RGPD. Chaque signature génère un faisceau de preuves (horodatage, ouvertures du lien,
+              Signature électronique conforme RGPD. Chaque signature génère un faisceau de preuves (horodatage, ouvertures du lien,
               appareil) conservé avec le contrat.
             </p>
           </div>

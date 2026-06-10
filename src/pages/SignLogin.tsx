@@ -132,7 +132,7 @@ export default function SignLogin() {
         {/* Footer note */}
         <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-[#A1A9A9]">
           <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" />
-          <span>Connexion sécurisée — conformité eIDAS &amp; RGPD</span>
+          <span>Connexion sécurisée — conformité RGPD</span>
         </div>
       </div>
     </div>

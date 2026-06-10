@@ -120,8 +120,8 @@ Bande pleine `bg-[#CEFF8F]`, items `uppercase tracking-widest font-bold` en `#19
 - **Message central, partout** : **Sign + Pay** — signer le contrat ET encaisser
   l'acompte dans le même geste. C'est LE différenciateur (≠ "énième outil de signature").
 - **Valeur réelle** : le **faisceau de preuves** opposable
-  (email vérifié + OTP SMS + horodatage eIDAS + IP + hash SHA-256 du document).
-- Registre : crédible, juridique, orienté closer. Conformité **eIDAS / RGPD** mise en avant.
+  (email vérifié + OTP SMS + horodatage serveur + IP + hash SHA-256 du document).
+- Registre : crédible, juridique, orienté closer. Conformité **RGPD** mise en avant.
 - Produit pas encore lancé → badges "Bientôt disponible" / "Beta Privée" + waitlist.
 
 ---

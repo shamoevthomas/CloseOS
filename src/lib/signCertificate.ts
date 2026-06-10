@@ -217,7 +217,7 @@ export async function buildCertificatePdf(data: CertData): Promise<string> {
   doc.setTextColor(GREY);
   doc.text(`Identifiant du certificat : ${data.certificateId ?? '—'}`, M, y);
   y += 4;
-  doc.text('Niveau : signature électronique simple documentée (eIDAS — SES).', M, y);
+  doc.text('Niveau : signature électronique simple documentée.', M, y);
 
   return doc.output('datauristring');
 }

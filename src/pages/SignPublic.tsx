@@ -480,7 +480,7 @@ export default function SignPublic() {
           </span>
         </div>
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#A1A9A9]">
-          <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> eIDAS &amp; RGPD
+          <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> Sécurisé &amp; RGPD
         </div>
       </header>
 
