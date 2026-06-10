@@ -1004,6 +1004,35 @@ export async function updateOwnerProfile(patch: Partial<OwnerProfile>): Promise<
   if (error) throw error;
 }
 
+// ---------- Paramètres (réels) ----------
+export type NotifPrefs = { new_device: boolean };
+
+/** Préférences de notification du propriétaire (défaut : tout activé). */
+export async function getNotifPrefs(): Promise<NotifPrefs> {
+  const { data } = await supabase.from('sign_users').select('notif_prefs').eq('id', await sessionUserId()).maybeSingle();
+  const p = (((data as any)?.notif_prefs) ?? {}) as Record<string, any>;
+  return { new_device: p.new_device === undefined ? true : !!p.new_device };
+}
+
+export async function updateNotifPrefs(patch: Partial<NotifPrefs>): Promise<void> {
+  const next = { ...(await getNotifPrefs()), ...patch };
+  const { error } = await supabase.from('sign_users').update({ notif_prefs: next }).eq('id', await sessionUserId());
+  if (error) throw error;
+}
+
+/** Infos compte en lecture seule (email, date de création) pour les paramètres. */
+export async function getAccountInfo(): Promise<{ email: string; createdAt: string | null }> {
+  const { data } = await supabase.from('sign_users').select('email, created_at').eq('id', await sessionUserId()).maybeSingle();
+  const c = (data ?? {}) as any;
+  return { email: c.email ?? '', createdAt: c.created_at ?? null };
+}
+
+/** Export RGPD : profil + contrats + contacts du propriétaire connecté. */
+export async function exportOwnerData(): Promise<Record<string, unknown>> {
+  const [profile, contracts, contacts] = await Promise.all([getOwnerProfile(), listContractsWithCounts(), listContacts()]);
+  return { export_version: 1, generated_at: new Date().toISOString(), profile, contracts, contacts };
+}
+
 // ---------- Contacts ----------
 export type SignContact = {
   id: string;

@@ -13,7 +13,10 @@ export const signSupabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    // OAuth/récupération gérés manuellement (completeOAuthRedirect / consumeRecoveryLink dans signAuth.ts)
+    // pour ne pas entrer en concurrence avec le client partagé Sales/Business sur la même origine.
     detectSessionInUrl: false,
+    flowType: 'pkce',
     storageKey: 'closeos-sign-auth',
   },
 });

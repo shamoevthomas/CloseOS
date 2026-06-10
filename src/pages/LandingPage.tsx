@@ -577,6 +577,12 @@ export function LandingPage() {
     setTimeout(() => navigate('/business'), 500);
   };
 
+  const handleNavigateToSign = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsExiting(true);
+    setTimeout(() => navigate('/sign'), 500);
+  };
+
   const calculatePrice = (price: number) => {
     if (billingCycle === 'yearly') return +(price * 0.75).toFixed(2);
     if (billingCycle === 'quarterly') return +(price * (5 / 6)).toFixed(2);
@@ -728,6 +734,14 @@ export function LandingPage() {
             <div className="absolute top-full left-0 right-0 mt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
               <a onClick={handleNavigateToBusiness} className="block glass-card rounded-2xl p-4 hover:bg-white/[0.06] transition-colors cursor-pointer">
                 <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="w-full h-auto" loading="lazy" width={200} height={40} />
+              </a>
+              <a onClick={handleNavigateToSign} className="mt-3 flex items-center gap-2.5 glass-card rounded-2xl p-4 hover:bg-white/[0.06] transition-colors cursor-pointer">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#CEFF8F" />
+                  <path d="M2 17L12 22L22 17" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M2 12L12 17L22 12" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="text-lg font-semibold text-white">CloseOS <span className="text-[#CEFF8F]">Sign</span></span>
               </a>
             </div>
           </div>

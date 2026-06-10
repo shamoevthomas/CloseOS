@@ -106,6 +106,8 @@ const SignProfile = lazy(() => import('./pages/SignProfile'))
 const SignContractEditor = lazy(() => import('./pages/SignContractEditor'))
 const SignPublic = lazy(() => import('./pages/SignPublic'))
 const SignVerify = lazy(() => import('./pages/SignVerify'))
+const SignProtected = lazy(() => import('./components/SignProtected'))
+const SignCheckout = lazy(() => import('./pages/SignCheckout'))
 
 // Business Module Imports
 import { BusinessAuthProvider, useBusinessAuth } from './business/contexts/BusinessAuthContext'
@@ -429,9 +431,10 @@ function AuthenticatedApp() {
         <Route path="/sign/login" element={<SignLogin />} />
         <Route path="/sign/s/:token" element={<SignPublic />} />
         <Route path="/sign/verify/:certificateId" element={<SignVerify />} />
-        <Route path="/sign/app/contrat" element={<SignContractEditor />} />
-        <Route path="/sign/app/contrat/:id" element={<SignContractEditor />} />
-        <Route path="/sign/app" element={<SignLayout />}>
+        <Route path="/sign/abonnement" element={<SignCheckout />} />
+        <Route path="/sign/app/contrat" element={<SignProtected><SignContractEditor /></SignProtected>} />
+        <Route path="/sign/app/contrat/:id" element={<SignProtected><SignContractEditor /></SignProtected>} />
+        <Route path="/sign/app" element={<SignProtected><SignLayout /></SignProtected>}>
           <Route index element={<SignHome />} />
           <Route path="nouveau" element={<SignNewContract />} />
           <Route path="contrats" element={<SignContracts />} />

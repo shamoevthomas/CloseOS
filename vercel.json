@@ -132,6 +132,18 @@
     { "source": "/api/business-send-login-code", "destination": "/api/business?action=send-login-code" },
     { "source": "/api/business-verify-login-code", "destination": "/api/business?action=verify-login-code" },
 
+    { "source": "/api/sign-send-verification-code", "destination": "/api/sign-auth?action=send-verification-code" },
+    { "source": "/api/sign-verify-code", "destination": "/api/sign-auth?action=verify-code" },
+    { "source": "/api/sign-check-device", "destination": "/api/sign-auth?action=check-device" },
+    { "source": "/api/sign-revoke-device", "destination": "/api/sign-auth?action=revoke-device" },
+    { "source": "/api/sign-list-devices", "destination": "/api/sign-auth?action=list-devices" },
+    { "source": "/api/sign-revoke-device-id", "destination": "/api/sign-auth?action=revoke-device-id" },
+    { "source": "/api/sign-revoke-all-devices", "destination": "/api/sign-auth?action=revoke-all-devices" },
+    { "source": "/api/sign-setup-intent", "destination": "/api/sign-checkout?action=setup-intent" },
+    { "source": "/api/sign-register", "destination": "/api/sign-checkout?action=register" },
+    { "source": "/api/sign-portal", "destination": "/api/sign-checkout?action=portal" },
+    { "source": "/api/sign-stripe-webhook", "destination": "/api/sign-stripe-webhook" },
+
     { "source": "/api/business-stripe-webhook", "destination": "/api/business-stripe-webhook" },
     { "source": "/api/business-revenue-summary", "destination": "/api/business?action=revenue-summary" },
     { "source": "/api/business-stripe-search", "destination": "/api/business?action=stripe-search" },

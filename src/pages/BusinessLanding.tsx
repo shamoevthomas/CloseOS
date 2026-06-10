@@ -108,6 +108,12 @@ export const BusinessLanding: React.FC = () => {
     setTimeout(() => navigate('/landing'), 500);
   };
 
+  const handleNavigateToSign = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsExiting(true);
+    setTimeout(() => navigate('/sign'), 500);
+  };
+
   // SEO meta tags for Business landing
   useEffect(() => {
     // Title & Description
@@ -355,6 +361,14 @@ export const BusinessLanding: React.FC = () => {
             <div className="absolute top-full left-0 right-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
               <a onClick={handleNavigateToSales} className="block rounded-xl border border-white/10 bg-[#020617] p-3 shadow-xl hover:bg-[#0f172a] transition-colors cursor-pointer">
                 <img src="/logo-sales.png" alt="CloseOS Sales" className="w-full h-auto" loading="lazy" width={200} height={40} />
+              </a>
+              <a onClick={handleNavigateToSign} className="mt-2 flex items-center gap-2.5 rounded-xl border border-white/10 bg-[#191E1E] p-3.5 shadow-xl hover:bg-[#222828] transition-colors cursor-pointer">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#CEFF8F" />
+                  <path d="M2 17L12 22L22 17" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M2 12L12 17L22 12" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="text-base font-semibold text-white">CloseOS <span className="text-[#CEFF8F]">Sign</span></span>
               </a>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   ArrowRight,
   PenTool,
@@ -9,24 +9,26 @@ import {
   Globe,
   Smartphone,
   Clock,
-  MailOpen,
+  Mail,
   ShieldCheck,
-  Scale,
-  Archive,
   Lock,
-  Quote,
-  Rocket,
+  Asterisk,
+  Users,
+  GitBranch,
+  BadgeCheck,
+  Archive,
+  KeyRound,
+  ScanLine,
   Linkedin,
   Twitter,
-  Asterisk,
-  Check,
+  ChevronDown,
 } from 'lucide-react';
 
 /**
  * CloseOS Sign — landing (sign.closeos.fr)
- * Design repris de Yousign (via aidesigner, mode inspire) : palette lime #CEFF8F
- * sur fond sombre #191E1E, mockups produit, bento-grid pour le faisceau de preuves.
- * Angle produit : sign + pay. Valeur réelle : le faisceau de preuves opposable.
+ * DA Sign : lime #CEFF8F sur fond sombre #191E1E, mockups produit, bento-grid pour le faisceau de preuves.
+ * Angle produit : Sign + Pay. Valeur réelle : le faisceau de preuves opposable + le certificat de preuve.
+ * Le module est complet ; Sign est INCLUS avec CloseOS Business (pas d'inscription publique).
  */
 
 const Logo = ({ className = '' }: { className?: string }) => (
@@ -38,26 +40,17 @@ const Logo = ({ className = '' }: { className?: string }) => (
 );
 
 export default function SignLanding() {
-  const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-
   useEffect(() => {
-    document.title = 'CloseOS Sign | Signez le contrat, encaissez l’acompte';
+    document.title = 'CloseOS Sign | Signez le contrat, encaissez le paiement';
     document.querySelector('meta[name="description"]')?.setAttribute(
       'content',
-      "CloseOS Sign : la signature électronique pensée pour les closers. Faites signer le contrat ET encaissez l'acompte dans le même geste, avec un faisceau de preuves opposable (email, OTP SMS, horodatage, IP, hash).",
+      "CloseOS Sign : la signature électronique qui encaisse. Faites signer le contrat ET encaissez le paiement (acompte, solde ou abonnement) dans le même geste, avec un faisceau de preuves opposable (email, OTP SMS, horodatage, IP, hash SHA-256) et un certificat de preuve vérifiable.",
     );
     document.getElementById('canonical')?.setAttribute('href', 'https://sign.closeos.fr/');
     document.getElementById('og-url')?.setAttribute('content', 'https://sign.closeos.fr/');
-    document.getElementById('og-title')?.setAttribute('content', 'CloseOS Sign — Signez le contrat, encaissez l’acompte');
-    document.getElementById('og-description')?.setAttribute('content', "Sign + Pay : faites signer le contrat et encaissez l'acompte dans le même geste.");
+    document.getElementById('og-title')?.setAttribute('content', 'CloseOS Sign — Signez le contrat, encaissez le paiement');
+    document.getElementById('og-description')?.setAttribute('content', "Sign + Pay : faites signer le contrat et encaissez le paiement dans le même geste, avec un certificat de preuve vérifiable.");
   }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setSubmitted(true);
-  };
 
   return (
     <div className="sign-landing relative min-h-screen overflow-x-hidden bg-[#191E1E] font-sans text-[#F3F4F6] antialiased selection:bg-[#CEFF8F] selection:text-[#191E1E]">
@@ -79,33 +72,47 @@ export default function SignLanding() {
       {/* Top Announcement Bar */}
       <div className="relative z-50 flex items-center justify-between bg-[#CEFF8F] px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[#191E1E]">
         <div className="flex items-center gap-2">
-          <span className="rounded-sm bg-[#191E1E] px-2 py-0.5 text-[#CEFF8F]">Nouveau</span>
-          <span>CloseOS Sign est actuellement en Beta Privée.</span>
+          <span className="rounded-sm bg-[#191E1E] px-2 py-0.5 text-[#CEFF8F]">Sign + Pay</span>
+          <span>Signez le contrat et encaissez le paiement dans le même geste.</span>
         </div>
-        <a href="#attente" className="flex items-center gap-1 transition-opacity hover:opacity-70">
-          Rejoindre la liste d’attente <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
+        <a href="/sign/abonnement" className="flex items-center gap-1 transition-opacity hover:opacity-70">
+          Essayer gratuitement <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
         </a>
       </div>
 
       {/* Navigation */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#3A4242] bg-[#191E1E]/90 px-6 py-4 backdrop-blur-md md:px-12">
         <div className="flex items-center gap-8">
-          <a href="/sign" className="flex items-center">
-            <Logo className="text-[#CEFF8F]" />
-            <span className="ml-2 text-lg font-semibold tracking-tight text-white">
-              CloseOS <span className="font-normal text-[#A1A9A9]">| Sign</span>
-            </span>
-          </a>
+          <div className="relative group flex items-center gap-1.5">
+            <a href="/sign" className="flex items-center">
+              <Logo className="text-[#CEFF8F]" />
+              <span className="ml-2 text-lg font-semibold tracking-tight text-white">
+                CloseOS <span className="font-normal text-[#A1A9A9]">| Sign</span>
+              </span>
+            </a>
+            <ChevronDown className="h-4 w-4 text-[#A1A9A9] transition-transform duration-300 group-hover:rotate-180 group-hover:text-white" />
+            <div className="absolute left-0 top-full z-50 mt-3 w-60 translate-y-2 opacity-0 invisible transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-hover:visible">
+              <div className="flex flex-col gap-2 rounded-xl border border-[#3A4242] bg-[#222828] p-2 shadow-2xl">
+                <a href="/landing" className="flex items-center justify-center rounded-lg px-5 py-4 transition-colors hover:bg-[#191E1E]">
+                  <img src="/logo-sales.png" alt="CloseOS Sales" className="h-7 w-auto object-contain" loading="lazy" />
+                </a>
+                <a href="/business" className="flex items-center justify-center rounded-lg px-5 py-4 transition-colors hover:bg-[#191E1E]">
+                  <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-7 w-auto object-contain" loading="lazy" />
+                </a>
+              </div>
+            </div>
+          </div>
           <nav className="hidden items-center gap-6 text-sm font-medium text-[#A1A9A9] lg:flex">
-            <a href="#concept" className="transition-colors hover:text-[#F3F4F6]">Le Concept</a>
-            <a href="#preuve" className="transition-colors hover:text-[#F3F4F6]">Preuve Légale</a>
-            <a href="#attente" className="transition-colors hover:text-[#F3F4F6]">Accès</a>
+            <a href="#concept" className="transition-colors hover:text-[#F3F4F6]">Sign + Pay</a>
+            <a href="#multi" className="transition-colors hover:text-[#F3F4F6]">Multi-signataire</a>
+            <a href="#preuve" className="transition-colors hover:text-[#F3F4F6]">Faisceau de preuves</a>
+            <a href="#securite" className="transition-colors hover:text-[#F3F4F6]">Sécurité</a>
           </nav>
         </div>
         <div className="flex items-center gap-4">
           <a href="/sign/login" className="hidden text-sm font-medium transition-colors hover:text-[#F3F4F6] md:block">Connexion</a>
-          <a href="#attente" className="rounded bg-[#CEFF8F] px-5 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
-            Accès Anticipé
+          <a href="/sign/abonnement" className="rounded bg-[#CEFF8F] px-5 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
+            Essai gratuit
           </a>
         </div>
       </header>
@@ -115,22 +122,25 @@ export default function SignLanding() {
         <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-2">
           {/* Copy */}
           <div className="space-y-8">
+            <div className="inline-flex items-center gap-2 rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
+              <BadgeCheck className="h-3.5 w-3.5" /> 14 jours d’essai gratuit · sans engagement
+            </div>
             <h1 className="text-[40px] font-semibold leading-[1.05] tracking-tight text-white sm:text-[52px]">
               Signez le contrat,<br />
-              <span className="text-[#CEFF8F]">encaissez l’acompte.</span><br />
+              <span className="text-[#CEFF8F]">encaissez le paiement.</span><br />
               Dans le même geste.
             </h1>
             <p className="max-w-xl text-lg leading-relaxed text-[#A1A9A9]">
-              Le premier module de signature européenne taillé pour les closers. Ne laissez plus un deal refroidir entre la
-              signature et le virement. CloseOS Sign lie la validation juridique au paiement de l’acompte sur un seul et
-              même écran.
+              La signature électronique qui encaisse. Ne laissez plus un deal refroidir entre la signature et le
+              virement : CloseOS Sign lie la validation du contrat à son paiement sur un seul écran — avec un
+              faisceau de preuves opposable et un certificat vérifiable.
             </p>
             <div className="flex flex-col gap-4 pt-4 sm:flex-row">
-              <a href="#attente" className="rounded bg-[#CEFF8F] px-8 py-3 text-center font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
-                Rejoindre la Waitlist
+              <a href="/sign/abonnement" className="flex items-center justify-center gap-2 rounded bg-[#CEFF8F] px-8 py-3 text-center font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
+                Démarrer l’essai gratuit <ArrowRight className="h-4 w-4" />
               </a>
               <a href="#preuve" className="rounded border border-[#3A4242] bg-transparent px-8 py-3 text-center font-medium text-white transition-colors hover:border-[#A1A9A9]">
-                Voir le Faisceau de Preuves
+                Voir le faisceau de preuves
               </a>
             </div>
           </div>
@@ -163,7 +173,7 @@ export default function SignLanding() {
               </div>
               <div>
                 <p className="text-xs font-medium text-white">Marc Dupont</p>
-                <p className="mt-0.5 text-[10px] uppercase text-[#A1A9A9]">Identification terminée</p>
+                <p className="mt-0.5 text-[10px] uppercase text-[#A1A9A9]">Identité vérifiée</p>
               </div>
               <div className="wire-b" />
             </div>
@@ -171,10 +181,10 @@ export default function SignLanding() {
             {/* Pay action */}
             <div className="absolute right-[5%] top-[45%] z-40 w-[220px] rounded border border-[#CEFF8F] bg-[#CEFF8F] p-4 shadow-[0_0_40px_rgba(206,255,143,0.15)]">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-bold text-[#191E1E]">Paiement Sécurisé</span>
+                <span className="text-sm font-bold text-[#191E1E]">Paiement sécurisé</span>
                 <CheckCircle2 className="h-4 w-4 text-[#191E1E]" fill="currentColor" stroke="#CEFF8F" />
               </div>
-              <div className="mb-3 text-[10px] text-[#191E1E]/80">Acompte lié au contrat #4092</div>
+              <div className="mb-3 text-[10px] text-[#191E1E]/80">Paiement lié au contrat #4092</div>
               <button className="w-full rounded bg-[#191E1E] py-2 text-xs font-bold text-[#CEFF8F]">
                 Payer 1 500 € &amp; Signer
               </button>
@@ -191,13 +201,12 @@ export default function SignLanding() {
         <div className="relative z-10 mx-auto mt-24 max-w-7xl border-t border-[#3A4242] pt-10">
           <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">
-              Conçu pour les écosystèmes exigeants
+              Paiements propulsés par Stripe · Module de l’écosystème CloseOS
             </span>
             <div className="flex flex-wrap justify-center gap-8 opacity-50 grayscale md:gap-16">
               <span className="text-xl font-bold tracking-tighter">Stripe.</span>
-              <span className="font-serif text-xl italic">HubSpot</span>
-              <span className="text-xl font-bold tracking-wide">Zapier</span>
-              <span className="text-lg font-bold">Google Workspace</span>
+              <span className="text-lg font-bold">CloseOS Business</span>
+              <span className="text-xl font-bold tracking-wide">RGPD</span>
             </div>
           </div>
         </div>
@@ -208,7 +217,7 @@ export default function SignLanding() {
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto mb-16 max-w-2xl text-center">
             <div className="mb-4 inline-block rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
-              Le Flux Unique
+              Le flux unique
             </div>
             <h2 className="text-4xl font-semibold tracking-tight text-white">
               Le moment de la signature est votre pic émotionnel. Ne le brisez pas.
@@ -224,17 +233,21 @@ export default function SignLanding() {
               </div>
               <h3 className="mb-4 text-2xl font-medium text-white">Signature fluide, sans friction.</h3>
               <p className="mb-8 text-sm leading-relaxed text-[#A1A9A9]">
-                Envoyez votre document. Votre client ouvre le lien sur mobile ou desktop. Aucune création de compte requise.
-                L’interface s’adapte parfaitement pour une lecture claire et une signature en un clic.
+                Composez le contrat depuis un modèle, une feuille blanche ou un PDF importé. Posez les champs en glisser-déposer.
+                Votre client ouvre le lien sur mobile ou desktop — aucune création de compte requise — et signe en un clic.
               </p>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-sm">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#CEFF8F]" />
-                  <span className="text-[#F3F4F6]">Navigation optimisée mobile (100% responsive).</span>
+                  <span className="text-[#F3F4F6]">Modèles, import PDF et éditeur en glisser-déposer.</span>
                 </li>
                 <li className="flex items-start gap-3 text-sm">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#CEFF8F]" />
-                  <span className="text-[#F3F4F6]">Champs pré-remplis via l’intégration CloseOS CRM.</span>
+                  <span className="text-[#F3F4F6]">Champs pré-remplis depuis votre carnet de contacts.</span>
+                </li>
+                <li className="flex items-start gap-3 text-sm">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#CEFF8F]" />
+                  <span className="text-[#F3F4F6]">100% responsive, lecture claire sur mobile.</span>
                 </li>
               </ul>
             </div>
@@ -245,21 +258,68 @@ export default function SignLanding() {
               <div className="mb-8 flex h-12 w-12 items-center justify-center rounded border border-[#CEFF8F]/30 bg-[#CEFF8F]/10">
                 <CreditCard className="h-6 w-6 text-[#CEFF8F]" />
               </div>
-              <h3 className="mb-4 text-2xl font-medium text-white">Paiement intégré instantané.</h3>
+              <h3 className="mb-4 text-2xl font-medium text-white">« Payé + signé », d’un seul geste.</h3>
               <p className="mb-8 text-sm leading-relaxed text-[#A1A9A9]">
-                Dès l’apposition de la signature, le module de paiement Stripe apparaît en overlay. L’acompte est sécurisé, le
-                document scellé cryptographiquement et envoyé aux deux parties avec le reçu.
+                Activez le paiement sur le contrat : le signataire règle le paiement (acompte, solde ou abonnement) pour valider. Via Stripe Connect,
+                l’argent arrive <span className="text-[#F3F4F6]">directement sur votre compte</span>. Le document est ensuite scellé et
+                envoyé aux deux parties.
               </p>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-sm">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#CEFF8F]" />
-                  <span className="text-[#F3F4F6]">Paiement par CB, prélèvement SEPA, Apple/Google Pay.</span>
+                  <span className="text-[#F3F4F6]">Paiement par carte sécurisé via Stripe, sur votre compte.</span>
                 </li>
                 <li className="flex items-start gap-3 text-sm">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#CEFF8F]" />
-                  <span className="text-[#F3F4F6]">Engagement financier verrouillant juridiquement l’accord.</span>
+                  <span className="text-[#F3F4F6]">Paiement assignable à un signataire précis, ou à tous.</span>
+                </li>
+                <li className="flex items-start gap-3 text-sm">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#CEFF8F]" />
+                  <span className="text-[#F3F4F6]">Engagement financier qui verrouille l’accord.</span>
                 </li>
               </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Multi-signataire */}
+      <section id="multi" className="border-b border-[#3A4242] px-6 py-24 md:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-16 max-w-2xl">
+            <div className="mb-4 inline-block rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
+              Plusieurs parties
+            </div>
+            <h2 className="text-[36px] font-semibold tracking-tight text-white sm:text-[44px]">
+              Un, deux, dix signataires.<br />
+              <span className="text-[#A1A9A9]">Chacun sa vérification, chacun son rôle.</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <Users className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">Plusieurs signataires</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                Ajoutez autant de signataires que nécessaire. Chacun reçoit son propre lien sécurisé et ses propres champs,
+                avec une couleur dédiée dans l’éditeur.
+              </p>
+            </div>
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <GitBranch className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">Parallèle ou séquentiel</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                Tout le monde signe quand il veut, ou dans un ordre imposé (1 → 2 → 3) : le signataire suivant n’est sollicité
+                qu’une fois le précédent passé.
+              </p>
+            </div>
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <Fingerprint className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">Vérification par signataire</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                Chaque signataire a sa propre liste de vérification (email / SMS), et le paiement peut être demandé à un
+                signataire précis — indépendamment de sa vérification.
+              </p>
             </div>
           </div>
         </div>
@@ -285,8 +345,8 @@ export default function SignLanding() {
               <div>
                 <h4 className="mb-2 text-xl font-medium text-white">Hash cryptographique unique (SHA-256)</h4>
                 <p className="max-w-md text-sm text-[#A1A9A9]">
-                  Chaque document signé est scellé. La moindre modification ultérieure d’un seul pixel invalide le hash. Le
-                  document original et son certificat de preuve sont liés à vie.
+                  Le document scellé est haché côté serveur sur les octets réellement reçus. La moindre modification
+                  ultérieure invalide le hash. Document et certificat de preuve sont liés à vie.
                 </p>
               </div>
             </div>
@@ -297,7 +357,7 @@ export default function SignLanding() {
               <div>
                 <h4 className="mb-2 text-lg font-medium text-white">Traçabilité IP &amp; appareil</h4>
                 <p className="text-xs text-[#A1A9A9]">
-                  Enregistrement strict de l’adresse IP, du navigateur (User-Agent) et de l’OS au moment précis de l’interaction.
+                  Adresse IP, navigateur et appareil enregistrés côté serveur au moment précis de chaque interaction.
                 </p>
               </div>
             </div>
@@ -308,11 +368,11 @@ export default function SignLanding() {
                 <div className="flex h-8 w-8 items-center justify-center rounded border border-[#3A4242] bg-[#191E1E]">
                   <Smartphone className="h-4 w-4 text-[#CEFF8F]" />
                 </div>
-                <h4 className="text-base font-medium text-white">Validation OTP SMS</h4>
+                <h4 className="text-base font-medium text-white">Vérification email &amp; SMS</h4>
               </div>
               <p className="text-xs text-[#A1A9A9]">
-                Double facteur d’authentification requis avant signature. Le code à 6 chiffres lie le signataire à son numéro
-                de téléphone personnel.
+                Code à 6 chiffres par email, par SMS, ou les deux — avant la signature. Blocage anti-fraude après plusieurs
+                tentatives échouées.
               </p>
             </div>
 
@@ -325,21 +385,48 @@ export default function SignLanding() {
                 <h4 className="text-base font-medium text-white">Horodatage serveur</h4>
               </div>
               <p className="text-xs text-[#A1A9A9]">
-                Le temps n’est pas basé sur l’horloge locale du signataire, mais horodaté côté serveur (UTC) à chaque
-                étape, pour une chronologie fiable.
+                Chaque étape est horodatée côté serveur (UTC), pas sur l’horloge locale du signataire, pour une chronologie
+                fiable.
               </p>
             </div>
 
             {/* Email */}
             <div className="hover-lift relative col-span-1 overflow-hidden rounded border border-[#3A4242] bg-[#222828] p-8 md:col-span-2">
               <div className="absolute -bottom-4 -right-4 opacity-5">
-                <MailOpen className="h-32 w-32" />
+                <Mail className="h-32 w-32" />
               </div>
               <div className="relative z-10">
-                <h4 className="mb-2 text-base font-medium text-white">Vérification de domaine</h4>
+                <div className="mb-4 flex h-8 w-8 items-center justify-center rounded border border-[#3A4242] bg-[#191E1E]">
+                  <Mail className="h-4 w-4 text-[#CEFF8F]" />
+                </div>
+                <h4 className="mb-2 text-base font-medium text-white">Journal d’événements inviolable</h4>
                 <p className="text-xs text-[#A1A9A9]">
-                  Le lien de signature n’est accessible que depuis la boîte mail du destinataire, établissant le premier niveau
-                  du faisceau.
+                  Création, envois, ouvertures, vérifications, paiement, scellement : tout est consigné dans un journal
+                  append-only, source unique de vérité.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Certificat de preuve */}
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-6">
+            <div className="hover-lift col-span-1 flex flex-col justify-between rounded border border-[#3A4242] bg-[#1D2323] p-8 md:col-span-3">
+              <BadgeCheck className="mb-6 h-9 w-9 text-[#CEFF8F]" />
+              <div>
+                <h4 className="mb-2 text-xl font-medium text-white">Certificat de preuve, joint au document</h4>
+                <p className="text-sm text-[#A1A9A9]">
+                  À la complétion, un certificat est généré une fois puis figé : identités, méthode de vérification, timeline,
+                  IP, preuve de paiement, hashs. Il voyage avec le document signé.
+                </p>
+              </div>
+            </div>
+            <div className="hover-lift col-span-1 flex flex-col justify-between rounded border border-[#3A4242] bg-[#1D2323] p-8 md:col-span-3">
+              <ScanLine className="mb-6 h-9 w-9 text-[#CEFF8F]" />
+              <div>
+                <h4 className="mb-2 text-xl font-medium text-white">Vérification publique</h4>
+                <p className="text-sm text-[#A1A9A9]">
+                  Une page de vérification permet à n’importe qui de contrôler l’authenticité d’un document et de son certificat
+                  — les coordonnées sensibles restant masquées hors des parties concernées.
                 </p>
               </div>
             </div>
@@ -351,9 +438,9 @@ export default function SignLanding() {
       <section className="overflow-hidden bg-[#CEFF8F] py-8">
         <div className="flex animate-[pulse_10s_ease-in-out_infinite] flex-wrap justify-center gap-x-12 gap-y-3 text-[#191E1E] opacity-90">
           {[
-            { icon: ShieldCheck, label: 'Faisceau de preuves' },
-            { icon: Scale, label: 'Valeur probante européenne' },
-            { icon: Archive, label: 'Archivage sécurisé 10 ans' },
+            { icon: ShieldCheck, label: 'Faisceau de preuves opposable' },
+            { icon: Clock, label: 'Horodatage serveur (UTC)' },
+            { icon: Archive, label: 'Conservation 5 ans + legal hold' },
             { icon: Lock, label: 'RGPD Compliant' },
           ].map((item) => (
             <span key={item.label} className="flex items-center gap-4 text-xl font-bold uppercase tracking-widest">
@@ -363,77 +450,73 @@ export default function SignLanding() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="border-b border-[#3A4242] px-6 py-24 md:px-12">
+      {/* Sécurité */}
+      <section id="securite" className="border-b border-[#3A4242] px-6 py-24 md:px-12">
         <div className="mx-auto max-w-7xl">
-          <h3 className="mb-12 text-center text-sm uppercase tracking-[0.2em] text-[#A1A9A9]">Conçu pour ceux qui clôturent</h3>
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="relative rounded border border-[#3A4242] bg-[#222828] p-8">
-              <Quote className="absolute right-6 top-6 h-8 w-8 text-[#3A4242]" fill="currentColor" />
-              <p className="mb-8 text-lg font-medium leading-relaxed text-[#F3F4F6]">
-                « L’intégration du paiement directement dans le flux de signature a réduit ma perte de deals post-closing à
-                zéro. Le client dit oui au téléphone, il signe et l’acompte est prélevé 30 secondes plus tard. »
-              </p>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-white">Julien M.</span>
-                <span className="mt-1 text-[10px] uppercase tracking-wider text-[#A1A9A9]">Directeur Commercial, TechSaaS Co</span>
-              </div>
+          <div className="mb-16 max-w-2xl">
+            <div className="mb-4 inline-block rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
+              Sécurité
             </div>
-            <div className="relative rounded border border-[#3A4242] bg-[#222828] p-8">
-              <Quote className="absolute right-6 top-6 h-8 w-8 text-[#3A4242]" fill="currentColor" />
-              <p className="mb-8 text-lg font-medium leading-relaxed text-[#F3F4F6]">
-                « En cas de litige, le dossier de preuve généré par CloseOS Sign est exhaustif. L’alliance de l’OTP, de l’IP et
-                du hash cryptographique rend l’acte juridiquement blindé. »
+            <h2 className="text-[36px] font-semibold tracking-tight text-white sm:text-[44px]">
+              Vos contrats et vos paiements,<br />
+              <span className="text-[#A1A9A9]">protégés à chaque couche.</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <Smartphone className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">Double authentification</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                Connexion vérifiée sur chaque nouvel appareil (code email), appareil de confiance 7 jours, et alerte de
+                connexion.
               </p>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-white">Sarah K.</span>
-                <span className="mt-1 text-[10px] uppercase tracking-wider text-[#A1A9A9]">Avocate au Barreau de Paris, Droit du Numérique</span>
-              </div>
+            </div>
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <KeyRound className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">Accès cloisonné</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                Données isolées par compte (sécurité au niveau des lignes), accès signataire limité à son seul document via un
+                lien à usage contrôlé.
+              </p>
+            </div>
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <Lock className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">Conforme RGPD</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                Conservation maîtrisée (5 ans + legal hold), export de vos données à la demande, journal de preuves conservé avec le contrat.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Waitlist */}
-      <section id="attente" className="bg-noise relative px-6 py-32 md:px-12">
+      {/* CTA final */}
+      <section className="bg-noise relative px-6 py-32 md:px-12">
         <div className="relative z-10 mx-auto max-w-3xl text-center">
           <div className="mb-8 flex justify-center">
             <div className="flex h-16 w-16 items-center justify-center rounded border border-[#CEFF8F] bg-[#CEFF8F]/10 shadow-[0_0_30px_rgba(206,255,143,0.1)]">
-              <Rocket className="h-8 w-8 text-[#CEFF8F]" />
+              <FileSignature className="h-8 w-8 text-[#CEFF8F]" />
             </div>
           </div>
           <h2 className="mb-6 text-4xl font-semibold tracking-tight text-white">
-            La bêta privée approche.<br />Réservez votre accès.
+            Essayez CloseOS Sign,<br />14 jours gratuits.
           </h2>
           <p className="mb-12 text-sm text-[#A1A9A9]">
-            CloseOS Sign sera déployé progressivement aux agences et closers français. Inscrivez-vous pour être parmi les
-            premiers à unifier signature et encaissement.
+            Signez et encaissez dès aujourd’hui. Sans engagement, annulable à tout moment.
+            Déjà client CloseOS Business ? Votre accès Sign est inclus.
           </p>
 
-          {submitted ? (
-            <div className="mx-auto inline-flex items-center gap-2 rounded bg-[#CEFF8F]/15 px-5 py-3 text-sm font-medium text-[#CEFF8F]">
-              <Check className="h-4 w-4" /> C’est noté ! On vous écrit dès l’ouverture.
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="mx-auto flex max-w-xl flex-col gap-3 sm:flex-row">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="votre@email-professionnel.fr"
-                className="flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F] focus:ring-1 focus:ring-[#CEFF8F]"
-              />
-              <button
-                type="submit"
-                className="whitespace-nowrap rounded bg-[#CEFF8F] px-6 py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
-              >
-                Rejoindre la liste
-              </button>
-            </form>
-          )}
+          <div className="mx-auto flex max-w-xl flex-col justify-center gap-3 sm:flex-row">
+            <a href="/sign/abonnement" className="flex items-center justify-center gap-2 whitespace-nowrap rounded bg-[#CEFF8F] px-8 py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
+              Démarrer l’essai gratuit <ArrowRight className="h-4 w-4" />
+            </a>
+            <a href="/sign/login" className="flex items-center justify-center gap-2 whitespace-nowrap rounded border border-[#3A4242] px-8 py-3 text-sm font-medium text-white transition-colors hover:border-[#A1A9A9]">
+              Se connecter
+            </a>
+          </div>
           <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-[#A1A9A9]">
-            <Lock className="h-3 w-3" fill="currentColor" /> <span>Vos données sont sécurisées et ne seront jamais revendues.</span>
+            <Lock className="h-3 w-3" fill="currentColor" /> <span>Signature électronique conforme RGPD — vos données ne sont jamais revendues.</span>
           </div>
         </div>
       </section>
@@ -447,18 +530,18 @@ export default function SignLanding() {
               <span className="ml-2 text-sm font-semibold tracking-tight text-[#A1A9A9]">CloseOS Sign</span>
             </div>
             <p className="max-w-xs text-[11px] leading-relaxed text-[#A1A9A9]">
-              Le standard de signature électronique pensé pour les cycles de vente rapides. Sécurisation juridique
-              couplée au paiement instantané.
+              La signature électronique pensée pour les cycles de vente rapides. Sécurisation du contrat couplée au paiement
+              instantané.
             </p>
           </div>
 
           <div>
             <h5 className="mb-4 text-xs font-bold uppercase tracking-widest text-white">Produit</h5>
             <ul className="space-y-3">
-              <li><a href="#concept" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Fonctionnalités Bêta</a></li>
-              <li><a href="#concept" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Intégration Stripe</a></li>
-              <li><a href="#preuve" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Preuve légale (Dossier de preuves)</a></li>
-              <li><a href="#attente" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">API (Bientôt)</a></li>
+              <li><a href="#concept" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Sign + Pay</a></li>
+              <li><a href="#multi" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Multi-signataire</a></li>
+              <li><a href="#preuve" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Faisceau de preuves &amp; certificat</a></li>
+              <li><a href="#securite" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Sécurité</a></li>
             </ul>
           </div>
 
@@ -467,7 +550,7 @@ export default function SignLanding() {
             <ul className="space-y-3">
               <li><a href="/business" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">CloseOS Business</a></li>
               <li><a href="/tarifs" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Tarifs</a></li>
-              <li><a href="/fonctionnalites" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Fonctionnalités</a></li>
+              <li><a href="/sign/login" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Connexion</a></li>
             </ul>
           </div>
 

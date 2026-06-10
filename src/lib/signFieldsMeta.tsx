@@ -1,4 +1,4 @@
-import { Signature, PenTool, User, Calendar, Clock, Mail, Phone, MapPin, Building2, Type, Hash, FileDigit, Percent, Landmark, Tag, CheckSquare } from 'lucide-react';
+import { Signature, PenTool, User, Calendar, Clock, Mail, Phone, MapPin, Building2, Type, Hash, FileDigit, Percent, Landmark, Tag } from 'lucide-react';
 
 // Texte par défaut d'une case à cocher de consentement (modifiable par champ via label)
 export const CHECKBOX_DEFAULT_TEXT = 'Je reconnais avoir lu et accepté le document.';
@@ -43,7 +43,6 @@ export const FIELD_META: Record<string, { label: string; Icon: typeof User }> = 
   tva: { label: 'N° de TVA', Icon: Percent },
   company_id: { label: "N° d'entreprise", Icon: Landmark },
   ape: { label: 'Code APE/NAF', Icon: Tag },
-  checkbox: { label: 'Lu et approuvé', Icon: CheckSquare },
   text: { label: 'Texte libre', Icon: Type },
 };
 
@@ -62,7 +61,6 @@ export const PALETTE = [
   { type: 'tva', label: 'N° de TVA', icon: Percent },
   { type: 'company_id', label: "N° d'entreprise", icon: Landmark },
   { type: 'ape', label: 'Code APE/NAF', icon: Tag },
-  { type: 'checkbox', label: 'Lu et approuvé', icon: CheckSquare },
   { type: 'text', label: 'Texte libre', icon: Type },
 ] as const;
 

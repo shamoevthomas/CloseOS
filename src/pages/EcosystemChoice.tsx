@@ -191,7 +191,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
           </motion.div>
 
           {/* ═══ Choice Cards ═══ */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-stretch">
 
             {/* ── Card: CloseOS Sales ── */}
             <motion.a
@@ -338,9 +338,6 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                   <div className="flex items-start justify-between mb-10">
                     <img src="/closeos-business-logo.png" alt="CloseOS Business" className="h-12 w-auto object-contain" />
                     <div className="flex items-center gap-2">
-                      <span className="text-[0.58rem] font-bold uppercase tracking-[0.12em] text-[#060608] px-3 py-1.5 rounded-full bg-[#ffa028]">
-                        {t.business_new}
-                      </span>
                       <span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#ffa028]/60 px-3 py-1.5 rounded-full" style={{
                         background: 'rgba(255,160,40,0.06)',
                         border: '0.5px solid rgba(255,160,40,0.08)',
@@ -402,6 +399,123 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                     }}
                   >
                     {t.business_cta}
+                    <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={1.5} />
+                  </span>
+                </div>
+              </div>
+            </motion.a>
+
+            {/* ── Card: CloseOS Sign ── */}
+            <motion.a
+              href="/sign"
+              initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => { e.preventDefault(); window.location.href = '/sign'; }}
+              className="group relative flex flex-col cursor-pointer"
+            >
+              {/* Card glow */}
+              <div className="absolute -inset-1 rounded-[2.2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" style={{
+                background: 'radial-gradient(ellipse at 50% 80%, rgba(206,255,143,0.12) 0%, transparent 70%)',
+              }} />
+
+              {/* Card body */}
+              <div
+                className="relative flex flex-col justify-between h-full p-10 md:p-12 rounded-[2rem] transition-all duration-500 overflow-hidden group-hover:translate-y-[-2px]"
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '0.5px solid rgba(255,255,255,0.06)',
+                  boxShadow: '0 0 0 0 rgba(206,255,143,0), inset 0 1px 0 0 rgba(255,255,255,0.03)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.border = '0.5px solid rgba(206,255,143,0.18)';
+                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(206,255,143,0.06), inset 0 1px 0 0 rgba(255,255,255,0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.border = '0.5px solid rgba(255,255,255,0.06)';
+                  e.currentTarget.style.boxShadow = '0 0 0 0 rgba(206,255,143,0), inset 0 1px 0 0 rgba(255,255,255,0.03)';
+                }}
+              >
+                {/* Ambient inner glow */}
+                <div className="absolute -top-20 -right-20 w-60 h-60 blur-[80px] rounded-full pointer-events-none transition-all duration-700" style={{ background: 'rgba(206,255,143,0.04)' }} />
+
+                {/* Content */}
+                <div className="relative z-10 flex-1">
+                  {/* Logo + Badges row */}
+                  <div className="flex items-start justify-between mb-10">
+                    <div className="flex items-center gap-2.5 font-bold text-2xl" style={{ fontFamily: "'Sora', sans-serif" }}>
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#CEFF8F" />
+                        <path d="M2 17L12 22L22 17" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M2 12L12 17L22 12" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <span className="text-white">Sign</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] px-3 py-1.5 rounded-full" style={{
+                        color: 'rgba(206,255,143,0.7)',
+                        background: 'rgba(206,255,143,0.06)',
+                        border: '0.5px solid rgba(206,255,143,0.1)',
+                      }}>Sign</span>
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <h2 className="text-[1.75rem] md:text-[2rem] font-bold tracking-[-0.03em] text-white mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>
+                    CloseOS Sign
+                  </h2>
+
+                  {/* Tag pill */}
+                  <div className="inline-block px-4 py-1.5 rounded-full text-[0.68rem] font-medium tracking-wide text-[#8a8a96] mb-6" style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '0.5px solid rgba(255,255,255,0.05)',
+                  }}>
+                    {lang === 'fr' ? 'Signature + Encaissement' : 'Signing + Payment'}
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-[#6a6a78] text-sm leading-relaxed mb-8 max-w-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                    {lang === 'fr'
+                      ? 'La signature électronique qui encaisse vos paiements dans le même geste. Faisceau de preuves opposable + certificat vérifiable.'
+                      : 'The e-signature that collects the deposit in the same gesture. Opposable proof bundle + verifiable certificate.'}
+                  </p>
+
+                  {/* Features */}
+                  <div className="grid grid-cols-2 gap-3 mb-10">
+                    {[
+                      { icon: <FileText className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'Signature électronique' : 'E-signature' },
+                      { icon: <Receipt className="w-3.5 h-3.5" strokeWidth={1.5} />, label: 'Sign + Pay (Stripe)' },
+                      { icon: <Users className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'Multi-signataire' : 'Multi-signer' },
+                      { icon: <Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'Certificat de preuve' : 'Proof certificate' },
+                    ].map((feat, i) => (
+                      <div key={i} className="flex items-center gap-2.5 text-[#6a6a78] text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        <span style={{ color: 'rgba(206,255,143,0.6)' }}>{feat.icon}</span>
+                        <span>{feat.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CTA Button */}
+                <div className="relative z-10">
+                  <span
+                    className="w-full flex items-center justify-between px-8 py-5 rounded-xl font-semibold text-base transition-all duration-300 group-hover:shadow-[0_0_30px_rgba(206,255,143,0.12)]"
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      background: 'rgba(206,255,143,0.08)',
+                      color: '#CEFF8F',
+                      border: '0.5px solid rgba(206,255,143,0.18)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#CEFF8F';
+                      e.currentTarget.style.color = '#060608';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(206,255,143,0.08)';
+                      e.currentTarget.style.color = '#CEFF8F';
+                    }}
+                  >
+                    {lang === 'fr' ? 'Accéder' : 'Access'}
                     <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={1.5} />
                   </span>
                 </div>
@@ -546,12 +660,12 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             </h2>
             <p className="text-[#6a6a78] text-sm leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               {lang === 'fr'
-                ? <>CloseOS est un <strong className="text-white/50 font-medium">écosystème SaaS français pour la vente digitale</strong>. Il regroupe deux outils complémentaires conçus pour les professionnels du closing francophone.</>
-                : <>CloseOS is a <strong className="text-white/50 font-medium">SaaS ecosystem for digital sales</strong>. It combines two complementary tools designed for sales professionals.</>
+                ? <>CloseOS est un <strong className="text-white/50 font-medium">écosystème SaaS français pour la vente digitale</strong>. Il regroupe trois outils complémentaires conçus pour les professionnels du closing francophone.</>
+                : <>CloseOS is a <strong className="text-white/50 font-medium">SaaS ecosystem for digital sales</strong>. It combines three complementary tools designed for sales professionals.</>
               }
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
               <div
                 className="p-6 rounded-2xl transition-all duration-300"
                 style={{
@@ -580,6 +694,23 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 </div>
                 <p className="text-[#6a6a78]/70 text-xs leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   {t.def_business_text}
+                </p>
+              </div>
+              <div
+                className="p-6 rounded-2xl transition-all duration-300"
+                style={{
+                  background: 'rgba(206,255,143,0.02)',
+                  border: '0.5px solid rgba(206,255,143,0.08)',
+                }}
+              >
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#CEFF8F]" />
+                  <h3 className="text-sm font-semibold text-[#CEFF8F]/70" style={{ fontFamily: "'Sora', sans-serif" }}>CloseOS Sign</h3>
+                </div>
+                <p className="text-[#6a6a78]/70 text-xs leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  {lang === 'fr'
+                    ? 'La signature électronique qui encaisse : signez le contrat et recevez le paiement dans le même geste, avec un faisceau de preuves opposable.'
+                    : 'The e-signature that collects payment: sign the contract and get paid in one gesture, with an opposable proof bundle.'}
                 </p>
               </div>
             </div>

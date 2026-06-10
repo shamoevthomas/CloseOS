@@ -375,7 +375,8 @@ export default function SignPublic() {
         setSubmitting(false);
         return;
       }
-      afterSigned(othersAllSigned);
+      // L'état « tous ont signé » est autoritaire côté serveur (finalize renvoie allSigned) ; repli sur le snapshot si absent.
+      afterSigned(Boolean(fdata?.allSigned ?? othersAllSigned));
     } catch (e) {
       console.error('[sign] signature', e);
       window.alert('La signature a échoué, réessayez.');
@@ -542,7 +543,7 @@ export default function SignPublic() {
           <div className="px-4 py-8 md:px-6">
             <div className="overflow-x-auto pb-2">
               {contract.source_type === 'pdf' ? (
-                <div className="flex w-fit flex-col items-center gap-6" ref={docRef}>
+                <div className="mx-auto flex w-fit flex-col items-center gap-6" ref={docRef}>
                   {pdfPages.length === 0 ? (
                     <div className="flex h-64 items-center justify-center text-[#A1A9A9]">
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Rendu du PDF…

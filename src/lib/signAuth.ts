@@ -8,15 +8,99 @@ import { signSupabase } from './signSupabase';
 
 export type SignOwner = { id: string; email: string; name: string };
 
-/** Connexion. Refuse si l'utilisateur n'a pas de ligne sign_users (= pas un propriétaire Sign). */
-export async function signInSign(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+/** Vrai si l'utilisateur auth possède un compte Sign (ligne sign_users = propriétaire Sign). */
+async function hasSignAccess(userId: string): Promise<boolean> {
+  const { data } = await signSupabase.from('sign_users').select('id').eq('id', userId).maybeSingle();
+  return !!data;
+}
+
+/** Connexion email + mot de passe. Refuse si pas de compte Sign (ex. compte Sales sans Business). */
+export async function signInSign(email: string, password: string): Promise<{ ok: boolean; error?: string; userId?: string; email?: string }> {
   const { data, error } = await signSupabase.auth.signInWithPassword({ email: email.trim(), password });
   if (error || !data.user) return { ok: false, error: error?.message || 'invalid' };
-  const { data: row } = await signSupabase.from('sign_users').select('id').eq('id', data.user.id).maybeSingle();
-  if (!row) {
+  if (!(await hasSignAccess(data.user.id))) {
     await signSupabase.auth.signOut();
     return { ok: false, error: 'not_sign_owner' };
   }
+  return { ok: true, userId: data.user.id, email: data.user.email ?? email.trim() };
+}
+
+/** Démarre la connexion Google (OAuth PKCE). Le retour est traité par completeOAuthRedirect() sur /sign/login. */
+export async function signInWithGoogle(): Promise<{ error?: string }> {
+  const { error } = await signSupabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/sign/login`,
+      queryParams: { access_type: 'offline', prompt: 'consent' },
+    },
+  });
+  return { error: error?.message };
+}
+
+/**
+ * À l'ouverture de /sign/login : si on revient d'un OAuth (`?code=…`), échange le code contre une session,
+ * vérifie l'accès Sign, et déconnecte si le compte n'a pas de Sign. `handled=false` si ce n'est pas un retour OAuth.
+ */
+export async function completeOAuthRedirect(): Promise<{ handled: boolean; ok: boolean; error?: string; userId?: string; email?: string }> {
+  if (typeof window === 'undefined') return { handled: false, ok: false };
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const oauthErr = params.get('error_description') || params.get('error');
+  if (!code && !oauthErr) return { handled: false, ok: false };
+
+  window.history.replaceState({}, '', window.location.pathname); // retire code/state/error de l'URL
+  if (oauthErr) return { handled: true, ok: false, error: oauthErr };
+
+  const { data, error } = await signSupabase.auth.exchangeCodeForSession(code as string);
+  if (error || !data.session?.user) return { handled: true, ok: false, error: error?.message || 'oauth' };
+  if (!(await hasSignAccess(data.session.user.id))) {
+    await signSupabase.auth.signOut();
+    return { handled: true, ok: false, error: 'not_sign_owner' };
+  }
+  return { handled: true, ok: true, userId: data.session.user.id, email: data.session.user.email ?? undefined };
+}
+
+/** Détecte un lien de réinitialisation (`#type=recovery`) et ouvre la session de récupération. */
+export async function consumeRecoveryLink(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  const h = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  if (h.get('type') !== 'recovery') return false;
+  const access_token = h.get('access_token');
+  const refresh_token = h.get('refresh_token');
+  if (!access_token || !refresh_token) return false;
+  window.history.replaceState({}, '', window.location.pathname);
+  const { error } = await signSupabase.auth.setSession({ access_token, refresh_token });
+  return !error;
+}
+
+/** Envoie l'email de réinitialisation du mot de passe (retour sur /sign/login). */
+export async function sendPasswordReset(email: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await signSupabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: `${window.location.origin}/sign/login`,
+  });
+  return { ok: !error, error: error?.message };
+}
+
+/** Définit un nouveau mot de passe (en session de récupération) puis vérifie l'accès Sign. */
+export async function updatePassword(password: string): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await signSupabase.auth.updateUser({ password });
+  if (error || !data.user) return { ok: false, error: error?.message || 'update' };
+  if (!(await hasSignAccess(data.user.id))) {
+    await signSupabase.auth.signOut();
+    return { ok: false, error: 'not_sign_owner' };
+  }
+  return { ok: true };
+}
+
+/** Change le mot de passe depuis les paramètres : ré-authentifie avec l'ancien, puis met à jour. */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: boolean; error?: string }> {
+  const { data: sess } = await signSupabase.auth.getSession();
+  const email = sess.session?.user?.email;
+  if (!email) return { ok: false, error: 'not_authenticated' };
+  const { error: reauth } = await signSupabase.auth.signInWithPassword({ email, password: currentPassword });
+  if (reauth) return { ok: false, error: 'wrong_current' };
+  const { error } = await signSupabase.auth.updateUser({ password: newPassword });
+  if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
 

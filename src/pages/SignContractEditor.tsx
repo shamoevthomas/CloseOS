@@ -30,7 +30,6 @@ import {
   Percent,
   Landmark,
   Tag,
-  CheckSquare,
   RotateCcw,
   Signature,
   ChevronLeft,
@@ -111,7 +110,6 @@ const FIELD_GROUPS = [
     title: 'Signature & accord',
     items: [
       { type: 'signature', label: 'Signature', icon: Signature },
-      { type: 'checkbox', label: 'Lu et approuvé', icon: CheckSquare },
     ],
   },
   {
