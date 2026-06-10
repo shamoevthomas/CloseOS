@@ -94,6 +94,18 @@ const FonctionnalitesHub = lazy(() => import('./pages/fonctionnalites/Fonctionna
 const CrmCloser = lazy(() => import('./pages/fonctionnalites/CrmCloser'))
 const AlternativeIclosed = lazy(() => import('./pages/comparatifs/AlternativeIclosed'))
 const CloseosVsIclosed = lazy(() => import('./pages/comparatifs/CloseosVsIclosed'))
+const SignLanding = lazy(() => import('./pages/SignLanding'))
+const SignLogin = lazy(() => import('./pages/SignLogin'))
+const SignLayout = lazy(() => import('./pages/SignLayout'))
+const SignHome = lazy(() => import('./pages/SignHome'))
+const SignContracts = lazy(() => import('./pages/SignContracts'))
+const SignContacts = lazy(() => import('./pages/SignContacts'))
+const SignContactDetail = lazy(() => import('./pages/SignContactDetail'))
+const SignNewContract = lazy(() => import('./pages/SignNewContract'))
+const SignProfile = lazy(() => import('./pages/SignProfile'))
+const SignContractEditor = lazy(() => import('./pages/SignContractEditor'))
+const SignPublic = lazy(() => import('./pages/SignPublic'))
+const SignVerify = lazy(() => import('./pages/SignVerify'))
 
 // Business Module Imports
 import { BusinessAuthProvider, useBusinessAuth } from './business/contexts/BusinessAuthContext'
@@ -401,10 +413,33 @@ function AuthenticatedApp() {
     ? <div className="flex items-center justify-center min-h-screen bg-[#f4f2f1] dark:bg-neutral-900"><div className="w-10 h-10 border-4 border-stone-300 border-t-stone-900 rounded-full animate-spin" /></div>
     : <LoadingScreen />
 
+  // Sous-domaine dédié sign.closeos.fr : la racine et tout chemin hors /sign sont renvoyés
+  // vers l'espace Sign (sign.closeos.fr/ → landing Sign, /login → /sign/login, etc.).
+  const onSignHost = typeof window !== 'undefined' && window.location.hostname === 'sign.closeos.fr'
+  if (onSignHost && !location.pathname.startsWith('/sign')) {
+    return <Navigate to={`/sign${location.pathname === '/' ? '' : location.pathname}${location.search}`} replace />
+  }
+
   return (
     <>
       <Suspense fallback={suspenseFallback}>
       <Routes>
+        {/* CloseOS Sign — landing (sign.closeos.fr) */}
+        <Route path="/sign" element={<SignLanding />} />
+        <Route path="/sign/login" element={<SignLogin />} />
+        <Route path="/sign/s/:token" element={<SignPublic />} />
+        <Route path="/sign/verify/:certificateId" element={<SignVerify />} />
+        <Route path="/sign/app/contrat" element={<SignContractEditor />} />
+        <Route path="/sign/app/contrat/:id" element={<SignContractEditor />} />
+        <Route path="/sign/app" element={<SignLayout />}>
+          <Route index element={<SignHome />} />
+          <Route path="nouveau" element={<SignNewContract />} />
+          <Route path="contrats" element={<SignContracts />} />
+          <Route path="contacts" element={<SignContacts />} />
+          <Route path="contacts/:id" element={<SignContactDetail />} />
+          <Route path="profil" element={<SignProfile />} />
+        </Route>
+
         {/* Business Landing */}
         <Route path="/business" element={<BusinessLanding />} />
         <Route path="/buisness" element={<Navigate to="/business" replace />} />

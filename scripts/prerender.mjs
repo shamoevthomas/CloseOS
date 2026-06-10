@@ -22,7 +22,7 @@ const DIST = join(__dirname, '..', 'dist')
 const PORT = 4173
 
 // Pages to prerender (public, SEO-critical)
-const ROUTES = ['/', '/landing', '/business', '/tarifs', '/fonctionnalites', '/fonctionnalites/crm-closer', '/comparatifs/alternative-iclosed', '/comparatifs/closeos-vs-iclosed']
+const ROUTES = ['/', '/landing', '/business', '/sign', '/tarifs', '/fonctionnalites', '/fonctionnalites/crm-closer', '/comparatifs/alternative-iclosed', '/comparatifs/closeos-vs-iclosed']
 
 // Serve dist/ folder as a static HTTP server
 function startServer() {
