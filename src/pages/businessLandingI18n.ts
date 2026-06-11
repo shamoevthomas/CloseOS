@@ -559,7 +559,7 @@ const fr: Translations = {
   crm_book_demo: 'Réserver une démo',
 
   // API Section
-  api_badge: 'Nouveau · Disponible maintenant',
+  api_badge: 'Disponible maintenant',
   api_title: "L'API CloseOS Business est arrivée",
   api_subtitle: "Branchez le CRM CloseOS à n'importe quelle stack — back-office, scoring IA, dashboards internes, tunnels d'acquisition. API REST entrante et Webhooks sortants signés HMAC-SHA256, prêts en moins de 5 minutes.",
   api_card_rest_title: 'API REST entrante',
@@ -1179,7 +1179,7 @@ const en: Translations = {
   crm_book_demo: 'Book a demo',
 
   // API Section
-  api_badge: 'New · Available now',
+  api_badge: 'Available now',
   api_title: 'The CloseOS Business API has landed',
   api_subtitle: 'Connect the CloseOS CRM to any stack — back-office, AI scoring, internal dashboards, acquisition funnels. REST API for inbound and HMAC-SHA256 signed outbound Webhooks, ready in under 5 minutes.',
   api_card_rest_title: 'Inbound REST API',

@@ -92,6 +92,8 @@ interface BookingLink {
   reschedule_paid?: boolean
   reschedule_price?: number
   reschedule_currency?: string
+  multi_booking_enabled?: boolean
+  multi_booking_max?: number
   created_at: string
 }
 
@@ -481,6 +483,8 @@ export function BusinessAppointments() {
   const [newLinkReschedulePaid, setNewLinkReschedulePaid] = useState(false)
   const [newLinkReschedulePrice, setNewLinkReschedulePrice] = useState(0)
   const [newLinkRescheduleCurrency, setNewLinkRescheduleCurrency] = useState('eur')
+  const [newLinkMultiBookingEnabled, setNewLinkMultiBookingEnabled] = useState(false)
+  const [newLinkMultiBookingMax, setNewLinkMultiBookingMax] = useState(3)
   const [showNewLinkPaymentPopup, setShowNewLinkPaymentPopup] = useState(false)
   const [stripeConnected, setStripeConnected] = useState(false)
   const [savingLink, setSavingLink] = useState(false)
@@ -698,6 +702,8 @@ export function BusinessAppointments() {
         reschedule_paid: newLinkReschedulePaid,
         reschedule_price: Math.round(newLinkReschedulePrice * 100),
         reschedule_currency: newLinkRescheduleCurrency,
+        multi_booking_enabled: newLinkMultiBookingEnabled,
+        multi_booking_max: newLinkMultiBookingMax,
         link: bookingUrl,
         slug,
       })
@@ -730,6 +736,8 @@ export function BusinessAppointments() {
     setNewLinkReschedulePaid(false)
     setNewLinkReschedulePrice(0)
     setNewLinkRescheduleCurrency('eur')
+    setNewLinkMultiBookingEnabled(false)
+    setNewLinkMultiBookingMax(3)
     toast.success(t.appointments_booking_link_created)
   }
 
@@ -765,6 +773,8 @@ export function BusinessAppointments() {
   const [editReschedulePaid, setEditReschedulePaid] = useState(false)
   const [editReschedulePrice, setEditReschedulePrice] = useState(0)
   const [editRescheduleCurrency, setEditRescheduleCurrency] = useState('eur')
+  const [editMultiBookingEnabled, setEditMultiBookingEnabled] = useState(false)
+  const [editMultiBookingMax, setEditMultiBookingMax] = useState(3)
   const [showEditPaymentPopup, setShowEditPaymentPopup] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
 
@@ -793,6 +803,8 @@ export function BusinessAppointments() {
     setEditReschedulePaid(bl.reschedule_paid ?? false)
     setEditReschedulePrice((bl.reschedule_price ?? 0) / 100)
     setEditRescheduleCurrency(bl.reschedule_currency || 'eur')
+    setEditMultiBookingEnabled(bl.multi_booking_enabled ?? false)
+    setEditMultiBookingMax(bl.multi_booking_max ?? 3)
   }
 
   const handleSaveEdit = async () => {
@@ -822,6 +834,8 @@ export function BusinessAppointments() {
       reschedule_paid: editReschedulePaid,
       reschedule_price: Math.round(editReschedulePrice * 100),
       reschedule_currency: editRescheduleCurrency,
+      multi_booking_enabled: editMultiBookingEnabled,
+      multi_booking_max: editMultiBookingMax,
     }
     const { error } = await supabase
       .from('business_booking_links')
@@ -2298,6 +2312,38 @@ export function BusinessAppointments() {
                     )}
                   </div>
                 </div>
+                {/* Multi-réservation */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Multi-réservation</label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                      <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><CalendarPlus className="h-3.5 w-3.5 text-[#444748]/50" />Réserver plusieurs créneaux</span>
+                      <button
+                        onClick={() => { if (!newLinkStripeEnabled) setNewLinkMultiBookingEnabled(!newLinkMultiBookingEnabled) }}
+                        className={`text-[#444748] dark:text-neutral-300 ${newLinkStripeEnabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                      >
+                        {newLinkMultiBookingEnabled && !newLinkStripeEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {newLinkStripeEnabled && (
+                      <p className="text-[11px] text-[#444748]/60 dark:text-neutral-400 ml-1">Indisponible avec le paiement Stripe activé.</p>
+                    )}
+                    {newLinkMultiBookingEnabled && !newLinkStripeEnabled && (
+                      <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                        <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Nombre max de créneaux</span>
+                        <select
+                          value={newLinkMultiBookingMax}
+                          onChange={e => setNewLinkMultiBookingMax(Number(e.target.value))}
+                          className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
+                        >
+                          {Array.from({ length: 9 }, (_, i) => i + 2).map(n => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 {/* Paiement */}
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Paiement</label>
@@ -2705,6 +2751,38 @@ export function BusinessAppointments() {
                         Configurer le questionnaire ({editQuestionnaireQuestions.length} question{editQuestionnaireQuestions.length !== 1 ? 's' : ''})
                       </button>
                     </>
+                  )}
+                </div>
+              </div>
+              {/* Multi-réservation */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 mb-3 ml-1">Multi-réservation</label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                    <span className="text-sm font-medium text-[#1b1c1b] dark:text-white flex items-center gap-2"><CalendarPlus className="h-3.5 w-3.5 text-[#444748]/50" />Réserver plusieurs créneaux</span>
+                    <button
+                      onClick={() => { if (!editStripeEnabled) setEditMultiBookingEnabled(!editMultiBookingEnabled) }}
+                      className={`text-[#444748] dark:text-neutral-300 ${editStripeEnabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    >
+                      {editMultiBookingEnabled && !editStripeEnabled ? <ToggleRight className="h-5 w-5 text-[#006c49]" /> : <ToggleLeft className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  {editStripeEnabled && (
+                    <p className="text-[11px] text-[#444748]/60 dark:text-neutral-400 ml-1">Indisponible avec le paiement Stripe activé.</p>
+                  )}
+                  {editMultiBookingEnabled && !editStripeEnabled && (
+                    <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                      <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Nombre max de créneaux</span>
+                      <select
+                        value={editMultiBookingMax}
+                        onChange={e => setEditMultiBookingMax(Number(e.target.value))}
+                        className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
+                      >
+                        {Array.from({ length: 9 }, (_, i) => i + 2).map(n => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                 </div>
               </div>

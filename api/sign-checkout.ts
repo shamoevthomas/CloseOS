@@ -70,7 +70,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ─── SetupIntent (saisie carte, public) ───
     if (action === 'setup-intent') {
-      const si = await stripe.setupIntents.create({ automatic_payment_methods: { enabled: true } })
+      // Carte uniquement (retire Kakao/Naver/Amazon Pay). Apple Pay & Google Pay s'affichent
+      // comme wallets associés à la carte, sans être des types distincts.
+      const si = await stripe.setupIntents.create({ payment_method_types: ['card'] })
       return res.status(200).json({ clientSecret: si.client_secret, trialDays: TRIAL_DAYS })
     }
 

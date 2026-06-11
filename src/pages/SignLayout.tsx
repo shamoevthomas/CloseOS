@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Home, FileText, Users, Plus, LogOut, ShieldCheck, Menu, X, Settings } from 'lucide-react';
+import { Home, FileText, Users, Plus, LogOut, ShieldCheck, Menu, X, Settings, Briefcase } from 'lucide-react';
 import { signOutSign, useSignOwner } from '../lib/signAuth';
+import { supabase } from '../lib/supabase';
+import { signSupabase } from '../lib/signSupabase';
 
 /**
  * CloseOS Sign — layout de l'espace connecté (DA Sign).
@@ -28,10 +30,36 @@ export default function SignLayout() {
   const { loading, owner } = useSignOwner();
   const user = owner?.name ?? '…';
   const [open, setOpen] = useState(false);
+  const [hasBusiness, setHasBusiness] = useState(false);
 
   useEffect(() => {
     if (!loading && !owner) navigate('/sign/login', { replace: true });
   }, [loading, owner, navigate]);
+
+  // L'utilisateur a-t-il aussi un compte CloseOS Business ? (même auth.uid())
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!owner?.id) { setHasBusiness(false); return; }
+      const { data } = await signSupabase.from('business_users').select('id').eq('id', owner.id).maybeSingle();
+      if (!cancelled) setHasBusiness(!!data);
+    })();
+    return () => { cancelled = true; };
+  }, [owner?.id]);
+
+  // Passage transparent vers CloseOS Business : transfert de la session (compte auth commun).
+  const goToBusiness = async () => {
+    try {
+      const { data } = await signSupabase.auth.getSession();
+      const s = data.session;
+      if (s?.access_token && s?.refresh_token) {
+        await supabase.auth.setSession({ access_token: s.access_token, refresh_token: s.refresh_token });
+      }
+    } catch (e) {
+      console.error('[sign] passage vers Business', e);
+    }
+    window.location.href = '/business/dashboard';
+  };
 
   const go = (to: string) => {
     setOpen(false);
@@ -104,6 +132,17 @@ export default function SignLayout() {
                 </NavLink>
               ))}
             </nav>
+
+            {/* Accès CloseOS Business — uniquement si l'utilisateur y a accès */}
+            {hasBusiness && (
+              <button
+                onClick={goToBusiness}
+                className="mt-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#A1A9A9] transition-colors hover:bg-[#191E1E] hover:text-white"
+              >
+                <Briefcase className="h-4 w-4" />
+                Accéder à CloseOS Business
+              </button>
+            )}
 
             {/* Bas */}
             <div className="mt-2 border-t border-[#3A4242] pt-3">

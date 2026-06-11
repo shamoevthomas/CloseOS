@@ -282,7 +282,7 @@ function CheckoutForm({ navigate }: { navigate: (p: string, o?: any) => void }) 
       {/* Carte */}
       <p className="mb-3 mt-6 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Carte bancaire (requise pour l’essai)</p>
       <div className="rounded-lg border border-[#3A4242] bg-[#191E1E] p-4">
-        <PaymentElement options={{ layout: 'tabs' }} />
+        <PaymentElement options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }} />
       </div>
 
       {error && (

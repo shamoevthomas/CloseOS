@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Globe, ArrowRight, Hash, List, Type, ChevronDown, Lock } from 'lucide-react'
+import { Loader2, Clock, Calendar, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Globe, ArrowRight, Hash, List, Type, ChevronDown, Lock, X, Plus, CalendarPlus } from 'lucide-react'
 import { toUTC, fromUTC, getTimezoneLabel } from '../lib/timezone'
 import { supabase } from '../lib/supabase'
 import { InlineStripePaymentModal } from '../components/InlineStripePayment'
@@ -39,6 +39,8 @@ interface BookingInfo {
   questionnaireEnabled: boolean
   questionnaireRequired: boolean
   questionnaireQuestions: BookingQuestion[]
+  multiBookingEnabled: boolean
+  multiBookingMax: number
   slots?: SlotData[]
   stripe: { enabled: true; price: number; currency: string } | null
 }
@@ -149,6 +151,8 @@ export function PublicBooking() {
   const [calYear, setCalYear] = useState(new Date().getFullYear())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  // Multi-booking: list of slots the prospect wants to reserve in one go
+  const [selectedSlots, setSelectedSlots] = useState<SlotData[]>([])
 
   // Prospect timezone
   const prospectTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
@@ -173,7 +177,7 @@ export function PublicBooking() {
         // Compléter avec données Supabase (description, redirect, creator)
         const { data: link } = await supabase
           .from('business_booking_links')
-          .select('description, redirect_url, business_owner_id, team_member_id, email_enabled, email_required, phone_enabled, phone_required, custom_fields, questionnaire_enabled, questionnaire_required, questionnaire_questions, stripe_enabled, stripe_price, stripe_currency')
+          .select('description, redirect_url, business_owner_id, team_member_id, email_enabled, email_required, phone_enabled, phone_required, custom_fields, questionnaire_enabled, questionnaire_required, questionnaire_questions, stripe_enabled, stripe_price, stripe_currency, multi_booking_enabled, multi_booking_max')
           .eq('slug', slug)
           .maybeSingle()
         if (link) {
@@ -199,6 +203,8 @@ export function PublicBooking() {
             price: link.stripe_price,
             currency: link.stripe_currency || 'eur',
           } : (d.stripe || null)
+          d.multiBookingEnabled = link.multi_booking_enabled ?? false
+          d.multiBookingMax = link.multi_booking_max ?? 3
 
           // Fallback: compute slots client-side if API doesn't return them (deployed API still uses freeMode)
           if (!d.slots || d.slots.length === 0 || d.freeMode) {
@@ -332,6 +338,24 @@ export function PublicBooking() {
   }, [selectedDate, prospectSlots])
 
   const hasQuestionnaire = !!(info?.questionnaireEnabled && info.questionnaireQuestions?.length > 0)
+
+  // Multi-booking is only available on free links (incompatible with Stripe payment)
+  const multiEnabled = !!info?.multiBookingEnabled && !info?.stripe
+  const multiMax = info?.multiBookingMax || 3
+
+  const slotKey = (s: { date: string; time: string }) => `${s.date}T${s.time}`
+  const isSlotSelected = (date: string, time: string) => selectedSlots.some(s => s.date === date && s.time === time)
+
+  const toggleSlot = (date: string, time: string) => {
+    if (isSlotSelected(date, time)) {
+      setSelectedSlots(prev => prev.filter(s => !(s.date === date && s.time === time)))
+      return
+    }
+    if (selectedSlots.length >= multiMax) return
+    const match = prospectSlots.find(s => s.date === date && s.time === time)
+    setSelectedSlots(prev => [...prev, { date, time, datetime_utc: match?.datetime_utc }]
+      .sort((a, b) => slotKey(a).localeCompare(slotKey(b))))
+  }
 
   // Map client_id -> answer (answers state is keyed by question_text for backward compat with payload shape)
   const answersByClientId = useMemo(() => {
@@ -591,6 +615,135 @@ export function PublicBooking() {
     }
   }
 
+  const handleSubmitMulti = async () => {
+    if (!slug || !linkMeta || selectedSlots.length === 0) return
+    setSubmitting(true)
+    try {
+      const fullPhone = phone.trim() ? `${countryCode} ${phone.trim()}` : ''
+      const builtAnswers = hasQuestionnaire
+        ? info!.questionnaireQuestions.filter(q => visibleQuestionIds.has(q.client_id)).map(q => ({
+            question_text: q.question_text,
+            answer_value: questionnaireAnswers[q.question_text] || '',
+          })).filter(a => Array.isArray(a.answer_value) ? a.answer_value.length > 0 : a.answer_value !== '')
+        : null
+
+      // Fetch all conflicting appointments once (across the whole window)
+      const conflictQuery = linkMeta.team_member_id
+        ? supabase.from('business_appointments').select('date, time, duration').eq('assigned_to', linkMeta.team_member_id).in('status', ['upcoming', 'pending', 'confirmed'])
+        : supabase.from('business_appointments').select('date, time, duration').eq('user_id', linkMeta.business_owner_id).is('assigned_to', null).in('status', ['upcoming', 'pending', 'confirmed'])
+      const { data: existing } = await conflictQuery
+
+      const created: { appointment_id: string; date: string; time: string; datetime_utc?: string }[] = []
+      const conflicted: SlotData[] = []
+
+      // Sort chronologically so emails/recap read in order
+      const ordered = [...selectedSlots].sort((a, b) => slotKey(a).localeCompare(slotKey(b)))
+
+      for (const slot of ordered) {
+        const matchSlot = prospectSlots.find(s => s.date === slot.date && s.time === slot.time)
+        const datetimeUtc = slot.datetime_utc || matchSlot?.datetime_utc || toUTC(slot.date, slot.time, prospectTimezone).toISOString()
+
+        const [rH, rM] = slot.time.split(':').map(Number)
+        const reqStart = rH * 60 + rM
+        const reqEnd = reqStart + linkMeta.duration
+        // Conflict against existing appointments AND already-created ones in this batch (same date)
+        const dayBusy = [
+          ...(existing || []).filter((a: any) => a.date === slot.date),
+          ...created.filter(c => c.date === slot.date).map(c => ({ time: c.time, duration: linkMeta.duration })),
+        ]
+        const hasConflict = dayBusy.some((appt: any) => {
+          const [aH, aM] = appt.time.split(':').map(Number)
+          const apptStart = aH * 60 + aM
+          const apptEnd = apptStart + (appt.duration || 30)
+          return reqStart < apptEnd && reqEnd > apptStart
+        })
+        if (hasConflict) { conflicted.push(slot); continue }
+
+        const cancelToken = crypto.randomUUID()
+        const rescheduleToken = crypto.randomUUID()
+        const { data: appointment, error: apptErr } = await supabase
+          .from('business_appointments')
+          .insert({
+            user_id: linkMeta.business_owner_id,
+            prospect_id: null,
+            assigned_to: linkMeta.team_member_id || null,
+            date: slot.date,
+            time: slot.time,
+            duration: linkMeta.duration,
+            status: 'pending',
+            datetime_utc: datetimeUtc,
+            timezone: prospectTimezone,
+            cancel_token: cancelToken,
+            reschedule_token: rescheduleToken,
+            notes: `Booking: ${name}${email ? ` — ${email}` : ''}${fullPhone ? ` — ${fullPhone}` : ''}${Object.entries(customFieldValues).filter(([, v]) => v.trim()).map(([k, v]) => ` — ${k}: ${v}`).join('')}`,
+            questionnaire_answers: builtAnswers,
+          })
+          .select()
+          .single()
+        if (apptErr || !appointment) { conflicted.push(slot); continue }
+        created.push({ appointment_id: appointment.id, date: slot.date, time: slot.time, datetime_utc: datetimeUtc })
+      }
+
+      if (created.length === 0) {
+        alert(lang === 'fr' ? 'Ces créneaux viennent d\'être réservés. Veuillez en choisir d\'autres.' : 'These slots have just been booked. Please choose others.')
+        setSubmitting(false)
+        return
+      }
+
+      // Combined internal notification (owner + assigned member + HoS)
+      const slotsLabel = created.map(c => `${new Date(c.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} ${c.time}`).join(', ')
+      const notifTitle = `Nouveau rendez-vous : ${name} (${created.length} créneaux)`
+      const notifDesc = `${name} a réservé ${created.length} créneaux : ${slotsLabel}${email ? ` — ${email}` : ''}`
+      const reminderRows: { user_id: string; title: string; description: string; reminder_date: string; is_done: boolean; is_notification: boolean }[] = []
+      reminderRows.push({ user_id: linkMeta.business_owner_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false, is_notification: true })
+      if (linkMeta.team_member_id) {
+        const { data: tmUser } = await supabase.from('business_team_members').select('user_id').eq('id', linkMeta.team_member_id).single()
+        if (tmUser?.user_id && tmUser.user_id !== linkMeta.business_owner_id) {
+          reminderRows.push({ user_id: tmUser.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false, is_notification: true })
+        }
+      }
+      const { data: hosMembers } = await supabase
+        .from('business_team_members')
+        .select('user_id')
+        .eq('business_owner_id', linkMeta.business_owner_id)
+        .in('role', ['Head of Sales', 'Admin'])
+      if (hosMembers) {
+        for (const hos of hosMembers) {
+          if (hos.user_id && !reminderRows.some(r => r.user_id === hos.user_id)) {
+            reminderRows.push({ user_id: hos.user_id, title: notifTitle, description: notifDesc, reminder_date: new Date().toISOString(), is_done: false, is_notification: true })
+          }
+        }
+      }
+      await supabase.from('reminders').insert(reminderRows)
+
+      // One API call → 1 GCal event per slot, but a SINGLE combined email (prospect + internal)
+      fetch(`${API_URL}?action=booking-gcal-email-multi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug, name, email, phone: fullPhone,
+          prospect_timezone: prospectTimezone,
+          slots: created,
+          questionnaire_answers: builtAnswers,
+        }),
+      }).catch(() => {})
+
+      // Keep only the successfully-booked slots for the confirmation screen
+      setSelectedSlots(created.map(c => ({ date: c.date, time: c.time, datetime_utc: c.datetime_utc })))
+
+      if (info?.redirectUrl) {
+        const url = info.redirectUrl!.match(/^https?:\/\//) ? info.redirectUrl! : `https://${info.redirectUrl!}`
+        setTimeout(() => { window.location.href = url }, 2500)
+      }
+      setDone(true)
+    } catch (err) {
+      console.error('Multi-booking error:', err)
+      alert(lang === 'fr' ? 'Erreur de connexion' : 'Connection error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const monthDates = getMonthDates(calYear, calMonth)
   const today = formatDateKey(new Date())
 
@@ -657,8 +810,34 @@ export function PublicBooking() {
               <CheckCircle2 className="h-10 w-10 text-[#006c49]" />
             </div>
           </div>
-          <h2 className="text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>Réservation confirmée</h2>
-          <p className="text-[#444748] mb-6">Votre rendez-vous a été réservé avec succès.</p>
+          <h2 className="text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {multiEnabled && selectedSlots.length > 1 ? 'Réservations confirmées' : 'Réservation confirmée'}
+          </h2>
+          <p className="text-[#444748] mb-6">
+            {multiEnabled && selectedSlots.length > 1
+              ? `Vos ${selectedSlots.length} rendez-vous ont été réservés avec succès.`
+              : 'Votre rendez-vous a été réservé avec succès.'}
+          </p>
+          {multiEnabled && selectedSlots.length > 0 ? (
+            <div className="rounded-2xl bg-white p-6 space-y-3 text-left" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
+              {selectedSlots.map(s => (
+                <div key={slotKey(s)} className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#f5f3f2] flex items-center justify-center shrink-0">
+                    <Calendar className="h-4 w-4 text-[#006c49]" />
+                  </div>
+                  <span className="text-sm font-bold text-[#1b1c1b] capitalize">
+                    {new Date(s.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} — {s.time} - {endTime(s.time, info.duration)}
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-center gap-3 pt-1">
+                <div className="w-9 h-9 rounded-xl bg-[#f5f3f2] flex items-center justify-center shrink-0">
+                  <Globe className="h-4 w-4 text-[#444748]" />
+                </div>
+                <span className="text-sm text-[#444748]">{getTimezoneLabel(prospectTimezone)}</span>
+              </div>
+            </div>
+          ) : (
           <div className="rounded-2xl bg-white p-6 space-y-4 text-left" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-[#f5f3f2] flex items-center justify-center shrink-0">
@@ -681,6 +860,7 @@ export function PublicBooking() {
               <span className="text-sm text-[#444748]">{getTimezoneLabel(prospectTimezone)}</span>
             </div>
           </div>
+          )}
           {info.redirectUrl ? (
             <p className="mt-6 text-xs text-[#444748]/50 animate-pulse">Vous allez être redirigé...</p>
           ) : info.companyName ? (
@@ -766,8 +946,23 @@ export function PublicBooking() {
                 </div>
               )}
 
+              {/* Selected slots recap (multi) */}
+              {multiEnabled && (step === 'calendar' || step === 'confirm') && selectedSlots.length > 0 && (
+                <div className="mt-4 pt-5 border-t border-[#c4c7c7]/20 space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/50 flex items-center gap-2">
+                    <CalendarPlus className="h-3.5 w-3.5" /> {selectedSlots.length} créneau{selectedSlots.length > 1 ? 'x' : ''} sélectionné{selectedSlots.length > 1 ? 's' : ''}
+                  </p>
+                  {selectedSlots.map(s => (
+                    <p key={slotKey(s)} className="text-sm text-[#1b1c1b] flex items-center gap-2.5 font-medium capitalize">
+                      <Calendar className="h-3.5 w-3.5 text-[#444748]/50" />
+                      {new Date(s.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} — {s.time}
+                    </p>
+                  ))}
+                </div>
+              )}
+
               {/* Selected slot recap */}
-              {step === 'confirm' && selectedDate && selectedTime && (
+              {!multiEnabled && step === 'confirm' && selectedDate && selectedTime && (
                 <div className="mt-4 pt-5 border-t border-[#c4c7c7]/20 space-y-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/50">Créneau sélectionné</p>
                   <p className="text-sm text-[#1b1c1b] flex items-center gap-2.5 font-medium">
@@ -1088,30 +1283,158 @@ export function PublicBooking() {
                         <p className="text-sm text-[#444748]/40 text-center py-4">Aucun créneau disponible ce jour.</p>
                       ) : (
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1">
-                          {slotsForDate.map(time => (
-                            <button
-                              key={time}
-                              onClick={() => { setSelectedTime(time); setStep('confirm') }}
-                              className={`
-                                py-3 px-4 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-2
-                                ${selectedTime === time
-                                  ? 'bg-[#1b1c1b] text-white shadow-lg'
-                                  : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49] hover:text-[#006c49]'
-                                }
-                              `}
-                            >
-                              {time}
-                            </button>
+                          {slotsForDate.map(time => {
+                            const active = multiEnabled ? isSlotSelected(selectedDate, time) : selectedTime === time
+                            const atMax = multiEnabled && !active && selectedSlots.length >= multiMax
+                            return (
+                              <button
+                                key={time}
+                                disabled={atMax}
+                                onClick={() => {
+                                  if (multiEnabled) { toggleSlot(selectedDate, time) }
+                                  else { setSelectedTime(time); setStep('confirm') }
+                                }}
+                                className={`
+                                  py-3 px-4 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-2
+                                  ${active
+                                    ? 'bg-[#1b1c1b] text-white shadow-lg'
+                                    : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49] hover:text-[#006c49]'
+                                  }
+                                  ${atMax ? 'opacity-30 cursor-not-allowed hover:border-[#c4c7c7]/30 hover:text-[#1b1c1b]' : ''}
+                                `}
+                              >
+                                {multiEnabled && active && <CheckCircle2 className="h-3.5 w-3.5" />}
+                                {time}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Multi-booking: selected slots recap + continue */}
+                  {multiEnabled && (
+                    <div className="mt-8 border-t border-[#c4c7c7]/20 pt-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 flex items-center gap-2">
+                          <CalendarPlus className="h-3.5 w-3.5" /> Créneaux sélectionnés
+                        </h3>
+                        <span className="text-[10px] font-bold text-[#006c49]">{selectedSlots.length} / {multiMax}</span>
+                      </div>
+                      {selectedSlots.length === 0 ? (
+                        <p className="text-sm text-[#444748]/40 text-center py-3">
+                          Sélectionnez jusqu'à {multiMax} créneaux, puis confirmez-les tous en une fois.
+                        </p>
+                      ) : (
+                        <div className="space-y-2 mb-5">
+                          {selectedSlots.map(s => (
+                            <div key={slotKey(s)} className="flex items-center justify-between rounded-xl bg-[#f5f3f2] px-4 py-2.5">
+                              <span className="text-sm font-bold text-[#1b1c1b] capitalize flex items-center gap-2">
+                                <Calendar className="h-3.5 w-3.5 text-[#006c49]" />
+                                {new Date(s.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} — {s.time}
+                              </span>
+                              <button
+                                onClick={() => setSelectedSlots(prev => prev.filter(x => !(x.date === s.date && x.time === s.time)))}
+                                className="text-[#444748]/40 hover:text-[#ba1a1a] transition-colors"
+                                aria-label="Retirer"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
                           ))}
                         </div>
                       )}
+                      <button
+                        onClick={() => setStep('confirm')}
+                        disabled={selectedSlots.length === 0}
+                        className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-4 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
+                        style={{ fontFamily: 'Manrope, sans-serif' }}
+                      >
+                        <span>Voir le récapitulatif</span>
+                        <ArrowRight className="h-5 w-5" />
+                      </button>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Step 3: Confirm */}
-              {step === 'confirm' && selectedDate && selectedTime && (
+              {/* Step 3: Confirm (multi-booking) */}
+              {step === 'confirm' && multiEnabled && (
+                <div>
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-10 h-10 rounded-full bg-[#006c49] flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="h-5 w-5 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Confirmer mes rendez-vous</h2>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#f5f3f2] p-6 mb-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <CalendarPlus className="h-4 w-4 text-[#006c49]" />
+                      <span className="text-sm font-bold text-[#1b1c1b]">{selectedSlots.length} créneau{selectedSlots.length > 1 ? 'x' : ''} — {info.duration} min chacun</span>
+                    </div>
+                    <div className="space-y-2.5">
+                      {selectedSlots.map(s => (
+                        <div key={slotKey(s)} className="flex items-center justify-between bg-white rounded-xl px-4 py-3">
+                          <span className="text-sm font-bold text-[#1b1c1b] capitalize flex items-center gap-2.5">
+                            <Calendar className="h-3.5 w-3.5 text-[#006c49]" />
+                            {new Date(s.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                          </span>
+                          <span className="text-sm font-bold text-[#444748] flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-[#444748]/40" />
+                            {s.time} - {endTime(s.time, info.duration)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#f5f3f2] p-6 space-y-4 mb-8">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
+                        <User className="h-4 w-4 text-[#006c49]" />
+                      </div>
+                      <span className="text-sm font-bold text-[#1b1c1b]">{name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
+                        <Globe className="h-4 w-4 text-[#444748]/50" />
+                      </div>
+                      <span className="text-sm text-[#444748]">{getTimezoneLabel(prospectTimezone)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setStep('calendar')}
+                      className="flex-1 rounded-full border border-[#c4c7c7]/30 px-5 py-4 text-sm font-bold text-[#444748] hover:bg-[#f5f3f2] transition-all"
+                    >
+                      <span className="flex items-center justify-center gap-2"><Plus className="h-4 w-4" /> Ajouter / modifier</span>
+                    </button>
+                    <button
+                      onClick={handleSubmitMulti}
+                      disabled={submitting || selectedSlots.length === 0}
+                      className="flex-[1.5] flex items-center justify-center gap-2 rounded-full bg-[#1b1c1b] px-5 py-4 text-sm font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all shadow-xl"
+                      style={{ fontFamily: 'Manrope, sans-serif' }}
+                    >
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                        <>
+                          <span>Confirmer tous mes bookings</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <p className="text-center text-[10px] text-[#444748]/40 mt-6 font-medium leading-relaxed">
+                    En confirmant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées.
+                  </p>
+                </div>
+              )}
+
+              {/* Step 3: Confirm (single) */}
+              {step === 'confirm' && !multiEnabled && selectedDate && selectedTime && (
                 <div>
                   <div className="flex items-center gap-3 mb-8">
                     <div className="w-10 h-10 rounded-full bg-[#006c49] flex items-center justify-center shrink-0">

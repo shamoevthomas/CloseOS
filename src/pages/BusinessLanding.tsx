@@ -1754,6 +1754,7 @@ const getPricingPlans = (lang: string) => [
       ? '1 seul utilisateur — l\'infopreneur qui close seul'
       : '1 user — the solopreneur who closes alone',
     features: lang === 'fr' ? [
+      'CloseOS Sign inclus',
       'CRM & Pipeline visuel',
       'Système d\'acquisition complet (campagnes, embed/iframe, tracking UTM, KPIs par source)',
       'Cockpit d\'appel plein écran (script, notes, offre, ressources)',
@@ -1767,6 +1768,7 @@ const getPricingPlans = (lang: string) => [
       'Rapports',
       'API REST & Webhooks sortants signés HMAC',
     ] : [
+      'CloseOS Sign included',
       'CRM & Visual Pipeline',
       'Full acquisition system (campaigns, embed/iframe, UTM tracking, KPIs per source)',
       'Full-screen call cockpit (script, notes, offer, resources)',
@@ -1795,6 +1797,7 @@ const getPricingPlans = (lang: string) => [
       ? '3 équipiers inclus — tout pour gérer une équipe'
       : '3 team members included — everything to manage a team',
     features: lang === 'fr' ? [
+      'CloseOS Sign inclus',
       'Tout ce que le Solo a, SAUF le système d\'acquisition',
       'Gestion d\'équipe complète (6 rôles : Owner, Admin, HOS, Closer, Setter, Setter-Closer)',
       'Vue macro Owner en temps réel sur toute l\'équipe',
@@ -1807,6 +1810,7 @@ const getPricingPlans = (lang: string) => [
       'Rapport avec export PDF',
       'Gestion des disponibilités et absences par membre',
     ] : [
+      'CloseOS Sign included',
       'Everything in Solo, EXCEPT the acquisition system',
       'Full team management (6 roles: Owner, Admin, HOS, Closer, Setter, Setter-Closer)',
       'Real-time Owner macro view of the entire team',
@@ -1841,9 +1845,11 @@ const getPricingPlans = (lang: string) => [
       ? '5 équipiers inclus — l\'arsenal complet'
       : '5 team members included — the full arsenal',
     features: lang === 'fr' ? [
+      'CloseOS Sign inclus',
       'Tout ce que Business a',
       'Système d\'acquisition complet en plus :',
     ] : [
+      'CloseOS Sign included',
       'Everything in Business',
       'Full acquisition system on top:',
     ],
@@ -1877,6 +1883,7 @@ const getPricingPlans = (lang: string) => [
       ? 'Sur devis — idéal pour les challenges & grandes organisations'
       : 'Custom pricing — ideal for challenges & large organizations',
     features: lang === 'fr' ? [
+      'CloseOS Sign inclus',
       'Membres illimités',
       'Tout le système d\'acquisition inclus',
       'API REST & Webhooks sortants signés HMAC',
@@ -1885,6 +1892,7 @@ const getPricingPlans = (lang: string) => [
       'Accès one-shot limité à la durée du challenge',
       'Aussi disponible en abonnement mensuel classique',
     ] : [
+      'CloseOS Sign included',
       'Unlimited members',
       'Full acquisition system included',
       'REST API & HMAC-signed outbound webhooks',
@@ -2081,12 +2089,22 @@ const PricingSection = () => {
               )}
 
               <ul className="space-y-3 flex-1">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2.5">
-                    <Check className={`size-4 mt-0.5 flex-shrink-0 ${plan.popular ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                    <span className={`text-sm font-medium leading-relaxed ${plan.popular ? 'text-stone-300' : 'text-stone-600'}`}>{feature}</span>
-                  </li>
-                ))}
+                {plan.features.map((feature, i) => {
+                  const isSign = feature.includes('CloseOS Sign')
+                  return (
+                    <li key={i} className="flex items-start gap-2.5">
+                      {isSign ? (
+                        <span className="relative flex size-2.5 shrink-0 mt-1.5">
+                          <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                          <span className={`relative inline-flex rounded-full size-2.5 ${plan.popular ? 'bg-emerald-400' : 'bg-emerald-500'}`} />
+                        </span>
+                      ) : (
+                        <Check className={`size-4 mt-0.5 flex-shrink-0 ${plan.popular ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                      )}
+                      <span className={`text-sm leading-relaxed ${isSign ? 'font-bold' : 'font-medium'} ${plan.popular ? 'text-stone-300' : 'text-stone-600'}`}>{feature}</span>
+                    </li>
+                  )
+                })}
                 {plan.subFeatures && (
                   <li className="pl-7">
                     <ul className="space-y-2 mt-1">
