@@ -76,7 +76,7 @@ export function TrialExpiredModal() {
     const [showTermsError, setShowTermsError] = useState(false);
 
     // Determine visibility (computed BEFORE hooks that depend on it)
-    const hiddenPaths = ['/checkout', '/return', '/welcome-founder', '/', '/login', '/register'];
+    const hiddenPaths = ['/checkout', '/return', '/welcome-founder', '/', '/login', '/register', '/sign'];
     const isOnHiddenPath = hiddenPaths.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));
     const hasSubscription = profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing';
     const isPaymentFailed = profile?.subscription_status === 'past_due' || profile?.subscription_status === 'unpaid';

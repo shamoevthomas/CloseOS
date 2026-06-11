@@ -242,6 +242,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ verified: !!data })
     }
 
+    // ─── Confiance d'appareil SANS code, via session authentifiée (passage transparent depuis Business) ───
+    // Le JWT prouve déjà l'identité (compte auth commun + 2FA Business). On mémorise l'appareil pour Sign.
+    if (action === 'trust-device') {
+      const uid = await authedUserId(req)
+      if (!uid) return res.status(401).json({ error: 'unauthorized' })
+      if (!(await isSignOwner(uid))) return res.status(403).json({ error: 'not_sign_owner' })
+      const device_fingerprint = (req.body?.device_fingerprint as string) || ''
+      if (!device_fingerprint) return res.status(400).json({ error: 'device_fingerprint required' })
+
+      const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || null
+      const city = (req.headers['x-vercel-ip-city'] as string) || ''
+      const country = (req.headers['x-vercel-ip-country'] as string) || ''
+      const location = [decodeURIComponent(city || ''), country].filter(Boolean).join(', ') || null
+      const ua = (req.headers['user-agent'] as string) || ''
+      const deviceName = deviceNameFromUA(ua)
+
+      const token = crypto.randomBytes(48).toString('hex')
+      const revokeToken = crypto.randomBytes(32).toString('hex')
+      const expiresAt = new Date(Date.now() + DEVICE_TTL_MS).toISOString()
+
+      await supabase.from('sign_device_tokens').delete().eq('user_id', uid).eq('device_fingerprint', device_fingerprint)
+      const { error: tokErr } = await supabase
+        .from('sign_device_tokens')
+        .insert({ user_id: uid, device_fingerprint, token, revoke_token: revokeToken, expires_at: expiresAt, device_name: deviceName, last_ip: ip, location })
+      if (tokErr) return res.status(500).json({ error: tokErr.message })
+      return res.status(200).json({ success: true, token })
+    }
+
     // ─── Liste des appareils de confiance du propriétaire (Paramètres) — authentifié JWT ───
     if (action === 'list-devices') {
       const uid = await authedUserId(req)

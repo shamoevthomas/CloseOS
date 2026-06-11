@@ -31,6 +31,8 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useTheme } from '../contexts/BusinessThemeContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
+import { signSupabase } from '../../lib/signSupabase'
+import { trustDeviceFromSession } from '../../lib/signDevice'
 import type { BusinessTranslations } from '../i18n/translations'
 import { usePendingApprovalsCount } from '../hooks/usePendingApprovalsCount'
 
@@ -214,6 +216,23 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
     checkSign()
     return () => { cancelled = true }
   }, [user?.id, isTeamMember])
+
+  // Passage transparent vers CloseOS Sign : on transfère la session (même compte auth) au client Sign
+  // pour éviter une reconnexion, puis on bascule sur l'app Sign.
+  const goToSign = async () => {
+    try {
+      const { data } = await supabase.auth.getSession()
+      const s = data.session
+      if (s?.access_token && s?.refresh_token) {
+        await signSupabase.auth.setSession({ access_token: s.access_token, refresh_token: s.refresh_token })
+        // Mémorise l'appareil pour Sign (évite le 2FA d'appareil au passage depuis Business).
+        await trustDeviceFromSession()
+      }
+    } catch (e) {
+      console.error('[business] passage vers Sign', e)
+    }
+    window.location.href = '/sign/app'
+  }
 
   // Auto-collapse after 3 seconds on desktop
   useEffect(() => {
@@ -424,7 +443,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
           {/* Accès CloseOS Sign — visible uniquement pour le PROPRIÉTAIRE ayant un accès Sign (pas les membres d'équipe) */}
           {hasSign && !isTeamMember && (
             <button
-              onClick={() => { window.location.href = '/sign/app' }}
+              onClick={goToSign}
               className={cn(
                 'flex items-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 transition-all',
                 collapsed ? 'w-12 h-12 justify-center rounded-xl' : 'gap-3 py-3 pl-4 rounded-r-lg w-full'

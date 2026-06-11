@@ -139,6 +139,7 @@
     { "source": "/api/sign-list-devices", "destination": "/api/sign-auth?action=list-devices" },
     { "source": "/api/sign-revoke-device-id", "destination": "/api/sign-auth?action=revoke-device-id" },
     { "source": "/api/sign-revoke-all-devices", "destination": "/api/sign-auth?action=revoke-all-devices" },
+    { "source": "/api/sign-trust-device", "destination": "/api/sign-auth?action=trust-device" },
     { "source": "/api/sign-setup-intent", "destination": "/api/sign-checkout?action=setup-intent" },
     { "source": "/api/sign-register", "destination": "/api/sign-checkout?action=register" },
     { "source": "/api/sign-portal", "destination": "/api/sign-checkout?action=portal" },

@@ -70,6 +70,31 @@ export async function verifyDeviceCode(userId: string, code: string, authMethod:
   }
 }
 
+/**
+ * Établit la confiance d'appareil à partir de la session authentifiée (sans code email).
+ * Utilisé pour le passage transparent depuis CloseOS Business (compte auth identique).
+ */
+export async function trustDeviceFromSession(): Promise<boolean> {
+  try {
+    const { data } = await signSupabase.auth.getSession();
+    const t = data.session?.access_token;
+    if (!t) return false;
+    const res = await fetch('/api/sign-trust-device', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+      body: JSON.stringify({ device_fingerprint: getSignDeviceFingerprint() }),
+    });
+    const data2 = await res.json();
+    if (res.ok && data2.token) {
+      localStorage.setItem(TOKEN_KEY, data2.token);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 async function bearerHeaders(): Promise<Record<string, string>> {
   const { data } = await signSupabase.auth.getSession();
   const t = data.session?.access_token;

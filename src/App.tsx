@@ -650,7 +650,7 @@ function AuthenticatedApp() {
       </Routes>
       </Suspense>
 
-      {user && (!isBusinessUser || profile) && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/capture') && !location.pathname.startsWith('/c/') && !location.pathname.startsWith('/book') && (
+      {user && (!isBusinessUser || profile) && !location.pathname.startsWith('/business') && !location.pathname.startsWith('/sign') && !location.pathname.startsWith('/capture') && !location.pathname.startsWith('/c/') && !location.pathname.startsWith('/book') && (
         <>
           <TrialExpiredModal />
           <OnboardingWrapper onComplete={() => {
