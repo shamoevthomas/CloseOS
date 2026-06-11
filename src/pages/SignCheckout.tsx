@@ -4,7 +4,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import {
   ArrowLeft, ArrowRight, Check, Loader2, CheckCircle2, Sparkles, ShieldCheck, AlertCircle,
-  User as UserIcon, Mail, Lock, Eye, EyeOff,
+  User as UserIcon, Mail, Lock, Eye, EyeOff, Phone,
 } from 'lucide-react';
 import {
   createSignSetupIntent, registerSign, openSignBillingPortal, getSignSubscription, isSubActive,
@@ -76,6 +76,32 @@ const errMsg = (e?: string) =>
 
 const inputCls =
   'w-full rounded border border-[#3A4242] bg-[#191E1E] py-3 pl-10 pr-4 text-sm text-white outline-none transition-all placeholder:text-[#A1A9A9]/40 focus:border-[#CEFF8F] focus:ring-1 focus:ring-[#CEFF8F]';
+
+// Indice de force du mot de passe (même logique que l'inscription Business) — score 0..4.
+function getPasswordStrength(pw: string): number {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+  if (/\d/.test(pw)) score++;
+  if (/[^a-zA-Z0-9]/.test(pw)) score++;
+  return Math.min(score, 4);
+}
+function PasswordStrengthBar({ strength }: { strength: number }) {
+  const labels = ['Faible', 'Faible', 'Moyen', 'Bon', 'Fort'];
+  const colors = ['#ef6b6b', '#ef6b6b', '#F0B86E', '#CEFF8F', '#CEFF8F'];
+  const c = colors[strength];
+  return (
+    <div className="mt-2">
+      <div className="mb-1 flex gap-1">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-1 flex-1 rounded-full transition-colors" style={{ background: i < strength ? c : '#3A4242' }} />
+        ))}
+      </div>
+      <p className="text-xs" style={{ color: c }}>Sécurité du mot de passe : {labels[strength]}</p>
+    </div>
+  );
+}
 
 export default function SignCheckout() {
   const navigate = useNavigate();
@@ -160,6 +186,7 @@ function CheckoutForm({ navigate }: { navigate: (p: string, o?: any) => void }) 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [phone, setPhone] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState('');
@@ -167,9 +194,9 @@ function CheckoutForm({ navigate }: { navigate: (p: string, o?: any) => void }) 
 
   const current = CYCLES.find((c) => c.key === cycle)!;
 
-  const complete = async (siId: string, d: { name: string; email: string; password: string; cycle: SignBillingCycle }) => {
+  const complete = async (siId: string, d: { name: string; email: string; phone: string; password: string; cycle: SignBillingCycle }) => {
     setStep('Création de votre compte…');
-    const r = await registerSign({ setup_intent_id: siId, cycle: d.cycle, email: d.email, name: d.name, password: d.password });
+    const r = await registerSign({ setup_intent_id: siId, cycle: d.cycle, email: d.email, name: d.name, phone: d.phone, password: d.password });
     if (!r.ok) { setError(errMsg(r.error)); setSubmitting(false); setStep(''); return; }
     setStep('Connexion…');
     const login = await signInSign(d.email, d.password);
@@ -196,13 +223,13 @@ function CheckoutForm({ navigate }: { navigate: (p: string, o?: any) => void }) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
-    if (!name.trim() || !email.trim() || password.length < 6) { setError('Remplissez tous les champs (mot de passe ≥ 6 caractères).'); return; }
+    if (!name.trim() || !email.trim() || !phone.trim() || password.length < 8) { setError('Remplissez tous les champs (mot de passe ≥ 8 caractères).'); return; }
     if (password !== confirm) { setError('Les mots de passe ne correspondent pas.'); return; }
 
     setSubmitting(true);
     setError(null);
     setStep('Validation de la carte…');
-    sessionStorage.setItem('closeos_sign_checkout', JSON.stringify({ name, email, password, cycle }));
+    sessionStorage.setItem('closeos_sign_checkout', JSON.stringify({ name, email, phone, password, cycle }));
 
     const { error: serr, setupIntent } = await stripe.confirmSetup({
       elements,
@@ -211,7 +238,7 @@ function CheckoutForm({ navigate }: { navigate: (p: string, o?: any) => void }) 
     });
     if (serr) { setError(serr.message || 'Carte refusée.'); setSubmitting(false); setStep(''); return; }
     if (!setupIntent || setupIntent.status !== 'succeeded') return; // redirection 3DS en cours
-    await complete(setupIntent.id, { name, email, password, cycle });
+    await complete(setupIntent.id, { name, email, phone, password, cycle });
   };
 
   return (
@@ -267,12 +294,17 @@ function CheckoutForm({ navigate }: { navigate: (p: string, o?: any) => void }) 
           <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }} placeholder="vous@exemple.fr" autoComplete="email" className={inputCls} disabled={submitting} />
         </div>
         <div className="relative">
+          <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
+          <input type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setError(null); }} placeholder="Téléphone" autoComplete="tel" className={inputCls} disabled={submitting} />
+        </div>
+        <div className="relative">
           <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
-          <input type={showPw ? 'text' : 'password'} value={password} onChange={(e) => { setPassword(e.target.value); setError(null); }} placeholder="Mot de passe (min. 6)" autoComplete="new-password" className={`${inputCls} pr-10`} disabled={submitting} />
+          <input type={showPw ? 'text' : 'password'} value={password} onChange={(e) => { setPassword(e.target.value); setError(null); }} placeholder="Mot de passe (min. 8)" autoComplete="new-password" className={`${inputCls} pr-10`} disabled={submitting} />
           <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1A9A9] hover:text-[#F3F4F6]">
             {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
+        {password && <PasswordStrengthBar strength={getPasswordStrength(password)} />}
         <div className="relative">
           <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
           <input type={showPw ? 'text' : 'password'} value={confirm} onChange={(e) => { setConfirm(e.target.value); setError(null); }} placeholder="Confirmer le mot de passe" autoComplete="new-password" className={inputCls} disabled={submitting} />

@@ -58,6 +58,7 @@ export async function registerSign(p: {
   cycle: SignBillingCycle;
   email: string;
   name: string;
+  phone: string;
   password: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -69,6 +70,7 @@ export async function registerSign(p: {
         cycle: p.cycle,
         user_email: p.email,
         user_name: p.name,
+        user_phone: p.phone,
         user_password: p.password,
       }),
     });

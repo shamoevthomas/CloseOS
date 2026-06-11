@@ -70,15 +70,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ─── SetupIntent (saisie carte, public) ───
     if (action === 'setup-intent') {
-      // Carte uniquement (retire Kakao/Naver/Amazon Pay). Apple Pay & Google Pay s'affichent
-      // comme wallets associés à la carte, sans être des types distincts.
-      const si = await stripe.setupIntents.create({ payment_method_types: ['card'] })
+      // Méthodes : carte (+ Apple Pay / Google Pay en wallets), Amazon Pay et Klarna.
+      // Kakao Pay et Naver Pay sont volontairement exclus.
+      const si = await stripe.setupIntents.create({ payment_method_types: ['card', 'amazon_pay', 'klarna'] })
       return res.status(200).json({ clientSecret: si.client_secret, trialDays: TRIAL_DAYS })
     }
 
     // ─── Création compte + abonnement (public) ───
     if (action === 'register') {
-      const { setup_intent_id, cycle, user_email, user_name, user_password } = req.body || {}
+      const { setup_intent_id, cycle, user_email, user_name, user_phone, user_password } = req.body || {}
       if (!setup_intent_id || !cycle || !user_email || !user_password) return res.status(400).json({ error: 'missing_fields' })
       if (!CYCLES[cycle]) return res.status(400).json({ error: 'invalid_cycle' })
       const emailLower = String(user_email).toLowerCase().trim()
@@ -122,7 +122,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           email: emailLower,
           password: String(user_password),
           email_confirm: true,
-          user_metadata: { module: 'sign', full_name: user_name || null },
+          user_metadata: { module: 'sign', full_name: user_name || null, phone: user_phone || null },
         })
         if (created.error || !created.data.user) throw created.error || new Error('create_user_failed')
         userId = created.data.user.id
@@ -135,6 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id: userId,
         email: emailLower,
         full_name: user_name || null,
+        phone: user_phone ? String(user_phone).trim() : null,
         stripe_customer_id: customer.id,
         stripe_subscription_id: sub.id,
         subscription_status: sub.status,
