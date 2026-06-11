@@ -79,6 +79,11 @@ export const CGV = () => {
               Les tarifs de CloseOS Business sont communiques sur la page dediee au moment du lancement commercial. Ils peuvent inclure une tarification par equipe ou par nombre de membres.
             </p>
 
+            <h3 className="text-base font-semibold text-white mt-6 mb-2">3.3 CloseOS Sign</h3>
+            <p>
+              CloseOS Sign (signature electronique et encaissement) est propose via une formule unique a 9 € / mois TTC, incluant l'ensemble des fonctionnalites, apres une periode d'essai de 14 jours necessitant l'enregistrement d'un moyen de paiement. L'abonnement est sans engagement et resiliable a tout moment. En cas d'echec de paiement au renouvellement, l'acces est suspendu apres un delai de grace. La fonction « Paye + signe » permet d'encaisser un paiement lors de la signature via Stripe ; CloseOS percoit une commission de service sur les transactions encaissees, l'Utilisateur restant le beneficiaire des fonds via son compte Stripe connecte. Les titulaires d'un abonnement CloseOS Business actif beneficient de l'acces a CloseOS Sign inclus. Les conditions specifiques et la valeur probante sont detaillees sur les pages dediees de CloseOS Sign.
+            </p>
+
             <p className="mt-4">
               Les prix sont indiques en euros. Le Prestataire se reserve le droit de modifier ses tarifs a tout moment pour les nouveaux abonnements. Les abonnements en cours ne sont pas affectes par ces modifications.
             </p>

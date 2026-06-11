@@ -62,9 +62,11 @@ import {
   Plus,
   Minus,
   CreditCard,
+  Files,
+  LayoutDashboard,
 } from 'lucide-react';
 import { currentOwnerId } from '../lib/signAuth';
-import { createContract, getContract, updateContract, saveFreeFields, fieldDefaultSize, listContacts, getContractAnalytics, getOwnerProfile, getOwnerStripeStatus, duplicateContract, listSigners, setSignerCount, updateSigner, setSignerContact, getOrCreateSignLinkForSigner, sendForSignatureMulti, type SignContact, type OverlayImage, type SignAnalytics, type OwnerProfile, type SignSigner } from '../lib/signContracts';
+import { createContract, getContract, updateContract, saveFreeFields, fieldDefaultSize, listContacts, listContactGroups, getContractAnalytics, getOwnerProfile, getOwnerStripeStatus, duplicateContract, listSigners, setSignerCount, updateSigner, setSignerContact, getOrCreateSignLinkForSigner, sendForSignatureMulti, type SignContact, type SignContactGroup, type OverlayImage, type SignAnalytics, type OwnerProfile, type SignSigner } from '../lib/signContracts';
 import { signSupabase as supabase } from '../lib/signSupabase';
 import VerificationStyleModal, { type VerifMethod, type SignerWL } from '../components/VerificationStyleModal';
 import PaymentConfigModal, { type PaymentDraft, type PayerScope } from '../components/PaymentConfigModal';
@@ -301,6 +303,7 @@ export default function SignContractEditor() {
   const orderMenuRef = useRef<HTMLDivElement>(null);
   const [editLabelId, setEditLabelId] = useState<string | null>(null);
   const [contacts, setContacts] = useState<SignContact[]>([]);
+  const [groups, setGroups] = useState<SignContactGroup[]>([]);
   const [images, setImages] = useState<OverlayImage[]>([]);
   const imagesRef = useRef<OverlayImage[]>([]);
   imagesRef.current = images;
@@ -316,6 +319,7 @@ export default function SignContractEditor() {
   const [fillMode, setFillMode] = useState(false);
   const [savingFill, setSavingFill] = useState(false);
   const [status, setStatus] = useState('draft');
+  const [isTemplate, setIsTemplate] = useState(false);
   const docRef = useRef<HTMLDivElement>(null);
   const [showSendPdf, setShowSendPdf] = useState(false);
   const [pdfEmail, setPdfEmail] = useState('');
@@ -412,6 +416,7 @@ export default function SignContractEditor() {
           setSigningOrder(data.signing_order || 'parallel');
           setVerificationMethod(data.verification_method === 'pay' ? 'none' : data.verification_method);
           setPaymentEnabled(!!data.payment_enabled);
+          setIsTemplate(!!data.is_template);
           setPaymentDraft(
             data.payment.mode
               ? { mode: data.payment.mode, amount: data.payment.amount ?? 0, interval: data.payment.interval ?? 'month', durationMonths: data.payment.durationMonths, trialDays: data.payment.trialDays, tvaRate: data.payment.tvaRate }
@@ -468,6 +473,14 @@ export default function SignContractEditor() {
     return () => clearTimeout(t);
   }, [dirty]);
 
+  // Bascule « mode modèle » (template réutilisable) — persiste immédiatement.
+  const toggleTemplate = () => {
+    const next = !isTemplate;
+    setIsTemplate(next);
+    const cid = contractIdRef.current;
+    if (cid) updateContract(cid, { is_template: next }).catch((e) => console.error('[sign] mode template', e));
+  };
+
   // Persiste les valeurs inline dès qu'elles changent (préremplissage + frappe)
   useEffect(() => {
     if (!inlineHydrated.current) {
@@ -482,6 +495,7 @@ export default function SignContractEditor() {
     listContacts()
       .then(setContacts)
       .catch((e) => console.error('[sign] contacts', e));
+    listContactGroups().then(setGroups).catch(() => {});
   }, []);
 
   // Suivi du lien (vues / personnes) une fois le contrat validé
@@ -2156,13 +2170,29 @@ export default function SignContractEditor() {
                 Paiement : {paymentEnabled ? 'Activé' : 'Sans'}
               </button>
               <button
-                onClick={handleValidate}
-                disabled={!hasSignatureField}
-                title={hasSignatureField ? '' : 'Ajoutez au moins un champ Signature avant de valider'}
-                className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#CEFF8F]"
+                onClick={toggleTemplate}
+                title="Réutiliser ce contrat comme modèle (signatures multiples + espace closer)"
+                className={`flex items-center gap-1.5 rounded border px-3 py-2 text-xs font-medium transition-colors ${isTemplate ? 'border-[#CEFF8F] text-[#CEFF8F]' : 'border-[#3A4242] text-[#A1A9A9] hover:border-[#A1A9A9] hover:text-white'}`}
               >
-                <CheckCircle2 className="h-4 w-4" /> Valider l’édition
+                <Files className="h-3.5 w-3.5" /> Modèle : {isTemplate ? 'Oui' : 'Non'}
               </button>
+              {isTemplate ? (
+                <button
+                  onClick={() => contractId && navigate(`/sign/app/template/${contractId}`)}
+                  className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
+                >
+                  <LayoutDashboard className="h-4 w-4" /> Tableau de bord
+                </button>
+              ) : (
+                <button
+                  onClick={handleValidate}
+                  disabled={!hasSignatureField}
+                  title={hasSignatureField ? '' : 'Ajoutez au moins un champ Signature avant de valider'}
+                  className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#CEFF8F]"
+                >
+                  <CheckCircle2 className="h-4 w-4" /> Valider l’édition
+                </button>
+              )}
             </>
           )}
         </div>
@@ -2580,7 +2610,7 @@ export default function SignContractEditor() {
                     <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">
                       Préremplir {signerCount > 1 ? `le signataire ${placeSignerIndex}` : 'depuis un contact'}
                     </h3>
-                    <ContactPicker contacts={contacts} onSelect={prefillFromContact} />
+                    <ContactPicker contacts={contacts} groups={groups} onSelect={prefillFromContact} />
                     <p className="mt-2 text-[11px] leading-relaxed text-[#A1A9A9]">
                       Seuls les champs Email, Téléphone et Adresse de ce signataire sont préremplis.
                     </p>
@@ -2914,6 +2944,7 @@ export default function SignContractEditor() {
                       <div className="mb-2">
                         <ContactPicker
                           contacts={contacts}
+                          groups={groups}
                           onSelect={(c) => setSendRows((prev) => prev.map((r, k) => (k === i ? { ...r, name: c.name, email: c.email } : r)))}
                         />
                       </div>

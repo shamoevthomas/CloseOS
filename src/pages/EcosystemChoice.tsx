@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, ChevronRight, Globe, ArrowRight, Sparkles, Users, BarChart3, Phone, Calendar, Receipt, Target, Rocket, Zap, Building2, FileText, Smartphone, MessageSquare } from 'lucide-react';
+import { TrendingUp, ChevronRight, Globe, ArrowRight, Sparkles, Users, BarChart3, Phone, Calendar, Receipt, Target, Rocket, Zap, Building2, FileText, Smartphone, MessageSquare, Files, UserCheck } from 'lucide-react';
 import { ecoTranslations, detectEcoLang } from './ecosystemChoiceI18n';
 import type { EcoLang } from './ecosystemChoiceI18n';
 import { salesTranslations } from './landingPageI18n';
@@ -487,6 +487,8 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                       { icon: <Receipt className="w-3.5 h-3.5" strokeWidth={1.5} />, label: 'Sign + Pay (Stripe)' },
                       { icon: <Users className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'Multi-signataire' : 'Multi-signer' },
                       { icon: <Sparkles className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'Certificat de preuve' : 'Proof certificate' },
+                      { icon: <Files className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'Modèles réutilisables' : 'Reusable templates' },
+                      { icon: <UserCheck className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'Espaces équipe' : 'Team workspaces' },
                     ].map((feat, i) => (
                       <div key={i} className="flex items-center gap-2.5 text-[#6a6a78] text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                         <span style={{ color: 'rgba(206,255,143,0.6)' }}>{feat.icon}</span>
@@ -709,8 +711,8 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 </div>
                 <p className="text-[#6a6a78]/70 text-xs leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   {lang === 'fr'
-                    ? 'La signature électronique qui encaisse : signez le contrat et recevez le paiement dans le même geste, avec un faisceau de preuves opposable.'
-                    : 'The e-signature that collects payment: sign the contract and get paid in one gesture, with an opposable proof bundle.'}
+                    ? 'La signature électronique qui encaisse : signez le contrat et recevez le paiement dans le même geste, avec un faisceau de preuves opposable. Modèles de contrats réutilisables et un espace par membre de l’équipe.'
+                    : 'The e-signature that collects payment: sign the contract and get paid in one gesture, with an opposable proof bundle. Reusable contract templates with a workspace per team member.'}
                 </p>
               </div>
             </div>

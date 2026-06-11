@@ -30,6 +30,7 @@
     "html2pdf.js": "^0.12.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
+    "libphonenumber-js": "^1.13.6",
     "lucide-react": "^0.561.0",
     "motion": "^12.38.0",
     "pdfjs-dist": "^4.10.38",

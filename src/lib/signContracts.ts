@@ -145,7 +145,20 @@ export type SignContractRow = {
   contactName: string | null;
   hasPayment: boolean; // contrat configuré « Payé + signé »
   subscriptionStatus: string | null; // état abonnement agrégé (active/past_due/canceled…) ou null
+  isTemplate: boolean; // contrat-modèle réutilisable
+  instanceCount?: number; // template : nombre d'instances générées
+  signedCount?: number; // template : instances signées/payées
+  contentHtml: string | null; // pour la prévisualisation (contrats texte)
+  sourceType: string; // 'text' | 'pdf'
+  theme: string; // thème du document (rendu fidèle de la prévisu)
 };
+
+/** Lit le PDF (base64) d'un contrat — à la demande, pour la miniature (jamais en masse). */
+export async function getContractPdfData(id: string): Promise<string | null> {
+  const { data, error } = await supabase.from('sign_contracts').select('pdf_data').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return (data?.pdf_data as string) ?? null;
+}
 
 function countInlineFields(html: string | null): number {
   if (!html) return 0;
@@ -314,10 +327,13 @@ export async function getContract(id: string): Promise<{
   verification_lock_step: number | null;
   payment: SignPaymentConfig;
   fields: SignFreeField[];
+  is_template: boolean;
+  template_id: string | null;
+  rep_id: string | null;
 } | null> {
   const { data, error } = await supabase
     .from('sign_contracts')
-    .select('id,title,content_html,status,source_type,pdf_data,locked,contact_id,theme,images,inline_values,signer_count,signing_order,payment_enabled,verification_method,verification_email,verification_emails,verification_phones,verification_pairs,verification_locked,verification_lock_reason,verification_lock_step,payment_mode,payment_amount,payment_interval,payment_duration_months,payment_trial_days,payment_tva_rate,payment_status')
+    .select('id,title,content_html,status,source_type,pdf_data,locked,contact_id,theme,images,inline_values,signer_count,signing_order,payment_enabled,verification_method,verification_email,verification_emails,verification_phones,verification_pairs,verification_locked,verification_lock_reason,verification_lock_step,payment_mode,payment_amount,payment_interval,payment_duration_months,payment_trial_days,payment_tva_rate,payment_status,is_template,template_id,rep_id')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -365,6 +381,9 @@ export async function getContract(id: string): Promise<{
     verification_lock_step: data.verification_lock_step ?? null,
     payment: parsePayment(data),
     fields,
+    is_template: !!data.is_template,
+    template_id: data.template_id ?? null,
+    rep_id: data.rep_id ?? null,
   };
 }
 
@@ -400,6 +419,7 @@ export async function updateContract(
     payment_duration_months?: number | null;
     payment_trial_days?: number;
     payment_tva_rate?: number | null;
+    is_template?: boolean;
   },
 ): Promise<void> {
   const { error } = await supabase.from('sign_contracts').update(patch).eq('id', id);
@@ -1033,6 +1053,37 @@ export async function exportOwnerData(): Promise<Record<string, unknown>> {
   return { export_version: 1, generated_at: new Date().toISOString(), profile, contracts, contacts };
 }
 
+/** Télécharge le document d'un contrat : PDF direct (source PDF) ou fenêtre d'impression (texte → « Enregistrer en PDF »). */
+export async function downloadContractDocument(id: string): Promise<void> {
+  const { data } = await supabase
+    .from('sign_contracts')
+    .select('title,source_type,content_html,pdf_data')
+    .eq('id', id)
+    .maybeSingle();
+  if (!data) return;
+  const title = (data.title || 'contrat').replace(/[^\w\-. ]+/g, '_').slice(0, 80) || 'contrat';
+  if (data.source_type === 'pdf' && data.pdf_data) {
+    const href = String(data.pdf_data).startsWith('data:') ? data.pdf_data : `data:application/pdf;base64,${data.pdf_data}`;
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = `${title}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return;
+  }
+  const w = window.open('', '_blank');
+  if (!w) return;
+  w.document.write(
+    `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title>` +
+      `<style>@page{size:A4;margin:18mm;}body{font-family:Georgia,'Times New Roman',serif;color:#1a1a1a;line-height:1.6;font-size:12pt;}img{max-width:100%;}</style>` +
+      `</head><body>${data.content_html || '<p>(Document vide)</p>'}</body></html>`,
+  );
+  w.document.close();
+  w.focus();
+  setTimeout(() => { try { w.print(); } catch { /* noop */ } }, 400);
+}
+
 // ---------- Contacts ----------
 export type SignContact = {
   id: string;
@@ -1047,6 +1098,7 @@ export type SignContact = {
   tva: string;
   company_id: string;
   ape: string;
+  groupId: string | null;
   details: Record<string, string>;
   created_at: string;
 };
@@ -1054,7 +1106,7 @@ export type SignContact = {
 export async function listContacts(): Promise<SignContact[]> {
   const { data, error } = await supabase
     .from('sign_contacts')
-    .select('id,name,email,phone,company,address,city,siret,siren,tva,company_id,ape,details,created_at')
+    .select('id,name,email,phone,company,address,city,siret,siren,tva,company_id,ape,group_id,details,created_at')
     .eq('user_id', await sessionUserId())
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -1071,6 +1123,7 @@ export async function listContacts(): Promise<SignContact[]> {
     tva: c.tva ?? '',
     company_id: c.company_id ?? '',
     ape: c.ape ?? '',
+    groupId: c.group_id ?? null,
     details: c.details ?? {},
     created_at: c.created_at,
   }));
@@ -1147,6 +1200,7 @@ export async function addContact(c: {
   tva?: string;
   company_id?: string;
   ape?: string;
+  groupId?: string | null;
 }): Promise<void> {
   const { data: existing } = await supabase
     .from('sign_contacts')
@@ -1156,6 +1210,7 @@ export async function addContact(c: {
     .limit(1);
   if (existing && existing.length > 0) {
     const patch: Record<string, any> = {};
+    if (c.groupId !== undefined) patch.group_id = c.groupId;
     if (c.name?.trim()) patch.name = c.name.trim();
     if (c.phone?.trim()) patch.phone = c.phone.trim();
     if (c.address?.trim()) patch.address = c.address.trim();
@@ -1179,6 +1234,7 @@ export async function addContact(c: {
     tva: c.tva?.trim() || null,
     company_id: c.company_id?.trim() || null,
     ape: c.ape?.trim() || null,
+    group_id: c.groupId ?? null,
   });
   if (error) throw error;
 }
@@ -1188,11 +1244,51 @@ export async function deleteContact(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// ---------- Groupes / dossiers de contacts ----------
+export type SignContactGroup = { id: string; name: string; color: string | null; createdAt: string };
+
+export async function listContactGroups(): Promise<SignContactGroup[]> {
+  const { data, error } = await supabase
+    .from('sign_contact_groups')
+    .select('id,name,color,created_at')
+    .eq('user_id', await sessionUserId())
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((g: any) => ({ id: g.id, name: g.name, color: g.color ?? null, createdAt: g.created_at }));
+}
+
+export async function createContactGroup(name: string, color?: string | null): Promise<SignContactGroup> {
+  const { data, error } = await supabase
+    .from('sign_contact_groups')
+    .insert({ user_id: await sessionUserId(), name: name.trim(), color: color ?? null })
+    .select('id,name,color,created_at')
+    .single();
+  if (error) throw error;
+  return { id: data.id, name: data.name, color: data.color ?? null, createdAt: data.created_at };
+}
+
+export async function renameContactGroup(id: string, name: string): Promise<void> {
+  const { error } = await supabase.from('sign_contact_groups').update({ name: name.trim() }).eq('id', id).eq('user_id', await sessionUserId());
+  if (error) throw error;
+}
+
+/** Supprime un dossier : ses contacts repassent « sans dossier » (FK on delete set null). */
+export async function deleteContactGroup(id: string): Promise<void> {
+  const { error } = await supabase.from('sign_contact_groups').delete().eq('id', id).eq('user_id', await sessionUserId());
+  if (error) throw error;
+}
+
+/** Range (ou retire) un contact dans un dossier. */
+export async function setContactGroup(contactId: string, groupId: string | null): Promise<void> {
+  const { error } = await supabase.from('sign_contacts').update({ group_id: groupId }).eq('id', contactId).eq('user_id', await sessionUserId());
+  if (error) throw error;
+}
+
 /** Récupère un contact par son id. */
 export async function getContactById(id: string): Promise<SignContact | null> {
   const { data, error } = await supabase
     .from('sign_contacts')
-    .select('id,name,email,phone,company,address,city,siret,siren,tva,company_id,ape,details,created_at')
+    .select('id,name,email,phone,company,address,city,siret,siren,tva,company_id,ape,group_id,details,created_at')
     .eq('id', id)
     .eq('user_id', await sessionUserId())
     .maybeSingle();
@@ -1212,6 +1308,7 @@ export async function getContactById(id: string): Promise<SignContact | null> {
     tva: c.tva ?? '',
     company_id: c.company_id ?? '',
     ape: c.ape ?? '',
+    groupId: c.group_id ?? null,
     details: c.details ?? {},
     created_at: c.created_at,
   };
@@ -1329,6 +1426,38 @@ export async function getOrCreateContactByEmail(email: string, name?: string): P
   return data.id as string;
 }
 
+/**
+ * Récupère (par email) ou crée un contact Sign complet, en renvoyant la fiche.
+ * Sert à « matérialiser » une personne du CRM Business en vrai contact Sign quand on l'utilise.
+ * N'écrase pas une fiche existante (le contact Sign édité par le propriétaire fait foi).
+ */
+export async function getOrCreateContactFull(c: { name: string; email: string; phone?: string; company?: string }): Promise<SignContact> {
+  const uid = await sessionUserId();
+  const email = c.email.trim();
+  if (!email) throw new Error('email_requis');
+  const { data: existing } = await supabase
+    .from('sign_contacts')
+    .select('id')
+    .eq('user_id', uid)
+    .ilike('email', email)
+    .limit(1);
+  let id: string;
+  if (existing && existing.length > 0) {
+    id = existing[0].id as string;
+  } else {
+    const { data, error } = await supabase
+      .from('sign_contacts')
+      .insert({ user_id: uid, name: c.name?.trim() || email, email, phone: c.phone?.trim() || null, company: c.company?.trim() || null })
+      .select('id')
+      .single();
+    if (error) throw error;
+    id = data.id as string;
+  }
+  const full = await getContactById(id);
+  if (!full) throw new Error('contact_introuvable');
+  return full;
+}
+
 /** Statistiques de l'accueil (basées sur les vrais contrats). */
 export async function getSignStats(): Promise<{ signed: number; pending: number; depositCents: number }> {
   const { data, error } = await supabase
@@ -1353,12 +1482,26 @@ export async function getSignStats(): Promise<{ signed: number; pending: number;
 export async function listContractsWithCounts(): Promise<SignContractRow[]> {
   const { data, error } = await supabase
     .from('sign_contracts')
-    .select('id,title,status,updated_at,content_html,contact_id,verification_method,payment_enabled,payment_status')
+    .select('id,title,status,updated_at,content_html,contact_id,verification_method,payment_enabled,payment_status,is_template,template_id,source_type,theme')
     .eq('user_id', await sessionUserId())
+    .is('template_id', null) // exclut les instances (générées depuis un template)
     .order('updated_at', { ascending: false });
   if (error) throw error;
   const contracts = data ?? [];
   if (contracts.length === 0) return [];
+
+  // Compteurs d'instances par template (total + signées/payées)
+  const templateIds = contracts.filter((c: any) => c.is_template).map((c: any) => c.id);
+  const tplCounts: Record<string, { total: number; signed: number }> = {};
+  if (templateIds.length) {
+    const { data: insts } = await supabase.from('sign_contracts').select('template_id,status').in('template_id', templateIds);
+    (insts ?? []).forEach((r: any) => {
+      const t = tplCounts[r.template_id] ?? { total: 0, signed: 0 };
+      t.total += 1;
+      if (r.status === 'signed' || r.status === 'paid') t.signed += 1;
+      tplCounts[r.template_id] = t;
+    });
+  }
 
   // Compte des champs libres par contrat
   const ids = contracts.map((c: any) => c.id);
@@ -1405,6 +1548,12 @@ export async function listContractsWithCounts(): Promise<SignContractRow[]> {
     contactName: c.contact_id ? contactNames[c.contact_id] ?? null : null,
     hasPayment: !!c.payment_enabled || (c.payment_status && c.payment_status !== 'none'),
     subscriptionStatus: subByContract[c.id] ?? null,
+    isTemplate: !!c.is_template,
+    instanceCount: c.is_template ? tplCounts[c.id]?.total ?? 0 : undefined,
+    signedCount: c.is_template ? tplCounts[c.id]?.signed ?? 0 : undefined,
+    contentHtml: c.content_html ?? null,
+    sourceType: c.source_type ?? 'text',
+    theme: c.theme ?? 'blank',
   }));
 }
 

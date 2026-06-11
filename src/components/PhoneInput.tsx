@@ -1,10 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Search } from 'lucide-react';
 import { COUNTRY_CODES, flagOf } from '../lib/countryCodes';
+import { AsYouType } from 'libphonenumber-js';
+
+/** Formate le numéro NATIONAL (sans indicatif) avec les espaces du pays, déduit du dial. */
+function formatNational(digits: string, dial: string): string {
+  if (!digits) return '';
+  try {
+    const intl = new AsYouType().input(`${dial}${digits}`); // ex. "+33 6 12 34 56 78"
+    return intl.startsWith(dial) ? intl.slice(dial.length).trimStart() : digits;
+  } catch {
+    return digits;
+  }
+}
 
 /**
  * Champ téléphone avec sélecteur d'indicatif international (recherchable).
  * Émet la valeur combinée "indicatif numéro" (ex. "+33 6 12 34 56 78"), ou '' si vide.
+ * Le menu déroulant est rendu dans un PORTAL (body, position fixed) pour ne pas être coupé
+ * par l'overflow / z-index d'un modal parent (ex. pop-up de vérification).
  */
 export default function PhoneInput({
   value,
@@ -26,7 +41,10 @@ export default function PhoneInput({
   const [num, setNum] = useState('');
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
 
   const country = COUNTRY_CODES.find((c) => c.iso === iso) ?? COUNTRY_CODES.find((c) => c.iso === 'FR')!;
 
@@ -42,18 +60,41 @@ export default function PhoneInput({
     const match = [...COUNTRY_CODES].sort((a, b) => b.dial.length - a.dial.length).find((c) => v.startsWith(c.dial));
     if (match) {
       setIso(match.iso);
-      setNum(v.slice(match.dial.length).trim());
+      setNum(formatNational(v.slice(match.dial.length).replace(/\D/g, ''), match.dial));
     } else {
       setNum(v);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fermeture au clic extérieur
+  // Positionne le menu sous le bouton (fixed), et le suit au scroll/resize.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const reposition = () => {
+      const r = btnRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const width = 288; // w-72
+      let left = r.left;
+      if (left + width > window.innerWidth - 8) left = window.innerWidth - width - 8;
+      if (left < 8) left = 8;
+      setPos({ top: r.bottom + 4, left, width });
+    };
+    reposition();
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+    return () => {
+      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('resize', reposition);
+    };
+  }, [open]);
+
+  // Fermeture au clic extérieur (le menu est dans un portal → on teste root ET menu)
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t) || dropRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -65,7 +106,9 @@ export default function PhoneInput({
     setIso(nextIso);
     setOpen(false);
     setSearch('');
-    emit(dial, num);
+    const formatted = formatNational(num.replace(/\D/g, ''), dial);
+    setNum(formatted);
+    emit(dial, formatted);
   };
 
   const filtered = COUNTRY_CODES.filter((c) => {
@@ -78,6 +121,7 @@ export default function PhoneInput({
     <div ref={rootRef} className={plain ? 'relative flex h-full w-full items-center' : 'relative flex gap-2'}>
       {/* Sélecteur d'indicatif */}
       <button
+        ref={btnRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         style={plain && fontSize ? { fontSize } : undefined}
@@ -97,8 +141,9 @@ export default function PhoneInput({
         type="tel"
         value={num}
         onChange={(e) => {
-          setNum(e.target.value);
-          emit(country.dial, e.target.value);
+          const formatted = formatNational(e.target.value.replace(/\D/g, ''), country.dial);
+          setNum(formatted);
+          emit(country.dial, formatted);
         }}
         placeholder={placeholder}
         style={plain && fontSize ? { fontSize } : undefined}
@@ -109,9 +154,13 @@ export default function PhoneInput({
         }
       />
 
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-lg border border-[#3A4242] bg-[#222828] shadow-2xl">
+      {/* Dropdown — portal (échappe à l'overflow/z-index du modal) */}
+      {open && pos && createPortal(
+        <div
+          ref={dropRef}
+          style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+          className="overflow-hidden rounded-lg border border-[#3A4242] bg-[#222828] shadow-2xl"
+        >
           <div className="relative border-b border-[#3A4242] p-2">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#A1A9A9]" />
             <input
@@ -140,7 +189,8 @@ export default function PhoneInput({
             ))}
             {filtered.length === 0 && <li className="px-3 py-3 text-center text-xs text-[#A1A9A9]">Aucun résultat</li>}
           </ul>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

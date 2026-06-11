@@ -3,11 +3,11 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Mail, Phone, MapPin, FileDigit, Hash, Percent, Landmark, Tag, FileText,
   Loader2, Send, Eye, Download, CheckCircle2, Clock, ChevronRight, Activity, IdCard,
-  Pencil, Check, X, Trash2, Plus,
+  Pencil, Check, X, Trash2, Plus, Folder, ChevronDown,
 } from 'lucide-react';
 import {
-  getContactById, getContactDossier, updateSignContact,
-  type SignContact, type ContactContract, type ContactActivity,
+  getContactById, getContactDossier, updateSignContact, listContactGroups, setContactGroup,
+  type SignContact, type ContactContract, type ContactActivity, type SignContactGroup,
 } from '../lib/signContracts';
 
 /**
@@ -52,6 +52,7 @@ export default function SignContactDetail() {
   const [activity, setActivity] = useState<ContactActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [groups, setGroups] = useState<SignContactGroup[]>([]);
 
   // Édition de l'identité (nom / email / téléphone)
   const [editing, setEditing] = useState(false);
@@ -65,6 +66,7 @@ export default function SignContactDetail() {
       const c = await getContactById(id);
       if (!c) { setNotFound(true); return; }
       setContact(c);
+      listContactGroups().then(setGroups).catch(() => {});
       const dossier = await getContactDossier(id);
       setContracts(dossier.contracts);
       setActivity(dossier.activity);
@@ -115,6 +117,18 @@ export default function SignContactDetail() {
       }
     } catch (e) {
       console.error('[sign] suppression champ enregistré', e);
+    }
+  };
+
+  // Range ou retire le contact d'un dossier.
+  const changeGroup = async (groupId: string | null) => {
+    if (!contact || !id) return;
+    setContact({ ...contact, groupId });
+    try {
+      await setContactGroup(id, groupId);
+    } catch (e) {
+      console.error('[sign] dossier contact', e);
+      load();
     }
   };
 
@@ -222,6 +236,26 @@ export default function SignContactDetail() {
                 <InfoRow icon={Phone} label="Téléphone" value={contact.phone} />
               </div>
             )}
+          </section>
+
+          {/* Dossier */}
+          <section className="rounded-xl border border-[#3A4242] bg-[#222828] p-5">
+            <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">
+              <Folder className="h-3.5 w-3.5 text-[#CEFF8F]" /> Dossier
+            </div>
+            <div className="relative">
+              <Folder className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
+              <select
+                value={contact.groupId ?? ''}
+                onChange={(e) => changeGroup(e.target.value || null)}
+                className="w-full appearance-none rounded border border-[#3A4242] bg-[#191E1E] py-2.5 pl-10 pr-9 text-sm text-white outline-none transition-colors focus:border-[#CEFF8F]"
+              >
+                <option value="">Sans dossier</option>
+                {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
+            </div>
+            {groups.length === 0 && <p className="mt-2 text-xs leading-relaxed text-[#A1A9A9]">Aucun dossier. Créez-en depuis la page Contacts.</p>}
           </section>
 
           {/* Champs enregistrés — non éditables, supprimables uniquement */}

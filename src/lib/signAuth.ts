@@ -3,7 +3,7 @@
  * Le propriétaire est un utilisateur `auth.users` AVEC une ligne `sign_users` (id = auth.uid()),
  * SANS profil Sales (séparation des comptes préservée côté DB). Connexion email + mot de passe.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { signSupabase } from './signSupabase';
 
 export type SignOwner = { id: string; email: string; name: string };
@@ -118,10 +118,12 @@ export async function currentOwnerId(): Promise<string | null> {
 export function useSignOwner(): { loading: boolean; owner: SignOwner | null } {
   const [loading, setLoading] = useState(true);
   const [owner, setOwner] = useState<SignOwner | null>(null);
+  const loadedRef = useRef<string | null | undefined>(undefined); // dernier user id chargé (undefined = jamais)
 
   useEffect(() => {
     let active = true;
     const load = async (userId?: string, email?: string) => {
+      loadedRef.current = userId ?? null;
       if (!userId) {
         if (active) {
           setOwner(null);
@@ -135,7 +137,12 @@ export function useSignOwner(): { loading: boolean; owner: SignOwner | null } {
       setLoading(false);
     };
     signSupabase.auth.getSession().then(({ data }) => load(data.session?.user?.id, data.session?.user?.email));
-    const { data: sub } = signSupabase.auth.onAuthStateChange((_e, session) => {
+    const { data: sub } = signSupabase.auth.onAuthStateChange((event, session) => {
+      const uid = session?.user?.id ?? null;
+      // Évite le « rechargement » au retour d'onglet : on ignore le refresh de token et les
+      // événements pour le même utilisateur déjà chargé (sinon flicker de loading sur toute l'app).
+      if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') return;
+      if (loadedRef.current !== undefined && uid === loadedRef.current) return;
       setLoading(true);
       load(session?.user?.id, session?.user?.email);
     });

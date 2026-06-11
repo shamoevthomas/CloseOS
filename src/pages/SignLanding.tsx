@@ -22,6 +22,9 @@ import {
   Linkedin,
   Twitter,
   ChevronDown,
+  Files,
+  UserCheck,
+  LayoutDashboard,
 } from 'lucide-react';
 
 /**
@@ -105,6 +108,7 @@ export default function SignLanding() {
           <nav className="hidden items-center gap-6 text-sm font-medium text-[#A1A9A9] lg:flex">
             <a href="#concept" className="transition-colors hover:text-[#F3F4F6]">Sign + Pay</a>
             <a href="#multi" className="transition-colors hover:text-[#F3F4F6]">Multi-signataire</a>
+            <a href="#modeles" className="transition-colors hover:text-[#F3F4F6]">Modèles</a>
             <a href="#preuve" className="transition-colors hover:text-[#F3F4F6]">Faisceau de preuves</a>
             <a href="#securite" className="transition-colors hover:text-[#F3F4F6]">Sécurité</a>
           </nav>
@@ -319,6 +323,52 @@ export default function SignLanding() {
               <p className="text-sm text-[#A1A9A9]">
                 Chaque signataire a sa propre liste de vérification (email / SMS), et le paiement peut être demandé à un
                 signataire précis — indépendamment de sa vérification.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contrats réutilisables (templates) + espaces par membre */}
+      <section id="modeles" className="border-b border-[#3A4242] px-6 py-24 md:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-16 max-w-2xl">
+            <div className="mb-4 inline-block rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
+              Contrats réutilisables
+            </div>
+            <h2 className="text-[36px] font-semibold tracking-tight text-white sm:text-[44px]">
+              Un modèle, mille signatures.<br />
+              <span className="text-[#A1A9A9]">Un espace par membre de votre équipe.</span>
+            </h2>
+            <p className="mt-5 text-base leading-relaxed text-[#A1A9A9]">
+              Créez un contrat-type une seule fois. Chaque envoi génère une copie figée et indépendante, avec son propre
+              certificat de preuve — modifier le modèle n’altère jamais les documents déjà signés.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <Files className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">Modèle réutilisable</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                Le même contrat envoyé à l’infini. Chaque signature crée une instance scellée à part — le modèle, lui, ne se
+                consomme jamais et reste modifiable.
+              </p>
+            </div>
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <UserCheck className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">Un espace par membre</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                Donnez à chaque commercial, closer ou collaborateur son propre accès sécurisé (code email + appareil de
+                confiance) pour générer ses liens et suivre ses signatures — sans jamais voir celles des autres.
+              </p>
+            </div>
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <LayoutDashboard className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">Suivi & attribution</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                Qui a généré quoi, combien de contrats signés, en attente ou expirés. Liens valables 7 jours et révocation
+                d’un accès en un clic — l’historique reste intact.
               </p>
             </div>
           </div>
@@ -540,6 +590,7 @@ export default function SignLanding() {
             <ul className="space-y-3">
               <li><a href="#concept" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Sign + Pay</a></li>
               <li><a href="#multi" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Multi-signataire</a></li>
+              <li><a href="#modeles" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Modèles réutilisables</a></li>
               <li><a href="#preuve" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Faisceau de preuves &amp; certificat</a></li>
               <li><a href="#securite" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Sécurité</a></li>
             </ul>
@@ -557,9 +608,9 @@ export default function SignLanding() {
           <div>
             <h5 className="mb-4 text-xs font-bold uppercase tracking-widest text-white">Légal</h5>
             <ul className="space-y-3">
-              <li><a href="/cgv" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">CGV &amp; CGU</a></li>
-              <li><a href="/privacy-policy" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Politique de confidentialité</a></li>
-              <li><a href="/legal" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Sécurité technique</a></li>
+              <li><a href="/sign/cgv" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">CGV &amp; CGU</a></li>
+              <li><a href="/sign/confidentialite" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Politique de confidentialité</a></li>
+              <li><a href="/sign/securite" className="text-[11px] text-[#A1A9A9] transition-colors hover:text-white">Sécurité technique</a></li>
             </ul>
           </div>
         </div>

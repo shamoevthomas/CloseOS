@@ -108,6 +108,11 @@ const SignPublic = lazy(() => import('./pages/SignPublic'))
 const SignVerify = lazy(() => import('./pages/SignVerify'))
 const SignProtected = lazy(() => import('./components/SignProtected'))
 const SignCheckout = lazy(() => import('./pages/SignCheckout'))
+const SignTemplateDashboard = lazy(() => import('./pages/SignTemplateDashboard'))
+const SignRepSpace = lazy(() => import('./pages/SignRepSpace'))
+const SignCGV = lazy(() => import('./pages/SignCGV'))
+const SignConfidentialite = lazy(() => import('./pages/SignConfidentialite'))
+const SignSecurite = lazy(() => import('./pages/SignSecurite'))
 
 // Business Module Imports
 import { BusinessAuthProvider, useBusinessAuth } from './business/contexts/BusinessAuthContext'
@@ -430,8 +435,12 @@ function AuthenticatedApp() {
         <Route path="/sign" element={<SignLanding />} />
         <Route path="/sign/login" element={<SignLogin />} />
         <Route path="/sign/s/:token" element={<SignPublic />} />
+        <Route path="/sign/rep/:token" element={<SignRepSpace />} />
         <Route path="/sign/verify/:certificateId" element={<SignVerify />} />
         <Route path="/sign/abonnement" element={<SignCheckout />} />
+        <Route path="/sign/cgv" element={<SignCGV />} />
+        <Route path="/sign/confidentialite" element={<SignConfidentialite />} />
+        <Route path="/sign/securite" element={<SignSecurite />} />
         <Route path="/sign/app/contrat" element={<SignProtected><SignContractEditor /></SignProtected>} />
         <Route path="/sign/app/contrat/:id" element={<SignProtected><SignContractEditor /></SignProtected>} />
         <Route path="/sign/app" element={<SignProtected><SignLayout /></SignProtected>}>
@@ -441,6 +450,7 @@ function AuthenticatedApp() {
           <Route path="contacts" element={<SignContacts />} />
           <Route path="contacts/:id" element={<SignContactDetail />} />
           <Route path="profil" element={<SignProfile />} />
+          <Route path="template/:id" element={<SignTemplateDashboard />} />
         </Route>
 
         {/* Business Landing */}

@@ -5,6 +5,7 @@ import {
   Users,
   TrendingUp,
   Settings,
+  FileSignature,
   LogOut,
   ChevronUp,
   X,
@@ -199,6 +200,20 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
     }
     fetchAvatar()
   }, [user?.id])
+
+  // Accès CloseOS Sign : l'utilisateur a-t-il une ligne sign_users (provisionnée avec l'abonnement Business) ?
+  const [hasSign, setHasSign] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    const checkSign = async () => {
+      // Réservé au propriétaire : un membre d'équipe n'a pas son propre accès Sign.
+      if (!user?.id || isTeamMember) { setHasSign(false); return }
+      const { data } = await supabase.from('sign_users').select('id').eq('id', user.id).maybeSingle()
+      if (!cancelled) setHasSign(!!data)
+    }
+    checkSign()
+    return () => { cancelled = true }
+  }, [user?.id, isTeamMember])
 
   // Auto-collapse after 3 seconds on desktop
   useEffect(() => {
@@ -402,6 +417,23 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
               <ChevronUp className="h-5 w-5 shrink-0 -rotate-90" />
               {!collapsed && (
                 <span className="text-sm font-extrabold tracking-tight uppercase" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.sidebar_personal}</span>
+              )}
+            </button>
+          )}
+
+          {/* Accès CloseOS Sign — visible uniquement pour le PROPRIÉTAIRE ayant un accès Sign (pas les membres d'équipe) */}
+          {hasSign && !isTeamMember && (
+            <button
+              onClick={() => { window.location.href = '/sign/app' }}
+              className={cn(
+                'flex items-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-900/5 dark:hover:bg-white/5 transition-all',
+                collapsed ? 'w-12 h-12 justify-center rounded-xl' : 'gap-3 py-3 pl-4 rounded-r-lg w-full'
+              )}
+              title="Accéder à CloseOS Sign"
+            >
+              <FileSignature className="h-5 w-5 shrink-0" />
+              {!collapsed && (
+                <span className="text-sm font-extrabold tracking-tight uppercase leading-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>Accéder à CloseOS Sign</span>
               )}
             </button>
           )}
