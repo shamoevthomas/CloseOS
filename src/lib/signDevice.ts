@@ -37,17 +37,17 @@ export async function isDeviceTrusted(userId: string): Promise<boolean> {
   }
 }
 
-/** Envoie le code de vérification par email. */
-export async function sendDeviceCode(userId: string): Promise<{ ok: boolean; error?: string }> {
+/** Envoie le code de vérification par email (défaut) ou par SMS (secours). */
+export async function sendDeviceCode(userId: string, channel: 'email' | 'sms' = 'email'): Promise<{ ok: boolean; error?: string; masked?: string }> {
   try {
     const res = await fetch('/api/sign-send-verification-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId }),
+      body: JSON.stringify({ user_id: userId, channel }),
     });
     const data = await res.json();
     if (!res.ok) return { ok: false, error: data.error || 'send_failed' };
-    return { ok: true };
+    return { ok: true, masked: data.masked };
   } catch (e: any) {
     return { ok: false, error: e?.message || 'send_failed' };
   }

@@ -13,6 +13,7 @@ import {
 } from '../lib/signAuth';
 import { isDeviceTrusted } from '../lib/signDevice';
 import SignVerification from '../components/SignVerification';
+import { SignLogo } from '../components/SignLogo';
 
 /**
  * CloseOS Sign — page de connexion (DA Sign : dark + lime).
@@ -32,14 +33,6 @@ const ERR: Record<ErrKey, string> = {
   reset: 'Échec — le lien a peut-être expiré. Redemandez-en un.',
   weak: 'Le mot de passe doit faire au moins 6 caractères.',
 };
-
-const Logo = ({ className = '' }: { className?: string }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className={className}>
-    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 const GoogleIcon = ({ className = '' }: { className?: string }) => (
   <svg viewBox="0 0 24 24" width="18" height="18" className={className} aria-hidden="true">
@@ -196,10 +189,7 @@ export default function SignLogin() {
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <a href="/sign" className="mb-8 flex items-center justify-center">
-          <Logo className="text-[#CEFF8F]" />
-          <span className="ml-2 text-lg font-semibold tracking-tight text-white">
-            CloseOS <span className="font-normal text-[#A1A9A9]">| Sign</span>
-          </span>
+          <SignLogo className="text-lg" />
         </a>
 
         {/* Init : traitement du retour OAuth / récupération */}

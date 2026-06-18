@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { ShieldCheck, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, Loader2, AlertCircle, ArrowLeft, Smartphone, Mail } from 'lucide-react';
 import { sendDeviceCode, verifyDeviceCode } from '../lib/signDevice';
+import { SignLogo } from './SignLogo';
 
 /**
  * CloseOS Sign — vérification d'appareil (2FA) à la connexion (DA Sign : dark + lime).
@@ -15,14 +16,6 @@ interface Props {
   onCancel: () => void;
 }
 
-const Logo = ({ className = '' }: { className?: string }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className={className}>
-    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 const maskEmail = (e: string) => e.replace(/^(.{2})(.*)(@.*)$/, (_, a, m, d) => a + '*'.repeat(Math.min(m.length, 6)) + d);
 
 export default function SignVerification({ userId, email, authMethod, onVerified, onCancel }: Props) {
@@ -30,6 +23,8 @@ export default function SignVerification({ userId, email, authMethod, onVerified
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resend, setResend] = useState(0);
+  const [smsSent, setSmsSent] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
   const sentRef = useRef(false);
 
@@ -92,8 +87,32 @@ export default function SignVerification({ userId, email, authMethod, onVerified
     setError(null);
     setCode(['', '', '', '', '', '']);
     const r = await sendDeviceCode(userId);
-    if (r.ok) setResend(60);
+    if (r.ok) { setSmsSent(null); setResend(60); }
     else setError("Impossible de renvoyer le code.");
+  };
+
+  // Secours : envoie le code par SMS (au numéro du compte) quand l'email n'arrive pas.
+  const sendBySms = async () => {
+    if (sending || loading) return;
+    setError(null);
+    setSending(true);
+    setCode(['', '', '', '', '', '']);
+    const r = await sendDeviceCode(userId, 'sms');
+    setSending(false);
+    if (r.ok) { setSmsSent(r.masked || '•••'); setResend(60); inputs.current[0]?.focus(); }
+    else setError(r.error === 'no_phone' ? 'Aucun numéro enregistré pour ce compte. Contactez support@closeos.fr.' : "Impossible d'envoyer le SMS. Réessayez ou contactez le support.");
+  };
+
+  // Repasse au canal email (depuis le mode SMS).
+  const sendByEmail = async () => {
+    if (sending || loading) return;
+    setError(null);
+    setSending(true);
+    setCode(['', '', '', '', '', '']);
+    const r = await sendDeviceCode(userId);
+    setSending(false);
+    if (r.ok) { setSmsSent(null); setResend(60); inputs.current[0]?.focus(); }
+    else setError("Impossible d'envoyer l'email. Réessayez ou contactez le support.");
   };
 
   return (
@@ -103,10 +122,7 @@ export default function SignVerification({ userId, email, authMethod, onVerified
 
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 flex items-center justify-center">
-          <Logo className="text-[#CEFF8F]" />
-          <span className="ml-2 text-lg font-semibold tracking-tight text-white">
-            CloseOS <span className="font-normal text-[#A1A9A9]">| Sign</span>
-          </span>
+          <SignLogo className="text-lg" />
         </div>
 
         <div className="rounded border border-[#3A4242] bg-[#222828] p-8 shadow-2xl">
@@ -116,8 +132,8 @@ export default function SignVerification({ userId, email, authMethod, onVerified
             </div>
             <h1 className="text-2xl font-semibold tracking-tight text-white">Vérifiez cette connexion</h1>
             <p className="mt-2 text-sm leading-relaxed text-[#A1A9A9]">
-              Nouvel appareil détecté. Un code à 6 chiffres a été envoyé à<br />
-              <span className="font-medium text-[#F3F4F6]">{maskEmail(email)}</span>
+              Nouvel appareil détecté. Un code à 6 chiffres a été envoyé {smsSent ? 'par SMS au' : 'à'}<br />
+              <span className="font-medium text-[#F3F4F6]">{smsSent || maskEmail(email)}</span>
             </p>
           </div>
 
@@ -160,6 +176,37 @@ export default function SignVerification({ userId, email, authMethod, onVerified
             >
               {resend > 0 ? `Renvoyer le code (${resend}s)` : 'Renvoyer le code'}
             </button>
+          </div>
+
+          {/* Secours : bascule SMS ⇆ email + aide */}
+          <div className="mt-5 border-t border-[#3A4242] pt-4 text-center">
+            <p className="text-[11px] text-[#A1A9A9]">
+              {smsSent ? 'Vous ne recevez pas le SMS ?' : 'Vous ne recevez pas le code ? Pensez à vérifier vos spams.'}
+            </p>
+            {smsSent ? (
+              <button
+                type="button"
+                onClick={sendByEmail}
+                disabled={sending || loading}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#A0E7EC] transition-colors hover:text-[#CEFF8F] disabled:opacity-60"
+              >
+                {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
+                Recevoir le code par e-mail
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={sendBySms}
+                disabled={sending || loading}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#A0E7EC] transition-colors hover:text-[#CEFF8F] disabled:opacity-60"
+              >
+                {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Smartphone className="h-3.5 w-3.5" />}
+                Recevoir le code par SMS
+              </button>
+            )}
+            <p className="mt-2 text-[10px] text-[#A1A9A9]">
+              Toujours rien ? <a href="mailto:support@closeos.fr" className="text-[#CEFF8F] hover:underline">support@closeos.fr</a>
+            </p>
           </div>
         </div>
 

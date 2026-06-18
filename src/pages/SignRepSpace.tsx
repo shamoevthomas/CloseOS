@@ -5,6 +5,7 @@ import {
   repBootstrap, repVerifyCode, repDashboard, repCreateLink, repRegenerate,
   signerLinkFromToken, clearRepDeviceToken, type RepDashboard,
 } from '../lib/signRepClient';
+import { SignLogo } from '../components/SignLogo';
 
 const BADGE: Record<string, { label: string; cls: string }> = {
   en_cours: { label: 'En cours', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30 bg-[#A0E7EC]/10' },
@@ -133,7 +134,7 @@ export default function SignRepSpace() {
     <div className="min-h-screen bg-[#191E1E] text-[#F3F4F6]">
       <div className="border-b border-[#3A4242] px-6 py-4">
         <div className="mx-auto flex max-w-5xl items-center gap-2">
-          <span className="text-lg font-bold">CloseOS <span className="text-[#CEFF8F]">Sign</span></span>
+          <SignLogo className="text-lg" />
         </div>
       </div>
       {children}

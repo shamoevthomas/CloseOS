@@ -109,6 +109,12 @@ const CRMLanding: React.FC = () => {
     setTimeout(() => navigate('/business'), 500);
   };
 
+  const handleNavigateToSign = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsExiting(true);
+    setTimeout(() => navigate('/sign'), 500);
+  };
+
   // SEO meta tags for Business landing
   useEffect(() => {
     // Title & Description
@@ -352,6 +358,9 @@ const CRMLanding: React.FC = () => {
                 </a>
                 <a onClick={handleNavigateToBusiness} className="block rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-xl hover:bg-blue-50/50 transition-colors cursor-pointer">
                   <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="w-full h-auto object-contain" loading="lazy" width={220} height={56} />
+                </a>
+                <a onClick={handleNavigateToSign} className="block rounded-xl border border-white/10 bg-[#191E1E] px-4 py-3 shadow-xl hover:bg-[#222828] transition-colors cursor-pointer">
+                  <img src="/CLOSEOS-SIGN-LOGO.png" alt="CloseOS Sign" className="w-full h-auto object-contain" loading="lazy" width={220} height={56} />
                 </a>
               </div>
             </div>

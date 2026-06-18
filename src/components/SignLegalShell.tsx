@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { SignLogo } from './SignLogo';
 
 /** Gabarit commun des pages légales CloseOS Sign (DA dark + lime). */
 export function SignLegalShell({ title, updated, children }: { title: string; updated?: string; children: ReactNode }) {
@@ -21,7 +22,7 @@ export function SignLegalShell({ title, updated, children }: { title: string; up
 
       <header className="sticky top-0 z-10 border-b border-[#3A4242] bg-[#191E1E]/90 px-6 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <a href="/sign" className="text-lg font-bold tracking-tight">CloseOS <span className="text-[#CEFF8F]">Sign</span></a>
+          <a href="/sign"><SignLogo className="text-lg" /></a>
           <a href="/sign" className="flex items-center gap-1.5 text-sm text-[#A1A9A9] transition-colors hover:text-white"><ArrowLeft className="h-4 w-4" /> Accueil</a>
         </div>
       </header>

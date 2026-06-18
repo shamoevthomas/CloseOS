@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, FileSignature, Search, Trash2, Loader2, X, ChevronDown, Check, Copy, Download, Pencil, Files } from 'lucide-react';
-import { listContractsWithCounts, deleteContract, duplicateContract, downloadContractDocument, getContractPdfData, type SignContractRow } from '../lib/signContracts';
+import { Plus, FileText, FileSignature, Search, Trash2, Loader2, X, ChevronDown, Check, Copy, Download, Pencil, Files, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { listContractsWithCounts, deleteContract, duplicateContract, downloadContractDocument, getContractPdfData, resendContract, type SignContractRow } from '../lib/signContracts';
 import { renderPdfFirstPage } from '../lib/signPdfThumb';
 import { THEME_CSS } from '../lib/signThemes';
 
@@ -57,7 +57,8 @@ export default function SignContracts() {
   const [dateTo, setDateTo] = useState('');
   const [contactMenuOpen, setContactMenuOpen] = useState(false);
   const [contactSearch, setContactSearch] = useState('');
-  const [actionBusy, setActionBusy] = useState<{ id: string; kind: 'dup' | 'dl' } | null>(null);
+  const [actionBusy, setActionBusy] = useState<{ id: string; kind: 'dup' | 'dl' | 'send' } | null>(null);
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const contactMenuRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -116,6 +117,28 @@ export default function SignContracts() {
       setActionBusy(null);
     }
   };
+
+  const handleResend = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setActionBusy({ id, kind: 'send' });
+    try {
+      const r = await resendContract(id);
+      if (r.ok) setToast({ type: 'ok', text: `Relance envoyée à ${r.email}.` });
+      else setToast({ type: 'err', text: r.error === 'no_email' ? 'Aucun email signataire associé à ce contrat.' : r.error === 'already_signed' ? 'Ce contrat est déjà signé.' : "Impossible d'envoyer la relance." });
+    } catch (err) {
+      console.error('[sign] relance contrat', err);
+      setToast({ type: 'err', text: "Impossible d'envoyer la relance." });
+    } finally {
+      setActionBusy(null);
+    }
+  };
+
+  // Masque le toast après quelques secondes.
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const distinctStatuses = useMemo(() => [...new Set(rows.map((r) => r.status))], [rows]);
   const distinctContacts = useMemo(() => {
@@ -176,6 +199,16 @@ export default function SignContracts() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 md:px-10">
       <style dangerouslySetInnerHTML={{ __html: DOC_BASE_CSS + THEME_CSS }} />
+
+      {/* Toast (relance…) */}
+      {toast && (
+        <div className="fixed left-1/2 top-6 z-[200] -translate-x-1/2">
+          <div className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm shadow-xl backdrop-blur ${toast.type === 'ok' ? 'border-[#CEFF8F]/30 bg-[#222828]/95 text-[#CEFF8F]' : 'border-[#ef6b6b]/30 bg-[#222828]/95 text-[#ef6b6b]'}`}>
+            {toast.type === 'ok' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+            {toast.text}
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
@@ -309,6 +342,9 @@ export default function SignContracts() {
                   {/* Overlay d'actions (au survol) — clic ailleurs = ouvrir */}
                   <div className="absolute inset-0 z-30 flex items-center justify-center gap-2 bg-[#191E1E]/70 opacity-0 backdrop-blur-[1px] transition-opacity duration-200 group-hover:opacity-100">
                     <ActionBtn icon={Pencil} title="Ouvrir" onClick={(e) => handleOpen(e, r.id)} />
+                    {r.status === 'sent' && r.hasSignerEmail && !r.isTemplate && (
+                      <ActionBtn icon={Send} title="Relancer par email" busy={actionBusy?.id === r.id && actionBusy.kind === 'send'} onClick={(e) => handleResend(e, r.id)} />
+                    )}
                     <ActionBtn icon={Copy} title="Dupliquer" busy={actionBusy?.id === r.id && actionBusy.kind === 'dup'} onClick={(e) => handleDuplicate(e, r.id)} />
                     <ActionBtn icon={Download} title="Télécharger" busy={actionBusy?.id === r.id && actionBusy.kind === 'dl'} onClick={(e) => handleDownload(e, r.id)} />
                     <ActionBtn icon={Trash2} title="Supprimer" danger onClick={(e) => handleDelete(e, r.id)} />

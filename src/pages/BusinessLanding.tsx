@@ -362,13 +362,8 @@ export const BusinessLanding: React.FC = () => {
               <a onClick={handleNavigateToSales} className="block rounded-xl border border-white/10 bg-[#020617] p-3 shadow-xl hover:bg-[#0f172a] transition-colors cursor-pointer">
                 <img src="/logo-sales.png" alt="CloseOS Sales" className="w-full h-auto" loading="lazy" width={200} height={40} />
               </a>
-              <a onClick={handleNavigateToSign} className="mt-2 flex items-center gap-2.5 rounded-xl border border-white/10 bg-[#191E1E] p-3.5 shadow-xl hover:bg-[#222828] transition-colors cursor-pointer">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#CEFF8F" />
-                  <path d="M2 17L12 22L22 17" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M2 12L12 17L22 12" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className="text-base font-semibold text-white">CloseOS <span className="text-[#CEFF8F]">Sign</span></span>
+              <a onClick={handleNavigateToSign} className="mt-2 block rounded-xl border border-white/10 bg-[#191E1E] p-3 shadow-xl hover:bg-[#222828] transition-colors cursor-pointer">
+                <img src="/CLOSEOS-SIGN-LOGO.png" alt="CloseOS Sign" className="w-full h-auto" loading="lazy" width={200} height={48} />
               </a>
             </div>
           </div>
@@ -759,26 +754,6 @@ export const BusinessLanding: React.FC = () => {
           </div>
         </motion.section>
       </main>
-
-      {/* Founder */}
-      <section className="py-20 border-t border-stone-200 bg-white">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col md:flex-row items-center gap-8">
-          <img
-            src="https://qwjvdwpixewsctircibl.supabase.co/storage/v1/object/public/avatars/business-7d48e479-cede-480e-b405-39611a48d333-0.3286628360007747.jpg"
-            alt="Thomas Shamoev, fondateur de CloseOS"
-            width={120}
-            height={120}
-            loading="lazy"
-            className="rounded-full w-28 h-28 object-cover flex-shrink-0"
-          />
-          <div>
-            <p className="text-sm text-[#111111] font-medium mb-1">{t.founder_section_title}</p>
-            <h2 className="text-2xl font-bold text-[#111111] mb-1">Thomas Shamoev</h2>
-            <p className="text-stone-500 text-sm mb-4">{t.founder_role}</p>
-            <p className="text-stone-500 leading-relaxed">{t.founder_bio}</p>
-          </div>
-        </div>
-      </section>
 
       <FooterSection />
 

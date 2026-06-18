@@ -5,6 +5,7 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { ShieldCheck, Loader2, PenLine, CheckCircle2, Download, X, Mail, User, RotateCcw, Lock, Clock } from 'lucide-react';
 import { getContractByToken, saveSignerFields, saveSignerContact, setSignerInlineValues, logOpened, logDownloaded } from '../lib/signContracts';
 import { parseInlineFields } from '../lib/signInline';
+import { SignLogo } from '../components/SignLogo';
 import { isValidEmail, todayLocalISO, nowLocalHM } from '../lib/signFieldsMeta';
 import { THEME_CSS } from '../lib/signThemes';
 import { PAGED_CSS } from '../lib/signPaging';
@@ -62,14 +63,6 @@ async function renderPdf(dataUrl: string): Promise<PdfPage[]> {
   }
   return pages;
 }
-
-const Logo = ({ className = '' }: { className?: string }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className={className}>
-    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 export default function SignPublic() {
   const { token } = useParams();
@@ -475,10 +468,7 @@ export default function SignPublic() {
 
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#3A4242] bg-[#191E1E]/95 px-6 py-4 backdrop-blur-md">
         <div className="flex items-center">
-          <Logo className="text-[#CEFF8F]" />
-          <span className="ml-2 text-sm font-semibold tracking-tight text-white">
-            CloseOS <span className="font-normal text-[#A1A9A9]">| Sign</span>
-          </span>
+          <SignLogo className="text-sm" />
         </div>
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#A1A9A9]">
           <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> Sécurisé &amp; RGPD

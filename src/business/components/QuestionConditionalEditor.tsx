@@ -2,9 +2,9 @@ import { useMemo } from 'react'
 import { ChevronDown, AlertTriangle } from 'lucide-react'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import {
-  ConditionalRule,
-  ConditionalOperator,
-  EvaluableQuestion,
+  type ConditionalRule,
+  type ConditionalOperator,
+  type EvaluableQuestion,
   isEligibleSourceType,
 } from '../../lib/questionnaireConditions'
 

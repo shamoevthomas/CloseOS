@@ -28,8 +28,8 @@ function IntegrationsStrip() {
   const bottomRow = ALL_INTEGRATIONS.filter((_, i) => i % 2 === 1);
   return (
     <div className="relative overflow-hidden space-y-3">
-      <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#060608] to-transparent z-10 pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-[#060608] to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#F6F7F9] to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#F6F7F9] to-transparent z-10 pointer-events-none" />
       <div className="flex animate-scroll-left gap-4 w-max">
         {[...Array(3)].map((_, dup) => (
           <div key={dup} className="flex gap-4">
@@ -38,12 +38,12 @@ function IntegrationsStrip() {
                 key={`${dup}-${item.name}`}
                 className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl min-w-[130px]"
                 style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '0.5px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(0,0,0,0.03)',
+                  border: '0.5px solid rgba(0,0,0,0.06)',
                 }}
               >
                 <img src={item.logo} alt={item.name} className="h-5 w-auto object-contain" loading="lazy" width={80} height={20}  />
-                <span className="text-xs font-semibold text-white/70 whitespace-nowrap" style={{ fontFamily: "'DM Sans', sans-serif" }}>{item.name}</span>
+                <span className="text-xs font-semibold text-black/70 whitespace-nowrap" style={{ fontFamily: "'DM Sans', sans-serif" }}>{item.name}</span>
               </div>
             ))}
           </div>
@@ -57,12 +57,12 @@ function IntegrationsStrip() {
                 key={`${dup}-${item.name}`}
                 className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl min-w-[130px]"
                 style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '0.5px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(0,0,0,0.03)',
+                  border: '0.5px solid rgba(0,0,0,0.06)',
                 }}
               >
                 <img src={item.logo} alt={item.name} className="h-5 w-auto object-contain" loading="lazy" width={80} height={20}  />
-                <span className="text-xs font-semibold text-white/70 whitespace-nowrap" style={{ fontFamily: "'DM Sans', sans-serif" }}>{item.name}</span>
+                <span className="text-xs font-semibold text-black/70 whitespace-nowrap" style={{ fontFamily: "'DM Sans', sans-serif" }}>{item.name}</span>
               </div>
             ))}
           </div>
@@ -97,11 +97,11 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
 
   return (
     <div
-      className="min-h-screen flex flex-col selection:bg-white/10"
-      style={{ fontFamily: "'Sora', sans-serif", backgroundColor: '#060608', color: '#e8e8ed' }}
+      className="min-h-screen flex flex-col selection:bg-black/10"
+      style={{ fontFamily: "'Sora', sans-serif", backgroundColor: '#F6F7F9', color: '#15161A' }}
     >
       {/* ═══ Grain Overlay ═══ */}
-      <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03]" style={{
+      <div className="fixed inset-0 pointer-events-none z-[100] opacity-0" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
         backgroundRepeat: 'repeat',
         backgroundSize: '128px 128px',
@@ -113,12 +113,12 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 0.6 }}
         onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
-        className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-[#8a8a96] hover:text-white transition-all text-[0.7rem] font-semibold uppercase tracking-[0.15em]"
+        className="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-[#8a8a96] hover:text-[#1a1a1a] transition-all text-[0.7rem] font-semibold uppercase tracking-[0.15em]"
         style={{
-          background: 'rgba(255,255,255,0.04)',
+          background: 'rgba(0,0,0,0.04)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          border: '0.5px solid rgba(255,255,255,0.06)',
+          border: '0.5px solid rgba(0,0,0,0.06)',
         }}
       >
         <Globe className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -130,13 +130,13 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
 
         {/* Ambient background effects */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none" style={{
-          background: 'radial-gradient(ellipse at center, rgba(120,100,255,0.04) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at center, rgba(120,100,255,0.06) 0%, transparent 70%)',
         }} />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] pointer-events-none" style={{
-          background: 'radial-gradient(circle at center, rgba(0,180,255,0.03) 0%, transparent 60%)',
+          background: 'radial-gradient(circle at center, rgba(0,180,255,0.05) 0%, transparent 60%)',
         }} />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] pointer-events-none" style={{
-          background: 'radial-gradient(circle at center, rgba(255,160,40,0.03) 0%, transparent 60%)',
+          background: 'radial-gradient(circle at center, rgba(255,160,40,0.05) 0%, transparent 60%)',
         }} />
 
         <div className="container max-w-6xl mx-auto px-6 relative z-10">
@@ -155,8 +155,8 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
               transition={{ delay: 0.2, duration: 0.5 }}
               className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full"
               style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '0.5px solid rgba(255,255,255,0.06)',
+                background: 'rgba(0,0,0,0.03)',
+                border: '0.5px solid rgba(0,0,0,0.06)',
               }}
             >
               <Sparkles className="w-3.5 h-3.5 text-[#8b7cf7]" strokeWidth={1.5} />
@@ -165,7 +165,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
 
             {/* Title */}
             <h1
-              className="text-[clamp(2.5rem,6vw,4.5rem)] font-extrabold tracking-[-0.04em] leading-[1.05] text-white"
+              className="text-[clamp(2.5rem,6vw,4.5rem)] font-extrabold tracking-[-0.04em] leading-[1.05] text-[#1a1a1a]"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
               {t.title_line1}
@@ -211,42 +211,42 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
               <div
                 className="relative flex flex-col justify-between h-full p-10 md:p-12 rounded-[2rem] transition-all duration-500 overflow-hidden group-hover:translate-y-[-2px]"
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '0.5px solid rgba(255,255,255,0.06)',
-                  boxShadow: '0 0 0 0 rgba(0,180,255,0), inset 0 1px 0 0 rgba(255,255,255,0.03)',
+                  background: '#ffffff',
+                  border: '1px solid rgba(0,0,0,0.07)',
+                  boxShadow: '0 1px 2px rgba(17,17,26,0.04), 0 12px 28px rgba(17,17,26,0.05)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.border = '0.5px solid rgba(0,180,255,0.15)';
-                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(0,180,255,0.06), inset 0 1px 0 0 rgba(255,255,255,0.05)';
+                  e.currentTarget.style.border = '1px solid rgba(0,180,255,0.5)';
+                  e.currentTarget.style.boxShadow = '0 24px 50px rgba(0,180,255,0.18)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.border = '0.5px solid rgba(255,255,255,0.06)';
-                  e.currentTarget.style.boxShadow = '0 0 0 0 rgba(0,180,255,0), inset 0 1px 0 0 rgba(255,255,255,0.03)';
+                  e.currentTarget.style.border = '1px solid rgba(0,0,0,0.07)';
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(17,17,26,0.04), 0 12px 28px rgba(17,17,26,0.05)';
                 }}
               >
                 {/* Ambient inner glow */}
-                <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#00b4ff]/[0.03] blur-[80px] rounded-full pointer-events-none group-hover:bg-[#00b4ff]/[0.06] transition-all duration-700" />
+                <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#00b4ff]/[0.06] blur-[80px] rounded-full pointer-events-none group-hover:bg-[#00b4ff]/[0.12] transition-all duration-700" />
 
                 {/* Content */}
                 <div className="relative z-10 flex-1">
                   {/* Logo + Tag row */}
                   <div className="flex items-start justify-between mb-10">
                     <img src="/closeos-logo.png" alt="CloseOS Sales" className="h-16 w-auto object-contain" />
-                    <span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#00b4ff]/60 px-3 py-1.5 rounded-full" style={{
-                      background: 'rgba(0,180,255,0.06)',
-                      border: '0.5px solid rgba(0,180,255,0.08)',
+                    <span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#0098d6] px-3 py-1.5 rounded-full" style={{
+                      background: 'rgba(0,180,255,0.10)',
+                      border: '1px solid rgba(0,180,255,0.25)',
                     }}>Sales</span>
                   </div>
 
                   {/* Title */}
-                  <h2 className="text-[1.75rem] md:text-[2rem] font-bold tracking-[-0.03em] text-white mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>
+                  <h2 className="text-[1.75rem] md:text-[2rem] font-bold tracking-[-0.03em] text-[#1a1a1a] mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>
                     CloseOS Sales
                   </h2>
 
                   {/* Tag pill */}
                   <div className="inline-block px-4 py-1.5 rounded-full text-[0.68rem] font-medium tracking-wide text-[#8a8a96] mb-6" style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '0.5px solid rgba(255,255,255,0.05)',
+                    background: 'rgba(0,0,0,0.03)',
+                    border: '0.5px solid rgba(0,0,0,0.05)',
                   }}>
                     {t.sales_tag}
                   </div>
@@ -264,8 +264,8 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                       { icon: <Receipt className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.sales_feat3 },
                       { icon: <Calendar className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.sales_feat4 },
                     ].map((feat, i) => (
-                      <div key={i} className="flex items-center gap-2.5 text-[#6a6a78] text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                        <span className="text-[#00b4ff]/50">{feat.icon}</span>
+                      <div key={i} className="flex items-center gap-2.5 text-[#5b5b66] text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        <span className="text-[#00b4ff]">{feat.icon}</span>
                         <span>{feat.label}</span>
                       </div>
                     ))}
@@ -275,20 +275,18 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 {/* CTA Button */}
                 <div className="relative z-10">
                   <span
-                    className="w-full flex items-center justify-between px-8 py-5 rounded-xl font-semibold text-base transition-all duration-300 group-hover:shadow-[0_0_30px_rgba(0,180,255,0.12)]"
+                    className="w-full flex items-center justify-between px-8 py-5 rounded-xl font-semibold text-base transition-all duration-300 group-hover:shadow-[0_10px_30px_rgba(0,180,255,0.35)]"
                     style={{
                       fontFamily: "'Sora', sans-serif",
-                      background: 'rgba(0,180,255,0.08)',
-                      color: '#00b4ff',
-                      border: '0.5px solid rgba(0,180,255,0.15)',
+                      background: '#00b4ff',
+                      color: '#ffffff',
+                      border: '1px solid transparent',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#00b4ff';
-                      e.currentTarget.style.color = '#060608';
+                      e.currentTarget.style.background = '#0098d6';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(0,180,255,0.08)';
-                      e.currentTarget.style.color = '#00b4ff';
+                      e.currentTarget.style.background = '#00b4ff';
                     }}
                   >
                     {t.sales_cta}
@@ -316,21 +314,21 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
               <div
                 className="relative flex flex-col justify-between h-full p-10 md:p-12 rounded-[2rem] transition-all duration-500 overflow-hidden group-hover:translate-y-[-2px]"
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '0.5px solid rgba(255,255,255,0.06)',
-                  boxShadow: '0 0 0 0 rgba(255,160,40,0), inset 0 1px 0 0 rgba(255,255,255,0.03)',
+                  background: '#ffffff',
+                  border: '1px solid rgba(0,0,0,0.07)',
+                  boxShadow: '0 1px 2px rgba(17,17,26,0.04), 0 12px 28px rgba(17,17,26,0.05)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.border = '0.5px solid rgba(255,160,40,0.15)';
-                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(255,160,40,0.06), inset 0 1px 0 0 rgba(255,255,255,0.05)';
+                  e.currentTarget.style.border = '1px solid rgba(255,160,40,0.5)';
+                  e.currentTarget.style.boxShadow = '0 24px 50px rgba(255,160,40,0.18)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.border = '0.5px solid rgba(255,255,255,0.06)';
-                  e.currentTarget.style.boxShadow = '0 0 0 0 rgba(255,160,40,0), inset 0 1px 0 0 rgba(255,255,255,0.03)';
+                  e.currentTarget.style.border = '1px solid rgba(0,0,0,0.07)';
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(17,17,26,0.04), 0 12px 28px rgba(17,17,26,0.05)';
                 }}
               >
                 {/* Ambient inner glow */}
-                <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#ffa028]/[0.03] blur-[80px] rounded-full pointer-events-none group-hover:bg-[#ffa028]/[0.06] transition-all duration-700" />
+                <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#ffa028]/[0.06] blur-[80px] rounded-full pointer-events-none group-hover:bg-[#ffa028]/[0.12] transition-all duration-700" />
 
                 {/* Content */}
                 <div className="relative z-10 flex-1">
@@ -338,22 +336,22 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                   <div className="flex items-start justify-between mb-10">
                     <img src="/closeos-business-logo.png" alt="CloseOS Business" className="h-12 w-auto object-contain" />
                     <div className="flex items-center gap-2">
-                      <span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#ffa028]/60 px-3 py-1.5 rounded-full" style={{
-                        background: 'rgba(255,160,40,0.06)',
-                        border: '0.5px solid rgba(255,160,40,0.08)',
+                      <span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#dd7d0e] px-3 py-1.5 rounded-full" style={{
+                        background: 'rgba(255,160,40,0.12)',
+                        border: '1px solid rgba(255,160,40,0.28)',
                       }}>Business</span>
                     </div>
                   </div>
 
                   {/* Title */}
-                  <h2 className="text-[1.75rem] md:text-[2rem] font-bold tracking-[-0.03em] text-white mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>
+                  <h2 className="text-[1.75rem] md:text-[2rem] font-bold tracking-[-0.03em] text-[#1a1a1a] mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>
                     CloseOS Business
                   </h2>
 
                   {/* Tag pill */}
                   <div className="inline-block px-4 py-1.5 rounded-full text-[0.68rem] font-medium tracking-wide text-[#8a8a96] mb-6" style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '0.5px solid rgba(255,255,255,0.05)',
+                    background: 'rgba(0,0,0,0.03)',
+                    border: '0.5px solid rgba(0,0,0,0.05)',
                   }}>
                     {t.business_tag}
                   </div>
@@ -371,8 +369,8 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                       { icon: <BarChart3 className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.business_feat3 },
                       { icon: <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.business_feat4 },
                     ].map((feat, i) => (
-                      <div key={i} className="flex items-center gap-2.5 text-[#6a6a78] text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                        <span className="text-[#ffa028]/50">{feat.icon}</span>
+                      <div key={i} className="flex items-center gap-2.5 text-[#5b5b66] text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        <span className="text-[#ffa028]">{feat.icon}</span>
                         <span>{feat.label}</span>
                       </div>
                     ))}
@@ -382,20 +380,18 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 {/* CTA Button */}
                 <div className="relative z-10">
                   <span
-                    className="w-full flex items-center justify-between px-8 py-5 rounded-xl font-semibold text-base transition-all duration-300 group-hover:shadow-[0_0_30px_rgba(255,160,40,0.12)]"
+                    className="w-full flex items-center justify-between px-8 py-5 rounded-xl font-semibold text-base transition-all duration-300 group-hover:shadow-[0_10px_30px_rgba(255,160,40,0.35)]"
                     style={{
                       fontFamily: "'Sora', sans-serif",
-                      background: 'rgba(255,160,40,0.08)',
-                      color: '#ffa028',
-                      border: '0.5px solid rgba(255,160,40,0.15)',
+                      background: '#ffa028',
+                      color: '#ffffff',
+                      border: '1px solid transparent',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#ffa028';
-                      e.currentTarget.style.color = '#060608';
+                      e.currentTarget.style.background = '#f08e10';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255,160,40,0.08)';
-                      e.currentTarget.style.color = '#ffa028';
+                      e.currentTarget.style.background = '#ffa028';
                     }}
                   >
                     {t.business_cta}
@@ -423,52 +419,47 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
               <div
                 className="relative flex flex-col justify-between h-full p-10 md:p-12 rounded-[2rem] transition-all duration-500 overflow-hidden group-hover:translate-y-[-2px]"
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '0.5px solid rgba(255,255,255,0.06)',
-                  boxShadow: '0 0 0 0 rgba(206,255,143,0), inset 0 1px 0 0 rgba(255,255,255,0.03)',
+                  background: '#ffffff',
+                  border: '1px solid rgba(0,0,0,0.07)',
+                  boxShadow: '0 1px 2px rgba(17,17,26,0.04), 0 12px 28px rgba(17,17,26,0.05)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.border = '0.5px solid rgba(206,255,143,0.18)';
-                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(206,255,143,0.06), inset 0 1px 0 0 rgba(255,255,255,0.05)';
+                  e.currentTarget.style.border = '1px solid rgba(150,200,80,0.7)';
+                  e.currentTarget.style.boxShadow = '0 24px 50px rgba(150,200,80,0.22)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.border = '0.5px solid rgba(255,255,255,0.06)';
-                  e.currentTarget.style.boxShadow = '0 0 0 0 rgba(206,255,143,0), inset 0 1px 0 0 rgba(255,255,255,0.03)';
+                  e.currentTarget.style.border = '1px solid rgba(0,0,0,0.07)';
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(17,17,26,0.04), 0 12px 28px rgba(17,17,26,0.05)';
                 }}
               >
                 {/* Ambient inner glow */}
-                <div className="absolute -top-20 -right-20 w-60 h-60 blur-[80px] rounded-full pointer-events-none transition-all duration-700" style={{ background: 'rgba(206,255,143,0.04)' }} />
+                <div className="absolute -top-20 -right-20 w-60 h-60 blur-[80px] rounded-full pointer-events-none transition-all duration-700" style={{ background: 'rgba(206,255,143,0.22)' }} />
 
                 {/* Content */}
                 <div className="relative z-10 flex-1">
                   {/* Logo + Badges row */}
                   <div className="flex items-start justify-between mb-10">
                     <div className="flex items-center gap-2.5 font-bold text-2xl" style={{ fontFamily: "'Sora', sans-serif" }}>
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#CEFF8F" />
-                        <path d="M2 17L12 22L22 17" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M2 12L12 17L22 12" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      <span className="text-white">Sign</span>
+                      <img src="/CLOSEOS-SIGN-MINI-LOGO.png" alt="CloseOS Sign" className="h-14 w-auto object-contain" loading="lazy" width={82} height={56} />
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] px-3 py-1.5 rounded-full" style={{
-                        color: 'rgba(206,255,143,0.7)',
-                        background: 'rgba(206,255,143,0.06)',
-                        border: '0.5px solid rgba(206,255,143,0.1)',
+                        color: '#5f8f24',
+                        background: 'rgba(206,255,143,0.32)',
+                        border: '1px solid rgba(150,200,80,0.45)',
                       }}>Sign</span>
                     </div>
                   </div>
 
                   {/* Title */}
-                  <h2 className="text-[1.75rem] md:text-[2rem] font-bold tracking-[-0.03em] text-white mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>
+                  <h2 className="text-[1.75rem] md:text-[2rem] font-bold tracking-[-0.03em] text-[#1a1a1a] mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>
                     CloseOS Sign
                   </h2>
 
                   {/* Tag pill */}
                   <div className="inline-block px-4 py-1.5 rounded-full text-[0.68rem] font-medium tracking-wide text-[#8a8a96] mb-6" style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '0.5px solid rgba(255,255,255,0.05)',
+                    background: 'rgba(0,0,0,0.03)',
+                    border: '0.5px solid rgba(0,0,0,0.05)',
                   }}>
                     {lang === 'fr' ? 'Signature + Encaissement' : 'Signing + Payment'}
                   </div>
@@ -490,8 +481,8 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                       { icon: <Files className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'Modèles réutilisables' : 'Reusable templates' },
                       { icon: <UserCheck className="w-3.5 h-3.5" strokeWidth={1.5} />, label: lang === 'fr' ? 'Espaces équipe' : 'Team workspaces' },
                     ].map((feat, i) => (
-                      <div key={i} className="flex items-center gap-2.5 text-[#6a6a78] text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                        <span style={{ color: 'rgba(206,255,143,0.6)' }}>{feat.icon}</span>
+                      <div key={i} className="flex items-center gap-2.5 text-[#5b5b66] text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        <span style={{ color: '#6FA32C' }}>{feat.icon}</span>
                         <span>{feat.label}</span>
                       </div>
                     ))}
@@ -501,20 +492,18 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 {/* CTA Button */}
                 <div className="relative z-10">
                   <span
-                    className="w-full flex items-center justify-between px-8 py-5 rounded-xl font-semibold text-base transition-all duration-300 group-hover:shadow-[0_0_30px_rgba(206,255,143,0.12)]"
+                    className="w-full flex items-center justify-between px-8 py-5 rounded-xl font-semibold text-base transition-all duration-300 group-hover:shadow-[0_10px_30px_rgba(150,200,80,0.45)]"
                     style={{
                       fontFamily: "'Sora', sans-serif",
-                      background: 'rgba(206,255,143,0.08)',
-                      color: '#CEFF8F',
-                      border: '0.5px solid rgba(206,255,143,0.18)',
+                      background: '#CEFF8F',
+                      color: '#1a2e0a',
+                      border: '1px solid transparent',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#CEFF8F';
-                      e.currentTarget.style.color = '#060608';
+                      e.currentTarget.style.background = '#bdf06f';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(206,255,143,0.08)';
-                      e.currentTarget.style.color = '#CEFF8F';
+                      e.currentTarget.style.background = '#CEFF8F';
                     }}
                   >
                     {lang === 'fr' ? 'Accéder' : 'Access'}
@@ -541,17 +530,17 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
               <div
                 className="relative flex flex-col justify-between h-full p-10 md:p-12 rounded-[2rem] transition-all duration-500 overflow-hidden group-hover:translate-y-[-2px]"
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '0.5px solid rgba(255,255,255,0.06)',
-                  boxShadow: '0 0 0 0 rgba(245,158,11,0), inset 0 1px 0 0 rgba(255,255,255,0.03)',
+                  background: 'rgba(0,0,0,0.02)',
+                  border: '0.5px solid rgba(0,0,0,0.06)',
+                  boxShadow: '0 0 0 0 rgba(245,158,11,0), inset 0 1px 0 0 rgba(0,0,0,0.03)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.border = '0.5px solid rgba(245,158,11,0.18)';
-                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(245,158,11,0.08), inset 0 1px 0 0 rgba(255,255,255,0.05)';
+                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(245,158,11,0.08), inset 0 1px 0 0 rgba(0,0,0,0.05)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.border = '0.5px solid rgba(255,255,255,0.06)';
-                  e.currentTarget.style.boxShadow = '0 0 0 0 rgba(245,158,11,0), inset 0 1px 0 0 rgba(255,255,255,0.03)';
+                  e.currentTarget.style.border = '0.5px solid rgba(0,0,0,0.06)';
+                  e.currentTarget.style.boxShadow = '0 0 0 0 rgba(245,158,11,0), inset 0 1px 0 0 rgba(0,0,0,0.03)';
                 }}
               >
                 <div className="absolute -top-20 -right-20 w-60 h-60 blur-[80px] rounded-full pointer-events-none transition-all duration-700" style={{ background: 'rgba(245,158,11,0.05)' }} />
@@ -559,9 +548,9 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 <div className="relative z-10 flex-1">
                   <div className="flex items-start justify-between mb-10">
                     <div className="flex items-center gap-2 font-extrabold text-2xl" style={{ fontFamily: "'Sora', sans-serif" }}>
-                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white font-black"
+                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#1a1a1a] font-black"
                         style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #60A5FA 100%)' }}>C</span>
-                      <span className="text-white">
+                      <span className="text-[#1a1a1a]">
                         Close<span style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #60A5FA 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>OS</span>
                       </span>
                     </div>
@@ -577,13 +566,13 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                     </div>
                   </div>
 
-                  <h2 className="text-[1.75rem] md:text-[2rem] font-bold tracking-[-0.03em] text-white mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>
+                  <h2 className="text-[1.75rem] md:text-[2rem] font-bold tracking-[-0.03em] text-[#1a1a1a] mb-3" style={{ fontFamily: "'Sora', sans-serif" }}>
                     CloseOS CRM
                   </h2>
 
                   <div className="inline-block px-4 py-1.5 rounded-full text-[0.68rem] font-medium tracking-wide text-[#8a8a96] mb-6" style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '0.5px solid rgba(255,255,255,0.05)',
+                    background: 'rgba(0,0,0,0.03)',
+                    border: '0.5px solid rgba(0,0,0,0.05)',
                   }}>
                     {lang === 'fr' ? 'Pour entrepreneurs solo' : 'For solo entrepreneurs'}
                   </div>
@@ -641,7 +630,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7, duration: 0.8 }}
-            className="mt-20"
+            className="mt-20 relative left-1/2 right-1/2 -mx-[50vw] w-screen"
           >
             <p className="text-center text-[0.68rem] font-medium uppercase tracking-[0.15em] text-[#4a4a56] mb-6" style={{ fontFamily: "'Sora', sans-serif" }}>
               {lang === 'fr' ? 'Intégrations disponibles' : 'Available integrations'}
@@ -657,13 +646,13 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             transition={{ duration: 0.7 }}
             className="mt-28 max-w-3xl mx-auto text-center space-y-8"
           >
-            <h2 className="text-xl md:text-2xl font-bold text-white/70 tracking-[-0.02em]" style={{ fontFamily: "'Sora', sans-serif" }}>
+            <h2 className="text-xl md:text-2xl font-bold text-black/70 tracking-[-0.02em]" style={{ fontFamily: "'Sora', sans-serif" }}>
               {t.def_title}
             </h2>
             <p className="text-[#6a6a78] text-sm leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               {lang === 'fr'
-                ? <>CloseOS est un <strong className="text-white/50 font-medium">écosystème SaaS français pour la vente digitale</strong>. Il regroupe trois outils complémentaires conçus pour les professionnels du closing francophone.</>
-                : <>CloseOS is a <strong className="text-white/50 font-medium">SaaS ecosystem for digital sales</strong>. It combines three complementary tools designed for sales professionals.</>
+                ? <>CloseOS est un <strong className="text-black/50 font-medium">écosystème SaaS français pour la vente digitale</strong>. Il regroupe trois outils complémentaires conçus pour les professionnels du closing francophone.</>
+                : <>CloseOS is a <strong className="text-black/50 font-medium">SaaS ecosystem for digital sales</strong>. It combines three complementary tools designed for sales professionals.</>
               }
             </p>
 
@@ -671,13 +660,13 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
               <div
                 className="p-6 rounded-2xl transition-all duration-300"
                 style={{
-                  background: 'rgba(0,180,255,0.02)',
-                  border: '0.5px solid rgba(0,180,255,0.08)',
+                  background: 'rgba(0,180,255,0.05)',
+                  border: '1px solid rgba(0,180,255,0.18)',
                 }}
               >
                 <div className="flex items-center gap-2.5 mb-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#00b4ff]" />
-                  <h3 className="text-sm font-semibold text-[#00b4ff]/70" style={{ fontFamily: "'Sora', sans-serif" }}>{t.def_sales_title}</h3>
+                  <h3 className="text-sm font-semibold text-[#0098d6]" style={{ fontFamily: "'Sora', sans-serif" }}>{t.def_sales_title}</h3>
                 </div>
                 <p className="text-[#6a6a78]/70 text-xs leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   {t.def_sales_text}
@@ -686,13 +675,13 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
               <div
                 className="p-6 rounded-2xl transition-all duration-300"
                 style={{
-                  background: 'rgba(255,160,40,0.02)',
-                  border: '0.5px solid rgba(255,160,40,0.08)',
+                  background: 'rgba(255,160,40,0.05)',
+                  border: '1px solid rgba(255,160,40,0.18)',
                 }}
               >
                 <div className="flex items-center gap-2.5 mb-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#ffa028]" />
-                  <h3 className="text-sm font-semibold text-[#ffa028]/70" style={{ fontFamily: "'Sora', sans-serif" }}>{t.def_business_title}</h3>
+                  <h3 className="text-sm font-semibold text-[#dd7d0e]" style={{ fontFamily: "'Sora', sans-serif" }}>{t.def_business_title}</h3>
                 </div>
                 <p className="text-[#6a6a78]/70 text-xs leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   {t.def_business_text}
@@ -701,13 +690,13 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
               <div
                 className="p-6 rounded-2xl transition-all duration-300"
                 style={{
-                  background: 'rgba(206,255,143,0.02)',
-                  border: '0.5px solid rgba(206,255,143,0.08)',
+                  background: 'rgba(206,255,143,0.18)',
+                  border: '1px solid rgba(150,200,80,0.35)',
                 }}
               >
                 <div className="flex items-center gap-2.5 mb-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#CEFF8F]" />
-                  <h3 className="text-sm font-semibold text-[#CEFF8F]/70" style={{ fontFamily: "'Sora', sans-serif" }}>CloseOS Sign</h3>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#8FBF3F]" />
+                  <h3 className="text-sm font-semibold text-[#5f8f24]" style={{ fontFamily: "'Sora', sans-serif" }}>CloseOS Sign</h3>
                 </div>
                 <p className="text-[#6a6a78]/70 text-xs leading-relaxed" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                   {lang === 'fr'
@@ -722,24 +711,24 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
       </main>
 
       {/* ═══ Footer ═══ */}
-      <footer className="py-8 pb-16 relative z-10" style={{ borderTop: '0.5px solid rgba(255,255,255,0.04)', backgroundColor: '#060608' }}>
+      <footer className="py-8 pb-16 relative z-10" style={{ borderTop: '0.5px solid rgba(0,0,0,0.08)', backgroundColor: '#ffffff' }}>
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-5">
           <div className="flex items-center gap-2">
-            <span className="text-base font-bold tracking-[-0.02em] text-white/60" style={{ fontFamily: "'Sora', sans-serif" }}>CloseOS</span>
+            <span className="text-base font-bold tracking-[-0.02em] text-black/60" style={{ fontFamily: "'Sora', sans-serif" }}>CloseOS</span>
           </div>
 
           <div className="flex flex-wrap justify-center gap-4 text-[0.68rem] text-[#4a4a56]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <span>© 2026 CloseOS.fr</span>
-            <span className="hidden sm:inline text-white/10">·</span>
-            <a href="/mentions-legales" className="hover:text-white/50 transition-colors">{t.footer_legal}</a>
-            <span className="hidden sm:inline text-white/10">·</span>
-            <a href="/cgu" className="hover:text-white/50 transition-colors">{t.footer_cgu}</a>
-            <span className="hidden sm:inline text-white/10">·</span>
-            <a href="/cgv" className="hover:text-white/50 transition-colors">{t.footer_cgv}</a>
-            <span className="hidden sm:inline text-white/10">·</span>
-            <a href="/confidentialite" className="hover:text-white/50 transition-colors">{t.footer_privacy}</a>
-            <span className="hidden sm:inline text-white/10">·</span>
-            <a href="/business/politique-utilisation" className="hover:text-white/50 transition-colors">{t.footer_business_policy}</a>
+            <span className="hidden sm:inline text-black/10">·</span>
+            <a href="/mentions-legales" className="hover:text-black/50 transition-colors">{t.footer_legal}</a>
+            <span className="hidden sm:inline text-black/10">·</span>
+            <a href="/cgu" className="hover:text-black/50 transition-colors">{t.footer_cgu}</a>
+            <span className="hidden sm:inline text-black/10">·</span>
+            <a href="/cgv" className="hover:text-black/50 transition-colors">{t.footer_cgv}</a>
+            <span className="hidden sm:inline text-black/10">·</span>
+            <a href="/confidentialite" className="hover:text-black/50 transition-colors">{t.footer_privacy}</a>
+            <span className="hidden sm:inline text-black/10">·</span>
+            <a href="/business/politique-utilisation" className="hover:text-black/50 transition-colors">{t.footer_business_policy}</a>
           </div>
 
           <div className="flex gap-6 text-[0.68rem]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -747,11 +736,11 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
               href="https://www.linkedin.com/in/thomas-shamoev-570885237/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#4a4a56] hover:text-white/50 transition-colors"
+              className="text-[#4a4a56] hover:text-black/50 transition-colors"
             >
               LinkedIn
             </a>
-            <a href="mailto:support@closeos.fr" className="text-[#4a4a56] hover:text-white/50 transition-colors">
+            <a href="mailto:support@closeos.fr" className="text-[#4a4a56] hover:text-black/50 transition-colors">
               support@closeos.fr
             </a>
           </div>

@@ -11,6 +11,7 @@ import {
   type SignBillingCycle, type SignSubscription,
 } from '../lib/signSubscription';
 import { signInSign, useSignOwner } from '../lib/signAuth';
+import { SignLogo } from '../components/SignLogo';
 
 /**
  * CloseOS Sign — page de paiement (carte intégrée Stripe Elements, DA Sign).
@@ -33,14 +34,6 @@ const STRIPE_APPEARANCE = {
     fontFamily: 'inherit',
   },
 };
-
-const Logo = ({ className = '' }: { className?: string }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className={className}>
-    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 const CYCLES: { key: SignBillingCycle; label: string; perMonth: string; total: string; badge?: string }[] = [
   { key: 'annual', label: 'Annuel', perMonth: '9 €', total: '108 € / an', badge: '−25 %' },
@@ -132,8 +125,7 @@ export default function SignCheckout() {
 
       <header className="relative z-10 flex items-center justify-between px-6 py-5 md:px-10">
         <a href="/sign" className="flex items-center">
-          <Logo className="text-[#CEFF8F]" />
-          <span className="ml-2 text-base font-semibold tracking-tight text-white">CloseOS <span className="font-normal text-[#A1A9A9]">| Sign</span></span>
+          <SignLogo className="text-base" />
         </a>
         <a href={owner ? '/sign/app' : '/sign/login'} className="flex items-center gap-1.5 text-sm text-[#A1A9A9] transition-colors hover:text-white">
           <ArrowLeft className="h-4 w-4" /> {owner ? 'Mon espace' : 'Se connecter'}

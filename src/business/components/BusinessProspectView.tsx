@@ -310,8 +310,11 @@ export function BusinessProspectView({
     setEditingPayment(false)
   }
 
-  // Next appointment
-  const [nextAppointment, setNextAppointment] = useState<{ id: string; date: string; time: string; status: string; datetime_utc?: string | null } | null>(null)
+  // Next appointment + tous les RDV liés (pour la modale planning)
+  type LinkedAppt = { id: string; date: string; time: string; status: string; datetime_utc?: string | null; duration?: number }
+  const [nextAppointment, setNextAppointment] = useState<LinkedAppt | null>(null)
+  const [allAppointments, setAllAppointments] = useState<LinkedAppt[]>([])
+  const [showApptsModal, setShowApptsModal] = useState(false)
   const [apptRefreshKey, setApptRefreshKey] = useState(0)
   useEffect(() => {
     const ownerId = isTeamMember ? ownerUserId : user?.id
@@ -319,25 +322,28 @@ export function BusinessProspectView({
     const nowUtc = new Date().toISOString()
     supabase
       .from('business_appointments')
-      .select('id, date, time, status, datetime_utc')
+      .select('id, date, time, status, datetime_utc, duration')
       .eq('prospect_id', prospect.id)
-      .in('status', ['pending', 'confirmed'])
       .order('date', { ascending: true })
       .order('time', { ascending: true })
       .then(({ data }) => {
-        const future = (data || []).find(a => {
+        // Convertit chaque RDV à l'heure locale du visiteur.
+        const rows: LinkedAppt[] = (data || []).map(a => {
+          if (a.datetime_utc) {
+            const l = fromUTC(a.datetime_utc, userTimezone)
+            return { id: a.id, date: l.date, time: l.time, status: a.status, datetime_utc: a.datetime_utc, duration: a.duration }
+          }
+          return { id: a.id, date: a.date, time: a.time?.slice(0, 5) || '00:00', status: a.status, datetime_utc: null, duration: a.duration }
+        })
+        setAllAppointments(rows)
+        // Prochain RDV = premier RDV futur en attente/confirmé.
+        const localNow = fromUTC(new Date().toISOString(), userTimezone)
+        const future = rows.find(a => {
+          if (a.status !== 'pending' && a.status !== 'confirmed') return false
           if (a.datetime_utc) return a.datetime_utc > nowUtc
-          // Fallback for old appointments without datetime_utc
-          const now = new Date()
-          const localNow = fromUTC(now.toISOString(), userTimezone)
           return a.date > localNow.date || (a.date === localNow.date && a.time >= localNow.time)
         })
-        if (future && future.datetime_utc) {
-          const local = fromUTC(future.datetime_utc, userTimezone)
-          setNextAppointment({ id: future.id, date: local.date, time: local.time, status: future.status, datetime_utc: future.datetime_utc })
-        } else {
-          setNextAppointment(future ? { id: future.id, date: future.date, time: future.time?.slice(0, 5), status: future.status, datetime_utc: null } : null)
-        }
+        setNextAppointment(future ?? null)
       })
   }, [prospect.id, user?.id, ownerUserId, isTeamMember, userTimezone, apptRefreshKey])
 
@@ -2131,6 +2137,16 @@ export function BusinessProspectView({
                               )
                             })()}
                           </div>
+                          {allAppointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length > 1 && (
+                            <button
+                              onClick={() => setShowApptsModal(true)}
+                              title="Voir tous les rendez-vous à venir"
+                              className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[#006c49]/10 hover:bg-[#006c49]/20 px-3 py-1.5 text-xs font-business-display font-bold text-[#006c49] transition-colors"
+                            >
+                              <Calendar className="h-3.5 w-3.5" strokeWidth={1.5} />
+                              {allAppointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length}
+                            </button>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 mt-3 pl-14">
                           <button
@@ -2623,6 +2639,57 @@ export function BusinessProspectView({
         )}
 
         {/* Reschedule modal */}
+        {showApptsModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => setShowApptsModal(false)} />
+            <div className="relative w-full max-w-md max-h-[80vh] flex flex-col rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
+                  <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">Rendez-vous de {prospect.contact || 'ce prospect'}</h3>
+                </div>
+                <button onClick={() => setShowApptsModal(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                  <X className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+              </div>
+              <div className="px-4 py-4 space-y-2 overflow-y-auto">
+                {(() => {
+                  const STATUS_UI: Record<string, { label: string; cls: string }> = {
+                    pending: { label: 'En attente', cls: 'bg-amber-100/80 text-amber-700' },
+                    confirmed: { label: 'Confirmé', cls: 'bg-[#006c49]/10 text-[#006c49]' },
+                    cancelled: { label: 'Annulé', cls: 'bg-rose-100/80 text-rose-600' },
+                    done: { label: 'Terminé', cls: 'bg-stone-200/70 text-stone-600 dark:bg-neutral-800 dark:text-neutral-300' },
+                  }
+                  const endTime = (time: string, dur?: number) => {
+                    const [h, m] = (time || '00:00').split(':').map(Number)
+                    const e = new Date(2000, 0, 1, h || 0, m || 0)
+                    e.setMinutes(e.getMinutes() + (dur || 30))
+                    return `${String(e.getHours()).padStart(2, '0')}:${String(e.getMinutes()).padStart(2, '0')}`
+                  }
+                  // Uniquement les RDV à venir / en cours (sans les annulés ni les terminés), du plus proche au plus lointain.
+                  const sorted = allAppointments
+                    .filter(a => a.status === 'pending' || a.status === 'confirmed')
+                    .sort((a, b) => (a.datetime_utc || `${a.date}T${a.time}`).localeCompare(b.datetime_utc || `${b.date}T${b.time}`))
+                  return sorted.map(a => {
+                    const ui = STATUS_UI[a.status] ?? { label: a.status, cls: 'bg-stone-200/70 text-stone-600' }
+                    return (
+                      <div key={a.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[#c4c7c7]/15 dark:border-neutral-800 px-4 py-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-business-display font-bold text-stone-900 dark:text-white">{a.time} — {endTime(a.time, a.duration)}</p>
+                          <p className="text-xs text-stone-500 dark:text-neutral-400 capitalize">
+                            {new Date(a.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                          </p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${ui.cls}`}>{ui.label}</span>
+                      </div>
+                    )
+                  })
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
         {showRescheduleModal && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => !rescheduleLoading && setShowRescheduleModal(false)} />

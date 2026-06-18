@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowRight,
   PenTool,
@@ -20,12 +20,13 @@ import {
   KeyRound,
   ScanLine,
   Linkedin,
-  Twitter,
   ChevronDown,
   Files,
   UserCheck,
   LayoutDashboard,
 } from 'lucide-react';
+import { SignLogo } from '../components/SignLogo';
+import SignContactModal from '../components/SignContactModal';
 
 /**
  * CloseOS Sign — landing (sign.closeos.fr)
@@ -34,15 +35,8 @@ import {
  * Le module est complet ; Sign est INCLUS avec CloseOS Business (pas d'inscription publique).
  */
 
-const Logo = ({ className = '' }: { className?: string }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className={className}>
-    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 export default function SignLanding() {
+  const [showContact, setShowContact] = useState(false);
   useEffect(() => {
     document.title = 'CloseOS Sign | Signez le contrat, encaissez le paiement';
     document.querySelector('meta[name="description"]')?.setAttribute(
@@ -88,19 +82,16 @@ export default function SignLanding() {
         <div className="flex items-center gap-8">
           <div className="relative group flex items-center gap-1.5">
             <a href="/sign" className="flex items-center">
-              <Logo className="text-[#CEFF8F]" />
-              <span className="ml-2 text-lg font-semibold tracking-tight text-white">
-                CloseOS <span className="font-normal text-[#A1A9A9]">| Sign</span>
-              </span>
+              <SignLogo className="text-lg" />
             </a>
             <ChevronDown className="h-4 w-4 text-[#A1A9A9] transition-transform duration-300 group-hover:rotate-180 group-hover:text-white" />
-            <div className="absolute left-0 top-full z-50 mt-3 w-60 translate-y-2 opacity-0 invisible transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-hover:visible">
-              <div className="flex flex-col gap-2 rounded-xl border border-[#3A4242] bg-[#222828] p-2 shadow-2xl">
-                <a href="/landing" className="flex items-center justify-center rounded-lg px-5 py-4 transition-colors hover:bg-[#191E1E]">
-                  <img src="/logo-sales.png" alt="CloseOS Sales" className="h-7 w-auto object-contain" loading="lazy" />
+            <div className="absolute left-0 top-full z-50 mt-3 w-64 translate-y-2 opacity-0 invisible transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-hover:visible">
+              <div className="flex flex-col gap-1 rounded-xl border border-[#3A4242] bg-[#222828] p-2 shadow-2xl">
+                <a href="/landing" className="flex items-center justify-center rounded-lg px-4 py-3 transition-colors hover:bg-[#191E1E]">
+                  <img src="/logo-sales.png" alt="CloseOS Sales" className="h-auto w-[160px] object-contain" loading="lazy" />
                 </a>
-                <a href="/business" className="flex items-center justify-center rounded-lg px-5 py-4 transition-colors hover:bg-[#191E1E]">
-                  <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-7 w-auto object-contain" loading="lazy" />
+                <a href="/business" className="flex items-center justify-center rounded-lg px-4 py-3 transition-colors hover:bg-[#191E1E]">
+                  <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="h-auto w-[160px] object-contain" loading="lazy" />
                 </a>
               </div>
             </div>
@@ -576,8 +567,7 @@ export default function SignLanding() {
         <div className="mx-auto mb-16 grid max-w-7xl grid-cols-2 gap-12 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
             <div className="mb-6 flex items-center">
-              <Logo className="h-5 w-5 text-[#A1A9A9]" />
-              <span className="ml-2 text-sm font-semibold tracking-tight text-[#A1A9A9]">CloseOS Sign</span>
+              <SignLogo className="text-sm" muted />
             </div>
             <p className="max-w-xs text-[11px] leading-relaxed text-[#A1A9A9]">
               La signature électronique pensée pour les cycles de vente rapides. Sécurisation du contrat couplée au paiement
@@ -616,13 +606,15 @@ export default function SignLanding() {
         </div>
 
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between border-t border-[#3A4242] pt-8 md:flex-row">
-          <span className="text-[10px] text-[#A1A9A9]">© {new Date().getFullYear()} CloseOS Technologies. Tous droits réservés. Construit en France.</span>
+          <span className="text-[10px] text-[#A1A9A9]">© {new Date().getFullYear()} CloseOS. Tous droits réservés.</span>
           <div className="mt-4 flex gap-4 text-[#A1A9A9] md:mt-0">
-            <a href="#" className="hover:text-white"><Linkedin className="h-5 w-5" /></a>
-            <a href="#" className="hover:text-white"><Twitter className="h-5 w-5" /></a>
+            <a href="https://www.linkedin.com/in/thomas-shamoev-570885237/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="transition-colors hover:text-white"><Linkedin className="h-5 w-5" /></a>
+            <button type="button" onClick={() => setShowContact(true)} className="flex items-center gap-1.5 text-[11px] text-[#A1A9A9] transition-colors hover:text-white"><Mail className="h-4 w-4" /> support@closeos.fr</button>
           </div>
         </div>
       </footer>
+
+      <SignContactModal open={showContact} onClose={() => setShowContact(false)} />
     </div>
   );
 }

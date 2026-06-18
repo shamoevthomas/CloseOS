@@ -4,20 +4,13 @@ import { Home, FileText, Users, Plus, LogOut, ShieldCheck, Menu, X, Settings, Br
 import { signOutSign, useSignOwner } from '../lib/signAuth';
 import { supabase } from '../lib/supabase';
 import { signSupabase } from '../lib/signSupabase';
+import { SignLogo } from '../components/SignLogo';
 
 /**
  * CloseOS Sign — layout de l'espace connecté (DA Sign).
  * Menu en "bulle" flottante, détachée des bords, qui s'ouvre au survol d'un
  * hamburger flottant. Le contenu occupe toute la largeur.
  */
-
-const Logo = ({ className = '' }: { className?: string }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className={className}>
-    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 const NAV = [
   { to: '/sign/app', label: 'Accueil', icon: Home, end: true },
@@ -99,10 +92,7 @@ export default function SignLayout() {
           <div className="flex flex-col gap-1 rounded-2xl border border-[#3A4242] bg-[#222828] p-3 shadow-2xl shadow-black/50">
             {/* Logo */}
             <button onClick={() => go('/sign/app')} className="mb-1 flex items-center px-2 py-1.5">
-              <Logo className="text-[#CEFF8F]" />
-              <span className="ml-2 text-sm font-semibold tracking-tight text-white">
-                CloseOS <span className="font-normal text-[#A1A9A9]">| Sign</span>
-              </span>
+              <SignLogo className="text-sm" />
             </button>
 
             {/* Créer un nouveau contrat */}

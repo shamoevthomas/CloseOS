@@ -229,7 +229,7 @@ export async function emailSignedPdf(opts: GenOpts & { to: string; title: string
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
       <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#222828;border:1px solid #3A4242;border-radius:12px;">
         <tr><td style="padding:28px 32px;">
-          <span style="color:#F3F4F6;font-size:18px;font-weight:700;">CloseOS <span style="color:#CEFF8F;">Sign</span></span>
+          <img src="https://sign.closeos.fr/CLOSEOS-SIGN-LOGO.png" alt="CloseOS Sign" height="30" style="height:30px;width:auto;display:block;" />
           <h1 style="color:#fff;font-size:20px;margin:14px 0 8px;">Votre copie signée</h1>
           <p style="color:#A1A9A9;font-size:14px;line-height:1.6;margin:0;">
             ${greeting}Veuillez trouver ci-joint la copie PDF du document signé : <strong style="color:#F3F4F6;">${opts.title}</strong>.<br/>

@@ -102,6 +102,48 @@ function deviceNameFromUA(ua: string): string {
   return 'Appareil inconnu'
 }
 
+const normPhone = (s: string) => (s || '').replace(/[^\d+]/g, '')
+// Masque le numéro : seuls les 2 premiers chiffres restent visibles, le reste (dont les 4 derniers) est caché.
+function maskPhone(p: string): string {
+  const n = normPhone(p)
+  if (n.length < 3) return p
+  return `${n.slice(0, 2)}${'•'.repeat(Math.max(4, n.length - 2))}`
+}
+
+// Téléphone du propriétaire (sign_users, repli sur business_users si vide).
+async function ownerPhone(userId: string): Promise<string | null> {
+  const { data: su } = await supabase.from('sign_users').select('phone').eq('id', userId).maybeSingle()
+  let phone = (((su as any)?.phone as string) || '').trim()
+  if (!phone) {
+    const { data: bu } = await supabase.from('business_users').select('phone').eq('id', userId).maybeSingle()
+    phone = (((bu as any)?.phone as string) || '').trim()
+  }
+  return phone || null
+}
+
+// Envoi d'un SMS via ClickSend (secrets dans sign_secrets).
+async function sendSms(to: string, body: string): Promise<{ ok: boolean; error?: string }> {
+  const { data: rows } = await supabase.from('sign_secrets').select('name,value').in('name', ['clicksend_username', 'clicksend_api_key', 'clicksend_from'])
+  const map: Record<string, string> = Object.fromEntries(((rows as any[]) ?? []).map((r) => [r.name, r.value]))
+  const user = map.clicksend_username
+  const key = map.clicksend_api_key
+  const from = (map.clicksend_from || '').trim()
+  if (!user || !key) return { ok: false, error: 'sms_not_configured' }
+  const message: Record<string, string> = { source: 'closeos', to: normPhone(to), body }
+  if (from) message.from = from
+  const r = await fetch('https://rest.clicksend.com/v3/sms/send', {
+    method: 'POST',
+    headers: { Authorization: `Basic ${Buffer.from(`${user}:${key}`).toString('base64')}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: [message] }),
+  })
+  const j: any = await r.json().catch(() => null)
+  const msgStatus = j?.data?.messages?.[0]?.status
+  if (!r.ok || (j?.response_code && j.response_code !== 'SUCCESS') || (msgStatus && msgStatus !== 'SUCCESS')) {
+    return { ok: false, error: `sms_failed ${j?.response_code ?? r.status} ${msgStatus ?? ''}`.slice(0, 160) }
+  }
+  return { ok: true }
+}
+
 // Vrai si l'utilisateur est bien un propriétaire Sign (anti-abus).
 async function isSignOwner(userId: string): Promise<boolean> {
   const { data } = await supabase.from('sign_users').select('id').eq('id', userId).maybeSingle()
@@ -147,23 +189,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ─── Envoi du code de vérification ───
     if (action === 'send-verification-code') {
-      const { user_id } = req.body || {}
+      const { user_id, channel } = req.body || {}
       if (!user_id) return res.status(400).json({ error: 'user_id required' })
       if (!(await isSignOwner(user_id))) return res.status(403).json({ error: 'not_sign_owner' })
 
-      const { data: authUser } = await supabase.auth.admin.getUserById(user_id)
-      const email = authUser?.user?.email
-      if (!email) return res.status(400).json({ error: 'email_not_found' })
-
       const code = Math.floor(100000 + Math.random() * 900000).toString()
       const expiresAt = new Date(Date.now() + CODE_TTL_MS).toISOString()
-
       await supabase.from('sign_device_codes').update({ used: true }).eq('user_id', user_id).eq('used', false)
       const { error: insErr } = await supabase.from('sign_device_codes').insert({ user_id, code, expires_at: expiresAt })
       if (insErr) return res.status(500).json({ error: insErr.message })
 
+      // Canal SMS (secours quand l'email n'arrive pas)
+      if (channel === 'sms') {
+        const phone = await ownerPhone(user_id)
+        if (!phone) return res.status(400).json({ error: 'no_phone' })
+        const sent = await sendSms(phone, `CloseOS Sign : votre code de connexion est ${code}. Valable 10 minutes.`)
+        if (!sent.ok) return res.status(502).json({ error: sent.error || 'sms_failed' })
+        return res.status(200).json({ success: true, channel: 'sms', masked: maskPhone(phone) })
+      }
+
+      // Canal email (par défaut)
+      const { data: authUser } = await supabase.auth.admin.getUserById(user_id)
+      const email = authUser?.user?.email
+      if (!email) return res.status(400).json({ error: 'email_not_found' })
       await sendEmail(email, 'Votre code de connexion CloseOS Sign', deviceCodeEmailHtml(code))
-      return res.status(200).json({ success: true })
+      return res.status(200).json({ success: true, channel: 'email' })
     }
 
     // ─── Vérification du code + création du token d'appareil (7 jours) ───

@@ -41,6 +41,9 @@ interface BookingInfo {
   questionnaireQuestions: BookingQuestion[]
   multiBookingEnabled: boolean
   multiBookingMax: number
+  multiBookingPeriod: 'week' | 'month'
+  multiBookingMaxPerPeriod: number
+  multiBookingGapDays: number
   slots?: SlotData[]
   stripe: { enabled: true; price: number; currency: string } | null
 }
@@ -177,7 +180,7 @@ export function PublicBooking() {
         // Compléter avec données Supabase (description, redirect, creator)
         const { data: link } = await supabase
           .from('business_booking_links')
-          .select('description, redirect_url, business_owner_id, team_member_id, email_enabled, email_required, phone_enabled, phone_required, custom_fields, questionnaire_enabled, questionnaire_required, questionnaire_questions, stripe_enabled, stripe_price, stripe_currency, multi_booking_enabled, multi_booking_max')
+          .select('description, redirect_url, business_owner_id, team_member_id, email_enabled, email_required, phone_enabled, phone_required, custom_fields, questionnaire_enabled, questionnaire_required, questionnaire_questions, stripe_enabled, stripe_price, stripe_currency, multi_booking_enabled, multi_booking_max, multi_booking_period, multi_booking_max_per_period, multi_booking_gap_days')
           .eq('slug', slug)
           .maybeSingle()
         if (link) {
@@ -205,6 +208,9 @@ export function PublicBooking() {
           } : (d.stripe || null)
           d.multiBookingEnabled = link.multi_booking_enabled ?? false
           d.multiBookingMax = link.multi_booking_max ?? 3
+          d.multiBookingPeriod = (link.multi_booking_period as 'week' | 'month') ?? 'week'
+          d.multiBookingMaxPerPeriod = link.multi_booking_max_per_period ?? 1
+          d.multiBookingGapDays = link.multi_booking_gap_days ?? 0
 
           // Fallback: compute slots client-side if API doesn't return them (deployed API still uses freeMode)
           if (!d.slots || d.slots.length === 0 || d.freeMode) {
@@ -342,9 +348,39 @@ export function PublicBooking() {
   // Multi-booking is only available on free links (incompatible with Stripe payment)
   const multiEnabled = !!info?.multiBookingEnabled && !info?.stripe
   const multiMax = info?.multiBookingMax || 3
+  const multiPeriod: 'week' | 'month' = info?.multiBookingPeriod || 'week'
+  const multiMaxPerPeriod = info?.multiBookingMaxPerPeriod || 1
+  const multiGapDays = info?.multiBookingGapDays || 0
 
   const slotKey = (s: { date: string; time: string }) => `${s.date}T${s.time}`
   const isSlotSelected = (date: string, time: string) => selectedSlots.some(s => s.date === date && s.time === time)
+
+  // Clé de période (semaine → lundi de la semaine ; mois → AAAA-MM) pour la limite « max par période ».
+  const periodKeyOf = (dateStr: string) => {
+    if (multiPeriod === 'month') return dateStr.slice(0, 7)
+    const d = new Date(dateStr + 'T00:00:00')
+    const offset = (d.getDay() + 6) % 7 // 0 = lundi
+    d.setDate(d.getDate() - offset)
+    return d.toISOString().slice(0, 10)
+  }
+  const dayDiff = (a: string, b: string) =>
+    Math.abs(Math.round((new Date(a + 'T00:00:00').getTime() - new Date(b + 'T00:00:00').getTime()) / 86400000))
+
+  /** Le créneau (non encore sélectionné) respecte-t-il délai + max par période vis-à-vis de la sélection ? */
+  const slotRespectsRules = (date: string): { ok: boolean; reason?: string } => {
+    if (multiGapDays > 0) {
+      const tooClose = selectedSlots.some(s => s.date !== date && dayDiff(s.date, date) < multiGapDays)
+      if (tooClose) return { ok: false, reason: `Min. ${multiGapDays} jour${multiGapDays > 1 ? 's' : ''} entre 2 rendez-vous.` }
+    }
+    if (multiMaxPerPeriod > 0) {
+      const pk = periodKeyOf(date)
+      const countInPeriod = selectedSlots.filter(s => periodKeyOf(s.date) === pk).length
+      if (countInPeriod >= multiMaxPerPeriod) {
+        return { ok: false, reason: `Max. ${multiMaxPerPeriod} créneau${multiMaxPerPeriod > 1 ? 'x' : ''} par ${multiPeriod === 'month' ? 'mois' : 'semaine'}.` }
+      }
+    }
+    return { ok: true }
+  }
 
   const toggleSlot = (date: string, time: string) => {
     if (isSlotSelected(date, time)) {
@@ -352,6 +388,7 @@ export function PublicBooking() {
       return
     }
     if (selectedSlots.length >= multiMax) return
+    if (!slotRespectsRules(date).ok) return
     const match = prospectSlots.find(s => s.date === date && s.time === time)
     setSelectedSlots(prev => [...prev, { date, time, datetime_utc: match?.datetime_utc }]
       .sort((a, b) => slotKey(a).localeCompare(slotKey(b))))
@@ -617,6 +654,24 @@ export function PublicBooking() {
 
   const handleSubmitMulti = async () => {
     if (!slug || !linkMeta || selectedSlots.length === 0) return
+    // Garde finale : la sélection respecte les règles (délai + max par période) — défense en profondeur.
+    if (multiGapDays > 0 || multiMaxPerPeriod > 0) {
+      const dates = selectedSlots.map(s => s.date)
+      for (let i = 0; i < dates.length; i++) {
+        for (let j = i + 1; j < dates.length; j++) {
+          if (multiGapDays > 0 && dayDiff(dates[i], dates[j]) < multiGapDays) {
+            alert(lang === 'fr' ? `Il faut au moins ${multiGapDays} jour(s) entre deux rendez-vous.` : `At least ${multiGapDays} day(s) required between two appointments.`)
+            return
+          }
+        }
+      }
+      const byPeriod: Record<string, number> = {}
+      for (const d of dates) { const k = periodKeyOf(d); byPeriod[k] = (byPeriod[k] || 0) + 1 }
+      if (Object.values(byPeriod).some(n => n > multiMaxPerPeriod)) {
+        alert(lang === 'fr' ? `Maximum ${multiMaxPerPeriod} créneau(x) par ${multiPeriod === 'month' ? 'mois' : 'semaine'}.` : `Maximum ${multiMaxPerPeriod} slot(s) per ${multiPeriod}.`)
+        return
+      }
+    }
     setSubmitting(true)
     try {
       const fullPhone = phone.trim() ? `${countryCode} ${phone.trim()}` : ''
@@ -1286,10 +1341,13 @@ export function PublicBooking() {
                           {slotsForDate.map(time => {
                             const active = multiEnabled ? isSlotSelected(selectedDate, time) : selectedTime === time
                             const atMax = multiEnabled && !active && selectedSlots.length >= multiMax
+                            const ruleCheck = multiEnabled && !active && !atMax ? slotRespectsRules(selectedDate) : { ok: true as const }
+                            const blocked = atMax || !ruleCheck.ok
                             return (
                               <button
                                 key={time}
-                                disabled={atMax}
+                                disabled={blocked}
+                                title={!ruleCheck.ok ? ruleCheck.reason : undefined}
                                 onClick={() => {
                                   if (multiEnabled) { toggleSlot(selectedDate, time) }
                                   else { setSelectedTime(time); setStep('confirm') }
@@ -1300,7 +1358,7 @@ export function PublicBooking() {
                                     ? 'bg-[#1b1c1b] text-white shadow-lg'
                                     : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49] hover:text-[#006c49]'
                                   }
-                                  ${atMax ? 'opacity-30 cursor-not-allowed hover:border-[#c4c7c7]/30 hover:text-[#1b1c1b]' : ''}
+                                  ${blocked ? 'opacity-30 cursor-not-allowed hover:border-[#c4c7c7]/30 hover:text-[#1b1c1b]' : ''}
                                 `}
                               >
                                 {multiEnabled && active && <CheckCircle2 className="h-3.5 w-3.5" />}

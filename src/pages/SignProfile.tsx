@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, Mail, Phone, MapPin, FileDigit, Hash, Percent, Landmark, Tag, Briefcase, Loader2, CheckCircle2,
   Settings, UserRound, LogOut, ShieldCheck, CreditCard, ExternalLink, Lock, Smartphone, Bell, Download,
-  AlertCircle, Power, Trash2, ArrowRight,
+  AlertCircle, Power, Trash2, ArrowRight, Camera,
 } from 'lucide-react';
 import {
   getOwnerProfile, updateOwnerProfile, getOwnerStripeStatus, getNotifPrefs, updateNotifPrefs,
-  getAccountInfo, exportOwnerData, type OwnerProfile, type NotifPrefs,
+  getAccountInfo, exportOwnerData, getOwnerAvatar, uploadSignAvatar, type OwnerProfile, type NotifPrefs,
 } from '../lib/signContracts';
 import { listTrustedDevices, revokeTrustedDevice, revokeAllTrustedDevices, type TrustedDevice } from '../lib/signDevice';
 import { getSignSubscription, isSubActive, openSignBillingPortal, type SignSubscription } from '../lib/signSubscription';
 import { signSupabase as supabase } from '../lib/signSupabase';
-import { signOutSign, changePassword, useSignOwner } from '../lib/signAuth';
+import { signOutSign, changePassword, updatePassword, getAuthIdentity, useSignOwner } from '../lib/signAuth';
 import PhoneInput from '../components/PhoneInput';
 import PlacesInput from '../components/PlacesInput';
 
@@ -43,9 +43,33 @@ export default function SignProfile() {
   const { owner } = useSignOwner();
   const user = owner?.name ?? '…';
 
+  // ── Photo de profil ──
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarFromBusiness, setAvatarFromBusiness] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const onAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { window.alert('Choisissez un fichier image.'); return; }
+    if (file.size > 5 * 1024 * 1024) { window.alert('Image trop lourde (max 5 Mo).'); return; }
+    setAvatarBusy(true);
+    try {
+      const url = await uploadSignAvatar(file);
+      setAvatarUrl(url);
+    } catch {
+      window.alert("Échec de l'envoi de la photo. Réessayez.");
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
   // ── Paramètres : état ──
   const [account, setAccount] = useState<{ email: string; createdAt: string | null }>({ email: '', createdAt: null });
   const [pw, setPw] = useState({ current: '', next: '', confirm: '' });
+  const [authId, setAuthId] = useState<{ hasPassword: boolean; google: boolean } | null>(null);
   const [pwBusy, setPwBusy] = useState(false);
   const [pwMsg, setPwMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [devices, setDevices] = useState<TrustedDevice[] | null>(null);
@@ -61,6 +85,9 @@ export default function SignProfile() {
       .then((p) => setForm({ ...EMPTY, ...p }))
       .catch((e) => console.error('[sign] profil', e))
       .finally(() => setLoading(false));
+    getOwnerAvatar()
+      .then((av) => { setAvatarUrl(av.url); setAvatarFromBusiness(av.fromBusiness); })
+      .catch(() => {});
     if (!owner) return;
     if (params.get('stripe_connected') === '1') {
       supabase.functions
@@ -76,6 +103,7 @@ export default function SignProfile() {
   useEffect(() => {
     if (tab !== 'parametres' || !owner) return;
     getAccountInfo().then(setAccount).catch(() => {});
+    getAuthIdentity().then(setAuthId).catch(() => {});
     getNotifPrefs().then(setNotif).catch(() => {});
     getSignSubscription().then(setSub).catch(() => {});
   }, [tab, owner]);
@@ -132,11 +160,14 @@ export default function SignProfile() {
     if (pw.next.length < 6) return setPwMsg({ type: 'err', text: 'Le nouveau mot de passe doit faire au moins 6 caractères.' });
     if (pw.next !== pw.confirm) return setPwMsg({ type: 'err', text: 'Les deux mots de passe ne correspondent pas.' });
     setPwBusy(true);
-    const r = await changePassword(pw.current, pw.next);
+    // Compte sans mot de passe (connexion Google) → on en définit un, sans « mot de passe actuel ».
+    const noPassword = authId?.hasPassword === false;
+    const r = noPassword ? await updatePassword(pw.next) : await changePassword(pw.current, pw.next);
     setPwBusy(false);
     if (r.ok) {
-      setPwMsg({ type: 'ok', text: 'Mot de passe mis à jour.' });
+      setPwMsg({ type: 'ok', text: noPassword ? 'Mot de passe défini. Vous pouvez désormais vous connecter par email.' : 'Mot de passe mis à jour.' });
       setPw({ current: '', next: '', confirm: '' });
+      if (noPassword) setAuthId((a) => (a ? { ...a, hasPassword: true } : a));
     } else {
       setPwMsg({ type: 'err', text: r.error === 'wrong_current' ? 'Mot de passe actuel incorrect.' : 'Échec de la mise à jour.' });
     }
@@ -193,12 +224,36 @@ export default function SignProfile() {
     <div className="mx-auto max-w-3xl px-6 py-10 md:px-10">
       {/* En-tête */}
       <div className="mb-8 flex items-center gap-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#CEFF8F] text-xl font-bold text-[#191E1E]">
-          {(form.full_name || user).slice(0, 1).toUpperCase()}
-        </div>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onAvatarChange} />
+        <button
+          type="button"
+          onClick={() => { if (!avatarFromBusiness && !avatarBusy) fileRef.current?.click(); }}
+          disabled={avatarFromBusiness || avatarBusy}
+          title={avatarFromBusiness ? 'Photo synchronisée depuis CloseOS Business' : 'Changer la photo de profil'}
+          className={`group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#CEFF8F] text-xl font-bold text-[#191E1E] ${avatarFromBusiness ? 'cursor-default' : 'cursor-pointer'}`}
+        >
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Photo de profil" className="h-full w-full object-cover" />
+          ) : (
+            (form.full_name || user).slice(0, 1).toUpperCase()
+          )}
+          {!avatarFromBusiness && !avatarBusy && (
+            <span className="absolute inset-0 hidden items-center justify-center bg-black/55 text-white group-hover:flex">
+              <Camera className="h-5 w-5" />
+            </span>
+          )}
+          {avatarBusy && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-white">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </span>
+          )}
+        </button>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-white">{form.full_name || user}</h1>
           <p className="text-sm text-[#A1A9A9]">{form.email || 'Compte CloseOS Sign'}</p>
+          {avatarFromBusiness && (
+            <p className="mt-0.5 text-[11px] text-[#A1A9A9]">Photo synchronisée depuis <span className="text-[#F3F4F6]">CloseOS Business</span></p>
+          )}
         </div>
       </div>
 
@@ -334,11 +389,17 @@ export default function SignProfile() {
           {/* Mot de passe */}
           <SettingCard
             icon={Lock}
-            title="Mot de passe"
-            desc="C’est le mot de passe de votre compte CloseOS (Business et Sign) — le modifier ici le change partout."
+            title={authId?.hasPassword === false ? 'Définir un mot de passe' : 'Mot de passe'}
+            desc={
+              authId?.hasPassword === false
+                ? 'Vous êtes connecté avec Google — votre compte n’a pas encore de mot de passe. Définissez-en un pour pouvoir aussi vous connecter par email.'
+                : 'C’est le mot de passe de votre compte CloseOS (Business et Sign) — le modifier ici le change partout.'
+            }
           >
             <form onSubmit={submitPassword} className="space-y-3">
-              <PwInput placeholder="Mot de passe actuel" autoComplete="current-password" value={pw.current} onChange={(v) => { setPw((p) => ({ ...p, current: v })); setPwMsg(null); }} />
+              {authId?.hasPassword !== false && (
+                <PwInput placeholder="Mot de passe actuel" autoComplete="current-password" value={pw.current} onChange={(v) => { setPw((p) => ({ ...p, current: v })); setPwMsg(null); }} />
+              )}
               <PwInput placeholder="Nouveau mot de passe" autoComplete="new-password" value={pw.next} onChange={(v) => { setPw((p) => ({ ...p, next: v })); setPwMsg(null); }} />
               <PwInput placeholder="Confirmer le nouveau mot de passe" autoComplete="new-password" value={pw.confirm} onChange={(v) => { setPw((p) => ({ ...p, confirm: v })); setPwMsg(null); }} />
               {pwMsg && (
@@ -348,10 +409,10 @@ export default function SignProfile() {
               )}
               <button
                 type="submit"
-                disabled={pwBusy || !pw.current || !pw.next || !pw.confirm}
+                disabled={pwBusy || !pw.next || !pw.confirm || (authId?.hasPassword !== false && !pw.current)}
                 className="inline-flex items-center gap-2 rounded bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50"
               >
-                {pwBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />} Mettre à jour le mot de passe
+                {pwBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />} {authId?.hasPassword === false ? 'Définir le mot de passe' : 'Mettre à jour le mot de passe'}
               </button>
             </form>
           </SettingCard>

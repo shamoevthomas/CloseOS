@@ -94,6 +94,9 @@ interface BookingLink {
   reschedule_currency?: string
   multi_booking_enabled?: boolean
   multi_booking_max?: number
+  multi_booking_period?: 'week' | 'month'
+  multi_booking_max_per_period?: number
+  multi_booking_gap_days?: number
   created_at: string
 }
 
@@ -445,6 +448,7 @@ export function BusinessAppointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [sortMode, setSortMode] = useState<'date_asc' | 'booked_desc'>('date_asc')
   const [filterDate, setFilterDate] = useState<string>('')
   const [filterMember, setFilterMember] = useState<string>('all')
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -485,6 +489,9 @@ export function BusinessAppointments() {
   const [newLinkRescheduleCurrency, setNewLinkRescheduleCurrency] = useState('eur')
   const [newLinkMultiBookingEnabled, setNewLinkMultiBookingEnabled] = useState(false)
   const [newLinkMultiBookingMax, setNewLinkMultiBookingMax] = useState(3)
+  const [newLinkMultiBookingPeriod, setNewLinkMultiBookingPeriod] = useState<'week' | 'month'>('week')
+  const [newLinkMultiBookingMaxPerPeriod, setNewLinkMultiBookingMaxPerPeriod] = useState(3)
+  const [newLinkMultiBookingGapDays, setNewLinkMultiBookingGapDays] = useState(0)
   const [showNewLinkPaymentPopup, setShowNewLinkPaymentPopup] = useState(false)
   const [stripeConnected, setStripeConnected] = useState(false)
   const [savingLink, setSavingLink] = useState(false)
@@ -704,6 +711,9 @@ export function BusinessAppointments() {
         reschedule_currency: newLinkRescheduleCurrency,
         multi_booking_enabled: newLinkMultiBookingEnabled,
         multi_booking_max: newLinkMultiBookingMax,
+        multi_booking_period: newLinkMultiBookingPeriod,
+        multi_booking_max_per_period: newLinkMultiBookingMaxPerPeriod,
+        multi_booking_gap_days: newLinkMultiBookingGapDays,
         link: bookingUrl,
         slug,
       })
@@ -738,6 +748,9 @@ export function BusinessAppointments() {
     setNewLinkRescheduleCurrency('eur')
     setNewLinkMultiBookingEnabled(false)
     setNewLinkMultiBookingMax(3)
+    setNewLinkMultiBookingPeriod('week')
+    setNewLinkMultiBookingMaxPerPeriod(3)
+    setNewLinkMultiBookingGapDays(0)
     toast.success(t.appointments_booking_link_created)
   }
 
@@ -775,6 +788,9 @@ export function BusinessAppointments() {
   const [editRescheduleCurrency, setEditRescheduleCurrency] = useState('eur')
   const [editMultiBookingEnabled, setEditMultiBookingEnabled] = useState(false)
   const [editMultiBookingMax, setEditMultiBookingMax] = useState(3)
+  const [editMultiBookingPeriod, setEditMultiBookingPeriod] = useState<'week' | 'month'>('week')
+  const [editMultiBookingMaxPerPeriod, setEditMultiBookingMaxPerPeriod] = useState(1)
+  const [editMultiBookingGapDays, setEditMultiBookingGapDays] = useState(0)
   const [showEditPaymentPopup, setShowEditPaymentPopup] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
 
@@ -805,6 +821,9 @@ export function BusinessAppointments() {
     setEditRescheduleCurrency(bl.reschedule_currency || 'eur')
     setEditMultiBookingEnabled(bl.multi_booking_enabled ?? false)
     setEditMultiBookingMax(bl.multi_booking_max ?? 3)
+    setEditMultiBookingPeriod(bl.multi_booking_period ?? 'week')
+    setEditMultiBookingMaxPerPeriod(bl.multi_booking_max_per_period ?? (bl.multi_booking_max ?? 3))
+    setEditMultiBookingGapDays(bl.multi_booking_gap_days ?? 0)
   }
 
   const handleSaveEdit = async () => {
@@ -836,6 +855,9 @@ export function BusinessAppointments() {
       reschedule_currency: editRescheduleCurrency,
       multi_booking_enabled: editMultiBookingEnabled,
       multi_booking_max: editMultiBookingMax,
+      multi_booking_period: editMultiBookingPeriod,
+      multi_booking_max_per_period: editMultiBookingMaxPerPeriod,
+      multi_booking_gap_days: editMultiBookingGapDays,
     }
     const { error } = await supabase
       .from('business_booking_links')
@@ -1094,12 +1116,33 @@ export function BusinessAppointments() {
     return { date: appt.date, time: appt.time?.slice(0, 5) || '00:00' }
   }
 
-  const filtered = visibleAppointments.filter(a => {
+  const filteredRaw = visibleAppointments.filter(a => {
     if (filterStatus !== 'all' && a.status !== filterStatus) return false
     const localDt = getLocalDateTime(a)
+    // Vue « Tous » : on masque les RDV passés (→ filtre « Terminé ») et les RDV annulés (→ filtre « Annulé »).
+    if (filterStatus === 'all') {
+      if (a.status === 'cancelled') return false
+      const start = new Date(`${localDt.date}T${(localDt.time || '00:00')}:00`)
+      const end = new Date(start.getTime() + (a.duration || 30) * 60000)
+      if (end.getTime() < Date.now()) return false
+    }
     if (filterDate && localDt.date !== filterDate) return false
     if (!isTeamMember && filterMember !== 'all' && (a as any).assigned_to !== filterMember) return false
     return true
+  })
+
+  /** Timestamp du rendez-vous (datetime_utc sinon date+heure). */
+  const apptTimestamp = (a: Appointment): number => {
+    if (a.datetime_utc) return new Date(a.datetime_utc).getTime()
+    const ld = getLocalDateTime(a)
+    const ts = new Date(`${ld.date}T${(ld.time || '00:00')}:00`).getTime()
+    return Number.isNaN(ts) ? 0 : ts
+  }
+
+  // Tri : par défaut RDV le plus proche → le plus éloigné ; sinon par date de prise (created_at) la plus récente.
+  const filtered = [...filteredRaw].sort((a, b) => {
+    if (sortMode === 'booked_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    return apptTimestamp(a) - apptTimestamp(b)
   })
 
   const formatDate = (dateStr: string) => {
@@ -1261,9 +1304,21 @@ export function BusinessAppointments() {
               className="w-full pl-11 pr-4 py-3 bg-white/50 dark:bg-white/5 border-none rounded-full text-sm focus:ring-2 ring-[#006c49]/20 font-medium text-[#1b1c1b] dark:text-white"
             />
           </div>
+          <div className="flex-1 min-w-[180px] relative">
+            <List className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#444748] dark:text-neutral-300/60" />
+            <select
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value as 'date_asc' | 'booked_desc')}
+              className="w-full pl-11 pr-4 py-3 bg-white/50 dark:bg-white/5 border-none rounded-full text-sm focus:ring-2 ring-[#006c49]/20 appearance-none font-medium text-[#1b1c1b] dark:text-white"
+            >
+              <option value="date_asc">{lang === 'en' ? 'Soonest appointment' : 'Rendez-vous le plus proche'}</option>
+              <option value="booked_desc">{lang === 'en' ? 'Most recently booked' : 'Pris le plus récemment'}</option>
+            </select>
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
+          </div>
           {hasActiveFilters && (
             <button
-              onClick={() => { setFilterStatus('all'); setFilterDate(''); setFilterMember('all') }}
+              onClick={() => { setFilterStatus('all'); setFilterDate(''); setFilterMember('all'); setSortMode('date_asc') }}
               className="text-sm text-[#006c49] hover:text-[#005236] font-semibold"
             >
               {t.appointments_reset_filters}
@@ -2329,18 +2384,52 @@ export function BusinessAppointments() {
                       <p className="text-[11px] text-[#444748]/60 dark:text-neutral-400 ml-1">Indisponible avec le paiement Stripe activé.</p>
                     )}
                     {newLinkMultiBookingEnabled && !newLinkStripeEnabled && (
-                      <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
-                        <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Nombre max de créneaux</span>
-                        <select
-                          value={newLinkMultiBookingMax}
-                          onChange={e => setNewLinkMultiBookingMax(Number(e.target.value))}
-                          className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
-                        >
-                          {Array.from({ length: 9 }, (_, i) => i + 2).map(n => (
-                            <option key={n} value={n}>{n}</option>
-                          ))}
-                        </select>
-                      </div>
+                      <>
+                        <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                          <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Nombre max de créneaux</span>
+                          <select
+                            value={newLinkMultiBookingMax}
+                            onChange={e => setNewLinkMultiBookingMax(Number(e.target.value))}
+                            className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
+                          >
+                            {Array.from({ length: 9 }, (_, i) => i + 2).map(n => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                          <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Nombre max par</span>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={newLinkMultiBookingMaxPerPeriod}
+                              onChange={e => setNewLinkMultiBookingMaxPerPeriod(Number(e.target.value))}
+                              className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
+                            >
+                              {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+                                <option key={n} value={n}>{n}</option>
+                              ))}
+                            </select>
+                            <select
+                              value={newLinkMultiBookingPeriod}
+                              onChange={e => setNewLinkMultiBookingPeriod(e.target.value as 'week' | 'month')}
+                              className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
+                            >
+                              <option value="week">semaine</option>
+                              <option value="month">mois</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                          <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Délai entre 2 rendez-vous (jours)</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={newLinkMultiBookingGapDays}
+                            onChange={e => setNewLinkMultiBookingGapDays(Math.max(0, Number(e.target.value)))}
+                            className="w-20 px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-right text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
+                          />
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -2479,8 +2568,8 @@ export function BusinessAppointments() {
                   const bookingUrl = bl.slug ? `${window.location.origin}/book/${bl.slug}` : bl.link
                   const memberName = bl.team_member_id ? teamMembers.find(m => m.id === bl.team_member_id) : null
                   return (
-                    <div key={bl.id} className="flex items-center justify-between group">
-                      <div>
+                    <div key={bl.id} className="flex items-center justify-between gap-3 group">
+                      <div className="min-w-0 flex-1">
                         <h4 className="font-bold text-sm text-[#1b1c1b] dark:text-white">{bl.label}</h4>
                         <p className="text-[11px] text-[#444748] dark:text-neutral-300">
                           {bl.duration} min
@@ -2492,7 +2581,7 @@ export function BusinessAppointments() {
                           <p className="text-[10px] text-[#444748]/50 dark:text-neutral-400 mt-0.5 truncate max-w-[250px]">{bl.description}</p>
                         )}
                       </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-all">
                         <button
                           onClick={() => handleStartEdit(bl)}
                           className="p-1.5 rounded-full hover:bg-white dark:hover:bg-neutral-800 transition-all text-[#444748] dark:text-neutral-300"
@@ -2771,18 +2860,52 @@ export function BusinessAppointments() {
                     <p className="text-[11px] text-[#444748]/60 dark:text-neutral-400 ml-1">Indisponible avec le paiement Stripe activé.</p>
                   )}
                   {editMultiBookingEnabled && !editStripeEnabled && (
-                    <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
-                      <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Nombre max de créneaux</span>
-                      <select
-                        value={editMultiBookingMax}
-                        onChange={e => setEditMultiBookingMax(Number(e.target.value))}
-                        className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
-                      >
-                        {Array.from({ length: 9 }, (_, i) => i + 2).map(n => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <>
+                      <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                        <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Nombre max de créneaux</span>
+                        <select
+                          value={editMultiBookingMax}
+                          onChange={e => setEditMultiBookingMax(Number(e.target.value))}
+                          className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
+                        >
+                          {Array.from({ length: 9 }, (_, i) => i + 2).map(n => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                        <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Nombre max par</span>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={editMultiBookingMaxPerPeriod}
+                            onChange={e => setEditMultiBookingMaxPerPeriod(Number(e.target.value))}
+                            className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
+                          >
+                            {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={editMultiBookingPeriod}
+                            onChange={e => setEditMultiBookingPeriod(e.target.value as 'week' | 'month')}
+                            className="px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
+                          >
+                            <option value="week">semaine</option>
+                            <option value="month">mois</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between rounded-xl bg-white dark:bg-neutral-800 px-4 py-2.5">
+                        <span className="text-sm font-medium text-[#1b1c1b] dark:text-white">Délai entre 2 rendez-vous (jours)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={editMultiBookingGapDays}
+                          onChange={e => setEditMultiBookingGapDays(Math.max(0, Number(e.target.value)))}
+                          className="w-20 px-3 py-1.5 rounded-lg bg-[#f5f3f2] dark:bg-neutral-700 border-none text-sm font-bold text-right text-[#1b1c1b] dark:text-white focus:ring-2 ring-[#006c49]/20"
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

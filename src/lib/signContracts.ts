@@ -143,6 +143,7 @@ export type SignContractRow = {
   fields: number; // total champs (inline + libres)
   contactId: string | null;
   contactName: string | null;
+  hasSignerEmail: boolean; // un email signataire est associé (contact, verification_email ou table signataires) → relançable
   hasPayment: boolean; // contrat configuré « Payé + signé »
   subscriptionStatus: string | null; // état abonnement agrégé (active/past_due/canceled…) ou null
   isTemplate: boolean; // contrat-modèle réutilisable
@@ -540,19 +541,23 @@ export async function sendForSignature(
   return { token, link };
 }
 
-async function sendSignatureEmail(opts: { to: string; name: string; title: string; link: string; cc?: string }) {
+async function sendSignatureEmail(opts: { to: string; name: string; title: string; link: string; cc?: string; reminder?: boolean }) {
+  const heading = opts.reminder ? 'Petit rappel : un document vous attend' : 'Vous avez un document à signer';
+  const intro = opts.reminder
+    ? `Vous n'avez pas encore signé le document : <strong style="color:#F3F4F6;">${opts.title}</strong>.`
+    : `Vous êtes invité(e) à signer le document : <strong style="color:#F3F4F6;">${opts.title}</strong>.`;
   const html = `
   <div style="background:#191E1E;padding:32px 0;font-family:Helvetica,Arial,sans-serif;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
       <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#222828;border:1px solid #3A4242;border-radius:12px;overflow:hidden;">
         <tr><td style="padding:28px 32px 8px;">
-          <span style="color:#F3F4F6;font-size:18px;font-weight:700;">CloseOS <span style="color:#CEFF8F;">Sign</span></span>
+          <img src="https://sign.closeos.fr/CLOSEOS-SIGN-LOGO.png" alt="CloseOS Sign" height="30" style="height:30px;width:auto;display:block;" />
         </td></tr>
         <tr><td style="padding:8px 32px 0;">
-          <h1 style="color:#ffffff;font-size:22px;margin:12px 0 8px;">Vous avez un document à signer</h1>
+          <h1 style="color:#ffffff;font-size:22px;margin:12px 0 8px;">${heading}</h1>
           <p style="color:#A1A9A9;font-size:14px;line-height:1.6;margin:0 0 4px;">
             Bonjour ${opts.name || ''},<br/>
-            Vous êtes invité(e) à signer le document : <strong style="color:#F3F4F6;">${opts.title}</strong>.
+            ${intro}
           </p>
         </td></tr>
         <tr><td style="padding:24px 32px;">
@@ -577,7 +582,7 @@ async function sendSignatureEmail(opts: { to: string; name: string; title: strin
       sender: { email: 'support@closeos.fr', name: 'CloseOS Sign' },
       to: [{ email: opts.to }],
       ...(opts.cc ? { cc: [{ email: opts.cc }] } : {}),
-      subject: `À signer : ${opts.title}`,
+      subject: opts.reminder ? `Rappel — à signer : ${opts.title}` : `À signer : ${opts.title}`,
       htmlContent: html,
     }),
   });
@@ -585,6 +590,58 @@ async function sendSignatureEmail(opts: { to: string; name: string; title: strin
     const txt = await res.text().catch(() => '');
     throw new Error(`Email non envoyé (${res.status}) ${txt}`);
   }
+}
+
+/**
+ * Relance : renvoie l'email d'invitation au signataire d'un contrat déjà envoyé,
+ * en réutilisant le lien existant (ne régénère pas le token, ne change pas le statut).
+ * N'aboutit que si le contrat a bien été envoyé (token) et qu'un email signataire existe.
+ */
+export async function resendContract(contractId: string): Promise<{ ok: boolean; email?: string; error?: string }> {
+  const { data: c } = await supabase
+    .from('sign_contracts')
+    .select('title,status,access_token,contact_id,verification_email')
+    .eq('id', contractId)
+    .maybeSingle();
+  if (!c) return { ok: false, error: 'not_found' };
+  if (c.status === 'signed' || c.status === 'paid') return { ok: false, error: 'already_signed' };
+
+  let email = (((c as any).verification_email as string) || '').trim();
+  let name = '';
+  let token = ((c as any).access_token as string) || null;
+  const contactId = ((c as any).contact_id as string) || null;
+  if (!email && contactId) {
+    const { data: ct } = await supabase.from('sign_contacts').select('name,email').eq('id', contactId).maybeSingle();
+    email = (((ct as any)?.email as string) || '').trim();
+    name = (((ct as any)?.name as string) || '').trim();
+  }
+  // Repli multi-signataire : premier signataire (email + son propre token).
+  if (!email || !token) {
+    const { data: s } = await supabase
+      .from('sign_contract_signers')
+      .select('name,email,access_token')
+      .eq('contract_id', contractId)
+      .order('signer_index', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (s) {
+      email = email || (((s as any).email as string) || '').trim();
+      name = name || (((s as any).name as string) || '').trim();
+      token = token || (((s as any).access_token as string) || null);
+    }
+  }
+  if (!email) return { ok: false, error: 'no_email' };
+  if (!token) return { ok: false, error: 'no_link' };
+
+  const link = `${window.location.origin}/sign/s/${token}`;
+  await sendSignatureEmail({ to: email, name, title: ((c as any).title as string) || 'Votre contrat', link, reminder: true });
+  // Réinitialise l'horloge des relances automatiques (best-effort).
+  try { await supabase.from('sign_contracts').update({ last_reminder_at: new Date().toISOString() }).eq('id', contractId); } catch { /* non bloquant */ }
+  // Faisceau de preuves : relance (best-effort, ne bloque pas l'envoi).
+  try {
+    await supabase.from('sign_signature_events').insert({ contract_id: contractId, contact_id: contactId, event_type: 'reminder', email });
+  } catch { /* event non bloquant */ }
+  return { ok: true, email };
 }
 
 /** Renvoie le lien de signature, en générant le token s'il n'existe pas encore. */
@@ -1022,6 +1079,36 @@ export async function updateOwnerProfile(patch: Partial<OwnerProfile>): Promise<
   }
   const { error } = await supabase.from('sign_users').update(clean).eq('id', await sessionUserId());
   if (error) throw error;
+}
+
+/**
+ * Avatar effectif du propriétaire.
+ * Si le compte est relié à un compte CloseOS Business (même auth.uid) qui a une photo,
+ * c'est CELLE-CI qui est utilisée (lecture seule côté Sign). Sinon, la photo Sign.
+ */
+export async function getOwnerAvatar(): Promise<{ url: string | null; fromBusiness: boolean }> {
+  const uid = await sessionUserId();
+  const [bz, su] = await Promise.all([
+    supabase.from('business_users').select('avatar_url').eq('id', uid).maybeSingle(),
+    supabase.from('sign_users').select('avatar_url').eq('id', uid).maybeSingle(),
+  ]);
+  const bizUrl = ((bz.data as any)?.avatar_url as string) || null;
+  if (bizUrl) return { url: bizUrl, fromBusiness: true };
+  return { url: ((su.data as any)?.avatar_url as string) || null, fromBusiness: false };
+}
+
+/** Upload d'une photo de profil Sign (bucket `avatars`), enregistre l'URL dans sign_users. */
+export async function uploadSignAvatar(file: File): Promise<string> {
+  const uid = await sessionUserId();
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const fileName = `sign-${uid}-${Date.now()}.${ext}`;
+  const { error: upErr } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true, contentType: file.type || undefined });
+  if (upErr) throw upErr;
+  const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+  const url = data.publicUrl;
+  const { error } = await supabase.from('sign_users').update({ avatar_url: url }).eq('id', uid);
+  if (error) throw error;
+  return url;
 }
 
 // ---------- Paramètres (réels) ----------
@@ -1482,7 +1569,7 @@ export async function getSignStats(): Promise<{ signed: number; pending: number;
 export async function listContractsWithCounts(): Promise<SignContractRow[]> {
   const { data, error } = await supabase
     .from('sign_contracts')
-    .select('id,title,status,updated_at,content_html,contact_id,verification_method,payment_enabled,payment_status,is_template,template_id,source_type,theme')
+    .select('id,title,status,updated_at,content_html,contact_id,verification_email,verification_method,payment_enabled,payment_status,is_template,template_id,source_type,theme')
     .eq('user_id', await sessionUserId())
     .is('template_id', null) // exclut les instances (générées depuis un template)
     .order('updated_at', { ascending: false });
@@ -1538,6 +1625,17 @@ export async function listContractsWithCounts(): Promise<SignContractRow[]> {
     if (!cur || (sevRank[r.subscription_status] ?? 2) > (sevRank[cur] ?? 2)) subByContract[r.contract_id] = r.subscription_status;
   });
 
+  // Contrats ayant au moins un email signataire (table signataires) → éligibles à la relance.
+  const signerEmailIds = new Set<string>();
+  const { data: sgEmailRows } = await supabase
+    .from('sign_contract_signers')
+    .select('contract_id,email')
+    .in('contract_id', ids)
+    .not('email', 'is', null);
+  (sgEmailRows ?? []).forEach((r: any) => {
+    if ((r.email || '').trim()) signerEmailIds.add(r.contract_id);
+  });
+
   return contracts.map((c: any) => ({
     id: c.id,
     title: c.title,
@@ -1546,6 +1644,7 @@ export async function listContractsWithCounts(): Promise<SignContractRow[]> {
     fields: countInlineFields(c.content_html) + (freeByContract[c.id] ?? 0),
     contactId: c.contact_id ?? null,
     contactName: c.contact_id ? contactNames[c.contact_id] ?? null : null,
+    hasSignerEmail: !!(c.contact_id || (c.verification_email && String(c.verification_email).trim()) || signerEmailIds.has(c.id)),
     hasPayment: !!c.payment_enabled || (c.payment_status && c.payment_status !== 'none'),
     subscriptionStatus: subByContract[c.id] ?? null,
     isTemplate: !!c.is_template,

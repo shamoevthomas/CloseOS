@@ -108,6 +108,20 @@ export async function signOutSign(): Promise<void> {
   await signSupabase.auth.signOut();
 }
 
+/**
+ * Méthode(s) de connexion du compte courant.
+ * `hasPassword` = une identité email/mot de passe existe ; `google` = identité Google liée.
+ * Un compte Google pur n'a pas de mot de passe : on propose d'en définir un (sans « actuel »).
+ */
+export async function getAuthIdentity(): Promise<{ hasPassword: boolean; google: boolean }> {
+  const { data } = await signSupabase.auth.getUser();
+  const ids = (data.user?.identities ?? []) as Array<{ provider?: string }>;
+  return {
+    hasPassword: ids.some((i) => i.provider === 'email'),
+    google: ids.some((i) => i.provider === 'google'),
+  };
+}
+
 /** Id du propriétaire connecté (= auth.uid()), ou null. Utilisé par la couche données. */
 export async function currentOwnerId(): Promise<string | null> {
   const { data } = await signSupabase.auth.getSession();

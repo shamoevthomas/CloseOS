@@ -19,6 +19,10 @@
   ],
   "crons": [
     {
+      "path": "/api/cron/sign-reminders",
+      "schedule": "0 10 * * *"
+    },
+    {
       "path": "/api/cron/process-deletions",
       "schedule": "0 0 * * *"
     },

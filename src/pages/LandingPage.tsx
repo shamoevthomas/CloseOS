@@ -735,13 +735,8 @@ export function LandingPage() {
               <a onClick={handleNavigateToBusiness} className="block glass-card rounded-2xl p-4 hover:bg-white/[0.06] transition-colors cursor-pointer">
                 <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="w-full h-auto" loading="lazy" width={200} height={40} />
               </a>
-              <a onClick={handleNavigateToSign} className="mt-3 flex items-center gap-2.5 glass-card rounded-2xl p-4 hover:bg-white/[0.06] transition-colors cursor-pointer">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#CEFF8F" />
-                  <path d="M2 17L12 22L22 17" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M2 12L12 17L22 12" stroke="#CEFF8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className="text-lg font-semibold text-white">CloseOS <span className="text-[#CEFF8F]">Sign</span></span>
+              <a onClick={handleNavigateToSign} className="mt-3 block glass-card rounded-2xl p-4 hover:bg-white/[0.06] transition-colors cursor-pointer">
+                <img src="/CLOSEOS-SIGN-LOGO.png" alt="CloseOS Sign" className="w-full h-auto" loading="lazy" width={200} height={48} />
               </a>
             </div>
           </div>
@@ -1440,19 +1435,6 @@ export function LandingPage() {
           <p className="mt-7 text-sm text-stone-600">{t.cta_trial}</p>
         </div>
       </motion.section>
-
-      {/* ═══ FOUNDER ═══ */}
-      <section className="py-24 border-t border-white/5">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col md:flex-row items-start gap-10">
-          <img src="https://qwjvdwpixewsctircibl.supabase.co/storage/v1/object/public/avatars/business-7d48e479-cede-480e-b405-39611a48d333-0.3286628360007747.jpg" alt="Thomas Shamoev, fondateur de CloseOS" width={120} height={120} loading="lazy" className="rounded-2xl w-28 h-28 object-cover flex-shrink-0" />
-          <div>
-            <p className="text-[0.72rem] font-extrabold text-emerald-400 uppercase tracking-[0.18em] mb-2" style={{ fontFamily: "'Manrope', sans-serif" }}>{t.founder_section_title}</p>
-            <h2 className="text-[1.8rem] font-extrabold text-stone-50 mb-1" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>Thomas Shamoev</h2>
-            <p className="text-emerald-400 text-sm font-semibold mb-5">{t.founder_role}</p>
-            <p className="text-stone-400 leading-[1.75]">{t.founder_bio}</p>
-          </div>
-        </div>
-      </section>
 
       {/* ═══ FOOTER ═══ */}
       <footer className="border-t border-white/5 py-8 pb-20">

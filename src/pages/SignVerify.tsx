@@ -2,20 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShieldCheck, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { signSupabase as supabase } from '../lib/signSupabase';
+import { SignLogo } from '../components/SignLogo';
 
 /**
  * Vérification publique d'un certificat de preuve par son identifiant (preuve publique, vérifiable
  * par tous). Affiche les empreintes enregistrées au scellement — aucune donnée personnelle.
  */
 type VerifyResult = { ok: boolean; title?: string; originalHash?: string; sealedHash?: string; certificateHash?: string; certifiedAt?: string };
-
-const Logo = ({ className = '' }: { className?: string }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className={className}>
-    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 const HashRow = ({ label, value }: { label: string; value?: string }) => (
   <div className="rounded-lg border border-[#3A4242] bg-[#191E1E] p-3">
@@ -53,10 +46,7 @@ export default function SignVerify() {
     <div className="min-h-screen bg-[#191E1E] font-sans text-[#F3F4F6] antialiased">
       <header className="flex items-center justify-between border-b border-[#3A4242] px-6 py-4">
         <div className="flex items-center">
-          <Logo className="text-[#CEFF8F]" />
-          <span className="ml-2 text-sm font-semibold tracking-tight text-white">
-            CloseOS <span className="font-normal text-[#A1A9A9]">| Sign</span>
-          </span>
+          <SignLogo className="text-sm" />
         </div>
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#A1A9A9]">
           <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> Vérification de certificat

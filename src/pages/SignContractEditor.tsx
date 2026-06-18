@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, Fragment } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { SignLogo } from '../components/SignLogo';
 import {
   Bold,
   Italic,
@@ -97,14 +98,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
  */
 
 const TARGET_W = 794; // largeur de rendu (≈ A4 210mm @96dpi)
-
-const Logo = ({ className = '' }: { className?: string }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className={className}>
-    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 // Palette regroupée par logique (signature/accord → coordonnées → entreprise → date & lieu → divers)
 const FIELD_GROUPS = [
@@ -2054,10 +2047,7 @@ export default function SignContractEditor() {
             <ChevronLeft className="h-3.5 w-3.5" /> Retour
           </button>
           <div className="hidden items-center sm:flex">
-            <Logo className="text-[#CEFF8F]" />
-            <span className="ml-2 text-sm font-semibold tracking-tight text-white">
-              CloseOS <span className="font-normal text-[#A1A9A9]">| Sign</span>
-            </span>
+            <SignLogo className="text-sm" />
           </div>
         </div>
 
