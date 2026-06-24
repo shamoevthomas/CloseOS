@@ -116,7 +116,7 @@ export default function SignVerification({ userId, email, authMethod, onVerified
   };
 
   return (
-    <div className="sign-landing relative flex min-h-screen items-center justify-center overflow-hidden bg-[#191E1E] px-6 py-12 font-sans text-[#F3F4F6] antialiased selection:bg-[#CEFF8F] selection:text-[#191E1E]">
+    <div className="sign-landing relative flex min-h-screen items-center justify-center overflow-hidden bg-[#191E1E] px-4 py-8 font-sans text-[#F3F4F6] antialiased selection:bg-[#CEFF8F] selection:text-[#191E1E] sm:px-6 sm:py-12">
       <style>{`.sign-landing { font-family: "SF Pro Display","Helvetica Neue",Helvetica,Arial,Inter,sans-serif; }`}</style>
       <div className="pointer-events-none absolute left-1/2 top-1/4 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-[#CEFF8F]/5 blur-[120px]" />
 
@@ -125,7 +125,7 @@ export default function SignVerification({ userId, email, authMethod, onVerified
           <SignLogo className="text-lg" />
         </div>
 
-        <div className="rounded border border-[#3A4242] bg-[#222828] p-8 shadow-2xl">
+        <div className="rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl sm:p-8">
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-[#3A4242] bg-[#191E1E]">
               <ShieldCheck className="h-5 w-5 text-[#CEFF8F]" />
@@ -150,7 +150,7 @@ export default function SignVerification({ userId, email, authMethod, onVerified
                 disabled={loading}
                 onChange={(e) => onInput(i, e.target.value)}
                 onKeyDown={(e) => onKeyDown(i, e)}
-                className="h-14 w-12 rounded border border-[#3A4242] bg-[#191E1E] text-center text-2xl font-bold text-white outline-none transition-all focus:border-[#CEFF8F] focus:ring-1 focus:ring-[#CEFF8F] disabled:opacity-50"
+                className="h-14 min-w-0 flex-1 rounded border border-[#3A4242] bg-[#191E1E] text-center text-2xl font-bold text-white outline-none transition-all focus:border-[#CEFF8F] focus:ring-1 focus:ring-[#CEFF8F] disabled:opacity-50 sm:w-12 sm:flex-none"
               />
             ))}
           </div>

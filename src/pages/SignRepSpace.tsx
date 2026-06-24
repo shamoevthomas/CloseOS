@@ -132,7 +132,7 @@ export default function SignRepSpace() {
   // ---------- Rendus ----------
   const Shell = ({ children }: { children: React.ReactNode }) => (
     <div className="min-h-screen bg-[#191E1E] text-[#F3F4F6]">
-      <div className="border-b border-[#3A4242] px-6 py-4">
+      <div className="border-b border-[#3A4242] px-4 py-4 sm:px-6">
         <div className="mx-auto flex max-w-5xl items-center gap-2">
           <SignLogo className="text-lg" />
         </div>
@@ -164,8 +164,8 @@ export default function SignRepSpace() {
   if (phase === 'code') {
     return (
       <Shell>
-        <div className="mx-auto max-w-md px-6 py-20">
-          <div className="rounded-2xl border border-[#3A4242] bg-[#222828] p-7">
+        <div className="mx-auto max-w-md px-4 py-16 sm:px-6 sm:py-20">
+          <div className="rounded-2xl border border-[#3A4242] bg-[#222828] p-6 sm:p-7">
             <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-[#CEFF8F]/30 bg-[#CEFF8F]/10"><ShieldCheck className="h-5 w-5 text-[#CEFF8F]" /></div>
             <h1 className="text-xl font-semibold text-white">Vérifiez votre identité</h1>
             <p className="mt-2 text-sm text-[#A1A9A9]">Un code à 6 chiffres a été envoyé à <span className="text-[#F3F4F6]">{maskedEmail || 'votre email'}</span>.</p>
@@ -194,11 +194,11 @@ export default function SignRepSpace() {
   const d = dash!;
   return (
     <Shell>
-      <div className="mx-auto max-w-5xl px-6 py-8">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <div className="mb-7 flex items-start gap-3">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#CEFF8F]/40 bg-[#CEFF8F]/10"><Files className="h-5 w-5 text-[#CEFF8F]" /></div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-white">{d.templateTitle || 'Modèle'}</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">{d.templateTitle || 'Modèle'}</h1>
             <p className="mt-1 text-sm text-[#A1A9A9]">Espace de <span className="text-[#F3F4F6]">{d.label}</span> — générez vos liens et suivez vos signatures.</p>
           </div>
         </div>

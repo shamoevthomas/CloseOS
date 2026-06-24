@@ -44,7 +44,7 @@ export default function SignVerify() {
 
   return (
     <div className="min-h-screen bg-[#191E1E] font-sans text-[#F3F4F6] antialiased">
-      <header className="flex items-center justify-between border-b border-[#3A4242] px-6 py-4">
+      <header className="flex items-center justify-between gap-3 border-b border-[#3A4242] px-4 py-4 sm:px-6">
         <div className="flex items-center">
           <SignLogo className="text-sm" />
         </div>
@@ -53,7 +53,7 @@ export default function SignVerify() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-lg px-6 py-16">
+      <div className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-16">
         {loading ? (
           <div className="flex items-center justify-center py-20 text-[#A1A9A9]">
             <Loader2 className="h-6 w-6 animate-spin" />

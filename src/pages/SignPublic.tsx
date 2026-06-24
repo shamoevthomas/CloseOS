@@ -466,11 +466,11 @@ export default function SignPublic() {
         ${THEME_CSS}
       `}</style>
 
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#3A4242] bg-[#191E1E]/95 px-6 py-4 backdrop-blur-md">
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-[#3A4242] bg-[#191E1E]/95 px-4 py-4 backdrop-blur-md sm:px-6">
         <div className="flex items-center">
           <SignLogo className="text-sm" />
         </div>
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#A1A9A9]">
+        <div className="flex shrink-0 items-center gap-2 text-[10px] uppercase tracking-widest text-[#A1A9A9]">
           <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> Sécurisé &amp; RGPD
         </div>
       </header>
@@ -487,7 +487,7 @@ export default function SignPublic() {
       ) : (
         <>
           {signed && (
-            <div className="mx-auto mt-8 flex max-w-3xl items-center justify-between gap-3 rounded-lg border border-[#CEFF8F]/30 bg-[#CEFF8F]/10 px-5 py-4">
+            <div className="mx-4 mt-6 flex max-w-3xl flex-col gap-3 rounded-lg border border-[#CEFF8F]/30 bg-[#CEFF8F]/10 px-4 py-4 sm:mt-8 sm:flex-row sm:items-center sm:justify-between sm:px-5 md:mx-auto">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="h-5 w-5 shrink-0 text-[#CEFF8F]" />
                 <div className="text-sm text-white">
@@ -498,15 +498,15 @@ export default function SignPublic() {
               <button
                 onClick={downloadCertificate}
                 disabled={certifying}
-                className="flex shrink-0 items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50"
+                className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2.5 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50 sm:w-auto sm:py-2"
               >
                 {certifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />} Télécharger
               </button>
             </div>
           )}
 
-          <div className="mx-auto max-w-3xl px-6 pt-8 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight text-white">
+          <div className="mx-auto max-w-3xl px-4 pt-8 text-center sm:px-6">
+            <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
               {signed ? 'Document signé' : !myTurn ? 'En attente de votre tour' : 'Vous êtes invité(e) à signer'}
             </h1>
             <p className="mt-2 text-sm text-[#A1A9A9]">
@@ -522,7 +522,7 @@ export default function SignPublic() {
           </div>
 
           {!signed && !myTurn && (
-            <div className="mx-auto mt-4 flex max-w-3xl items-center gap-3 rounded-lg border border-[#F0B86E]/30 bg-[#F0B86E]/10 px-5 py-4">
+            <div className="mx-4 mt-4 flex max-w-3xl items-center gap-3 rounded-lg border border-[#F0B86E]/30 bg-[#F0B86E]/10 px-4 py-4 sm:px-5 md:mx-auto">
               <Clock className="h-5 w-5 shrink-0 text-[#F0B86E]" />
               <div className="text-sm text-white">
                 Signature à la suite : vous pourrez signer une fois que le ou les signataires précédents auront signé. Le document reste consultable.
@@ -567,7 +567,7 @@ export default function SignPublic() {
           </div>
 
           {!signed && myTurn && (
-            <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#3A4242] bg-[#191E1E]/95 px-6 py-4 backdrop-blur-md">
+            <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#3A4242] bg-[#191E1E]/95 px-4 py-3 backdrop-blur-md sm:px-6 sm:py-4">
               <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <label className="flex cursor-pointer items-start gap-2 text-xs leading-snug text-[#F3F4F6] sm:max-w-xs">
                   <input
@@ -586,17 +586,17 @@ export default function SignPublic() {
                     <button
                       onClick={resetSignerFields}
                       disabled={submitting}
-                      className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-3 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white disabled:opacity-40"
+                      className="flex shrink-0 items-center justify-center gap-1.5 rounded border border-[#3A4242] px-3 py-3 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white disabled:opacity-40"
                       title="Effacer les champs préremplis"
                     >
-                      <RotateCcw className="h-3.5 w-3.5" /> Réinitialiser
+                      <RotateCcw className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Réinitialiser</span>
                     </button>
                   )}
                   <button
                     onClick={submit}
                     disabled={!complete || !consented || submitting}
                     title={!consented ? 'Cochez « J’ai lu et j’accepte » pour signer' : !complete ? 'Complétez tous les champs' : ''}
-                    className="flex items-center gap-2 rounded bg-[#CEFF8F] px-6 py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-40"
+                    className="flex flex-1 items-center justify-center gap-2 rounded bg-[#CEFF8F] px-6 py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-40 sm:flex-none"
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenLine className="h-4 w-4" />}
                     {submitting ? 'Signature…' : 'Terminer et signer'}

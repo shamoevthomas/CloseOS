@@ -57,6 +57,7 @@ export default function SignPagedDoc({
   };
 
   return (
+    <div className="max-w-full overflow-x-auto">
     <div className="pg-stack" ref={docElRef} style={{ minHeight: pages * (PG_H + PG_GAP) - PG_GAP }}>
       {Array.from({ length: pages }).map((_, k) => (
         <div key={`s${k}`} className="pg-sheet" style={{ top: k * (PG_H + PG_GAP), height: PG_H }}>
@@ -92,6 +93,7 @@ export default function SignPagedDoc({
           setDatePick(null);
         }}
       />
+    </div>
     </div>
   );
 }

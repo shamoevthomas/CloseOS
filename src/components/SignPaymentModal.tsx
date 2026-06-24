@@ -157,7 +157,7 @@ export default function SignPaymentModal({
   if (!open || !clientSecret) return null;
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm" onMouseDown={onClose}>
-      <div className="w-full max-w-md rounded-2xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[#3A4242] bg-[#222828] p-4 shadow-2xl sm:p-6" onMouseDown={(e) => e.stopPropagation()}>
         <Elements stripe={stripePromise} options={{ clientSecret, appearance: APPEARANCE }}>
           <PayInner token={token} intentType={intentType} amount={amount} currency={currency} consent={consent} onPaid={onPaid} onClose={onClose} />
         </Elements>

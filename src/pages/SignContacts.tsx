@@ -171,17 +171,17 @@ export default function SignContacts() {
   const searching = q.length > 0;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10 md:px-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
       {/* Header */}
       <div className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Contacts</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Contacts</h1>
           <p className="mt-2 text-sm text-[#A1A9A9]">Organisez vos signataires en dossiers. Ils s'enregistrent aussi automatiquement à la signature.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 md:w-auto">
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 rounded bg-[#CEFF8F] px-5 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
+            className="flex w-full items-center justify-center gap-2 rounded bg-[#CEFF8F] px-5 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] md:w-auto"
           >
             <Plus className="h-4 w-4" strokeWidth={2.5} /> Ajouter un contact
           </button>
@@ -200,20 +200,20 @@ export default function SignContacts() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative">
+          <div className="relative flex-1 sm:flex-none">
             <FolderPlus className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
             <input
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') createGroup(); }}
               placeholder="Nouveau dossier…"
-              className="w-48 rounded border border-[#3A4242] bg-[#191E1E] py-2.5 pl-10 pr-4 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]"
+              className="w-full rounded border border-[#3A4242] bg-[#191E1E] py-2.5 pl-10 pr-4 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F] sm:w-48"
             />
           </div>
           <button
             onClick={createGroup}
             disabled={creatingGroup || !newGroupName.trim()}
-            className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2.5 text-sm font-medium text-white transition-colors hover:border-[#CEFF8F] disabled:opacity-40"
+            className="flex shrink-0 items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2.5 text-sm font-medium text-white transition-colors hover:border-[#CEFF8F] disabled:opacity-40"
           >
             {creatingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />} Créer
           </button>

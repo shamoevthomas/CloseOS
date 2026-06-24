@@ -67,18 +67,19 @@ export default function SignLanding() {
       `}</style>
 
       {/* Top Announcement Bar */}
-      <div className="relative z-50 flex items-center justify-between bg-[#CEFF8F] px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[#191E1E]">
-        <div className="flex items-center gap-2">
-          <span className="rounded-sm bg-[#191E1E] px-2 py-0.5 text-[#CEFF8F]">Sign + Pay</span>
-          <span>Signez le contrat et encaissez le paiement dans le même geste.</span>
+      <div className="relative z-50 flex items-center justify-between gap-3 bg-[#CEFF8F] px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[#191E1E]">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 rounded-sm bg-[#191E1E] px-2 py-0.5 text-[#CEFF8F]">Sign + Pay</span>
+          <span className="hidden sm:inline">Signez le contrat et encaissez le paiement dans le même geste.</span>
+          <span className="truncate sm:hidden">Signez et encaissez d’un seul geste.</span>
         </div>
-        <a href="/sign/abonnement" className="flex items-center gap-1 transition-opacity hover:opacity-70">
-          Essayer gratuitement <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
+        <a href="/sign/abonnement" className="flex shrink-0 items-center gap-1 transition-opacity hover:opacity-70">
+          <span className="hidden sm:inline">Essayer gratuitement</span><span className="sm:hidden">Essayer</span> <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
         </a>
       </div>
 
       {/* Navigation */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#3A4242] bg-[#191E1E]/90 px-6 py-4 backdrop-blur-md md:px-12">
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-[#3A4242] bg-[#191E1E]/90 px-4 py-4 backdrop-blur-md sm:px-6 md:px-12">
         <div className="flex items-center gap-8">
           <div className="relative group flex items-center gap-1.5">
             <a href="/sign" className="flex items-center">
@@ -113,14 +114,14 @@ export default function SignLanding() {
       </header>
 
       {/* Hero */}
-      <section className="bg-noise relative overflow-hidden border-b border-[#3A4242] px-6 pb-32 pt-24 md:px-12">
-        <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-2">
+      <section className="bg-noise relative overflow-hidden border-b border-[#3A4242] px-4 pb-20 pt-16 sm:px-6 sm:pb-32 sm:pt-24 md:px-12">
+        <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-16">
           {/* Copy */}
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             <div className="inline-flex items-center gap-2 rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
               <BadgeCheck className="h-3.5 w-3.5" /> 14 jours d’essai gratuit · sans engagement
             </div>
-            <h1 className="text-[40px] font-semibold leading-[1.05] tracking-tight text-white sm:text-[52px]">
+            <h1 className="text-[30px] font-semibold leading-[1.08] tracking-tight text-white sm:text-[40px] sm:leading-[1.05] lg:text-[52px]">
               Signez le contrat,<br />
               <span className="text-[#CEFF8F]">encaissez le paiement.</span><br />
               Dans le même geste.
@@ -193,9 +194,9 @@ export default function SignLanding() {
         </div>
 
         {/* Trusted by */}
-        <div className="relative z-10 mx-auto mt-24 max-w-7xl border-t border-[#3A4242] pt-10">
+        <div className="relative z-10 mx-auto mt-16 max-w-7xl border-t border-[#3A4242] pt-10 sm:mt-24">
           <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">
+            <span className="text-center text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9] md:text-left">
               Paiements propulsés par Stripe · Module de l’écosystème CloseOS
             </span>
             <div className="flex flex-wrap justify-center gap-8 opacity-50 grayscale md:gap-16">
@@ -208,20 +209,20 @@ export default function SignLanding() {
       </section>
 
       {/* Concept : Sign + Pay */}
-      <section id="concept" className="relative border-b border-[#3A4242] px-6 py-24 md:px-12">
+      <section id="concept" className="relative border-b border-[#3A4242] px-4 py-16 sm:px-6 sm:py-24 md:px-12">
         <div className="mx-auto max-w-7xl">
-          <div className="mx-auto mb-16 max-w-2xl text-center">
+          <div className="mx-auto mb-12 max-w-2xl text-center sm:mb-16">
             <div className="mb-4 inline-block rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
               Le flux unique
             </div>
-            <h2 className="text-4xl font-semibold tracking-tight text-white">
+            <h2 className="text-[26px] font-semibold tracking-tight text-white sm:text-4xl">
               Le moment de la signature est votre pic émotionnel. Ne le brisez pas.
             </h2>
           </div>
 
           <div className="grid overflow-hidden rounded border border-[#3A4242] lg:grid-cols-2">
             {/* Signature */}
-            <div className="relative bg-[#222828] p-12">
+            <div className="relative bg-[#222828] p-7 sm:p-12">
               <div className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded border border-[#3A4242] text-[#A1A9A9]">1</div>
               <div className="mb-8 flex h-12 w-12 items-center justify-center rounded border border-[#3A4242] bg-[#191E1E]">
                 <FileSignature className="h-6 w-6 text-[#F3F4F6]" />
@@ -248,7 +249,7 @@ export default function SignLanding() {
             </div>
 
             {/* Payment */}
-            <div className="relative border-t border-[#3A4242] bg-[#1D2323] p-12 lg:border-l lg:border-t-0">
+            <div className="relative border-t border-[#3A4242] bg-[#1D2323] p-7 sm:p-12 lg:border-l lg:border-t-0">
               <div className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded border border-[#3A4242] text-[#A1A9A9]">2</div>
               <div className="mb-8 flex h-12 w-12 items-center justify-center rounded border border-[#CEFF8F]/30 bg-[#CEFF8F]/10">
                 <CreditCard className="h-6 w-6 text-[#CEFF8F]" />
@@ -279,13 +280,13 @@ export default function SignLanding() {
       </section>
 
       {/* Multi-signataire */}
-      <section id="multi" className="border-b border-[#3A4242] px-6 py-24 md:px-12">
+      <section id="multi" className="border-b border-[#3A4242] px-4 py-16 sm:px-6 sm:py-24 md:px-12">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-16 max-w-2xl">
+          <div className="mb-12 max-w-2xl sm:mb-16">
             <div className="mb-4 inline-block rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
               Plusieurs parties
             </div>
-            <h2 className="text-[36px] font-semibold tracking-tight text-white sm:text-[44px]">
+            <h2 className="text-[28px] font-semibold tracking-tight text-white sm:text-[36px] lg:text-[44px]">
               Un, deux, dix signataires.<br />
               <span className="text-[#A1A9A9]">Chacun sa vérification, chacun son rôle.</span>
             </h2>
@@ -321,13 +322,13 @@ export default function SignLanding() {
       </section>
 
       {/* Contrats réutilisables (templates) + espaces par membre */}
-      <section id="modeles" className="border-b border-[#3A4242] px-6 py-24 md:px-12">
+      <section id="modeles" className="border-b border-[#3A4242] px-4 py-16 sm:px-6 sm:py-24 md:px-12">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-16 max-w-2xl">
+          <div className="mb-12 max-w-2xl sm:mb-16">
             <div className="mb-4 inline-block rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
               Contrats réutilisables
             </div>
-            <h2 className="text-[36px] font-semibold tracking-tight text-white sm:text-[44px]">
+            <h2 className="text-[28px] font-semibold tracking-tight text-white sm:text-[36px] lg:text-[44px]">
               Un modèle, mille signatures.<br />
               <span className="text-[#A1A9A9]">Un espace par membre de votre équipe.</span>
             </h2>
@@ -367,10 +368,10 @@ export default function SignLanding() {
       </section>
 
       {/* Faisceau de preuves — bento grid */}
-      <section id="preuve" className="border-b border-[#3A4242] px-6 py-24 md:px-12">
+      <section id="preuve" className="border-b border-[#3A4242] px-4 py-16 sm:px-6 sm:py-24 md:px-12">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-16">
-            <h2 className="text-[36px] font-semibold tracking-tight text-white sm:text-[48px]">
+          <div className="mb-12 sm:mb-16">
+            <h2 className="text-[28px] font-semibold tracking-tight text-white sm:text-[36px] lg:text-[48px]">
               Pas juste une signature.<br />
               <span className="text-[#A1A9A9]">Un faisceau de preuves inattaquable.</span>
             </h2>
@@ -476,15 +477,15 @@ export default function SignLanding() {
       </section>
 
       {/* Regulatory ticker */}
-      <section className="overflow-hidden bg-[#CEFF8F] py-8">
-        <div className="flex animate-[pulse_10s_ease-in-out_infinite] flex-wrap justify-center gap-x-12 gap-y-3 text-[#191E1E] opacity-90">
+      <section className="overflow-hidden bg-[#CEFF8F] px-4 py-8">
+        <div className="flex animate-[pulse_10s_ease-in-out_infinite] flex-wrap justify-center gap-x-8 gap-y-3 text-[#191E1E] opacity-90 sm:gap-x-12">
           {[
             { icon: ShieldCheck, label: 'Faisceau de preuves opposable' },
             { icon: Clock, label: 'Horodatage serveur (UTC)' },
             { icon: Archive, label: 'Conservation 5 ans + legal hold' },
             { icon: Lock, label: 'RGPD Compliant' },
           ].map((item) => (
-            <span key={item.label} className="flex items-center gap-4 text-xl font-bold uppercase tracking-widest">
+            <span key={item.label} className="flex items-center gap-3 text-base font-bold uppercase tracking-widest sm:gap-4 sm:text-xl">
               <item.icon className="h-5 w-5" strokeWidth={2.5} /> {item.label}
             </span>
           ))}
@@ -492,13 +493,13 @@ export default function SignLanding() {
       </section>
 
       {/* Sécurité */}
-      <section id="securite" className="border-b border-[#3A4242] px-6 py-24 md:px-12">
+      <section id="securite" className="border-b border-[#3A4242] px-4 py-16 sm:px-6 sm:py-24 md:px-12">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-16 max-w-2xl">
+          <div className="mb-12 max-w-2xl sm:mb-16">
             <div className="mb-4 inline-block rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
               Sécurité
             </div>
-            <h2 className="text-[36px] font-semibold tracking-tight text-white sm:text-[44px]">
+            <h2 className="text-[28px] font-semibold tracking-tight text-white sm:text-[36px] lg:text-[44px]">
               Vos contrats et vos paiements,<br />
               <span className="text-[#A1A9A9]">protégés à chaque couche.</span>
             </h2>
@@ -533,14 +534,14 @@ export default function SignLanding() {
       </section>
 
       {/* CTA final */}
-      <section className="bg-noise relative px-6 py-32 md:px-12">
+      <section className="bg-noise relative px-4 py-20 sm:px-6 sm:py-32 md:px-12">
         <div className="relative z-10 mx-auto max-w-3xl text-center">
           <div className="mb-8 flex justify-center">
             <div className="flex h-16 w-16 items-center justify-center rounded border border-[#CEFF8F] bg-[#CEFF8F]/10 shadow-[0_0_30px_rgba(206,255,143,0.1)]">
               <FileSignature className="h-8 w-8 text-[#CEFF8F]" />
             </div>
           </div>
-          <h2 className="mb-6 text-4xl font-semibold tracking-tight text-white">
+          <h2 className="mb-6 text-[28px] font-semibold tracking-tight text-white sm:text-4xl">
             Essayez CloseOS Sign,<br />14 jours gratuits.
           </h2>
           <p className="mb-12 text-sm text-[#A1A9A9]">
@@ -563,7 +564,7 @@ export default function SignLanding() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[#3A4242] bg-[#191E1E] px-6 pb-8 pt-16 md:px-12">
+      <footer className="border-t border-[#3A4242] bg-[#191E1E] px-4 pb-8 pt-16 sm:px-6 md:px-12">
         <div className="mx-auto mb-16 grid max-w-7xl grid-cols-2 gap-12 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
             <div className="mb-6 flex items-center">

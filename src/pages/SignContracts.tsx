@@ -197,7 +197,7 @@ export default function SignContracts() {
     new Date(ts).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10 md:px-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
       <style dangerouslySetInnerHTML={{ __html: DOC_BASE_CSS + THEME_CSS }} />
 
       {/* Toast (relance…) */}
@@ -212,12 +212,12 @@ export default function SignContracts() {
       {/* Header */}
       <div className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Tous les contrats</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Tous les contrats</h1>
           <p className="mt-2 text-sm text-[#A1A9A9]">Suivez l’état de vos contrats : brouillon, envoyé, signé, payé.</p>
         </div>
         <button
           onClick={() => navigate('/sign/app/nouveau')}
-          className="flex items-center gap-2 rounded bg-[#CEFF8F] px-5 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
+          className="flex w-full items-center justify-center gap-2 rounded bg-[#CEFF8F] px-5 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] md:w-auto"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} /> Créer un nouveau contrat
         </button>
@@ -239,7 +239,7 @@ export default function SignContracts() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-[#F3F4F6] outline-none transition-colors focus:border-[#CEFF8F]"
+          className="min-w-0 flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-[#F3F4F6] outline-none transition-colors focus:border-[#CEFF8F] sm:flex-none"
         >
           <option value="">Tous les statuts</option>
           {distinctStatuses.map((s) => (
@@ -291,7 +291,7 @@ export default function SignContracts() {
           )}
         </div>
 
-        <select value={payFilter} onChange={(e) => setPayFilter(e.target.value)} className="rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-[#F3F4F6] outline-none transition-colors focus:border-[#CEFF8F]">
+        <select value={payFilter} onChange={(e) => setPayFilter(e.target.value)} className="min-w-0 flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-[#F3F4F6] outline-none transition-colors focus:border-[#CEFF8F] sm:flex-none">
           <option value="">Paiement : tous</option>
           <option value="with">Avec paiement</option>
           <option value="without">Sans paiement</option>

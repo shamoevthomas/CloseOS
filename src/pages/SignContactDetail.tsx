@@ -163,7 +163,7 @@ export default function SignContactDetail() {
   const hasPrefilled = prefilled.length > 0 || extraDetails.length > 0;
 
   return (
-    <div className="px-6 py-10 md:px-10">
+    <div className="px-4 py-8 sm:px-6 sm:py-10 md:px-10">
       {/* Header */}
       <div className="mb-8 flex items-center gap-4">
         <button
@@ -173,21 +173,21 @@ export default function SignContactDetail() {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#CEFF8F] text-lg font-bold text-[#191E1E]">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#CEFF8F] text-lg font-bold text-[#191E1E]">
             {(contact.name || contact.email).slice(0, 1).toUpperCase()}
           </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-white">{contact.name || '—'}</h1>
-            <p className="text-sm text-[#A1A9A9]">{contact.email}</p>
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold tracking-tight text-white sm:text-2xl">{contact.name || '—'}</h1>
+            <p className="truncate text-sm text-[#A1A9A9]">{contact.email}</p>
           </div>
         </div>
       </div>
 
       {/* Grille 3 colonnes : gauche / milieu / rail droite */}
-      <div className="flex gap-6">
+      <div className="flex flex-col gap-6 lg:flex-row">
         {/* ----- Colonne gauche : identité + préremplis ----- */}
-        <div className="flex w-full max-w-xs shrink-0 flex-col gap-6">
+        <div className="flex w-full flex-col gap-6 lg:max-w-xs lg:shrink-0">
           {/* Identité — éditable */}
           <section className="rounded-xl border border-[#3A4242] bg-[#222828] p-5">
             <div className="mb-4 flex items-center justify-between">
@@ -332,8 +332,8 @@ export default function SignContactDetail() {
           )}
         </section>
 
-        {/* ----- Rail droite : contrats assignés (enroulé, se déroule au survol) ----- */}
-        <section className="group relative w-16 shrink-0 self-start transition-all duration-300 hover:w-80">
+        {/* ----- Rail droite : contrats assignés (pleine largeur sur mobile, enroulé/survol sur desktop) ----- */}
+        <section className="group relative w-full shrink-0 self-start transition-all duration-300 lg:w-16 lg:hover:w-80">
           <div className="overflow-hidden rounded-xl border border-[#3A4242] bg-[#222828]">
             {/* En-tête du rail */}
             <div className="flex items-center gap-3 border-b border-[#3A4242] px-4 py-4">
@@ -345,7 +345,7 @@ export default function SignContactDetail() {
                   </span>
                 )}
               </div>
-              <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9] opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9] transition-opacity duration-200 lg:opacity-0 lg:group-hover:opacity-100">
                 Contrats assignés
               </span>
             </div>
@@ -353,13 +353,13 @@ export default function SignContactDetail() {
             {/* Bouton : nouveau contrat assigné à ce contact */}
             <button
               onClick={() => navigate(`/sign/app/nouveau?contact=${contact.id}`)}
-              className="flex w-full items-center gap-2 whitespace-nowrap border-b border-[#3A4242] px-4 py-3 text-left text-sm font-bold text-[#CEFF8F] opacity-0 transition-all duration-200 hover:bg-[#CEFF8F]/10 group-hover:opacity-100"
+              className="flex w-full items-center gap-2 whitespace-nowrap border-b border-[#3A4242] px-4 py-3 text-left text-sm font-bold text-[#CEFF8F] transition-all duration-200 hover:bg-[#CEFF8F]/10 lg:opacity-0 lg:group-hover:opacity-100"
             >
               <Plus className="h-4 w-4 shrink-0" strokeWidth={2.5} /> Nouveau contrat
             </button>
 
             {/* Liste (visible une fois déroulé) */}
-            <div className="max-h-[60vh] overflow-y-auto opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            <div className="max-h-[60vh] overflow-y-auto transition-opacity duration-200 lg:opacity-0 lg:group-hover:opacity-100">
               {contracts.length === 0 ? (
                 <p className="whitespace-nowrap px-4 py-5 text-xs text-[#A1A9A9]">Aucun contrat assigné.</p>
               ) : (

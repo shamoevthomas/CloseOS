@@ -68,6 +68,15 @@ export default function SignLayout() {
     <div className="sign-landing relative min-h-screen bg-[#191E1E] font-sans text-[#F3F4F6] antialiased selection:bg-[#CEFF8F] selection:text-[#191E1E]">
       <style>{`.sign-landing { font-family: "SF Pro Display","Helvetica Neue",Helvetica,Arial,Inter,sans-serif; }`}</style>
 
+      {/* Overlay plein écran — ferme le menu au tap en dehors (indispensable sur tactile) */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40"
+          aria-hidden="true"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
       {/* Menu flottant (hamburger + bulle au survol) */}
       <div
         className="fixed left-4 top-4 z-50"
@@ -85,7 +94,7 @@ export default function SignLayout() {
 
         {/* Bulle */}
         <div
-          className={`absolute left-0 top-full w-64 pt-2 origin-top-left transition-all duration-200 ${
+          className={`absolute left-0 top-full w-64 max-w-[calc(100vw-2rem)] pt-2 origin-top-left transition-all duration-200 ${
             open ? 'pointer-events-auto translate-y-0 scale-100 opacity-100' : 'pointer-events-none -translate-y-1 scale-95 opacity-0'
           }`}
         >

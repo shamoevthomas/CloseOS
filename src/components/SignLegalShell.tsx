@@ -20,20 +20,20 @@ export function SignLegalShell({ title, updated, children }: { title: string; up
         .sign-legal th{color:#F3F4F6;background:#222828;font-weight:600;}
       `}</style>
 
-      <header className="sticky top-0 z-10 border-b border-[#3A4242] bg-[#191E1E]/90 px-6 py-4 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b border-[#3A4242] bg-[#191E1E]/90 px-4 py-4 backdrop-blur sm:px-6">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <a href="/sign"><SignLogo className="text-lg" /></a>
           <a href="/sign" className="flex items-center gap-1.5 text-sm text-[#A1A9A9] transition-colors hover:text-white"><ArrowLeft className="h-4 w-4" /> Accueil</a>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-14">
-        <h1 className="text-[32px] font-semibold tracking-tight text-white">{title}</h1>
+      <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+        <h1 className="text-[26px] font-semibold tracking-tight text-white sm:text-[32px]">{title}</h1>
         {updated && <p className="mt-2 text-xs text-[#6b7373]">Dernière mise à jour : {updated}</p>}
         <div className="sign-legal mt-8">{children}</div>
       </main>
 
-      <footer className="border-t border-[#3A4242] px-6 py-10">
+      <footer className="border-t border-[#3A4242] px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-3xl space-y-4 text-xs text-[#6b7373]">
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             <a href="/sign/cgv" className="transition-colors hover:text-[#CEFF8F]">CGV &amp; CGU</a>

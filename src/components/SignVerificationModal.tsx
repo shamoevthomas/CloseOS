@@ -189,7 +189,7 @@ export default function SignVerificationModal({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm" onMouseDown={onClose}>
-      <div className="w-full max-w-sm rounded-2xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-[#3A4242] bg-[#222828] p-4 shadow-2xl sm:p-6" onMouseDown={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-start justify-between">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: `${accent}1f` }}>
             <ShieldCheck className="h-5 w-5" style={{ color: accent }} />
@@ -267,8 +267,8 @@ export default function SignVerificationModal({
                   disabled={verifying}
                   onChange={(e) => onChangeDigit(i, e.target.value)}
                   onKeyDown={(e) => onKeyDownDigit(i, e)}
-                  className="w-11 rounded-xl border bg-[#191E1E] text-center text-xl font-bold text-white outline-none transition-colors disabled:opacity-50"
-                  style={{ borderColor: digit ? accent : '#3A4242', height: 52 }}
+                  className="h-12 min-w-0 flex-1 rounded-xl border bg-[#191E1E] text-center text-xl font-bold text-white outline-none transition-colors disabled:opacity-50 sm:h-[52px] sm:w-11 sm:flex-none"
+                  style={{ borderColor: digit ? accent : '#3A4242' }}
                 />
               ))}
             </div>

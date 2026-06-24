@@ -24,8 +24,8 @@ export default function SignPaywall({ mode, sub }: { mode: 'grace' | 'blocked'; 
   const daysLeft = deadline ? Math.max(0, Math.ceil((deadline - Date.now()) / 86400000)) : null;
 
   return (
-    <div className={`fixed inset-0 z-[200] flex items-center justify-center p-5 ${blocked ? 'bg-[#191E1E]/95 backdrop-blur-md' : 'bg-[#191E1E]/70 backdrop-blur-sm'}`}>
-      <div className="relative w-full max-w-md rounded-2xl border border-[#3A4242] bg-[#222828] p-8 shadow-2xl">
+    <div className={`fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-5 ${blocked ? 'bg-[#191E1E]/95 backdrop-blur-md' : 'bg-[#191E1E]/70 backdrop-blur-sm'}`}>
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl sm:p-8">
         {!blocked && (
           <button onClick={() => setClosed(true)} aria-label="Fermer" className="absolute right-4 top-4 text-[#A1A9A9] transition-colors hover:text-white">
             <X className="h-4 w-4" />

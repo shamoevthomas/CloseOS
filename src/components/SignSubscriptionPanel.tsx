@@ -59,7 +59,7 @@ export default function SignSubscriptionPanel({ contractId, signers }: { contrac
   };
 
   return (
-    <div className="mx-auto mt-4 max-w-4xl rounded-xl border border-[#3A4242] bg-[#222828] p-5">
+    <div className="mx-auto mt-4 max-w-4xl rounded-xl border border-[#3A4242] bg-[#222828] p-4 sm:p-5">
       <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
         <RefreshCw className="h-4 w-4 text-[#F0B86E]" /> Suivi des abonnements
       </h3>
@@ -87,8 +87,8 @@ export default function SignSubscriptionPanel({ contractId, signers }: { contrac
         ) : events.length === 0 ? (
           <p className="px-1 py-3 text-xs text-[#A1A9A9]">Aucune échéance enregistrée pour l'instant. Les renouvellements apparaîtront ici automatiquement.</p>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-[#3A4242]">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto rounded-lg border border-[#3A4242]">
+            <table className="w-full min-w-[460px] text-left text-xs">
               <thead className="bg-[#191E1E] text-[10px] uppercase tracking-wider text-[#A1A9A9]">
                 <tr>
                   <th className="px-3 py-2 font-semibold">Date</th>

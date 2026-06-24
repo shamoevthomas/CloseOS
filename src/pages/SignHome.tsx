@@ -98,16 +98,16 @@ export default function SignHome() {
   const segTotal = segs.reduce((a, s) => a + s.val, 0);
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10 md:px-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
       {/* Welcome + CTA */}
       <div className="mb-8 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Bonjour {user} 👋</h1>
+          <h1 className="text-[26px] font-semibold tracking-tight text-white sm:text-3xl">Bonjour {user} 👋</h1>
           <p className="mt-2 text-sm text-[#A1A9A9]">Envoyez un contrat, faites-le signer et encaissez le paiement — dans le même geste.</p>
         </div>
         <button
           onClick={() => navigate('/sign/app/nouveau')}
-          className="flex shrink-0 items-center gap-2 rounded bg-[#CEFF8F] px-6 py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
+          className="flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded bg-[#CEFF8F] px-6 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] sm:h-auto sm:w-auto sm:justify-start sm:py-3"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} /> Créer un nouveau contrat
         </button>
@@ -116,11 +116,11 @@ export default function SignHome() {
       {/* Stats principales */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {primary.map((s) => (
-          <div key={s.label} className="rounded-xl border border-[#3A4242] bg-[#222828] p-5">
+          <div key={s.label} className="rounded-xl border border-[#3A4242] bg-[#222828] p-4 sm:p-5">
             <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg border border-[#3A4242] bg-[#191E1E]">
               <s.icon className="h-4 w-4 text-[#CEFF8F]" />
             </div>
-            <div className="text-2xl font-semibold text-white">{loading ? '—' : s.value}</div>
+            <div className="text-xl font-semibold text-white sm:text-2xl">{loading ? '—' : s.value}</div>
             <div className="mt-1 text-sm text-[#F3F4F6]">{s.label}</div>
             <div className="mt-0.5 text-[10px] uppercase tracking-widest text-[#A1A9A9]">{s.hint}</div>
           </div>
@@ -128,8 +128,8 @@ export default function SignHome() {
       </div>
 
       {/* Répartition par statut */}
-      <div className="mb-6 rounded-xl border border-[#3A4242] bg-[#222828] p-5">
-        <div className="mb-3 flex items-center justify-between">
+      <div className="mb-6 rounded-xl border border-[#3A4242] bg-[#222828] p-4 sm:p-5">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Répartition par statut</div>
           <div className="flex items-center gap-1.5 text-xs text-[#A1A9A9]">
             <TrendingUp className="h-3.5 w-3.5 text-[#CEFF8F]" /> Taux de signature{' '}
@@ -161,7 +161,7 @@ export default function SignHome() {
       <div className="mb-6 grid gap-4 lg:grid-cols-3">
         {/* Récents */}
         <div className="lg:col-span-2 overflow-hidden rounded-xl border border-[#3A4242] bg-[#222828]">
-          <div className="flex items-center justify-between border-b border-[#3A4242] px-5 py-3">
+          <div className="flex items-center justify-between border-b border-[#3A4242] px-4 py-3 sm:px-5">
             <div className="text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Contrats récents</div>
             <button onClick={() => navigate('/sign/app/contrats')} className="flex items-center gap-1 text-xs font-medium text-[#CEFF8F] transition-opacity hover:opacity-80">
               Tout voir <ArrowUpRight className="h-3.5 w-3.5" />
@@ -187,7 +187,7 @@ export default function SignHome() {
                   <li
                     key={r.id}
                     onClick={() => navigate(`/sign/app/contrat/${r.id}`)}
-                    className="flex cursor-pointer items-center justify-between gap-3 border-b border-[#3A4242] px-5 py-3 transition-colors last:border-0 hover:bg-[#1D2323]"
+                    className="flex cursor-pointer items-center justify-between gap-3 border-b border-[#3A4242] px-4 py-3 transition-colors last:border-0 hover:bg-[#1D2323] sm:px-5"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-[#3A4242] bg-[#191E1E]">
@@ -195,7 +195,7 @@ export default function SignHome() {
                       </div>
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium text-white">{r.title}</div>
-                        <div className="flex items-center gap-2 text-[11px] text-[#A1A9A9]">
+                        <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-[#A1A9A9]">
                           {fmtDate(r.updated_at)}
                           {r.contactName && <span className="truncate">· {r.contactName}</span>}
                           {r.hasPayment && <span className="text-[#F0B86E]">· Paiement</span>}
@@ -211,7 +211,7 @@ export default function SignHome() {
         </div>
 
         {/* Aperçu secondaire */}
-        <div className="rounded-xl border border-[#3A4242] bg-[#222828] p-5">
+        <div className="rounded-xl border border-[#3A4242] bg-[#222828] p-4 sm:p-5">
           <div className="mb-4 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Aperçu</div>
           <ul className="space-y-3.5">
             {[
@@ -241,18 +241,18 @@ export default function SignHome() {
           <button
             key={a.title}
             onClick={() => navigate(a.to)}
-            className="group flex items-center justify-between rounded-xl border border-[#3A4242] bg-[#222828] p-5 text-left transition-colors hover:border-[#CEFF8F]"
+            className="group flex items-center justify-between rounded-xl border border-[#3A4242] bg-[#222828] p-4 text-left transition-colors hover:border-[#CEFF8F] sm:p-5"
           >
-            <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#3A4242] bg-[#191E1E]">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#3A4242] bg-[#191E1E]">
                 <a.icon className="h-5 w-5 text-[#CEFF8F]" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="font-medium text-white">{a.title}</div>
                 <div className="text-xs text-[#A1A9A9]">{a.sub}</div>
               </div>
             </div>
-            <ArrowUpRight className="h-5 w-5 text-[#A1A9A9] transition-colors group-hover:text-[#CEFF8F]" />
+            <ArrowUpRight className="ml-2 h-5 w-5 shrink-0 text-[#A1A9A9] transition-colors group-hover:text-[#CEFF8F]" />
           </button>
         ))}
       </div>

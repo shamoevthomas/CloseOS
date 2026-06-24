@@ -59,6 +59,28 @@ interface Campaign {
   name: string
 }
 
+// Les leads issus d'un formulaire de capture stockent leurs réponses (custom_data)
+// dans la colonne `notes` sous forme de JSON. Pour éviter d'écraser ces réponses
+// quand le proprio saisit des notes internes, on range les notes internes sous une
+// clé réservée DANS ce JSON. `notes` en texte libre reste géré tel quel.
+const INTERNAL_NOTES_KEY = '__internal_notes'
+
+function parseNotesField(notes: string | null | undefined): {
+  capture: Record<string, string> | null
+  internal: string
+} {
+  if (!notes) return { capture: null, internal: '' }
+  try {
+    const parsed = JSON.parse(notes)
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      const { [INTERNAL_NOTES_KEY]: internal, ...rest } = parsed
+      const capture = Object.keys(rest).length > 0 ? rest : null
+      return { capture, internal: typeof internal === 'string' ? internal : '' }
+    }
+  } catch { /* notes en texte libre */ }
+  return { capture: null, internal: notes }
+}
+
 interface BusinessProspectViewProps {
   prospect: BusinessProspect
   onClose: () => void
@@ -140,7 +162,11 @@ export function BusinessProspectView({
       supabase.from('business_users').select('id, full_name, email, owner_assignable, owner_assignable_roles').eq('id', ownerId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = tmRes.data || []
-      if (ownerRes.data?.owner_assignable) {
+      // Le proprio peut toujours s'auto-assigner depuis sa propre fiche prospect,
+      // même sans avoir activé « Apparaître dans les assignations ». Pour un membre
+      // d'équipe qui consulte, on garde le verrou owner_assignable (le proprio peut
+      // se retirer des listes des autres).
+      if (ownerRes.data && (!isTeamMember || ownerRes.data.owner_assignable)) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
         list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', owner_assignable_roles: ownerRes.data.owner_assignable_roles || [] })
       }
@@ -438,7 +464,7 @@ export function BusinessProspectView({
 
   // Notes internes
   const [editingNotes, setEditingNotes] = useState(false)
-  const [tempNotes, setTempNotes] = useState(prospect.notes || '')
+  const [tempNotes, setTempNotes] = useState(parseNotesField(prospect.notes).internal)
 
   // Call notes
   const [isAddingNote, setIsAddingNote] = useState(false)
@@ -511,7 +537,7 @@ export function BusinessProspectView({
   useEffect(() => {
     const p = { ...prospect }
     setLocal(p)
-    setTempNotes(p.notes || '')
+    setTempNotes(parseNotesField(p.notes).internal)
     setEditedContact(p.contact)
     setEditedCompany(p.company)
     setEditedEmail(p.email)
@@ -823,7 +849,13 @@ export function BusinessProspectView({
 
   // -- Notes --
   const handleSaveNotes = () => {
-    handleUpdate({ notes: tempNotes })
+    const { capture } = parseNotesField(local.notes)
+    // Lead issu d'un formulaire de capture : on conserve les réponses et on range
+    // les notes internes sous la clé réservée, au lieu d'écraser le JSON.
+    const nextNotes = capture
+      ? JSON.stringify({ ...capture, ...(tempNotes ? { [INTERNAL_NOTES_KEY]: tempNotes } : {}) })
+      : tempNotes
+    handleUpdate({ notes: nextNotes })
     setEditingNotes(false)
   }
 
@@ -964,16 +996,8 @@ export function BusinessProspectView({
     }
   }
 
-  // Parse capture custom data from notes
-  const getCaptureData = (): Record<string, string> | null => {
-    if (!local.notes) return null
-    try {
-      const parsed = JSON.parse(local.notes)
-      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) return parsed
-    } catch { /* not JSON */ }
-    return null
-  }
-  const captureData = getCaptureData()
+  // Parse capture custom data + notes internes depuis la colonne `notes`
+  const { capture: captureData, internal: internalNotes } = parseNotesField(local.notes)
 
   const content = (
       <aside className={inline
@@ -1722,8 +1746,8 @@ export function BusinessProspectView({
 
               {/* Assignment */}
               {teamMembers.length > 0 && (() => {
-                const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Head of Sales' || tm.role === 'Admin' || (tm.owner_assignable_roles || []).includes('Closer'))
-                const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Head of Sales' || tm.role === 'Admin' || (tm.owner_assignable_roles || []).includes('Setter'))
+                const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Head of Sales' || tm.role === 'Admin' || (tm.owner_assignable_roles || []).includes('Closer') || (!isTeamMember && tm.role === 'Owner'))
+                const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Head of Sales' || tm.role === 'Admin' || (tm.owner_assignable_roles || []).includes('Setter') || (!isTeamMember && tm.role === 'Owner'))
 
                 return (
                   <div className="grid grid-cols-2 gap-4">
@@ -2191,7 +2215,7 @@ export function BusinessProspectView({
                 ) : (
                   <div className="rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 p-5">
                     <p className="whitespace-pre-wrap text-sm text-stone-600 dark:text-neutral-300">
-                      {captureData ? t.prospect_capture_data_ref : (local.notes || t.prospect_no_notes)}
+                      {internalNotes || t.prospect_no_notes}
                     </p>
                   </div>
                 )}

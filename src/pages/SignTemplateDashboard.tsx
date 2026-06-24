@@ -157,7 +157,7 @@ export default function SignTemplateDashboard() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10 md:px-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
       {/* Header */}
       <button onClick={() => navigate('/sign/app/contrats')} className="mb-4 flex items-center gap-1.5 text-sm text-[#A1A9A9] transition-colors hover:text-white">
         <ChevronLeft className="h-4 w-4" /> Tous les contrats
@@ -167,15 +167,15 @@ export default function SignTemplateDashboard() {
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#CEFF8F]/40 bg-[#CEFF8F]/10">
             <Files className="h-5 w-5 text-[#CEFF8F]" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight text-white">{title}</h1>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">{title}</h1>
               <span className="rounded border border-[#CEFF8F] bg-[#CEFF8F] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#191E1E]">Modèle</span>
             </div>
             <p className="mt-1 text-sm text-[#A1A9A9]">Générez des liens de signature, suivez les signatures, gérez vos closers.</p>
           </div>
         </div>
-        <button onClick={() => navigate(`/sign/app/contrat/${id}`)} className="flex items-center gap-2 rounded border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-[#F3F4F6] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F]">
+        <button onClick={() => navigate(`/sign/app/contrat/${id}`)} className="flex w-full items-center justify-center gap-2 rounded border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-[#F3F4F6] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F] md:w-auto">
           <Pencil className="h-4 w-4" /> Éditer le modèle
         </button>
       </div>

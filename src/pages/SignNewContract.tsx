@@ -63,12 +63,12 @@ export default function SignNewContract() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10 md:px-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
       <style>{`${BASE_CSS}\n${PREVIEW_CSS}`}</style>
 
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Nouveau contrat</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Nouveau contrat</h1>
           <p className="mt-2 text-sm text-[#A1A9A9]">Partez d'une feuille blanche, importez un PDF, ou choisissez un modèle.</p>
         </div>
         <button onClick={() => navigate('/sign/app')} className="rounded border border-[#3A4242] p-2 text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white">

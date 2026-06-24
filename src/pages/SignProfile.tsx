@@ -221,7 +221,7 @@ export default function SignProfile() {
   ];
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10 md:px-10">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
       {/* En-tête */}
       <div className="mb-8 flex items-center gap-4">
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onAvatarChange} />
@@ -248,9 +248,9 @@ export default function SignProfile() {
             </span>
           )}
         </button>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">{form.full_name || user}</h1>
-          <p className="text-sm text-[#A1A9A9]">{form.email || 'Compte CloseOS Sign'}</p>
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold tracking-tight text-white sm:text-2xl">{form.full_name || user}</h1>
+          <p className="truncate text-sm text-[#A1A9A9]">{form.email || 'Compte CloseOS Sign'}</p>
           {avatarFromBusiness && (
             <p className="mt-0.5 text-[11px] text-[#A1A9A9]">Photo synchronisée depuis <span className="text-[#F3F4F6]">CloseOS Business</span></p>
           )}
@@ -258,12 +258,12 @@ export default function SignProfile() {
       </div>
 
       {/* Onglets */}
-      <div className="mb-6 flex gap-1 border-b border-[#3A4242]">
+      <div className="mb-6 flex gap-1 overflow-x-auto border-b border-[#3A4242] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setParams(t.id === 'profil' ? {} : { tab: t.id })}
-            className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`-mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
               tab === t.id ? 'border-[#CEFF8F] text-[#CEFF8F]' : 'border-transparent text-[#A1A9A9] hover:text-white'
             }`}
           >

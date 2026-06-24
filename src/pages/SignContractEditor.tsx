@@ -2038,8 +2038,8 @@ export default function SignContractEditor() {
       <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={onImageFile} />
 
       {/* Top bar */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#3A4242] bg-[#191E1E]/95 px-4 py-3 backdrop-blur-md md:px-6">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-y-2 border-b border-[#3A4242] bg-[#191E1E]/95 px-3 py-2.5 backdrop-blur-md sm:px-4 md:px-6 md:py-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => navigate('/sign/app/contrats')}
             className="flex items-center gap-1 rounded border border-[#3A4242] px-2.5 py-1.5 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
@@ -2056,10 +2056,10 @@ export default function SignContractEditor() {
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => persist()}
           disabled={validated}
-          className="mx-2 min-w-0 flex-1 truncate rounded border border-transparent bg-transparent px-2 py-1 text-center text-sm font-medium text-white outline-none transition-colors hover:border-[#3A4242] focus:border-[#CEFF8F] disabled:cursor-not-allowed"
+          className="order-3 mx-0 mt-1 w-full min-w-0 truncate rounded border border-transparent bg-transparent px-2 py-1 text-center text-sm font-medium text-white outline-none transition-colors hover:border-[#3A4242] focus:border-[#CEFF8F] disabled:cursor-not-allowed sm:order-none sm:mx-2 sm:mt-0 sm:flex-1"
         />
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {(status === 'sent' || status === 'signed' || status === 'paid') && (
             <button
               onClick={handleDuplicate}
@@ -2191,7 +2191,7 @@ export default function SignContractEditor() {
       {/* Bannière : accès signataire bloqué (3 essais ratés) + déblocage */}
       {verificationLocked && (
         <div className="border-b border-[#ef6b6b]/30 bg-[#ef6b6b]/10 px-4 py-3 md:px-6">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+          <div className="mx-auto flex max-w-4xl flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="flex items-start gap-3">
               <Lock className="mt-0.5 h-5 w-5 shrink-0 text-[#ef6b6b]" />
               <div className="text-sm">
@@ -2436,8 +2436,8 @@ export default function SignContractEditor() {
           </div>
 
           {/* Corps : feuille / pdf + panneau champs */}
-          <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-6 px-4 md:flex-row md:px-6">
-            <div className="min-w-0 flex-1 overflow-y-auto py-8">
+          <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-6 overflow-y-auto px-4 md:flex-row md:overflow-visible md:px-6">
+            <div className="min-w-0 flex-1 py-6 md:overflow-y-auto md:py-8">
               <div className="overflow-x-auto pb-2 pt-5">
                 {sourceType === 'pdf' ? (
                   pdfPages.length > 0 ? (
@@ -2504,8 +2504,8 @@ export default function SignContractEditor() {
             </div>
 
             {/* Panneau champs */}
-            <aside className="overflow-y-auto py-8 md:w-72 md:shrink-0">
-              <div className="rounded border border-[#3A4242] bg-[#222828] p-5">
+            <aside className="pb-8 md:w-72 md:shrink-0 md:overflow-y-auto md:py-8">
+              <div className="rounded border border-[#3A4242] bg-[#222828] p-4 sm:p-5">
                 {/* Nombre de signataires + ordre de signature */}
                 <div className="mb-4">
                   <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Signataires</h3>

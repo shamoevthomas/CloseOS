@@ -65,7 +65,7 @@ export default function SignContactModal({ open, onClose }: { open: boolean; onC
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={close}>
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#3A4242] bg-[#222828] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-[#3A4242] p-6">
+        <div className="flex items-center justify-between border-b border-[#3A4242] p-4 sm:p-6">
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-white">Contacter le support</h2>
             <p className="mt-0.5 text-xs text-[#A1A9A9]">On vous répond sous 24 h ouvrées.</p>
@@ -75,7 +75,7 @@ export default function SignContactModal({ open, onClose }: { open: boolean; onC
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 p-6">
+        <form onSubmit={handleSubmit} className="space-y-4 p-4 sm:p-6">
           <div>
             <label className="mb-1 block text-sm font-medium text-[#F3F4F6]">Nom</label>
             <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Votre nom" className={field} />

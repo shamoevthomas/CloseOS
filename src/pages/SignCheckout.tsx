@@ -123,7 +123,7 @@ export default function SignCheckout() {
       <style>{`.sign-landing { font-family: "SF Pro Display","Helvetica Neue",Helvetica,Arial,Inter,sans-serif; }`}</style>
       <div className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-[#CEFF8F]/5 blur-[140px]" />
 
-      <header className="relative z-10 flex items-center justify-between px-6 py-5 md:px-10">
+      <header className="relative z-10 flex items-center justify-between px-4 py-5 sm:px-6 md:px-10">
         <a href="/sign" className="flex items-center">
           <SignLogo className="text-base" />
         </a>
@@ -242,7 +242,7 @@ function CheckoutForm({ navigate }: { navigate: (p: string, o?: any) => void }) 
             key={c.key}
             type="button"
             onClick={() => setCycle(c.key)}
-            className={`relative flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${cycle === c.key ? 'bg-[#CEFF8F] text-[#191E1E]' : 'text-[#A1A9A9] hover:text-white'}`}
+            className={`relative flex-1 whitespace-nowrap rounded-full px-1.5 py-1.5 text-[11px] font-bold transition-colors sm:px-3 sm:text-xs ${cycle === c.key ? 'bg-[#CEFF8F] text-[#191E1E]' : 'text-[#A1A9A9] hover:text-white'}`}
           >
             {c.label}
             {c.badge && cycle !== c.key && <span className="ml-1 text-[9px] text-[#CEFF8F]">{c.badge}</span>}
