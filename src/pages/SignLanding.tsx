@@ -105,9 +105,9 @@ export default function SignLanding() {
             <a href="#securite" className="transition-colors hover:text-[#F3F4F6]">Sécurité</a>
           </nav>
         </div>
-        <div className="flex items-center gap-4">
-          <a href="/sign/login" className="hidden text-sm font-medium transition-colors hover:text-[#F3F4F6] md:block">Connexion</a>
-          <a href="/sign/abonnement" className="rounded bg-[#CEFF8F] px-5 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <a href="/sign/login" className="text-sm font-medium transition-colors hover:text-[#F3F4F6]">Connexion</a>
+          <a href="/sign/abonnement" className="whitespace-nowrap rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] sm:px-5">
             Essai gratuit
           </a>
         </div>

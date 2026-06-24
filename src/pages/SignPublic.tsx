@@ -14,6 +14,7 @@ import { emailSignedPdf, buildSignedPdfDataUri } from '../lib/signPdfExport';
 import { generateCertificate, getCertificateUrl } from '../lib/signCertificate';
 import { signSupabase as supabase } from '../lib/signSupabase';
 import FillableField from '../components/FillableField';
+import { FitPdfPage } from '../components/FitPdfPage';
 import PhoneInput from '../components/PhoneInput';
 import SignVerificationModal from '../components/SignVerificationModal';
 import SignPaymentModal from '../components/SignPaymentModal';
@@ -531,20 +532,20 @@ export default function SignPublic() {
           )}
 
           <div className="px-4 py-8 md:px-6">
-            <div className="overflow-x-auto pb-2">
+            <div className="pb-2">
               {contract.source_type === 'pdf' ? (
-                <div className="mx-auto flex w-fit flex-col items-center gap-6" ref={docRef}>
+                <div className="flex flex-col items-center gap-6" ref={docRef}>
                   {pdfPages.length === 0 ? (
                     <div className="flex h-64 items-center justify-center text-[#A1A9A9]">
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Rendu du PDF…
                     </div>
                   ) : (
                     pdfPages.map((pg, idx) => (
-                      <div key={idx} className="relative bg-white shadow-2xl" style={{ width: pg.width, height: pg.height }}>
+                      <FitPdfPage key={idx} width={pg.width} height={pg.height}>
                         <img src={pg.dataUrl} width={pg.width} height={pg.height} alt={`Page ${idx + 1}`} />
                         {renderImages(idx + 1)}
                         {renderFields(idx + 1)}
-                      </div>
+                      </FitPdfPage>
                     ))
                   )}
                 </div>

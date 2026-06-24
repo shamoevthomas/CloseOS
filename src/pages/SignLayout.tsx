@@ -173,8 +173,9 @@ export default function SignLayout() {
         </div>
       </div>
 
-      {/* Contenu — pleine largeur, décalé pour ne pas passer sous le hamburger */}
-      <main className="min-h-screen pl-16 md:pl-20">
+      {/* Contenu — sur mobile : pleine largeur, décalé vers le bas (le hamburger flotte
+          en haut à gauche). Sur desktop : décalé à gauche pour laisser la place au menu. */}
+      <main className="min-h-screen pt-16 md:pt-0 md:pl-20">
         <Outlet />
       </main>
     </div>

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { SignLogo } from '../components/SignLogo';
+import { FitPdfPage } from '../components/FitPdfPage';
 import {
   Bold,
   Italic,
@@ -2304,11 +2305,11 @@ export default function SignContractEditor() {
               </div>
             </div>
 
-            <div className="overflow-x-auto pb-2">
+            <div className="pb-2">
               {sourceType === 'pdf' ? (
-                <div className="flex w-fit flex-col items-center gap-6" ref={docRef}>
+                <div className="flex flex-col items-center gap-6" ref={docRef}>
                   {pdfPages.map((pg, idx) => (
-                    <div key={idx} className="relative bg-white shadow-2xl" style={{ width: pg.width, height: pg.height }}>
+                    <FitPdfPage key={idx} width={pg.width} height={pg.height}>
                       <img src={pg.dataUrl} width={pg.width} height={pg.height} alt={`Page ${idx + 1}`} />
                       {images.filter((im) => im.page === idx + 1).map((im) => renderImage(im, true))}
                       {fields
@@ -2316,7 +2317,7 @@ export default function SignContractEditor() {
                         .map((f) => (
                           <FillableField key={f.id} field={f} value={f.value ?? ''} onChange={() => {}} readOnly />
                         ))}
-                    </div>
+                    </FitPdfPage>
                   ))}
                 </div>
               ) : (
@@ -2343,11 +2344,11 @@ export default function SignContractEditor() {
                 <div className="text-xs text-[#A1A9A9]">Complétez les champs en mint, puis validez votre partie.</div>
               </div>
             </div>
-            <div className="overflow-x-auto pb-2">
+            <div className="pb-2">
               {sourceType === 'pdf' ? (
                 <div className="flex flex-col items-center gap-6">
                   {pdfPages.map((pg, idx) => (
-                    <div key={idx} className="relative bg-white shadow-2xl" style={{ width: pg.width, height: pg.height }}>
+                    <FitPdfPage key={idx} width={pg.width} height={pg.height}>
                       <img src={pg.dataUrl} width={pg.width} height={pg.height} alt={`Page ${idx + 1}`} />
                       {images.filter((im) => im.page === idx + 1).map((im) => renderImage(im, true))}
                       {fields
@@ -2355,7 +2356,7 @@ export default function SignContractEditor() {
                         .map((f) => (
                           <FillableField key={f.id} field={f} value={f.value ?? ''} onChange={(v) => setFieldValue(f.id, v)} readOnly={f.role !== 'owner'} />
                         ))}
-                    </div>
+                    </FitPdfPage>
                   ))}
                 </div>
               ) : (
