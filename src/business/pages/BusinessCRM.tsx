@@ -510,7 +510,10 @@ export function BusinessCRM() {
               Sync
             </button>
           )}
-          {!isReadOnly && (
+          {/* Intégrations (clés API, webhooks, sync CRM) = réglages de COMPTE → proprio uniquement.
+              La modale suppose user.id == proprio ; pour un membre d'équipe ça plantait (FK business_users)
+              et affichait une config vide. */}
+          {!isReadOnly && !isTeamMember && (
             <button
               onClick={() => setIsIntegrationModalOpen(true)}
               className="flex items-center gap-2 rounded-full bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-all"

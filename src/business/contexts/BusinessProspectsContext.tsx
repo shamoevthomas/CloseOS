@@ -541,10 +541,19 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
   const addProspect = async (prospect: Omit<BusinessProspect, 'id' | 'user_id'>) => {
     if (!user) return
 
+    // Les prospects sont rattachés au PROPRIÉTAIRE. Pour un membre d'équipe,
+    // user.id est son propre id (absent de business_users → viole la FK et casse
+    // l'ajout). On utilise donc toujours l'id du proprio.
+    const ownerId = isTeamMember ? ownerUserId : user.id
+    if (!ownerId) {
+      toast.error('Impossible de créer le prospect.')
+      return
+    }
+
     // Solo plan: auto-assign the user as both setter and closer
     const prospectData = isSolo
-      ? { ...prospect, user_id: user.id, assigned_to: user.id, assigned_setter: user.id }
-      : { ...prospect, user_id: user.id }
+      ? { ...prospect, user_id: ownerId, assigned_to: ownerId, assigned_setter: ownerId }
+      : { ...prospect, user_id: ownerId }
 
     const { data, error } = await withRetry(
       () => supabase.from('business_prospects').insert([prospectData]).select(),
