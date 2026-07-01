@@ -20,7 +20,8 @@ export default function SignPaywall({ mode, sub }: { mode: 'grace' | 'blocked'; 
     if (error) setBusy(false); // sinon redirection vers Stripe
   };
 
-  const deadline = sub?.currentPeriodEnd ? new Date(sub.currentPeriodEnd).getTime() + 3 * 86400000 : null;
+  const anchor = sub?.pastDueAt || sub?.currentPeriodEnd;
+  const deadline = anchor ? new Date(anchor).getTime() + 3 * 86400000 : null;
   const daysLeft = deadline ? Math.max(0, Math.ceil((deadline - Date.now()) / 86400000)) : null;
 
   return (

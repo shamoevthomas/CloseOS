@@ -18,6 +18,13 @@ const stripe = new Stripe(stripeKey)
 
 const TRIAL_DAYS = 14
 
+// current_period_end a migré au niveau de l'item d'abonnement dans les versions récentes
+// de l'API Stripe. On lit d'abord le niveau abonnement (compat), sinon le 1er item.
+const subPeriodEndIso = (sub: any): string | null => {
+  const ts = sub?.current_period_end ?? sub?.items?.data?.[0]?.current_period_end ?? null
+  return ts ? new Date(ts * 1000).toISOString() : null
+}
+
 const CYCLES: Record<string, { unit_amount: number; interval: 'month' | 'year'; interval_count: number }> = {
   monthly: { unit_amount: 1200, interval: 'month', interval_count: 1 },
   quarterly: { unit_amount: 3000, interval: 'month', interval_count: 3 },
@@ -140,7 +147,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         stripe_subscription_id: sub.id,
         subscription_status: sub.status,
         subscription_cycle: cycle,
-        current_period_end: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
+        current_period_end: subPeriodEndIso(sub),
         subscription_exempt: false,
       })
       if (insErr) return res.status(500).json({ error: 'profile_link_failed', detail: insErr.message })

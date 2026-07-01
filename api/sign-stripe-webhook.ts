@@ -35,6 +35,10 @@ async function rawBody(req: VercelRequest): Promise<Buffer> {
 
 const iso = (unix?: number | null) => (unix ? new Date(unix * 1000).toISOString() : null)
 
+// current_period_end a migré au niveau de l'item d'abonnement (API Stripe récente).
+const subPeriodEndIso = (sub: any): string | null =>
+  iso(sub?.current_period_end ?? sub?.items?.data?.[0]?.current_period_end ?? null)
+
 type Match =
   | { kind: 'owner'; userId: string }
   | { kind: 'signer'; signerId: string; contractId: string }
@@ -53,14 +57,22 @@ async function matchSubscription(subId: string | null | undefined): Promise<Matc
 }
 
 async function syncOwnerSubscription(sub: Stripe.Subscription, userId: string) {
-  await supabase
-    .from('sign_users')
-    .update({
-      subscription_status: sub.status,
-      subscription_cycle: (sub.metadata?.cycle as string) || undefined,
-      current_period_end: iso((sub as any).current_period_end),
-    })
-    .eq('id', userId)
+  const status = sub.status
+  const patch: Record<string, any> = {
+    subscription_status: status,
+    subscription_cycle: (sub.metadata?.cycle as string) || undefined,
+    current_period_end: subPeriodEndIso(sub),
+  }
+  if (status === 'active' || status === 'trialing') {
+    // Paiement OK / essai en cours → on efface l'état d'échec et les relances.
+    patch.subscription_past_due_at = null
+    patch.subscription_dunning_sent = []
+  } else if (status === 'past_due' || status === 'unpaid') {
+    // Échec : on ancre la grâce au 1er échec (ne pas écraser si déjà posé).
+    const { data } = await supabase.from('sign_users').select('subscription_past_due_at').eq('id', userId).maybeSingle()
+    if (!data?.subscription_past_due_at) patch.subscription_past_due_at = new Date().toISOString()
+  }
+  await supabase.from('sign_users').update(patch).eq('id', userId)
 }
 
 async function syncContractSubscriptionStatus(sub: Stripe.Subscription, m: Match) {
@@ -152,7 +164,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         matched = true
         note = paid ? 'contract_invoice_paid' : 'contract_invoice_failed'
       } else if (m.kind === 'owner') {
-        if (!paid) await supabase.from('sign_users').update({ subscription_status: 'past_due' }).eq('id', m.userId)
+        if (!paid) {
+          // Échec de paiement propriétaire → past_due + ancrage grâce au 1er échec.
+          const { data } = await supabase.from('sign_users').select('subscription_past_due_at').eq('id', m.userId).maybeSingle()
+          const patch: Record<string, any> = { subscription_status: 'past_due' }
+          if (!data?.subscription_past_due_at) patch.subscription_past_due_at = new Date().toISOString()
+          await supabase.from('sign_users').update(patch).eq('id', m.userId)
+        } else {
+          // Paiement (renouvellement) réussi → à jour, on efface échec + relances.
+          await supabase.from('sign_users')
+            .update({ subscription_status: 'active', subscription_past_due_at: null, subscription_dunning_sent: [] })
+            .eq('id', m.userId)
+        }
         matched = true
         note = 'owner_invoice'
       } else {

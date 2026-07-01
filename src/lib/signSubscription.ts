@@ -11,6 +11,7 @@ export type SignSubscription = {
   status: string | null; // trialing | active | past_due | canceled | unpaid | null
   cycle: string | null;
   currentPeriodEnd: string | null;
+  pastDueAt: string | null; // date du 1er échec de paiement → ancre la grâce (3 j)
   exempt: boolean; // compte Business / test : jamais bloqué
 };
 
@@ -24,8 +25,12 @@ export const isSubActive = (s: string | null | undefined) => s === 'active' || s
 export function subAccessState(sub: SignSubscription | null): SignAccess {
   if (!sub || sub.exempt) return 'ok';
   if (isSubActive(sub.status)) return 'ok';
-  if (sub.status === 'past_due' && sub.currentPeriodEnd) {
-    const deadline = new Date(sub.currentPeriodEnd).getTime() + GRACE_DAYS * 86400000;
+  if (sub.status === 'past_due') {
+    // Grâce ancrée sur le 1er échec (past_due_at). NB : après un échec en fin d'essai,
+    // Stripe avance current_period_end vers le futur → inutilisable comme ancre.
+    const anchorIso = sub.pastDueAt || sub.currentPeriodEnd;
+    if (!anchorIso) return 'grace'; // ancre inconnue → on ne bloque pas encore
+    const deadline = new Date(anchorIso).getTime() + GRACE_DAYS * 86400000;
     return Date.now() < deadline ? 'grace' : 'blocked';
   }
   if (sub.status === null) return 'ok'; // pas d'abonnement connu → on ne bloque pas par défaut
@@ -103,10 +108,10 @@ export async function openSignBillingPortal(): Promise<{ error?: string }> {
 export async function getSignSubscription(): Promise<SignSubscription> {
   const { data: s } = await signSupabase.auth.getSession();
   const uid = s.session?.user?.id;
-  if (!uid) return { status: null, cycle: null, currentPeriodEnd: null, exempt: false };
+  if (!uid) return { status: null, cycle: null, currentPeriodEnd: null, pastDueAt: null, exempt: false };
   const { data } = await signSupabase
     .from('sign_users')
-    .select('subscription_status, subscription_cycle, current_period_end, subscription_exempt')
+    .select('subscription_status, subscription_cycle, current_period_end, subscription_past_due_at, subscription_exempt')
     .eq('id', uid)
     .maybeSingle();
   const r = (data ?? {}) as any;
@@ -114,6 +119,7 @@ export async function getSignSubscription(): Promise<SignSubscription> {
     status: r.subscription_status ?? null,
     cycle: r.subscription_cycle ?? null,
     currentPeriodEnd: r.current_period_end ?? null,
+    pastDueAt: r.subscription_past_due_at ?? null,
     exempt: !!r.subscription_exempt,
   };
 }
