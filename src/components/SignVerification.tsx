@@ -196,12 +196,12 @@ export default function SignVerification({ userId, email, authMethod, onVerified
             ) : (
               <button
                 type="button"
-                onClick={sendBySms}
-                disabled={sending || loading}
-                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#A0E7EC] transition-colors hover:text-[#CEFF8F] disabled:opacity-60"
+                disabled
+                title="Indisponible temporairement"
+                className="mt-2 inline-flex cursor-not-allowed items-center gap-1.5 text-xs font-semibold text-[#A1A9A9] opacity-50"
               >
-                {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Smartphone className="h-3.5 w-3.5" />}
-                Recevoir le code par SMS
+                <Smartphone className="h-3.5 w-3.5" />
+                Recevoir le code par SMS — indisponible temporairement
               </button>
             )}
             <p className="mt-2 text-[10px] text-[#A1A9A9]">

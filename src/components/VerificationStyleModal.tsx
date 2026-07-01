@@ -15,11 +15,11 @@ export type VerifPair = { email: string; phone: string };
 
 export type SignerWL = { index: number; label: string; emails: string[]; phones: string[]; pairs: VerifPair[] };
 
-const OPTIONS: { key: Exclude<VerifMethod, 'pay'>; Icon: typeof Mail; title: string; desc: string }[] = [
+const OPTIONS: { key: Exclude<VerifMethod, 'pay'>; Icon: typeof Mail; title: string; desc: string; disabled?: boolean }[] = [
   { key: 'none', Icon: ShieldOff, title: 'Sans vérification', desc: 'Le signataire signe directement (flux actuel).' },
   { key: 'email', Icon: Mail, title: 'Vérification par email', desc: 'Code envoyé à l’adresse autorisée. Saisie obligatoire pour signer.' },
-  { key: 'sms', Icon: MessageSquare, title: 'Vérification par SMS', desc: 'Code envoyé par SMS au numéro autorisé.' },
-  { key: 'email_sms', Icon: ShieldCheck, title: 'Vérification email + SMS', desc: 'Double vérification : email PUIS SMS du même couple.' },
+  { key: 'sms', Icon: MessageSquare, title: 'Vérification par SMS', desc: 'Code envoyé par SMS au numéro autorisé.', disabled: true },
+  { key: 'email_sms', Icon: ShieldCheck, title: 'Vérification email + SMS', desc: 'Double vérification : email PUIS SMS du même couple.', disabled: true },
 ];
 
 const normPhone = (s: string) => s.replace(/[^\d+]/g, '');
@@ -134,21 +134,23 @@ export default function VerificationStyleModal({
         <div className="space-y-2.5">
           {OPTIONS.map((o) => {
             const selected = method === o.key;
+            const disabled = !!o.disabled;
             return (
               <button
                 key={o.key}
                 type="button"
-                onClick={() => setMethod(o.key)}
-                className={`flex w-full items-start gap-3 rounded-xl border p-3.5 text-left transition-colors ${selected ? 'border-[#CEFF8F] bg-[#CEFF8F]/10' : 'border-[#3A4242] bg-[#191E1E] hover:border-[#A1A9A9]'}`}
+                disabled={disabled}
+                onClick={() => { if (!disabled) setMethod(o.key); }}
+                className={`flex w-full items-start gap-3 rounded-xl border p-3.5 text-left transition-colors ${disabled ? 'cursor-not-allowed border-[#3A4242] bg-[#191E1E] opacity-50' : selected ? 'border-[#CEFF8F] bg-[#CEFF8F]/10' : 'border-[#3A4242] bg-[#191E1E] hover:border-[#A1A9A9]'}`}
               >
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: selected ? '#CEFF8F' : '#2c3232', color: selected ? '#191E1E' : '#A1A9A9' }}>
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: selected && !disabled ? '#CEFF8F' : '#2c3232', color: selected && !disabled ? '#191E1E' : '#A1A9A9' }}>
                   <o.Icon className="h-4 w-4" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="text-sm font-semibold text-[#F3F4F6]">{o.title}</span>
-                  <span className="mt-0.5 block text-xs leading-snug text-[#A1A9A9]">{o.desc}</span>
+                  <span className="mt-0.5 block text-xs leading-snug text-[#A1A9A9]">{disabled ? 'Indisponible temporairement' : o.desc}</span>
                 </span>
-                {selected && <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#CEFF8F]" />}
+                {selected && !disabled && <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#CEFF8F]" />}
               </button>
             );
           })}
