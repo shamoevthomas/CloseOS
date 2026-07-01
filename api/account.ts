@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { subPeriodEndUnix } from './_lib/stripePeriod.js';
 
 export const config = {
     runtime: 'edge',
@@ -174,7 +175,8 @@ async function handleRequestDeletion(req: Request) {
                 const sub = activeSubs.data[0] || trialingSubs.data[0];
                 if (sub) {
                     hasActiveSubscription = true;
-                    periodEndDate = new Date((sub as any).current_period_end * 1000);
+                    const peUnix = subPeriodEndUnix(sub);
+                    periodEndDate = peUnix ? new Date(peUnix * 1000) : null;
 
                     // Schedule cancellation at end of period (not immediate)
                     await stripe.subscriptions.update(sub.id, {

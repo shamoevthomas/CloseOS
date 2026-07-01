@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { subPeriodEndIso } from './_lib/stripePeriod.js';
 
 export const config = {
     runtime: 'edge',
@@ -177,12 +178,9 @@ async function handleStatus(req: Request): Promise<Response> {
             });
         }
 
-        const subAny = sub as any;
         return new Response(JSON.stringify({
             cancel_at_period_end: sub.cancel_at_period_end,
-            current_period_end: subAny.current_period_end
-                ? new Date((typeof subAny.current_period_end === 'number' ? subAny.current_period_end * 1000 : new Date(subAny.current_period_end).getTime())).toISOString()
-                : null,
+            current_period_end: subPeriodEndIso(sub),
         }), {
             headers: { 'Content-Type': 'application/json' }
         });
@@ -242,7 +240,7 @@ async function handleSync(req: Request): Promise<Response> {
                     plan: activeSub.metadata?.plan || 'pro',
                     has_voip: activeSub.metadata?.voip === 'true',
                     billing_cycle: billingCycle,
-                    current_period_end: new Date((activeSub as any).current_period_end * 1000).toISOString()
+                    current_period_end: subPeriodEndIso(activeSub)
                 })
                 .eq('id', userId);
 

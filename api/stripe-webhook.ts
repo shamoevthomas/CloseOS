@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { subPeriodEndIso } from './_lib/stripePeriod.js';
 import {
     detectBillingCycleFromInterval,
     mapReferralReward,
@@ -818,7 +819,7 @@ export default async function handler(req: Request) {
                 .from('profiles')
                 .update({
                     subscription_status: subscription.status,
-                    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                    current_period_end: subPeriodEndIso(subscription),
                     stripe_subscription_id: subscription.id,
                     ...(updatedPlan ? { plan: updatedPlan } : {}),
                     billing_cycle: updatedCycle,

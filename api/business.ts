@@ -5,6 +5,7 @@ import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz'
 import { fr as frLocale } from 'date-fns/locale'
 import Stripe from 'stripe'
 import { computeVisibleQuestionIds } from './_lib/questionnaireConditions.js'
+import { subPeriodEndIso } from './_lib/stripePeriod.js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -7771,7 +7772,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         subscription_interval: item?.price?.recurring?.interval || 'month',
         matched_via: 'auto_won',
         last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
-        next_payment_date: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
+        next_payment_date: subPeriodEndIso(sub),
       }).eq('id', prospect_id)
 
       return res.status(200).json({
@@ -7783,7 +7784,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         subscription_interval: item?.price?.recurring?.interval || 'month',
         matched_via: 'auto_won',
         last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
-        next_payment_date: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
+        next_payment_date: subPeriodEndIso(sub),
       })
     }
 
@@ -7946,7 +7947,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               subscription_status: sub.status,
               subscription_interval: interval,
               last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
-              next_payment_date: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
+              next_payment_date: subPeriodEndIso(sub),
             }).eq('id', prospectId)
             // Also update the payment amount if exists
             await supabase.from('business_payments').update({ amount }).eq('stripe_invoice_id', `sync_${sub.id}`)
@@ -7971,7 +7972,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           subscription_interval: interval,
           matched_via: 'sync',
           last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
-          next_payment_date: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
+          next_payment_date: subPeriodEndIso(sub),
         }
 
         const existingId = existingByEmail.get(customer.email.toLowerCase())
@@ -8077,7 +8078,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 status: sub.status,
                 amount: item?.price?.unit_amount ? item.price.unit_amount / 100 : 0,
                 interval: item?.price?.recurring?.interval || 'month',
-                current_period_end: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
+                current_period_end: subPeriodEndIso(sub),
               }
             })
           }
@@ -8118,7 +8119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           subscription_interval: item?.price?.recurring?.interval || 'month',
           matched_via: 'manual',
           last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
-          next_payment_date: (sub as any).current_period_end ? new Date((sub as any).current_period_end * 1000).toISOString() : null,
+          next_payment_date: subPeriodEndIso(sub),
         }).eq('id', prospect_id)
 
         return res.status(200).json({

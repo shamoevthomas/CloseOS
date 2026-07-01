@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { subPeriodEndIso } from './_lib/stripePeriod.js';
 
 export const config = {
     runtime: 'edge',
@@ -142,9 +143,7 @@ async function updateProspectStripeData(
         last_payment_date: (subscription as any).current_period_start
             ? new Date((subscription as any).current_period_start * 1000).toISOString()
             : null,
-        next_payment_date: (subscription as any).current_period_end
-            ? new Date((subscription as any).current_period_end * 1000).toISOString()
-            : null,
+        next_payment_date: subPeriodEndIso(subscription),
     };
     if (shouldFlipWon) {
         updates.stage = 'won';
@@ -386,9 +385,7 @@ export default async function handler(req: Request) {
                             last_payment_date: (subscription as any).current_period_start
                                 ? new Date((subscription as any).current_period_start * 1000).toISOString()
                                 : null,
-                            next_payment_date: (subscription as any).current_period_end
-                                ? new Date((subscription as any).current_period_end * 1000).toISOString()
-                                : null,
+                            next_payment_date: subPeriodEndIso(subscription),
                         })
                         .select()
                         .single();

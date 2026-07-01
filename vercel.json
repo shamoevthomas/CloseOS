@@ -69,6 +69,14 @@
     {
       "path": "/api/cron/business-stripe-sync",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/sign-subscription-grace",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/business-subscription-sync",
+      "schedule": "15 7 * * *"
     }
   ],
   "rewrites": [
