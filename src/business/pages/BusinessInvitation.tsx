@@ -8,6 +8,26 @@ import { supabase } from '../../lib/supabase';
 import { useBusinessLang } from '../i18n/BusinessLangContext';
 import BusinessVerification from './BusinessVerification';
 
+// Formate une date ISO en heure de Paris (jj/mm/aaaa à hh:mm:ss)
+const fmtAccountDate = (iso?: string | null): string | null => {
+  if (!iso) return null;
+  try {
+    return new Date(iso).toLocaleString('fr-FR', {
+      timeZone: 'Europe/Paris',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+  } catch {
+    return null;
+  }
+};
+
+// Construit la ligne d'infos (date/heure de création) à afficher sous un conflit de compte
+const accountInfoLine = (createdAtIso?: string | null): string => {
+  const d = fmtAccountDate(createdAtIso);
+  return d ? `Compte créé le ${d}` : '';
+};
+
 export function BusinessInvitation() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
@@ -111,7 +131,8 @@ export function BusinessInvitation() {
           .maybeSingle();
 
         if (salesCheck) {
-          setError(t.invitation_account_sales_conflict);
+          const info = accountInfoLine((session.user as any).created_at);
+          setError(info ? `${t.invitation_account_sales_conflict}\n${info}` : t.invitation_account_sales_conflict);
           setSubmitLoading(false);
           return;
         }
@@ -200,7 +221,8 @@ export function BusinessInvitation() {
 
       if (salesProfile) {
         oauthAcceptedRef.current = false;
-        setError(t.invitation_google_sales_conflict);
+        const info = accountInfoLine(user.created_at);
+        setError(info ? `${t.invitation_google_sales_conflict}\n${info}` : t.invitation_google_sales_conflict);
         setSubmitLoading(false);
         return;
       }
@@ -442,7 +464,7 @@ export function BusinessInvitation() {
           </div>
 
           {error && (
-            <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600 border border-red-200">
+            <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600 border border-red-200 whitespace-pre-line">
               {error}
             </div>
           )}

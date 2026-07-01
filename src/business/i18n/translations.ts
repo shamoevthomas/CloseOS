@@ -206,6 +206,7 @@ export interface BusinessTranslations {
   crm_no_offer: string;
   crm_setter_label: string;
   crm_no_setter: string;
+  crm_setter_or_closer_required: string;
   crm_choose_setter: string;
   crm_closer_label: string;
   crm_no_closer: string;
@@ -4912,6 +4913,7 @@ export const fr: BusinessTranslations = {
   crm_no_offer: 'Aucune offre',
   crm_setter_label: 'Setter',
   crm_no_setter: 'Aucun setter',
+  crm_setter_or_closer_required: 'Veuillez assigner au moins un setter ou un closer.',
   crm_choose_setter: 'Choisir un setter',
   crm_closer_label: 'Closer',
   crm_no_closer: 'Aucun closer',
@@ -7810,6 +7812,7 @@ export const en: BusinessTranslations = {
   crm_no_offer: 'No offer',
   crm_setter_label: 'Setter',
   crm_no_setter: 'No setter',
+  crm_setter_or_closer_required: 'Please assign at least a setter or a closer.',
   crm_choose_setter: 'Choose a setter',
   crm_closer_label: 'Closer',
   crm_no_closer: 'No closer',

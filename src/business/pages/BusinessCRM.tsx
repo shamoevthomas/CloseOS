@@ -378,9 +378,6 @@ export function BusinessCRM() {
     } else {
       setterId = newSetterId || null
     }
-    // Setter is required only if user needs picker (Closer/Owner/HoS/Admin) and not solo
-    if (!isSolo && needsSetterPicker && !setterId) return
-
     // Determine closer
     let closerId: string | null = null
     if (isSolo) {
@@ -404,6 +401,12 @@ export function BusinessCRM() {
           closerId = setterId
         }
       }
+    }
+
+    // Setter and closer are each optional, but at least ONE must be assigned.
+    if (!setterId && !closerId) {
+      toast.error(t.crm_setter_or_closer_required || 'Veuillez assigner au moins un setter ou un closer.')
+      return
     }
 
     setAddLoading(true)
@@ -1083,14 +1086,14 @@ export function BusinessCRM() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_setter_label} *</label>
+                  <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_setter_label} <span className="text-stone-400 dark:text-neutral-500 font-normal">({t.crm_optional})</span></label>
                   <div className="flex gap-2">
                     <select
                       value={newSetterId}
                       onChange={(e) => setNewSetterId(e.target.value)}
                       className="flex-1 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     >
-                      <option value="">{t.crm_choose_setter}</option>
+                      <option value="">{t.crm_no_setter}</option>
                       {teamSetters.map(s => (
                         <option key={s.id} value={s.id}>{s.first_name} {s.last_name} {s.role === 'Owner' ? '(Owner)' : `(${s.role})`}</option>
                       ))}
@@ -1161,7 +1164,7 @@ export function BusinessCRM() {
                 </button>
                 <button
                   onClick={handleAddProspect}
-                  disabled={addLoading || !newContact || (!isSolo && isOwnerView && !newSetterId)}
+                  disabled={addLoading || !newContact}
                   className="flex-1 rounded-full bg-stone-900 py-2.5 font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
                 >
                   {addLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : t.common_add}
