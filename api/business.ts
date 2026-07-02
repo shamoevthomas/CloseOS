@@ -2781,6 +2781,130 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ sent: true })
     }
 
+    // Notifie la personne assignée (closer/owner) d'un RDV : email complet (date, prospect,
+    // Google Meet, notes + invitation .ics) + notification in-app. Idempotent via assignee_notified_at.
+    if (action === 'appointment-notify-assignee' && req.method === 'POST') {
+      const { appointment_id, user_id: ownerUserId, force } = req.body
+      if (!appointment_id || !ownerUserId) return res.status(400).json({ error: 'appointment_id and user_id required' })
+
+      const { data: appt } = await supabase
+        .from('business_appointments')
+        .select('*, prospect:business_prospects(id, contact, email, phone, timezone)')
+        .eq('id', appointment_id)
+        .eq('user_id', ownerUserId)
+        .single()
+
+      if (!appt) return res.status(404).json({ error: 'appointment not found' })
+      if (!appt.assigned_to) return res.status(200).json({ skipped: true, reason: 'no assignee' })
+      if (appt.assignee_notified_at && !force) return res.status(200).json({ skipped: true, reason: 'already_notified' })
+
+      // Résout l'assigné : team_member (id) ou owner.
+      let assigneeAuthUserId: string | null = null
+      let assigneeName = ''
+      const { data: tmRow } = await supabase.from('business_team_members').select('user_id, first_name, last_name').eq('id', appt.assigned_to).single()
+      if (tmRow) {
+        assigneeAuthUserId = tmRow.user_id || null
+        assigneeName = [tmRow.first_name, tmRow.last_name].filter(Boolean).join(' ')
+      } else {
+        const { data: ownerRow } = await supabase.from('business_users').select('id, full_name').eq('id', appt.assigned_to).single()
+        if (ownerRow) { assigneeAuthUserId = ownerRow.id; assigneeName = ownerRow.full_name || '' }
+      }
+      if (!assigneeAuthUserId) return res.status(200).json({ skipped: true, reason: 'assignee has no account' })
+
+      const { data: authU } = await supabase.auth.admin.getUserById(assigneeAuthUserId)
+      const assigneeEmail = authU?.user?.email || null
+
+      const prospectName = appt.prospect?.contact || appt.contact || 'Prospect'
+      const prospectEmail = appt.prospect?.email || ''
+      const prospectPhone = appt.prospect?.phone || ''
+      const { dateFr: apptDate, timeFr: apptTime } = buildProspectAppointmentDate(appt, appt.timezone)
+      const meetLink = appt.google_meet_link || null
+      const baseUrl = 'https://www.closeos.fr'
+
+      // Notification in-app (cloche) pour l'assigné.
+      await supabase.from('reminders').insert([{
+        user_id: assigneeAuthUserId,
+        title: `Nouveau rendez-vous assigné : ${prospectName}`,
+        description: `${apptDate}${apptTime ? ` à ${apptTime}` : ''}${meetLink ? ` — Google Meet inclus` : ''}`,
+        reminder_date: new Date().toISOString(),
+        is_done: false,
+        is_notification: true,
+      }]).then(undefined, () => undefined)
+
+      const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+      if (assigneeEmail && BREVO_API_KEY) {
+        const contactLine = [prospectEmail, prospectPhone].filter(Boolean).join(' · ')
+        const meetSection = meetLink ? `
+          <div style="margin-top:8px;margin-bottom:32px;text-align:center;">
+            <a href="${meetLink}" style="display:inline-block;background-color:#111111;color:#ffffff;text-align:center;padding:16px 40px;border-radius:48px;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;text-decoration:none;letter-spacing:-0.02em;">Rejoindre le Google Meet</a>
+          </div>` : ''
+        const notesSection = appt.notes ? `<div style="background-color:#f5f3f2;border-radius:24px;padding:24px;margin-bottom:32px;"><p style="margin:0;font-family:'Inter',Helvetica,sans-serif;font-size:14px;color:#1b1c1b;line-height:1.6;white-space:pre-wrap;">${String(appt.notes).replace(/</g, '&lt;')}</p></div>` : ''
+
+        const emailHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"></head>
+<body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+<tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><img src="https://closeos.fr/closeos-business-logo-ecrit.png" alt="CloseOS Business" width="160" style="display:block;"></td></tr>
+<tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
+<h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:34px;color:#111111;letter-spacing:-0.04em;line-height:1.1;margin:0 0 16px;">Nouveau<br>rendez-vous assigné</h1>
+<p style="font-family:'Inter',Helvetica,sans-serif;font-size:16px;color:#1b1c1b;line-height:1.6;margin:0 0 40px;">Bonjour ${assigneeName || ''}, un rendez-vous avec <strong style="color:#111111;">${prospectName}</strong> vient de vous être assigné.</p>
+<div style="background-color:#f5f3f2;border-radius:48px;padding:40px 32px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;">
+<tr><td style="padding-bottom:16px;"><p style="margin:0;font-family:'Inter',Helvetica,sans-serif;font-size:12px;color:#747878;text-transform:uppercase;letter-spacing:0.1em;font-weight:500;">Date</p><p style="margin:4px 0 0;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:18px;color:#111111;letter-spacing:-0.02em;">${apptDate}</p></td></tr>
+<tr><td style="padding-bottom:16px;"><p style="margin:0;font-family:'Inter',Helvetica,sans-serif;font-size:12px;color:#747878;text-transform:uppercase;letter-spacing:0.1em;font-weight:500;">Heure</p><p style="margin:4px 0 0;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:18px;color:#111111;letter-spacing:-0.02em;">${apptTime}</p></td></tr>
+<tr><td><p style="margin:0;font-family:'Inter',Helvetica,sans-serif;font-size:12px;color:#747878;text-transform:uppercase;letter-spacing:0.1em;font-weight:500;">Prospect</p><p style="margin:4px 0 0;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:18px;color:#111111;letter-spacing:-0.02em;">${prospectName}</p>${contactLine ? `<p style="margin:4px 0 0;font-family:'Inter',Helvetica,sans-serif;font-size:14px;color:#747878;">${contactLine}</p>` : ''}</td></tr>
+</table></div>
+${meetSection}
+${notesSection}
+<div style="text-align:center;"><a href="${baseUrl}/business/rendez-vous" style="display:inline-block;background-color:#f5f3f2;color:#111111;text-align:center;padding:14px 32px;border-radius:48px;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:13px;text-decoration:none;letter-spacing:-0.02em;">Voir dans mon agenda</a></div>
+</td></tr>
+<tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits reserves</p><p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">Cet e-mail a ete envoye automatiquement, merci de ne pas y repondre.</p></td></tr>
+</table></td></tr></table></body></html>`
+
+        // Invitation .ics (mêmes règles que la confirmation prospect).
+        let icsBase64: string | null = null
+        try {
+          const isAllDay = !appt.time || appt.all_day
+          const uid = `closeos-appt-${appt.id}-assignee@closeos.fr`
+          const nowUtc = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+          let icsDateBlock = ''
+          if (isAllDay) {
+            const dtDate = (appt.date || '').replace(/-/g, '')
+            const nextDay = new Date((appt.date || '') + 'T00:00:00'); nextDay.setDate(nextDay.getDate() + 1)
+            icsDateBlock = `DTSTART;VALUE=DATE:${dtDate}\nDTEND;VALUE=DATE:${nextDay.toISOString().split('T')[0].replace(/-/g, '')}`
+          } else {
+            const startUtc = appt.datetime_utc ? new Date(appt.datetime_utc) : fromZonedTime(`${appt.date}T${appt.time}:00`, appt.timezone || 'Europe/Paris')
+            const durationMins = appt.duration || 30
+            const startDt = startUtc.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+            const endDt = new Date(startUtc.getTime() + durationMins * 60000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+            icsDateBlock = `DTSTART:${startDt}\nDTEND:${endDt}`
+          }
+          const icsContent = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CloseOS//FR','CALSCALE:GREGORIAN','METHOD:REQUEST','BEGIN:VEVENT',`UID:${uid}`,`DTSTAMP:${nowUtc}`,icsDateBlock,`SUMMARY:${appt.title || `Call — ${prospectName}`}`,`DESCRIPTION:Rendez-vous avec ${prospectName}${meetLink ? `\\nGoogle Meet: ${meetLink}` : ''}`,...(meetLink ? [`LOCATION:${meetLink}`] : []),'STATUS:CONFIRMED','END:VEVENT','END:VCALENDAR'].join('\r\n')
+          icsBase64 = Buffer.from(icsContent).toString('base64')
+        } catch { /* skip attachment */ }
+
+        const emailPayload: Record<string, any> = {
+          sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+          to: [{ email: assigneeEmail, name: assigneeName || undefined }],
+          subject: `Nouveau RDV assigné : ${prospectName} — ${apptDate}${apptTime ? ` à ${apptTime}` : ''}`,
+          htmlContent: emailHtml,
+        }
+        if (icsBase64) emailPayload.attachment = [{ content: icsBase64, name: 'invitation.ics' }]
+
+        const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+          body: JSON.stringify(emailPayload),
+        })
+        if (!emailRes.ok) {
+          const errData = await emailRes.json().catch(() => ({}))
+          console.error('Brevo assignee email error:', emailRes.status, JSON.stringify(errData))
+        }
+      }
+
+      await supabase.from('business_appointments').update({ assignee_notified_at: new Date().toISOString() }).eq('id', appointment_id)
+      return res.status(200).json({ notified: true, emailed: !!assigneeEmail })
+    }
+
     // Quick booking from prospect view: creates appointment + GCal event (with Meet) + sends confirmation email.
     if (action === 'appointments-book-quick' && req.method === 'POST') {
       const {

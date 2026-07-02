@@ -175,21 +175,51 @@ export function CloserCallRoom() {
       chunksRef.current = []
       const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const tracks = [...displayStream.getVideoTracks(), ...displayStream.getAudioTracks(), ...micStream.getAudioTracks()]
-      const combinedStream = new MediaStream(tracks)
+
+      // MediaRecorder n'encode QUE la première piste audio d'un MediaStream : mettre
+      // l'audio de l'onglet et le micro comme deux pistes séparées faisait perdre le
+      // micro. On mixe les deux sources en une seule piste via l'API Web Audio.
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+      const audioCtx = new AudioCtx()
+      const mixDest = audioCtx.createMediaStreamDestination()
+      if (displayStream.getAudioTracks().length) audioCtx.createMediaStreamSource(displayStream).connect(mixDest)
+      if (micStream.getAudioTracks().length) audioCtx.createMediaStreamSource(micStream).connect(mixDest)
+
+      const combinedStream = new MediaStream([
+        ...displayStream.getVideoTracks(),
+        ...mixDest.stream.getAudioTracks(),
+      ])
       streamRef.current = combinedStream
-      const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' })
+
+      // Préfère un vrai conteneur MP4 (H.264/AAC) si le navigateur le supporte,
+      // sinon repli honnête en webm (extension cohérente avec le contenu).
+      const candidates = [
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+        'video/mp4;codecs=h264,aac',
+        'video/mp4',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+      ]
+      const mimeType = candidates.find(tp => MediaRecorder.isTypeSupported(tp)) || ''
+      const isMp4 = mimeType.startsWith('video/mp4')
+      const recorder = mimeType ? new MediaRecorder(combinedStream, { mimeType }) : new MediaRecorder(combinedStream)
+
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' })
+        const outType = isMp4 ? 'video/mp4' : 'video/webm'
+        const ext = isMp4 ? 'mp4' : 'webm'
+        const blob = new Blob(chunksRef.current, { type: outType })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.style.display = 'none'; a.href = url
-        a.download = `${lang === 'en' ? 'Recording' : 'Enregistrement'}_${contactName}_${new Date().toISOString().slice(0, 10)}.mp4`
+        a.download = `${lang === 'en' ? 'Recording' : 'Enregistrement'}_${contactName}_${new Date().toISOString().slice(0, 10)}.${ext}`
         document.body.appendChild(a); a.click()
+        URL.revokeObjectURL(url)
         combinedStream.getTracks().forEach(t => t.stop())
         displayStream.getTracks().forEach(t => t.stop())
         micStream.getTracks().forEach(t => t.stop())
+        audioCtx.close().catch(() => {})
       }
       displayStream.getVideoTracks()[0].onended = () => stopRecording()
       recorder.start(1000)

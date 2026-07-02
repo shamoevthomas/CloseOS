@@ -366,7 +366,7 @@ export function SetterCallDetails() {
       }
 
       if (selectedOutcome === 'qualified' && selectedCloser && selectedSlot && effectiveOwnerId) {
-        const { error: apptError } = await supabase.from('business_appointments').insert([{
+        const { data: newAppt, error: apptError } = await supabase.from('business_appointments').insert([{
           user_id: effectiveOwnerId,
           assigned_to: selectedCloser.id,
           prospect_id: prospect?.id || null,
@@ -380,14 +380,14 @@ export function SetterCallDetails() {
           type: 'call',
           status: 'pending',
           notes: `Qualifié par ${teamMember?.first_name || 'Setter'}. ${notes || ''}`.trim(),
-        }])
+        }]).select('id').single()
         if (apptError) console.error('Erreur appointment:', apptError.message)
 
         if (isGoogleConnected) {
           const [startH, startM] = selectedSlot.time.split(':').map(Number)
           const endMinutes = startH * 60 + startM + 30
           const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
-          await createGoogleEvent({
+          const gcal = await createGoogleEvent({
             title: `Call — ${call.contact_name}`,
             date: selectedSlot.date,
             startTime: selectedSlot.time,
@@ -395,6 +395,11 @@ export function SetterCallDetails() {
             description: `Prospect qualifié par ${teamMember?.first_name || 'Setter'}.\nCloser: ${selectedCloser.first_name} ${selectedCloser.last_name}\n${notes || ''}`.trim(),
             withGoogleMeet: true,
           })
+          // Stocke le lien Meet sur le RDV pour qu'il apparaisse dans les emails
+          // (confirmation prospect + notification closer, envoyés par le cron).
+          if (gcal?.hangoutLink && newAppt?.id) {
+            await supabase.from('business_appointments').update({ google_meet_link: gcal.hangoutLink }).eq('id', newAppt.id)
+          }
         }
 
         if (assignmentMode === 'suivant') {

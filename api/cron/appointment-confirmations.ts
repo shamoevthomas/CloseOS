@@ -13,16 +13,16 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 const API_BASE = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.closeos.fr';
 
 /**
- * Filet de sécurité des confirmations de RDV.
- * Envoie la confirmation au prospect pour tout RDV à venir qui :
- *  - est lié à un prospect qui a un email,
- *  - n'a pas encore reçu de confirmation (confirmation_sent_at IS NULL).
- * Couvre TOUS les cas : n'importe quel chemin de création, prospect lié après coup,
- * email ajouté après la création. L'envoi réel + le tampon confirmation_sent_at
- * sont faits par l'action `appointment-send-confirmation` (source unique de vérité).
+ * Filet de sécurité des emails de RDV.
+ * Pour tout RDV à venir (pending/confirmed), envoie :
+ *  - la confirmation au PROSPECT (s'il a un email) si confirmation_sent_at IS NULL,
+ *  - la notification à l'ASSIGNÉ (closer/owner) si assignee_notified_at IS NULL.
+ * Couvre TOUS les cas : n'importe quel chemin de création/assignation, prospect lié
+ * après coup, email ajouté après coup. L'envoi réel + les tampons sont faits par les
+ * actions `appointment-send-confirmation` et `appointment-notify-assignee`.
  *
- * Note : tout l'existant a été marqué comme déjà traité lors de la migration,
- * donc seules les nouvelles réservations sont concernées.
+ * Note : tout l'existant a été marqué comme déjà traité lors des migrations,
+ * donc seules les nouvelles réservations/assignations sont concernées.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
@@ -31,18 +31,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const now = new Date();
   let sent = 0;
+  let notified = 0;
   let skipped = 0;
   let errors = 0;
 
+  const post = async (act: string, appt: any) => {
+    try {
+      const r = await fetch(`${API_BASE}/api/business?action=${act}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appointment_id: appt.id,
+          user_id: appt.user_id,
+          google_meet_link: appt.google_meet_link || null,
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.sent) sent++;
+      else if (r.ok && data.notified) notified++;
+      else if (r.ok && data.skipped) skipped++;
+      else { errors++; console.error('[appt-confirmations] failed', act, appt.id, r.status, data); }
+    } catch (e) {
+      errors++;
+      console.error('[appt-confirmations] error', act, appt.id, e);
+    }
+  };
+
   try {
-    // RDV à venir, liés à un prospect, sans confirmation encore envoyée.
+    // RDV à venir avec au moins un email en attente (prospect ou assigné).
     const { data: appts, error } = await supabaseAdmin
       .from('business_appointments')
-      .select('id, user_id, prospect_id, google_meet_link, datetime_utc')
-      .is('confirmation_sent_at', null)
-      .not('prospect_id', 'is', null)
+      .select('id, user_id, prospect_id, assigned_to, google_meet_link, confirmation_sent_at, assignee_notified_at, datetime_utc')
+      .or('confirmation_sent_at.is.null,assignee_notified_at.is.null')
       .in('status', ['pending', 'confirmed'])
       .gte('datetime_utc', new Date(now.getTime() - 60 * 60000).toISOString())
+      // Grâce de 2 min : laisse le temps aux flux de créer l'event Google et de
+      // stocker le lien Meet avant l'envoi, pour qu'il figure dans les emails.
+      .lte('created_at', new Date(now.getTime() - 2 * 60000).toISOString())
       .order('datetime_utc', { ascending: true })
       .limit(200);
 
@@ -52,43 +77,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!appts?.length) {
-      return res.status(200).json({ message: 'Aucune confirmation en attente', sent: 0 });
+      return res.status(200).json({ message: 'Rien en attente', sent: 0, notified: 0 });
     }
 
     for (const appt of appts) {
-      // Ne poste que si le prospect a un email (sinon on retentera plus tard,
+      // Confirmation prospect : seulement s'il a un email (sinon on retentera plus tard,
       // ex. email ajouté après coup — le RDV reste éligible jusqu'à sa date).
-      const { data: prospect } = await supabaseAdmin
-        .from('business_prospects')
-        .select('email')
-        .eq('id', appt.prospect_id)
-        .single();
+      if (!appt.confirmation_sent_at && appt.prospect_id) {
+        const { data: prospect } = await supabaseAdmin
+          .from('business_prospects')
+          .select('email')
+          .eq('id', appt.prospect_id)
+          .single();
+        if (prospect?.email) await post('appointment-send-confirmation', appt);
+        else skipped++;
+      }
 
-      if (!prospect?.email) { skipped++; continue; }
-
-      try {
-        const r = await fetch(`${API_BASE}/api/business?action=appointment-send-confirmation`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            appointment_id: appt.id,
-            user_id: appt.user_id,
-            google_meet_link: appt.google_meet_link || null,
-          }),
-        });
-        const data = await r.json().catch(() => ({}));
-        if (r.ok && data.sent) sent++;
-        else if (r.ok && data.skipped) skipped++;
-        else { errors++; console.error('[appt-confirmations] send failed', appt.id, r.status, data); }
-      } catch (e) {
-        errors++;
-        console.error('[appt-confirmations] send error', appt.id, e);
+      // Notification à l'assigné (closer/owner).
+      if (!appt.assignee_notified_at && appt.assigned_to) {
+        await post('appointment-notify-assignee', appt);
       }
     }
 
-    return res.status(200).json({ message: 'Done', sent, skipped, errors });
+    return res.status(200).json({ message: 'Done', sent, notified, skipped, errors });
   } catch (err) {
     console.error('[appt-confirmations] cron error:', err);
-    return res.status(500).json({ error: 'Internal error', sent, skipped, errors });
+    return res.status(500).json({ error: 'Internal error', sent, notified, skipped, errors });
   }
 }
