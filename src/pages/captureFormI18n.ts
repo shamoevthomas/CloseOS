@@ -16,6 +16,8 @@ export interface CaptureFormTranslations {
   success_confirmed: string
   success_redirect: string
   success_email: string
+  success_email_rdv: string
+  success_spam: string
   // Fallback titles
   fallback_title: string
   // Powered by
@@ -83,6 +85,8 @@ const fr: CaptureFormTranslations = {
   success_confirmed: 'Rendez-vous confirmé',
   success_redirect: 'Vous allez être redirigé...',
   success_email: 'Vous recevrez une confirmation par email.',
+  success_email_rdv: 'Vous recevrez un email de confirmation contenant le lien de votre rendez-vous.',
+  success_spam: 'Pas de mail ? Pensez à vérifier vos spams.',
   fallback_title: 'Prenez rendez-vous',
   powered_by: 'Propulsé par',
   powered_by_footer: 'Propulsé par CloseOS Business',
@@ -137,6 +141,8 @@ const en: CaptureFormTranslations = {
   success_confirmed: 'Appointment confirmed',
   success_redirect: 'You will be redirected shortly...',
   success_email: 'You will receive a confirmation by email.',
+  success_email_rdv: 'You will receive a confirmation email containing the link to your appointment.',
+  success_spam: 'No email? Please check your spam folder.',
   fallback_title: 'Book an appointment',
   powered_by: 'Powered by',
   powered_by_footer: 'Powered by CloseOS Business',

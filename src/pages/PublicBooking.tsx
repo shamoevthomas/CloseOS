@@ -916,6 +916,12 @@ export function PublicBooking() {
             </div>
           </div>
           )}
+          {email && (
+            <>
+              <p className="mt-6 text-xs text-[#444748]/60">Vous recevrez un email de confirmation contenant le lien de votre rendez-vous.</p>
+              <p className="mt-1 text-xs text-[#444748]/45">Pas de mail ? Pensez à vérifier vos spams.</p>
+            </>
+          )}
           {info.redirectUrl ? (
             <p className="mt-6 text-xs text-[#444748]/50 animate-pulse">Vous allez être redirigé...</p>
           ) : info.companyName ? (

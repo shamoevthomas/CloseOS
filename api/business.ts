@@ -2586,7 +2586,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Send appointment confirmation email to prospect
     if (action === 'appointment-send-confirmation' && req.method === 'POST') {
-      const { appointment_id, user_id: ownerUserId, google_meet_link: meetLink } = req.body
+      const { appointment_id, user_id: ownerUserId, google_meet_link: meetLink, force } = req.body
       if (!appointment_id || !ownerUserId) return res.status(400).json({ error: 'appointment_id and user_id required' })
 
       const { data: appt } = await supabase
@@ -2597,6 +2597,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single()
 
       if (!appt?.prospect?.email) return res.status(200).json({ skipped: true, reason: 'no prospect email' })
+      // Idempotence : n'envoie qu'une seule fois, sauf renvoi manuel explicite (force).
+      if (appt.confirmation_sent_at && !force) return res.status(200).json({ skipped: true, reason: 'already_sent' })
 
       const prospectName = appt.prospect.contact || 'Bonjour'
       const prospectEmail = appt.prospect.email
@@ -2774,6 +2776,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('Brevo appointment email error:', emailRes.status, JSON.stringify(emailData))
         return res.status(500).json({ error: 'Email send failed', details: emailData })
       }
+      // Tampon : marque la confirmation comme envoyée pour la dédup (cron + renvois).
+      await supabase.from('business_appointments').update({ confirmation_sent_at: new Date().toISOString() }).eq('id', appointment_id)
       return res.status(200).json({ sent: true })
     }
 
@@ -3568,6 +3572,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       await supabase.from('business_google_calendar_tokens').delete().eq('user_id', user_id)
       return res.status(200).json({ success: true })
+    }
+
+    // ─── Agenda: busy blocks ("occupé") of a member's Google Calendar — NO event details ───
+    // Read-only. Reuses the same helpers as the booking availability, but ONLY returns
+    // anonymized {start, end} busy slots (fetchGoogleCalendarEvents already strips titles
+    // and filters out "available"/transparent events). Does NOT touch capture-slots/booking-info.
+    if (action === 'agenda-member-busy' && req.method === 'GET') {
+      const owner_id = req.query.owner_id as string
+      const member_user_id = req.query.member_user_id as string
+      const time_min = req.query.time_min as string
+      const time_max = req.query.time_max as string
+      if (!owner_id || !member_user_id || !time_min || !time_max) {
+        return res.status(400).json({ error: 'owner_id, member_user_id, time_min and time_max are required' })
+      }
+
+      // Authorize: the requested user must be the owner himself OR a team member of this org.
+      let allowed = member_user_id === owner_id
+      if (!allowed) {
+        const { data: tm } = await supabase
+          .from('business_team_members')
+          .select('id')
+          .eq('business_owner_id', owner_id)
+          .eq('user_id', member_user_id)
+          .maybeSingle()
+        allowed = !!tm
+      }
+      if (!allowed) return res.status(403).json({ error: 'forbidden' })
+
+      const token = await getGoogleAccessToken(supabase, member_user_id)
+      if (!token) return res.status(200).json({ busy: [], connected: false })
+
+      const busy = await fetchGoogleCalendarEvents(token, time_min, time_max)
+      return res.status(200).json({ busy, connected: true })
     }
 
     // ─── Capture slots: real availability for campaign (no auth) ───

@@ -2,9 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ChevronLeft, Files, Pencil, Plus, Copy, Check, Loader2, RefreshCw, ShieldCheck,
-  Users, Link as LinkIcon, Mail, CheckCircle2, Ban,
+  Users, Link as LinkIcon, Mail, CheckCircle2, Ban, Eye, X,
 } from 'lucide-react';
-import { getContract } from '../lib/signContracts';
+import { getContract, mergedInlineValues } from '../lib/signContracts';
+import { getCertificateUrl } from '../lib/signCertificate';
+import SignDocViewer, { type SignDocData } from '../components/SignDocViewer';
+import SignInstanceFilters, { matchInstance, isFilterActive, EMPTY_INSTANCE_FILTER, type InstanceFilter } from '../components/SignInstanceFilters';
 import {
   listTemplateReps, createTemplateRep, revokeTemplateRep,
   generateOwnerLink, regenerateInstance, listTemplateInstances,
@@ -28,6 +31,7 @@ export default function SignTemplateDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
+  const [verifMethod, setVerifMethod] = useState<'none' | 'email' | 'sms' | 'email_sms' | 'pay'>('none');
   const [notTemplate, setNotTemplate] = useState(false);
   const [reps, setReps] = useState<SignTemplateRep[]>([]);
   const [instances, setInstances] = useState<SignInstanceRow[]>([]);
@@ -41,6 +45,11 @@ export default function SignTemplateDashboard() {
   const [genBusy, setGenBusy] = useState(false);
   const [lastOwnerLink, setLastOwnerLink] = useState<string | null>(null);
   const [busyInstance, setBusyInstance] = useState<string | null>(null);
+  // Aperçu du contrat signé + accès au certificat
+  const [viewer, setViewer] = useState<{ title: string; subtitle: string; doc: SignDocData } | null>(null);
+  const [viewerLoading, setViewerLoading] = useState<string | null>(null);
+  const [certBusy, setCertBusy] = useState<string | null>(null);
+  const [filter, setFilter] = useState<InstanceFilter>(EMPTY_INSTANCE_FILTER);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -53,6 +62,7 @@ export default function SignTemplateDashboard() {
         return;
       }
       setTitle(c.title);
+      setVerifMethod(c.verification_method);
       const [r, i] = await Promise.all([listTemplateReps(id), listTemplateInstances(id)]);
       setReps(r);
       setInstances(i);
@@ -102,9 +112,14 @@ export default function SignTemplateDashboard() {
     }
   };
 
+  // Champs demandés à la génération = pilotés par la méthode de vérif du modèle.
+  const needEmail = verifMethod === 'email' || verifMethod === 'email_sms';
+  const needPhone = verifMethod === 'sms' || verifMethod === 'email_sms';
+
   const genOwner = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id || !ownerForm.email.trim()) return;
+    if (!id || !ownerForm.name.trim()) return;
+    if (needEmail && !ownerForm.email.trim()) return;
     setGenBusy(true);
     try {
       const res = await generateOwnerLink(id, { name: ownerForm.name, email: ownerForm.email, phone: ownerForm.phone });
@@ -118,6 +133,47 @@ export default function SignTemplateDashboard() {
       alert("Impossible de générer le lien.");
     } finally {
       setGenBusy(false);
+    }
+  };
+
+  // Aperçu « en grand » d'une instance (document + valeurs + signatures), lecture seule.
+  const openInstanceDoc = async (inst: SignInstanceRow) => {
+    setViewerLoading(inst.id);
+    try {
+      const c = await getContract(inst.id);
+      if (!c) { alert("Impossible d'afficher le contrat."); return; }
+      const doc: SignDocData = {
+        title: c.title,
+        sourceType: c.source_type,
+        contentHtml: c.content_html,
+        theme: c.theme,
+        pdfData: c.pdf_data,
+        images: c.images,
+        inlineValues: mergedInlineValues(c.inline_values, c.signers),
+        fields: c.fields,
+      };
+      const who = inst.signerName || inst.signerEmail || 'Prospect';
+      setViewer({ title: c.title || 'Contrat', subtitle: `Contrat de ${who}`, doc });
+    } catch (e) {
+      console.error('[sign] aperçu instance', e);
+      alert("Impossible d'afficher le contrat.");
+    } finally {
+      setViewerLoading(null);
+    }
+  };
+
+  // Ouvre le certificat de preuve scellé (bucket privé) dans un nouvel onglet.
+  const openCertificate = async (inst: SignInstanceRow) => {
+    setCertBusy(inst.id);
+    try {
+      const url = await getCertificateUrl({ contractId: inst.id });
+      if (url) window.open(url, '_blank');
+      else alert("Certificat indisponible.");
+    } catch (e) {
+      console.error('[sign] certificat', e);
+      alert("Certificat indisponible.");
+    } finally {
+      setCertBusy(null);
     }
   };
 
@@ -149,6 +205,7 @@ export default function SignTemplateDashboard() {
     );
   }
 
+  const filteredInstances = instances.filter((it) => matchInstance(it, filter));
   const counts = {
     total: instances.length,
     pending: instances.filter((i) => i.effectiveStatus === 'en_cours' || i.effectiveStatus === 'consulte').length,
@@ -201,10 +258,14 @@ export default function SignTemplateDashboard() {
           <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white"><LinkIcon className="h-4 w-4 text-[#CEFF8F]" /> Générer un lien de signature</h2>
           <p className="mb-4 text-xs text-[#A1A9A9]">Pour un prospect précis. Le lien expire dans 7 jours. La signature crée une instance figée avec son certificat.</p>
           <form onSubmit={genOwner} className="space-y-3">
-            <input value={ownerForm.name} onChange={(e) => setOwnerForm({ ...ownerForm, name: e.target.value })} placeholder="Nom du prospect (facultatif)" className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
-            <input required type="email" value={ownerForm.email} onChange={(e) => setOwnerForm({ ...ownerForm, email: e.target.value })} placeholder="Email du prospect" className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
-            <input value={ownerForm.phone} onChange={(e) => setOwnerForm({ ...ownerForm, phone: e.target.value })} placeholder="Téléphone (si vérif SMS)" className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
-            <button type="submit" disabled={genBusy || !ownerForm.email.trim()} className="flex w-full items-center justify-center gap-2 rounded bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50">
+            <input required value={ownerForm.name} onChange={(e) => setOwnerForm({ ...ownerForm, name: e.target.value })} placeholder="Nom du prospect" className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+            {needEmail && (
+              <input required type="email" value={ownerForm.email} onChange={(e) => setOwnerForm({ ...ownerForm, email: e.target.value })} placeholder="Email du prospect" className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+            )}
+            {needPhone && (
+              <input required value={ownerForm.phone} onChange={(e) => setOwnerForm({ ...ownerForm, phone: e.target.value })} placeholder="Téléphone du prospect" className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+            )}
+            <button type="submit" disabled={genBusy || !ownerForm.name.trim() || (needEmail && !ownerForm.email.trim())} className="flex w-full items-center justify-center gap-2 rounded bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50">
               {genBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" strokeWidth={2.5} />} Générer le lien
             </button>
           </form>
@@ -266,8 +327,13 @@ export default function SignTemplateDashboard() {
         {instances.length === 0 ? (
           <p className="px-5 py-10 text-center text-sm text-[#A1A9A9]">Aucun lien généré pour le moment.</p>
         ) : (
+          <>
+            <SignInstanceFilters value={filter} onChange={setFilter} />
+            {filteredInstances.length === 0 ? (
+              <p className="px-5 py-10 text-center text-sm text-[#A1A9A9]">Aucune signature ne correspond {isFilterActive(filter) ? 'à ces filtres' : ''}.</p>
+            ) : (
           <ul className="divide-y divide-[#3A4242]">
-            {instances.map((inst) => {
+            {filteredInstances.map((inst) => {
               const b = INST_BADGE[inst.effectiveStatus] ?? INST_BADGE.en_cours;
               const link = inst.signLink ?? (inst.signerToken ? signerLinkUrl(inst.signerToken) : null);
               return (
@@ -282,7 +348,24 @@ export default function SignTemplateDashboard() {
                   </div>
                   <div className="hidden shrink-0 text-xs text-[#A1A9A9] sm:block">{fmtDate(inst.signedAt ?? inst.createdAt)}</div>
                   <div className="flex shrink-0 items-center gap-1">
-                    {inst.hasCertificate && <span title="Certificat de preuve émis" className="rounded p-1.5 text-[#CEFF8F]"><ShieldCheck className="h-4 w-4" /></span>}
+                    <button
+                      onClick={() => openInstanceDoc(inst)}
+                      disabled={viewerLoading === inst.id}
+                      title="Voir le contrat en grand"
+                      className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white disabled:opacity-50"
+                    >
+                      {viewerLoading === inst.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                    {inst.hasCertificate && (
+                      <button
+                        onClick={() => openCertificate(inst)}
+                        disabled={certBusy === inst.id}
+                        title="Voir le certificat de preuve"
+                        className="rounded p-1.5 text-[#CEFF8F] transition-colors hover:bg-[#3A4242] disabled:opacity-50"
+                      >
+                        {certBusy === inst.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                      </button>
+                    )}
                     {link && (inst.effectiveStatus === 'en_cours' || inst.effectiveStatus === 'consulte') && (
                       <button onClick={() => copy(`inst:${inst.id}`, link)} title="Copier le lien" className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white">
                         {copiedKey === `inst:${inst.id}` ? <Check className="h-4 w-4 text-[#CEFF8F]" /> : <Copy className="h-4 w-4" />}
@@ -298,8 +381,31 @@ export default function SignTemplateDashboard() {
               );
             })}
           </ul>
+            )}
+          </>
         )}
       </section>
+
+      {/* Aperçu « en grand » du contrat signé (lecture seule) */}
+      {viewer && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#191E1E]/95 backdrop-blur-sm">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#3A4242] px-4 py-3 sm:px-6">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold text-white">{viewer.title}</div>
+              <div className="truncate text-xs text-[#A1A9A9]">{viewer.subtitle}</div>
+            </div>
+            <button
+              onClick={() => setViewer(null)}
+              className="flex shrink-0 items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
+            >
+              <X className="h-4 w-4" /> Fermer
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto px-4 py-8 sm:px-6">
+            <SignDocViewer doc={viewer.doc} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

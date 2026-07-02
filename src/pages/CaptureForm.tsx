@@ -753,7 +753,8 @@ export function CaptureForm() {
               )}
             </div>
           )}
-          <p className="text-xs text-[#444748]/60 mb-6">{t.success_email}</p>
+          <p className="text-xs text-[#444748]/60 mb-1">{isInscriptionMode ? t.success_email : t.success_email_rdv}</p>
+          <p className="text-xs text-[#444748]/45 mb-6">{t.success_spam}</p>
           {redirectUrl && (
             <a
               href={redirectUrl}

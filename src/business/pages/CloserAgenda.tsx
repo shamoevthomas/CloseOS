@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   ChevronLeft, ChevronRight, Calendar, Clock, User, Bell, X, Loader2,
-  Video, Phone, MapPin, ExternalLink, RefreshCw, Plus, ChevronDown, FileText, Megaphone, Trash2, Copy,
+  Video, Phone, MapPin, ExternalLink, RefreshCw, Plus, ChevronDown, FileText, Megaphone, Trash2, Copy, Send,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
@@ -185,7 +185,7 @@ interface CalendarEvent {
   title: string
   date: string   // YYYY-MM-DD
   time: string   // "HH:MM" or "HH:MM - HH:MM"
-  type: 'appointment' | 'reminder' | 'google'
+  type: 'appointment' | 'reminder' | 'google' | 'busy'
   color: string  // tailwind bg class
   status?: string
   data?: any
@@ -205,6 +205,9 @@ interface TeamMemberOption {
   first_name: string
   last_name: string
   role: string
+  user_id?: string
+  owner_assignable?: boolean
+  owner_assignable_roles?: string[]
 }
 
 export function CloserAgenda() {
@@ -225,6 +228,10 @@ export function CloserAgenda() {
   const { googleEvents, isConnected, login, isLoading: gLoading, deleteEvent: deleteGoogleEvent, createEvent: createGoogleCalendarEvent } = useBusinessGoogleCalendar()
   const effectiveUserId = ownerUserId || user?.id
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
+  // Setter / Setter-Closer : peuvent consulter l'agenda des membres assignables en Closer
+  // uniquement (Closers + Admin/HOS/Owner ayant activé owner_assignable avec le rôle Closer),
+  // PAS de tout le monde comme l'owner.
+  const isSetterView = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
 
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<ViewMode>('week')
@@ -234,10 +241,14 @@ export function CloserAgenda() {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
+  const [resendingConfirmation, setResendingConfirmation] = useState(false)
 
   // Owner: team member selector
   const [teamMembers, setTeamMembers] = useState<TeamMemberOption[]>([])
   const [selectedMemberId, setSelectedMemberId] = useState<string>('perso')
+
+  // Créneaux "occupé" (Google) du membre actuellement consulté — sans aucun détail
+  const [memberBusy, setMemberBusy] = useState<{ start: string; end: string }[]>([])
 
   // Create event modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -272,6 +283,19 @@ export function CloserAgenda() {
 
   const canAssign = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer'
 
+  // "Assignable en Closer" = Closer (par rôle) OU membre ayant activé owner_assignable + rôle Closer.
+  const isAssignableCloser = (m: TeamMemberOption) =>
+    m.role === 'Closer' || (!!m.owner_assignable && (m.owner_assignable_roles || []).includes('Closer'))
+
+  // Membres affichés dans le sélecteur d'agenda :
+  // - owner / HOS / Admin : tous les membres
+  // - Setter / Setter-Closer : uniquement les membres assignables en Closer
+  const visibleAgendaMembers = isOwnerView
+    ? teamMembers
+    : isSetterView
+      ? teamMembers.filter(isAssignableCloser)
+      : []
+
   const dayScrollRef = useRef<HTMLDivElement>(null)
   const weekScrollRef = useRef<HTMLDivElement>(null)
 
@@ -281,13 +305,13 @@ export function CloserAgenda() {
   useEffect(() => {
     if ((!isOwnerView && !canAssign) || !effectiveUserId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role').eq('business_owner_id', effectiveUserId),
-      supabase.from('business_users').select('id, full_name').eq('id', effectiveUserId).single(),
+      supabase.from('business_team_members').select('id, user_id, first_name, last_name, role, owner_assignable, owner_assignable_roles').eq('business_owner_id', effectiveUserId),
+      supabase.from('business_users').select('id, full_name, owner_assignable, owner_assignable_roles').eq('id', effectiveUserId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = tmRes.data || []
       if (ownerRes.data) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
-        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner' })
+        list.unshift({ id: ownerRes.data.id, user_id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', owner_assignable: ownerRes.data.owner_assignable, owner_assignable_roles: ownerRes.data.owner_assignable_roles })
       }
       setTeamMembers(list)
       // Auto-select self in assignment dropdown
@@ -297,6 +321,29 @@ export function CloserAgenda() {
       }
     })
   }, [isOwnerView, canAssign, effectiveUserId])
+
+  // Charge les créneaux "occupé" du membre consulté (uniquement quand on regarde
+  // l'agenda d'un membre précis — pas "perso", pas "tous"). Aucun détail exposé.
+  useEffect(() => {
+    if (!(isOwnerView || isSetterView) || selectedMemberId === 'perso' || selectedMemberId === 'all' || !effectiveUserId) {
+      setMemberBusy([])
+      return
+    }
+    const selected = teamMembers.find(m => m.id === selectedMemberId)
+    const memberUserId = selectedMemberId === effectiveUserId ? effectiveUserId : selected?.user_id
+    if (!memberUserId) { setMemberBusy([]); return }
+
+    // Fenêtre couvrant la vue courante (mois ± 1 semaine → couvre jour/semaine/mois)
+    const start = new Date(currentDate); start.setDate(1); start.setDate(start.getDate() - 7); start.setHours(0, 0, 0, 0)
+    const end = new Date(currentDate); end.setMonth(end.getMonth() + 1, 0); end.setDate(end.getDate() + 7); end.setHours(23, 59, 59, 0)
+
+    let cancelled = false
+    fetch(`${API_URL}?action=agenda-member-busy&owner_id=${effectiveUserId}&member_user_id=${memberUserId}&time_min=${encodeURIComponent(start.toISOString())}&time_max=${encodeURIComponent(end.toISOString())}`)
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setMemberBusy(Array.isArray(d.busy) ? d.busy : []) })
+      .catch(() => { if (!cancelled) setMemberBusy([]) })
+    return () => { cancelled = true }
+  }, [isOwnerView, isSetterView, selectedMemberId, effectiveUserId, teamMembers, currentDate])
 
   // Fetch full prospect data when an appointment with prospect is selected
   const fetchProspectForEvent = useCallback(async (prospectId: number) => {
@@ -363,12 +410,34 @@ export function CloserAgenda() {
           } else {
             setAppointments(allAppts.filter(a => a.assigned_to === selectedMemberId))
           }
+        } else if (isSetterView) {
+          // Setter / Setter-Closer : uniquement les agendas des membres assignables en Closer (+ le sien)
+          const closerIds = new Set(
+            teamMembers
+              .filter(m => m.role === 'Closer' || (!!m.owner_assignable && (m.owner_assignable_roles || []).includes('Closer')))
+              .map(m => m.id)
+          )
+          // Un RDV non assigné (assigned_to = null) appartient par défaut à l'owner du compte.
+          const ownerIsVisibleCloser = !!effectiveUserId && closerIds.has(effectiveUserId)
+          if (selectedMemberId === 'perso') {
+            setAppointments(allAppts.filter(a => a.assigned_to === teamMember?.id))
+          } else if (selectedMemberId === 'all') {
+            setAppointments(allAppts.filter(a =>
+              (a.assigned_to != null && closerIds.has(a.assigned_to)) ||
+              (ownerIsVisibleCloser && a.assigned_to == null)
+            ))
+          } else {
+            const isOwnerOption = selectedMemberId === effectiveUserId
+            setAppointments(closerIds.has(selectedMemberId)
+              ? allAppts.filter(a => a.assigned_to === selectedMemberId || (isOwnerOption && a.assigned_to == null))
+              : [])
+          }
         } else {
           setAppointments(allAppts.filter(a => a.assigned_to === teamMember?.id))
         }
       }
     } catch (err) { console.error('Error fetching appointments:', err) }
-  }, [effectiveUserId, teamMember?.id, isOwnerView, selectedMemberId, userTimezone])
+  }, [effectiveUserId, teamMember?.id, isOwnerView, isSetterView, teamMembers, selectedMemberId, userTimezone])
 
   const fetchReminders = useCallback(async () => {
     if (!user?.id) return
@@ -504,7 +573,7 @@ export function CloserAgenda() {
       }
     }
 
-    const showGoogleEvents = !isOwnerView || selectedMemberId === 'perso' || selectedMemberId === 'all'
+    const showGoogleEvents = (!isOwnerView && !isSetterView) || selectedMemberId === 'perso' || (isOwnerView && selectedMemberId === 'all')
     for (const ge of (showGoogleEvents ? googleEvents : [])) {
       if (!ge.start || ge.allDay) continue
       const start = ge.start instanceof Date ? ge.start : new Date(ge.start)
@@ -526,8 +595,25 @@ export function CloserAgenda() {
       })
     }
 
+    // Créneaux "occupé" du membre consulté — bloc rouge anonyme, sans détail
+    for (const b of memberBusy) {
+      const bStart = new Date(b.start)
+      if (!isSameDay(bStart, date)) continue
+      const bEnd = new Date(b.end)
+      const st = `${bStart.getHours().toString().padStart(2, '0')}:${bStart.getMinutes().toString().padStart(2, '0')}`
+      const et = `${bEnd.getHours().toString().padStart(2, '0')}:${bEnd.getMinutes().toString().padStart(2, '0')}`
+      events.push({
+        id: `busy-${b.start}`,
+        title: lang === 'en' ? 'Busy' : 'Occupé',
+        date: formatDateKey(bStart),
+        time: `${st} - ${et}`,
+        type: 'busy',
+        color: 'bg-red-100 text-red-700',
+      })
+    }
+
     return events
-  }, [appointments, reminders, googleEvents, isOwnerView, selectedMemberId, userTimezone])
+  }, [appointments, reminders, googleEvents, memberBusy, lang, isOwnerView, isSetterView, selectedMemberId, userTimezone])
 
   const getAllDayGoogleEvents = useCallback((date: Date) => {
     return googleEvents.filter(e => {
@@ -572,6 +658,9 @@ export function CloserAgenda() {
 
   // Event block style — glass morphism inspired
   const getBlockStyle = (ev: CalendarEvent): React.CSSProperties => {
+    if (ev.type === 'busy') {
+      return { background: 'rgba(254,226,226,0.85)', backdropFilter: 'blur(12px)', color: '#b91c1c', borderLeft: '4px solid #ef4444', borderRadius: '12px', boxShadow: '0 2px 8px rgba(239,68,68,0.1)' }
+    }
     if (ev.isGoogleEvent) {
       return { background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', color: '#0f172a', borderLeft: '4px solid #60a5fa', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }
     }
@@ -680,8 +769,10 @@ export function CloserAgenda() {
           }
         }
 
-        // 3. Send confirmation email to prospect if linked and has email
-        if (createLinkProspect && createProspectId && data.appointment) {
+        // 3. Send confirmation email to prospect if linked and has email.
+        // Basé sur le prospect réellement lié au RDV créé (le cron sert de filet
+        // pour tous les autres chemins). L'endpoint skip si pas d'email / déjà envoyé.
+        if (data.appointment?.prospect_id) {
           fetch(`${API_URL}?action=appointment-send-confirmation`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -700,6 +791,31 @@ export function CloserAgenda() {
       console.error('Error creating event:', err)
     } finally {
       setCreateSaving(false)
+    }
+  }
+
+  const handleResendConfirmation = async (event: CalendarEvent) => {
+    if (!effectiveUserId || event.type !== 'appointment' || !event.data?.id) return
+    setResendingConfirmation(true)
+    try {
+      const res = await fetch(`${API_URL}?action=appointment-send-confirmation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appointment_id: event.data.id,
+          user_id: effectiveUserId,
+          google_meet_link: event.data.google_meet_link || event.hangoutLink || null,
+          force: true,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.sent) toast.success(t.closer_agenda_confirmation_sent)
+      else if (data.reason === 'no prospect email') toast.error(t.closer_agenda_confirmation_no_email)
+      else toast.error(t.closer_agenda_confirmation_error)
+    } catch {
+      toast.error(t.closer_agenda_confirmation_error)
+    } finally {
+      setResendingConfirmation(false)
     }
   }
 
@@ -804,7 +920,7 @@ export function CloserAgenda() {
                 return (
                   <div
                     key={ev.id}
-                    onClick={() => setSelectedEvent(ev)}
+                    onClick={() => { if (ev.type !== 'busy') setSelectedEvent(ev) }}
                     className="absolute cursor-pointer overflow-hidden px-3 py-2 transition-all hover:scale-[1.02] hover:shadow-md"
                     style={{ top: `${top}px`, height: `${height}px`, left: `calc(${leftPct}% + 4px)`, width: `calc(${widthPct}% - 8px)`, ...getBlockStyle(ev) }}
                   >
@@ -936,7 +1052,7 @@ export function CloserAgenda() {
                         return (
                           <div
                             key={ev.id}
-                            onClick={() => setSelectedEvent(ev)}
+                            onClick={() => { if (ev.type !== 'busy') setSelectedEvent(ev) }}
                             className="absolute cursor-pointer overflow-hidden px-2.5 py-1.5 transition-all hover:scale-[1.02] hover:shadow-md"
                             style={{ top: `${top}px`, height: `${height}px`, left: `calc(${leftPct}% + 2px)`, width: `calc(${widthPct}% - 4px)`, ...getBlockStyle(ev) }}
                           >
@@ -1014,7 +1130,7 @@ export function CloserAgenda() {
                   {vis.map(ev => (
                     <div
                       key={ev.id}
-                      onClick={() => setSelectedEvent(ev)}
+                      onClick={() => { if (ev.type !== 'busy') setSelectedEvent(ev) }}
                       className={cn('cursor-pointer px-1.5 py-0.5 text-[10px] font-medium rounded-lg truncate', ev.color)}
                     >
                       {ev.time?.split(' - ')[0]} {ev.title}
@@ -1079,8 +1195,8 @@ export function CloserAgenda() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Owner: team member filter */}
-          {isOwnerView && !isSolo && teamMembers.length > 0 && (
+          {/* Owner (tous les membres) + Setter/Setter-Closer (membres assignables en Closer) */}
+          {(isOwnerView || isSetterView) && !isSolo && visibleAgendaMembers.length > 0 && (
             <select
               value={selectedMemberId}
               onChange={e => setSelectedMemberId(e.target.value)}
@@ -1088,7 +1204,7 @@ export function CloserAgenda() {
             >
               <option value="perso">{t.closer_agenda_my_agenda}</option>
               <option value="all">{t.closer_agenda_all_members}</option>
-              {teamMembers.map(m => (
+              {visibleAgendaMembers.map(m => (
                 <option key={m.id} value={m.id}>
                   {m.first_name} {m.last_name} ({m.role})
                 </option>
@@ -1159,7 +1275,7 @@ export function CloserAgenda() {
               {todayEvents.map(ev => (
                 <div
                   key={ev.id}
-                  onClick={() => setSelectedEvent(ev)}
+                  onClick={() => { if (ev.type !== 'busy') setSelectedEvent(ev) }}
                   className="cursor-pointer rounded-2xl border border-stone-200/60 dark:border-white/10 bg-white/70 dark:bg-white/5 backdrop-blur-md p-4 hover:shadow-md hover:scale-[1.01] transition-all"
                 >
                   <div className="flex items-center gap-2 mb-1.5">
@@ -1393,6 +1509,16 @@ export function CloserAgenda() {
                 )
               })()}
               <div className="flex items-center gap-3">
+              {selectedEvent.type === 'appointment' && selectedEvent.data?.prospect?.email && (
+                <button
+                  onClick={() => handleResendConfirmation(selectedEvent)}
+                  disabled={resendingConfirmation}
+                  className="flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors disabled:opacity-50"
+                >
+                  {resendingConfirmation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {t.closer_agenda_resend_confirmation}
+                </button>
+              )}
               {(selectedEvent.type === 'appointment' || selectedEvent.type === 'reminder' || selectedEvent.type === 'google') && (
                 <button
                   onClick={() => handleDeleteEvent(selectedEvent)}

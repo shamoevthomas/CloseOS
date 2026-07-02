@@ -1752,6 +1752,9 @@ export default function SignContractEditor() {
 
   const fieldCount = fields.length + inlineCount;
   const hasSignatureField = fields.some((f) => f.type === 'signature' || f.type === 'initials') || inlineSigCount > 0;
+  // Nb de champs côté propriétaire (libres + inline) — utilisé par la modale de remplissage.
+  const ownerFieldCount =
+    fields.filter((f) => f.role === 'owner').length + inlineFields.filter((f) => f.role === 'owner').length;
   const docClass = theme && theme !== 'blank' ? `sign-doc theme-${theme}` : 'sign-doc';
   const BTN = 'flex h-9 w-9 items-center justify-center rounded text-[#A1A9A9] transition-colors hover:bg-[#3A4242]/40 hover:text-white active:scale-95';
 
@@ -2110,18 +2113,31 @@ export default function SignContractEditor() {
                 >
                   <Pencil className="h-3.5 w-3.5" /> Modifier
                 </button>
-                <button
-                  onClick={openLinksPopup}
-                  className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F]"
-                >
-                  <Copy className="h-3.5 w-3.5" /> {signerCount > 1 ? 'Copier les liens' : 'Copier le lien'}
-                </button>
-                <button
-                  onClick={openSendModal}
-                  className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
-                >
-                  <Send className="h-3.5 w-3.5" /> Envoyer pour signature
-                </button>
+                {isTemplate ? (
+                  /* Modèle validé (signature/champs propriétaire enregistrés) → on gère
+                     la génération des liens depuis le tableau de bord du modèle. */
+                  <button
+                    onClick={() => contractId && navigate(`/sign/app/template/${contractId}`)}
+                    className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
+                  >
+                    <LayoutDashboard className="h-4 w-4" /> Tableau de bord
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={openLinksPopup}
+                      className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F]"
+                    >
+                      <Copy className="h-3.5 w-3.5" /> {signerCount > 1 ? 'Copier les liens' : 'Copier le lien'}
+                    </button>
+                    <button
+                      onClick={openSendModal}
+                      className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
+                    >
+                      <Send className="h-3.5 w-3.5" /> Envoyer pour signature
+                    </button>
+                  </>
+                )}
               </>
             )
           ) : fillMode ? (
@@ -2167,23 +2183,16 @@ export default function SignContractEditor() {
               >
                 <Files className="h-3.5 w-3.5" /> Modèle : {isTemplate ? 'Oui' : 'Non'}
               </button>
-              {isTemplate ? (
-                <button
-                  onClick={() => contractId && navigate(`/sign/app/template/${contractId}`)}
-                  className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
-                >
-                  <LayoutDashboard className="h-4 w-4" /> Tableau de bord
-                </button>
-              ) : (
-                <button
-                  onClick={handleValidate}
-                  disabled={!hasSignatureField}
-                  title={hasSignatureField ? '' : 'Ajoutez au moins un champ Signature avant de valider'}
-                  className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#CEFF8F]"
-                >
-                  <CheckCircle2 className="h-4 w-4" /> Valider l’édition
-                </button>
-              )}
+              {/* Même en mode modèle : on passe par la validation (remplissage/signature
+                  propriétaire obligatoire) avant de pouvoir accéder au tableau de bord. */}
+              <button
+                onClick={handleValidate}
+                disabled={!hasSignatureField}
+                title={hasSignatureField ? '' : 'Ajoutez au moins un champ Signature avant de valider'}
+                className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#CEFF8F]"
+              >
+                <CheckCircle2 className="h-4 w-4" /> Valider l’édition
+              </button>
             </>
           )}
         </div>
@@ -2667,6 +2676,7 @@ export default function SignContractEditor() {
       <VerificationStyleModal
         open={showVerifModal}
         method={verificationMethod}
+        isTemplate={isTemplate}
         signers={signers.map((s) => ({
           index: s.signerIndex,
           label: signerCount > 1 ? `Signataire ${s.signerIndex}` : 'Signataire',
@@ -2794,21 +2804,26 @@ export default function SignContractEditor() {
             <p className="mb-6 text-sm leading-relaxed text-[#A1A9A9]">
               Vous avez{' '}
               <span className="font-semibold text-white">
-                {fields.filter((f) => f.role === 'owner').length} champ
-                {fields.filter((f) => f.role === 'owner').length > 1 ? 's' : ''}
+                {ownerFieldCount} champ{ownerFieldCount > 1 ? 's' : ''}
               </span>{' '}
-              à remplir ou signer de votre côté (propriétaire) avant d’envoyer le contrat.
+              à remplir ou signer de votre côté (propriétaire) avant{' '}
+              {isTemplate ? 'de générer des liens depuis ce modèle' : 'd’envoyer le contrat'}.
+              {isTemplate && ' Votre signature et vos champs seront enregistrés sur le modèle et repris sur chaque contrat généré.'}
             </p>
             <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowOwnerPrompt(false);
-                  setValidated(true);
-                }}
-                className="rounded border border-[#3A4242] px-4 py-2 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
-              >
-                Plus tard
-              </button>
+              {/* En mode modèle, le remplissage/signature propriétaire est obligatoire :
+                  pas d'esquive « Plus tard ». */}
+              {!isTemplate && (
+                <button
+                  onClick={() => {
+                    setShowOwnerPrompt(false);
+                    setValidated(true);
+                  }}
+                  className="rounded border border-[#3A4242] px-4 py-2 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
+                >
+                  Plus tard
+                </button>
+              )}
               <button
                 onClick={startOwnerFill}
                 className="flex items-center gap-1.5 rounded px-4 py-2 text-sm font-bold text-[#191E1E]"

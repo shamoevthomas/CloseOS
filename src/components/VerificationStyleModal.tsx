@@ -29,12 +29,14 @@ export default function VerificationStyleModal({
   open,
   method: initialMethod,
   signers: initialSigners,
+  isTemplate = false,
   onClose,
   onConfirm,
 }: {
   open: boolean;
   method: VerifMethod;
   signers: SignerWL[]; // une entrée par signataire, avec ses whitelists
+  isTemplate?: boolean; // modèle : pas de whitelist ici (email demandé à la génération du lien)
   onClose: () => void;
   onConfirm: (v: { method: Exclude<VerifMethod, 'pay'>; signers: SignerWL[] }) => void;
 }) {
@@ -109,7 +111,8 @@ export default function VerificationStyleModal({
   const count = (s: SignerWL): number => (method === 'email' ? s.emails.length : method === 'sms' ? s.phones.length : method === 'email_sms' ? s.pairs.length : 0);
   const folded = foldDrafts(list);
   // Tous les signataires doivent avoir au moins une entrée (sinon non vérifiable → ne peut pas signer).
-  const canConfirm = method === 'none' || folded.every((s) => count(s) > 0);
+  // Sur un modèle : pas de whitelist ici (l'adresse est fournie à la génération du lien) → toujours confirmable.
+  const canConfirm = isTemplate || method === 'none' || folded.every((s) => count(s) > 0);
 
   const chip = (label: string, onRemove: () => void, key: string) => (
     <span key={key} className="flex items-center gap-1.5 rounded-lg border border-[#3A4242] bg-[#222828] px-2.5 py-1 text-xs text-[#F3F4F6]">
@@ -156,8 +159,18 @@ export default function VerificationStyleModal({
           })}
         </div>
 
+        {/* Modèle : l'adresse autorisée n'est pas fixée ici mais à la génération du lien */}
+        {isTemplate && method !== 'none' && (
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[#A0E7EC]/25 bg-[#A0E7EC]/5 p-3.5 text-xs leading-relaxed text-[#A1A9A9]">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#A0E7EC]" />
+            <span>
+              Modèle : l’{method === 'email_sms' ? 'email et le numéro autorisés seront demandés' : method === 'sms' ? 'numéro autorisé sera demandé' : 'email autorisé sera demandé'} au moment de la génération de chaque lien.
+            </span>
+          </div>
+        )}
+
         {/* Whitelists par signataire */}
-        {method !== 'none' && cur && (
+        {method !== 'none' && cur && !isTemplate && (
           <div className="mt-4 rounded-xl border border-[#3A4242] bg-[#191E1E] p-3.5">
             {multi && (
               <>

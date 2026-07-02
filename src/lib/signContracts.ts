@@ -79,7 +79,7 @@ export const FIELD_DEFAULT_SIZE: Record<string, { w: number; h: number }> = {
 export const fieldDefaultSize = (type: string) => FIELD_DEFAULT_SIZE[type] ?? { w: 180, h: 40 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapFieldRow(f: any): SignFreeField {
+export function mapFieldRow(f: any): SignFreeField {
   const role = (f.assignee as SignRole) ?? 'signer';
   return {
     id: f.id,

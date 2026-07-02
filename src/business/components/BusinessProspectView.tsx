@@ -17,7 +17,9 @@ import { InstallmentScheduleEditor } from '../../components/InstallmentScheduleE
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { DMRBadge } from './DMRBadge'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { createPortal } from 'react-dom'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
+import { BookingAgendaPanel } from './BookingAgendaPanel'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
@@ -112,7 +114,7 @@ export function BusinessProspectView({
     noshow: t.stage_noshow, lost: t.stage_lost,
   }
   const ALL_STAGES = ALL_STAGE_DEFS.map(s => ({ ...s, name: STAGE_NAME_MAP[s.id] || s.id }))
-  const [teamMembers, setTeamMembers] = useState<{ id: string; first_name: string; last_name: string; role: string; setter_scope?: string }[]>([])
+  const [teamMembers, setTeamMembers] = useState<{ id: string; user_id?: string; first_name: string; last_name: string; role: string; setter_scope?: string; owner_assignable?: boolean; owner_assignable_roles?: string[] }[]>([])
 
   // Pipeline dismissal state
   const [isDismissed, setIsDismissed] = useState(false)
@@ -158,7 +160,7 @@ export function BusinessProspectView({
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role, setter_scope, owner_assignable, owner_assignable_roles').eq('business_owner_id', ownerId),
+      supabase.from('business_team_members').select('id, user_id, first_name, last_name, role, setter_scope, owner_assignable, owner_assignable_roles').eq('business_owner_id', ownerId),
       supabase.from('business_users').select('id, full_name, email, owner_assignable, owner_assignable_roles').eq('id', ownerId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = tmRes.data || []
@@ -168,7 +170,7 @@ export function BusinessProspectView({
       // se retirer des listes des autres).
       if (ownerRes.data && (!isTeamMember || ownerRes.data.owner_assignable)) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
-        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', owner_assignable_roles: ownerRes.data.owner_assignable_roles || [] })
+        list.unshift({ id: ownerRes.data.id, user_id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', owner_assignable_roles: ownerRes.data.owner_assignable_roles || [] })
       }
       setTeamMembers(list)
     })
@@ -571,6 +573,40 @@ export function BusinessProspectView({
       .then(({ data }) => setStripeConnected(!!(data?.stripe_connected && data?.stripe_account_id)))
   }, [effectiveOwnerId])
 
+  // Config de l'agenda latéral du pop-up de booking (selon "Assigné à" + rôles)
+  const bookAgendaConfig = useMemo(() => {
+    const ownerId = effectiveOwnerId || ''
+    const currentId = isTeamMember ? (teamMember?.id || '') : (user?.id || '')
+    const currentRole = isTeamMember ? (teamMember?.role || '') : 'Owner'
+    const tz = userTimezone || 'Europe/Paris'
+    // "Toi" → agenda détaillé de soi
+    if (bookAssigneeId && bookAssigneeId === currentId) {
+      return {
+        mode: 'self' as const,
+        apptMatchId: isTeamMember ? currentId : ownerId,
+        includeUnassigned: !isTeamMember,
+        busyUserId: null as string | null,
+        timezone: tz,
+        title: lang === 'en' ? 'My agenda' : 'Mon agenda',
+      }
+    }
+    const isOwnerAssignee = bookAssigneeId === ownerId
+    const member = teamMembers.find(m => m.id === bookAssigneeId)
+    const targetRole = isOwnerAssignee ? 'Owner' : (member?.role || '')
+    // Exception : même rôle pur (Setter↔Setter, Closer↔Closer) → tout en "occupé"
+    const sameRolePeer = (currentRole === 'Setter' && targetRole === 'Setter') || (currentRole === 'Closer' && targetRole === 'Closer')
+    return {
+      mode: (sameRolePeer ? 'busy' : 'detailed') as 'busy' | 'detailed',
+      apptMatchId: isOwnerAssignee ? ownerId : bookAssigneeId,
+      includeUnassigned: isOwnerAssignee,
+      busyUserId: (isOwnerAssignee ? ownerId : (member?.user_id || null)) as string | null,
+      timezone: tz,
+      title: isOwnerAssignee
+        ? (member ? `${member.first_name} ${member.last_name}`.trim() || 'Owner' : 'Owner')
+        : (member ? `${member.first_name} ${member.last_name}`.trim() || (lang === 'en' ? 'Agenda' : 'Agenda') : (lang === 'en' ? 'Agenda' : 'Agenda')),
+    }
+  }, [bookAssigneeId, teamMembers, isTeamMember, teamMember?.id, teamMember?.role, user?.id, effectiveOwnerId, userTimezone, lang])
+
   // Stripe: auto-match by email
   const handleStripeAutoMatch = async () => {
     if (!effectiveOwnerId || !local.email) return
@@ -704,7 +740,7 @@ export function BusinessProspectView({
       .from('reminders')
       .select('*')
       .eq('user_id', user.id)
-      .eq('prospect_id', prospect.id)
+      .eq('business_prospect_id', prospect.id)
       .order('reminder_date', { ascending: true })
       .then(({ data }) => {
         if (mounted) {
@@ -891,7 +927,7 @@ export function BusinessProspectView({
       const reminder_date = new Date(`${reminderDate}T${reminderTime}`).toISOString()
       const { data, error } = await supabase
         .from('reminders')
-        .insert([{ user_id: user.id, title: reminderTitle.trim(), description: reminderDesc.trim() || null, reminder_date, prospect_id: prospect.id, is_done: false }])
+        .insert([{ user_id: user.id, title: reminderTitle.trim(), description: reminderDesc.trim() || null, reminder_date, business_prospect_id: prospect.id, is_done: false }])
         .select().single()
       if (error) throw error
       setProspectReminders(prev => [...prev, data])
@@ -2516,6 +2552,26 @@ export function BusinessProspectView({
 
         {/* Quick booking modal */}
         {showBookModal && (
+          <>
+          {/* Agenda détaché, positionné dans la zone vide à gauche de l'écran (portail hors du panneau prospect) */}
+          {createPortal(
+            <div className="hidden lg:flex fixed left-8 top-1/2 -translate-y-1/2 z-[70] w-[44vw] max-w-[600px] h-[80vh] max-h-[660px] rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden">
+              <BookingAgendaPanel
+                ownerId={effectiveOwnerId || ''}
+                mode={bookAgendaConfig.mode}
+                apptMatchId={bookAgendaConfig.apptMatchId}
+                includeUnassigned={bookAgendaConfig.includeUnassigned}
+                busyUserId={bookAgendaConfig.busyUserId}
+                timezone={bookAgendaConfig.timezone}
+                title={bookAgendaConfig.title}
+                previewDate={bookDate}
+                previewTime={bookTime}
+                previewDuration={bookDuration}
+                previewTitle={bookTitle}
+              />
+            </div>,
+            document.body
+          )}
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => !bookSubmitting && setShowBookModal(false)} />
             <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
@@ -2660,6 +2716,7 @@ export function BusinessProspectView({
               </div>
             </div>
           </div>
+          </>
         )}
 
         {/* Reschedule modal */}

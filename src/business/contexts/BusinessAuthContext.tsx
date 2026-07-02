@@ -105,7 +105,14 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
           .eq('user_id', teamRes.data.business_owner_id)
           .single();
 
-        setHasSalesAccount(!!salesRes.data);
+        // A raw `profiles` row is auto-created by the DB trigger for every signup,
+        // including Business team-invite signups → its mere existence does NOT mean
+        // the member owns a real CloseOS Sales space. Only members who joined the org
+        // FROM Sales (Paramètres › Organisation › lien d'organisation) get their profile
+        // linked via business_owner_id (see api/organization.ts executeJoin). Use that
+        // linkage as the real "has Sales account" signal so the "Personnel" button
+        // (which navigates to Sales) is hidden for Business-only team members.
+        setHasSalesAccount(!!salesRes.data?.business_owner_id);
         applyUserData(version, {
           teamMember: teamRes.data,
           isTeamMember: true,

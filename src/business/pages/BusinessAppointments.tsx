@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
 import { toUTC, fromUTC, getTimezoneLabel } from '../../lib/timezone'
 import { BookingQuestionCard } from '../components/BookingQuestionCard'
+import { BookingAgendaPanel } from '../components/BookingAgendaPanel'
 import type { ConditionalRule } from '../../lib/questionnaireConditions'
 
 function genClientId(): string {
@@ -42,6 +43,7 @@ interface Appointment {
 
 interface TeamMember {
   id: string
+  user_id?: string
   first_name: string
   last_name: string
   role: string
@@ -513,6 +515,49 @@ export function BusinessAppointments() {
   const [bookNotes, setBookNotes] = useState('')
   const [bookWithMeet, setBookWithMeet] = useState(true)
   const [bookSaving, setBookSaving] = useState(false)
+  // Lien vers un prospect (facultatif) — déclenche l'email de confirmation au prospect
+  const [bookLinkProspect, setBookLinkProspect] = useState(false)
+  const [bookProspectId, setBookProspectId] = useState<number | null>(null)
+  const [bookProspectSearch, setBookProspectSearch] = useState('')
+  const [bookProspects, setBookProspects] = useState<{ id: number; contact: string; company: string; email: string }[]>([])
+  const [bookProspectsLoaded, setBookProspectsLoaded] = useState(false)
+
+  // Charge les prospects à la première ouverture du menu déroulant
+  useEffect(() => {
+    if (!bookLinkProspect || bookProspectsLoaded || !effectiveUserId) return
+    supabase.from('business_prospects').select('id, contact, company, email').eq('user_id', effectiveUserId).order('contact')
+      .then(({ data }) => { setBookProspects(data || []); setBookProspectsLoaded(true) })
+  }, [bookLinkProspect, bookProspectsLoaded, effectiveUserId])
+
+  // Config de l'agenda latéral du pop-up (selon "Assigner à" + rôles)
+  const bookAgendaConfig = useMemo(() => {
+    const currentRole = isTeamMember ? (teamMember?.role || '') : 'Owner'
+    const ownerId = effectiveUserId || ''
+    if (!bookMemberId) {
+      // "Pour moi" → agenda détaillé de soi
+      const selfMatch = isTeamMember ? (teamMember?.id || '') : ownerId
+      return {
+        mode: 'self' as const,
+        apptMatchId: selfMatch,
+        includeUnassigned: !isTeamMember,
+        busyUserId: null as string | null,
+        timezone: userTimezone || 'Europe/Paris',
+        title: lang === 'en' ? 'My agenda' : 'Mon agenda',
+      }
+    }
+    const member = teamMembers.find(m => m.id === bookMemberId)
+    const targetRole = member?.role || ''
+    // Exception : même rôle pur (Setter↔Setter, Closer↔Closer) → tout en "occupé"
+    const sameRolePeer = (currentRole === 'Setter' && targetRole === 'Setter') || (currentRole === 'Closer' && targetRole === 'Closer')
+    return {
+      mode: (sameRolePeer ? 'busy' : 'detailed') as 'busy' | 'detailed',
+      apptMatchId: bookMemberId,
+      includeUnassigned: member?.id === ownerId,
+      busyUserId: (member?.user_id || null) as string | null,
+      timezone: userTimezone || 'Europe/Paris',
+      title: member ? `${member.first_name} ${member.last_name}` : (lang === 'en' ? 'Agenda' : 'Agenda'),
+    }
+  }, [bookMemberId, teamMembers, isTeamMember, teamMember?.role, teamMember?.id, effectiveUserId, userTimezone, lang])
 
   // Reminder config state
   const [showReminderConfig, setShowReminderConfig] = useState(false)
@@ -642,13 +687,13 @@ export function BusinessAppointments() {
   useEffect(() => {
     if (!effectiveUserId) return
     Promise.all([
-      supabase.from('business_team_members').select('id, first_name, last_name, role, timezone, owner_assignable, owner_assignable_roles').eq('business_owner_id', effectiveUserId),
+      supabase.from('business_team_members').select('id, user_id, first_name, last_name, role, timezone, owner_assignable, owner_assignable_roles').eq('business_owner_id', effectiveUserId),
       supabase.from('business_users').select('id, full_name, timezone, owner_assignable, owner_assignable_roles').eq('id', effectiveUserId).single(),
     ]).then(([tmRes, ownerRes]) => {
       const list = (tmRes.data || []).filter((m: any) => !['Head of Sales', 'Admin'].includes(m.role) || m.owner_assignable)
       if (ownerRes.data?.owner_assignable) {
         const nameParts = (ownerRes.data.full_name || 'Owner').split(' ')
-        list.unshift({ id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', timezone: ownerRes.data.timezone || 'Europe/Paris' })
+        list.unshift({ id: ownerRes.data.id, user_id: ownerRes.data.id, first_name: nameParts[0] || 'Owner', last_name: nameParts.slice(1).join(' ') || '', role: 'Owner', timezone: ownerRes.data.timezone || 'Europe/Paris' })
       }
       setTeamMembers(list)
     })
@@ -1061,11 +1106,25 @@ export function BusinessAppointments() {
           google_meet_link: googleMeetLink,
           datetime_utc: utcDate.toISOString(),
           timezone: userTimezone,
+          prospect_id: (bookLinkProspect && bookProspectId) ? bookProspectId : null,
         }),
       })
 
       const data = await res.json()
       if (!res.ok) { toast.error(data.error || t.common_error); setBookSaving(false); return }
+
+      // Envoi de l'email de confirmation au prospect relié (facultatif)
+      if (bookLinkProspect && bookProspectId && data.appointment?.id) {
+        fetch(`${API_URL}?action=appointment-send-confirmation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            appointment_id: data.appointment.id,
+            user_id: effectiveUserId,
+            google_meet_link: googleMeetLink || null,
+          }),
+        }).catch(err => console.error('Error sending confirmation email:', err))
+      }
 
       toast.success(googleMeetLink ? t.appointments_created_with_meet : t.appointments_created)
       setShowBookModal(false)
@@ -1087,6 +1146,9 @@ export function BusinessAppointments() {
     setBookMemberId('')
     setBookNotes('')
     setBookWithMeet(true)
+    setBookLinkProspect(false)
+    setBookProspectId(null)
+    setBookProspectSearch('')
   }
 
   // Determine my member ID (for filtering personal appointments)
@@ -1338,7 +1400,28 @@ export function BusinessAppointments() {
         <>
           <div className="fixed inset-0 z-50 bg-[#1b1c1b]/30 backdrop-blur-md" onClick={() => { setShowBookModal(false); resetBookForm() }} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <div className="pointer-events-auto w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden relative" onClick={e => e.stopPropagation()}>
+            <div className={`pointer-events-auto w-full ${canBookForOthers ? 'max-w-5xl h-[85vh] max-h-[640px]' : 'max-w-lg'} bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden relative flex`} onClick={e => e.stopPropagation()}>
+              {/* Left: agenda of the selected assignee */}
+              {canBookForOthers && (
+                <div className="hidden md:flex w-[52%] shrink-0 border-r border-stone-200/60 dark:border-white/10 bg-[#faf9f8] dark:bg-neutral-950/40">
+                  <BookingAgendaPanel
+                    ownerId={effectiveUserId || ''}
+                    mode={bookAgendaConfig.mode}
+                    apptMatchId={bookAgendaConfig.apptMatchId}
+                    includeUnassigned={bookAgendaConfig.includeUnassigned}
+                    busyUserId={bookAgendaConfig.busyUserId}
+                    timezone={bookAgendaConfig.timezone}
+                    title={bookAgendaConfig.title}
+                    previewDate={bookDate}
+                    previewTime={bookTime}
+                    previewDuration={bookDuration}
+                    previewTitle={bookTitle}
+                  />
+                </div>
+              )}
+
+              {/* Right: the form */}
+              <div className={`relative min-w-0 ${canBookForOthers ? 'flex-1 overflow-y-auto' : 'w-full'}`}>
               {/* Gradient accent bar */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#006c49] to-[#ffb95f]" />
 
@@ -1437,6 +1520,78 @@ export function BusinessAppointments() {
                   />
                 </div>
 
+                {/* Relié à un prospect (facultatif) */}
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#444748] dark:text-neutral-300 ml-1">{t.appointments_link_prospect}</label>
+                    <button
+                      type="button"
+                      onClick={() => { const next = !bookLinkProspect; setBookLinkProspect(next); if (!next) { setBookProspectId(null); setBookProspectSearch('') } }}
+                      className={`relative w-10 h-5 rounded-full transition-colors ${bookLinkProspect ? 'bg-[#006c49]' : 'bg-[#c4c7c7]/40 dark:bg-neutral-700'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${bookLinkProspect ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                  {bookLinkProspect && (
+                    <div className="mt-3 relative">
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878]" strokeWidth={1.5} />
+                        <input
+                          type="text"
+                          value={bookProspectSearch}
+                          onChange={e => { setBookProspectSearch(e.target.value); setBookProspectId(null) }}
+                          placeholder={t.closer_agenda_search_prospect}
+                          className="w-full appearance-none rounded-xl bg-[#f5f3f2] dark:bg-neutral-900 border-0 pl-10 pr-4 py-2.5 text-sm font-medium text-[#1b1c1b] dark:text-white placeholder-[#c4c7c7] dark:placeholder-neutral-600 focus:ring-2 focus:ring-[#006c49]/30 focus:outline-none transition-colors"
+                        />
+                      </div>
+                      {!bookProspectId && (
+                        <div className="mt-1.5 max-h-40 overflow-y-auto rounded-xl bg-white dark:bg-neutral-900 border border-[#c4c7c7]/20 dark:border-neutral-700 shadow-lg">
+                          {bookProspects
+                            .filter(p => {
+                              if (!bookProspectSearch) return true
+                              const q = bookProspectSearch.toLowerCase()
+                              return (p.contact || '').toLowerCase().includes(q) || (p.company || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q)
+                            })
+                            .slice(0, 20)
+                            .map(p => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => { setBookProspectId(p.id); setBookProspectSearch(p.contact || p.company || p.email) }}
+                                className="w-full text-left px-4 py-2.5 text-sm hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors flex items-center gap-3"
+                              >
+                                <div className="h-7 w-7 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-xs font-bold text-[#747878] shrink-0">
+                                  {(p.contact || '?')[0]?.toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-[#1b1c1b] dark:text-white truncate">{p.contact || t.closer_agenda_no_name}</p>
+                                  {p.company && <p className="text-[11px] text-[#747878] dark:text-neutral-500 truncate">{p.company}</p>}
+                                </div>
+                              </button>
+                            ))
+                          }
+                          {bookProspects.filter(p => {
+                            if (!bookProspectSearch) return true
+                            const q = bookProspectSearch.toLowerCase()
+                            return (p.contact || '').toLowerCase().includes(q) || (p.company || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q)
+                          }).length === 0 && (
+                            <p className="text-xs text-[#747878] dark:text-neutral-500 text-center py-4">{t.closer_agenda_no_prospect_found}</p>
+                          )}
+                        </div>
+                      )}
+                      {bookProspectId && (
+                        <div className="mt-1.5 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#006c49]/10 dark:bg-emerald-900/20">
+                          <User className="h-3.5 w-3.5 text-[#006c49] dark:text-emerald-400" strokeWidth={2} />
+                          <span className="text-xs font-bold text-[#006c49] dark:text-emerald-400 flex-1">{bookProspectSearch}</span>
+                          <button type="button" onClick={() => { setBookProspectId(null); setBookProspectSearch('') }} className="text-[#006c49]/60 hover:text-[#006c49]">
+                            <X className="h-3.5 w-3.5" strokeWidth={2} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Google Meet toggle */}
                 {isGoogleConnected && (
                   <div className="flex items-center justify-between p-4 bg-[#f5f3f2] dark:bg-neutral-900 rounded-xl">
@@ -1474,6 +1629,7 @@ export function BusinessAppointments() {
                     {t.appointments_confirm_rdv}
                   </button>
                 </div>
+              </div>
               </div>
             </div>
           </div>

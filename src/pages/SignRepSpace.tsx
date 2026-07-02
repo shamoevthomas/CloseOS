@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Files, ShieldCheck, Loader2, Mail, Copy, Check, Plus, RefreshCw, Ban, LogIn, Users } from 'lucide-react';
+import { Files, ShieldCheck, Loader2, Mail, Copy, Check, Plus, RefreshCw, Ban, LogIn, Users, Eye, X, FileText } from 'lucide-react';
 import {
   repBootstrap, repVerifyCode, repDashboard, repCreateLink, repRegenerate,
+  repTemplateDoc, repInstanceDoc,
   signerLinkFromToken, clearRepDeviceToken, type RepDashboard,
 } from '../lib/signRepClient';
 import { SignLogo } from '../components/SignLogo';
+import SignDocViewer, { type SignDocData } from '../components/SignDocViewer';
+import SignInstanceFilters, { matchInstance, isFilterActive, EMPTY_INSTANCE_FILTER, type InstanceFilter } from '../components/SignInstanceFilters';
 
 const BADGE: Record<string, { label: string; cls: string }> = {
   en_cours: { label: 'En cours', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30 bg-[#A0E7EC]/10' },
@@ -17,6 +20,21 @@ const BADGE: Record<string, { label: string; cls: string }> = {
 };
 const fmtDate = (ts: string | null) =>
   ts ? new Date(ts).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
+// Coquille de page (logo + fond). Définie AU NIVEAU MODULE : si elle était déclarée dans le
+// composant, chaque frappe recréerait la fonction → remontage de l'arbre → perte de focus des champs.
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-[#191E1E] text-[#F3F4F6]">
+      <div className="border-b border-[#3A4242] px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-5xl items-center gap-2">
+          <SignLogo className="text-lg" />
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export default function SignRepSpace() {
   const { token = '' } = useParams();
@@ -31,6 +49,10 @@ export default function SignRepSpace() {
   const [creating, setCreating] = useState(false);
   const [lastLink, setLastLink] = useState<string | null>(null);
   const [busyInstance, setBusyInstance] = useState<string | null>(null);
+  // Aperçu du contrat (modèle ou instance signée) en lecture seule
+  const [viewer, setViewer] = useState<{ title: string; subtitle: string; doc: SignDocData } | null>(null);
+  const [viewerLoading, setViewerLoading] = useState<string | null>(null); // 'template' | instanceId | null
+  const [filter, setFilter] = useState<InstanceFilter>(EMPTY_INSTANCE_FILTER);
 
   const copy = async (key: string, text: string) => {
     try {
@@ -95,9 +117,16 @@ export default function SignRepSpace() {
     await startBootstrap();
   };
 
+  // Champs demandés à la génération = pilotés par la méthode de vérif du modèle.
+  // (SMS/Email+SMS étant indisponibles, le téléphone n'apparaît jamais pour l'instant.)
+  const vmethod = dash?.verificationMethod ?? 'none';
+  const needEmail = vmethod === 'email' || vmethod === 'email_sms';
+  const needPhone = vmethod === 'sms' || vmethod === 'email_sms';
+
   const createLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email.trim()) return;
+    if (!form.name.trim()) return;
+    if (needEmail && !form.email.trim()) return;
     setCreating(true);
     try {
       const r = await repCreateLink(token, { name: form.name, email: form.email, phone: form.phone });
@@ -129,18 +158,25 @@ export default function SignRepSpace() {
     }
   };
 
-  // ---------- Rendus ----------
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <div className="min-h-screen bg-[#191E1E] text-[#F3F4F6]">
-      <div className="border-b border-[#3A4242] px-4 py-4 sm:px-6">
-        <div className="mx-auto flex max-w-5xl items-center gap-2">
-          <SignLogo className="text-lg" />
-        </div>
-      </div>
-      {children}
-    </div>
-  );
+  const openTemplateDoc = async () => {
+    setViewerLoading('template');
+    try {
+      const r = await repTemplateDoc(token);
+      if (r.ok && r.doc) setViewer({ title: r.doc.title || 'Modèle', subtitle: 'Modèle — aperçu du contrat', doc: r.doc });
+      else alert("Impossible d'afficher le contrat.");
+    } catch { alert("Impossible d'afficher le contrat."); } finally { setViewerLoading(null); }
+  };
 
+  const openInstanceDoc = async (instanceId: string, signerName: string) => {
+    setViewerLoading(instanceId);
+    try {
+      const r = await repInstanceDoc(token, instanceId);
+      if (r.ok && r.doc) setViewer({ title: r.doc.title || 'Contrat', subtitle: signerName ? `Contrat de ${signerName}` : 'Contrat', doc: r.doc });
+      else alert("Impossible d'afficher le contrat.");
+    } catch { alert("Impossible d'afficher le contrat."); } finally { setViewerLoading(null); }
+  };
+
+  // ---------- Rendus ----------
   if (phase === 'loading') {
     return <Shell><div className="flex min-h-[60vh] items-center justify-center text-[#A1A9A9]"><Loader2 className="h-6 w-6 animate-spin" /></div></Shell>;
   }
@@ -192,15 +228,23 @@ export default function SignRepSpace() {
 
   // phase === 'ready'
   const d = dash!;
+  const filteredInstances = d.instances.filter((it) => matchInstance(it, filter));
   return (
     <Shell>
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <div className="mb-7 flex items-start gap-3">
+        <div className="mb-7 flex flex-wrap items-start gap-3">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#CEFF8F]/40 bg-[#CEFF8F]/10"><Files className="h-5 w-5 text-[#CEFF8F]" /></div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">{d.templateTitle || 'Modèle'}</h1>
             <p className="mt-1 text-sm text-[#A1A9A9]">Espace de <span className="text-[#F3F4F6]">{d.label}</span> — générez vos liens et suivez vos signatures.</p>
           </div>
+          <button
+            onClick={openTemplateDoc}
+            disabled={viewerLoading === 'template'}
+            className="flex shrink-0 items-center gap-2 rounded-lg border border-[#3A4242] bg-[#222828] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F] disabled:opacity-50"
+          >
+            {viewerLoading === 'template' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} Voir le contrat
+          </button>
         </div>
 
         <div className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -221,11 +265,15 @@ export default function SignRepSpace() {
         <section className="mb-6 rounded-xl border border-[#3A4242] bg-[#222828] p-5">
           <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white"><Plus className="h-4 w-4 text-[#CEFF8F]" /> Nouveau lien de signature</h2>
           <p className="mb-4 text-xs text-[#A1A9A9]">Pour un prospect. Le lien expire dans 7 jours. {d.verificationMethod !== 'none' && 'La vérification d’identité est active.'} {d.paymentEnabled && 'Le paiement est requis pour signer.'}</p>
-          <form onSubmit={createLink} className="grid gap-3 sm:grid-cols-3">
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nom (facultatif)" className="rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
-            <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email du prospect" className="rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
-            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone (si SMS)" className="rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
-            <button type="submit" disabled={creating || !form.email.trim()} className="flex items-center justify-center gap-2 rounded bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50 sm:col-span-3">
+          <form onSubmit={createLink} className="grid gap-3 sm:grid-cols-2">
+            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nom du prospect" className="rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+            {needEmail && (
+              <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email du prospect" className="rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+            )}
+            {needPhone && (
+              <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone du prospect" className="rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+            )}
+            <button type="submit" disabled={creating || !form.name.trim() || (needEmail && !form.email.trim())} className="flex items-center justify-center gap-2 rounded bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50 sm:col-span-2">
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" strokeWidth={2.5} />} Générer le lien
             </button>
           </form>
@@ -245,8 +293,13 @@ export default function SignRepSpace() {
           {d.instances.length === 0 ? (
             <p className="px-5 py-10 text-center text-sm text-[#A1A9A9]">Aucun lien généré pour le moment.</p>
           ) : (
+            <>
+              <SignInstanceFilters value={filter} onChange={setFilter} />
+              {filteredInstances.length === 0 ? (
+                <p className="px-5 py-10 text-center text-sm text-[#A1A9A9]">Aucune signature ne correspond {isFilterActive(filter) ? 'à ces filtres' : ''}.</p>
+              ) : (
             <ul className="divide-y divide-[#3A4242]">
-              {d.instances.map((inst) => {
+              {filteredInstances.map((inst) => {
                 const b = BADGE[inst.effectiveStatus] ?? BADGE.en_cours;
                 const active = inst.effectiveStatus === 'en_cours' || inst.effectiveStatus === 'consulte';
                 const link = active && inst.signerToken ? signerLinkFromToken(inst.signerToken) : null;
@@ -259,6 +312,14 @@ export default function SignRepSpace() {
                     </div>
                     <div className="hidden shrink-0 text-xs text-[#A1A9A9] sm:block">{fmtDate(inst.signedAt ?? inst.createdAt)}</div>
                     <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        onClick={() => openInstanceDoc(inst.id, inst.signerName || inst.signerEmail || '')}
+                        disabled={viewerLoading === inst.id}
+                        title="Voir le contrat détaillé"
+                        className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white disabled:opacity-50"
+                      >
+                        {viewerLoading === inst.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                      </button>
                       {inst.hasCertificate && <span title="Certificat émis" className="rounded p-1.5 text-[#CEFF8F]"><ShieldCheck className="h-4 w-4" /></span>}
                       {link && (
                         <button onClick={() => copy(`inst:${inst.id}`, link)} title="Copier le lien" className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white">
@@ -275,9 +336,32 @@ export default function SignRepSpace() {
                 );
               })}
             </ul>
+              )}
+            </>
           )}
         </section>
       </div>
+
+      {/* Aperçu du contrat en lecture seule (modèle ou instance signée) */}
+      {viewer && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#191E1E]/95 backdrop-blur-sm">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#3A4242] px-4 py-3 sm:px-6">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold text-white">{viewer.title}</div>
+              <div className="truncate text-xs text-[#A1A9A9]">{viewer.subtitle}</div>
+            </div>
+            <button
+              onClick={() => setViewer(null)}
+              className="flex shrink-0 items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
+            >
+              <X className="h-4 w-4" /> Fermer
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto px-4 py-8 sm:px-6">
+            <SignDocViewer doc={viewer.doc} />
+          </div>
+        </div>
+      )}
     </Shell>
   );
 }

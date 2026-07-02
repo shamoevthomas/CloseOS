@@ -47,6 +47,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/appointment-confirmations",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/pipeline-reset",
       "schedule": "0 3 * * *"
     },

@@ -1,4 +1,6 @@
 import { signSupabase } from './signSupabase';
+import { mapFieldRow } from './signContracts';
+import type { SignDocData } from '../components/SignDocViewer';
 
 /**
  * Client de l'espace closer (« rep ») — appelle l'Edge Function `sign-rep`.
@@ -75,6 +77,35 @@ export async function repCreateLink(repToken: string, signer: { name?: string; e
 
 export async function repRegenerate(repToken: string, instanceId: string): Promise<{ ok: boolean; error?: string; token?: string }> {
   return callRep('regenerate-link', repToken, { deviceToken: getRepDeviceToken(repToken), instanceId });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapDoc(raw: any): SignDocData {
+  return {
+    title: raw?.title ?? '',
+    sourceType: (raw?.sourceType as 'text' | 'pdf') ?? 'text',
+    contentHtml: raw?.contentHtml ?? '',
+    theme: raw?.theme ?? 'blank',
+    pdfData: raw?.pdfData ?? null,
+    images: Array.isArray(raw?.images) ? raw.images : [],
+    inlineValues: raw?.inlineValues && typeof raw.inlineValues === 'object' ? raw.inlineValues : {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fields: Array.isArray(raw?.fields) ? raw.fields.map((f: any) => mapFieldRow(f)) : [],
+  };
+}
+
+/** Document du MODÈLE (template) tel que conçu — champs propriétaire remplis/signés. */
+export async function repTemplateDoc(repToken: string): Promise<{ ok: boolean; error?: string; doc?: SignDocData }> {
+  const data = await callRep('template-doc', repToken, { deviceToken: getRepDeviceToken(repToken) });
+  if (!data?.ok || !data.doc) return { ok: false, error: data?.error };
+  return { ok: true, doc: mapDoc(data.doc) };
+}
+
+/** Document d'une INSTANCE (contrat généré) avec toutes ses valeurs/signatures. */
+export async function repInstanceDoc(repToken: string, instanceId: string): Promise<{ ok: boolean; error?: string; doc?: SignDocData }> {
+  const data = await callRep('instance-doc', repToken, { deviceToken: getRepDeviceToken(repToken), instanceId });
+  if (!data?.ok || !data.doc) return { ok: false, error: data?.error };
+  return { ok: true, doc: mapDoc(data.doc) };
 }
 
 export const signerLinkFromToken = (token: string) =>

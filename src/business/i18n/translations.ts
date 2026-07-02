@@ -2069,6 +2069,7 @@ export interface BusinessTranslations {
   appointments_book_rdv: string;
   appointments_new_rdv: string;
   appointments_schedule_new: string;
+  appointments_link_prospect: string;
   appointments_event_title: string;
   appointments_label_date: string;
   appointments_label_time: string;
@@ -4476,6 +4477,7 @@ export const fr: BusinessTranslations = {
   appointments_book_rdv: 'Booker un RDV',
   appointments_new_rdv: 'Nouveau rendez-vous',
   appointments_schedule_new: 'Planifiez un nouveau rendez-vous pour votre équipe.',
+  appointments_link_prospect: 'Relié à un prospect',
   appointments_event_title: 'Titre de l\'événement',
   appointments_label_date: 'Date',
   appointments_label_time: 'Heure',
@@ -5432,6 +5434,7 @@ export const fr: BusinessTranslations = {
   closer_agenda_all_day: 'Toute la journée', closer_agenda_appointment_default: 'Rendez-vous', closer_agenda_reminder_label: 'Rappel',
   closer_agenda_reminder_done: 'Terminé', closer_agenda_reminder_overdue: 'En retard', closer_agenda_reminder_upcoming: 'À venir',
   closer_agenda_join_meet: 'Rejoindre Google Meet', closer_agenda_link_copied: 'Lien copié', closer_agenda_delete: 'Supprimer',
+  closer_agenda_resend_confirmation: 'Renvoyer la confirmation', closer_agenda_confirmation_sent: 'Confirmation envoyée au prospect', closer_agenda_confirmation_no_email: 'Aucun email associé à ce prospect', closer_agenda_confirmation_error: "Erreur lors de l'envoi de la confirmation",
   closer_agenda_confirm_delete_event: 'Supprimer cet événement ?', closer_agenda_event_deleted: 'Événement supprimé', closer_agenda_delete_error: 'Erreur lors de la suppression',
   closer_agenda_confirm_delete_reminder: 'Supprimer ce rappel ?', closer_agenda_reminder_deleted: 'Rappel supprimé',
   closer_agenda_confirm_delete_google: 'Supprimer cet événement de Google Calendar ?', closer_agenda_google_deleted: 'Événement supprimé de Google Calendar',
@@ -7910,6 +7913,7 @@ export const en: BusinessTranslations = {
   appointments_book_rdv: 'Book an appointment',
   appointments_new_rdv: 'New appointment',
   appointments_schedule_new: 'Schedule a new appointment for your team.',
+  appointments_link_prospect: 'Linked to a prospect',
   appointments_event_title: 'Event title',
   appointments_label_date: 'Date',
   appointments_label_time: 'Time',
@@ -8369,6 +8373,7 @@ export const en: BusinessTranslations = {
   closer_agenda_all_day: 'All day', closer_agenda_appointment_default: 'Appointment', closer_agenda_reminder_label: 'Reminder',
   closer_agenda_reminder_done: 'Done', closer_agenda_reminder_overdue: 'Overdue', closer_agenda_reminder_upcoming: 'Upcoming',
   closer_agenda_join_meet: 'Join Google Meet', closer_agenda_link_copied: 'Link copied', closer_agenda_delete: 'Delete',
+  closer_agenda_resend_confirmation: 'Resend confirmation', closer_agenda_confirmation_sent: 'Confirmation sent to prospect', closer_agenda_confirmation_no_email: 'No email associated with this prospect', closer_agenda_confirmation_error: 'Error sending confirmation',
   closer_agenda_confirm_delete_event: 'Delete this event?', closer_agenda_event_deleted: 'Event deleted', closer_agenda_delete_error: 'Error deleting',
   closer_agenda_confirm_delete_reminder: 'Delete this reminder?', closer_agenda_reminder_deleted: 'Reminder deleted',
   closer_agenda_confirm_delete_google: 'Delete this Google Calendar event?', closer_agenda_google_deleted: 'Google Calendar event deleted',
