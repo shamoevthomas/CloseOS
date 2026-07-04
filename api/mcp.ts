@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { buildSignMcpServer } from './_lib/signMcp'
-// StreamableHTTPServerTransport (SDK) importé dynamiquement dans le handler (voir plus bas) :
-// évite tout crash au chargement du module côté serverless.
 
 /**
  * CloseOS Sign — endpoint MCP distant (Streamable HTTP, stateless) pour Claude.ai.
@@ -47,8 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { StreamableHTTPServerTransport } = await import('@modelcontextprotocol/sdk/server/streamableHttp.js')
-    const server = await buildSignMcpServer()
+    const server = buildSignMcpServer()
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // stateless (serverless-friendly)
       enableJsonResponse: true,      // réponses JSON (pas de SSE persistant)
