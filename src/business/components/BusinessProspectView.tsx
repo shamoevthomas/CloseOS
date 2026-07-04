@@ -31,6 +31,7 @@ const INPUT_CLS = 'w-full bg-[#f5f3f2] dark:bg-neutral-800 border-0 rounded-xl p
 
 const ALL_STAGE_DEFS = [
   { id: 'prospect', color: 'bg-blue-500' },
+  { id: 'contacted', color: 'bg-sky-500' },
   { id: 'qualified', color: 'bg-purple-500' },
   { id: 'unqualified', color: 'bg-yellow-500' },
   { id: 'won', color: 'bg-emerald-500' },
@@ -109,7 +110,7 @@ export function BusinessProspectView({
   const { t, lang } = useBusinessLang()
   const { customStages } = useCustomStages()
   const STAGE_NAME_MAP: Record<string, string> = {
-    prospect: t.stage_prospect, qualified: t.stage_qualified, unqualified: t.stage_unqualified,
+    prospect: t.stage_prospect, contacted: t.stage_contacted, qualified: t.stage_qualified, unqualified: t.stage_unqualified,
     won: t.stage_won, followup: t.stage_followup, noanswer: t.stage_noanswer,
     noshow: t.stage_noshow, lost: t.stage_lost,
   }

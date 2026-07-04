@@ -26,6 +26,7 @@ const ALL_STAGES = [
 
 const CRM_STAGE_NAME_KEYS: Record<string, string> = {
   prospect: 'pipeline_stage_prospect',
+  contacted: 'pipeline_stage_contacted',
   qualified: 'pipeline_stage_qualified',
   unqualified: 'pipeline_stage_unqualified',
   won: 'pipeline_stage_won',

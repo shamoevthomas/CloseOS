@@ -3,6 +3,7 @@ import { Loader2, Lock, X, ShieldCheck } from 'lucide-react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { stripePromise } from './InlineStripePayment';
 import { signSupabase as supabase } from '../lib/signSupabase';
+import { useSignLang } from '../contexts/SignLangContext';
 
 /**
  * Modale de paiement signataire (« Payé + signé »), DA Sign. Gère un PaymentIntent (paiement
@@ -44,6 +45,7 @@ function PayInner({
   onPaid: () => void;
   onClose: () => void;
 }) {
+  const { lang } = useSignLang();
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -58,7 +60,7 @@ function PayInner({
     setError('');
     const { error: subErr } = await elements.submit();
     if (subErr) {
-      setError(subErr.message || 'Erreur de paiement');
+      setError(subErr.message || (lang === 'fr' ? 'Erreur de paiement' : 'Payment error'));
       setProcessing(false);
       return;
     }
@@ -67,7 +69,7 @@ function PayInner({
         ? await stripe.confirmSetup({ elements, redirect: 'if_required' })
         : await stripe.confirmPayment({ elements, redirect: 'if_required' });
     if (res.error) {
-      setError(res.error.message || 'Paiement refusé');
+      setError(res.error.message || (lang === 'fr' ? 'Paiement refusé' : 'Payment declined'));
       setProcessing(false);
       return;
     }
@@ -75,18 +77,18 @@ function PayInner({
     const intent = (res as any).setupIntent || (res as any).paymentIntent;
     if (intent?.status === 'succeeded') {
       try {
-        const { data, error: err } = await supabase.functions.invoke('sign-pay', { body: { action: 'confirm', token, consent: consent ? "J'ai lu et j'accepte ce document" : undefined } });
+        const { data, error: err } = await supabase.functions.invoke('sign-pay', { body: { action: 'confirm', token, consent: consent ? (lang === 'fr' ? "J'ai lu et j'accepte ce document" : 'I have read and accept this document') : undefined } });
         if (err) throw err;
         if (data?.ok) {
           onPaid();
           return;
         }
-        setError('Confirmation impossible. Réessayez.');
+        setError(lang === 'fr' ? 'Confirmation impossible. Réessayez.' : 'Unable to confirm. Please try again.');
       } catch {
-        setError('Erreur réseau, réessayez.');
+        setError(lang === 'fr' ? 'Erreur réseau, réessayez.' : 'Network error, please try again.');
       }
     } else {
-      setError('Paiement non finalisé.');
+      setError(lang === 'fr' ? 'Paiement non finalisé.' : 'Payment not completed.');
     }
     setProcessing(false);
   };
@@ -102,11 +104,13 @@ function PayInner({
         </button>
       </div>
 
-      <h3 className="text-lg font-semibold text-white">{intentType === 'setup' ? 'Confirmer votre moyen de paiement' : `Paiement — ${label}`}</h3>
+      <h3 className="text-lg font-semibold text-white">{intentType === 'setup' ? (lang === 'fr' ? 'Confirmer votre moyen de paiement' : 'Confirm your payment method') : (lang === 'fr' ? `Paiement — ${label}` : `Payment — ${label}`)}</h3>
       <p className="mt-1 text-sm leading-relaxed text-[#A1A9A9]">
         {intentType === 'setup'
-          ? `Essai gratuit : aucun débit aujourd'hui. Votre carte est enregistrée pour la suite (${label} par échéance).`
-          : 'Réglez pour valider et signer le document.'}
+          ? (lang === 'fr'
+              ? `Essai gratuit : aucun débit aujourd'hui. Votre carte est enregistrée pour la suite (${label} par échéance).`
+              : `Free trial: no charge today. Your card is saved for later (${label} per billing period).`)
+          : (lang === 'fr' ? 'Réglez pour valider et signer le document.' : 'Pay to validate and sign the document.')}
       </p>
 
       <div className="mt-5">
@@ -123,11 +127,11 @@ function PayInner({
         className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-[#CEFF8F] py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {processing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-        {intentType === 'setup' ? 'Confirmer et signer' : `Payer ${label} et signer`}
+        {intentType === 'setup' ? (lang === 'fr' ? 'Confirmer et signer' : 'Confirm and sign') : (lang === 'fr' ? `Payer ${label} et signer` : `Pay ${label} and sign`)}
       </button>
 
       <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] font-medium text-[#6b7373]">
-        <Lock className="h-3 w-3" /> Paiement sécurisé par Stripe
+        <Lock className="h-3 w-3" /> {lang === 'fr' ? 'Paiement sécurisé par Stripe' : 'Secure payment by Stripe'}
       </div>
     </div>
   );

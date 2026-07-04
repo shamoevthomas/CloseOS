@@ -18,6 +18,8 @@ import { FitPdfPage } from '../components/FitPdfPage';
 import PhoneInput from '../components/PhoneInput';
 import SignVerificationModal from '../components/SignVerificationModal';
 import SignPaymentModal from '../components/SignPaymentModal';
+import SignLangToggle from '../components/SignLangToggle';
+import { useSignLang } from '../contexts/SignLangContext';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -66,6 +68,7 @@ async function renderPdf(dataUrl: string): Promise<PdfPage[]> {
 }
 
 export default function SignPublic() {
+  const { lang } = useSignLang();
   const { token } = useParams();
   const [loading, setLoading] = useState(true);
   const [contract, setContract] = useState<Awaited<ReturnType<typeof getContractByToken>> | null>(null);
@@ -101,7 +104,10 @@ export default function SignPublic() {
   const [certError, setCertError] = useState('');
 
   useEffect(() => {
-    document.title = 'Signer le document | CloseOS Sign';
+    document.title = lang === 'fr' ? 'Signer le document | CloseOS Sign' : 'Sign the document | CloseOS Sign';
+  }, [lang]);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -281,10 +287,10 @@ export default function SignPublic() {
           images: contract!.images,
         });
         const r = await generateCertificate({ token, signedPdfDataUri: uri });
-        if (!r.ok) setCertError("Le certificat n'a pas pu être généré automatiquement.");
+        if (!r.ok) setCertError(lang === 'fr' ? "Le certificat n'a pas pu être généré automatiquement." : 'The proof certificate could not be generated automatically.');
       } catch (err) {
         console.error('[sign] certificat', err);
-        setCertError("Le certificat n'a pas pu être généré automatiquement.");
+        setCertError(lang === 'fr' ? "Le certificat n'a pas pu être généré automatiquement." : 'The proof certificate could not be generated automatically.');
       } finally {
         setCertifying(false);
       }
@@ -343,7 +349,7 @@ export default function SignPublic() {
       if (contract.paymentRequired) {
         const { data, error: err } = await supabase.functions.invoke('sign-pay', { body: { action: 'create-payment', token } });
         if (err || !data?.ok || !data.client_secret) {
-          window.alert('Paiement indisponible' + (data?.error ? ` (${data.error})` : '') + '.');
+          window.alert((lang === 'fr' ? 'Paiement indisponible' : 'Payment unavailable') + (data?.error ? ` (${data.error})` : '') + '.');
           setSubmitting(false);
           return;
         }
@@ -355,16 +361,16 @@ export default function SignPublic() {
 
       // Non-payeur : la signature est finalisée par le SERVEUR (ordre + vérif réellement passée) — non contournable.
       const { data: fdata, error: ferr } = await supabase.functions.invoke('sign-verify', {
-        body: { action: 'finalize', token, email: emailForSign || undefined, tzOffset: new Date().getTimezoneOffset(), consent: "J'ai lu et j'accepte ce document" },
+        body: { action: 'finalize', token, email: emailForSign || undefined, tzOffset: new Date().getTimezoneOffset(), consent: lang === 'fr' ? "J'ai lu et j'accepte ce document" : 'I have read and accept this document' },
       });
       if (ferr || !fdata?.ok) {
         const code = fdata?.error;
         window.alert(
           code === 'not_your_turn'
-            ? "Ce n'est pas encore votre tour de signer."
+            ? (lang === 'fr' ? "Ce n'est pas encore votre tour de signer." : "It is not your turn to sign yet.")
             : code === 'not_verified'
-              ? 'La vérification doit être validée avant de signer.'
-              : 'La signature a échoué, réessayez.',
+              ? (lang === 'fr' ? 'La vérification doit être validée avant de signer.' : 'Identity verification must be completed before signing.')
+              : (lang === 'fr' ? 'La signature a échoué, réessayez.' : 'Signing failed, please try again.'),
         );
         setSubmitting(false);
         return;
@@ -373,7 +379,7 @@ export default function SignPublic() {
       afterSigned(Boolean(fdata?.allSigned ?? othersAllSigned));
     } catch (e) {
       console.error('[sign] signature', e);
-      window.alert('La signature a échoué, réessayez.');
+      window.alert(lang === 'fr' ? 'La signature a échoué, réessayez.' : 'Signing failed, please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -383,11 +389,11 @@ export default function SignPublic() {
     e.preventDefault();
     if (!contract) return;
     if (!dlName.trim()) {
-      setDlError('Veuillez indiquer votre nom complet.');
+      setDlError(lang === 'fr' ? 'Veuillez indiquer votre nom complet.' : 'Please enter your full name.');
       return;
     }
     if (!isValidEmail(dlEmail)) {
-      setDlError('Email invalide.');
+      setDlError(lang === 'fr' ? 'Email invalide.' : 'Invalid email.');
       return;
     }
     setDlSending(true);
@@ -411,7 +417,7 @@ export default function SignPublic() {
       setDlSent(true);
     } catch (err) {
       console.error('[sign] téléchargement copie', err);
-      setDlError("L'envoi a échoué, réessayez.");
+      setDlError(lang === 'fr' ? "L'envoi a échoué, réessayez." : 'Sending failed, please try again.');
     } finally {
       setDlSending(false);
     }
@@ -471,8 +477,11 @@ export default function SignPublic() {
         <div className="flex items-center">
           <SignLogo className="text-sm" />
         </div>
-        <div className="flex shrink-0 items-center gap-2 text-[10px] uppercase tracking-widest text-[#A1A9A9]">
-          <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> Sécurisé &amp; RGPD
+        <div className="flex shrink-0 items-center gap-3">
+          <SignLangToggle className="inline-flex items-center gap-1.5 rounded-lg border border-[#3A4242] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white" />
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#A1A9A9]">
+            <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> {lang === 'fr' ? 'Sécurisé & RGPD' : 'Secure & GDPR'}
+          </div>
         </div>
       </header>
 
@@ -482,8 +491,8 @@ export default function SignPublic() {
         </div>
       ) : !contract ? (
         <div className="mx-auto max-w-md px-6 py-32 text-center">
-          <h1 className="text-2xl font-semibold text-white">Lien invalide ou expiré</h1>
-          <p className="mt-2 text-sm text-[#A1A9A9]">Ce document n’est plus disponible. Contactez l’expéditeur.</p>
+          <h1 className="text-2xl font-semibold text-white">{lang === 'fr' ? 'Lien invalide ou expiré' : 'Invalid or expired link'}</h1>
+          <p className="mt-2 text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Ce document n’est plus disponible. Contactez l’expéditeur.' : 'This document is no longer available. Please contact the sender.'}</p>
         </div>
       ) : (
         <>
@@ -492,8 +501,12 @@ export default function SignPublic() {
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="h-5 w-5 shrink-0 text-[#CEFF8F]" />
                 <div className="text-sm text-white">
-                  Document signé. Merci !
-                  {certifying ? ' Génération du certificat de preuve…' : certError ? ` ${certError}` : ' Le certificat de preuve est joint au document.'}
+                  {lang === 'fr' ? 'Document signé. Merci !' : 'Document signed. Thank you!'}
+                  {certifying
+                    ? (lang === 'fr' ? ' Génération du certificat de preuve…' : ' Generating the proof certificate…')
+                    : certError
+                      ? ` ${certError}`
+                      : (lang === 'fr' ? ' Le certificat de preuve est joint au document.' : ' The proof certificate is attached to the document.')}
                 </div>
               </div>
               <button
@@ -501,24 +514,28 @@ export default function SignPublic() {
                 disabled={certifying}
                 className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2.5 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50 sm:w-auto sm:py-2"
               >
-                {certifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />} Télécharger
+                {certifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />} {lang === 'fr' ? 'Télécharger' : 'Download'}
               </button>
             </div>
           )}
 
           <div className="mx-auto max-w-3xl px-4 pt-8 text-center sm:px-6">
             <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-              {signed ? 'Document signé' : !myTurn ? 'En attente de votre tour' : 'Vous êtes invité(e) à signer'}
+              {signed
+                ? (lang === 'fr' ? 'Document signé' : 'Document signed')
+                : !myTurn
+                  ? (lang === 'fr' ? 'En attente de votre tour' : 'Waiting for your turn')
+                  : (lang === 'fr' ? 'Vous êtes invité(e) à signer' : 'You are invited to sign')}
             </h1>
             <p className="mt-2 text-sm text-[#A1A9A9]">
               {contract.title} —{' '}
               {signed
                 ? othersAllSigned
-                  ? 'merci, le document est complet.'
-                  : 'merci, votre signature est enregistrée. En attente des autres signataires.'
+                  ? (lang === 'fr' ? 'merci, le document est complet.' : 'thank you, the document is complete.')
+                  : (lang === 'fr' ? 'merci, votre signature est enregistrée. En attente des autres signataires.' : 'thank you, your signature has been recorded. Waiting for the other signers.')
                 : !myTurn
-                  ? 'un signataire précédent doit signer avant vous. Vous serez notifié(e) par email.'
-                  : 'relisez puis complétez les champs surlignés.'}
+                  ? (lang === 'fr' ? 'un signataire précédent doit signer avant vous. Vous serez notifié(e) par email.' : 'a previous signer must sign before you. You will be notified by email.')
+                  : (lang === 'fr' ? 'relisez puis complétez les champs surlignés.' : 'review the document, then fill in the highlighted fields.')}
             </p>
           </div>
 
@@ -526,7 +543,9 @@ export default function SignPublic() {
             <div className="mx-4 mt-4 flex max-w-3xl items-center gap-3 rounded-lg border border-[#F0B86E]/30 bg-[#F0B86E]/10 px-4 py-4 sm:px-5 md:mx-auto">
               <Clock className="h-5 w-5 shrink-0 text-[#F0B86E]" />
               <div className="text-sm text-white">
-                Signature à la suite : vous pourrez signer une fois que le ou les signataires précédents auront signé. Le document reste consultable.
+                {lang === 'fr'
+                  ? 'Signature à la suite : vous pourrez signer une fois que le ou les signataires précédents auront signé. Le document reste consultable.'
+                  : 'Sequential signing: you will be able to sign once the previous signer(s) have signed. The document remains viewable.'}
               </div>
             </div>
           )}
@@ -537,7 +556,7 @@ export default function SignPublic() {
                 <div className="flex flex-col items-center gap-6" ref={docRef}>
                   {pdfPages.length === 0 ? (
                     <div className="flex h-64 items-center justify-center text-[#A1A9A9]">
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Rendu du PDF…
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {lang === 'fr' ? 'Rendu du PDF…' : 'Rendering PDF…'}
                     </div>
                   ) : (
                     pdfPages.map((pg, idx) => (
@@ -578,8 +597,8 @@ export default function SignPublic() {
                     className="mt-0.5 h-4 w-4 shrink-0 accent-[#CEFF8F]"
                   />
                   <span>
-                    J’ai lu et j’accepte ce document.
-                    {!complete && <span className="mt-0.5 block text-[#A1A9A9]">Complétez aussi les champs surlignés.</span>}
+                    {lang === 'fr' ? 'J’ai lu et j’accepte ce document.' : 'I have read and accept this document.'}
+                    {!complete && <span className="mt-0.5 block text-[#A1A9A9]">{lang === 'fr' ? 'Complétez aussi les champs surlignés.' : 'Also fill in the highlighted fields.'}</span>}
                   </span>
                 </label>
                 <div className="flex items-center gap-2">
@@ -588,19 +607,19 @@ export default function SignPublic() {
                       onClick={resetSignerFields}
                       disabled={submitting}
                       className="flex shrink-0 items-center justify-center gap-1.5 rounded border border-[#3A4242] px-3 py-3 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white disabled:opacity-40"
-                      title="Effacer les champs préremplis"
+                      title={lang === 'fr' ? 'Effacer les champs préremplis' : 'Clear the pre-filled fields'}
                     >
-                      <RotateCcw className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Réinitialiser</span>
+                      <RotateCcw className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{lang === 'fr' ? 'Réinitialiser' : 'Reset'}</span>
                     </button>
                   )}
                   <button
                     onClick={submit}
                     disabled={!complete || !consented || submitting}
-                    title={!consented ? 'Cochez « J’ai lu et j’accepte » pour signer' : !complete ? 'Complétez tous les champs' : ''}
+                    title={!consented ? (lang === 'fr' ? 'Cochez « J’ai lu et j’accepte » pour signer' : 'Check “I have read and accept” to sign') : !complete ? (lang === 'fr' ? 'Complétez tous les champs' : 'Fill in all fields') : ''}
                     className="flex flex-1 items-center justify-center gap-2 rounded bg-[#CEFF8F] px-6 py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-40 sm:flex-none"
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenLine className="h-4 w-4" />}
-                    {submitting ? 'Signature…' : 'Terminer et signer'}
+                    {submitting ? (lang === 'fr' ? 'Signature…' : 'Signing…') : (lang === 'fr' ? 'Terminer et signer' : 'Finish and sign')}
                   </button>
                 </div>
               </div>
@@ -662,11 +681,21 @@ export default function SignPublic() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#ef6b6b]/15">
               <Lock className="h-8 w-8 text-[#ef6b6b]" />
             </div>
-            <h2 className="text-xl font-bold text-white">Accès bloqué</h2>
+            <h2 className="text-xl font-bold text-white">{lang === 'fr' ? 'Accès bloqué' : 'Access blocked'}</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#A1A9A9]">
-              Trop de tentatives échouées
-              {lockInfo.step === 2 ? ' lors de la saisie du code' : lockInfo.step === 1 ? ' lors de la saisie de vos informations' : ''}.
-              Vous n’avez plus accès à ce document. Contactez l’émetteur pour qu’il rétablisse votre accès.
+              {lang === 'fr' ? (
+                <>
+                  Trop de tentatives échouées
+                  {lockInfo.step === 2 ? ' lors de la saisie du code' : lockInfo.step === 1 ? ' lors de la saisie de vos informations' : ''}.
+                  {' '}Vous n’avez plus accès à ce document. Contactez l’émetteur pour qu’il rétablisse votre accès.
+                </>
+              ) : (
+                <>
+                  Too many failed attempts
+                  {lockInfo.step === 2 ? ' while entering the code' : lockInfo.step === 1 ? ' while entering your information' : ''}.
+                  {' '}You no longer have access to this document. Contact the sender to restore your access.
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -677,7 +706,7 @@ export default function SignPublic() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Recevoir une copie PDF</h3>
+              <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Recevoir une copie PDF' : 'Receive a PDF copy'}</h3>
               <button onClick={() => setShowDownload(false)} className="text-[#A1A9A9] transition-colors hover:text-white">
                 <X className="h-5 w-5" />
               </button>
@@ -688,20 +717,22 @@ export default function SignPublic() {
                 <div className="mb-5 flex items-center gap-3 rounded border border-[#CEFF8F]/30 bg-[#CEFF8F]/10 px-4 py-3">
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-[#CEFF8F]" />
                   <div className="text-sm text-white">
-                    Copie envoyée à <span className="font-semibold">{dlEmail}</span>.
+                    {lang === 'fr' ? 'Copie envoyée à ' : 'Copy sent to '}<span className="font-semibold">{dlEmail}</span>.
                   </div>
                 </div>
                 <button
                   onClick={() => setShowDownload(false)}
                   className="w-full rounded border border-[#3A4242] py-2.5 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
                 >
-                  Fermer
+                  {lang === 'fr' ? 'Fermer' : 'Close'}
                 </button>
               </div>
             ) : (
               <form onSubmit={submitDownload} className="space-y-4">
                 <p className="text-sm leading-relaxed text-[#A1A9A9]">
-                  Indiquez votre nom et votre email : nous vous envoyons la copie PDF du document signé.
+                  {lang === 'fr'
+                    ? 'Indiquez votre nom et votre email : nous vous envoyons la copie PDF du document signé.'
+                    : 'Enter your name and email: we will send you the PDF copy of the signed document.'}
                 </p>
                 <div className="relative">
                   <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
@@ -710,7 +741,7 @@ export default function SignPublic() {
                     required
                     value={dlName}
                     onChange={(e) => setDlName(e.target.value)}
-                    placeholder="Votre nom complet"
+                    placeholder={lang === 'fr' ? 'Votre nom complet' : 'Your full name'}
                     className="w-full rounded border border-[#3A4242] bg-[#191E1E] py-2.5 pl-10 pr-4 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/40 focus:border-[#CEFF8F]"
                   />
                 </div>
@@ -721,12 +752,12 @@ export default function SignPublic() {
                     required
                     value={dlEmail}
                     onChange={(e) => setDlEmail(e.target.value)}
-                    placeholder="vous@exemple.fr"
+                    placeholder={lang === 'fr' ? 'vous@exemple.fr' : 'you@example.com'}
                     className="w-full rounded border border-[#3A4242] bg-[#191E1E] py-2.5 pl-10 pr-4 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/40 focus:border-[#CEFF8F]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Téléphone <span className="text-[#A1A9A9]/60">(facultatif)</span></label>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'Téléphone' : 'Phone'} <span className="text-[#A1A9A9]/60">{lang === 'fr' ? '(facultatif)' : '(optional)'}</span></label>
                   <PhoneInput value={dlPhone} onChange={setDlPhone} />
                 </div>
                 {dlError && <p className="rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">{dlError}</p>}
@@ -736,7 +767,7 @@ export default function SignPublic() {
                   className="flex w-full items-center justify-center gap-2 rounded bg-[#CEFF8F] py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-60"
                 >
                   {dlSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  {dlSending ? 'Envoi…' : 'Recevoir par email'}
+                  {dlSending ? (lang === 'fr' ? 'Envoi…' : 'Sending…') : (lang === 'fr' ? 'Recevoir par email' : 'Receive by email')}
                 </button>
               </form>
             )}

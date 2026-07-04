@@ -59,6 +59,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/contacted-reminders",
+      "schedule": "0 9 * * *"
+    },
+    {
       "path": "/api/cron/appointment-confirmations",
       "schedule": "*/5 * * * *"
     },

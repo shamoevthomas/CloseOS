@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { SignLogo } from './SignLogo';
+import SignLangToggle from './SignLangToggle';
+import { useSignLang } from '../contexts/SignLangContext';
 
 /** Gabarit commun des pages légales CloseOS Sign (DA dark + lime). */
 export function SignLegalShell({ title, updated, children }: { title: string; updated?: string; children: ReactNode }) {
+  const { lang } = useSignLang();
   return (
     <div className="min-h-screen bg-[#191E1E] text-[#F3F4F6]">
       <style>{`
@@ -23,29 +26,32 @@ export function SignLegalShell({ title, updated, children }: { title: string; up
       <header className="sticky top-0 z-10 border-b border-[#3A4242] bg-[#191E1E]/90 px-4 py-4 backdrop-blur sm:px-6">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <a href="/sign"><SignLogo className="text-lg" /></a>
-          <a href="/sign" className="flex items-center gap-1.5 text-sm text-[#A1A9A9] transition-colors hover:text-white"><ArrowLeft className="h-4 w-4" /> Accueil</a>
+          <div className="flex items-center gap-2">
+            <SignLangToggle className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-bold uppercase tracking-wider text-[#A1A9A9] transition-colors hover:bg-white/10 hover:text-white" />
+            <a href="/sign" className="flex items-center gap-1.5 text-sm text-[#A1A9A9] transition-colors hover:text-white"><ArrowLeft className="h-4 w-4" /> {lang === 'fr' ? 'Accueil' : 'Home'}</a>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
         <h1 className="text-[26px] font-semibold tracking-tight text-white sm:text-[32px]">{title}</h1>
-        {updated && <p className="mt-2 text-xs text-[#6b7373]">Dernière mise à jour : {updated}</p>}
+        {updated && <p className="mt-2 text-xs text-[#6b7373]">{lang === 'fr' ? 'Dernière mise à jour : ' : 'Last updated: '}{updated}</p>}
         <div className="sign-legal mt-8">{children}</div>
       </main>
 
       <footer className="border-t border-[#3A4242] px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-3xl space-y-4 text-xs text-[#6b7373]">
           <div className="flex flex-wrap gap-x-5 gap-y-2">
-            <a href="/sign/cgv" className="transition-colors hover:text-[#CEFF8F]">CGV &amp; CGU</a>
-            <a href="/sign/confidentialite" className="transition-colors hover:text-[#CEFF8F]">Politique de confidentialité</a>
-            <a href="/sign/securite" className="transition-colors hover:text-[#CEFF8F]">Sécurité technique</a>
+            <a href="/sign/cgv" className="transition-colors hover:text-[#CEFF8F]">{lang === 'fr' ? 'CGV & CGU' : 'Terms of Sale & Use'}</a>
+            <a href="/sign/confidentialite" className="transition-colors hover:text-[#CEFF8F]">{lang === 'fr' ? 'Politique de confidentialité' : 'Privacy Policy'}</a>
+            <a href="/sign/securite" className="transition-colors hover:text-[#CEFF8F]">{lang === 'fr' ? 'Sécurité technique' : 'Technical Security'}</a>
           </div>
           <p>
-            <strong className="text-[#A1A9A9]">Éditeur :</strong> CloseOS Technologies — SIREN 993 427 509 — SIRET 99342750900019.
-            Directeur de la publication : Thomas Shamoev. Contact : <a href="mailto:support@closeos.fr" className="text-[#CEFF8F] hover:underline">support@closeos.fr</a>.
-            Hébergement : Supabase (Union européenne) &amp; Vercel.
+            <strong className="text-[#A1A9A9]">{lang === 'fr' ? 'Éditeur :' : 'Publisher:'}</strong> CloseOS Technologies — SIREN 993 427 509 — SIRET 99342750900019.
+            {lang === 'fr' ? ' Directeur de la publication : ' : ' Publication director: '}Thomas Shamoev.{lang === 'fr' ? ' Contact : ' : ' Contact: '}<a href="mailto:support@closeos.fr" className="text-[#CEFF8F] hover:underline">support@closeos.fr</a>.
+            {lang === 'fr' ? ' Hébergement : Supabase (Union européenne) & Vercel.' : ' Hosting: Supabase (European Union) & Vercel.'}
           </p>
-          <p>© 2026 CloseOS Technologies. Tous droits réservés. Construit en France.</p>
+          <p>{lang === 'fr' ? '© 2026 CloseOS Technologies. Tous droits réservés. Construit en France.' : '© 2026 CloseOS Technologies. All rights reserved. Built in France.'}</p>
         </div>
       </footer>
     </div>

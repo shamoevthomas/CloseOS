@@ -11,6 +11,7 @@ import { DMRBadge } from '../components/DMRBadge'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
+import { BusinessContactedRemindersModal } from '../components/BusinessContactedRemindersModal'
 import { useCustomStages, type CustomStage } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
@@ -18,6 +19,7 @@ import toast from 'react-hot-toast'
 
 const STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
+  { id: 'contacted', name: 'Contacté', color: 'bg-sky-500', textColor: 'text-sky-700', bgLight: 'bg-sky-50', borderColor: 'border-sky-200' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50', borderColor: 'border-purple-200' },
   { id: 'unqualified', name: 'Non-Qualifié', color: 'bg-yellow-500', textColor: 'text-yellow-700', bgLight: 'bg-yellow-50', borderColor: 'border-yellow-200' },
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgLight: 'bg-emerald-50', borderColor: 'border-emerald-200' },
@@ -27,7 +29,7 @@ const STAGES = [
   { id: 'lost', name: 'Perdu', color: 'bg-red-500', textColor: 'text-red-700', bgLight: 'bg-red-50', borderColor: 'border-red-200' },
 ]
 
-const ACTIVE_STAGE_IDS = ['prospect', 'qualified', 'won', 'followup']
+const ACTIVE_STAGE_IDS = ['prospect', 'contacted', 'qualified', 'won', 'followup']
 const INACTIVE_STAGE_IDS = ['unqualified', 'noanswer', 'noshow', 'lost']
 const ACTIVE_STAGES = STAGES.filter(s => ACTIVE_STAGE_IDS.includes(s.id))
 const INACTIVE_STAGES = STAGES.filter(s => INACTIVE_STAGE_IDS.includes(s.id))
@@ -106,6 +108,7 @@ export function BusinessPipeline() {
   const hasCrmIntegration = crmProvider !== 'closeos' && crmProvider !== 'zapier' && crmProvider !== 'make' && crmProvider !== 'n8n'
 
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban')
+  const [contactedRemindersOpen, setContactedRemindersOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
@@ -768,9 +771,20 @@ export function BusinessPipeline() {
                           <div className={cn("h-3 w-3 rounded-full", stage.color)} />
                           <span className="text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">{stageNames[stage.id] || stage.name}</span>
                         </div>
-                        <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5">
-                          {stageDeals.length}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {stage.id === 'contacted' && (
+                            <button
+                              onClick={() => setContactedRemindersOpen(true)}
+                              title={lang === 'en' ? 'Configure follow-up reminders' : 'Configurer les relances'}
+                              className="p-1 rounded-full text-stone-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors"
+                            >
+                              <Settings className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5">
+                            {stageDeals.length}
+                          </span>
+                        </div>
                       </div>
 
                       <Droppable droppableId={stage.id}>
@@ -1206,6 +1220,14 @@ export function BusinessPipeline() {
             dismissed ? next.add(id) : next.delete(id)
             return next
           })}
+        />
+      )}
+
+      {contactedRemindersOpen && effectiveUserId && (
+        <BusinessContactedRemindersModal
+          isOpen={contactedRemindersOpen}
+          onClose={() => setContactedRemindersOpen(false)}
+          ownerId={effectiveUserId}
         />
       )}
 

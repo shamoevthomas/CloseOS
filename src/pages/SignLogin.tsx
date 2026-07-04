@@ -14,6 +14,8 @@ import {
 import { isDeviceTrusted } from '../lib/signDevice';
 import SignVerification from '../components/SignVerification';
 import { SignLogo } from '../components/SignLogo';
+import SignLangToggle from '../components/SignLangToggle';
+import { useSignLang, type SignLang } from '../contexts/SignLangContext';
 
 /**
  * CloseOS Sign — page de connexion (DA Sign : dark + lime).
@@ -25,13 +27,31 @@ import { SignLogo } from '../components/SignLogo';
  */
 
 type ErrKey = 'creds' | 'no-access' | 'oauth' | 'reset-no-email' | 'reset' | 'weak';
-const ERR: Record<ErrKey, string> = {
-  creds: 'Identifiant ou mot de passe incorrect.',
-  'no-access': "Ce compte n'a pas accès à CloseOS Sign — l'accès est inclus avec un compte CloseOS Business.",
-  oauth: 'La connexion Google a échoué. Réessayez.',
-  'reset-no-email': 'Entrez d’abord votre email, puis cliquez sur « Mot de passe oublié ».',
-  reset: 'Échec — le lien a peut-être expiré. Redemandez-en un.',
-  weak: 'Le mot de passe doit faire au moins 6 caractères.',
+const ERR: Record<ErrKey, Record<SignLang, string>> = {
+  creds: {
+    fr: 'Identifiant ou mot de passe incorrect.',
+    en: 'Incorrect email or password.',
+  },
+  'no-access': {
+    fr: "Ce compte n'a pas accès à CloseOS Sign — l'accès est inclus avec un compte CloseOS Business.",
+    en: 'This account does not have access to CloseOS Sign — access is included with a CloseOS Business account.',
+  },
+  oauth: {
+    fr: 'La connexion Google a échoué. Réessayez.',
+    en: 'Google sign-in failed. Please try again.',
+  },
+  'reset-no-email': {
+    fr: 'Entrez d’abord votre email, puis cliquez sur « Mot de passe oublié ».',
+    en: 'Enter your email first, then click “Forgot password”.',
+  },
+  reset: {
+    fr: 'Échec — le lien a peut-être expiré. Redemandez-en un.',
+    en: 'Failed — the link may have expired. Request a new one.',
+  },
+  weak: {
+    fr: 'Le mot de passe doit faire au moins 6 caractères.',
+    en: 'Password must be at least 6 characters.',
+  },
 };
 
 const GoogleIcon = ({ className = '' }: { className?: string }) => (
@@ -49,6 +69,7 @@ const inputCls =
 export default function SignLogin() {
   const navigate = useNavigate();
   const { owner } = useSignOwner();
+  const { lang } = useSignLang();
 
   const [phase, setPhase] = useState<'init' | 'login' | 'recovery'>('init');
   const [email, setEmail] = useState('');
@@ -63,8 +84,8 @@ export default function SignLogin() {
   const gatingRef = useRef(false);
 
   useEffect(() => {
-    document.title = 'Connexion | CloseOS Sign';
-  }, []);
+    document.title = lang === 'fr' ? 'Connexion | CloseOS Sign' : 'Sign in | CloseOS Sign';
+  }, [lang]);
 
   // Traite le retour OAuth / le lien de récupération une seule fois.
   const ranRef = useRef(false);
@@ -186,6 +207,9 @@ export default function SignLogin() {
       <div className="pointer-events-none absolute left-1/2 top-0 h-full w-[1px] bg-[#3A4242]/40" />
       <div className="pointer-events-none absolute left-1/2 top-1/4 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-[#CEFF8F]/5 blur-[120px]" />
 
+      {/* Bascule FR/EN */}
+      <SignLangToggle className="absolute right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-lg border border-[#3A4242] bg-[#222828]/70 px-2.5 py-2 text-xs font-bold uppercase tracking-wider text-[#A1A9A9] backdrop-blur transition-colors hover:text-[#CEFF8F] sm:right-6 sm:top-6" />
+
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <a href="/sign" className="mb-8 flex items-center justify-center">
@@ -196,7 +220,7 @@ export default function SignLogin() {
         {phase === 'init' && (
           <div className="rounded border border-[#3A4242] bg-[#222828] p-10 text-center shadow-2xl">
             <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#CEFF8F]" />
-            <p className="mt-4 text-sm text-[#A1A9A9]">Connexion en cours…</p>
+            <p className="mt-4 text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Connexion en cours…' : 'Signing in…'}</p>
           </div>
         )}
 
@@ -207,12 +231,12 @@ export default function SignLogin() {
               <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-[#3A4242] bg-[#191E1E]">
                 <KeyRound className="h-5 w-5 text-[#CEFF8F]" />
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-white">Nouveau mot de passe</h1>
-              <p className="mt-2 text-sm text-[#A1A9A9]">Choisissez un nouveau mot de passe pour votre compte.</p>
+              <h1 className="text-2xl font-semibold tracking-tight text-white">{lang === 'fr' ? 'Nouveau mot de passe' : 'New password'}</h1>
+              <p className="mt-2 text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Choisissez un nouveau mot de passe pour votre compte.' : 'Choose a new password for your account.'}</p>
             </div>
             <form onSubmit={handleRecovery} className="space-y-4">
               <div>
-                <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Nouveau mot de passe</label>
+                <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'Nouveau mot de passe' : 'New password'}</label>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
                   <input
@@ -228,7 +252,7 @@ export default function SignLogin() {
               </div>
               {error && (
                 <div className="flex items-center gap-2 rounded border border-[#ef6b6b]/30 bg-[#ef6b6b]/10 px-3 py-2 text-xs text-[#ef6b6b]">
-                  <AlertCircle className="h-4 w-4 shrink-0" /> {ERR[error]}
+                  <AlertCircle className="h-4 w-4 shrink-0" /> {ERR[error][lang]}
                 </div>
               )}
               <button
@@ -236,7 +260,7 @@ export default function SignLogin() {
                 disabled={submitting}
                 className="group flex w-full items-center justify-center gap-2 rounded bg-[#CEFF8F] py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-60"
               >
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Mettre à jour et se connecter <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>}
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{lang === 'fr' ? 'Mettre à jour et se connecter' : 'Update and sign in'} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>}
               </button>
             </form>
           </div>
@@ -247,8 +271,8 @@ export default function SignLogin() {
           <>
             <div className="rounded border border-[#3A4242] bg-[#222828] p-8 shadow-2xl">
               <div className="mb-7 text-center">
-                <h1 className="text-2xl font-semibold tracking-tight text-white">Connexion</h1>
-                <p className="mt-2 text-sm text-[#A1A9A9]">Accédez à votre espace de signature.</p>
+                <h1 className="text-2xl font-semibold tracking-tight text-white">{lang === 'fr' ? 'Connexion' : 'Sign in'}</h1>
+                <p className="mt-2 text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Accédez à votre espace de signature.' : 'Access your signing workspace.'}</p>
               </div>
 
               {/* Google */}
@@ -258,13 +282,13 @@ export default function SignLogin() {
                 disabled={googleLoading}
                 className="flex w-full items-center justify-center gap-3 rounded border border-[#3A4242] bg-white py-3 text-sm font-semibold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-60"
               >
-                {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><GoogleIcon /> Continuer avec Google</>}
+                {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><GoogleIcon /> {lang === 'fr' ? 'Continuer avec Google' : 'Continue with Google'}</>}
               </button>
 
               {/* Séparateur */}
               <div className="my-6 flex items-center gap-3">
                 <div className="h-px flex-1 bg-[#3A4242]" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">ou</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'ou' : 'or'}</span>
                 <div className="h-px flex-1 bg-[#3A4242]" />
               </div>
 
@@ -279,7 +303,7 @@ export default function SignLogin() {
                       required
                       value={email}
                       onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                      placeholder="vous@exemple.fr"
+                      placeholder={lang === 'fr' ? 'vous@exemple.fr' : 'you@example.com'}
                       autoComplete="email"
                       className={inputCls}
                     />
@@ -289,9 +313,9 @@ export default function SignLogin() {
                 {/* Mot de passe */}
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Mot de passe</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'Mot de passe' : 'Password'}</label>
                     <button type="button" onClick={handleForgot} className="text-[11px] text-[#A1A9A9] transition-colors hover:text-[#CEFF8F]">
-                      Mot de passe oublié ?
+                      {lang === 'fr' ? 'Mot de passe oublié ?' : 'Forgot password?'}
                     </button>
                   </div>
                   <div className="relative">
@@ -308,7 +332,7 @@ export default function SignLogin() {
                     <button
                       type="button"
                       onClick={() => setShowPw((v) => !v)}
-                      aria-label={showPw ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                      aria-label={showPw ? (lang === 'fr' ? 'Masquer le mot de passe' : 'Hide password') : (lang === 'fr' ? 'Afficher le mot de passe' : 'Show password')}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1A9A9] transition-colors hover:text-[#F3F4F6]"
                     >
                       {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -318,13 +342,13 @@ export default function SignLogin() {
 
                 {resetSent && (
                   <div className="flex items-center gap-2 rounded border border-[#CEFF8F]/30 bg-[#CEFF8F]/10 px-3 py-2 text-xs text-[#CEFF8F]">
-                    <CheckCircle2 className="h-4 w-4 shrink-0" /> Email de réinitialisation envoyé. Vérifiez votre boîte.
+                    <CheckCircle2 className="h-4 w-4 shrink-0" /> {lang === 'fr' ? 'Email de réinitialisation envoyé. Vérifiez votre boîte.' : 'Reset email sent. Check your inbox.'}
                   </div>
                 )}
 
                 {error && (
                   <div className="flex items-start gap-2 rounded border border-[#ef6b6b]/30 bg-[#ef6b6b]/10 px-3 py-2 text-xs leading-snug text-[#ef6b6b]">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {ERR[error]}
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {ERR[error][lang]}
                   </div>
                 )}
 
@@ -333,21 +357,25 @@ export default function SignLogin() {
                   disabled={submitting}
                   className="group flex w-full items-center justify-center gap-2 rounded bg-[#CEFF8F] py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-60"
                 >
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Se connecter <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>}
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{lang === 'fr' ? 'Se connecter' : 'Sign in'} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>}
                 </button>
               </form>
             </div>
 
             {/* Note : accès réservé Business */}
             <p className="mt-5 text-center text-xs leading-relaxed text-[#A1A9A9]">
-              Pas encore de compte ? L'accès à CloseOS Sign est <span className="text-[#F3F4F6]">inclus avec votre compte CloseOS Business</span> — connectez-vous avec vos identifiants Business.
+              {lang === 'fr' ? (
+                <>Pas encore de compte ? L'accès à CloseOS Sign est <span className="text-[#F3F4F6]">inclus avec votre compte CloseOS Business</span> — connectez-vous avec vos identifiants Business.</>
+              ) : (
+                <>No account yet? Access to CloseOS Sign is <span className="text-[#F3F4F6]">included with your CloseOS Business account</span> — sign in with your Business credentials.</>
+              )}
             </p>
 
             {/* Trust + rappel produit */}
             <div className="mt-6 flex items-center justify-center gap-5 text-[10px] text-[#A1A9A9]">
-              <span className="inline-flex items-center gap-1.5"><FileSignature className="h-3.5 w-3.5 text-[#CEFF8F]" /> Signature</span>
-              <span className="inline-flex items-center gap-1.5"><Banknote className="h-3.5 w-3.5 text-[#CEFF8F]" /> Encaissement</span>
-              <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> RGPD</span>
+              <span className="inline-flex items-center gap-1.5"><FileSignature className="h-3.5 w-3.5 text-[#CEFF8F]" /> {lang === 'fr' ? 'Signature' : 'Signing'}</span>
+              <span className="inline-flex items-center gap-1.5"><Banknote className="h-3.5 w-3.5 text-[#CEFF8F]" /> {lang === 'fr' ? 'Encaissement' : 'Payments'}</span>
+              <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> {lang === 'fr' ? 'RGPD' : 'GDPR'}</span>
             </div>
           </>
         )}

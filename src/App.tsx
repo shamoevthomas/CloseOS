@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 
 // Imports des Contextes
@@ -113,6 +113,7 @@ const SignRepSpace = lazy(() => import('./pages/SignRepSpace'))
 const SignCGV = lazy(() => import('./pages/SignCGV'))
 const SignConfidentialite = lazy(() => import('./pages/SignConfidentialite'))
 const SignSecurite = lazy(() => import('./pages/SignSecurite'))
+import { SignLangProvider } from './contexts/SignLangContext'
 
 // Business Module Imports
 import { BusinessAuthProvider, useBusinessAuth } from './business/contexts/BusinessAuthContext'
@@ -431,7 +432,8 @@ function AuthenticatedApp() {
     <>
       <Suspense fallback={suspenseFallback}>
       <Routes>
-        {/* CloseOS Sign — landing (sign.closeos.fr) */}
+        {/* CloseOS Sign — toutes les routes /sign partagent le provider de langue (FR/EN) */}
+        <Route element={<SignLangProvider><Outlet /></SignLangProvider>}>
         <Route path="/sign" element={<SignLanding />} />
         <Route path="/sign/login" element={<SignLogin />} />
         <Route path="/sign/s/:token" element={<SignPublic />} />
@@ -451,6 +453,7 @@ function AuthenticatedApp() {
           <Route path="contacts/:id" element={<SignContactDetail />} />
           <Route path="profil" element={<SignProfile />} />
           <Route path="template/:id" element={<SignTemplateDashboard />} />
+        </Route>
         </Route>
 
         {/* Business Landing */}

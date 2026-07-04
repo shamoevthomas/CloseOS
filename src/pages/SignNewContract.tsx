@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FileText, FileUp, Loader2, X } from 'lucide-react';
 import { createContract, updateContract } from '../lib/signContracts';
 import { THEMES, CONTRACT_TEMPLATE_HTML, THEME_CSS, type ThemeId } from '../lib/signThemes';
+import { useSignLang } from '../contexts/SignLangContext';
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -23,6 +24,7 @@ const BASE_CSS = `
 const PREVIEW_CSS = THEME_CSS.replace(/\.sign-doc/g, '.np-doc').replace(/theme-/g, 'th-');
 
 export default function SignNewContract() {
+  const { lang } = useSignLang();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const contactId = searchParams.get('contact'); // contact à pré-assigner (depuis la fiche contact)
@@ -42,9 +44,9 @@ export default function SignNewContract() {
     }
   };
 
-  const blank = () => create({ title: 'Contrat sans titre', content_html: '<p><br></p>', theme: 'blank' });
+  const blank = () => create({ title: lang === 'fr' ? 'Contrat sans titre' : 'Untitled contract', content_html: '<p><br></p>', theme: 'blank' });
   const useTemplate = (id: ThemeId) =>
-    create({ title: 'Contrat de prestation', content_html: CONTRACT_TEMPLATE_HTML, theme: id });
+    create({ title: lang === 'fr' ? 'Contrat de prestation' : 'Service agreement', content_html: CONTRACT_TEMPLATE_HTML, theme: id });
 
   const onPdfFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,8 +70,8 @@ export default function SignNewContract() {
 
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Nouveau contrat</h1>
-          <p className="mt-2 text-sm text-[#A1A9A9]">Partez d'une feuille blanche, importez un PDF, ou choisissez un modèle.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{lang === 'fr' ? 'Nouveau contrat' : 'New contract'}</h1>
+          <p className="mt-2 text-sm text-[#A1A9A9]">{lang === 'fr' ? "Partez d'une feuille blanche, importez un PDF, ou choisissez un modèle." : 'Start from a blank page, import a PDF, or pick a template.'}</p>
         </div>
         <button onClick={() => navigate('/sign/app')} className="rounded border border-[#3A4242] p-2 text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white">
           <X className="h-5 w-5" />
@@ -87,8 +89,8 @@ export default function SignNewContract() {
             <FileText className="h-6 w-6 text-[#CEFF8F]" />
           </div>
           <div>
-            <div className="font-semibold text-white">Feuille blanche</div>
-            <div className="text-xs text-[#A1A9A9]">Rédigez votre contrat de zéro</div>
+            <div className="font-semibold text-white">{lang === 'fr' ? 'Feuille blanche' : 'Blank page'}</div>
+            <div className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Rédigez votre contrat de zéro' : 'Write your contract from scratch'}</div>
           </div>
         </button>
         <input ref={pdfInputRef} type="file" accept="application/pdf" className="hidden" onChange={onPdfFile} />
@@ -101,14 +103,14 @@ export default function SignNewContract() {
             <FileUp className="h-6 w-6 text-[#CEFF8F]" />
           </div>
           <div>
-            <div className="font-semibold text-white">Importer un PDF</div>
-            <div className="text-xs text-[#A1A9A9]">Posez des champs sur un PDF existant</div>
+            <div className="font-semibold text-white">{lang === 'fr' ? 'Importer un PDF' : 'Import a PDF'}</div>
+            <div className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Posez des champs sur un PDF existant' : 'Place fields on an existing PDF'}</div>
           </div>
         </button>
       </div>
 
       {/* Partie basse : templates */}
-      <div className="mt-9 mb-3 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Modèles</div>
+      <div className="mt-9 mb-3 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'Modèles' : 'Templates'}</div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {THEMES.map((t) => (
           <button
@@ -134,7 +136,7 @@ export default function SignNewContract() {
 
       {busy && (
         <div className="mt-6 flex items-center gap-2 text-sm text-[#A1A9A9]">
-          <Loader2 className="h-4 w-4 animate-spin" /> Création…
+          <Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Création…' : 'Creating…'}
         </div>
       )}
     </div>

@@ -198,7 +198,7 @@ export function CloserFactures() {
     if (!isSetterRole || perBookingAmount <= 0) return []
     return prospects.filter(p => {
       if (p.assigned_setter !== teamMember?.id) return false
-      if (p.stage === 'prospect' || p.stage === 'noanswer' || p.stage === 'partial') return false
+      if (p.stage === 'prospect' || p.stage === 'contacted' || p.stage === 'noanswer' || p.stage === 'partial') return false
       if (p.stage === 'unqualified' && p.stage_changed_by === teamMember?.id) return false
       const d = new Date(p.last_contact || p.created_at || '')
       if (isNaN(d.getTime())) return false

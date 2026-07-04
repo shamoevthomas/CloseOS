@@ -158,13 +158,13 @@ export function CloserDashboard() {
   const noshowFromFollowup = noShowProspects.filter(p => p.previous_stage === 'followup')
   const totalDecided = wonProspects.length + lostProspects.length + noshowFromFollowup.length
   const closingRate = totalDecided > 0 ? (wonProspects.length / totalDecided) * 100 : 0
-  const noshowEligible = myProspects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const noshowEligible = myProspects.filter(p => !['prospect', 'contacted', 'unqualified', 'noanswer'].includes(p.stage))
   const noshowRate = noshowEligible.length > 0 ? (noShowProspects.length / noshowEligible.length) * 100 : 0
 
   // Booking KPI (setter): prospects assigned as setter who got booked (moved past prospect stage)
   const isSetter = teamMember?.role === 'Setter'
   const mySetterProspects = prospects.filter(p => p.assigned_setter === teamMember?.id)
-  const bookedProspects = mySetterProspects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const bookedProspects = mySetterProspects.filter(p => !['prospect', 'contacted', 'unqualified', 'noanswer'].includes(p.stage))
   const bookingRate = mySetterProspects.length > 0 ? (bookedProspects.length / mySetterProspects.length) * 100 : 0
 
   // Commission calculation with formula-level rates

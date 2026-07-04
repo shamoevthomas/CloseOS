@@ -17,6 +17,7 @@ const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 dark:t
 
 const ACTIVE_STAGES = [
   { id: 'prospect', dot: 'bg-[#ffb95f]', border: 'border-l-[#ffb95f]' },
+  { id: 'contacted', dot: 'bg-sky-400', border: 'border-l-sky-400' },
   { id: 'qualified', dot: 'bg-purple-400', border: 'border-l-purple-400' },
   { id: 'won', dot: 'bg-[#006c49]', border: 'border-l-[#006c49]' },
   { id: 'followup', dot: 'bg-orange-400', border: 'border-l-orange-400' },
@@ -31,6 +32,7 @@ const INACTIVE_STAGES = [
 
 const STAGE_NAME_KEYS: Record<string, string> = {
   prospect: 'pipeline_stage_prospect',
+  contacted: 'pipeline_stage_contacted',
   qualified: 'pipeline_stage_qualified',
   won: 'pipeline_stage_won',
   followup: 'pipeline_stage_followup',

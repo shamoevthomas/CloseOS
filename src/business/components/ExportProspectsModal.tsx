@@ -40,6 +40,7 @@ interface Props {
 
 const ALL_STAGE_IDS = [
   { id: 'prospect', color: 'bg-blue-500' },
+  { id: 'contacted', color: 'bg-sky-500' },
   { id: 'qualified', color: 'bg-purple-500' },
   { id: 'unqualified', color: 'bg-yellow-500' },
   { id: 'won', color: 'bg-emerald-500' },
@@ -57,7 +58,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
   const { t, lang } = useBusinessLang()
 
   const STAGE_NAMES: Record<string, string> = useMemo(() => ({
-    prospect: t.export_stage_prospect, qualified: t.export_stage_qualified, unqualified: t.export_stage_unqualified,
+    prospect: t.export_stage_prospect, contacted: t.export_stage_contacted, qualified: t.export_stage_qualified, unqualified: t.export_stage_unqualified,
     won: t.export_stage_won, followup: t.export_stage_followup, noanswer: t.export_stage_noanswer,
     noshow: t.export_stage_noshow, lost: t.export_stage_lost,
   }), [t])
@@ -87,7 +88,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
   ], [t])
 
   const STAGE_LABELS: Record<string, string> = useMemo(() => ({
-    prospect: t.export_stage_label_prospect, qualified: t.export_stage_label_qualified,
+    prospect: t.export_stage_label_prospect, contacted: t.export_stage_label_contacted, qualified: t.export_stage_label_qualified,
     unqualified: t.export_stage_label_unqualified, won: t.export_stage_label_won,
     lost: t.export_stage_label_lost, noshow: t.export_stage_label_noshow,
     noanswer: t.export_stage_label_noanswer, followup: t.export_stage_label_followup,

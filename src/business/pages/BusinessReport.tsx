@@ -79,6 +79,7 @@ const formatPct = (v: number) => `${v.toFixed(1)}%`
 
 const STAGE_COLORS: Record<string, string> = {
   prospect: '#006c49',
+  contacted: '#38bdf8',
   qualified: '#ffb95f',
   unqualified: '#c4c7c7',
   followup: '#1b1c1b',
@@ -216,7 +217,7 @@ export function BusinessReport() {
   const noshowLeads = filteredProspects.filter(p => p.stage === 'noshow')
   const qualifiedLeads = filteredProspects.filter(p => p.stage === 'qualified')
   const followupLeads = filteredProspects.filter(p => p.stage === 'followup')
-  const activeLeads = filteredProspects.filter(p => ['prospect', 'qualified', 'followup'].includes(p.stage))
+  const activeLeads = filteredProspects.filter(p => ['prospect', 'contacted', 'qualified', 'followup'].includes(p.stage))
 
   const totalCA = wonLeads.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
   const totalPipeline = filteredProspects.filter(p => p.stage !== 'unqualified').reduce((s, p) => s + (Number(p.value) || 0), 0)
@@ -225,7 +226,7 @@ export function BusinessReport() {
   const noshowFromFollowup = noshowLeads.filter(p => p.previous_stage === 'followup')
   const totalDecided = wonLeads.length + lostLeads.length + noshowFromFollowup.length
   const closingRate = totalDecided > 0 ? (wonLeads.length / totalDecided) * 100 : 0
-  const noshowEligible = filteredProspects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage)).length
+  const noshowEligible = filteredProspects.filter(p => !['prospect', 'contacted', 'unqualified', 'noanswer'].includes(p.stage)).length
   const noshowRate = noshowEligible > 0 ? (noshowLeads.length / noshowEligible) * 100 : 0
   const lostRate = totalDecided > 0 ? (lostLeads.length / totalDecided) * 100 : 0
 
@@ -270,6 +271,7 @@ export function BusinessReport() {
   const stageData = useMemo(() => {
     const stages = [
       { id: 'prospect', name: t.report_stage_new_lead, color: '#006c49' },
+      { id: 'contacted', name: t.report_stage_contacted, color: '#38bdf8' },
       { id: 'qualified', name: t.report_stage_qualified, color: '#ffb95f' },
       { id: 'unqualified', name: t.report_stage_unqualified, color: '#c4c7c7' },
       { id: 'followup', name: t.report_stage_followup, color: '#1b1c1b' },
@@ -1103,14 +1105,14 @@ export function BusinessReport() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e4e2e1' }}>
-                  {[t.report_stage_new_lead, t.report_stage_qualified, t.report_stage_followup, t.report_stage_won, t.report_stage_lost, t.report_stage_no_show].map(s => (
+                  {[t.report_stage_new_lead, t.report_stage_contacted, t.report_stage_qualified, t.report_stage_followup, t.report_stage_won, t.report_stage_lost, t.report_stage_no_show].map(s => (
                     <th key={s} style={{ textAlign: 'center', padding: '6px', fontWeight: 'bold', color: '#747878' }}>{s}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  {['prospect', 'qualified', 'followup', 'won', 'lost', 'noshow'].map(s => (
+                  {['prospect', 'contacted', 'qualified', 'followup', 'won', 'lost', 'noshow'].map(s => (
                     <td key={s} style={{ textAlign: 'center', padding: '6px', fontWeight: 'bold' }}>
                       {filteredProspects.filter(p => p.stage === s).length}
                     </td>

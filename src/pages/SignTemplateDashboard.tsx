@@ -13,20 +13,22 @@ import {
   generateOwnerLink, regenerateInstance, listTemplateInstances,
   signerLinkUrl, type SignTemplateRep, type SignInstanceRow,
 } from '../lib/signTemplates';
+import { useSignLang, signLocale, type SignLang } from '../contexts/SignLangContext';
 
-const INST_BADGE: Record<string, { label: string; cls: string }> = {
-  en_cours: { label: 'En cours', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30 bg-[#A0E7EC]/10' },
-  consulte: { label: 'Consulté', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30 bg-[#A0E7EC]/10' },
-  signe: { label: 'Signé', cls: 'text-[#CEFF8F] border-[#CEFF8F]/30 bg-[#CEFF8F]/10' },
-  paye: { label: 'Signé + Payé', cls: 'text-[#191E1E] border-[#CEFF8F] bg-[#CEFF8F]' },
-  expire: { label: 'Expiré', cls: 'text-[#A1A9A9] border-[#3A4242] bg-[#191E1E]' },
-  refuse: { label: 'Refusé', cls: 'text-[#ef6b6b] border-[#ef6b6b]/30 bg-[#ef6b6b]/10' },
-};
+const instBadge = (lang: SignLang): Record<string, { label: string; cls: string }> => ({
+  en_cours: { label: lang === 'fr' ? 'En cours' : 'In progress', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30 bg-[#A0E7EC]/10' },
+  consulte: { label: lang === 'fr' ? 'Consulté' : 'Viewed', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30 bg-[#A0E7EC]/10' },
+  signe: { label: lang === 'fr' ? 'Signé' : 'Signed', cls: 'text-[#CEFF8F] border-[#CEFF8F]/30 bg-[#CEFF8F]/10' },
+  paye: { label: lang === 'fr' ? 'Signé + Payé' : 'Signed + Paid', cls: 'text-[#191E1E] border-[#CEFF8F] bg-[#CEFF8F]' },
+  expire: { label: lang === 'fr' ? 'Expiré' : 'Expired', cls: 'text-[#A1A9A9] border-[#3A4242] bg-[#191E1E]' },
+  refuse: { label: lang === 'fr' ? 'Refusé' : 'Declined', cls: 'text-[#ef6b6b] border-[#ef6b6b]/30 bg-[#ef6b6b]/10' },
+});
 
-const fmtDate = (ts: string | null) =>
-  ts ? new Date(ts).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+const fmtDate = (ts: string | null, lang: SignLang) =>
+  ts ? new Date(ts).toLocaleDateString(signLocale(lang), { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
 export default function SignTemplateDashboard() {
+  const { lang } = useSignLang();
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -74,9 +76,9 @@ export default function SignTemplateDashboard() {
   }, [id, navigate]);
 
   useEffect(() => {
-    document.title = 'Tableau de bord du modèle | CloseOS Sign';
+    document.title = (lang === 'fr' ? 'Tableau de bord du modèle' : 'Template dashboard') + ' | CloseOS Sign';
     load();
-  }, [load]);
+  }, [load, lang]);
 
   const copy = async (key: string, text: string) => {
     try {
@@ -96,14 +98,16 @@ export default function SignTemplateDashboard() {
       copy(`rep:${rep.id}`, rep.link);
     } catch (e) {
       console.error('[sign] création closer', e);
-      alert("Impossible de créer le closer.");
+      alert(lang === 'fr' ? "Impossible de créer le closer." : 'Unable to create the closer.');
     } finally {
       setCreatingRep(false);
     }
   };
 
   const revoke = async (rep: SignTemplateRep) => {
-    if (!window.confirm(`Révoquer l'accès de « ${rep.label} » ? Ses appareils sont déconnectés immédiatement et il ne pourra plus créer de liens. L'historique et les contrats déjà signés restent intacts.`)) return;
+    if (!window.confirm(lang === 'fr'
+      ? `Révoquer l'accès de « ${rep.label} » ? Ses appareils sont déconnectés immédiatement et il ne pourra plus créer de liens. L'historique et les contrats déjà signés restent intacts.`
+      : `Revoke access for “${rep.label}”? Their devices are disconnected immediately and they can no longer create links. History and already-signed contracts stay intact.`)) return;
     try {
       await revokeTemplateRep(rep.id);
       setReps((p) => p.map((x) => (x.id === rep.id ? { ...x, status: 'revoked', revokedAt: new Date().toISOString() } : x)));
@@ -130,7 +134,7 @@ export default function SignTemplateDashboard() {
       setInstances(i);
     } catch (err) {
       console.error('[sign] génération lien propriétaire', err);
-      alert("Impossible de générer le lien.");
+      alert(lang === 'fr' ? "Impossible de générer le lien." : 'Unable to generate the link.');
     } finally {
       setGenBusy(false);
     }
@@ -141,7 +145,7 @@ export default function SignTemplateDashboard() {
     setViewerLoading(inst.id);
     try {
       const c = await getContract(inst.id);
-      if (!c) { alert("Impossible d'afficher le contrat."); return; }
+      if (!c) { alert(lang === 'fr' ? "Impossible d'afficher le contrat." : 'Unable to display the contract.'); return; }
       const doc: SignDocData = {
         title: c.title,
         sourceType: c.source_type,
@@ -152,11 +156,11 @@ export default function SignTemplateDashboard() {
         inlineValues: mergedInlineValues(c.inline_values, c.signers),
         fields: c.fields,
       };
-      const who = inst.signerName || inst.signerEmail || 'Prospect';
-      setViewer({ title: c.title || 'Contrat', subtitle: `Contrat de ${who}`, doc });
+      const who = inst.signerName || inst.signerEmail || (lang === 'fr' ? 'Prospect' : 'Prospect');
+      setViewer({ title: c.title || (lang === 'fr' ? 'Contrat' : 'Contract'), subtitle: lang === 'fr' ? `Contrat de ${who}` : `Contract for ${who}`, doc });
     } catch (e) {
       console.error('[sign] aperçu instance', e);
-      alert("Impossible d'afficher le contrat.");
+      alert(lang === 'fr' ? "Impossible d'afficher le contrat." : 'Unable to display the contract.');
     } finally {
       setViewerLoading(null);
     }
@@ -168,10 +172,10 @@ export default function SignTemplateDashboard() {
     try {
       const url = await getCertificateUrl({ contractId: inst.id });
       if (url) window.open(url, '_blank');
-      else alert("Certificat indisponible.");
+      else alert(lang === 'fr' ? "Certificat indisponible." : 'Certificate unavailable.');
     } catch (e) {
       console.error('[sign] certificat', e);
-      alert("Certificat indisponible.");
+      alert(lang === 'fr' ? "Certificat indisponible." : 'Certificate unavailable.');
     } finally {
       setCertBusy(null);
     }
@@ -200,7 +204,7 @@ export default function SignTemplateDashboard() {
   if (notTemplate) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-20 text-center text-[#A1A9A9]">
-        Modèle introuvable. <button onClick={() => navigate('/sign/app/contrats')} className="text-[#CEFF8F] underline">Retour aux contrats</button>
+        {lang === 'fr' ? 'Modèle introuvable.' : 'Template not found.'} <button onClick={() => navigate('/sign/app/contrats')} className="text-[#CEFF8F] underline">{lang === 'fr' ? 'Retour aux contrats' : 'Back to contracts'}</button>
       </div>
     );
   }
@@ -217,7 +221,7 @@ export default function SignTemplateDashboard() {
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
       {/* Header */}
       <button onClick={() => navigate('/sign/app/contrats')} className="mb-4 flex items-center gap-1.5 text-sm text-[#A1A9A9] transition-colors hover:text-white">
-        <ChevronLeft className="h-4 w-4" /> Tous les contrats
+        <ChevronLeft className="h-4 w-4" /> {lang === 'fr' ? 'Tous les contrats' : 'All contracts'}
       </button>
       <div className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div className="flex items-start gap-3">
@@ -227,23 +231,23 @@ export default function SignTemplateDashboard() {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">{title}</h1>
-              <span className="rounded border border-[#CEFF8F] bg-[#CEFF8F] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#191E1E]">Modèle</span>
+              <span className="rounded border border-[#CEFF8F] bg-[#CEFF8F] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#191E1E]">{lang === 'fr' ? 'Modèle' : 'Template'}</span>
             </div>
-            <p className="mt-1 text-sm text-[#A1A9A9]">Générez des liens de signature, suivez les signatures, gérez vos closers.</p>
+            <p className="mt-1 text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Générez des liens de signature, suivez les signatures, gérez vos closers.' : 'Generate signing links, track signatures, manage your closers.'}</p>
           </div>
         </div>
         <button onClick={() => navigate(`/sign/app/contrat/${id}`)} className="flex w-full items-center justify-center gap-2 rounded border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-[#F3F4F6] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F] md:w-auto">
-          <Pencil className="h-4 w-4" /> Éditer le modèle
+          <Pencil className="h-4 w-4" /> {lang === 'fr' ? 'Éditer le modèle' : 'Edit template'}
         </button>
       </div>
 
       {/* Compteurs */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: 'Liens générés', value: counts.total, color: 'text-white' },
-          { label: 'En cours', value: counts.pending, color: 'text-[#A0E7EC]' },
-          { label: 'Signés', value: counts.signed, color: 'text-[#CEFF8F]' },
-          { label: 'Expirés', value: counts.expired, color: 'text-[#A1A9A9]' },
+          { label: lang === 'fr' ? 'Liens générés' : 'Links generated', value: counts.total, color: 'text-white' },
+          { label: lang === 'fr' ? 'En cours' : 'In progress', value: counts.pending, color: 'text-[#A0E7EC]' },
+          { label: lang === 'fr' ? 'Signés' : 'Signed', value: counts.signed, color: 'text-[#CEFF8F]' },
+          { label: lang === 'fr' ? 'Expirés' : 'Expired', value: counts.expired, color: 'text-[#A1A9A9]' },
         ].map((k) => (
           <div key={k.label} className="rounded-xl border border-[#3A4242] bg-[#222828] p-4">
             <div className={`text-2xl font-bold ${k.color}`}>{k.value}</div>
@@ -255,18 +259,18 @@ export default function SignTemplateDashboard() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Générer un lien (propriétaire) */}
         <section className="rounded-xl border border-[#3A4242] bg-[#222828] p-5">
-          <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white"><LinkIcon className="h-4 w-4 text-[#CEFF8F]" /> Générer un lien de signature</h2>
-          <p className="mb-4 text-xs text-[#A1A9A9]">Pour un prospect précis. Le lien expire dans 7 jours. La signature crée une instance figée avec son certificat.</p>
+          <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white"><LinkIcon className="h-4 w-4 text-[#CEFF8F]" /> {lang === 'fr' ? 'Générer un lien de signature' : 'Generate a signing link'}</h2>
+          <p className="mb-4 text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Pour un prospect précis. Le lien expire dans 7 jours. La signature crée une instance figée avec son certificat.' : 'For a specific prospect. The link expires in 7 days. Signing creates a frozen instance with its certificate.'}</p>
           <form onSubmit={genOwner} className="space-y-3">
-            <input required value={ownerForm.name} onChange={(e) => setOwnerForm({ ...ownerForm, name: e.target.value })} placeholder="Nom du prospect" className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+            <input required value={ownerForm.name} onChange={(e) => setOwnerForm({ ...ownerForm, name: e.target.value })} placeholder={lang === 'fr' ? 'Nom du prospect' : 'Prospect name'} className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
             {needEmail && (
-              <input required type="email" value={ownerForm.email} onChange={(e) => setOwnerForm({ ...ownerForm, email: e.target.value })} placeholder="Email du prospect" className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+              <input required type="email" value={ownerForm.email} onChange={(e) => setOwnerForm({ ...ownerForm, email: e.target.value })} placeholder={lang === 'fr' ? 'Email du prospect' : 'Prospect email'} className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
             )}
             {needPhone && (
-              <input required value={ownerForm.phone} onChange={(e) => setOwnerForm({ ...ownerForm, phone: e.target.value })} placeholder="Téléphone du prospect" className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+              <input required value={ownerForm.phone} onChange={(e) => setOwnerForm({ ...ownerForm, phone: e.target.value })} placeholder={lang === 'fr' ? 'Téléphone du prospect' : 'Prospect phone'} className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
             )}
             <button type="submit" disabled={genBusy || !ownerForm.name.trim() || (needEmail && !ownerForm.email.trim())} className="flex w-full items-center justify-center gap-2 rounded bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50">
-              {genBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" strokeWidth={2.5} />} Générer le lien
+              {genBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" strokeWidth={2.5} />} {lang === 'fr' ? 'Générer le lien' : 'Generate link'}
             </button>
           </form>
           {lastOwnerLink && (
@@ -281,34 +285,34 @@ export default function SignTemplateDashboard() {
 
         {/* Closers (reps) */}
         <section className="rounded-xl border border-[#3A4242] bg-[#222828] p-5">
-          <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white"><Users className="h-4 w-4 text-[#CEFF8F]" /> Closers</h2>
-          <p className="mb-4 text-xs text-[#A1A9A9]">Chaque closer a son lien d'accès (sécurisé par code email + appareil de confiance) pour générer ses propres liens et suivre ses signatures.</p>
+          <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white"><Users className="h-4 w-4 text-[#CEFF8F]" /> {lang === 'fr' ? 'Closers' : 'Closers'}</h2>
+          <p className="mb-4 text-xs text-[#A1A9A9]">{lang === 'fr' ? "Chaque closer a son lien d'accès (sécurisé par code email + appareil de confiance) pour générer ses propres liens et suivre ses signatures." : 'Each closer has their own access link (secured by email code + trusted device) to generate their own links and track their signatures.'}</p>
           <div className="mb-4 flex flex-col gap-2 sm:flex-row">
-            <input value={repLabel} onChange={(e) => setRepLabel(e.target.value)} placeholder="Nom du closer" className="flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
-            <input type="email" value={repEmail} onChange={(e) => setRepEmail(e.target.value)} placeholder="Email du closer" className="flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+            <input value={repLabel} onChange={(e) => setRepLabel(e.target.value)} placeholder={lang === 'fr' ? 'Nom du closer' : 'Closer name'} className="flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+            <input type="email" value={repEmail} onChange={(e) => setRepEmail(e.target.value)} placeholder={lang === 'fr' ? 'Email du closer' : 'Closer email'} className="flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
             <button onClick={addRep} disabled={creatingRep || !repLabel.trim() || !repEmail.trim()} className="flex items-center justify-center gap-1.5 rounded border border-[#3A4242] px-3 py-2.5 text-sm font-medium text-white transition-colors hover:border-[#CEFF8F] disabled:opacity-40">
               {creatingRep ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             </button>
           </div>
           <ul className="space-y-2">
-            {reps.length === 0 && <li className="text-xs text-[#A1A9A9]">Aucun closer. Ajoutez-en un pour partager un accès.</li>}
+            {reps.length === 0 && <li className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Aucun closer. Ajoutez-en un pour partager un accès.' : 'No closer yet. Add one to share access.'}</li>}
             {reps.map((rep) => (
               <li key={rep.id} className={`rounded-lg border px-3 py-2.5 ${rep.status === 'revoked' ? 'border-[#3A4242] bg-[#191E1E] opacity-60' : 'border-[#3A4242] bg-[#191E1E]'}`}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-sm font-medium text-white">
                       {rep.label}
-                      {rep.status === 'revoked' && <span className="rounded bg-[#ef6b6b]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#ef6b6b]">Révoqué</span>}
+                      {rep.status === 'revoked' && <span className="rounded bg-[#ef6b6b]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#ef6b6b]">{lang === 'fr' ? 'Révoqué' : 'Revoked'}</span>}
                     </div>
                     <div className="flex items-center gap-1 truncate text-xs text-[#A1A9A9]"><Mail className="h-3 w-3" /> {rep.email}</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     {rep.status === 'active' && (
                       <>
-                        <button onClick={() => copy(`rep:${rep.id}`, rep.link)} title="Copier le lien du closer" className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white">
+                        <button onClick={() => copy(`rep:${rep.id}`, rep.link)} title={lang === 'fr' ? 'Copier le lien du closer' : "Copy the closer's link"} className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white">
                           {copiedKey === `rep:${rep.id}` ? <Check className="h-4 w-4 text-[#CEFF8F]" /> : <Copy className="h-4 w-4" />}
                         </button>
-                        <button onClick={() => revoke(rep)} title="Révoquer" className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-[#ef6b6b]"><Ban className="h-4 w-4" /></button>
+                        <button onClick={() => revoke(rep)} title={lang === 'fr' ? 'Révoquer' : 'Revoke'} className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-[#ef6b6b]"><Ban className="h-4 w-4" /></button>
                       </>
                     )}
                   </div>
@@ -322,36 +326,37 @@ export default function SignTemplateDashboard() {
       {/* Instances */}
       <section className="mt-6 overflow-hidden rounded-xl border border-[#3A4242] bg-[#222828]">
         <div className="flex items-center gap-2 border-b border-[#3A4242] px-5 py-3 text-sm font-semibold text-white">
-          <FileSignatureFallback /> Signatures ({instances.length})
+          <FileSignatureFallback /> {lang === 'fr' ? 'Signatures' : 'Signatures'} ({instances.length})
         </div>
         {instances.length === 0 ? (
-          <p className="px-5 py-10 text-center text-sm text-[#A1A9A9]">Aucun lien généré pour le moment.</p>
+          <p className="px-5 py-10 text-center text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Aucun lien généré pour le moment.' : 'No link generated yet.'}</p>
         ) : (
           <>
             <SignInstanceFilters value={filter} onChange={setFilter} />
             {filteredInstances.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm text-[#A1A9A9]">Aucune signature ne correspond {isFilterActive(filter) ? 'à ces filtres' : ''}.</p>
+              <p className="px-5 py-10 text-center text-sm text-[#A1A9A9]">{lang === 'fr' ? `Aucune signature ne correspond ${isFilterActive(filter) ? 'à ces filtres' : ''}.` : `No signature matches${isFilterActive(filter) ? ' these filters' : ''}.`}</p>
             ) : (
           <ul className="divide-y divide-[#3A4242]">
             {filteredInstances.map((inst) => {
-              const b = INST_BADGE[inst.effectiveStatus] ?? INST_BADGE.en_cours;
+              const BADGES = instBadge(lang);
+              const b = BADGES[inst.effectiveStatus] ?? BADGES.en_cours;
               const link = inst.signLink ?? (inst.signerToken ? signerLinkUrl(inst.signerToken) : null);
               return (
                 <li key={inst.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[#1D2323]">
                   <span className={`shrink-0 rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${b.cls}`}>{b.label}</span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm text-white">{inst.signerName || inst.signerEmail || 'Prospect'}</div>
+                    <div className="truncate text-sm text-white">{inst.signerName || inst.signerEmail || 'Prospect'}</div>{/* 'Prospect' identique FR/EN */}
                     <div className="truncate text-xs text-[#A1A9A9]">{inst.signerEmail}</div>
                   </div>
                   <div className="shrink-0 text-xs text-[#A1A9A9]">
-                    {inst.repLabel ? <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {inst.repLabel}</span> : <span className="text-[#6b7373]">Vous</span>}
+                    {inst.repLabel ? <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {inst.repLabel}</span> : <span className="text-[#6b7373]">{lang === 'fr' ? 'Vous' : 'You'}</span>}
                   </div>
-                  <div className="hidden shrink-0 text-xs text-[#A1A9A9] sm:block">{fmtDate(inst.signedAt ?? inst.createdAt)}</div>
+                  <div className="hidden shrink-0 text-xs text-[#A1A9A9] sm:block">{fmtDate(inst.signedAt ?? inst.createdAt, lang)}</div>
                   <div className="flex shrink-0 items-center gap-1">
                     <button
                       onClick={() => openInstanceDoc(inst)}
                       disabled={viewerLoading === inst.id}
-                      title="Voir le contrat en grand"
+                      title={lang === 'fr' ? 'Voir le contrat en grand' : 'View the contract full-screen'}
                       className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white disabled:opacity-50"
                     >
                       {viewerLoading === inst.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
@@ -360,19 +365,19 @@ export default function SignTemplateDashboard() {
                       <button
                         onClick={() => openCertificate(inst)}
                         disabled={certBusy === inst.id}
-                        title="Voir le certificat de preuve"
+                        title={lang === 'fr' ? 'Voir le certificat de preuve' : 'View the proof certificate'}
                         className="rounded p-1.5 text-[#CEFF8F] transition-colors hover:bg-[#3A4242] disabled:opacity-50"
                       >
                         {certBusy === inst.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                       </button>
                     )}
                     {link && (inst.effectiveStatus === 'en_cours' || inst.effectiveStatus === 'consulte') && (
-                      <button onClick={() => copy(`inst:${inst.id}`, link)} title="Copier le lien" className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white">
+                      <button onClick={() => copy(`inst:${inst.id}`, link)} title={lang === 'fr' ? 'Copier le lien' : 'Copy link'} className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white">
                         {copiedKey === `inst:${inst.id}` ? <Check className="h-4 w-4 text-[#CEFF8F]" /> : <Copy className="h-4 w-4" />}
                       </button>
                     )}
                     {inst.effectiveStatus === 'expire' && (
-                      <button onClick={() => regen(inst)} disabled={busyInstance === inst.id} title="Régénérer un lien (7 j)" className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-[#CEFF8F] disabled:opacity-50">
+                      <button onClick={() => regen(inst)} disabled={busyInstance === inst.id} title={lang === 'fr' ? 'Régénérer un lien (7 j)' : 'Regenerate a link (7 days)'} className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-[#CEFF8F] disabled:opacity-50">
                         {busyInstance === inst.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                       </button>
                     )}
@@ -398,7 +403,7 @@ export default function SignTemplateDashboard() {
               onClick={() => setViewer(null)}
               className="flex shrink-0 items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
             >
-              <X className="h-4 w-4" /> Fermer
+              <X className="h-4 w-4" /> {lang === 'fr' ? 'Fermer' : 'Close'}
             </button>
           </div>
           <div className="flex-1 overflow-auto px-4 py-8 sm:px-6">

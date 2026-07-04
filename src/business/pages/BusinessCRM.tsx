@@ -58,6 +58,7 @@ const DEFAULT_TAGS = [
 
 const ALL_STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
+  { id: 'contacted', name: 'Contacté', color: 'bg-sky-500', textColor: 'text-sky-700', bgLight: 'bg-sky-50', borderColor: 'border-sky-200' },
   { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', textColor: 'text-purple-700', bgLight: 'bg-purple-50', borderColor: 'border-purple-200' },
   { id: 'unqualified', name: 'Non-Qualifié', color: 'bg-yellow-500', textColor: 'text-yellow-700', bgLight: 'bg-yellow-50', borderColor: 'border-yellow-200' },
   { id: 'won', name: 'Gagné', color: 'bg-emerald-500', textColor: 'text-emerald-700', bgLight: 'bg-emerald-50', borderColor: 'border-emerald-200' },
@@ -92,6 +93,7 @@ export function BusinessCRM() {
 
   const stageNameMap: Record<string, string> = useMemo(() => ({
     prospect: t.crm_stage_prospect,
+    contacted: t.crm_stage_contacted,
     qualified: t.crm_stage_qualified,
     unqualified: t.crm_stage_unqualified,
     won: t.crm_stage_won,

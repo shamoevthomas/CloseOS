@@ -1445,6 +1445,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ status, error: errorText })
     }
 
+    // ─── Relances stage "Contacté" : configuration des délais (jours) ───
+    // Autorise l'owner OU un membre Head of Sales / Admin de cet owner (contourne la RLS via service role).
+    if (action === 'contacted-reminders-list' || action === 'contacted-reminders-save') {
+      const authHeader = (req.headers['authorization'] || '') as string
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+      if (!token) return res.status(401).json({ error: 'Missing bearer token' })
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token)
+      if (userErr || !userData?.user) return res.status(401).json({ error: 'Invalid token' })
+      const uid = userData.user.id
+      const ownerId = ((req.query.owner_id as string) || (req.body?.owner_id as string) || uid).trim()
+
+      // Authorize
+      let allowed = uid === ownerId
+      if (!allowed) {
+        const { data: tm } = await supabase
+          .from('business_team_members')
+          .select('role')
+          .eq('user_id', uid)
+          .eq('business_owner_id', ownerId)
+          .maybeSingle()
+        allowed = !!tm && ['Head of Sales', 'Admin'].includes(tm.role || '')
+      }
+      if (!allowed) return res.status(403).json({ error: 'Forbidden' })
+
+      if (action === 'contacted-reminders-list') {
+        const { data, error } = await supabase
+          .from('business_contacted_reminders')
+          .select('id, days, is_active')
+          .eq('business_owner_id', ownerId)
+          .order('days', { ascending: true })
+        if (error) return res.status(500).json({ error: error.message })
+        return res.status(200).json({ reminders: data || [] })
+      }
+
+      // save — set semantics avec diff (préserve les lignes inchangées et leurs logs anti-doublon)
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+      const rawDays: any[] = Array.isArray(req.body?.days) ? req.body.days : []
+      const days: number[] = Array.from(new Set<number>(
+        rawDays.map((d) => Math.floor(Number(d))).filter((d) => Number.isFinite(d) && d >= 1 && d <= 60)
+      )).sort((a, b) => a - b)
+
+      const { data: existing } = await supabase
+        .from('business_contacted_reminders')
+        .select('id, days')
+        .eq('business_owner_id', ownerId)
+      const existingDays = new Set((existing || []).map((r: any) => r.days))
+      const newSet = new Set(days)
+      const toDelete = (existing || []).filter((r: any) => !newSet.has(r.days)).map((r: any) => r.id)
+      const toInsert = days.filter(d => !existingDays.has(d)).map(d => ({ business_owner_id: ownerId, days: d }))
+      if (toDelete.length) await supabase.from('business_contacted_reminders').delete().in('id', toDelete)
+      if (toInsert.length) {
+        const { error: insErr } = await supabase.from('business_contacted_reminders').insert(toInsert)
+        if (insErr) return res.status(500).json({ error: insErr.message })
+      }
+      return res.status(200).json({ ok: true, days })
+    }
+
     // ─── Invitation actions (method-based routing for backward compat) ───
     const PLAN_SEAT_LIMITS: Record<string, number> = { solo: 0, business: 3, business_acquisition: 5, enterprise: 999999 }
 

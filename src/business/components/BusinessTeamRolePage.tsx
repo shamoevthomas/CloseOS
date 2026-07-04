@@ -107,6 +107,7 @@ const getRoleColor = (role: string) =>
 
 const PIPELINE_STAGES_STATIC = [
   { id: 'prospect', nameKey: 'team_role_stage_prospect' as const, color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgLight: 'bg-blue-50/60' },
+  { id: 'contacted', nameKey: 'team_role_stage_contacted' as const, color: 'bg-sky-500', textColor: 'text-sky-700 dark:text-sky-400', bgLight: 'bg-sky-50/60' },
   { id: 'qualified', nameKey: 'team_role_stage_qualified' as const, color: 'bg-purple-500', textColor: 'text-purple-700 dark:text-purple-400', bgLight: 'bg-purple-50/60' },
   { id: 'followup', nameKey: 'team_role_stage_followup' as const, color: 'bg-orange-500', textColor: 'text-orange-700 dark:text-orange-400', bgLight: 'bg-orange-50/60' },
   { id: 'won', nameKey: 'team_role_stage_won' as const, color: 'bg-emerald-500', textColor: 'text-[#006c49] dark:text-[#6ffbbe]', bgLight: 'bg-[#6cf8bb]/15' },

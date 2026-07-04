@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ShieldCheck, Loader2, AlertCircle, ArrowLeft, Smartphone, Mail } from 'lucide-react';
 import { sendDeviceCode, verifyDeviceCode } from '../lib/signDevice';
 import { SignLogo } from './SignLogo';
+import { useSignLang } from '../contexts/SignLangContext';
 
 /**
  * CloseOS Sign — vérification d'appareil (2FA) à la connexion (DA Sign : dark + lime).
@@ -19,6 +20,7 @@ interface Props {
 const maskEmail = (e: string) => e.replace(/^(.{2})(.*)(@.*)$/, (_, a, m, d) => a + '*'.repeat(Math.min(m.length, 6)) + d);
 
 export default function SignVerification({ userId, email, authMethod, onVerified, onCancel }: Props) {
+  const { lang } = useSignLang();
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export default function SignVerification({ userId, email, authMethod, onVerified
     (async () => {
       const r = await sendDeviceCode(userId);
       if (r.ok) setResend(60);
-      else setError("Impossible d'envoyer le code. Réessayez.");
+      else setError(lang === 'fr' ? "Impossible d'envoyer le code. Réessayez." : 'Unable to send the code. Please try again.');
     })();
   }, [userId]);
 
@@ -52,7 +54,7 @@ export default function SignVerification({ userId, email, authMethod, onVerified
     setLoading(false);
     if (r.ok) onVerified();
     else {
-      setError('Code invalide ou expiré.');
+      setError(lang === 'fr' ? 'Code invalide ou expiré.' : 'Invalid or expired code.');
       setCode(['', '', '', '', '', '']);
       inputs.current[0]?.focus();
     }
@@ -88,7 +90,7 @@ export default function SignVerification({ userId, email, authMethod, onVerified
     setCode(['', '', '', '', '', '']);
     const r = await sendDeviceCode(userId);
     if (r.ok) { setSmsSent(null); setResend(60); }
-    else setError("Impossible de renvoyer le code.");
+    else setError(lang === 'fr' ? "Impossible de renvoyer le code." : 'Unable to resend the code.');
   };
 
   // Secours : envoie le code par SMS (au numéro du compte) quand l'email n'arrive pas.
@@ -100,7 +102,7 @@ export default function SignVerification({ userId, email, authMethod, onVerified
     const r = await sendDeviceCode(userId, 'sms');
     setSending(false);
     if (r.ok) { setSmsSent(r.masked || '•••'); setResend(60); inputs.current[0]?.focus(); }
-    else setError(r.error === 'no_phone' ? 'Aucun numéro enregistré pour ce compte. Contactez support@closeos.fr.' : "Impossible d'envoyer le SMS. Réessayez ou contactez le support.");
+    else setError(r.error === 'no_phone' ? (lang === 'fr' ? 'Aucun numéro enregistré pour ce compte. Contactez support@closeos.fr.' : 'No phone number registered for this account. Contact support@closeos.fr.') : (lang === 'fr' ? "Impossible d'envoyer le SMS. Réessayez ou contactez le support." : 'Unable to send the SMS. Please try again or contact support.'));
   };
 
   // Repasse au canal email (depuis le mode SMS).
@@ -112,7 +114,7 @@ export default function SignVerification({ userId, email, authMethod, onVerified
     const r = await sendDeviceCode(userId);
     setSending(false);
     if (r.ok) { setSmsSent(null); setResend(60); inputs.current[0]?.focus(); }
-    else setError("Impossible d'envoyer l'email. Réessayez ou contactez le support.");
+    else setError(lang === 'fr' ? "Impossible d'envoyer l'email. Réessayez ou contactez le support." : 'Unable to send the email. Please try again or contact support.');
   };
 
   return (
@@ -130,9 +132,11 @@ export default function SignVerification({ userId, email, authMethod, onVerified
             <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-[#3A4242] bg-[#191E1E]">
               <ShieldCheck className="h-5 w-5 text-[#CEFF8F]" />
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-white">Vérifiez cette connexion</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-white">{lang === 'fr' ? 'Vérifiez cette connexion' : 'Verify this sign-in'}</h1>
             <p className="mt-2 text-sm leading-relaxed text-[#A1A9A9]">
-              Nouvel appareil détecté. Un code à 6 chiffres a été envoyé {smsSent ? 'par SMS au' : 'à'}<br />
+              {lang === 'fr'
+                ? <>Nouvel appareil détecté. Un code à 6 chiffres a été envoyé {smsSent ? 'par SMS au' : 'à'}</>
+                : <>New device detected. A 6-digit code has been sent {smsSent ? 'by SMS to' : 'to'}</>}<br />
               <span className="font-medium text-[#F3F4F6]">{smsSent || maskEmail(email)}</span>
             </p>
           </div>
@@ -163,7 +167,7 @@ export default function SignVerification({ userId, email, authMethod, onVerified
 
           {loading && (
             <div className="mt-5 flex items-center justify-center gap-2 text-xs text-[#A1A9A9]">
-              <Loader2 className="h-4 w-4 animate-spin" /> Vérification…
+              <Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Vérification…' : 'Verifying…'}
             </div>
           )}
 
@@ -174,14 +178,16 @@ export default function SignVerification({ userId, email, authMethod, onVerified
               disabled={resend > 0 || loading}
               className="text-xs font-semibold text-[#CEFF8F] transition-colors hover:text-[#A0E7EC] disabled:text-[#A1A9A9] disabled:opacity-60"
             >
-              {resend > 0 ? `Renvoyer le code (${resend}s)` : 'Renvoyer le code'}
+              {resend > 0 ? (lang === 'fr' ? `Renvoyer le code (${resend}s)` : `Resend the code (${resend}s)`) : (lang === 'fr' ? 'Renvoyer le code' : 'Resend the code')}
             </button>
           </div>
 
           {/* Secours : bascule SMS ⇆ email + aide */}
           <div className="mt-5 border-t border-[#3A4242] pt-4 text-center">
             <p className="text-[11px] text-[#A1A9A9]">
-              {smsSent ? 'Vous ne recevez pas le SMS ?' : 'Vous ne recevez pas le code ? Pensez à vérifier vos spams.'}
+              {smsSent
+                ? (lang === 'fr' ? 'Vous ne recevez pas le SMS ?' : "Didn't receive the SMS?")
+                : (lang === 'fr' ? 'Vous ne recevez pas le code ? Pensez à vérifier vos spams.' : "Didn't receive the code? Remember to check your spam folder.")}
             </p>
             {smsSent ? (
               <button
@@ -191,21 +197,21 @@ export default function SignVerification({ userId, email, authMethod, onVerified
                 className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#A0E7EC] transition-colors hover:text-[#CEFF8F] disabled:opacity-60"
               >
                 {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
-                Recevoir le code par e-mail
+                {lang === 'fr' ? 'Recevoir le code par e-mail' : 'Receive the code by email'}
               </button>
             ) : (
               <button
                 type="button"
                 disabled
-                title="Indisponible temporairement"
+                title={lang === 'fr' ? 'Indisponible temporairement' : 'Temporarily unavailable'}
                 className="mt-2 inline-flex cursor-not-allowed items-center gap-1.5 text-xs font-semibold text-[#A1A9A9] opacity-50"
               >
                 <Smartphone className="h-3.5 w-3.5" />
-                Recevoir le code par SMS — indisponible temporairement
+                {lang === 'fr' ? 'Recevoir le code par SMS — indisponible temporairement' : 'Receive the code by SMS — temporarily unavailable'}
               </button>
             )}
             <p className="mt-2 text-[10px] text-[#A1A9A9]">
-              Toujours rien ? <a href="mailto:support@closeos.fr" className="text-[#CEFF8F] hover:underline">support@closeos.fr</a>
+              {lang === 'fr' ? 'Toujours rien ? ' : 'Still nothing? '}<a href="mailto:support@closeos.fr" className="text-[#CEFF8F] hover:underline">support@closeos.fr</a>
             </p>
           </div>
         </div>
@@ -215,12 +221,12 @@ export default function SignVerification({ userId, email, authMethod, onVerified
           onClick={onCancel}
           className="mt-5 flex w-full items-center justify-center gap-1.5 text-xs text-[#A1A9A9] transition-colors hover:text-[#F3F4F6]"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Utiliser un autre compte
+          <ArrowLeft className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Utiliser un autre compte' : 'Use another account'}
         </button>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-[#A1A9A9]">
           <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" />
-          <span>Appareil mémorisé 7 jours après vérification</span>
+          <span>{lang === 'fr' ? 'Appareil mémorisé 7 jours après vérification' : 'Device remembered for 7 days after verification'}</span>
         </div>
       </div>
     </div>

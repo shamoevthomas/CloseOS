@@ -188,6 +188,14 @@ export function BusinessStripeConnectModal({
                 ))}
               </div>
 
+              {/* Frais de service CloseOS (2% sur paiements Stripe) */}
+              <div className="flex items-start gap-3 bg-[#8b5cf6]/5 border border-[#8b5cf6]/15 rounded-xl p-3">
+                <AlertCircle className="h-5 w-5 text-[#635BFF] shrink-0 mt-0.5" />
+                <p className="text-xs text-[#444748] dark:text-neutral-300 leading-relaxed">
+                  {t.stripe_connect_fee_notice}
+                </p>
+              </div>
+
               <button
                 onClick={handleConnectStripe}
                 disabled={connecting}

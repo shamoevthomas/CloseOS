@@ -15,6 +15,7 @@ import { signSupabase as supabase } from '../lib/signSupabase';
 import { signOutSign, changePassword, updatePassword, getAuthIdentity, useSignOwner } from '../lib/signAuth';
 import PhoneInput from '../components/PhoneInput';
 import PlacesInput from '../components/PlacesInput';
+import { useSignLang, signLocale, type SignLang } from '../contexts/SignLangContext';
 
 /**
  * CloseOS Sign — Profil du propriétaire (compte sign_users) + Paramètres réels.
@@ -24,8 +25,8 @@ import PlacesInput from '../components/PlacesInput';
  */
 const EMPTY: OwnerProfile = { full_name: '', email: '', phone: '', company: '', address: '', city: '', siret: '', siren: '', tva: '', company_id: '', ape: '' };
 
-const fmtDate = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+const fmtDate = (iso: string | null, lang: SignLang) =>
+  iso ? new Date(iso).toLocaleDateString(signLocale(lang), { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
 
 const pwInputCls =
   'w-full rounded border border-[#3A4242] bg-[#191E1E] py-2.5 pl-10 pr-4 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/40 focus:border-[#CEFF8F]';
@@ -41,6 +42,7 @@ export default function SignProfile() {
   const [stripeConnected, setStripeConnected] = useState(false);
   const [stripeBusy, setStripeBusy] = useState(false);
   const { owner } = useSignOwner();
+  const { lang } = useSignLang();
   const user = owner?.name ?? '…';
 
   // ── Photo de profil ──
@@ -53,14 +55,14 @@ export default function SignProfile() {
     const file = e.target.files?.[0];
     if (fileRef.current) fileRef.current.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) { window.alert('Choisissez un fichier image.'); return; }
-    if (file.size > 5 * 1024 * 1024) { window.alert('Image trop lourde (max 5 Mo).'); return; }
+    if (!file.type.startsWith('image/')) { window.alert(lang === 'fr' ? 'Choisissez un fichier image.' : 'Please choose an image file.'); return; }
+    if (file.size > 5 * 1024 * 1024) { window.alert(lang === 'fr' ? 'Image trop lourde (max 5 Mo).' : 'Image too large (max 5 MB).'); return; }
     setAvatarBusy(true);
     try {
       const url = await uploadSignAvatar(file);
       setAvatarUrl(url);
     } catch {
-      window.alert("Échec de l'envoi de la photo. Réessayez.");
+      window.alert(lang === 'fr' ? "Échec de l'envoi de la photo. Réessayez." : 'Photo upload failed. Please try again.');
     } finally {
       setAvatarBusy(false);
     }
@@ -80,7 +82,7 @@ export default function SignProfile() {
   const [sub, setSub] = useState<SignSubscription | null>(null);
 
   useEffect(() => {
-    document.title = 'Mon profil | CloseOS Sign';
+    document.title = lang === 'fr' ? 'Mon profil | CloseOS Sign' : 'My profile | CloseOS Sign';
     getOwnerProfile()
       .then((p) => setForm({ ...EMPTY, ...p }))
       .catch((e) => console.error('[sign] profil', e))
@@ -122,9 +124,9 @@ export default function SignProfile() {
         body: { action: 'connect', ownerId: owner?.id, email: form.email || undefined, origin: window.location.origin },
       });
       if (data?.url) window.location.href = data.url as string;
-      else window.alert('Connexion Stripe indisponible (clé Stripe non configurée ?).');
+      else window.alert(lang === 'fr' ? 'Connexion Stripe indisponible (clé Stripe non configurée ?).' : 'Stripe connection unavailable (Stripe key not configured?).');
     } catch {
-      window.alert('Connexion Stripe impossible.');
+      window.alert(lang === 'fr' ? 'Connexion Stripe impossible.' : 'Unable to connect to Stripe.');
     } finally {
       setStripeBusy(false);
     }
@@ -157,19 +159,19 @@ export default function SignProfile() {
   const submitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwMsg(null);
-    if (pw.next.length < 6) return setPwMsg({ type: 'err', text: 'Le nouveau mot de passe doit faire au moins 6 caractères.' });
-    if (pw.next !== pw.confirm) return setPwMsg({ type: 'err', text: 'Les deux mots de passe ne correspondent pas.' });
+    if (pw.next.length < 6) return setPwMsg({ type: 'err', text: lang === 'fr' ? 'Le nouveau mot de passe doit faire au moins 6 caractères.' : 'The new password must be at least 6 characters.' });
+    if (pw.next !== pw.confirm) return setPwMsg({ type: 'err', text: lang === 'fr' ? 'Les deux mots de passe ne correspondent pas.' : 'The two passwords do not match.' });
     setPwBusy(true);
     // Compte sans mot de passe (connexion Google) → on en définit un, sans « mot de passe actuel ».
     const noPassword = authId?.hasPassword === false;
     const r = noPassword ? await updatePassword(pw.next) : await changePassword(pw.current, pw.next);
     setPwBusy(false);
     if (r.ok) {
-      setPwMsg({ type: 'ok', text: noPassword ? 'Mot de passe défini. Vous pouvez désormais vous connecter par email.' : 'Mot de passe mis à jour.' });
+      setPwMsg({ type: 'ok', text: noPassword ? (lang === 'fr' ? 'Mot de passe défini. Vous pouvez désormais vous connecter par email.' : 'Password set. You can now also sign in with your email.') : (lang === 'fr' ? 'Mot de passe mis à jour.' : 'Password updated.') });
       setPw({ current: '', next: '', confirm: '' });
       if (noPassword) setAuthId((a) => (a ? { ...a, hasPassword: true } : a));
     } else {
-      setPwMsg({ type: 'err', text: r.error === 'wrong_current' ? 'Mot de passe actuel incorrect.' : 'Échec de la mise à jour.' });
+      setPwMsg({ type: 'err', text: r.error === 'wrong_current' ? (lang === 'fr' ? 'Mot de passe actuel incorrect.' : 'Current password is incorrect.') : (lang === 'fr' ? 'Échec de la mise à jour.' : 'Update failed.') });
     }
   };
 
@@ -202,7 +204,7 @@ export default function SignProfile() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('[sign] export', err);
-      window.alert("L'export a échoué.");
+      window.alert(lang === 'fr' ? "L'export a échoué." : 'Export failed.');
     } finally {
       setExporting(false);
     }
@@ -216,8 +218,8 @@ export default function SignProfile() {
   };
 
   const TABS = [
-    { id: 'profil', label: 'Profil', icon: UserRound },
-    { id: 'parametres', label: 'Paramètres', icon: Settings },
+    { id: 'profil', label: lang === 'fr' ? 'Profil' : 'Profile', icon: UserRound },
+    { id: 'parametres', label: lang === 'fr' ? 'Paramètres' : 'Settings', icon: Settings },
   ];
 
   return (
@@ -229,11 +231,11 @@ export default function SignProfile() {
           type="button"
           onClick={() => { if (!avatarFromBusiness && !avatarBusy) fileRef.current?.click(); }}
           disabled={avatarFromBusiness || avatarBusy}
-          title={avatarFromBusiness ? 'Photo synchronisée depuis CloseOS Business' : 'Changer la photo de profil'}
+          title={avatarFromBusiness ? (lang === 'fr' ? 'Photo synchronisée depuis CloseOS Business' : 'Photo synced from CloseOS Business') : (lang === 'fr' ? 'Changer la photo de profil' : 'Change profile photo')}
           className={`group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#CEFF8F] text-xl font-bold text-[#191E1E] ${avatarFromBusiness ? 'cursor-default' : 'cursor-pointer'}`}
         >
           {avatarUrl ? (
-            <img src={avatarUrl} alt="Photo de profil" className="h-full w-full object-cover" />
+            <img src={avatarUrl} alt={lang === 'fr' ? 'Photo de profil' : 'Profile photo'} className="h-full w-full object-cover" />
           ) : (
             (form.full_name || user).slice(0, 1).toUpperCase()
           )}
@@ -250,9 +252,9 @@ export default function SignProfile() {
         </button>
         <div className="min-w-0">
           <h1 className="truncate text-xl font-semibold tracking-tight text-white sm:text-2xl">{form.full_name || user}</h1>
-          <p className="truncate text-sm text-[#A1A9A9]">{form.email || 'Compte CloseOS Sign'}</p>
+          <p className="truncate text-sm text-[#A1A9A9]">{form.email || (lang === 'fr' ? 'Compte CloseOS Sign' : 'CloseOS Sign account')}</p>
           {avatarFromBusiness && (
-            <p className="mt-0.5 text-[11px] text-[#A1A9A9]">Photo synchronisée depuis <span className="text-[#F3F4F6]">CloseOS Business</span></p>
+            <p className="mt-0.5 text-[11px] text-[#A1A9A9]">{lang === 'fr' ? 'Photo synchronisée depuis ' : 'Photo synced from '}<span className="text-[#F3F4F6]">CloseOS Business</span></p>
           )}
         </div>
       </div>
@@ -274,20 +276,23 @@ export default function SignProfile() {
 
       {loading ? (
         <div className="flex items-center gap-2 py-12 text-sm text-[#A1A9A9]">
-          <Loader2 className="h-4 w-4 animate-spin" /> Chargement…
+          <Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Chargement…' : 'Loading…'}
         </div>
       ) : tab === 'profil' ? (
         <form onSubmit={save} className="space-y-5">
           <p className="rounded-lg border border-[#3A4242] bg-[#222828] px-4 py-3 text-xs text-[#A1A9A9]">
-            Ces informations préremplissent automatiquement <span className="text-[#A0E7EC]">vos champs (propriétaire)</span> dans les contrats
-            — sauf la signature, la date et l’heure.
+            {lang === 'fr' ? (
+              <>Ces informations préremplissent automatiquement <span className="text-[#A0E7EC]">vos champs (propriétaire)</span> dans les contrats — sauf la signature, la date et l’heure.</>
+            ) : (
+              <>This information automatically prefills <span className="text-[#A0E7EC]">your fields (owner)</span> in contracts — except the signature, date and time.</>
+            )}
           </p>
 
-          <Field icon={User} label="Nom complet" value={form.full_name} onChange={(v) => set('full_name', v)} placeholder="Thomas Shamoev" />
+          <Field icon={User} label={lang === 'fr' ? 'Nom complet' : 'Full name'} value={form.full_name} onChange={(v) => set('full_name', v)} placeholder="Thomas Shamoev" />
 
           <div>
             <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">
-              Email du compte <span className="text-[#A1A9A9]/60">(non modifiable)</span>
+              {lang === 'fr' ? 'Email du compte' : 'Account email'} <span className="text-[#A1A9A9]/60">{lang === 'fr' ? '(non modifiable)' : '(not editable)'}</span>
             </label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
@@ -299,15 +304,15 @@ export default function SignProfile() {
             </div>
           </div>
 
-          <Field icon={Briefcase} label="Entreprise / Dénomination" value={form.company} onChange={(v) => set('company', v)} placeholder="CloseOS SAS" />
+          <Field icon={Briefcase} label={lang === 'fr' ? 'Entreprise / Dénomination' : 'Company / Legal name'} value={form.company} onChange={(v) => set('company', v)} placeholder="CloseOS SAS" />
 
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Téléphone</label>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'Téléphone' : 'Phone'}</label>
             <PhoneInput value={form.phone} onChange={(v) => set('phone', v)} />
           </div>
 
           <div>
-            <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Adresse complète</label>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'Adresse complète' : 'Full address'}</label>
             <div className="relative">
               <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
               <PlacesInput variant="dark" mode="address" value={form.address} onChange={(v) => set('address', v)} placeholder="12 rue de Paris, 75001 Paris" />
@@ -315,11 +320,11 @@ export default function SignProfile() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field icon={FileDigit} label="SIRET" value={form.siret} onChange={(v) => set('siret', v)} placeholder="ex. 14 chiffres (FR)" />
-            <Field icon={Hash} label="SIREN" value={form.siren} onChange={(v) => set('siren', v)} placeholder="ex. 9 chiffres (FR)" />
-            <Field icon={Percent} label="N° de TVA" value={form.tva} onChange={(v) => set('tva', v)} placeholder="ex. FR12345678901" />
-            <Field icon={Landmark} label="N° d'entreprise" value={form.company_id} onChange={(v) => set('company_id', v)} placeholder="Registre national" />
-            <Field icon={Tag} label="Code APE/NAF" value={form.ape} onChange={(v) => set('ape', v)} placeholder="ex. 6201Z" />
+            <Field icon={FileDigit} label="SIRET" value={form.siret} onChange={(v) => set('siret', v)} placeholder={lang === 'fr' ? 'ex. 14 chiffres (FR)' : 'e.g. 14 digits (FR)'} />
+            <Field icon={Hash} label="SIREN" value={form.siren} onChange={(v) => set('siren', v)} placeholder={lang === 'fr' ? 'ex. 9 chiffres (FR)' : 'e.g. 9 digits (FR)'} />
+            <Field icon={Percent} label={lang === 'fr' ? 'N° de TVA' : 'VAT number'} value={form.tva} onChange={(v) => set('tva', v)} placeholder="ex. FR12345678901" />
+            <Field icon={Landmark} label={lang === 'fr' ? "N° d'entreprise" : 'Company ID'} value={form.company_id} onChange={(v) => set('company_id', v)} placeholder={lang === 'fr' ? 'Registre national' : 'National registry'} />
+            <Field icon={Tag} label={lang === 'fr' ? 'Code APE/NAF' : 'APE/NAF code'} value={form.ape} onChange={(v) => set('ape', v)} placeholder="ex. 6201Z" />
           </div>
 
           <div className="flex items-center gap-3 pt-1">
@@ -329,58 +334,70 @@ export default function SignProfile() {
               className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-5 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-60"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              Enregistrer
+              {lang === 'fr' ? 'Enregistrer' : 'Save'}
             </button>
-            {saved && <span className="text-sm text-[#CEFF8F]">Profil enregistré ✓</span>}
+            {saved && <span className="text-sm text-[#CEFF8F]">{lang === 'fr' ? 'Profil enregistré ✓' : 'Profile saved ✓'}</span>}
           </div>
         </form>
       ) : (
         /* ─────────── Paramètres ─────────── */
         <div className="space-y-4">
           {/* Compte */}
-          <SettingCard icon={UserRound} title="Compte">
+          <SettingCard icon={UserRound} title={lang === 'fr' ? 'Compte' : 'Account'}>
             <div className="flex items-center justify-between border-b border-[#3A4242] py-2.5">
               <span className="text-sm text-[#A1A9A9]">Email</span>
               <span className="text-sm font-medium text-white">{account.email || form.email || '—'}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="text-sm text-[#A1A9A9]">Membre depuis</span>
-              <span className="text-sm font-medium text-white">{fmtDate(account.createdAt)}</span>
+              <span className="text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Membre depuis' : 'Member since'}</span>
+              <span className="text-sm font-medium text-white">{fmtDate(account.createdAt, lang)}</span>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-[#A1A9A9]">
-              Votre identifiant CloseOS est partagé entre <span className="text-[#F3F4F6]">Business</span> et <span className="text-[#CEFF8F]">Sign</span>.
+              {lang === 'fr' ? (
+                <>Votre identifiant CloseOS est partagé entre <span className="text-[#F3F4F6]">Business</span> et <span className="text-[#CEFF8F]">Sign</span>.</>
+              ) : (
+                <>Your CloseOS login is shared between <span className="text-[#F3F4F6]">Business</span> and <span className="text-[#CEFF8F]">Sign</span>.</>
+              )}
             </p>
           </SettingCard>
 
           {/* Abonnement */}
-          <SettingCard icon={CreditCard} title="Abonnement">
+          <SettingCard icon={CreditCard} title={lang === 'fr' ? 'Abonnement' : 'Subscription'}>
             {sub?.exempt ? (
               <p className="text-sm leading-relaxed text-[#A1A9A9]">
-                CloseOS Sign est <span className="text-[#CEFF8F]">inclus</span> avec votre abonnement CloseOS Business — sans frais supplémentaires.
+                {lang === 'fr' ? (
+                  <>CloseOS Sign est <span className="text-[#CEFF8F]">inclus</span> avec votre abonnement CloseOS Business — sans frais supplémentaires.</>
+                ) : (
+                  <>CloseOS Sign is <span className="text-[#CEFF8F]">included</span> with your CloseOS Business subscription — at no extra cost.</>
+                )}
               </p>
             ) : sub && isSubActive(sub.status) ? (
               <>
                 <div className="flex items-center justify-between border-b border-[#3A4242] py-2.5">
-                  <span className="text-sm text-[#A1A9A9]">Statut</span>
+                  <span className="text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Statut' : 'Status'}</span>
                   <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#CEFF8F]">
-                    <CheckCircle2 className="h-4 w-4" /> {sub.status === 'trialing' ? 'Essai en cours' : 'Actif'}
+                    <CheckCircle2 className="h-4 w-4" /> {sub.status === 'trialing' ? (lang === 'fr' ? 'Essai en cours' : 'Trial in progress') : (lang === 'fr' ? 'Actif' : 'Active')}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-2.5">
-                  <span className="text-sm text-[#A1A9A9]">{sub.status === 'trialing' ? 'Fin de l’essai' : 'Renouvellement'}</span>
-                  <span className="text-sm font-medium text-white">{fmtDate(sub.currentPeriodEnd)}</span>
+                  <span className="text-sm text-[#A1A9A9]">{sub.status === 'trialing' ? (lang === 'fr' ? 'Fin de l’essai' : 'Trial ends') : (lang === 'fr' ? 'Renouvellement' : 'Renewal')}</span>
+                  <span className="text-sm font-medium text-white">{fmtDate(sub.currentPeriodEnd, lang)}</span>
                 </div>
                 <button onClick={() => openSignBillingPortal()} className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:border-[#CEFF8F]">
-                  <ExternalLink className="h-4 w-4" /> Gérer l’abonnement
+                  <ExternalLink className="h-4 w-4" /> {lang === 'fr' ? 'Gérer l’abonnement' : 'Manage subscription'}
                 </button>
               </>
             ) : (
               <>
                 <p className="mb-4 text-sm text-[#A1A9A9]">
-                  Activez CloseOS Sign — toutes les fonctionnalités, à partir de <span className="text-[#F3F4F6]">9 €/mois</span>. 14 jours d’essai gratuit.
+                  {lang === 'fr' ? (
+                    <>Activez CloseOS Sign — toutes les fonctionnalités, à partir de <span className="text-[#F3F4F6]">9 €/mois</span>. 14 jours d’essai gratuit.</>
+                  ) : (
+                    <>Activate CloseOS Sign — all features, from <span className="text-[#F3F4F6]">€9/month</span>. 14-day free trial.</>
+                  )}
                 </p>
                 <button onClick={() => navigate('/sign/abonnement')} className="inline-flex items-center gap-2 rounded-lg bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
-                  S’abonner <ArrowRight className="h-4 w-4" />
+                  {lang === 'fr' ? 'S’abonner' : 'Subscribe'} <ArrowRight className="h-4 w-4" />
                 </button>
               </>
             )}
@@ -389,19 +406,23 @@ export default function SignProfile() {
           {/* Mot de passe */}
           <SettingCard
             icon={Lock}
-            title={authId?.hasPassword === false ? 'Définir un mot de passe' : 'Mot de passe'}
+            title={authId?.hasPassword === false ? (lang === 'fr' ? 'Définir un mot de passe' : 'Set a password') : (lang === 'fr' ? 'Mot de passe' : 'Password')}
             desc={
               authId?.hasPassword === false
-                ? 'Vous êtes connecté avec Google — votre compte n’a pas encore de mot de passe. Définissez-en un pour pouvoir aussi vous connecter par email.'
-                : 'C’est le mot de passe de votre compte CloseOS (Business et Sign) — le modifier ici le change partout.'
+                ? (lang === 'fr'
+                    ? 'Vous êtes connecté avec Google — votre compte n’a pas encore de mot de passe. Définissez-en un pour pouvoir aussi vous connecter par email.'
+                    : 'You are signed in with Google — your account has no password yet. Set one so you can also sign in with your email.')
+                : (lang === 'fr'
+                    ? 'C’est le mot de passe de votre compte CloseOS (Business et Sign) — le modifier ici le change partout.'
+                    : 'This is your CloseOS account password (Business and Sign) — changing it here changes it everywhere.')
             }
           >
             <form onSubmit={submitPassword} className="space-y-3">
               {authId?.hasPassword !== false && (
-                <PwInput placeholder="Mot de passe actuel" autoComplete="current-password" value={pw.current} onChange={(v) => { setPw((p) => ({ ...p, current: v })); setPwMsg(null); }} />
+                <PwInput placeholder={lang === 'fr' ? 'Mot de passe actuel' : 'Current password'} autoComplete="current-password" value={pw.current} onChange={(v) => { setPw((p) => ({ ...p, current: v })); setPwMsg(null); }} />
               )}
-              <PwInput placeholder="Nouveau mot de passe" autoComplete="new-password" value={pw.next} onChange={(v) => { setPw((p) => ({ ...p, next: v })); setPwMsg(null); }} />
-              <PwInput placeholder="Confirmer le nouveau mot de passe" autoComplete="new-password" value={pw.confirm} onChange={(v) => { setPw((p) => ({ ...p, confirm: v })); setPwMsg(null); }} />
+              <PwInput placeholder={lang === 'fr' ? 'Nouveau mot de passe' : 'New password'} autoComplete="new-password" value={pw.next} onChange={(v) => { setPw((p) => ({ ...p, next: v })); setPwMsg(null); }} />
+              <PwInput placeholder={lang === 'fr' ? 'Confirmer le nouveau mot de passe' : 'Confirm new password'} autoComplete="new-password" value={pw.confirm} onChange={(v) => { setPw((p) => ({ ...p, confirm: v })); setPwMsg(null); }} />
               {pwMsg && (
                 <div className={`flex items-center gap-2 rounded border px-3 py-2 text-xs ${pwMsg.type === 'ok' ? 'border-[#CEFF8F]/30 bg-[#CEFF8F]/10 text-[#CEFF8F]' : 'border-[#ef6b6b]/30 bg-[#ef6b6b]/10 text-[#ef6b6b]'}`}>
                   {pwMsg.type === 'ok' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />} {pwMsg.text}
@@ -412,7 +433,7 @@ export default function SignProfile() {
                 disabled={pwBusy || !pw.next || !pw.confirm || (authId?.hasPassword !== false && !pw.current)}
                 className="inline-flex items-center gap-2 rounded bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50"
               >
-                {pwBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />} {authId?.hasPassword === false ? 'Définir le mot de passe' : 'Mettre à jour le mot de passe'}
+                {pwBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />} {authId?.hasPassword === false ? (lang === 'fr' ? 'Définir le mot de passe' : 'Set password') : (lang === 'fr' ? 'Mettre à jour le mot de passe' : 'Update password')}
               </button>
             </form>
           </SettingCard>
@@ -420,13 +441,15 @@ export default function SignProfile() {
           {/* Appareils de confiance */}
           <SettingCard
             icon={Smartphone}
-            title="Appareils de confiance"
-            desc="Appareils où la vérification (code email) a réussi. Chacun reste de confiance 7 jours, puis une nouvelle vérification est demandée."
+            title={lang === 'fr' ? 'Appareils de confiance' : 'Trusted devices'}
+            desc={lang === 'fr'
+              ? 'Appareils où la vérification (code email) a réussi. Chacun reste de confiance 7 jours, puis une nouvelle vérification est demandée.'
+              : 'Devices where verification (email code) succeeded. Each stays trusted for 7 days, then a new verification is required.'}
           >
             {devices === null ? (
-              <div className="flex items-center gap-2 text-sm text-[#A1A9A9]"><Loader2 className="h-4 w-4 animate-spin" /> Chargement…</div>
+              <div className="flex items-center gap-2 text-sm text-[#A1A9A9]"><Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Chargement…' : 'Loading…'}</div>
             ) : devices.length === 0 ? (
-              <p className="text-sm text-[#A1A9A9]">Aucun appareil de confiance actif.</p>
+              <p className="text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Aucun appareil de confiance actif.' : 'No active trusted devices.'}</p>
             ) : (
               <div className="space-y-2">
                 {devices.map((d) => (
@@ -434,11 +457,11 @@ export default function SignProfile() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-white">
                         <Smartphone className="h-4 w-4 shrink-0 text-[#A1A9A9]" />
-                        {d.device_name || 'Appareil'}
-                        {d.current && <span className="rounded-full bg-[#CEFF8F]/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#CEFF8F]">Cet appareil</span>}
+                        {d.device_name || (lang === 'fr' ? 'Appareil' : 'Device')}
+                        {d.current && <span className="rounded-full bg-[#CEFF8F]/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#CEFF8F]">{lang === 'fr' ? 'Cet appareil' : 'This device'}</span>}
                       </div>
                       <div className="mt-1 truncate text-xs text-[#A1A9A9]">
-                        {[d.location, d.last_ip].filter(Boolean).join(' · ') || 'Localisation inconnue'} — ajouté le {fmtDate(d.created_at)}
+                        {[d.location, d.last_ip].filter(Boolean).join(' · ') || (lang === 'fr' ? 'Localisation inconnue' : 'Unknown location')} {lang === 'fr' ? '— ajouté le' : '— added on'} {fmtDate(d.created_at, lang)}
                       </div>
                     </div>
                     <button
@@ -446,7 +469,7 @@ export default function SignProfile() {
                       disabled={deviceBusy === d.id}
                       className="shrink-0 rounded-lg border border-[#3A4242] px-3 py-1.5 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#ef6b6b]/40 hover:text-[#ef6b6b] disabled:opacity-50"
                     >
-                      {deviceBusy === d.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Révoquer'}
+                      {deviceBusy === d.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (lang === 'fr' ? 'Révoquer' : 'Revoke')}
                     </button>
                   </div>
                 ))}
@@ -458,8 +481,8 @@ export default function SignProfile() {
           <SettingCard icon={Bell} title="Notifications">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-sm font-medium text-white">Connexion sur un nouvel appareil</div>
-                <div className="text-xs text-[#A1A9A9]">Recevez un email de sécurité à chaque connexion vérifiée sur un nouvel appareil.</div>
+                <div className="text-sm font-medium text-white">{lang === 'fr' ? 'Connexion sur un nouvel appareil' : 'Sign-in on a new device'}</div>
+                <div className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Recevez un email de sécurité à chaque connexion vérifiée sur un nouvel appareil.' : 'Receive a security email for each verified sign-in on a new device.'}</div>
               </div>
               <Toggle checked={notif?.new_device ?? true} disabled={!notif} onChange={(v) => toggleNotif('new_device', v)} />
             </div>
@@ -468,12 +491,14 @@ export default function SignProfile() {
           {/* Paiement Stripe */}
           <SettingCard
             icon={CreditCard}
-            title="Paiement Stripe"
-            desc="Connecte ton compte Stripe pour proposer « Payé + signé » : le signataire paie pour valider, l’argent arrive directement sur ton compte."
+            title={lang === 'fr' ? 'Paiement Stripe' : 'Stripe payment'}
+            desc={lang === 'fr'
+              ? 'Connecte ton compte Stripe pour proposer « Payé + signé » : le signataire paie pour valider, l’argent arrive directement sur ton compte.'
+              : 'Connect your Stripe account to offer “Paid + signed”: the signer pays to confirm, and the money lands directly in your account.'}
           >
             {stripeConnected ? (
               <div className="flex items-center gap-2 rounded-lg border border-[#CEFF8F]/30 bg-[#CEFF8F]/10 px-3 py-2.5 text-sm font-medium text-[#CEFF8F]">
-                <CheckCircle2 className="h-4 w-4" /> Compte Stripe connecté
+                <CheckCircle2 className="h-4 w-4" /> {lang === 'fr' ? 'Compte Stripe connecté' : 'Stripe account connected'}
               </div>
             ) : (
               <button
@@ -481,7 +506,7 @@ export default function SignProfile() {
                 disabled={stripeBusy}
                 className="inline-flex items-center gap-2 rounded-lg bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50"
               >
-                {stripeBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />} Connecter mon compte Stripe
+                {stripeBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />} {lang === 'fr' ? 'Connecter mon compte Stripe' : 'Connect my Stripe account'}
               </button>
             )}
           </SettingCard>
@@ -489,17 +514,19 @@ export default function SignProfile() {
           {/* Données & confidentialité */}
           <SettingCard
             icon={ShieldCheck}
-            title="Données & confidentialité"
-            desc="Signature électronique conforme RGPD. Chaque signature génère un faisceau de preuves (horodatage, ouvertures du lien, appareil) conservé avec le contrat."
+            title={lang === 'fr' ? 'Données & confidentialité' : 'Data & privacy'}
+            desc={lang === 'fr'
+              ? 'Signature électronique conforme RGPD. Chaque signature génère un faisceau de preuves (horodatage, ouvertures du lien, appareil) conservé avec le contrat.'
+              : 'GDPR-compliant electronic signature. Each signature generates an evidence bundle (timestamp, link opens, device) kept with the contract.'}
           >
             <button
               onClick={exportData}
               disabled={exporting}
               className="inline-flex items-center gap-2 rounded-lg border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:border-[#CEFF8F] disabled:opacity-50"
             >
-              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Télécharger mes données (JSON)
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} {lang === 'fr' ? 'Télécharger mes données (JSON)' : 'Download my data (JSON)'}
             </button>
-            <p className="mt-3 text-xs text-[#A1A9A9]">Export de votre profil, vos contrats et vos contacts.</p>
+            <p className="mt-3 text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Export de votre profil, vos contrats et vos contacts.' : 'Export of your profile, contracts and contacts.'}</p>
           </SettingCard>
 
           {/* Sessions */}
@@ -509,14 +536,14 @@ export default function SignProfile() {
                 onClick={handleLogout}
                 className="flex items-center justify-center gap-2 rounded-lg border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
               >
-                <LogOut className="h-4 w-4" /> Se déconnecter
+                <LogOut className="h-4 w-4" /> {lang === 'fr' ? 'Se déconnecter' : 'Log out'}
               </button>
               <button
                 onClick={signOutEverywhere}
                 disabled={outAllBusy}
                 className="flex items-center justify-center gap-2 rounded-lg border border-[#ef6b6b]/30 px-4 py-2.5 text-sm font-medium text-[#ef6b6b] transition-colors hover:bg-[#ef6b6b]/10 disabled:opacity-50"
               >
-                {outAllBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Déconnexion de tous les appareils
+                {outAllBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} {lang === 'fr' ? 'Déconnexion de tous les appareils' : 'Log out of all devices'}
               </button>
             </div>
           </SettingCard>

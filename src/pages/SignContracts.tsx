@@ -4,31 +4,37 @@ import { Plus, FileText, FileSignature, Search, Trash2, Loader2, X, ChevronDown,
 import { listContractsWithCounts, deleteContract, duplicateContract, downloadContractDocument, getContractPdfData, resendContract, type SignContractRow } from '../lib/signContracts';
 import { renderPdfFirstPage } from '../lib/signPdfThumb';
 import { THEME_CSS } from '../lib/signThemes';
+import { useSignLang, signLocale, type SignLang } from '../contexts/SignLangContext';
 
 /**
  * CloseOS Sign — Tous les contrats (grille de cartes, style « Google Docs » en DA Sign).
  */
 
-const STATUS: Record<string, { label: string; cls: string; accent: string }> = {
-  draft: { label: 'Brouillon', cls: 'text-[#A1A9A9] border-[#3A4242] bg-[#191E1E]', accent: '#3A4242' },
-  pending: { label: 'En attente', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30 bg-[#A0E7EC]/10', accent: '#A0E7EC' },
-  sent: { label: 'Envoyé', cls: 'text-[#CEFF8F] border-[#CEFF8F]/30 bg-[#CEFF8F]/10', accent: '#CEFF8F' },
-  viewed: { label: 'Consulté', cls: 'text-[#CEFF8F] border-[#CEFF8F]/30 bg-[#CEFF8F]/10', accent: '#CEFF8F' },
-  signed: { label: 'Signé', cls: 'text-[#CEFF8F] border-[#CEFF8F]/30 bg-[#CEFF8F]/10', accent: '#CEFF8F' },
-  paid: { label: 'Signé + Payé', cls: 'text-[#191E1E] border-[#CEFF8F] bg-[#CEFF8F]', accent: '#CEFF8F' },
-  declined: { label: 'Refusé', cls: 'text-red-400 border-red-500/30 bg-red-500/10', accent: '#ef6b6b' },
-  expired: { label: 'Expiré', cls: 'text-[#A1A9A9] border-[#3A4242] bg-[#191E1E]', accent: '#3A4242' },
-  cancelled: { label: 'Annulé', cls: 'text-[#A1A9A9] border-[#3A4242] bg-[#191E1E]', accent: '#3A4242' },
+const STATUS: Record<string, { label: string; labelEn: string; cls: string; accent: string }> = {
+  draft: { label: 'Brouillon', labelEn: 'Draft', cls: 'text-[#A1A9A9] border-[#3A4242] bg-[#191E1E]', accent: '#3A4242' },
+  pending: { label: 'En attente', labelEn: 'Pending', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30 bg-[#A0E7EC]/10', accent: '#A0E7EC' },
+  sent: { label: 'Envoyé', labelEn: 'Sent', cls: 'text-[#CEFF8F] border-[#CEFF8F]/30 bg-[#CEFF8F]/10', accent: '#CEFF8F' },
+  viewed: { label: 'Consulté', labelEn: 'Viewed', cls: 'text-[#CEFF8F] border-[#CEFF8F]/30 bg-[#CEFF8F]/10', accent: '#CEFF8F' },
+  signed: { label: 'Signé', labelEn: 'Signed', cls: 'text-[#CEFF8F] border-[#CEFF8F]/30 bg-[#CEFF8F]/10', accent: '#CEFF8F' },
+  paid: { label: 'Signé + Payé', labelEn: 'Signed + Paid', cls: 'text-[#191E1E] border-[#CEFF8F] bg-[#CEFF8F]', accent: '#CEFF8F' },
+  declined: { label: 'Refusé', labelEn: 'Declined', cls: 'text-red-400 border-red-500/30 bg-red-500/10', accent: '#ef6b6b' },
+  expired: { label: 'Expiré', labelEn: 'Expired', cls: 'text-[#A1A9A9] border-[#3A4242] bg-[#191E1E]', accent: '#3A4242' },
+  cancelled: { label: 'Annulé', labelEn: 'Cancelled', cls: 'text-[#A1A9A9] border-[#3A4242] bg-[#191E1E]', accent: '#3A4242' },
+};
+const statusLabel = (s: string, lang: SignLang) => {
+  const st = STATUS[s];
+  if (!st) return s;
+  return lang === 'fr' ? st.label : st.labelEn;
 };
 
 // Badge d'état d'abonnement (suivi webhook)
-const SUB_BADGE: Record<string, { label: string; cls: string }> = {
-  active: { label: 'Abo à jour', cls: 'text-[#CEFF8F] border-[#CEFF8F]/30' },
-  trialing: { label: 'Abo · essai', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30' },
-  past_due: { label: 'Abo · échec', cls: 'text-[#F0B86E] border-[#F0B86E]/40' },
-  unpaid: { label: 'Abo · impayé', cls: 'text-[#ef6b6b] border-[#ef6b6b]/40' },
-  canceled: { label: 'Abo · annulé', cls: 'text-[#A1A9A9] border-[#3A4242]' },
-  incomplete: { label: 'Abo · incomplet', cls: 'text-[#A1A9A9] border-[#3A4242]' },
+const SUB_BADGE: Record<string, { label: string; labelEn: string; cls: string }> = {
+  active: { label: 'Abo à jour', labelEn: 'Sub · up to date', cls: 'text-[#CEFF8F] border-[#CEFF8F]/30' },
+  trialing: { label: 'Abo · essai', labelEn: 'Sub · trial', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30' },
+  past_due: { label: 'Abo · échec', labelEn: 'Sub · past due', cls: 'text-[#F0B86E] border-[#F0B86E]/40' },
+  unpaid: { label: 'Abo · impayé', labelEn: 'Sub · unpaid', cls: 'text-[#ef6b6b] border-[#ef6b6b]/40' },
+  canceled: { label: 'Abo · annulé', labelEn: 'Sub · canceled', cls: 'text-[#A1A9A9] border-[#3A4242]' },
+  incomplete: { label: 'Abo · incomplet', labelEn: 'Sub · incomplete', cls: 'text-[#A1A9A9] border-[#3A4242]' },
 };
 
 // CSS de base pour la prévisualisation réelle du document (rendu fidèle .sign-doc + thèmes)
@@ -46,6 +52,7 @@ const DOC_BASE_CSS = `
 
 export default function SignContracts() {
   const navigate = useNavigate();
+  const { lang } = useSignLang();
   const [rows, setRows] = useState<SignContractRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -73,13 +80,13 @@ export default function SignContracts() {
   }, []);
 
   useEffect(() => {
-    document.title = 'Tous les contrats | CloseOS Sign';
+    document.title = (lang === 'fr' ? 'Tous les contrats' : 'All contracts') + ' | CloseOS Sign';
     load();
-  }, [load]);
+  }, [load, lang]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!window.confirm('Supprimer ce contrat ?')) return;
+    if (!window.confirm(lang === 'fr' ? 'Supprimer ce contrat ?' : 'Delete this contract?')) return;
     try {
       await deleteContract(id);
       setRows((prev) => prev.filter((r) => r.id !== id));
@@ -123,11 +130,11 @@ export default function SignContracts() {
     setActionBusy({ id, kind: 'send' });
     try {
       const r = await resendContract(id);
-      if (r.ok) setToast({ type: 'ok', text: `Relance envoyée à ${r.email}.` });
-      else setToast({ type: 'err', text: r.error === 'no_email' ? 'Aucun email signataire associé à ce contrat.' : r.error === 'already_signed' ? 'Ce contrat est déjà signé.' : "Impossible d'envoyer la relance." });
+      if (r.ok) setToast({ type: 'ok', text: lang === 'fr' ? `Relance envoyée à ${r.email}.` : `Reminder sent to ${r.email}.` });
+      else setToast({ type: 'err', text: r.error === 'no_email' ? (lang === 'fr' ? 'Aucun email signataire associé à ce contrat.' : 'No signer email associated with this contract.') : r.error === 'already_signed' ? (lang === 'fr' ? 'Ce contrat est déjà signé.' : 'This contract is already signed.') : (lang === 'fr' ? "Impossible d'envoyer la relance." : 'Unable to send the reminder.') });
     } catch (err) {
       console.error('[sign] relance contrat', err);
-      setToast({ type: 'err', text: "Impossible d'envoyer la relance." });
+      setToast({ type: 'err', text: lang === 'fr' ? "Impossible d'envoyer la relance." : 'Unable to send the reminder.' });
     } finally {
       setActionBusy(null);
     }
@@ -159,11 +166,11 @@ export default function SignContracts() {
   }, [contactMenuOpen]);
   const contactLabel =
     contactFilter === ''
-      ? 'Tous (contact)'
+      ? (lang === 'fr' ? 'Tous (contact)' : 'All (contact)')
       : contactFilter === '__any__'
-        ? 'Assignés à un contact'
+        ? (lang === 'fr' ? 'Assignés à un contact' : 'Assigned to a contact')
         : contactFilter === '__none__'
-          ? 'Sans contact'
+          ? (lang === 'fr' ? 'Sans contact' : 'No contact')
           : distinctContacts.find((c) => c.id === contactFilter)?.name ?? 'Contact';
   const filteredContacts = distinctContacts.filter((c) => c.name.toLowerCase().includes(contactSearch.trim().toLowerCase()));
   const pickContact = (v: string) => {
@@ -194,7 +201,7 @@ export default function SignContracts() {
     return true;
   });
   const fmtDate = (ts: string) =>
-    new Date(ts).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    new Date(ts).toLocaleDateString(signLocale(lang), { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
@@ -212,14 +219,14 @@ export default function SignContracts() {
       {/* Header */}
       <div className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Tous les contrats</h1>
-          <p className="mt-2 text-sm text-[#A1A9A9]">Suivez l’état de vos contrats : brouillon, envoyé, signé, payé.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{lang === 'fr' ? 'Tous les contrats' : 'All contracts'}</h1>
+          <p className="mt-2 text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Suivez l’état de vos contrats : brouillon, envoyé, signé, payé.' : 'Track the status of your contracts: draft, sent, signed, paid.'}</p>
         </div>
         <button
           onClick={() => navigate('/sign/app/nouveau')}
           className="flex w-full items-center justify-center gap-2 rounded bg-[#CEFF8F] px-5 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] md:w-auto"
         >
-          <Plus className="h-4 w-4" strokeWidth={2.5} /> Créer un nouveau contrat
+          <Plus className="h-4 w-4" strokeWidth={2.5} /> {lang === 'fr' ? 'Créer un nouveau contrat' : 'Create a new contract'}
         </button>
       </div>
 
@@ -229,7 +236,7 @@ export default function SignContracts() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher un contrat…"
+          placeholder={lang === 'fr' ? 'Rechercher un contrat…' : 'Search a contract…'}
           className="w-full rounded border border-[#3A4242] bg-[#191E1E] py-2.5 pl-10 pr-4 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]"
         />
       </div>
@@ -241,16 +248,16 @@ export default function SignContracts() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="min-w-0 flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-[#F3F4F6] outline-none transition-colors focus:border-[#CEFF8F] sm:flex-none"
         >
-          <option value="">Tous les statuts</option>
+          <option value="">{lang === 'fr' ? 'Tous les statuts' : 'All statuses'}</option>
           {distinctStatuses.map((s) => (
-            <option key={s} value={s}>{STATUS[s]?.label ?? s}</option>
+            <option key={s} value={s}>{statusLabel(s, lang)}</option>
           ))}
         </select>
 
         <div className="flex items-center gap-1.5 rounded border border-[#3A4242] bg-[#191E1E] px-2.5 py-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-[#A1A9A9]">Du</span>
+          <span className="text-[10px] font-bold uppercase tracking-wide text-[#A1A9A9]">{lang === 'fr' ? 'Du' : 'From'}</span>
           <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} onClick={(e) => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()} style={{ colorScheme: 'dark' }} className="cursor-pointer bg-transparent text-sm text-[#F3F4F6] outline-none" />
-          <span className="text-[10px] font-bold uppercase tracking-wide text-[#A1A9A9]">au</span>
+          <span className="text-[10px] font-bold uppercase tracking-wide text-[#A1A9A9]">{lang === 'fr' ? 'au' : 'to'}</span>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} onClick={(e) => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()} style={{ colorScheme: 'dark' }} className="cursor-pointer bg-transparent text-sm text-[#F3F4F6] outline-none" />
         </div>
 
@@ -267,10 +274,10 @@ export default function SignContracts() {
             <div className="absolute left-0 top-full z-30 mt-1 w-64 overflow-hidden rounded-lg border border-[#3A4242] bg-[#222828] shadow-2xl">
               <div className="relative border-b border-[#3A4242] p-2">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#A1A9A9]" />
-                <input autoFocus value={contactSearch} onChange={(e) => setContactSearch(e.target.value)} placeholder="Rechercher un contact…" className="w-full rounded border border-[#3A4242] bg-[#191E1E] py-2 pl-8 pr-3 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
+                <input autoFocus value={contactSearch} onChange={(e) => setContactSearch(e.target.value)} placeholder={lang === 'fr' ? 'Rechercher un contact…' : 'Search a contact…'} className="w-full rounded border border-[#3A4242] bg-[#191E1E] py-2 pl-8 pr-3 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]" />
               </div>
               <ul className="max-h-60 overflow-y-auto py-1 text-sm">
-                {[{ v: '', label: 'Tous (contact)' }, { v: '__any__', label: 'Assignés à un contact' }, { v: '__none__', label: 'Sans contact' }].map((o) => (
+                {[{ v: '', label: lang === 'fr' ? 'Tous (contact)' : 'All (contact)' }, { v: '__any__', label: lang === 'fr' ? 'Assignés à un contact' : 'Assigned to a contact' }, { v: '__none__', label: lang === 'fr' ? 'Sans contact' : 'No contact' }].map((o) => (
                   <li key={o.v}>
                     <button type="button" onClick={() => pickContact(o.v)} className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-[#191E1E] ${contactFilter === o.v ? 'text-[#CEFF8F]' : 'text-[#F3F4F6]'}`}>
                       {o.label}{contactFilter === o.v && <Check className="h-3.5 w-3.5" />}
@@ -285,21 +292,21 @@ export default function SignContracts() {
                     </button>
                   </li>
                 ))}
-                {distinctContacts.length > 0 && filteredContacts.length === 0 && <li className="px-3 py-3 text-center text-xs text-[#A1A9A9]">Aucun contact</li>}
+                {distinctContacts.length > 0 && filteredContacts.length === 0 && <li className="px-3 py-3 text-center text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Aucun contact' : 'No contact'}</li>}
               </ul>
             </div>
           )}
         </div>
 
         <select value={payFilter} onChange={(e) => setPayFilter(e.target.value)} className="min-w-0 flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-[#F3F4F6] outline-none transition-colors focus:border-[#CEFF8F] sm:flex-none">
-          <option value="">Paiement : tous</option>
-          <option value="with">Avec paiement</option>
-          <option value="without">Sans paiement</option>
+          <option value="">{lang === 'fr' ? 'Paiement : tous' : 'Payment: all'}</option>
+          <option value="with">{lang === 'fr' ? 'Avec paiement' : 'With payment'}</option>
+          <option value="without">{lang === 'fr' ? 'Sans paiement' : 'Without payment'}</option>
         </select>
 
         {anyFilter && (
           <button onClick={resetFilters} className="flex items-center gap-1 rounded border border-[#3A4242] px-3 py-2.5 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white">
-            <X className="h-3.5 w-3.5" /> Réinitialiser
+            <X className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Réinitialiser' : 'Reset'}
           </button>
         )}
       </div>
@@ -314,10 +321,10 @@ export default function SignContracts() {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded border border-dashed border-[#3A4242] bg-[#191E1E]">
             <FileText className="h-6 w-6 text-[#A1A9A9]" />
           </div>
-          <p className="text-sm text-[#F3F4F6]">{rows.length === 0 ? 'Aucun contrat pour le moment.' : 'Aucun résultat.'}</p>
-          <p className="mt-1 max-w-xs text-xs text-[#A1A9A9]">Créez votre premier contrat pour le faire signer et encaisser le paiement.</p>
+          <p className="text-sm text-[#F3F4F6]">{rows.length === 0 ? (lang === 'fr' ? 'Aucun contrat pour le moment.' : 'No contract yet.') : (lang === 'fr' ? 'Aucun résultat.' : 'No results.')}</p>
+          <p className="mt-1 max-w-xs text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Créez votre premier contrat pour le faire signer et encaisser le paiement.' : 'Create your first contract to get it signed and collect payment.'}</p>
           <button onClick={() => navigate('/sign/app/nouveau')} className="mt-6 flex items-center gap-2 rounded bg-[#CEFF8F] px-5 py-2.5 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
-            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} /> Créer un nouveau contrat
+            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} /> {lang === 'fr' ? 'Créer un nouveau contrat' : 'Create a new contract'}
           </button>
         </div>
       ) : (
@@ -337,17 +344,17 @@ export default function SignContracts() {
                   <ContractThumbnail row={r} />
                   {/* Statut / Modèle */}
                   <span className={`absolute right-3 top-3 z-40 rounded border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${r.isTemplate ? 'border-[#CEFF8F] bg-[#CEFF8F] text-[#191E1E]' : st.cls}`}>
-                    {r.isTemplate ? 'Modèle' : st.label}
+                    {r.isTemplate ? (lang === 'fr' ? 'Modèle' : 'Template') : statusLabel(r.status, lang)}
                   </span>
                   {/* Overlay d'actions (au survol) — clic ailleurs = ouvrir */}
                   <div className="absolute inset-0 z-30 flex items-center justify-center gap-2 bg-[#191E1E]/70 opacity-0 backdrop-blur-[1px] transition-opacity duration-200 group-hover:opacity-100">
-                    <ActionBtn icon={Pencil} title="Ouvrir" onClick={(e) => handleOpen(e, r.id)} />
+                    <ActionBtn icon={Pencil} title={lang === 'fr' ? 'Ouvrir' : 'Open'} onClick={(e) => handleOpen(e, r.id)} />
                     {r.status === 'sent' && r.hasSignerEmail && !r.isTemplate && (
-                      <ActionBtn icon={Send} title="Relancer par email" busy={actionBusy?.id === r.id && actionBusy.kind === 'send'} onClick={(e) => handleResend(e, r.id)} />
+                      <ActionBtn icon={Send} title={lang === 'fr' ? 'Relancer par email' : 'Send email reminder'} busy={actionBusy?.id === r.id && actionBusy.kind === 'send'} onClick={(e) => handleResend(e, r.id)} />
                     )}
-                    <ActionBtn icon={Copy} title="Dupliquer" busy={actionBusy?.id === r.id && actionBusy.kind === 'dup'} onClick={(e) => handleDuplicate(e, r.id)} />
-                    <ActionBtn icon={Download} title="Télécharger" busy={actionBusy?.id === r.id && actionBusy.kind === 'dl'} onClick={(e) => handleDownload(e, r.id)} />
-                    <ActionBtn icon={Trash2} title="Supprimer" danger onClick={(e) => handleDelete(e, r.id)} />
+                    <ActionBtn icon={Copy} title={lang === 'fr' ? 'Dupliquer' : 'Duplicate'} busy={actionBusy?.id === r.id && actionBusy.kind === 'dup'} onClick={(e) => handleDuplicate(e, r.id)} />
+                    <ActionBtn icon={Download} title={lang === 'fr' ? 'Télécharger' : 'Download'} busy={actionBusy?.id === r.id && actionBusy.kind === 'dl'} onClick={(e) => handleDownload(e, r.id)} />
+                    <ActionBtn icon={Trash2} title={lang === 'fr' ? 'Supprimer' : 'Delete'} danger onClick={(e) => handleDelete(e, r.id)} />
                   </div>
                 </div>
                 {/* Pied : icône + titre + méta */}
@@ -362,21 +369,21 @@ export default function SignContracts() {
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#A1A9A9]">
                       {r.isTemplate ? (
                         <>
-                          <span>{r.instanceCount ?? 0} lien{(r.instanceCount ?? 0) > 1 ? 's' : ''}</span>
+                          <span>{lang === 'fr' ? `${r.instanceCount ?? 0} lien${(r.instanceCount ?? 0) > 1 ? 's' : ''}` : `${r.instanceCount ?? 0} link${(r.instanceCount ?? 0) > 1 ? 's' : ''}`}</span>
                           <span className="text-[#3A4242]">·</span>
-                          <span className="text-[#CEFF8F]">{r.signedCount ?? 0} signé{(r.signedCount ?? 0) > 1 ? 's' : ''}</span>
+                          <span className="text-[#CEFF8F]">{lang === 'fr' ? `${r.signedCount ?? 0} signé${(r.signedCount ?? 0) > 1 ? 's' : ''}` : `${r.signedCount ?? 0} signed`}</span>
                         </>
                       ) : (
                         <>
                           <span>{fmtDate(r.updated_at)}</span>
                           <span className="text-[#3A4242]">·</span>
-                          <span>{r.fields} champ{r.fields > 1 ? 's' : ''}</span>
+                          <span>{lang === 'fr' ? `${r.fields} champ${r.fields > 1 ? 's' : ''}` : `${r.fields} field${r.fields > 1 ? 's' : ''}`}</span>
                         </>
                       )}
                     </div>
                     {r.subscriptionStatus && SUB_BADGE[r.subscriptionStatus] && (
                       <span className={`mt-1.5 inline-block rounded border px-2 py-0.5 text-[10px] font-semibold ${SUB_BADGE[r.subscriptionStatus].cls}`}>
-                        {SUB_BADGE[r.subscriptionStatus].label}
+                        {lang === 'fr' ? SUB_BADGE[r.subscriptionStatus].label : SUB_BADGE[r.subscriptionStatus].labelEn}
                       </span>
                     )}
                   </div>

@@ -349,7 +349,7 @@ export function CloserKPI() {
     const closedTotal = won.length + lost.length + noshowFromFollowup.length
     const conversionRate = closedTotal > 0 ? (won.length / closedTotal) * 100 : 0
     // No-show rate: denominator = all qualified prospects who had an appointment (excludes prospect, unqualified, noanswer)
-    const qualifiedWithRdv = src.filter((p: any) => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+    const qualifiedWithRdv = src.filter((p: any) => !['prospect', 'contacted', 'unqualified', 'noanswer'].includes(p.stage))
     const noShowRate = qualifiedWithRdv.length > 0 ? (noShow.length / qualifiedWithRdv.length) * 100 : 0
     // Follow-up rate: % of prospects in scope who passed through the 'followup' stage at any point
     const everInFollowup = src.filter((p: any) =>

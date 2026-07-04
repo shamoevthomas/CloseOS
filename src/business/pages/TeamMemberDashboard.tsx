@@ -118,7 +118,7 @@ export function TeamMemberDashboard() {
   const noshowFromFollowup = noshowProspects.filter(p => p.previous_stage === 'followup')
   const totalDecided = wonProspects.length + lostProspects.length + noshowFromFollowup.length
   const closingRate = totalDecided > 0 ? (wonProspects.length / totalDecided) * 100 : 0
-  const noshowEligible = prospects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const noshowEligible = prospects.filter(p => !['prospect', 'contacted', 'unqualified', 'noanswer'].includes(p.stage))
   const noshowRate = noshowEligible.length > 0 ? (noshowProspects.length / noshowEligible.length) * 100 : 0
   const totalAppts = appointments.length
 

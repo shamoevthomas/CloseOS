@@ -377,11 +377,12 @@ export function SetterKPI() {
   // Helper: compute setter KPIs for a given set of prospects
   const computeSetterKpis = (src: any[], memberId?: string) => {
     const contacted = src.filter((p: any) => p.stage !== 'prospect')
-    const responded = contacted.filter((p: any) => p.stage !== 'noanswer')
+    // 'contacted' = contacté, en attente de réponse → ni "a répondu" ni "booké"
+    const responded = contacted.filter((p: any) => p.stage !== 'noanswer' && p.stage !== 'contacted')
     const responseRate = contacted.length > 0 ? (responded.length / contacted.length) * 100 : 0
 
     const booked = contacted.filter((p: any) => {
-      if (p.stage === 'noanswer') return false
+      if (p.stage === 'noanswer' || p.stage === 'contacted') return false
       if (p.stage === 'unqualified' && p.stage_changed_by === memberId) return false
       return true
     })

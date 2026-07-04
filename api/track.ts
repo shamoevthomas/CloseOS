@@ -48,6 +48,19 @@ function makeSlug(): string {
   return crypto.randomBytes(5).toString('hex').slice(0, 8)
 }
 
+// Bots d'aperçu de lien / crawlers / scanners (frappent l'URL depuis des datacenters,
+// souvent géolocalisés US, sans cookie → fausseraient les stats). On les ignore.
+const BOT_RE = /bot\b|crawl|spider|slurp|facebookexternalhit|facebot|whatsapp|telegram|slack|discord|twitter|linkedin|embedly|quora|pinterest|redditbot|applebot|bingpreview|preview|scanner|monitor|curl|wget|python-requests|python-urllib|axios|node-fetch|go-http|okhttp|java\/|headless|phantom|puppeteer|playwright|lighthouse|prerender|metainspector|vercel|ahrefs|semrush|petalbot|yandex|baiduspider|duckduckbot|gptbot|claudebot|ccbot|bytespider/i
+
+function isBotOrPrefetch(req: VercelRequest): boolean {
+  const ua = ((req.headers['user-agent'] as string) || '').toLowerCase()
+  if (!ua || BOT_RE.test(ua)) return true
+  const purpose = ((req.headers['purpose'] || req.headers['x-purpose'] || req.headers['sec-purpose']) as string) || ''
+  if (/prefetch|preview|prerender/i.test(purpose)) return true
+  if ((req.headers['x-moz'] as string) === 'prefetch') return true
+  return false
+}
+
 // ─── Handler ───
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -67,6 +80,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .maybeSingle()
 
       if (!link || !link.is_active) return res.redirect(302, fallback)
+
+      // Bot / aperçu de lien / prefetch : on redirige mais on n'enregistre RIEN (stats propres)
+      if (isBotOrPrefetch(req)) {
+        res.setHeader('Cache-Control', 'no-store')
+        return res.redirect(302, link.destination_url)
+      }
 
       // Visiteur (cookie 1st-party)
       const cookies = parseCookies(req)

@@ -1,94 +1,96 @@
-import { useEffect, useRef } from 'react'
-import createGlobe from 'cobe'
-
-export interface GlobeMarker {
-  location: [number, number]
-  size: number
-}
+import { useEffect, useRef, useState } from 'react'
+// @ts-ignore — react-globe.gl n'expose pas de types
+import Globe from 'react-globe.gl'
 
 interface Props {
-  markers: GlobeMarker[]
-  size?: number
+  // map code pays ISO2 en minuscules -> nombre de visiteurs (ex: { fr: 131, us: 3 })
+  counts: Record<string, number>
+  height?: number
 }
 
-// Globe 3D sombre à halo rouge — marqueurs des visiteurs par pays.
-export function VisitorGlobe({ markers, size = 360 }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const pointerInteracting = useRef<number | null>(null)
-  const pointerInteractionMovement = useRef(0)
-  const phiRef = useRef(0)
-  const rotationRef = useRef(0)
-  const markersRef = useRef<GlobeMarker[]>(markers)
-
-  // garder les marqueurs à jour sans recréer le globe
-  useEffect(() => { markersRef.current = markers }, [markers])
+// Vrai globe 3D (react-globe.gl) — continents en relief, pays colorés par trafic, atmosphère rouge.
+export function VisitorGlobe({ counts, height = 380 }: Props) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const globeRef = useRef<any>(null)
+  const [features, setFeatures] = useState<any[]>([])
+  const [width, setWidth] = useState(420)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    let width = size
+    fetch('/countries.geojson')
+      .then((r) => r.json())
+      .then((d) => setFeatures(d.features || []))
+      .catch(() => {})
+  }, [])
 
-    const globe = createGlobe(canvas, {
-      devicePixelRatio: 2,
-      width: width * 2,
-      height: width * 2,
-      phi: 0,
-      theta: 0.25,
-      dark: 1,
-      diffuse: 1.1,
-      mapSamples: 16000,
-      mapBrightness: 5,
-      baseColor: [0.28, 0.16, 0.16],
-      markerColor: [1, 0.25, 0.25],
-      glowColor: [0.75, 0.16, 0.16],
-      markers: markersRef.current,
-      onRender: (state: any) => {
-        // rotation auto + interaction pointeur
-        if (pointerInteracting.current === null) phiRef.current += 0.004
-        state.phi = phiRef.current + rotationRef.current
-        state.width = width * 2
-        state.height = width * 2
-        state.markers = markersRef.current
-      },
-    })
+  useEffect(() => {
+    const measure = () => { if (wrapRef.current) setWidth(wrapRef.current.clientWidth) }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
 
-    return () => globe.destroy()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size])
+  useEffect(() => {
+    const g = globeRef.current
+    if (!g || features.length === 0) return
+    g.controls().autoRotate = true
+    g.controls().autoRotateSpeed = 0.35
+    g.controls().enableZoom = false
+    g.pointOfView({ lat: 30, lng: 0, altitude: 2.2 })
+    try {
+      const mat = g.globeMaterial()
+      mat.color.set('#0a0a0a')
+      mat.emissive.set('#1c1c1c')
+      mat.emissiveIntensity = 1
+      mat.shininess = 0
+    } catch { /* ignore */ }
+  }, [features])
+
+  // Code pays alpha-2 fiable (ISO_A2 vaut "-99" pour certains pays comme la France).
+  const iso2 = (feat: any) => {
+    const p = feat.properties
+    let c = p.ISO_A2
+    if (!c || c === '-99') c = p.ISO_A2_EH
+    if (!c || c === '-99') c = p.WB_A2
+    return (c || '').toLowerCase()
+  }
+
+  const max = Math.max(1, ...Object.values(counts))
+  const valOf = (feat: any) => counts[iso2(feat)] || 0
+  const capColor = (feat: any) => {
+    const v = valOf(feat)
+    if (!v) return 'rgba(120, 120, 120, 0.35)'
+    return `rgba(220, 38, 38, ${(0.35 + 0.65 * (v / max)).toFixed(3)})`
+  }
+  const altOf = (feat: any) => {
+    const v = valOf(feat)
+    return v ? 0.02 + 0.14 * (v / max) : 0.006
+  }
+  const label = (feat: any) =>
+    `<div style="font:600 12px monospace;background:#0e0e0e;color:#f4f1ec;padding:5px 9px;border-radius:6px">${feat.properties.ADMIN} — ${valOf(feat)} clic(s)</div>`
 
   return (
-    <div
-      className="relative select-none"
-      style={{ width: size, height: size, maxWidth: '100%', aspectRatio: '1' }}
-    >
-      {/* halo rouge diffus derrière le globe */}
-      <div
-        className="absolute inset-0 rounded-full blur-3xl -z-10 pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.35) 0%, rgba(220,38,38,0) 65%)' }}
-      />
-      <canvas
-        ref={canvasRef}
-        style={{ width: size, height: size, maxWidth: '100%', cursor: 'grab', contain: 'layout paint size' }}
-        onPointerDown={(e) => {
-          pointerInteracting.current = e.clientX - pointerInteractionMovement.current
-          if (canvasRef.current) canvasRef.current.style.cursor = 'grabbing'
-        }}
-        onPointerUp={() => {
-          pointerInteracting.current = null
-          if (canvasRef.current) canvasRef.current.style.cursor = 'grab'
-        }}
-        onPointerOut={() => {
-          pointerInteracting.current = null
-          if (canvasRef.current) canvasRef.current.style.cursor = 'grab'
-        }}
-        onPointerMove={(e) => {
-          if (pointerInteracting.current !== null) {
-            const delta = e.clientX - pointerInteracting.current
-            pointerInteractionMovement.current = delta
-            rotationRef.current = delta / 200
-          }
-        }}
-      />
+    <div ref={wrapRef} style={{ width: '100%', minHeight: height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {features.length === 0 ? (
+        <div style={{ height, display: 'flex', alignItems: 'center' }} className="text-sm text-stone-400 dark:text-neutral-500">
+          Chargement du globe…
+        </div>
+      ) : (
+        <Globe
+          ref={globeRef}
+          width={width}
+          height={height}
+          backgroundColor="rgba(0,0,0,0)"
+          atmosphereColor="#dc2626"
+          atmosphereAltitude={0.2}
+          polygonsData={features}
+          polygonCapColor={capColor}
+          polygonSideColor={() => 'rgba(220, 38, 38, 0.12)'}
+          polygonStrokeColor={() => 'rgba(150, 150, 150, 0.4)'}
+          polygonAltitude={altOf}
+          polygonLabel={label}
+          polygonsTransitionDuration={300}
+        />
+      )}
     </div>
   )
 }

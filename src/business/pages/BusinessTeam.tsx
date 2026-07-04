@@ -123,6 +123,7 @@ const getRoleColor = (role: string) =>
 
 const PIPELINE_STAGE_DEFS = [
   { id: 'prospect', tKey: 'team_pipeline_stages_prospect' as const, color: 'bg-blue-500', textColor: 'text-blue-700 dark:text-blue-400', bgLight: 'bg-blue-50/60' },
+  { id: 'contacted', tKey: 'team_pipeline_stages_contacted' as const, color: 'bg-sky-500', textColor: 'text-sky-700 dark:text-sky-400', bgLight: 'bg-sky-50/60' },
   { id: 'qualified', tKey: 'team_pipeline_stages_qualified' as const, color: 'bg-purple-500', textColor: 'text-purple-700 dark:text-purple-400', bgLight: 'bg-purple-50/60' },
   { id: 'followup', tKey: 'team_pipeline_stages_followup' as const, color: 'bg-orange-500', textColor: 'text-orange-700 dark:text-orange-400', bgLight: 'bg-orange-50/60' },
   { id: 'won', tKey: 'team_pipeline_stages_won' as const, color: 'bg-emerald-500', textColor: 'text-[#006c49] dark:text-[#6ffbbe]', bgLight: 'bg-[#6cf8bb]/15' },
@@ -893,7 +894,7 @@ function IndividualView({
   const revenue = won.reduce((s: number, p: any) => s + (p.value || 0), 0)
   const decided = won.length + lost.length + noshow.length
   const convRate = decided > 0 ? (won.length / decided) * 100 : 0
-  const noshowEligible = memberProspects.filter((p: any) => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const noshowEligible = memberProspects.filter((p: any) => !['prospect', 'contacted', 'unqualified', 'noanswer'].includes(p.stage))
   const noshowRate = noshowEligible.length > 0 ? (noshow.length / noshowEligible.length) * 100 : 0
 
   const upcomingAppts = useMemo(() => {

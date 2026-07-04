@@ -5,6 +5,8 @@ import { signOutSign, useSignOwner } from '../lib/signAuth';
 import { supabase } from '../lib/supabase';
 import { signSupabase } from '../lib/signSupabase';
 import { SignLogo } from '../components/SignLogo';
+import SignLangToggle from '../components/SignLangToggle';
+import { useSignLang } from '../contexts/SignLangContext';
 
 /**
  * CloseOS Sign — layout de l'espace connecté (DA Sign).
@@ -12,15 +14,16 @@ import { SignLogo } from '../components/SignLogo';
  * hamburger flottant. Le contenu occupe toute la largeur.
  */
 
-const NAV = [
-  { to: '/sign/app', label: 'Accueil', icon: Home, end: true },
-  { to: '/sign/app/contrats', label: 'Tous les contrats', icon: FileText, end: false },
-  { to: '/sign/app/contacts', label: 'Contacts', icon: Users, end: false },
-];
-
 export default function SignLayout() {
   const navigate = useNavigate();
+  const { lang } = useSignLang();
   const { loading, owner } = useSignOwner();
+
+  const NAV = [
+    { to: '/sign/app', label: lang === 'fr' ? 'Accueil' : 'Home', icon: Home, end: true },
+    { to: '/sign/app/contrats', label: lang === 'fr' ? 'Tous les contrats' : 'All contracts', icon: FileText, end: false },
+    { to: '/sign/app/contacts', label: lang === 'fr' ? 'Contacts' : 'Contacts', icon: Users, end: false },
+  ];
   const user = owner?.name ?? '…';
   const [open, setOpen] = useState(false);
   const [hasBusiness, setHasBusiness] = useState(false);
@@ -86,7 +89,7 @@ export default function SignLayout() {
         {/* Hamburger */}
         <button
           onClick={() => setOpen((v) => !v)}
-          aria-label="Menu"
+          aria-label={lang === 'fr' ? 'Menu' : 'Menu'}
           className={`flex h-10 w-12 items-center justify-center rounded-xl border border-[#3A4242] bg-[#222828] text-[#F3F4F6] shadow-lg shadow-black/40 transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F] ${open ? 'border-[#CEFF8F] text-[#CEFF8F]' : ''}`}
         >
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -109,7 +112,7 @@ export default function SignLayout() {
               onClick={() => go('/sign/app/nouveau')}
               className="mb-1 flex items-center justify-center gap-2 rounded-xl bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
             >
-              <Plus className="h-4 w-4" strokeWidth={2.5} /> Créer un contrat
+              <Plus className="h-4 w-4" strokeWidth={2.5} /> {lang === 'fr' ? 'Créer un contrat' : 'Create a contract'}
             </button>
 
             {/* Navigation */}
@@ -139,19 +142,22 @@ export default function SignLayout() {
                 className="mt-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#A1A9A9] transition-colors hover:bg-[#191E1E] hover:text-white"
               >
                 <Briefcase className="h-4 w-4" />
-                Accéder à CloseOS Business
+                {lang === 'fr' ? 'Accéder à CloseOS Business' : 'Go to CloseOS Business'}
               </button>
             )}
+
+            {/* Toggle de langue */}
+            <SignLangToggle className="mt-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#A1A9A9] transition-colors hover:bg-[#191E1E] hover:text-white" />
 
             {/* Bas */}
             <div className="mt-2 border-t border-[#3A4242] pt-3">
               <div className="mb-2 flex items-center gap-2 px-2 text-[10px] text-[#A1A9A9]">
-                <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> Sécurisé &amp; RGPD
+                <ShieldCheck className="h-3.5 w-3.5 text-[#CEFF8F]" /> {lang === 'fr' ? 'Sécurisé & RGPD' : 'Secure & GDPR'}
               </div>
               <div className="flex items-center justify-between rounded-xl border border-[#3A4242] bg-[#191E1E] px-3 py-2">
                 <button
                   onClick={() => go('/sign/app/profil')}
-                  title="Mon profil"
+                  title={lang === 'fr' ? 'Mon profil' : 'My profile'}
                   className="flex min-w-0 flex-1 items-center gap-2 text-left transition-opacity hover:opacity-80"
                 >
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#CEFF8F] text-xs font-bold text-[#191E1E]">
@@ -160,10 +166,10 @@ export default function SignLayout() {
                   <span className="truncate text-sm text-[#F3F4F6]">{user}</span>
                 </button>
                 <div className="flex items-center gap-1 pl-2">
-                  <button onClick={() => go('/sign/app/profil?tab=parametres')} title="Paramètres" className="text-[#A1A9A9] transition-colors hover:text-white">
+                  <button onClick={() => go('/sign/app/profil?tab=parametres')} title={lang === 'fr' ? 'Paramètres' : 'Settings'} className="text-[#A1A9A9] transition-colors hover:text-white">
                     <Settings className="h-4 w-4" />
                   </button>
-                  <button onClick={handleLogout} title="Déconnexion" className="text-[#A1A9A9] transition-colors hover:text-white">
+                  <button onClick={handleLogout} title={lang === 'fr' ? 'Déconnexion' : 'Log out'} className="text-[#A1A9A9] transition-colors hover:text-white">
                     <LogOut className="h-4 w-4" />
                   </button>
                 </div>

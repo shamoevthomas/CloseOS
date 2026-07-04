@@ -45,6 +45,9 @@ const METRIC_BADGE: Record<string, { bg: string; text: string }> = {
   conversion_rate: { bg: 'bg-[#6cf8bb]/30', text: 'text-[#00714d]' },
   leads: { bg: 'bg-[#d0ebff]', text: 'text-[#004a7c]' },
   appointments: { bg: 'bg-[#e4e2e1]', text: 'text-[#444748] dark:text-neutral-300' },
+  appointments_set: { bg: 'bg-[#e5dbff]', text: 'text-[#5f3dc4]' },
+  booking_rate: { bg: 'bg-[#e5dbff]', text: 'text-[#5f3dc4]' },
+  setter_revenue: { bg: 'bg-[#6cf8bb]/30', text: 'text-[#00714d]' },
   noshow_rate: { bg: 'bg-[#ffdad6]', text: 'text-[#ba1a1a]' },
   custom: { bg: 'bg-[#e4e2e1]', text: 'text-[#444748] dark:text-neutral-300' },
 }
@@ -71,6 +74,9 @@ export function BusinessObjectives() {
     { value: 'conversion_rate', label: t.objectives_metric_conversion_rate },
     { value: 'leads', label: t.objectives_metric_leads },
     { value: 'appointments', label: t.objectives_metric_appointments },
+    { value: 'appointments_set', label: t.objectives_metric_appointments_set },
+    { value: 'booking_rate', label: t.objectives_metric_booking_rate },
+    { value: 'setter_revenue', label: t.objectives_metric_setter_revenue },
     { value: 'noshow_rate', label: t.objectives_metric_noshow_rate },
     { value: 'custom', label: t.objectives_metric_custom },
   ]
@@ -183,7 +189,7 @@ export function BusinessObjectives() {
     if (!user || objectives.length === 0) return
 
     for (const obj of objectives) {
-      const currentValue = calculateCurrentValue(obj.metric, obj.period)
+      const currentValue = calculateCurrentValue(obj)
       if (currentValue === null || obj.target_value <= 0) continue
 
       const progress = Math.round((currentValue / obj.target_value) * 100)
@@ -320,34 +326,66 @@ export function BusinessObjectives() {
     } catch { toast.error(t.revenue_error) }
   }
 
-  // Calculate current value for a given metric — uses ALL data (no date cutoff)
+  // Which team members an objective's progress should be measured over.
+  // Individual → the assigned member(s) ; par rôle → all members of that role ; org → everyone (null).
+  const objectiveMemberIds = useCallback((obj: Objective): Set<string> | null => {
+    if (obj.scope === 'global_org') return null
+    if (obj.scope === 'global_role') {
+      return new Set(members.filter(m => m.role === obj.assigned_to_role).map(m => m.id))
+    }
+    const ids = (obj.assigned_to_members && obj.assigned_to_members.length)
+      ? obj.assigned_to_members
+      : (obj.assigned_to ? [obj.assigned_to] : [])
+    return ids.length ? new Set(ids) : null // legacy org-wide
+  }, [members])
+
+  // Booked = a set prospect that moved past the raw "prospect" stage (got a call/RDV)
+  const isBooked = (stage: string) => !['prospect', 'contacted', 'unqualified', 'noanswer'].includes(stage)
+
+  // Calculate current value for a metric, scoped to an objective's assignees — uses ALL data (no date cutoff)
   const calculateCurrentValue = useMemo(() => {
-    return (metric: string, _period: string): number | null => {
-      switch (metric) {
+    return (obj: Objective): number | null => {
+      const ids = objectiveMemberIds(obj)
+      const inSet = (id: string | null | undefined) => !ids || (!!id && ids.has(id))
+      // Closer-side prospects (assigned_to) and setter-side prospects (assigned_setter)
+      const closerProspects = prospects.filter(p => inSet(p.assigned_to))
+      const setterProspects = prospects.filter(p => inSet(p.assigned_setter))
+      const scopedAppointments = ids ? appointments.filter((a: any) => inSet(a.assigned_to)) : appointments
+
+      switch (obj.metric) {
         case 'revenue': {
-          return prospects
-            .filter(p => p.stage === 'won')
-            .reduce((sum, p) => sum + (Number(p.value) || 0), 0)
+          return closerProspects.filter(p => p.stage === 'won').reduce((sum, p) => sum + (Number(p.value) || 0), 0)
         }
         case 'sales_count': {
-          return prospects.filter(p => p.stage === 'won').length
+          return closerProspects.filter(p => p.stage === 'won').length
         }
         case 'conversion_rate': {
-          const closed = prospects.filter(p => ['won', 'lost', 'noshow'].includes(p.stage))
+          const closed = closerProspects.filter(p => ['won', 'lost', 'noshow'].includes(p.stage))
           if (closed.length === 0) return 0
           const won = closed.filter(p => p.stage === 'won').length
           return Math.round((won / closed.length) * 100 * 10) / 10
         }
         case 'leads': {
-          return prospects.length
+          return closerProspects.length
         }
         case 'appointments': {
-          return appointments.length
+          return scopedAppointments.length
+        }
+        case 'appointments_set': {
+          return setterProspects.filter(p => isBooked(p.stage)).length
+        }
+        case 'booking_rate': {
+          if (setterProspects.length === 0) return 0
+          const booked = setterProspects.filter(p => isBooked(p.stage)).length
+          return Math.round((booked / setterProspects.length) * 100 * 10) / 10
+        }
+        case 'setter_revenue': {
+          return setterProspects.filter(p => p.stage === 'won').reduce((sum, p) => sum + (Number(p.value) || 0), 0)
         }
         case 'noshow_rate': {
-          if (appointments.length === 0) return 0
-          const noshow = appointments.filter((a: any) => a.status === 'noshow').length
-          return Math.round((noshow / appointments.length) * 100 * 10) / 10
+          if (scopedAppointments.length === 0) return 0
+          const noshow = scopedAppointments.filter((a: any) => a.status === 'noshow').length
+          return Math.round((noshow / scopedAppointments.length) * 100 * 10) / 10
         }
         case 'custom':
           return null
@@ -355,13 +393,13 @@ export function BusinessObjectives() {
           return null
       }
     }
-  }, [prospects, appointments])
+  }, [prospects, appointments, objectiveMemberIds])
 
   const getMetricLabel = (metric: string) => METRICS.find(m => m.value === metric)?.label || metric
   const formatValue = (metric: string, value: number | null) => {
     if (value === null) return '—'
-    if (metric === 'revenue') return `${value.toLocaleString('fr-FR')} €`
-    if (metric === 'conversion_rate' || metric === 'noshow_rate') return `${value}%`
+    if (metric === 'revenue' || metric === 'setter_revenue') return `${value.toLocaleString('fr-FR')} €`
+    if (metric === 'conversion_rate' || metric === 'noshow_rate' || metric === 'booking_rate') return `${value}%`
     return value.toString()
   }
 
@@ -458,7 +496,7 @@ export function BusinessObjectives() {
       {objectives.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {objectives.map((obj) => {
-            const currentValue = calculateCurrentValue(obj.metric, obj.period)
+            const currentValue = calculateCurrentValue(obj)
             const progress = currentValue !== null && obj.target_value > 0
               ? Math.min(Math.round((currentValue / obj.target_value) * 100), 100)
               : null
@@ -622,7 +660,7 @@ export function BusinessObjectives() {
       {/* Detail Modal */}
       {detailObjective && (() => {
         const obj = detailObjective
-        const currentValue = calculateCurrentValue(obj.metric, obj.period)
+        const currentValue = calculateCurrentValue(obj)
         const progress = currentValue !== null && obj.target_value > 0
           ? Math.min(Math.round((currentValue / obj.target_value) * 100), 100)
           : null

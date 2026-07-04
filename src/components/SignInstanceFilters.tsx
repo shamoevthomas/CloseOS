@@ -1,4 +1,5 @@
 import { Search } from 'lucide-react';
+import { useSignLang } from '../contexts/SignLangContext';
 
 /**
  * Barre de filtres réutilisable pour les listes d'instances (signatures) —
@@ -41,13 +42,6 @@ export function matchInstance(
   return true;
 }
 
-const STATUSES: { k: InstanceFilter['status']; label: string }[] = [
-  { k: 'all', label: 'Tous' },
-  { k: 'en_cours', label: 'En cours' },
-  { k: 'signe', label: 'Signés' },
-  { k: 'expire', label: 'Expirés' },
-];
-
 export default function SignInstanceFilters({
   value,
   onChange,
@@ -55,6 +49,13 @@ export default function SignInstanceFilters({
   value: InstanceFilter;
   onChange: (f: InstanceFilter) => void;
 }) {
+  const { lang } = useSignLang();
+  const STATUSES: { k: InstanceFilter['status']; label: string }[] = [
+    { k: 'all', label: lang === 'fr' ? 'Tous' : 'All' },
+    { k: 'en_cours', label: lang === 'fr' ? 'En cours' : 'In progress' },
+    { k: 'signe', label: lang === 'fr' ? 'Signés' : 'Signed' },
+    { k: 'expire', label: lang === 'fr' ? 'Expirés' : 'Expired' },
+  ];
   const set = (patch: Partial<InstanceFilter>) => onChange({ ...value, ...patch });
   const dateCls =
     'rounded-lg border border-[#3A4242] bg-[#191E1E] px-2.5 py-2 text-xs text-white outline-none transition-colors focus:border-[#CEFF8F]';
@@ -67,7 +68,7 @@ export default function SignInstanceFilters({
         <input
           value={value.q}
           onChange={(e) => set({ q: e.target.value })}
-          placeholder="Rechercher (nom, email)"
+          placeholder={lang === 'fr' ? 'Rechercher (nom, email)' : 'Search (name, email)'}
           className="w-full rounded-lg border border-[#3A4242] bg-[#191E1E] py-2 pl-9 pr-3 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]"
         />
       </div>
@@ -92,9 +93,9 @@ export default function SignInstanceFilters({
 
         {/* Période */}
         <div className="flex items-center gap-1.5">
-          <input type="date" value={value.from} onChange={(e) => set({ from: e.target.value })} title="À partir du" className={dateCls} style={{ colorScheme: 'dark' }} />
+          <input type="date" value={value.from} onChange={(e) => set({ from: e.target.value })} title={lang === 'fr' ? 'À partir du' : 'From'} className={dateCls} style={{ colorScheme: 'dark' }} />
           <span className="text-xs text-[#A1A9A9]">→</span>
-          <input type="date" value={value.to} onChange={(e) => set({ to: e.target.value })} title="Jusqu'au" className={dateCls} style={{ colorScheme: 'dark' }} />
+          <input type="date" value={value.to} onChange={(e) => set({ to: e.target.value })} title={lang === 'fr' ? "Jusqu'au" : 'To'} className={dateCls} style={{ colorScheme: 'dark' }} />
         </div>
       </div>
     </div>

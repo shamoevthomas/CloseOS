@@ -779,6 +779,9 @@ export interface BusinessTranslations {
   objectives_metric_conversion_rate: string;
   objectives_metric_leads: string;
   objectives_metric_appointments: string;
+  objectives_metric_appointments_set: string;
+  objectives_metric_booking_rate: string;
+  objectives_metric_setter_revenue: string;
   objectives_metric_noshow_rate: string;
   objectives_metric_custom: string;
   objectives_period_weekly: string;
@@ -2455,7 +2458,7 @@ export interface BusinessTranslations {
   // ─── Export Prospects Modal ───
   export_title: string; export_filters: string; export_period_label: string; export_period_all: string; export_period_today: string; export_period_7days: string; export_period_30days: string; export_period_90days: string; export_closer_setter: string; export_status_label: string; export_offer_formula: string; export_tags_label: string; export_custom_period: string; export_date_from: string; export_date_to: string; export_columns: string; export_select_all: string; export_deselect_all: string; export_col_name: string; export_col_firstname: string; export_col_lastname: string; export_col_email: string; export_col_phone: string; export_col_company: string; export_col_stage: string; export_col_value: string; export_col_offer: string; export_col_created: string; export_col_notes: string; export_button: string; export_toast: string; export_stage_prospect: string; export_stage_qualified: string; export_stage_unqualified: string; export_stage_won: string; export_stage_followup: string; export_stage_noanswer: string; export_stage_noshow: string; export_stage_lost: string; export_stage_label_prospect: string; export_stage_label_qualified: string; export_stage_label_unqualified: string; export_stage_label_won: string; export_stage_label_followup: string; export_stage_label_noanswer: string; export_stage_label_noshow: string; export_stage_label_lost: string;
   // ─── Stripe Connect Modal ───
-  stripe_connect_title: string; stripe_connect_checking: string; stripe_connect_active: string; stripe_connect_close: string; stripe_connect_disconnect: string; stripe_connect_disconnect_confirm: string; stripe_connect_connected: string; stripe_connect_btn: string; stripe_connect_redirect: string; stripe_connect_error_init: string; stripe_connect_error_server: string; stripe_connect_benefit_1: string; stripe_connect_benefit_2: string; stripe_connect_connected_desc: string;
+  stripe_connect_title: string; stripe_connect_checking: string; stripe_connect_active: string; stripe_connect_close: string; stripe_connect_disconnect: string; stripe_connect_disconnect_confirm: string; stripe_connect_connected: string; stripe_connect_btn: string; stripe_connect_redirect: string; stripe_connect_error_init: string; stripe_connect_error_server: string; stripe_connect_benefit_1: string; stripe_connect_benefit_2: string; stripe_connect_fee_notice: string; stripe_connect_connected_desc: string;
   // ─── Issuer Profiles Modal (extra) ───
   issuer_form_title_edit: string; issuer_form_title_new: string;
   // ─── Payment Methods Modal (extra) ───
@@ -2748,6 +2751,7 @@ export const fr: BusinessTranslations = {
   team_day_sat: 'Samedi',
   team_day_sun: 'Dimanche',
   team_pipeline_stages_prospect: 'Prospect',
+  team_pipeline_stages_contacted: 'Contacté',
   team_pipeline_stages_qualified: 'Qualifié',
   team_pipeline_stages_followup: 'Follow Up',
   team_pipeline_stages_won: 'Gagné',
@@ -3151,6 +3155,9 @@ export const fr: BusinessTranslations = {
   objectives_metric_conversion_rate: 'Taux de conversion',
   objectives_metric_leads: 'Leads',
   objectives_metric_appointments: 'Rendez-vous',
+  objectives_metric_appointments_set: 'RDV bookés (setter)',
+  objectives_metric_booking_rate: 'Taux de booking',
+  objectives_metric_setter_revenue: 'CA généré via setting',
   objectives_metric_noshow_rate: 'Taux de no-show',
   objectives_metric_custom: 'Personnalisé',
   objectives_period_weekly: 'Hebdomadaire',
@@ -3371,6 +3378,7 @@ export const fr: BusinessTranslations = {
   report_prospects: 'Prospects',
   report_won: 'Gagnés',
   report_stage_new_lead: 'Nouveau Lead',
+  report_stage_contacted: 'Contacté',
   report_stage_qualified: 'Qualifié',
   report_stage_unqualified: 'Non-Qualifié',
   report_stage_followup: 'Follow Up',
@@ -4610,6 +4618,7 @@ export const fr: BusinessTranslations = {
 
   // ─── CRM Stages ───
   stage_prospect: 'Prospect',
+  stage_contacted: 'Contacté',
   stage_qualified: 'Qualifie',
   stage_unqualified: 'Non-Qualifie',
   stage_won: 'Gagne',
@@ -4755,6 +4764,7 @@ export const fr: BusinessTranslations = {
   pipeline_delete_stage_confirm: 'Supprimer le statut "{name}" ?',
   pipeline_at: 'à',
   pipeline_stage_prospect: 'Prospect',
+  pipeline_stage_contacted: 'Contacté',
   pipeline_stage_qualified: 'Qualifié',
   pipeline_stage_unqualified: 'Non-Qualifié',
   pipeline_stage_won: 'Gagné',
@@ -4873,6 +4883,7 @@ export const fr: BusinessTranslations = {
   crm_30_days: '30 jours',
   crm_90_days: '90 jours',
   crm_stage_prospect: 'Prospect',
+  crm_stage_contacted: 'Contacté',
   crm_stage_qualified: 'Qualifié',
   crm_stage_unqualified: 'Non qualifié',
   crm_stage_won: 'Gagné',
@@ -5078,6 +5089,7 @@ export const fr: BusinessTranslations = {
   team_role_day_sat: 'Samedi',
   team_role_day_sun: 'Dimanche',
   team_role_stage_prospect: 'Prospect',
+  team_role_stage_contacted: 'Contacté',
   team_role_stage_qualified: 'Qualifié',
   team_role_stage_followup: 'Follow Up',
   team_role_stage_won: 'Gagné',
@@ -5189,6 +5201,7 @@ export const fr: BusinessTranslations = {
   export_button: 'Exporter',
   export_toast: 'prospects exportes',
   export_stage_prospect: 'Prospect',
+  export_stage_contacted: 'Contacté',
   export_stage_qualified: 'Qualifie',
   export_stage_unqualified: 'Non-Qualifie',
   export_stage_won: 'Gagne',
@@ -5197,6 +5210,7 @@ export const fr: BusinessTranslations = {
   export_stage_noshow: 'No Show',
   export_stage_lost: 'Perdu',
   export_stage_label_prospect: 'Prospect',
+  export_stage_label_contacted: 'Contacté',
   export_stage_label_qualified: 'Qualifie',
   export_stage_label_unqualified: 'Non qualifie',
   export_stage_label_won: 'Gagne',
@@ -5218,6 +5232,7 @@ export const fr: BusinessTranslations = {
   stripe_connect_error_server: 'Impossible de contacter le serveur de paiement.',
   stripe_connect_benefit_1: 'Recevez vos commissions par CB directement sur votre compte bancaire.',
   stripe_connect_benefit_2: 'Vos clients paient en 1 clic depuis le PDF de la facture.',
+  stripe_connect_fee_notice: 'Sur chaque facture payee via Stripe, des frais de service CloseOS de 2% sont preleves automatiquement sur le montant. Les autres moyens de paiement (virement, PayPal...) restent sans frais.',
   stripe_connect_connected_desc: 'Votre compte Stripe est correctement relie. Vous pouvez recevoir des paiements directement sur vos factures.',
   stripe_connect_campaign_benefit_1: 'Faites payer vos rendez-vous directement via vos campagnes.',
   stripe_connect_campaign_benefit_2: 'CloseOS prélève 2% de frais de service sur chaque transaction.',
@@ -5767,6 +5782,7 @@ export const en: BusinessTranslations = {
   team_day_sat: 'Saturday',
   team_day_sun: 'Sunday',
   team_pipeline_stages_prospect: 'Prospect',
+  team_pipeline_stages_contacted: 'Contacted',
   team_pipeline_stages_qualified: 'Qualified',
   team_pipeline_stages_followup: 'Follow Up',
   team_pipeline_stages_won: 'Won',
@@ -6170,6 +6186,9 @@ export const en: BusinessTranslations = {
   objectives_metric_conversion_rate: 'Conversion rate',
   objectives_metric_leads: 'Leads',
   objectives_metric_appointments: 'Appointments',
+  objectives_metric_appointments_set: 'Appointments set (setter)',
+  objectives_metric_booking_rate: 'Booking rate',
+  objectives_metric_setter_revenue: 'Revenue via setting',
   objectives_metric_noshow_rate: 'No-show rate',
   objectives_metric_custom: 'Custom',
   objectives_period_weekly: 'Weekly',
@@ -6467,6 +6486,7 @@ export const en: BusinessTranslations = {
   report_prospects: 'Prospects',
   report_won: 'Won',
   report_stage_new_lead: 'New Lead',
+  report_stage_contacted: 'Contacted',
   report_stage_qualified: 'Qualified',
   report_stage_unqualified: 'Unqualified',
   report_stage_followup: 'Follow Up',
@@ -7512,6 +7532,7 @@ export const en: BusinessTranslations = {
 
   // ─── CRM Stages ───
   stage_prospect: 'Prospect',
+  stage_contacted: 'Contacted',
   stage_qualified: 'Qualified',
   stage_unqualified: 'Unqualified',
   stage_won: 'Won',
@@ -7657,6 +7678,7 @@ export const en: BusinessTranslations = {
   pipeline_delete_stage_confirm: 'Delete status "{name}"?',
   pipeline_at: 'at',
   pipeline_stage_prospect: 'Prospect',
+  pipeline_stage_contacted: 'Contacted',
   pipeline_stage_qualified: 'Qualified',
   pipeline_stage_unqualified: 'Unqualified',
   pipeline_stage_won: 'Won',
@@ -7775,6 +7797,7 @@ export const en: BusinessTranslations = {
   crm_30_days: '30 days',
   crm_90_days: '90 days',
   crm_stage_prospect: 'Prospect',
+  crm_stage_contacted: 'Contacted',
   crm_stage_qualified: 'Qualified',
   crm_stage_unqualified: 'Unqualified',
   crm_stage_won: 'Won',
@@ -8022,6 +8045,7 @@ export const en: BusinessTranslations = {
   team_role_day_sat: 'Saturday',
   team_role_day_sun: 'Sunday',
   team_role_stage_prospect: 'Prospect',
+  team_role_stage_contacted: 'Contacted',
   team_role_stage_qualified: 'Qualified',
   team_role_stage_followup: 'Follow Up',
   team_role_stage_won: 'Won',
@@ -8133,6 +8157,7 @@ export const en: BusinessTranslations = {
   export_button: 'Export',
   export_toast: 'prospects exported',
   export_stage_prospect: 'Prospect',
+  export_stage_contacted: 'Contacted',
   export_stage_qualified: 'Qualified',
   export_stage_unqualified: 'Unqualified',
   export_stage_won: 'Won',
@@ -8141,6 +8166,7 @@ export const en: BusinessTranslations = {
   export_stage_noshow: 'No Show',
   export_stage_lost: 'Lost',
   export_stage_label_prospect: 'Prospect',
+  export_stage_label_contacted: 'Contacted',
   export_stage_label_qualified: 'Qualified',
   export_stage_label_unqualified: 'Unqualified',
   export_stage_label_won: 'Won',
@@ -8162,6 +8188,7 @@ export const en: BusinessTranslations = {
   stripe_connect_error_server: 'Unable to contact the payment server.',
   stripe_connect_benefit_1: 'Receive your commissions by card directly to your bank account.',
   stripe_connect_benefit_2: 'Your clients pay in 1 click from the invoice PDF.',
+  stripe_connect_fee_notice: 'On every invoice paid via Stripe, a 2% CloseOS service fee is automatically deducted from the amount. Other payment methods (bank transfer, PayPal...) remain free of charge.',
   stripe_connect_connected_desc: 'Your Stripe account is properly linked. You can receive payments directly on your invoices.',
   stripe_connect_campaign_benefit_1: 'Charge for appointments directly through your campaigns.',
   stripe_connect_campaign_benefit_2: 'CloseOS takes a 2% service fee on each transaction.',

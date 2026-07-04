@@ -322,8 +322,16 @@ async function handleInvoiceSession(req: VercelRequest, res: VercelResponse) {
       throw new Error('Missing required parameters');
     }
 
+    // Montant total en centimes (Stripe attend des centimes)
+    const totalCents = Math.round(amount * 100);
+    // Commission plateforme CloseOS : 2% du montant de la facture, prélevé automatiquement
+    // sur le paiement (application_fee) et reversé au compte plateforme (clé secrète ci-dessus).
+    const PLATFORM_FEE_RATE = 0.02;
+    const applicationFeeAmount = Math.round(totalCents * PLATFORM_FEE_RATE);
+
     // Création de la session de paiement Checkout
-    // L'option clé ici est "stripeAccount", qui crée la session AU NOM du closer
+    // L'option clé ici est "stripeAccount", qui crée la session AU NOM du closer (direct charge).
+    // application_fee_amount reverse 2% à CloseOS sur chaque paiement.
     const session = await stripe.checkout.sessions.create(
       {
         line_items: [
@@ -333,12 +341,15 @@ async function handleInvoiceSession(req: VercelRequest, res: VercelResponse) {
               product_data: {
                 name: title || 'Facture de Commission',
               },
-              unit_amount: Math.round(amount * 100), // Stripe attend des centimes
+              unit_amount: totalCents,
             },
             quantity: 1,
           },
         ],
         mode: 'payment',
+        payment_intent_data: {
+          application_fee_amount: applicationFeeAmount,
+        },
         customer_email: clientEmail, // Pré-remplir l'email du client s'il est dispo
         success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.headers.origin}/factures`,

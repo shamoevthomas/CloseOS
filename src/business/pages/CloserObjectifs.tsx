@@ -46,6 +46,9 @@ const METRICS_BASE = [
   { value: 'conversion_rate', key: 'objectives_metric_conversion_rate' },
   { value: 'leads', key: 'objectives_metric_leads' },
   { value: 'appointments', key: 'objectives_metric_appointments' },
+  { value: 'appointments_set', key: 'objectives_metric_appointments_set' },
+  { value: 'booking_rate', key: 'objectives_metric_booking_rate' },
+  { value: 'setter_revenue', key: 'objectives_metric_setter_revenue' },
   { value: 'noshow_rate', key: 'objectives_metric_noshow_rate' },
   { value: 'custom', key: 'objectives_metric_custom' },
 ] as const
@@ -67,6 +70,9 @@ const METRIC_BADGE: Record<string, { bg: string; text: string }> = {
   conversion_rate: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
   leads: { bg: 'bg-stone-100', text: 'text-stone-700' },
   appointments: { bg: 'bg-stone-100', text: 'text-stone-600' },
+  appointments_set: { bg: 'bg-violet-50', text: 'text-violet-700' },
+  booking_rate: { bg: 'bg-violet-50', text: 'text-violet-700' },
+  setter_revenue: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
   noshow_rate: { bg: 'bg-red-50', text: 'text-red-700' },
   custom: { bg: 'bg-stone-100', text: 'text-stone-600' },
 }
@@ -160,12 +166,19 @@ export function CloserObjectifs() {
       const cutoff = new Date()
       cutoff.setDate(cutoff.getDate() - days)
 
-      // Filter prospects assigned to this closer
+      // Prospects assigned to this member as closer (assigned_to) or as setter (assigned_setter)
       const myProspects = prospects.filter(p => {
         if (assignedTo && p.assigned_to !== assignedTo) return false
         const createdAt = p.created_at ? new Date(p.created_at) : null
         return createdAt && createdAt >= cutoff
       })
+      const mySetProspects = prospects.filter(p => {
+        if (assignedTo && p.assigned_setter !== assignedTo) return false
+        const createdAt = p.created_at ? new Date(p.created_at) : null
+        return createdAt && createdAt >= cutoff
+      })
+      // Booked = a set prospect that moved past the raw "prospect" stage (got a call/RDV)
+      const isBooked = (stage: string) => !['prospect', 'contacted', 'unqualified', 'noanswer'].includes(stage)
 
       const filteredAppointments = appointments.filter(a => {
         const createdAt = a.created_at ? new Date(a.created_at) : null
@@ -186,6 +199,15 @@ export function CloserObjectifs() {
           return myProspects.length
         case 'appointments':
           return filteredAppointments.length
+        case 'appointments_set':
+          return mySetProspects.filter(p => isBooked(p.stage)).length
+        case 'booking_rate': {
+          if (mySetProspects.length === 0) return 0
+          const booked = mySetProspects.filter(p => isBooked(p.stage)).length
+          return Math.round((booked / mySetProspects.length) * 100 * 10) / 10
+        }
+        case 'setter_revenue':
+          return mySetProspects.filter(p => p.stage === 'won').reduce((sum, p) => sum + (Number(p.value) || 0), 0)
         case 'noshow_rate': {
           if (filteredAppointments.length === 0) return 0
           const noshow = filteredAppointments.filter((a: any) => a.status === 'noshow').length
@@ -202,8 +224,8 @@ export function CloserObjectifs() {
   const getMetricLabel = (metric: string) => METRICS.find(m => m.value === metric)?.label || metric
   const formatValue = (metric: string, value: number | null) => {
     if (value === null) return '—'
-    if (metric === 'revenue') return `${value.toLocaleString('fr-FR')} €`
-    if (metric === 'conversion_rate' || metric === 'noshow_rate') return `${value}%`
+    if (metric === 'revenue' || metric === 'setter_revenue') return `${value.toLocaleString('fr-FR')} €`
+    if (metric === 'conversion_rate' || metric === 'noshow_rate' || metric === 'booking_rate') return `${value}%`
     return value.toString()
   }
 

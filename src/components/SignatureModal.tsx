@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { X, PenTool, Upload, Type as TypeIcon, Eraser, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { computeInitials, cursiveTextToDataUrl, CURSIVE_FONT } from '../lib/signFieldsMeta';
+import { useSignLang } from '../contexts/SignLangContext';
 
 /**
  * Modale de signature (DA Sign). 3 modes : Initiales (Prénom+Nom → "T.S"),
@@ -23,6 +24,7 @@ export default function SignatureModal({
   onConfirm: (value: string) => void;
   accent?: string;
 }) {
+  const { lang } = useSignLang();
   const [mode, setMode] = useState<Mode>('initials');
   const [prenom, setPrenom] = useState('');
   const [nom, setNom] = useState('');
@@ -123,7 +125,7 @@ export default function SignatureModal({
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white">{confirmStep ? 'Confirmer la signature' : 'Votre signature'}</h3>
+          <h3 className="text-lg font-semibold text-white">{confirmStep ? (lang === 'fr' ? 'Confirmer la signature' : 'Confirm signature') : (lang === 'fr' ? 'Votre signature' : 'Your signature')}</h3>
           <button onClick={onClose} className="text-[#A1A9A9] transition-colors hover:text-white">
             <X className="h-5 w-5" />
           </button>
@@ -134,36 +136,36 @@ export default function SignatureModal({
             <div className="mb-5 flex min-h-[120px] items-center justify-center rounded-lg border border-[#3A4242] bg-white p-4">
               <SignaturePreview value={pending} />
             </div>
-            <p className="mb-6 text-center text-sm text-[#F3F4F6]">Êtes-vous sûr de vouloir signer ?</p>
+            <p className="mb-6 text-center text-sm text-[#F3F4F6]">{lang === 'fr' ? 'Êtes-vous sûr de vouloir signer ?' : 'Are you sure you want to sign?'}</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmStep(false)}
                 className="flex flex-1 items-center justify-center gap-1.5 rounded border border-[#3A4242] py-2.5 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
               >
-                <ArrowLeft className="h-4 w-4" /> Retour
+                <ArrowLeft className="h-4 w-4" /> {lang === 'fr' ? 'Retour' : 'Back'}
               </button>
               <button
                 onClick={() => onConfirm(pending)}
                 className="flex flex-1 items-center justify-center gap-1.5 rounded py-2.5 text-sm font-bold text-[#191E1E]"
                 style={{ background: accent }}
               >
-                <ShieldCheck className="h-4 w-4" /> Oui, je signe
+                <ShieldCheck className="h-4 w-4" /> {lang === 'fr' ? 'Oui, je signe' : 'Yes, I sign'}
               </button>
             </div>
           </div>
         ) : (
           <div>
             <div className="mb-4 flex gap-1 rounded-lg border border-[#3A4242] bg-[#191E1E] p-1">
-              {tabBtn('initials', TypeIcon, 'Initiales')}
-              {tabBtn('import', Upload, 'Importer')}
-              {tabBtn('draw', PenTool, 'Dessiner')}
+              {tabBtn('initials', TypeIcon, lang === 'fr' ? 'Initiales' : 'Initials')}
+              {tabBtn('import', Upload, lang === 'fr' ? 'Importer' : 'Import')}
+              {tabBtn('draw', PenTool, lang === 'fr' ? 'Dessiner' : 'Draw')}
             </div>
 
             {mode === 'initials' && (
               <div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Prénom</label>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'Prénom' : 'First name'}</label>
                     <input
                       value={prenom}
                       onChange={(e) => setPrenom(e.target.value)}
@@ -173,7 +175,7 @@ export default function SignatureModal({
                     />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Nom</label>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'Nom' : 'Last name'}</label>
                     <input
                       value={nom}
                       onChange={(e) => setNom(e.target.value)}
@@ -186,7 +188,7 @@ export default function SignatureModal({
                 <div className="mt-4 flex min-h-[110px] items-center justify-center rounded-lg border border-[#3A4242] bg-white">
                   <span style={{ fontFamily: CURSIVE, fontSize: 52, color: '#1a1a1a' }}>{initials || '—'}</span>
                 </div>
-                <p className="mt-2 text-center text-[11px] text-[#A1A9A9]">Vos initiales sont générées automatiquement.</p>
+                <p className="mt-2 text-center text-[11px] text-[#A1A9A9]">{lang === 'fr' ? 'Vos initiales sont générées automatiquement.' : 'Your initials are generated automatically.'}</p>
               </div>
             )}
 
@@ -198,7 +200,7 @@ export default function SignatureModal({
                   ) : (
                     <>
                       <Upload className="h-6 w-6 text-[#A1A9A9]" />
-                      <span className="text-sm text-[#444]">Importer une image (PNG, JPEG…)</span>
+                      <span className="text-sm text-[#444]">{lang === 'fr' ? 'Importer une image (PNG, JPEG…)' : 'Import an image (PNG, JPEG…)'}</span>
                     </>
                   )}
                   <input type="file" accept="image/*" className="hidden" onChange={onFile} />
@@ -223,10 +225,10 @@ export default function SignatureModal({
                     onClick={clearCanvas}
                     className="absolute right-2 top-2 flex items-center gap-1 rounded bg-[#191E1E]/80 px-2 py-1 text-[10px] font-medium text-[#A1A9A9] hover:text-white"
                   >
-                    <Eraser className="h-3 w-3" /> Effacer
+                    <Eraser className="h-3 w-3" /> {lang === 'fr' ? 'Effacer' : 'Clear'}
                   </button>
                 </div>
-                <p className="mt-2 text-center text-[11px] text-[#A1A9A9]">Dessinez votre signature dans le cadre.</p>
+                <p className="mt-2 text-center text-[11px] text-[#A1A9A9]">{lang === 'fr' ? 'Dessinez votre signature dans le cadre.' : 'Draw your signature inside the frame.'}</p>
               </div>
             )}
 
@@ -235,7 +237,7 @@ export default function SignatureModal({
                 onClick={onClose}
                 className="rounded border border-[#3A4242] px-4 py-2 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
               >
-                Annuler
+                {lang === 'fr' ? 'Annuler' : 'Cancel'}
               </button>
               <button
                 onClick={() => {
@@ -248,7 +250,7 @@ export default function SignatureModal({
                 className="rounded px-4 py-2 text-sm font-bold text-[#191E1E] transition-opacity disabled:opacity-40"
                 style={{ background: accent }}
               >
-                Valider la signature
+                {lang === 'fr' ? 'Valider la signature' : 'Confirm signature'}
               </button>
             </div>
           </div>

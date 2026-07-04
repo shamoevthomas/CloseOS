@@ -87,6 +87,7 @@ import { PG_H, PG_GAP, paginateEl, PAGED_CSS } from '../lib/signPaging';
 import SignPagedDoc from '../components/SignPagedDoc';
 import SignSubscriptionPanel from '../components/SignSubscriptionPanel';
 import { parseInlineFields } from '../lib/signInline';
+import { useSignLang, signLocale } from '../contexts/SignLangContext';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -150,8 +151,8 @@ const FIELD_LABELS: Record<string, string> = Object.fromEntries(FIELD_TYPES.map(
 // Legacy : anciens champs "initials" rendus comme une signature
 FIELD_META.initials = FIELD_META.signature;
 FIELD_LABELS.initials = FIELD_LABELS.signature;
-const buildChip = (type: string, role: string, signerIndex: number) =>
-  `<span class="sign-field" data-field="${type}" data-role="${role}"${role === 'signer' ? ` data-signer="${signerIndex}"` : ''} contenteditable="false">${FIELD_LABELS[type]}</span>&nbsp;`;
+const buildChip = (type: string, role: string, signerIndex: number, label: string) =>
+  `<span class="sign-field" data-field="${type}" data-role="${role}"${role === 'signer' ? ` data-signer="${signerIndex}"` : ''} contenteditable="false">${label}</span>&nbsp;`;
 
 function caretRangeFromPoint(x: number, y: number): Range | null {
   const doc = document as any;
@@ -248,6 +249,28 @@ export default function SignContractEditor() {
   const navigate = useNavigate();
   const params = useParams();
   const paramId = params.id;
+  const { lang } = useSignLang();
+
+  // Libellés de champs traduits (le FR d'origine vient de FIELD_LABELS)
+  const enFieldLabels: Record<string, string> = {
+    signature: 'Signature',
+    name: 'Full name',
+    email: 'Email',
+    tel: 'Phone',
+    address: 'Full address',
+    siret: 'SIRET',
+    siren: 'SIREN',
+    tva: 'VAT number',
+    company_id: 'Company no.',
+    ape: 'APE/NAF code',
+    date: 'Date',
+    time: 'Time',
+    city: 'Place of signature',
+    text: 'Free text',
+    initials: 'Signature',
+  };
+  const labelOf = (type: string): string =>
+    lang === 'en' ? enFieldLabels[type] ?? FIELD_LABELS[type] : FIELD_LABELS[type];
 
   const editorRef = useRef<HTMLDivElement>(null);
   const textPageRef = useRef<HTMLDivElement>(null);
@@ -367,7 +390,7 @@ export default function SignContractEditor() {
 
   // ---- Chargement / création ----
   useEffect(() => {
-    document.title = 'Éditer un contrat | CloseOS Sign';
+    document.title = lang === 'fr' ? 'Éditer un contrat | CloseOS Sign' : 'Edit a contract | CloseOS Sign';
     let cancelled = false;
     setLoading(true);
     (async () => {
@@ -680,7 +703,7 @@ export default function SignContractEditor() {
         sel.addRange(r);
       }
     }
-    document.execCommand('insertHTML', false, buildChip(type, placeFor, placeSignerIndexRef.current));
+    document.execCommand('insertHTML', false, buildChip(type, placeFor, placeSignerIndexRef.current, labelOf(type)));
     saveSelection();
     countInline();
     persist();
@@ -990,9 +1013,9 @@ export default function SignContractEditor() {
         body: { action: 'connect', ownerId: await currentOwnerId(), origin: window.location.origin },
       });
       if (data?.url) window.location.href = data.url as string;
-      else window.alert('Connexion Stripe indisponible (clé Stripe non configurée ?).');
+      else window.alert(lang === 'fr' ? 'Connexion Stripe indisponible (clé Stripe non configurée ?).' : 'Stripe connection unavailable (Stripe key not configured?).');
     } catch {
-      window.alert('Connexion Stripe impossible.');
+      window.alert(lang === 'fr' ? 'Connexion Stripe impossible.' : 'Unable to connect to Stripe.');
     }
   };
 
@@ -1068,7 +1091,15 @@ export default function SignContractEditor() {
     // À la baisse : confirmation si des champs appartiennent aux signataires retirés
     if (next < signerCount) {
       const lost = fieldsRef.current.some((f) => f.role === 'signer' && (f.signerIndex ?? 1) > next) || inlineFields.some((f) => f.role === 'signer' && f.signerIndex > next);
-      if (lost && !window.confirm(`Réduire à ${next} signataire${next > 1 ? 's' : ''} supprimera les champs des signataires retirés. Continuer ?`)) return;
+      if (
+        lost &&
+        !window.confirm(
+          lang === 'fr'
+            ? `Réduire à ${next} signataire${next > 1 ? 's' : ''} supprimera les champs des signataires retirés. Continuer ?`
+            : `Reducing to ${next} signer${next > 1 ? 's' : ''} will delete the fields of the removed signers. Continue?`,
+        )
+      )
+        return;
       // Nettoie les champs libres + inline des signataires au-delà de next
       setFields((prev) => prev.filter((f) => !(f.role === 'signer' && (f.signerIndex ?? 1) > next)));
       if (sourceTypeRef.current === 'text' && editorRef.current) {
@@ -1332,7 +1363,7 @@ export default function SignContractEditor() {
         chip.setAttribute('data-role', placeFor);
         if (placeFor === 'signer') chip.setAttribute('data-signer', String(placeSignerIndexRef.current));
         chip.setAttribute('contenteditable', 'false');
-        chip.textContent = FIELD_LABELS[type];
+        chip.textContent = labelOf(type);
         const space = document.createTextNode(' ');
         tr.insertNode(space);
         tr.insertNode(chip);
@@ -1364,7 +1395,7 @@ export default function SignContractEditor() {
     e.target.value = '';
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      window.alert('Veuillez sélectionner un fichier PDF.');
+      window.alert(lang === 'fr' ? 'Veuillez sélectionner un fichier PDF.' : 'Please select a PDF file.');
       return;
     }
     setImporting(true);
@@ -1390,14 +1421,14 @@ export default function SignContractEditor() {
       }
     } catch (err) {
       console.error('[sign] import PDF', err);
-      window.alert('Import du PDF impossible.');
+      window.alert(lang === 'fr' ? 'Import du PDF impossible.' : 'Unable to import the PDF.');
     } finally {
       setImporting(false);
     }
   };
 
   const removePdf = async () => {
-    if (!window.confirm('Retirer le PDF et revenir à un contrat texte ?')) return;
+    if (!window.confirm(lang === 'fr' ? 'Retirer le PDF et revenir à un contrat texte ?' : 'Remove the PDF and go back to a text contract?')) return;
     setSourceType('text');
     sourceTypeRef.current = 'text';
     setPdfPages([]);
@@ -1443,7 +1474,7 @@ export default function SignContractEditor() {
       navigate(`/sign/app/contrat/${newId}`);
     } catch (e) {
       console.error('[sign] duplication', e);
-      window.alert('Duplication impossible.');
+      window.alert(lang === 'fr' ? 'Duplication impossible.' : 'Unable to duplicate.');
     } finally {
       setDuplicating(false);
     }
@@ -1614,7 +1645,7 @@ export default function SignContractEditor() {
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error('[sign] download pdf', e);
-      window.alert('Échec de la génération du PDF.');
+      window.alert(lang === 'fr' ? 'Échec de la génération du PDF.' : 'PDF generation failed.');
     } finally {
       setDownloading(false);
     }
@@ -1633,10 +1664,10 @@ export default function SignContractEditor() {
         if (r.ok) url = await getCertificateUrl({ contractId: cid });
       }
       if (url) window.open(url, '_blank');
-      else window.alert('Certificat indisponible : le contrat doit être entièrement signé.');
+      else window.alert(lang === 'fr' ? 'Certificat indisponible : le contrat doit être entièrement signé.' : 'Certificate unavailable: the contract must be fully signed.');
     } catch (e) {
       console.error('[sign] certificat', e);
-      window.alert('Certificat indisponible. Réessayez.');
+      window.alert(lang === 'fr' ? 'Certificat indisponible. Réessayez.' : 'Certificate unavailable. Please try again.');
     } finally {
       setCertBusy(false);
     }
@@ -1645,7 +1676,7 @@ export default function SignContractEditor() {
   const submitSendPdf = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidEmail(pdfEmail)) {
-      setPdfError('Email invalide.');
+      setPdfError(lang === 'fr' ? 'Email invalide.' : 'Invalid email.');
       return;
     }
     setPdfSending(true);
@@ -1655,7 +1686,7 @@ export default function SignContractEditor() {
       setPdfSent(true);
     } catch (err) {
       console.error('[sign] envoi pdf', err);
-      setPdfError("L'envoi a échoué, réessayez.");
+      setPdfError(lang === 'fr' ? "L'envoi a échoué, réessayez." : 'Sending failed, please try again.');
     } finally {
       setPdfSending(false);
     }
@@ -1682,7 +1713,7 @@ export default function SignContractEditor() {
     if (!cid || !sendRows.length) return;
     const rows = sendRows.map((r) => ({ ...r, email: r.email.trim(), name: r.name.trim() }));
     if (rows.some((r) => !isValidEmail(r.email))) {
-      setSendError('Renseignez un email valide pour chaque signataire.');
+      setSendError(lang === 'fr' ? 'Renseignez un email valide pour chaque signataire.' : 'Enter a valid email for each signer.');
       return;
     }
     setSending(true);
@@ -1708,7 +1739,7 @@ export default function SignContractEditor() {
       );
     } catch (err) {
       console.error('[sign] envoi signature', err);
-      setSendError("L'envoi a échoué. Vérifiez les emails et réessayez.");
+      setSendError(lang === 'fr' ? "L'envoi a échoué. Vérifiez les emails et réessayez." : 'Sending failed. Check the emails and try again.');
     } finally {
       setSending(false);
     }
@@ -1720,7 +1751,7 @@ export default function SignContractEditor() {
       setCopiedIdx(idx);
       setTimeout(() => setCopiedIdx((c) => (c === idx ? null : c)), 1500);
     } else {
-      window.prompt('Copiez le lien de signature :', link);
+      window.prompt(lang === 'fr' ? 'Copiez le lien de signature :' : 'Copy the signing link:', link);
     }
   };
 
@@ -1734,7 +1765,7 @@ export default function SignContractEditor() {
       setShowLinks(true);
     } catch (e) {
       console.error('[sign] liens de signature', e);
-      window.alert('Impossible de générer les liens. Réessayez.');
+      window.alert(lang === 'fr' ? 'Impossible de générer les liens. Réessayez.' : 'Unable to generate the links. Please try again.');
     }
   };
 
@@ -1761,10 +1792,10 @@ export default function SignContractEditor() {
   // Menus couleur / surlignage / taille (réutilisés barre + bulle)
   const renderFmtMenus = () => (
     <>
-      <ToolbarMenu icon={Palette} title="Couleur du texte" btnClass={BTN}>
+      <ToolbarMenu icon={Palette} title={lang === 'fr' ? 'Couleur du texte' : 'Text color'} btnClass={BTN}>
         {(close) => <ColorPalette onPick={(c) => { applyColor(c); close(); }} />}
       </ToolbarMenu>
-      <ToolbarMenu icon={Highlighter} title="Surligner" btnClass={BTN}>
+      <ToolbarMenu icon={Highlighter} title={lang === 'fr' ? 'Surligner' : 'Highlight'} btnClass={BTN}>
         {(close) => (
           <ColorPalette
             onPick={(c) => { applyHighlight(c); close(); }}
@@ -1774,13 +1805,13 @@ export default function SignContractEditor() {
                 onClick={() => { applyHighlight('transparent'); close(); }}
                 className="mb-2 w-full rounded border border-[#3A4242] px-2 py-1 text-[11px] text-[#A1A9A9] transition-colors hover:bg-[#191E1E] hover:text-white"
               >
-                Aucun surlignage
+                {lang === 'fr' ? 'Aucun surlignage' : 'No highlight'}
               </button>
             }
           />
         )}
       </ToolbarMenu>
-      <ToolbarMenu icon={ALargeSmall} title="Taille du texte" btnClass={BTN}>
+      <ToolbarMenu icon={ALargeSmall} title={lang === 'fr' ? 'Taille du texte' : 'Text size'} btnClass={BTN}>
         {(close) => (
           <div className="flex w-24 flex-col">
             {FONT_SIZES.map((s) => (
@@ -1798,7 +1829,8 @@ export default function SignContractEditor() {
   const renderField = (f: Field, readOnly: boolean) => {
     const meta = FIELD_META[f.type];
     if (!meta) return null;
-    const { Icon, label } = meta;
+    const { Icon } = meta;
+    const label = labelOf(f.type);
     const fontSize = Math.max(9, Math.min(f.h * 0.42, 30));
     const iconSize = Math.max(10, Math.min(f.h * 0.4, 24));
     const color = fieldColor(f.role, f.signerIndex);
@@ -1817,7 +1849,7 @@ export default function SignContractEditor() {
           }}
           className={`sign-field-box group absolute z-20 flex select-none items-center gap-2 overflow-hidden rounded-md border border-dashed bg-[#191E1E] px-2 ${readOnly ? '' : 'cursor-move'}`}
           style={{ left: f.x, top: f.y, width: f.w, height: f.h, borderColor: color }}
-          title={readOnly ? undefined : 'Double-cliquez pour modifier le texte'}
+          title={readOnly ? undefined : lang === 'fr' ? 'Double-cliquez pour modifier le texte' : 'Double-click to edit the text'}
         >
           <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border-2" style={{ borderColor: color }} />
           <span className="truncate text-left leading-tight" style={{ fontSize: Math.max(9, Math.min(f.h * 0.32, 14)), color: '#F3F4F6' }}>
@@ -1832,7 +1864,7 @@ export default function SignContractEditor() {
                 }}
                 onClick={() => removeField(f.id)}
                 className="absolute right-0.5 top-0.5 hidden rounded-full bg-[#191E1E]/80 p-0.5 text-[#A1A9A9] hover:bg-[#3A4242] hover:text-white group-hover:flex"
-                title="Supprimer le champ"
+                title={lang === 'fr' ? 'Supprimer le champ' : 'Delete field'}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -1840,7 +1872,7 @@ export default function SignContractEditor() {
                 onMouseDown={(e) => onResizeMouseDown(e, f)}
                 className="absolute bottom-0 right-0 h-3 w-3 cursor-nwse-resize rounded-tl-md"
                 style={{ background: color }}
-                title="Redimensionner"
+                title={lang === 'fr' ? 'Redimensionner' : 'Resize'}
               />
             </>
           )}
@@ -1860,7 +1892,7 @@ export default function SignContractEditor() {
         }}
         className={`sign-field-box group absolute z-20 flex select-none items-center justify-center gap-1.5 overflow-hidden rounded-md border border-dashed bg-[#191E1E] font-bold uppercase tracking-wider ${readOnly ? '' : 'cursor-move'}`}
         style={{ left: f.x, top: f.y, width: f.w, height: f.h, borderColor: color, color }}
-        title={readOnly ? undefined : 'Double-cliquez pour renommer'}
+        title={readOnly ? undefined : lang === 'fr' ? 'Double-cliquez pour renommer' : 'Double-click to rename'}
       >
         <Icon style={{ width: iconSize, height: iconSize }} className="shrink-0" />
         {editing ? (
@@ -1893,7 +1925,7 @@ export default function SignContractEditor() {
               }}
               onClick={() => removeField(f.id)}
               className="absolute right-0.5 top-0.5 hidden rounded-full bg-[#191E1E]/80 p-0.5 text-[#A1A9A9] hover:bg-[#3A4242] hover:text-white group-hover:flex"
-              title="Supprimer le champ"
+              title={lang === 'fr' ? 'Supprimer le champ' : 'Delete field'}
             >
               <X className="h-3 w-3" />
             </button>
@@ -1901,7 +1933,7 @@ export default function SignContractEditor() {
               onMouseDown={(e) => onResizeMouseDown(e, f)}
               className="absolute bottom-0 right-0 h-3 w-3 cursor-nwse-resize rounded-tl-md"
               style={{ background: color }}
-              title="Redimensionner"
+              title={lang === 'fr' ? 'Redimensionner' : 'Resize'}
             />
           </>
         )}
@@ -1920,10 +1952,10 @@ export default function SignContractEditor() {
               setShowVerifModal(true);
             }}
             className="flex items-center gap-1.5 rounded-lg border border-[#3A4242] bg-[#222828] px-2.5 py-1.5 text-xs font-medium text-[#A1A9A9] shadow-xl transition-colors hover:border-[#CEFF8F] hover:text-white"
-            title="Style de vérification du signataire"
+            title={lang === 'fr' ? 'Style de vérification du signataire' : 'Signer verification method'}
           >
             <Settings className="h-3.5 w-3.5" style={verificationMethod === 'email' ? { color: '#CEFF8F' } : undefined} />
-            Vérification
+            {lang === 'fr' ? 'Vérification' : 'Verification'}
           </button>
         </div>
       )}
@@ -1951,14 +1983,14 @@ export default function SignContractEditor() {
             }}
             onClick={() => removeImage(im.id)}
             className="absolute right-0.5 top-0.5 hidden rounded-full bg-[#191E1E]/80 p-0.5 text-[#A1A9A9] hover:bg-[#3A4242] hover:text-white group-hover:flex"
-            title="Supprimer l'image"
+            title={lang === 'fr' ? "Supprimer l'image" : 'Delete image'}
           >
             <X className="h-3 w-3" />
           </button>
           <span
             onMouseDown={(e) => onImgResizeMouseDown(e, im)}
             className="absolute bottom-0 right-0 h-3 w-3 cursor-nwse-resize rounded-tl-md bg-[#CEFF8F]"
-            title="Redimensionner"
+            title={lang === 'fr' ? 'Redimensionner' : 'Resize'}
           />
         </>
       )}
@@ -1977,7 +2009,7 @@ export default function SignContractEditor() {
           className="pointer-events-none absolute z-30 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border border-dashed border-[#CEFF8F] bg-[#CEFF8F]/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#191E1E]"
           style={{ left: dropGhost.x, top: dropGhost.y }}
         >
-          <Move className="h-3 w-3" /> Déposer ici
+          <Move className="h-3 w-3" /> {lang === 'fr' ? 'Déposer ici' : 'Drop here'}
         </div>
       )
     ) : null;
@@ -2048,7 +2080,7 @@ export default function SignContractEditor() {
             onClick={() => navigate('/sign/app/contrats')}
             className="flex items-center gap-1 rounded border border-[#3A4242] px-2.5 py-1.5 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
           >
-            <ChevronLeft className="h-3.5 w-3.5" /> Retour
+            <ChevronLeft className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Retour' : 'Back'}
           </button>
           <div className="hidden items-center sm:flex">
             <SignLogo className="text-sm" />
@@ -2068,10 +2100,10 @@ export default function SignContractEditor() {
             <button
               onClick={handleDuplicate}
               disabled={duplicating}
-              title="Dupliquer ce contrat (l'assignation au contact n'est pas copiée)"
+              title={lang === 'fr' ? "Dupliquer ce contrat (l'assignation au contact n'est pas copiée)" : 'Duplicate this contract (the contact assignment is not copied)'}
               className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white disabled:opacity-50"
             >
-              {duplicating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CopyPlus className="h-3.5 w-3.5" />} Dupliquer
+              {duplicating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CopyPlus className="h-3.5 w-3.5" />} {lang === 'fr' ? 'Dupliquer' : 'Duplicate'}
             </button>
           )}
           {validated ? (
@@ -2080,11 +2112,11 @@ export default function SignContractEditor() {
                 <button
                   onClick={handleCertificate}
                   disabled={certBusy}
-                  title="Certificat de preuve (document signé + faisceau de preuves)"
+                  title={lang === 'fr' ? 'Certificat de preuve (document signé + faisceau de preuves)' : 'Proof certificate (signed document + evidence bundle)'}
                   className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F] disabled:opacity-50"
                 >
                   {certBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                  Certificat de preuve
+                  {lang === 'fr' ? 'Certificat de preuve' : 'Proof certificate'}
                 </button>
                 <button
                   onClick={downloadPdf}
@@ -2092,7 +2124,7 @@ export default function SignContractEditor() {
                   className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F] disabled:opacity-50"
                 >
                   {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                  Télécharger le PDF
+                  {lang === 'fr' ? 'Télécharger le PDF' : 'Download the PDF'}
                 </button>
                 <button
                   onClick={() => {
@@ -2102,7 +2134,7 @@ export default function SignContractEditor() {
                   }}
                   className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
                 >
-                  <Send className="h-3.5 w-3.5" /> Envoyer le PDF par email
+                  <Send className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Envoyer le PDF par email' : 'Send the PDF by email'}
                 </button>
               </>
             ) : (
@@ -2111,7 +2143,7 @@ export default function SignContractEditor() {
                   onClick={backToEdit}
                   className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
                 >
-                  <Pencil className="h-3.5 w-3.5" /> Modifier
+                  <Pencil className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Modifier' : 'Edit'}
                 </button>
                 {isTemplate ? (
                   /* Modèle validé (signature/champs propriétaire enregistrés) → on gère
@@ -2120,7 +2152,7 @@ export default function SignContractEditor() {
                     onClick={() => contractId && navigate(`/sign/app/template/${contractId}`)}
                     className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
                   >
-                    <LayoutDashboard className="h-4 w-4" /> Tableau de bord
+                    <LayoutDashboard className="h-4 w-4" /> {lang === 'fr' ? 'Tableau de bord' : 'Dashboard'}
                   </button>
                 ) : (
                   <>
@@ -2128,13 +2160,13 @@ export default function SignContractEditor() {
                       onClick={openLinksPopup}
                       className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F]"
                     >
-                      <Copy className="h-3.5 w-3.5" /> {signerCount > 1 ? 'Copier les liens' : 'Copier le lien'}
+                      <Copy className="h-3.5 w-3.5" /> {signerCount > 1 ? (lang === 'fr' ? 'Copier les liens' : 'Copy the links') : lang === 'fr' ? 'Copier le lien' : 'Copy the link'}
                     </button>
                     <button
                       onClick={openSendModal}
                       className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
                     >
-                      <Send className="h-3.5 w-3.5" /> Envoyer pour signature
+                      <Send className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Envoyer pour signature' : 'Send for signature'}
                     </button>
                   </>
                 )}
@@ -2145,9 +2177,9 @@ export default function SignContractEditor() {
               <button
                 onClick={resetOwnerFields}
                 className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
-                title="Effacer mes champs préremplis"
+                title={lang === 'fr' ? 'Effacer mes champs préremplis' : 'Clear my prefilled fields'}
               >
-                <RotateCcw className="h-3.5 w-3.5" /> Réinitialiser
+                <RotateCcw className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Réinitialiser' : 'Reset'}
               </button>
               <button
                 onClick={finishOwnerFill}
@@ -2155,43 +2187,43 @@ export default function SignContractEditor() {
                 className="flex items-center gap-1.5 rounded px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors disabled:opacity-40"
                 style={{ background: '#A0E7EC' }}
               >
-                {savingFill ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} Valider ma partie
+                {savingFill ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} {lang === 'fr' ? 'Valider ma partie' : 'Validate my part'}
               </button>
             </>
           ) : (
             <>
               <button
                 onClick={() => setShowVerifModal(true)}
-                title="Style de vérification du signataire"
+                title={lang === 'fr' ? 'Style de vérification du signataire' : 'Signer verification method'}
                 className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
               >
                 <ShieldCheck className="h-3.5 w-3.5" style={verificationMethod !== 'none' ? { color: '#CEFF8F' } : undefined} />
-                Vérif : {verificationMethod === 'email' ? 'Email' : verificationMethod === 'sms' ? 'SMS' : verificationMethod === 'email_sms' ? 'Email+SMS' : 'Sans'}
+                {lang === 'fr' ? 'Vérif' : 'Verify'} : {verificationMethod === 'email' ? 'Email' : verificationMethod === 'sms' ? 'SMS' : verificationMethod === 'email_sms' ? 'Email+SMS' : lang === 'fr' ? 'Sans' : 'None'}
               </button>
               <button
                 onClick={() => setShowPaymentModal(true)}
-                title="Paiement « Payé + signé »"
+                title={lang === 'fr' ? 'Paiement « Payé + signé »' : 'Payment (Sign + Pay)'}
                 className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
               >
                 <CreditCard className="h-3.5 w-3.5" style={paymentEnabled ? { color: '#F0B86E' } : undefined} />
-                Paiement : {paymentEnabled ? 'Activé' : 'Sans'}
+                {lang === 'fr' ? 'Paiement' : 'Payment'} : {paymentEnabled ? (lang === 'fr' ? 'Activé' : 'On') : lang === 'fr' ? 'Sans' : 'Off'}
               </button>
               <button
                 onClick={toggleTemplate}
-                title="Réutiliser ce contrat comme modèle (signatures multiples + espace closer)"
+                title={lang === 'fr' ? 'Réutiliser ce contrat comme modèle (signatures multiples + espace closer)' : 'Reuse this contract as a template (multiple signatures + closer space)'}
                 className={`flex items-center gap-1.5 rounded border px-3 py-2 text-xs font-medium transition-colors ${isTemplate ? 'border-[#CEFF8F] text-[#CEFF8F]' : 'border-[#3A4242] text-[#A1A9A9] hover:border-[#A1A9A9] hover:text-white'}`}
               >
-                <Files className="h-3.5 w-3.5" /> Modèle : {isTemplate ? 'Oui' : 'Non'}
+                <Files className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Modèle' : 'Template'} : {isTemplate ? (lang === 'fr' ? 'Oui' : 'Yes') : lang === 'fr' ? 'Non' : 'No'}
               </button>
               {/* Même en mode modèle : on passe par la validation (remplissage/signature
                   propriétaire obligatoire) avant de pouvoir accéder au tableau de bord. */}
               <button
                 onClick={handleValidate}
                 disabled={!hasSignatureField}
-                title={hasSignatureField ? '' : 'Ajoutez au moins un champ Signature avant de valider'}
+                title={hasSignatureField ? '' : lang === 'fr' ? 'Ajoutez au moins un champ Signature avant de valider' : 'Add at least one Signature field before validating'}
                 className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#CEFF8F]"
               >
-                <CheckCircle2 className="h-4 w-4" /> Valider l’édition
+                <CheckCircle2 className="h-4 w-4" /> {lang === 'fr' ? 'Valider l’édition' : 'Validate editing'}
               </button>
             </>
           )}
@@ -2205,10 +2237,17 @@ export default function SignContractEditor() {
             <div className="flex items-start gap-3">
               <Lock className="mt-0.5 h-5 w-5 shrink-0 text-[#ef6b6b]" />
               <div className="text-sm">
-                <div className="font-semibold text-white">Accès signataire bloqué</div>
+                <div className="font-semibold text-white">{lang === 'fr' ? 'Accès signataire bloqué' : 'Signer access blocked'}</div>
                 <div className="text-[#A1A9A9]">
-                  Trop de tentatives échouées à l’étape{' '}
-                  {verificationLockStep === 2 ? '2 (saisie du code)' : '1 (saisie email / numéro)'}. Le signataire ne peut plus accéder au document.
+                  {lang === 'fr' ? 'Trop de tentatives échouées à l’étape' : 'Too many failed attempts at step'}{' '}
+                  {verificationLockStep === 2
+                    ? lang === 'fr'
+                      ? '2 (saisie du code)'
+                      : '2 (code entry)'
+                    : lang === 'fr'
+                      ? '1 (saisie email / numéro)'
+                      : '1 (email / number entry)'}
+                  . {lang === 'fr' ? 'Le signataire ne peut plus accéder au document.' : 'The signer can no longer access the document.'}
                 </div>
               </div>
             </div>
@@ -2217,7 +2256,7 @@ export default function SignContractEditor() {
               disabled={unlocking}
               className="flex shrink-0 items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50"
             >
-              {unlocking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unlock className="h-3.5 w-3.5" />} Débloquer l’accès
+              {unlocking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unlock className="h-3.5 w-3.5" />} {lang === 'fr' ? 'Débloquer l’accès' : 'Unblock access'}
             </button>
           </div>
         </div>
@@ -2236,9 +2275,11 @@ export default function SignContractEditor() {
               <div className="mb-6 flex items-center gap-3 rounded border border-[#CEFF8F]/40 bg-[#CEFF8F]/10 px-5 py-4">
                 <CheckCircle2 className="h-5 w-5 shrink-0 text-[#CEFF8F]" />
                 <div>
-                  <div className="text-sm font-semibold text-white">Contrat signé ✓</div>
+                  <div className="text-sm font-semibold text-white">{lang === 'fr' ? 'Contrat signé ✓' : 'Contract signed ✓'}</div>
                   <div className="text-xs text-[#A1A9A9]">
-                    Le document est finalisé et le lien de signature n’est plus actif. Téléchargez le PDF ou envoyez-le par email.
+                    {lang === 'fr'
+                      ? 'Le document est finalisé et le lien de signature n’est plus actif. Téléchargez le PDF ou envoyez-le par email.'
+                      : 'The document is finalized and the signing link is no longer active. Download the PDF or send it by email.'}
                   </div>
                 </div>
               </div>
@@ -2246,9 +2287,11 @@ export default function SignContractEditor() {
               <div className="mb-6 flex items-center gap-3 rounded border border-[#CEFF8F]/30 bg-[#CEFF8F]/10 px-5 py-4">
                 <Lock className="h-5 w-5 shrink-0 text-[#CEFF8F]" />
                 <div>
-                  <div className="text-sm font-semibold text-white">Contrat validé — prêt à l’envoi</div>
+                  <div className="text-sm font-semibold text-white">{lang === 'fr' ? 'Contrat validé — prêt à l’envoi' : 'Contract validated — ready to send'}</div>
                   <div className="text-xs text-[#A1A9A9]">
-                    {fieldCount} champ{fieldCount > 1 ? 's' : ''} à remplir par le signataire. L’édition est verrouillée.
+                    {lang === 'fr'
+                      ? `${fieldCount} champ${fieldCount > 1 ? 's' : ''} à remplir par le signataire. L’édition est verrouillée.`
+                      : `${fieldCount} field${fieldCount > 1 ? 's' : ''} to be filled by the signer. Editing is locked.`}
                   </div>
                 </div>
               </div>
@@ -2259,24 +2302,24 @@ export default function SignContractEditor() {
               {/* Pré-signature */}
               <div className="rounded-xl border border-[#3A4242] bg-[#222828] p-4">
                 <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#A1A9A9]">
-                  <Eye className="h-3.5 w-3.5 text-[#CEFF8F]" /> Avant signature
+                  <Eye className="h-3.5 w-3.5 text-[#CEFF8F]" /> {lang === 'fr' ? 'Avant signature' : 'Before signature'}
                 </div>
                 <div className="flex gap-8">
                   <div>
                     <div className="text-2xl font-semibold text-white">{analytics?.pre.views ?? 0}</div>
-                    <div className="text-xs text-[#A1A9A9]">Vues du lien</div>
+                    <div className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Vues du lien' : 'Link views'}</div>
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5 text-2xl font-semibold text-white">
                       <Users className="h-4 w-4 text-[#A1A9A9]" />
                       {analytics?.pre.uniques ?? 0}
                     </div>
-                    <div className="text-xs text-[#A1A9A9]">Personnes différentes</div>
+                    <div className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Personnes différentes' : 'Unique visitors'}</div>
                   </div>
                 </div>
                 {analytics?.pre.lastAt && (
                   <div className="mt-3 text-[11px] text-[#6b7373]">
-                    Dernière vue : {new Date(analytics.pre.lastAt).toLocaleString('fr-FR')}
+                    {lang === 'fr' ? 'Dernière vue' : 'Last view'} : {new Date(analytics.pre.lastAt).toLocaleString(signLocale(lang))}
                   </div>
                 )}
               </div>
@@ -2284,32 +2327,32 @@ export default function SignContractEditor() {
               {/* Post-signature */}
               <div className={`rounded-xl border p-4 ${isSigned ? 'border-[#CEFF8F]/30 bg-[#CEFF8F]/5' : 'border-[#3A4242] bg-[#222828]'}`}>
                 <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[#A1A9A9]">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-[#CEFF8F]" /> Après signature
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[#CEFF8F]" /> {lang === 'fr' ? 'Après signature' : 'After signature'}
                 </div>
                 {isSigned ? (
                   <>
                     <div className="flex gap-8">
                       <div>
                         <div className="text-2xl font-semibold text-white">{analytics?.post.views ?? 0}</div>
-                        <div className="text-xs text-[#A1A9A9]">Vues du document signé</div>
+                        <div className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Vues du document signé' : 'Views of the signed document'}</div>
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 text-2xl font-semibold text-white">
                           <Download className="h-4 w-4 text-[#A1A9A9]" />
                           {analytics?.post.downloads ?? 0}
                         </div>
-                        <div className="text-xs text-[#A1A9A9]">Téléchargements</div>
+                        <div className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Téléchargements' : 'Downloads'}</div>
                       </div>
                     </div>
                     {(analytics?.signedAt || analytics?.signedBy) && (
                       <div className="mt-3 text-[11px] text-[#6b7373]">
-                        Signé{analytics?.signedBy ? ` par ${analytics.signedBy}` : ''}
-                        {analytics?.signedAt ? ` le ${new Date(analytics.signedAt).toLocaleString('fr-FR')}` : ''}
+                        {lang === 'fr' ? 'Signé' : 'Signed'}{analytics?.signedBy ? (lang === 'fr' ? ` par ${analytics.signedBy}` : ` by ${analytics.signedBy}`) : ''}
+                        {analytics?.signedAt ? (lang === 'fr' ? ` le ${new Date(analytics.signedAt).toLocaleString(signLocale(lang))}` : ` on ${new Date(analytics.signedAt).toLocaleString(signLocale(lang))}`) : ''}
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="py-2 text-sm text-[#6b7373]">En attente de signature…</div>
+                  <div className="py-2 text-sm text-[#6b7373]">{lang === 'fr' ? 'En attente de signature…' : 'Awaiting signature…'}</div>
                 )}
               </div>
             </div>
@@ -2349,8 +2392,8 @@ export default function SignContractEditor() {
             <div className="mb-6 flex items-center gap-3 rounded border border-[#A0E7EC]/30 bg-[#A0E7EC]/10 px-5 py-4">
               <PenLine className="h-5 w-5 shrink-0 text-[#A0E7EC]" />
               <div>
-                <div className="text-sm font-semibold text-white">Remplissez vos champs (propriétaire)</div>
-                <div className="text-xs text-[#A1A9A9]">Complétez les champs en mint, puis validez votre partie.</div>
+                <div className="text-sm font-semibold text-white">{lang === 'fr' ? 'Remplissez vos champs (propriétaire)' : 'Fill in your fields (owner)'}</div>
+                <div className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Complétez les champs en mint, puis validez votre partie.' : 'Complete the mint-colored fields, then validate your part.'}</div>
               </div>
             </div>
             <div className="pb-2">
@@ -2392,53 +2435,53 @@ export default function SignContractEditor() {
                 onClick={onImportClick}
                 disabled={importing}
                 className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-1.5 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F] disabled:opacity-50"
-                title="Importer un PDF"
+                title={lang === 'fr' ? 'Importer un PDF' : 'Import a PDF'}
               >
                 {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileUp className="h-3.5 w-3.5" />}
-                {sourceType === 'pdf' ? 'Remplacer le PDF' : 'Importer un PDF'}
+                {sourceType === 'pdf' ? (lang === 'fr' ? 'Remplacer le PDF' : 'Replace the PDF') : lang === 'fr' ? 'Importer un PDF' : 'Import a PDF'}
               </button>
 
               {sourceType === 'pdf' ? (
                 <button
                   onClick={removePdf}
                   className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-1.5 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-red-500/50 hover:text-red-400"
-                  title="Retirer le PDF"
+                  title={lang === 'fr' ? 'Retirer le PDF' : 'Remove the PDF'}
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Retirer le PDF
+                  <Trash2 className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Retirer le PDF' : 'Remove the PDF'}
                 </button>
               ) : (
                 <>
                   <div className="mx-1 h-5 w-px bg-[#3A4242]" />
-                  <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<h1>')} className={BTN} title="Titre 1"><Heading1 className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<h2>')} className={BTN} title="Titre 2"><Heading2 className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<p>')} className={BTN} title="Paragraphe"><Type className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<h1>')} className={BTN} title={lang === 'fr' ? 'Titre 1' : 'Heading 1'}><Heading1 className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<h2>')} className={BTN} title={lang === 'fr' ? 'Titre 2' : 'Heading 2'}><Heading2 className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<p>')} className={BTN} title={lang === 'fr' ? 'Paragraphe' : 'Paragraph'}><Type className="h-4 w-4" /></button>
                   <div className="mx-1 h-5 w-px bg-[#3A4242]" />
-                  <button onMouseDown={keepFocus} onClick={() => exec('bold')} className={BTN} title="Gras"><Bold className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('italic')} className={BTN} title="Italique"><Italic className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('underline')} className={BTN} title="Souligné"><Underline className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('strikeThrough')} className={BTN} title="Barré"><Strikethrough className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('bold')} className={BTN} title={lang === 'fr' ? 'Gras' : 'Bold'}><Bold className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('italic')} className={BTN} title={lang === 'fr' ? 'Italique' : 'Italic'}><Italic className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('underline')} className={BTN} title={lang === 'fr' ? 'Souligné' : 'Underline'}><Underline className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('strikeThrough')} className={BTN} title={lang === 'fr' ? 'Barré' : 'Strikethrough'}><Strikethrough className="h-4 w-4" /></button>
                   <div className="mx-1 h-5 w-px bg-[#3A4242]" />
-                  <button onMouseDown={keepFocus} onClick={() => exec('insertUnorderedList')} className={BTN} title="Liste à puces"><List className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('insertOrderedList')} className={BTN} title="Liste numérotée"><ListOrdered className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('insertUnorderedList')} className={BTN} title={lang === 'fr' ? 'Liste à puces' : 'Bulleted list'}><List className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('insertOrderedList')} className={BTN} title={lang === 'fr' ? 'Liste numérotée' : 'Numbered list'}><ListOrdered className="h-4 w-4" /></button>
                   <div className="mx-1 h-5 w-px bg-[#3A4242]" />
-                  <button onMouseDown={keepFocus} onClick={() => exec('justifyLeft')} className={BTN} title="Aligner à gauche"><AlignLeft className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('justifyCenter')} className={BTN} title="Centrer"><AlignCenter className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('justifyRight')} className={BTN} title="Aligner à droite"><AlignRight className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('justifyLeft')} className={BTN} title={lang === 'fr' ? 'Aligner à gauche' : 'Align left'}><AlignLeft className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('justifyCenter')} className={BTN} title={lang === 'fr' ? 'Centrer' : 'Center'}><AlignCenter className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('justifyRight')} className={BTN} title={lang === 'fr' ? 'Aligner à droite' : 'Align right'}><AlignRight className="h-4 w-4" /></button>
                   <div className="mx-1 h-5 w-px bg-[#3A4242]" />
                   {renderFmtMenus()}
                   <div className="mx-1 h-5 w-px bg-[#3A4242]" />
-                  <button onMouseDown={keepFocus} onClick={onImageClick} className={BTN} title="Insérer une image"><ImageIcon className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('removeFormat')} className={BTN} title="Effacer la mise en forme"><RemoveFormatting className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('undo')} className={BTN} title="Annuler"><Undo2 className="h-4 w-4" /></button>
-                  <button onMouseDown={keepFocus} onClick={() => exec('redo')} className={BTN} title="Rétablir"><Redo2 className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={onImageClick} className={BTN} title={lang === 'fr' ? 'Insérer une image' : 'Insert an image'}><ImageIcon className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('removeFormat')} className={BTN} title={lang === 'fr' ? 'Effacer la mise en forme' : 'Clear formatting'}><RemoveFormatting className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('undo')} className={BTN} title={lang === 'fr' ? 'Annuler' : 'Undo'}><Undo2 className="h-4 w-4" /></button>
+                  <button onMouseDown={keepFocus} onClick={() => exec('redo')} className={BTN} title={lang === 'fr' ? 'Rétablir' : 'Redo'}><Redo2 className="h-4 w-4" /></button>
                   <div className="mx-1 h-5 w-px bg-[#3A4242]" />
                   <button
                     onMouseDown={keepFocus}
                     onClick={addArticle}
                     className="flex items-center gap-1.5 rounded border border-[#3A4242] px-2.5 py-1.5 text-xs font-medium text-[#A1A9A9] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F]"
-                    title="Ajouter un article (reproduit le style)"
+                    title={lang === 'fr' ? 'Ajouter un article (reproduit le style)' : 'Add an article (matches the style)'}
                   >
-                    <ListPlus className="h-3.5 w-3.5" /> Article
+                    <ListPlus className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Article' : 'Article'}
                   </button>
                 </>
               )}
@@ -2454,7 +2497,7 @@ export default function SignContractEditor() {
                     renderPdfPages(false)
                   ) : (
                     <div className="flex h-64 items-center justify-center text-[#A1A9A9]">
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Rendu du PDF…
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {lang === 'fr' ? 'Rendu du PDF…' : 'Rendering the PDF…'}
                     </div>
                   )
                 ) : (
@@ -2507,9 +2550,12 @@ export default function SignContractEditor() {
                 )}
               </div>
               <p className="mt-3 text-center text-xs text-[#A1A9A9]">
-                {sourceType === 'pdf' ? 'PDF importé' : 'Format A4'} · {loading ? 'Chargement…' : 'Enregistré sur le cloud'} ·{' '}
-                {fieldCount} champ{fieldCount > 1 ? 's' : ''} signataire
-                {sourceType === 'pdf' && ' · champs en glisser-déposer uniquement'}
+                {sourceType === 'pdf' ? (lang === 'fr' ? 'PDF importé' : 'Imported PDF') : lang === 'fr' ? 'Format A4' : 'A4 format'} ·{' '}
+                {loading ? (lang === 'fr' ? 'Chargement…' : 'Loading…') : lang === 'fr' ? 'Enregistré sur le cloud' : 'Saved to the cloud'} ·{' '}
+                {lang === 'fr'
+                  ? `${fieldCount} champ${fieldCount > 1 ? 's' : ''} signataire`
+                  : `${fieldCount} signer field${fieldCount > 1 ? 's' : ''}`}
+                {sourceType === 'pdf' && (lang === 'fr' ? ' · champs en glisser-déposer uniquement' : ' · drag-and-drop fields only')}
               </p>
             </div>
 
@@ -2518,14 +2564,14 @@ export default function SignContractEditor() {
               <div className="rounded border border-[#3A4242] bg-[#222828] p-4 sm:p-5">
                 {/* Nombre de signataires + ordre de signature */}
                 <div className="mb-4">
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Signataires</h3>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'Signataires' : 'Signers'}</h3>
                   <div className="flex items-center gap-2">
                     <div className="flex flex-1 items-center justify-between rounded-lg border border-[#3A4242] bg-[#191E1E] px-2 py-1.5">
                       <button
                         onClick={() => changeSignerCount(signerCount - 1)}
                         disabled={signerCount <= 1 || validated}
                         className="flex h-6 w-6 items-center justify-center rounded text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                        title="Retirer un signataire"
+                        title={lang === 'fr' ? 'Retirer un signataire' : 'Remove a signer'}
                       >
                         <Minus className="h-3.5 w-3.5" />
                       </button>
@@ -2534,7 +2580,7 @@ export default function SignContractEditor() {
                         onClick={() => changeSignerCount(signerCount + 1)}
                         disabled={signerCount >= MAX_SIGNERS || validated}
                         className="flex h-6 w-6 items-center justify-center rounded text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                        title="Ajouter un signataire"
+                        title={lang === 'fr' ? 'Ajouter un signataire' : 'Add a signer'}
                       >
                         <Plus className="h-3.5 w-3.5" />
                       </button>
@@ -2543,18 +2589,18 @@ export default function SignContractEditor() {
                       <button
                         onClick={() => setShowOrderMenu((v) => !v)}
                         disabled={validated}
-                        title="Ordre de signature"
+                        title={lang === 'fr' ? 'Ordre de signature' : 'Signing order'}
                         className="flex h-[38px] w-[38px] items-center justify-center rounded-lg border border-[#3A4242] bg-[#191E1E] text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white disabled:opacity-40"
                       >
                         <Settings className="h-4 w-4" style={signingOrder === 'sequential' ? { color: '#CEFF8F' } : undefined} />
                       </button>
                       {showOrderMenu && (
                         <>
-                          <button className="fixed inset-0 z-40 cursor-default" onClick={() => setShowOrderMenu(false)} tabIndex={-1} aria-label="Fermer" />
+                          <button className="fixed inset-0 z-40 cursor-default" onClick={() => setShowOrderMenu(false)} tabIndex={-1} aria-label={lang === 'fr' ? 'Fermer' : 'Close'} />
                           <div ref={orderMenuRef} className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-[#3A4242] bg-[#222828] p-2 shadow-2xl">
                             {([
-                              { key: 'parallel', title: 'Quand ils veulent', desc: 'Tout le monde peut signer en même temps.' },
-                              { key: 'sequential', title: 'À la suite', desc: 'Signataire 1, puis 2, puis 3…' },
+                              { key: 'parallel', title: lang === 'fr' ? 'Quand ils veulent' : 'Whenever they want', desc: lang === 'fr' ? 'Tout le monde peut signer en même temps.' : 'Everyone can sign at the same time.' },
+                              { key: 'sequential', title: lang === 'fr' ? 'À la suite' : 'In order', desc: lang === 'fr' ? 'Signataire 1, puis 2, puis 3…' : 'Signer 1, then 2, then 3…' },
                             ] as const).map((o) => (
                               <button
                                 key={o.key}
@@ -2577,7 +2623,7 @@ export default function SignContractEditor() {
 
                 {/* Sélecteur : pour qui place-t-on les champs (Signataire 1..N / Propriétaire) */}
                 <div className="mb-4">
-                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">Champs pour…</h3>
+                  <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">{lang === 'fr' ? 'Champs pour…' : 'Fields for…'}</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {Array.from({ length: signerCount }, (_, i) => i + 1).map((idx) => {
                       const active = placeFor === 'signer' && placeSignerIndex === idx;
@@ -2590,7 +2636,7 @@ export default function SignContractEditor() {
                           style={active ? { background: c, borderColor: c, color: '#191E1E' } : { borderColor: '#3A4242', color: '#A1A9A9' }}
                         >
                           <span className="h-2 w-2 rounded-full" style={{ background: active ? '#191E1E' : c }} />
-                          {signerCount > 1 ? `Signataire ${idx}` : 'Signataire'}
+                          {signerCount > 1 ? (lang === 'fr' ? `Signataire ${idx}` : `Signer ${idx}`) : lang === 'fr' ? 'Signataire' : 'Signer'}
                         </button>
                       );
                     })}
@@ -2599,7 +2645,7 @@ export default function SignContractEditor() {
                       className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors"
                       style={placeFor === 'owner' ? { background: '#A0E7EC', borderColor: '#A0E7EC', color: '#191E1E' } : { borderColor: '#3A4242', color: '#A1A9A9' }}
                     >
-                      Propriétaire
+                      {lang === 'fr' ? 'Propriétaire' : 'Owner'}
                     </button>
                   </div>
                 </div>
@@ -2608,30 +2654,60 @@ export default function SignContractEditor() {
                 {placeFor === 'signer' && (
                   <div className="mb-5">
                     <h3 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">
-                      Préremplir {signerCount > 1 ? `le signataire ${placeSignerIndex}` : 'depuis un contact'}
+                      {lang === 'fr'
+                        ? `Préremplir ${signerCount > 1 ? `le signataire ${placeSignerIndex}` : 'depuis un contact'}`
+                        : `Prefill ${signerCount > 1 ? `signer ${placeSignerIndex}` : 'from a contact'}`}
                     </h3>
                     <ContactPicker contacts={contacts} groups={groups} onSelect={prefillFromContact} />
                     <p className="mt-2 text-[11px] leading-relaxed text-[#A1A9A9]">
-                      Seuls les champs Email, Téléphone et Adresse de ce signataire sont préremplis.
+                      {lang === 'fr'
+                        ? 'Seuls les champs Email, Téléphone et Adresse de ce signataire sont préremplis.'
+                        : "Only this signer's Email, Phone and Address fields are prefilled."}
                     </p>
                   </div>
                 )}
 
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#A1A9A9]">
-                  {placeFor === 'owner' ? 'Champs du propriétaire (vous)' : signerCount > 1 ? `Champs du signataire ${placeSignerIndex}` : 'Champs du signataire'}
+                  {placeFor === 'owner'
+                    ? lang === 'fr'
+                      ? 'Champs du propriétaire (vous)'
+                      : 'Owner fields (you)'
+                    : signerCount > 1
+                      ? lang === 'fr'
+                        ? `Champs du signataire ${placeSignerIndex}`
+                        : `Signer ${placeSignerIndex} fields`
+                      : lang === 'fr'
+                        ? 'Champs du signataire'
+                        : 'Signer fields'}
                 </h3>
                 <p className="mt-2 text-xs leading-relaxed text-[#A1A9A9]">
                   {placeFor === 'owner' ? (
-                    <>
-                      <span className="text-[#F3F4F6]">Glissez-déposez</span> les champs que <span className="text-[#F3F4F6]">vous</span> (propriétaire) devrez remplir ou signer.
-                    </>
+                    lang === 'fr' ? (
+                      <>
+                        <span className="text-[#F3F4F6]">Glissez-déposez</span> les champs que <span className="text-[#F3F4F6]">vous</span> (propriétaire) devrez remplir ou signer.
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[#F3F4F6]">Drag and drop</span> the fields that <span className="text-[#F3F4F6]">you</span> (owner) will need to fill in or sign.
+                      </>
+                    )
                   ) : sourceType === 'pdf' ? (
+                    lang === 'fr' ? (
+                      <>
+                        <span className="text-[#F3F4F6]">Glissez-déposez</span> un champ n’importe où sur le PDF. Le signataire le complétera.
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[#F3F4F6]">Drag and drop</span> a field anywhere on the PDF. The signer will fill it in.
+                      </>
+                    )
+                  ) : lang === 'fr' ? (
                     <>
-                      <span className="text-[#F3F4F6]">Glissez-déposez</span> un champ n’importe où sur le PDF. Le signataire le complétera.
+                      <span className="text-[#F3F4F6]">Cliquez</span> pour insérer dans le texte au curseur. <span className="text-[#F3F4F6]">Glissez-déposez</span> pour poser librement, même dans le blanc.
                     </>
                   ) : (
                     <>
-                      <span className="text-[#F3F4F6]">Cliquez</span> pour insérer dans le texte au curseur. <span className="text-[#F3F4F6]">Glissez-déposez</span> pour poser librement, même dans le blanc.
+                      <span className="text-[#F3F4F6]">Click</span> to insert into the text at the cursor. <span className="text-[#F3F4F6]">Drag and drop</span> to place freely, even in blank space.
                     </>
                   )}
                 </p>
@@ -2648,13 +2724,13 @@ export default function SignContractEditor() {
                         <f.icon className="h-4 w-4" style={{ color: fieldColor(placeFor, placeSignerIndex) }} />
                         <GripVertical className="h-3.5 w-3.5 text-[#3A4242] transition-colors group-hover:text-[#A1A9A9]" />
                       </div>
-                      <span className="text-xs font-medium leading-tight text-white">{f.label}</span>
+                      <span className="text-xs font-medium leading-tight text-white">{labelOf(f.type)}</span>
                     </button>
                   ))}
                 </div>
 
                 <div className="mt-5 flex items-center justify-between rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5">
-                  <span className="text-xs text-[#A1A9A9]">Champs posés</span>
+                  <span className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Champs posés' : 'Placed fields'}</span>
                   <span className="rounded-full bg-[#CEFF8F] px-2 py-0.5 text-xs font-bold text-[#191E1E]">{fieldCount}</span>
                 </div>
 
@@ -2662,7 +2738,15 @@ export default function SignContractEditor() {
                   <div className="mt-3 flex items-start gap-2 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-400">
                     <Signature className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span>
-                      Ajoutez au moins un champ <span className="font-semibold">Signature</span> pour pouvoir valider l’édition.
+                      {lang === 'fr' ? (
+                        <>
+                          Ajoutez au moins un champ <span className="font-semibold">Signature</span> pour pouvoir valider l’édition.
+                        </>
+                      ) : (
+                        <>
+                          Add at least one <span className="font-semibold">Signature</span> field to be able to validate the editing.
+                        </>
+                      )}
                     </span>
                   </div>
                 )}
@@ -2679,7 +2763,7 @@ export default function SignContractEditor() {
         isTemplate={isTemplate}
         signers={signers.map((s) => ({
           index: s.signerIndex,
-          label: signerCount > 1 ? `Signataire ${s.signerIndex}` : 'Signataire',
+          label: signerCount > 1 ? (lang === 'fr' ? `Signataire ${s.signerIndex}` : `Signer ${s.signerIndex}`) : lang === 'fr' ? 'Signataire' : 'Signer',
           emails: s.verificationEmails,
           phones: s.verificationPhones,
           pairs: s.verificationPairs,
@@ -2692,7 +2776,7 @@ export default function SignContractEditor() {
         enabled={paymentEnabled}
         paymentInit={paymentDraft}
         payerScope={payerScope}
-        signers={signers.map((s) => ({ index: s.signerIndex, label: `Signataire ${s.signerIndex}` }))}
+        signers={signers.map((s) => ({ index: s.signerIndex, label: lang === 'fr' ? `Signataire ${s.signerIndex}` : `Signer ${s.signerIndex}` }))}
         stripeConnected={stripeConnected}
         onConnectStripe={onConnectStripe}
         onClose={() => setShowPaymentModal(false)}
@@ -2704,13 +2788,15 @@ export default function SignContractEditor() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Titre du contrat</h3>
+              <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Titre du contrat' : 'Contract title'}</h3>
               <button onClick={() => setShowTitlePrompt(false)} className="text-[#A1A9A9] transition-colors hover:text-white">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <p className="mb-4 text-sm leading-relaxed text-[#A1A9A9]">
-              Donnez un titre clair à ce contrat (visible dans vos contrats et par le signataire).
+              {lang === 'fr'
+                ? 'Donnez un titre clair à ce contrat (visible dans vos contrats et par le signataire).'
+                : 'Give this contract a clear title (visible in your contracts and to the signer).'}
             </p>
             <input
               autoFocus
@@ -2719,7 +2805,7 @@ export default function SignContractEditor() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') continueFromTitle();
               }}
-              placeholder="Ex. Contrat de prestation — Société X"
+              placeholder={lang === 'fr' ? 'Ex. Contrat de prestation — Société X' : 'e.g. Service agreement — Company X'}
               className="w-full rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/40 focus:border-[#CEFF8F]"
             />
             <div className="mt-6 flex justify-end gap-3">
@@ -2727,14 +2813,14 @@ export default function SignContractEditor() {
                 onClick={() => setShowTitlePrompt(false)}
                 className="rounded border border-[#3A4242] px-4 py-2 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
               >
-                Annuler
+                {lang === 'fr' ? 'Annuler' : 'Cancel'}
               </button>
               <button
                 onClick={continueFromTitle}
                 disabled={!titleDraft.trim()}
                 className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <CheckCircle2 className="h-4 w-4" /> Continuer
+                <CheckCircle2 className="h-4 w-4" /> {lang === 'fr' ? 'Continuer' : 'Continue'}
               </button>
             </div>
           </div>
@@ -2746,7 +2832,7 @@ export default function SignContractEditor() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Valider l’édition du contrat</h3>
+              <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Valider l’édition du contrat' : 'Validate contract editing'}</h3>
               <button onClick={() => setShowConfirm(false)} className="text-[#A1A9A9] transition-colors hover:text-white">
                 <X className="h-5 w-5" />
               </button>
@@ -2757,20 +2843,25 @@ export default function SignContractEditor() {
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium text-white">{title}</div>
                 <div className="text-xs text-[#A1A9A9]">
-                  {fieldCount} champ{fieldCount > 1 ? 's' : ''} à remplir par le signataire
+                  {lang === 'fr'
+                    ? `${fieldCount} champ${fieldCount > 1 ? 's' : ''} à remplir par le signataire`
+                    : `${fieldCount} field${fieldCount > 1 ? 's' : ''} to be filled by the signer`}
                 </div>
               </div>
             </div>
 
             {fieldCount === 0 && (
               <p className="mb-5 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-                Aucun champ signataire n’a été posé. Le signataire ne pourra rien compléter. Continuer quand même ?
+                {lang === 'fr'
+                  ? 'Aucun champ signataire n’a été posé. Le signataire ne pourra rien compléter. Continuer quand même ?'
+                  : 'No signer field has been placed. The signer will not be able to fill anything in. Continue anyway?'}
               </p>
             )}
 
             <p className="mb-6 text-sm leading-relaxed text-[#A1A9A9]">
-              Une fois validée, l’édition est verrouillée. Le contrat sera prêt à être envoyé pour signature. Vous pourrez
-              toujours revenir le modifier.
+              {lang === 'fr'
+                ? 'Une fois validée, l’édition est verrouillée. Le contrat sera prêt à être envoyé pour signature. Vous pourrez toujours revenir le modifier.'
+                : 'Once validated, editing is locked. The contract will be ready to send for signature. You can always come back to edit it.'}
             </p>
 
             <div className="flex justify-end gap-3">
@@ -2778,13 +2869,13 @@ export default function SignContractEditor() {
                 onClick={() => setShowConfirm(false)}
                 className="rounded border border-[#3A4242] px-4 py-2 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
               >
-                Annuler
+                {lang === 'fr' ? 'Annuler' : 'Cancel'}
               </button>
               <button
                 onClick={confirmValidate}
                 className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]"
               >
-                <CheckCircle2 className="h-4 w-4" /> Valider
+                <CheckCircle2 className="h-4 w-4" /> {lang === 'fr' ? 'Valider' : 'Validate'}
               </button>
             </div>
           </div>
@@ -2799,16 +2890,26 @@ export default function SignContractEditor() {
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#A0E7EC]/15">
                 <PenLine className="h-5 w-5 text-[#A0E7EC]" />
               </div>
-              <h3 className="text-lg font-semibold text-white">Vos champs à remplir</h3>
+              <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Vos champs à remplir' : 'Your fields to fill in'}</h3>
             </div>
             <p className="mb-6 text-sm leading-relaxed text-[#A1A9A9]">
-              Vous avez{' '}
+              {lang === 'fr' ? 'Vous avez' : 'You have'}{' '}
               <span className="font-semibold text-white">
-                {ownerFieldCount} champ{ownerFieldCount > 1 ? 's' : ''}
+                {lang === 'fr' ? `${ownerFieldCount} champ${ownerFieldCount > 1 ? 's' : ''}` : `${ownerFieldCount} field${ownerFieldCount > 1 ? 's' : ''}`}
               </span>{' '}
-              à remplir ou signer de votre côté (propriétaire) avant{' '}
-              {isTemplate ? 'de générer des liens depuis ce modèle' : 'd’envoyer le contrat'}.
-              {isTemplate && ' Votre signature et vos champs seront enregistrés sur le modèle et repris sur chaque contrat généré.'}
+              {lang === 'fr' ? 'à remplir ou signer de votre côté (propriétaire) avant ' : 'to fill in or sign on your side (owner) before '}
+              {isTemplate
+                ? lang === 'fr'
+                  ? 'de générer des liens depuis ce modèle'
+                  : 'generating links from this template'
+                : lang === 'fr'
+                  ? 'd’envoyer le contrat'
+                  : 'sending the contract'}
+              .
+              {isTemplate &&
+                (lang === 'fr'
+                  ? ' Votre signature et vos champs seront enregistrés sur le modèle et repris sur chaque contrat généré.'
+                  : ' Your signature and fields will be saved on the template and reused on every generated contract.')}
             </p>
             <div className="flex justify-end gap-3">
               {/* En mode modèle, le remplissage/signature propriétaire est obligatoire :
@@ -2821,7 +2922,7 @@ export default function SignContractEditor() {
                   }}
                   className="rounded border border-[#3A4242] px-4 py-2 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
                 >
-                  Plus tard
+                  {lang === 'fr' ? 'Plus tard' : 'Later'}
                 </button>
               )}
               <button
@@ -2829,7 +2930,7 @@ export default function SignContractEditor() {
                 className="flex items-center gap-1.5 rounded px-4 py-2 text-sm font-bold text-[#191E1E]"
                 style={{ background: '#A0E7EC' }}
               >
-                <PenLine className="h-4 w-4" /> Remplir mes champs
+                <PenLine className="h-4 w-4" /> {lang === 'fr' ? 'Remplir mes champs' : 'Fill in my fields'}
               </button>
             </div>
           </div>
@@ -2841,7 +2942,7 @@ export default function SignContractEditor() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Envoyer le PDF par email</h3>
+              <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Envoyer le PDF par email' : 'Send the PDF by email'}</h3>
               <button onClick={() => setShowSendPdf(false)} className="text-[#A1A9A9] transition-colors hover:text-white">
                 <X className="h-5 w-5" />
               </button>
@@ -2850,18 +2951,18 @@ export default function SignContractEditor() {
               <div>
                 <div className="mb-5 flex items-center gap-3 rounded border border-[#CEFF8F]/30 bg-[#CEFF8F]/10 px-4 py-3">
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-[#CEFF8F]" />
-                  <div className="text-sm text-white">PDF envoyé à <span className="font-semibold">{pdfEmail}</span>.</div>
+                  <div className="text-sm text-white">{lang === 'fr' ? 'PDF envoyé à' : 'PDF sent to'} <span className="font-semibold">{pdfEmail}</span>.</div>
                 </div>
                 <button
                   onClick={() => setShowSendPdf(false)}
                   className="w-full rounded border border-[#3A4242] py-2.5 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white"
                 >
-                  Fermer
+                  {lang === 'fr' ? 'Fermer' : 'Close'}
                 </button>
               </div>
             ) : (
               <form onSubmit={submitSendPdf} className="space-y-4">
-                <p className="text-sm leading-relaxed text-[#A1A9A9]">Indiquez l’adresse qui recevra la copie PDF du contrat signé.</p>
+                <p className="text-sm leading-relaxed text-[#A1A9A9]">{lang === 'fr' ? 'Indiquez l’adresse qui recevra la copie PDF du contrat signé.' : 'Enter the address that will receive the PDF copy of the signed contract.'}</p>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A9A9]" />
                   <input
@@ -2869,7 +2970,7 @@ export default function SignContractEditor() {
                     required
                     value={pdfEmail}
                     onChange={(e) => setPdfEmail(e.target.value)}
-                    placeholder="destinataire@exemple.fr"
+                    placeholder={lang === 'fr' ? 'destinataire@exemple.fr' : 'recipient@example.com'}
                     className="w-full rounded border border-[#3A4242] bg-[#191E1E] py-2.5 pl-10 pr-4 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/40 focus:border-[#CEFF8F]"
                   />
                 </div>
@@ -2880,7 +2981,7 @@ export default function SignContractEditor() {
                   className="flex w-full items-center justify-center gap-2 rounded bg-[#CEFF8F] py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-60"
                 >
                   {pdfSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {pdfSending ? 'Envoi…' : 'Envoyer le PDF'}
+                  {pdfSending ? (lang === 'fr' ? 'Envoi…' : 'Sending…') : lang === 'fr' ? 'Envoyer le PDF' : 'Send the PDF'}
                 </button>
               </form>
             )}
@@ -2893,7 +2994,7 @@ export default function SignContractEditor() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
           <div className="max-h-[88vh] w-full max-w-md overflow-y-auto rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Envoyer pour signature</h3>
+              <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Envoyer pour signature' : 'Send for signature'}</h3>
               <button onClick={closeSend} className="text-[#A1A9A9] transition-colors hover:text-white">
                 <X className="h-5 w-5" />
               </button>
@@ -2905,8 +3006,12 @@ export default function SignContractEditor() {
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-[#CEFF8F]" />
                   <div className="text-sm text-white">
                     {signingOrder === 'sequential'
-                      ? 'Envoyé au 1er signataire. Les suivants seront notifiés automatiquement.'
-                      : `Envoyé à ${sentLinks.length} signataire${sentLinks.length > 1 ? 's' : ''}.`}
+                      ? lang === 'fr'
+                        ? 'Envoyé au 1er signataire. Les suivants seront notifiés automatiquement.'
+                        : 'Sent to the 1st signer. The next ones will be notified automatically.'
+                      : lang === 'fr'
+                        ? `Envoyé à ${sentLinks.length} signataire${sentLinks.length > 1 ? 's' : ''}.`
+                        : `Sent to ${sentLinks.length} signer${sentLinks.length > 1 ? 's' : ''}.`}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -2914,7 +3019,7 @@ export default function SignContractEditor() {
                     <div key={l.signerIndex} className="rounded border border-[#3A4242] bg-[#191E1E] p-3">
                       <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold" style={{ color: signerColor(l.signerIndex) }}>
                         <span className="h-2 w-2 rounded-full" style={{ background: signerColor(l.signerIndex) }} />
-                        {signerCount > 1 ? `Signataire ${l.signerIndex}` : 'Signataire'}
+                        {signerCount > 1 ? (lang === 'fr' ? `Signataire ${l.signerIndex}` : `Signer ${l.signerIndex}`) : lang === 'fr' ? 'Signataire' : 'Signer'}
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="flex min-w-0 flex-1 items-center gap-2 rounded border border-[#3A4242] bg-[#222828] px-2.5 py-2">
@@ -2923,28 +3028,32 @@ export default function SignContractEditor() {
                         </div>
                         <button onClick={() => copyOne(l.link, l.signerIndex)} className="flex shrink-0 items-center gap-1 rounded bg-[#CEFF8F] px-2.5 py-2 text-[11px] font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
                           {copiedIdx === l.signerIndex ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                          {copiedIdx === l.signerIndex ? 'Copié' : 'Copier'}
+                          {copiedIdx === l.signerIndex ? (lang === 'fr' ? 'Copié' : 'Copied') : lang === 'fr' ? 'Copier' : 'Copy'}
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
                 <button onClick={closeSend} className="mt-6 w-full rounded border border-[#3A4242] py-2.5 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white">
-                  Fermer
+                  {lang === 'fr' ? 'Fermer' : 'Close'}
                 </button>
               </div>
             ) : (
               <form onSubmit={submitSend} className="space-y-4">
                 <p className="text-sm leading-relaxed text-[#A1A9A9]">
                   {signingOrder === 'sequential'
-                    ? 'Signature à la suite : seul le 1er signataire reçoit son lien maintenant. Les suivants sont notifiés dès que le précédent a signé.'
-                    : 'Chaque signataire reçoit son propre lien sécurisé pour signer.'}
+                    ? lang === 'fr'
+                      ? 'Signature à la suite : seul le 1er signataire reçoit son lien maintenant. Les suivants sont notifiés dès que le précédent a signé.'
+                      : 'Signing in order: only the 1st signer receives their link now. The next ones are notified as soon as the previous one has signed.'
+                    : lang === 'fr'
+                      ? 'Chaque signataire reçoit son propre lien sécurisé pour signer.'
+                      : 'Each signer receives their own secure link to sign.'}
                 </p>
                 {sendRows.map((row, i) => (
                   <div key={row.signerIndex} className="rounded-lg border border-[#3A4242] bg-[#191E1E] p-3">
                     <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: signerColor(row.signerIndex) }}>
                       <span className="h-2 w-2 rounded-full" style={{ background: signerColor(row.signerIndex) }} />
-                      {sendRows.length > 1 ? `Signataire ${row.signerIndex}` : 'Signataire'}
+                      {sendRows.length > 1 ? (lang === 'fr' ? `Signataire ${row.signerIndex}` : `Signer ${row.signerIndex}`) : lang === 'fr' ? 'Signataire' : 'Signer'}
                     </div>
                     {contacts.length > 0 && (
                       <div className="mb-2">
@@ -2960,7 +3069,7 @@ export default function SignContractEditor() {
                       <input
                         value={row.name}
                         onChange={(e) => setSendRows((prev) => prev.map((r, k) => (k === i ? { ...r, name: e.target.value } : r)))}
-                        placeholder="Nom du signataire"
+                        placeholder={lang === 'fr' ? 'Nom du signataire' : 'Signer name'}
                         className="w-full rounded border border-[#3A4242] bg-[#222828] py-2.5 pl-10 pr-4 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/40 focus:border-[#CEFF8F]"
                       />
                     </div>
@@ -2971,7 +3080,7 @@ export default function SignContractEditor() {
                         required
                         value={row.email}
                         onChange={(e) => setSendRows((prev) => prev.map((r, k) => (k === i ? { ...r, email: e.target.value } : r)))}
-                        placeholder="email@exemple.fr"
+                        placeholder={lang === 'fr' ? 'email@exemple.fr' : 'email@example.com'}
                         className="w-full rounded border border-[#3A4242] bg-[#222828] py-2.5 pl-10 pr-4 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/40 focus:border-[#CEFF8F]"
                       />
                     </div>
@@ -2982,11 +3091,11 @@ export default function SignContractEditor() {
 
                 <div className="flex justify-end gap-3 pt-1">
                   <button type="button" onClick={closeSend} className="rounded border border-[#3A4242] px-4 py-2 text-sm font-medium text-[#A1A9A9] transition-colors hover:border-[#A1A9A9] hover:text-white">
-                    Annuler
+                    {lang === 'fr' ? 'Annuler' : 'Cancel'}
                   </button>
                   <button type="submit" disabled={sending} className="flex items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-60">
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    {sending ? 'Envoi…' : 'Envoyer'}
+                    {sending ? (lang === 'fr' ? 'Envoi…' : 'Sending…') : lang === 'fr' ? 'Envoyer' : 'Send'}
                   </button>
                 </div>
               </form>
@@ -3000,7 +3109,7 @@ export default function SignContractEditor() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm" onMouseDown={() => setShowLinks(false)}>
           <div className="max-h-[88vh] w-full max-w-md overflow-y-auto rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl" onMouseDown={(e) => e.stopPropagation()}>
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">{headerLinks.length > 1 ? 'Liens de signature' : 'Lien de signature'}</h3>
+              <h3 className="text-lg font-semibold text-white">{headerLinks.length > 1 ? (lang === 'fr' ? 'Liens de signature' : 'Signing links') : lang === 'fr' ? 'Lien de signature' : 'Signing link'}</h3>
               <button onClick={() => setShowLinks(false)} className="text-[#A1A9A9] transition-colors hover:text-white">
                 <X className="h-5 w-5" />
               </button>
@@ -3010,7 +3119,7 @@ export default function SignContractEditor() {
                 <div key={l.signerIndex} className="rounded border border-[#3A4242] bg-[#191E1E] p-3">
                   <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold" style={{ color: signerColor(l.signerIndex) }}>
                     <span className="h-2 w-2 rounded-full" style={{ background: signerColor(l.signerIndex) }} />
-                    {headerLinks.length > 1 ? `Signataire ${l.signerIndex}` : 'Signataire'}
+                    {headerLinks.length > 1 ? (lang === 'fr' ? `Signataire ${l.signerIndex}` : `Signer ${l.signerIndex}`) : lang === 'fr' ? 'Signataire' : 'Signer'}
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex min-w-0 flex-1 items-center gap-2 rounded border border-[#3A4242] bg-[#222828] px-2.5 py-2">
@@ -3019,7 +3128,7 @@ export default function SignContractEditor() {
                     </div>
                     <button onClick={() => copyOne(l.link, l.signerIndex)} className="flex shrink-0 items-center gap-1 rounded bg-[#CEFF8F] px-2.5 py-2 text-[11px] font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
                       {copiedIdx === l.signerIndex ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                      {copiedIdx === l.signerIndex ? 'Copié' : 'Copier'}
+                      {copiedIdx === l.signerIndex ? (lang === 'fr' ? 'Copié' : 'Copied') : lang === 'fr' ? 'Copier' : 'Copy'}
                     </button>
                   </div>
                 </div>
@@ -3042,20 +3151,20 @@ export default function SignContractEditor() {
             onClick={() => setChipRole('owner')}
             className={`rounded px-2.5 py-1.5 text-xs font-semibold transition-colors ${chipMenu.role === 'owner' ? 'bg-[#A0E7EC] text-[#191E1E]' : 'text-[#A1A9A9] hover:text-white'}`}
           >
-            Propriétaire
+            {lang === 'fr' ? 'Propriétaire' : 'Owner'}
           </button>
           <button
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setChipRole('signer')}
             className={`rounded px-2.5 py-1.5 text-xs font-semibold transition-colors ${chipMenu.role === 'signer' ? 'bg-[#CEFF8F] text-[#191E1E]' : 'text-[#A1A9A9] hover:text-white'}`}
           >
-            Signataire
+            {lang === 'fr' ? 'Signataire' : 'Signer'}
           </button>
           <div className="mx-0.5 h-5 w-px bg-[#3A4242]" />
           <button
             onMouseDown={(e) => e.preventDefault()}
             onClick={deleteChip}
-            title="Supprimer le champ"
+            title={lang === 'fr' ? 'Supprimer le champ' : 'Delete field'}
             className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-red-500/15 hover:text-red-400"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -3073,16 +3182,16 @@ export default function SignContractEditor() {
             onClick={freeToInline}
             className={`rounded px-2.5 py-1.5 text-xs font-semibold transition-colors ${selImg.kind === 'inline' ? 'bg-[#CEFF8F] text-[#191E1E]' : 'text-[#A1A9A9] hover:text-white'}`}
           >
-            À la suite
+            {lang === 'fr' ? 'À la suite' : 'Inline'}
           </button>
           <button
             onClick={inlineToFree}
             className={`rounded px-2.5 py-1.5 text-xs font-semibold transition-colors ${selImg.kind === 'free' ? 'bg-[#CEFF8F] text-[#191E1E]' : 'text-[#A1A9A9] hover:text-white'}`}
           >
-            Libre
+            {lang === 'fr' ? 'Libre' : 'Free'}
           </button>
           <span className="mx-0.5 h-4 w-px bg-[#3A4242]" />
-          <button onClick={deleteSelectedImage} className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white" title="Supprimer">
+          <button onClick={deleteSelectedImage} className="rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white" title={lang === 'fr' ? 'Supprimer' : 'Delete'}>
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -3095,17 +3204,17 @@ export default function SignContractEditor() {
           style={{ position: 'fixed', left: fmtBar.x, top: fmtBar.y - 10, transform: 'translate(-50%, -100%)', zIndex: 60 }}
           className="flex items-center gap-0.5 rounded-lg border border-[#3A4242] bg-[#222828] p-1 shadow-2xl"
         >
-          <button onMouseDown={keepFocus} onClick={() => exec('bold')} className={BTN} title="Gras"><Bold className="h-4 w-4" /></button>
-          <button onMouseDown={keepFocus} onClick={() => exec('italic')} className={BTN} title="Italique"><Italic className="h-4 w-4" /></button>
-          <button onMouseDown={keepFocus} onClick={() => exec('underline')} className={BTN} title="Souligné"><Underline className="h-4 w-4" /></button>
-          <button onMouseDown={keepFocus} onClick={() => exec('strikeThrough')} className={BTN} title="Barré"><Strikethrough className="h-4 w-4" /></button>
+          <button onMouseDown={keepFocus} onClick={() => exec('bold')} className={BTN} title={lang === 'fr' ? 'Gras' : 'Bold'}><Bold className="h-4 w-4" /></button>
+          <button onMouseDown={keepFocus} onClick={() => exec('italic')} className={BTN} title={lang === 'fr' ? 'Italique' : 'Italic'}><Italic className="h-4 w-4" /></button>
+          <button onMouseDown={keepFocus} onClick={() => exec('underline')} className={BTN} title={lang === 'fr' ? 'Souligné' : 'Underline'}><Underline className="h-4 w-4" /></button>
+          <button onMouseDown={keepFocus} onClick={() => exec('strikeThrough')} className={BTN} title={lang === 'fr' ? 'Barré' : 'Strikethrough'}><Strikethrough className="h-4 w-4" /></button>
           <span className="mx-0.5 h-4 w-px bg-[#3A4242]" />
-          <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<h1>')} className={BTN} title="Titre 1"><Heading1 className="h-4 w-4" /></button>
-          <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<h2>')} className={BTN} title="Titre 2"><Heading2 className="h-4 w-4" /></button>
-          <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<p>')} className={BTN} title="Paragraphe"><Type className="h-4 w-4" /></button>
+          <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<h1>')} className={BTN} title={lang === 'fr' ? 'Titre 1' : 'Heading 1'}><Heading1 className="h-4 w-4" /></button>
+          <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<h2>')} className={BTN} title={lang === 'fr' ? 'Titre 2' : 'Heading 2'}><Heading2 className="h-4 w-4" /></button>
+          <button onMouseDown={keepFocus} onClick={() => exec('formatBlock', '<p>')} className={BTN} title={lang === 'fr' ? 'Paragraphe' : 'Paragraph'}><Type className="h-4 w-4" /></button>
           <span className="mx-0.5 h-4 w-px bg-[#3A4242]" />
-          <button onMouseDown={keepFocus} onClick={() => exec('insertUnorderedList')} className={BTN} title="Liste à puces"><List className="h-4 w-4" /></button>
-          <button onMouseDown={keepFocus} onClick={() => exec('insertOrderedList')} className={BTN} title="Liste numérotée"><ListOrdered className="h-4 w-4" /></button>
+          <button onMouseDown={keepFocus} onClick={() => exec('insertUnorderedList')} className={BTN} title={lang === 'fr' ? 'Liste à puces' : 'Bulleted list'}><List className="h-4 w-4" /></button>
+          <button onMouseDown={keepFocus} onClick={() => exec('insertOrderedList')} className={BTN} title={lang === 'fr' ? 'Liste numérotée' : 'Numbered list'}><ListOrdered className="h-4 w-4" /></button>
           <span className="mx-0.5 h-4 w-px bg-[#3A4242]" />
           {renderFmtMenus()}
         </div>

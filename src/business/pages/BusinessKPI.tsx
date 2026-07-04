@@ -110,7 +110,7 @@ function computeKpis(prospects: any[], formulaBillingTypes: Record<string, strin
   const won = prospects.filter(p => p.stage === 'won')
   const lost = prospects.filter(p => p.stage === 'lost')
   const noshow = prospects.filter(p => p.stage === 'noshow')
-  const active = prospects.filter(p => ['prospect', 'qualified', 'followup'].includes(p.stage))
+  const active = prospects.filter(p => ['prospect', 'contacted', 'qualified', 'followup'].includes(p.stage))
   // No-shows only count if they came from follow-up stage
   const noshowFromFollowup = noshow.filter(p => p.previous_stage === 'followup')
   const totalDecided = won.length + lost.length + noshowFromFollowup.length
@@ -119,7 +119,7 @@ function computeKpis(prospects: any[], formulaBillingTypes: Record<string, strin
   const ventesTotales = won.length
   const tauxConversion = totalDecided > 0 ? (won.length / totalDecided) * 100 : 0
   const prospectsActifs = active.length
-  const noshowEligible = prospects.filter(p => !['prospect', 'unqualified', 'noanswer'].includes(p.stage))
+  const noshowEligible = prospects.filter(p => !['prospect', 'contacted', 'unqualified', 'noanswer'].includes(p.stage))
   const tauxNoShow = noshowEligible.length > 0 ? (noshow.length / noshowEligible.length) * 100 : 0
   const dealsPerdu = lost.length
 
@@ -340,7 +340,7 @@ export function BusinessKPI() {
   // ---- Period bar chart data ----
   const periodBarData = useMemo(() => {
     const stages: Record<string, number> = {
-      prospect: 0, qualified: 0, unqualified: 0, followup: 0, won: 0, noanswer: 0, lost: 0, noshow: 0,
+      prospect: 0, contacted: 0, qualified: 0, unqualified: 0, followup: 0, won: 0, noanswer: 0, lost: 0, noshow: 0,
     }
     periodProspects.forEach(p => {
       if (stages[p.stage] !== undefined) stages[p.stage]++
@@ -775,7 +775,7 @@ export function BusinessKPI() {
         const mWon = memberProspects.filter(p => p.stage === 'won')
         const mLost = memberProspects.filter(p => p.stage === 'lost')
         const mNoshow = memberProspects.filter(p => p.stage === 'noshow')
-        const mActive = memberProspects.filter(p => ['prospect', 'qualified', 'followup'].includes(p.stage))
+        const mActive = memberProspects.filter(p => ['prospect', 'contacted', 'qualified', 'followup'].includes(p.stage))
         const mRevenue = mWon.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
         const mDecided = mWon.length + mLost.length + mNoshow.length
         const mConversion = mDecided > 0 ? (mWon.length / mDecided) * 100 : 0
@@ -975,7 +975,7 @@ export function BusinessKPI() {
         const pWon = personalProspects.filter(p => p.stage === 'won')
         const pLost = personalProspects.filter(p => p.stage === 'lost')
         const pNoshow = personalProspects.filter(p => p.stage === 'noshow')
-        const pActive = personalProspects.filter(p => ['prospect', 'qualified', 'followup'].includes(p.stage))
+        const pActive = personalProspects.filter(p => ['prospect', 'contacted', 'qualified', 'followup'].includes(p.stage))
         const pRevenue = pWon.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
         const pDecided = pWon.length + pLost.length + pNoshow.length
         const pConversion = pDecided > 0 ? (pWon.length / pDecided) * 100 : 0

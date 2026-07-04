@@ -24,6 +24,7 @@ const CRM_OPTIONS = [
 
 const CLOSEOS_STAGES = [
   { id: 'prospect', name: 'Prospect' },
+  { id: 'contacted', name: 'Contacté' },
   { id: 'qualified', name: 'Qualifié' },
   { id: 'won', name: 'Gagné' },
   { id: 'followup', name: 'Follow Up' },

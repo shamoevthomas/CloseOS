@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { X, Loader2, MousePointerClick, Users, Repeat, Clock, Globe, Copy, Check } from 'lucide-react'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
-import { VisitorGlobe, type GlobeMarker } from './VisitorGlobe'
-import { flagEmoji, countryName, centroidFor } from '../lib/countryGeo'
+import { flagEmoji, countryName } from '../lib/countryGeo'
+
+// three.js est lourd → on ne le charge que quand la pop-up détail s'ouvre
+const VisitorGlobe = lazy(() => import('./VisitorGlobe').then((m) => ({ default: m.VisitorGlobe })))
 
 interface CountryStat { code: string; count: number }
 interface Stats {
@@ -32,14 +34,14 @@ const TT = {
   fr: {
     clicks: 'Clics totaux', unique: 'Visiteurs uniques', recurring: 'Récurrents', neww: 'Nouveaux',
     returning_clicks: 'clics récurrents', avg_time: 'Temps moyen / page', no_time: 'Non mesurable (destination externe)',
-    by_country: 'Visiteurs par pays', countries: 'pays', no_data: 'Aucun clic pour le moment',
-    share: 'Lien', unknown: 'Inconnu', visitors_split: 'Répartition visiteurs',
+    by_country: 'Visiteurs par pays', countries: 'pays', country: 'pays', no_data: 'Aucun clic pour le moment',
+    unknown: 'Inconnu',
   },
   en: {
     clicks: 'Total clicks', unique: 'Unique visitors', recurring: 'Returning', neww: 'New',
     returning_clicks: 'returning clicks', avg_time: 'Avg. time / page', no_time: 'Not measurable (external destination)',
-    by_country: 'Visitors by country', countries: 'countries', no_data: 'No clicks yet',
-    share: 'Link', unknown: 'Unknown', visitors_split: 'Visitor split',
+    by_country: 'Visitors by country', countries: 'countries', country: 'country', no_data: 'No clicks yet',
+    unknown: 'Unknown',
   },
 }
 
@@ -81,14 +83,11 @@ export function TrackingDetailModal({ isOpen, onClose, linkId, linkName, userId 
 
   const shortUrl = link ? `${window.location.origin}/t/${link.slug}` : ''
   const maxCountry = stats?.byCountry?.[0]?.count || 1
+  const realCountries = (stats?.byCountry || []).filter((c) => c.code !== 'ZZ')
 
-  const markers: GlobeMarker[] = (stats?.byCountry || [])
-    .map((c) => {
-      const loc = centroidFor(c.code)
-      if (!loc) return null
-      return { location: loc, size: Math.max(0.03, Math.min(0.11, (c.count / maxCountry) * 0.11)) }
-    })
-    .filter(Boolean) as GlobeMarker[]
+  // map pour le globe : iso2 minuscule -> count
+  const counts: Record<string, number> = {}
+  realCountries.forEach((c) => { counts[c.code.toLowerCase()] = c.count })
 
   const handleCopy = () => {
     if (!shortUrl) return
@@ -98,7 +97,7 @@ export function TrackingDetailModal({ isOpen, onClose, linkId, linkName, userId 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 backdrop-blur-md p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-stone-900/50 backdrop-blur-md p-4 overflow-y-auto">
       <div className="w-full max-w-4xl my-8 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-2xl shadow-[0_20px_60px_rgba(27,28,27,0.15)] border border-stone-200/20 dark:border-neutral-700 p-8 relative animate-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
@@ -108,7 +107,7 @@ export function TrackingDetailModal({ isOpen, onClose, linkId, linkName, userId 
         </button>
 
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 pr-8">
           <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {linkName}
           </h2>
@@ -135,21 +134,21 @@ export function TrackingDetailModal({ isOpen, onClose, linkId, linkName, userId 
           <>
             {/* KPI cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-              <div className="bg-white/70 dark:bg-white/5 border border-stone-200/40 dark:border-neutral-700/40 rounded-2xl p-5">
+              <div className="bg-stone-50 dark:bg-white/5 border border-stone-200/60 dark:border-neutral-700/40 rounded-2xl p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <MousePointerClick className="h-4 w-4 text-red-600" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-stone-500 dark:text-neutral-400">{t.clicks}</span>
                 </div>
                 <div className="text-3xl font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{stats.clicks}</div>
               </div>
-              <div className="bg-white/70 dark:bg-white/5 border border-stone-200/40 dark:border-neutral-700/40 rounded-2xl p-5">
+              <div className="bg-stone-50 dark:bg-white/5 border border-stone-200/60 dark:border-neutral-700/40 rounded-2xl p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <Users className="h-4 w-4 text-blue-600" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-stone-500 dark:text-neutral-400">{t.unique}</span>
                 </div>
                 <div className="text-3xl font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{stats.uniqueVisitors}</div>
               </div>
-              <div className="bg-white/70 dark:bg-white/5 border border-stone-200/40 dark:border-neutral-700/40 rounded-2xl p-5">
+              <div className="bg-stone-50 dark:bg-white/5 border border-stone-200/60 dark:border-neutral-700/40 rounded-2xl p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <Repeat className="h-4 w-4 text-amber-600" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-stone-500 dark:text-neutral-400">{t.recurring}</span>
@@ -157,7 +156,7 @@ export function TrackingDetailModal({ isOpen, onClose, linkId, linkName, userId 
                 <div className="text-3xl font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{stats.recurringVisitors}</div>
                 <div className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{stats.newVisitors} {t.neww.toLowerCase()}</div>
               </div>
-              <div className="bg-white/70 dark:bg-white/5 border border-stone-200/40 dark:border-neutral-700/40 rounded-2xl p-5">
+              <div className="bg-stone-50 dark:bg-white/5 border border-stone-200/60 dark:border-neutral-700/40 rounded-2xl p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <Clock className="h-4 w-4 text-emerald-600" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-stone-500 dark:text-neutral-400">{t.avg_time}</span>
@@ -170,23 +169,27 @@ export function TrackingDetailModal({ isOpen, onClose, linkId, linkName, userId 
               </div>
             </div>
 
-            {/* Visiteurs par pays : globe + liste */}
-            <div className="bg-gradient-to-b from-neutral-950 to-black rounded-2xl p-8 border border-neutral-800">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xl font-semibold text-white/90" style={{ fontFamily: 'Georgia, serif' }}>{t.by_country}</h3>
-                <span className="text-xs text-neutral-500 uppercase tracking-widest">{stats.byCountry.filter(c => c.code !== 'ZZ').length} {t.countries}</span>
+            {/* Visiteurs par pays : globe + liste (fond blanc) */}
+            <div className="bg-white dark:bg-white/5 rounded-2xl p-8 border border-stone-200/60 dark:border-neutral-700/40">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-extrabold text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.by_country}</h3>
+                <span className="text-xs text-stone-400 dark:text-neutral-500 uppercase tracking-widest">
+                  {realCountries.length} {realCountries.length === 1 ? t.country : t.countries}
+                </span>
               </div>
-              <div className="flex flex-col lg:flex-row items-center gap-8 mt-4">
-                <div className="shrink-0">
-                  <VisitorGlobe markers={markers} size={340} />
+              <div className="flex flex-col lg:flex-row items-center gap-8">
+                <div className="shrink-0 w-full lg:w-[420px]">
+                  <Suspense fallback={<div className="h-[380px] flex items-center justify-center"><Loader2 className="h-6 w-6 text-stone-300 animate-spin" /></div>}>
+                    <VisitorGlobe counts={counts} height={380} />
+                  </Suspense>
                 </div>
-                <div className="flex-1 w-full space-y-0.5 max-h-[340px] overflow-y-auto pr-2">
+                <div className="flex-1 w-full space-y-0.5 max-h-[360px] overflow-y-auto pr-2">
                   {stats.byCountry.map((c) => (
-                    <div key={c.code} className="flex items-center gap-3 py-2 border-b border-neutral-800/60">
+                    <div key={c.code} className="flex items-center gap-3 py-2.5 border-b border-stone-100 dark:border-neutral-800">
                       <span className="text-base w-6 text-center">{flagEmoji(c.code)}</span>
-                      <span className="text-sm text-neutral-300 flex-1">{c.code === 'ZZ' ? t.unknown : countryName(c.code, lang)}</span>
-                      <div className="h-1 rounded-full bg-red-600/70" style={{ width: `${Math.max(6, (c.count / maxCountry) * 90)}px` }} />
-                      <span className="text-sm font-bold text-red-500 w-8 text-right tabular-nums">{c.count}</span>
+                      <span className="text-sm text-stone-700 dark:text-neutral-200 flex-1">{c.code === 'ZZ' ? t.unknown : countryName(c.code, lang)}</span>
+                      <div className="h-1 rounded-full bg-red-500" style={{ width: `${Math.max(6, (c.count / maxCountry) * 90)}px` }} />
+                      <span className="text-sm font-bold text-red-600 w-8 text-right tabular-nums">{c.count}</span>
                     </div>
                   ))}
                 </div>

@@ -1,115 +1,213 @@
 import { useEffect } from 'react';
 import { SignLegalShell } from '../components/SignLegalShell';
+import { useSignLang } from '../contexts/SignLangContext';
 
 export default function SignCGV() {
-  useEffect(() => { document.title = 'CGV & CGU | CloseOS Sign'; }, []);
+  const { lang } = useSignLang();
+  useEffect(() => { document.title = lang === 'fr' ? 'CGV & CGU | CloseOS Sign' : 'Terms of Sale & Use | CloseOS Sign'; }, [lang]);
   return (
-    <SignLegalShell title="Conditions Générales de Vente et d'Utilisation" updated="11 juin 2026">
-      <h2>1. Objet</h2>
+    <SignLegalShell
+      title={lang === 'fr' ? "Conditions Générales de Vente et d'Utilisation" : 'General Terms of Sale and Use'}
+      updated={lang === 'fr' ? '11 juin 2026' : 'June 11, 2026'}
+    >
+      <h2>{lang === 'fr' ? '1. Objet' : '1. Purpose'}</h2>
       <p>
-        Les présentes conditions régissent la souscription et l'utilisation de <strong>CloseOS Sign</strong>, service de
-        signature électronique et d'encaissement édité par CloseOS Technologies (le « Prestataire »). Elles s'appliquent à
-        tout utilisateur professionnel disposant d'un compte (l'« Utilisateur »). La souscription emporte acceptation pleine
-        et entière des présentes.
+        {lang === 'fr' ? (
+          <>Les présentes conditions régissent la souscription et l'utilisation de <strong>CloseOS Sign</strong>, service de
+          signature électronique et d'encaissement édité par CloseOS Technologies (le « Prestataire »). Elles s'appliquent à
+          tout utilisateur professionnel disposant d'un compte (l'« Utilisateur »). La souscription emporte acceptation pleine
+          et entière des présentes.</>
+        ) : (
+          <>These terms govern the subscription to and use of <strong>CloseOS Sign</strong>, an electronic signature and payment
+          collection service published by CloseOS Technologies (the "Provider"). They apply to any professional user holding an
+          account (the "User"). Subscribing constitutes full and unreserved acceptance of these terms.</>
+        )}
       </p>
 
-      <h2>2. Description du service</h2>
+      <h2>{lang === 'fr' ? '2. Description du service' : '2. Service description'}</h2>
       <p>
-        CloseOS Sign permet de composer un contrat (à partir d'un modèle, d'une feuille blanche ou d'un PDF importé), de le
-        faire signer électroniquement par un ou plusieurs signataires, et le cas échéant d'encaisser un paiement au moment de
-        la signature (fonction « Payé + signé »). Chaque signature génère un document scellé accompagné d'un faisceau de
-        preuves et d'un certificat vérifiable. Les modèles réutilisables et les espaces par membre d'équipe font partie du
-        service.
+        {lang === 'fr' ? (
+          <>CloseOS Sign permet de composer un contrat (à partir d'un modèle, d'une feuille blanche ou d'un PDF importé), de le
+          faire signer électroniquement par un ou plusieurs signataires, et le cas échéant d'encaisser un paiement au moment de
+          la signature (fonction « Payé + signé »). Chaque signature génère un document scellé accompagné d'un faisceau de
+          preuves et d'un certificat vérifiable. Les modèles réutilisables et les espaces par membre d'équipe font partie du
+          service.</>
+        ) : (
+          <>CloseOS Sign lets you compose a contract (from a template, a blank page, or an imported PDF), have it signed
+          electronically by one or more signers, and, where applicable, collect a payment at the time of signing (the "Sign +
+          Pay" feature). Each signature generates a sealed document accompanied by an evidence bundle and a verifiable
+          certificate. Reusable templates and per-team-member workspaces are part of the service.</>
+        )}
       </p>
 
-      <h2>3. Abonnement, période d'essai et tarifs</h2>
+      <h2>{lang === 'fr' ? "3. Abonnement, période d'essai et tarifs" : '3. Subscription, trial period and pricing'}</h2>
       <p>
-        CloseOS Sign est proposé via une <strong>formule unique à 9 € / mois</strong> (TTC), incluant l'ensemble des
-        fonctionnalités. La souscription débute par une <strong>période d'essai de 14 jours</strong> nécessitant
-        l'enregistrement d'un moyen de paiement valide. À l'issue de l'essai, l'abonnement est automatiquement activé sauf
-        résiliation. L'abonnement est <strong>sans engagement</strong> et résiliable à tout moment depuis l'espace de
-        l'Utilisateur.
+        {lang === 'fr' ? (
+          <>CloseOS Sign est proposé via une <strong>formule unique à 9 € / mois</strong> (TTC), incluant l'ensemble des
+          fonctionnalités. La souscription débute par une <strong>période d'essai de 14 jours</strong> nécessitant
+          l'enregistrement d'un moyen de paiement valide. À l'issue de l'essai, l'abonnement est automatiquement activé sauf
+          résiliation. L'abonnement est <strong>sans engagement</strong> et résiliable à tout moment depuis l'espace de
+          l'Utilisateur.</>
+        ) : (
+          <>CloseOS Sign is offered through a <strong>single plan at 9 € / month</strong> (incl. tax), including all features.
+          The subscription begins with a <strong>14-day trial period</strong> requiring a valid payment method to be
+          registered. At the end of the trial, the subscription is automatically activated unless cancelled. The subscription
+          is <strong>commitment-free</strong> and can be cancelled at any time from the User's workspace.</>
+        )}
       </p>
       <p>
-        Les titulaires d'un abonnement <strong>CloseOS Business</strong> actif bénéficient de l'accès à CloseOS Sign inclus,
-        sans souscription distincte.
-      </p>
-
-      <h2>4. Paiement et renouvellement</h2>
-      <p>
-        L'abonnement est payable d'avance par carte bancaire via notre prestataire de paiement <strong>Stripe</strong>. Il se
-        renouvelle automatiquement par périodes successives. En cas d'échec de prélèvement au renouvellement, l'Utilisateur
-        dispose d'un délai de grâce pour régulariser ; à défaut, l'accès au service est suspendu. Les documents déjà signés et
-        leurs preuves restent conservés conformément à l'article 9.
-      </p>
-
-      <h2>5. Fonction « Payé + signé »</h2>
-      <p>
-        Lorsque cette fonction est activée, le signataire règle un montant défini par l'Utilisateur au moment de la signature,
-        via Stripe Connect. <strong>L'Utilisateur reste le bénéficiaire des fonds</strong> (encaissés sur son compte Stripe
-        connecté) et le responsable de la prestation vendue. CloseOS perçoit une commission de service sur les transactions
-        encaissées, prélevée automatiquement. CloseOS n'est pas partie au contrat conclu entre l'Utilisateur et son client.
+        {lang === 'fr' ? (
+          <>Les titulaires d'un abonnement <strong>CloseOS Business</strong> actif bénéficient de l'accès à CloseOS Sign inclus,
+          sans souscription distincte.</>
+        ) : (
+          <>Holders of an active <strong>CloseOS Business</strong> subscription benefit from access to CloseOS Sign included, at
+          no separate subscription.</>
+        )}
       </p>
 
-      <h2>6. Valeur juridique de la signature</h2>
+      <h2>{lang === 'fr' ? '4. Paiement et renouvellement' : '4. Payment and renewal'}</h2>
       <p>
-        Les signatures réalisées via CloseOS Sign constituent des signatures électroniques au sens du règlement (UE)
-        n° 910/2014 (« eIDAS »). Le service réunit un <strong>faisceau de preuves</strong> (horodatage serveur, adresse IP,
-        empreinte du document, vérification d'identité, consentement explicite, journal d'événements inaltérable) destiné à
-        établir l'intégrité du document et l'imputabilité de la signature. La force probante relève de l'appréciation
-        souveraine des tribunaux ; l'Utilisateur demeure responsable de l'adéquation du niveau de signature à ses besoins.
+        {lang === 'fr' ? (
+          <>L'abonnement est payable d'avance par carte bancaire via notre prestataire de paiement <strong>Stripe</strong>. Il se
+          renouvelle automatiquement par périodes successives. En cas d'échec de prélèvement au renouvellement, l'Utilisateur
+          dispose d'un délai de grâce pour régulariser ; à défaut, l'accès au service est suspendu. Les documents déjà signés et
+          leurs preuves restent conservés conformément à l'article 9.</>
+        ) : (
+          <>The subscription is payable in advance by bank card via our payment provider <strong>Stripe</strong>. It renews
+          automatically for successive periods. Should a renewal charge fail, the User has a grace period to remedy the
+          situation; failing that, access to the service is suspended. Documents already signed and their evidence remain
+          retained in accordance with article 9.</>
+        )}
       </p>
 
-      <h2>7. Obligations de l'Utilisateur (CGU)</h2>
+      <h2>{lang === 'fr' ? '5. Fonction « Payé + signé »' : '5. The "Sign + Pay" feature'}</h2>
+      <p>
+        {lang === 'fr' ? (
+          <>Lorsque cette fonction est activée, le signataire règle un montant défini par l'Utilisateur au moment de la signature,
+          via Stripe Connect. <strong>L'Utilisateur reste le bénéficiaire des fonds</strong> (encaissés sur son compte Stripe
+          connecté) et le responsable de la prestation vendue. CloseOS perçoit une commission de service sur les transactions
+          encaissées, prélevée automatiquement. CloseOS n'est pas partie au contrat conclu entre l'Utilisateur et son client.</>
+        ) : (
+          <>When this feature is enabled, the signer pays an amount set by the User at the time of signing, via Stripe Connect.
+          <strong> The User remains the beneficiary of the funds</strong> (collected into their connected Stripe account) and is
+          responsible for the service sold. CloseOS charges a service commission on collected transactions, deducted
+          automatically. CloseOS is not a party to the contract entered into between the User and their client.</>
+        )}
+      </p>
+
+      <h2>{lang === 'fr' ? '6. Valeur juridique de la signature' : '6. Legal value of the signature'}</h2>
+      <p>
+        {lang === 'fr' ? (
+          <>Les signatures réalisées via CloseOS Sign constituent des signatures électroniques au sens du règlement (UE)
+          n° 910/2014 (« eIDAS »). Le service réunit un <strong>faisceau de preuves</strong> (horodatage serveur, adresse IP,
+          empreinte du document, vérification d'identité, consentement explicite, journal d'événements inaltérable) destiné à
+          établir l'intégrité du document et l'imputabilité de la signature. La force probante relève de l'appréciation
+          souveraine des tribunaux ; l'Utilisateur demeure responsable de l'adéquation du niveau de signature à ses besoins.</>
+        ) : (
+          <>Signatures made through CloseOS Sign constitute electronic signatures within the meaning of Regulation (EU)
+          No 910/2014 ("eIDAS"). The service gathers an <strong>evidence bundle</strong> (server timestamp, IP address,
+          document hash, identity verification, explicit consent, tamper-proof event log) intended to establish the integrity of
+          the document and the attributability of the signature. Evidentiary weight is a matter for the sole assessment of the
+          courts; the User remains responsible for ensuring the signature level is appropriate to their needs.</>
+        )}
+      </p>
+
+      <h2>{lang === 'fr' ? "7. Obligations de l'Utilisateur (CGU)" : '7. User obligations (Terms of Use)'}</h2>
       <ul>
-        <li>Fournir des informations exactes et maintenir la confidentialité de ses accès.</li>
-        <li>N'utiliser le service que pour des documents licites dont il détient les droits.</li>
-        <li>Ne pas détourner le service à des fins frauduleuses, trompeuses ou portant atteinte aux droits de tiers.</li>
-        <li>Obtenir le consentement des signataires au traitement de leurs données aux fins de signature.</li>
-        <li>Ne pas tenter de contourner les mesures de sécurité ni d'altérer les preuves générées.</li>
+        {lang === 'fr' ? (
+          <>
+            <li>Fournir des informations exactes et maintenir la confidentialité de ses accès.</li>
+            <li>N'utiliser le service que pour des documents licites dont il détient les droits.</li>
+            <li>Ne pas détourner le service à des fins frauduleuses, trompeuses ou portant atteinte aux droits de tiers.</li>
+            <li>Obtenir le consentement des signataires au traitement de leurs données aux fins de signature.</li>
+            <li>Ne pas tenter de contourner les mesures de sécurité ni d'altérer les preuves générées.</li>
+          </>
+        ) : (
+          <>
+            <li>Provide accurate information and keep their credentials confidential.</li>
+            <li>Use the service only for lawful documents to which they hold the rights.</li>
+            <li>Not misuse the service for fraudulent or deceptive purposes or in a way that infringes third-party rights.</li>
+            <li>Obtain the signers' consent to the processing of their data for signing purposes.</li>
+            <li>Not attempt to circumvent security measures or tamper with the evidence generated.</li>
+          </>
+        )}
       </ul>
-      <p>Tout manquement peut entraîner la suspension immédiate du compte sans préjudice d'éventuels recours.</p>
+      <p>{lang === 'fr' ? 'Tout manquement peut entraîner la suspension immédiate du compte sans préjudice d\'éventuels recours.' : 'Any breach may result in the immediate suspension of the account without prejudice to any legal recourse.'}</p>
 
-      <h2>8. Disponibilité et maintenance</h2>
+      <h2>{lang === 'fr' ? '8. Disponibilité et maintenance' : '8. Availability and maintenance'}</h2>
       <p>
-        Le Prestataire met en œuvre les moyens raisonnables pour assurer la disponibilité du service mais ne garantit pas une
-        disponibilité ininterrompue. Des opérations de maintenance peuvent être réalisées, en principe signalées lorsqu'elles
-        sont programmées.
+        {lang === 'fr' ? (
+          <>Le Prestataire met en œuvre les moyens raisonnables pour assurer la disponibilité du service mais ne garantit pas une
+          disponibilité ininterrompue. Des opérations de maintenance peuvent être réalisées, en principe signalées lorsqu'elles
+          sont programmées.</>
+        ) : (
+          <>The Provider uses reasonable means to ensure the availability of the service but does not guarantee uninterrupted
+          availability. Maintenance operations may be carried out, and are in principle announced when scheduled.</>
+        )}
       </p>
 
-      <h2>9. Responsabilité</h2>
+      <h2>{lang === 'fr' ? '9. Responsabilité' : '9. Liability'}</h2>
       <p>
-        CloseOS fournit un outil technique. L'Utilisateur est seul responsable du contenu, de la validité et de la légalité des
-        contrats qu'il établit et fait signer, ainsi que des montants encaissés. La responsabilité du Prestataire, à supposer
-        qu'elle soit engagée, est limitée aux dommages directs et plafonnée au montant des sommes versées par l'Utilisateur au
-        cours des douze derniers mois.
+        {lang === 'fr' ? (
+          <>CloseOS fournit un outil technique. L'Utilisateur est seul responsable du contenu, de la validité et de la légalité des
+          contrats qu'il établit et fait signer, ainsi que des montants encaissés. La responsabilité du Prestataire, à supposer
+          qu'elle soit engagée, est limitée aux dommages directs et plafonnée au montant des sommes versées par l'Utilisateur au
+          cours des douze derniers mois.</>
+        ) : (
+          <>CloseOS provides a technical tool. The User is solely responsible for the content, validity, and legality of the
+          contracts they draw up and have signed, as well as for the amounts collected. The Provider's liability, should it be
+          engaged, is limited to direct damages and capped at the amount of the sums paid by the User over the last twelve
+          months.</>
+        )}
       </p>
 
-      <h2>10. Droit de rétractation</h2>
+      <h2>{lang === 'fr' ? '10. Droit de rétractation' : '10. Right of withdrawal'}</h2>
       <p>
-        Le service étant souscrit par des professionnels dans le cadre de leur activité, le droit de rétractation prévu par le
-        Code de la consommation ne s'applique pas (art. L221-3). L'Utilisateur peut néanmoins résilier à tout moment, l'arrêt
-        prenant effet à la fin de la période en cours.
+        {lang === 'fr' ? (
+          <>Le service étant souscrit par des professionnels dans le cadre de leur activité, le droit de rétractation prévu par le
+          Code de la consommation ne s'applique pas (art. L221-3). L'Utilisateur peut néanmoins résilier à tout moment, l'arrêt
+          prenant effet à la fin de la période en cours.</>
+        ) : (
+          <>As the service is subscribed to by professionals in the course of their business, the right of withdrawal provided by
+          the French Consumer Code does not apply (art. L221-3). The User may nonetheless cancel at any time, with the
+          termination taking effect at the end of the current period.</>
+        )}
       </p>
 
-      <h2>11. Données personnelles</h2>
+      <h2>{lang === 'fr' ? '11. Données personnelles' : '11. Personal data'}</h2>
       <p>
-        Le traitement des données personnelles est décrit dans notre <a href="/sign/confidentialite">Politique de
-        confidentialité</a>. Les mesures de sécurité et la valeur probante sont détaillées dans la page <a href="/sign/securite">Sécurité
-        technique</a>.
+        {lang === 'fr' ? (
+          <>Le traitement des données personnelles est décrit dans notre <a href="/sign/confidentialite">Politique de
+          confidentialité</a>. Les mesures de sécurité et la valeur probante sont détaillées dans la page <a href="/sign/securite">Sécurité
+          technique</a>.</>
+        ) : (
+          <>The processing of personal data is described in our <a href="/sign/confidentialite">Privacy Policy</a>. Security
+          measures and evidentiary value are detailed on the <a href="/sign/securite">Technical Security</a> page.</>
+        )}
       </p>
 
-      <h2>12. Durée et résiliation</h2>
+      <h2>{lang === 'fr' ? '12. Durée et résiliation' : '12. Term and termination'}</h2>
       <p>
-        Les présentes s'appliquent pendant toute la durée d'utilisation du service. L'Utilisateur peut résilier depuis son
-        espace ; le Prestataire peut résilier en cas de manquement. La résiliation n'emporte pas suppression des preuves des
-        documents déjà signés, conservées conformément à la loi.
+        {lang === 'fr' ? (
+          <>Les présentes s'appliquent pendant toute la durée d'utilisation du service. L'Utilisateur peut résilier depuis son
+          espace ; le Prestataire peut résilier en cas de manquement. La résiliation n'emporte pas suppression des preuves des
+          documents déjà signés, conservées conformément à la loi.</>
+        ) : (
+          <>These terms apply for the entire duration of use of the service. The User may cancel from their workspace; the
+          Provider may terminate in the event of a breach. Termination does not entail the deletion of the evidence of documents
+          already signed, which is retained in accordance with the law.</>
+        )}
       </p>
 
-      <h2>13. Droit applicable et juridiction</h2>
+      <h2>{lang === 'fr' ? '13. Droit applicable et juridiction' : '13. Governing law and jurisdiction'}</h2>
       <p>
-        Les présentes sont soumises au droit français. À défaut de résolution amiable, tout litige relève de la compétence des
-        tribunaux français compétents.
+        {lang === 'fr' ? (
+          <>Les présentes sont soumises au droit français. À défaut de résolution amiable, tout litige relève de la compétence des
+          tribunaux français compétents.</>
+        ) : (
+          <>These terms are governed by French law. Failing an amicable resolution, any dispute falls within the jurisdiction of
+          the competent French courts.</>
+        )}
       </p>
     </SignLegalShell>
   );

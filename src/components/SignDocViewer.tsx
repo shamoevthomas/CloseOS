@@ -8,6 +8,7 @@ import { THEME_CSS } from '../lib/signThemes';
 import SignPagedDoc from './SignPagedDoc';
 import FillableField from './FillableField';
 import { FitPdfPage } from './FitPdfPage';
+import { useSignLang } from '../contexts/SignLangContext';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -59,6 +60,7 @@ async function renderPdf(dataUrl: string): Promise<PdfPage[]> {
  * Sert à afficher un modèle ou une instance signée dans l'espace closer / le tableau de bord.
  */
 export default function SignDocViewer({ doc }: { doc: SignDocData }) {
+  const { lang } = useSignLang();
   const [pdfPages, setPdfPages] = useState<PdfPage[]>([]);
   const docRef = useRef<HTMLDivElement>(null);
 
@@ -123,7 +125,7 @@ export default function SignDocViewer({ doc }: { doc: SignDocData }) {
         <div className="flex flex-col items-center gap-6" ref={docRef}>
           {pdfPages.length === 0 ? (
             <div className="flex h-64 items-center justify-center text-[#A1A9A9]">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Rendu du PDF…
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {lang === 'fr' ? 'Rendu du PDF…' : 'Rendering PDF…'}
             </div>
           ) : (
             pdfPages.map((pg, idx) => (

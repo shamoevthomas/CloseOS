@@ -3,6 +3,7 @@ import { X, ShieldCheck, Loader2, Mail, MessageSquare, ChevronLeft } from 'lucid
 import { signSupabase as supabase } from '../lib/signSupabase';
 import { isValidEmail } from '../lib/signFieldsMeta';
 import PhoneInput from './PhoneInput';
+import { useSignLang } from '../contexts/SignLangContext';
 
 /**
  * Vérification d'identité du signataire (DA Sign), 1 ou plusieurs canaux SÉQUENTIELS.
@@ -31,6 +32,7 @@ export default function SignVerificationModal({
   onVerified: (result: { email?: string; phone?: string }) => void;
   onLocked?: (info: { reason?: string; step?: number }) => void;
 }) {
+  const { lang } = useSignLang();
   const list: Channel[] = channels.length ? channels : ['email'];
   const [idx, setIdx] = useState(0);
   const [step, setStep] = useState<'dest' | 'code'>('dest');
@@ -53,7 +55,11 @@ export default function SignVerificationModal({
   const requestCode = async () => {
     const d = dest.trim();
     if (!destValid) {
-      setError(current === 'sms' ? 'Entrez un numéro valide.' : 'Entrez une adresse email valide.');
+      setError(
+        current === 'sms'
+          ? (lang === 'fr' ? 'Entrez un numéro valide.' : 'Enter a valid phone number.')
+          : (lang === 'fr' ? 'Entrez une adresse email valide.' : 'Enter a valid email address.'),
+      );
       return;
     }
     setSending(true);
@@ -72,26 +78,32 @@ export default function SignVerificationModal({
       } else if (data?.error === 'locked') {
         onLocked?.({ reason: data.reason, step: data.step });
       } else if (data?.error === 'not_authorized') {
-        const left = typeof data.attemptsLeft === 'number' ? ` Il vous reste ${data.attemptsLeft} essai${data.attemptsLeft > 1 ? 's' : ''}.` : '';
-        setError((current === 'sms' ? "Ce numéro n'est pas autorisé (ou ne correspond pas à votre email)." : "Cette adresse n'est pas autorisée à signer ce document.") + left);
+        const left = typeof data.attemptsLeft === 'number'
+          ? (lang === 'fr'
+              ? ` Il vous reste ${data.attemptsLeft} essai${data.attemptsLeft > 1 ? 's' : ''}.`
+              : ` You have ${data.attemptsLeft} attempt${data.attemptsLeft > 1 ? 's' : ''} left.`)
+          : '';
+        setError((current === 'sms'
+          ? (lang === 'fr' ? "Ce numéro n'est pas autorisé (ou ne correspond pas à votre email)." : 'This number is not authorized (or does not match your email).')
+          : (lang === 'fr' ? "Cette adresse n'est pas autorisée à signer ce document." : 'This address is not authorized to sign this document.')) + left);
       } else if (data?.error === 'email_first') {
-        setError('Vérifiez d’abord votre email.');
+        setError(lang === 'fr' ? 'Vérifiez d’abord votre email.' : 'Please verify your email first.');
       } else if (data?.error === 'resend_limit') {
         setResendBlocked(true);
-        setError('Limite de renvois atteinte. Contactez l’émetteur si besoin.');
+        setError(lang === 'fr' ? 'Limite de renvois atteinte. Contactez l’émetteur si besoin.' : 'Resend limit reached. Contact the sender if needed.');
       } else if (data?.error === 'rate_limit') {
         setMasked(mask);
         setStep('code');
         setResendIn(data.wait || 90);
-        setInfo('Un code a déjà été envoyé. Saisissez-le ou patientez pour le renvoyer.');
+        setInfo(lang === 'fr' ? 'Un code a déjà été envoyé. Saisissez-le ou patientez pour le renvoyer.' : 'A code has already been sent. Enter it or wait to resend.');
         setTimeout(() => inputs.current[0]?.focus(), 60);
       } else if (data?.error === 'already_signed') {
-        setError('Ce document est déjà signé.');
+        setError(lang === 'fr' ? 'Ce document est déjà signé.' : 'This document has already been signed.');
       } else {
-        setError('Envoi impossible. Réessayez.');
+        setError(lang === 'fr' ? 'Envoi impossible. Réessayez.' : 'Unable to send. Please try again.');
       }
     } catch {
-      setError('Envoi impossible. Réessayez.');
+      setError(lang === 'fr' ? 'Envoi impossible. Réessayez.' : 'Unable to send. Please try again.');
     } finally {
       setSending(false);
     }
@@ -124,20 +136,24 @@ export default function SignVerificationModal({
         onLocked?.({ reason: data.reason, step: data.step });
         return;
       }
-      const left = typeof data?.attemptsLeft === 'number' ? ` Il vous reste ${data.attemptsLeft} essai${data.attemptsLeft > 1 ? 's' : ''}.` : '';
+      const left = typeof data?.attemptsLeft === 'number'
+        ? (lang === 'fr'
+            ? ` Il vous reste ${data.attemptsLeft} essai${data.attemptsLeft > 1 ? 's' : ''}.`
+            : ` You have ${data.attemptsLeft} attempt${data.attemptsLeft > 1 ? 's' : ''} left.`)
+        : '';
       const msg =
         data?.error === 'expired'
-          ? 'Code expiré. Renvoyez un code.'
+          ? (lang === 'fr' ? 'Code expiré. Renvoyez un code.' : 'Code expired. Request a new code.')
           : data?.error === 'too_many'
-            ? 'Trop de tentatives. Renvoyez un code.'
+            ? (lang === 'fr' ? 'Trop de tentatives. Renvoyez un code.' : 'Too many attempts. Request a new code.')
             : data?.error === 'no_code'
-              ? 'Aucun code actif. Renvoyez un code.'
-              : `Code incorrect.${left}`;
+              ? (lang === 'fr' ? 'Aucun code actif. Renvoyez un code.' : 'No active code. Request a new code.')
+              : (lang === 'fr' ? `Code incorrect.${left}` : `Incorrect code.${left}`);
       setError(msg);
       setCode(['', '', '', '', '', '']);
       inputs.current[0]?.focus();
     } catch {
-      setError('Vérification impossible. Réessayez.');
+      setError(lang === 'fr' ? 'Vérification impossible. Réessayez.' : 'Verification failed. Please try again.');
     } finally {
       setVerifying(false);
     }
@@ -201,17 +217,21 @@ export default function SignVerificationModal({
 
         {multi && (
           <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[#CEFF8F]">
-            Étape {idx + 1} sur {list.length} — {current === 'sms' ? 'SMS' : 'Email'}
+            {lang === 'fr' ? `Étape ${idx + 1} sur ${list.length}` : `Step ${idx + 1} of ${list.length}`} — {current === 'sms' ? 'SMS' : 'Email'}
           </div>
         )}
 
         {step === 'dest' ? (
           <>
-            <h3 className="text-lg font-semibold text-white">Vérification d’identité</h3>
+            <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Vérification d’identité' : 'Identity verification'}</h3>
             <p className="mt-1 text-sm leading-relaxed text-[#A1A9A9]">
               {current === 'sms'
-                ? 'Entrez votre numéro de téléphone pour recevoir un code par SMS. Il doit faire partie des numéros autorisés.'
-                : 'Entrez votre adresse email pour recevoir un code. Elle doit faire partie des adresses autorisées.'}
+                ? (lang === 'fr'
+                    ? 'Entrez votre numéro de téléphone pour recevoir un code par SMS. Il doit faire partie des numéros autorisés.'
+                    : 'Enter your phone number to receive a code by SMS. It must be one of the authorized numbers.')
+                : (lang === 'fr'
+                    ? 'Entrez votre adresse email pour recevoir un code. Elle doit faire partie des adresses autorisées.'
+                    : 'Enter your email address to receive a code. It must be one of the authorized addresses.')}
             </p>
 
             <div className="mt-5">
@@ -228,7 +248,7 @@ export default function SignVerificationModal({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') requestCode();
                     }}
-                    placeholder="vous@exemple.fr"
+                    placeholder={lang === 'fr' ? 'vous@exemple.fr' : 'you@example.com'}
                     className="w-full rounded-xl border border-[#3A4242] bg-[#191E1E] py-2.5 pl-9 pr-3 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/40 focus:border-[#CEFF8F]"
                   />
                 </div>
@@ -243,14 +263,18 @@ export default function SignVerificationModal({
               style={{ background: accent }}
             >
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : current === 'sms' ? <MessageSquare className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
-              Recevoir le code
+              {lang === 'fr' ? 'Recevoir le code' : 'Get the code'}
             </button>
           </>
         ) : (
           <>
-            <h3 className="text-lg font-semibold text-white">Saisissez le code</h3>
+            <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Saisissez le code' : 'Enter the code'}</h3>
             <p className="mt-1 text-sm leading-relaxed text-[#A1A9A9]">
-              Un code à 6 chiffres a été envoyé {current === 'sms' ? 'par SMS au' : 'à'} <span className="font-semibold text-[#F3F4F6]">{masked || dest}</span>.
+              {lang === 'fr' ? (
+                <>Un code à 6 chiffres a été envoyé {current === 'sms' ? 'par SMS au' : 'à'} <span className="font-semibold text-[#F3F4F6]">{masked || dest}</span>.</>
+              ) : (
+                <>A 6-digit code has been sent {current === 'sms' ? 'by SMS to' : 'to'} <span className="font-semibold text-[#F3F4F6]">{masked || dest}</span>.</>
+              )}
             </p>
 
             <div className="mt-5 flex justify-between gap-2" onPaste={onPaste}>
@@ -275,7 +299,7 @@ export default function SignVerificationModal({
 
             {verifying && (
               <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[#A1A9A9]">
-                <Loader2 className="h-4 w-4 animate-spin" /> Vérification…
+                <Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Vérification…' : 'Verifying…'}
               </div>
             )}
             {error && <p className="mt-4 rounded-lg border border-[#ef6b6b]/30 bg-[#ef6b6b]/10 px-3 py-2.5 text-center text-xs font-medium text-[#ef6b6b]">{error}</p>}
@@ -290,15 +314,15 @@ export default function SignVerificationModal({
                 }}
                 className="flex items-center gap-1 text-[#A1A9A9] transition-colors hover:text-white"
               >
-                <ChevronLeft className="h-3.5 w-3.5" /> {current === 'sms' ? 'Modifier le numéro' : 'Modifier l’email'}
+                <ChevronLeft className="h-3.5 w-3.5" /> {current === 'sms' ? (lang === 'fr' ? 'Modifier le numéro' : 'Change number') : (lang === 'fr' ? 'Modifier l’email' : 'Change email')}
               </button>
               {resendBlocked ? (
-                <span className="text-[#A1A9A9]">Limite de renvois atteinte</span>
+                <span className="text-[#A1A9A9]">{lang === 'fr' ? 'Limite de renvois atteinte' : 'Resend limit reached'}</span>
               ) : resendIn > 0 ? (
-                <span className="text-[#A1A9A9]">Renvoyer dans {resendIn}s</span>
+                <span className="text-[#A1A9A9]">{lang === 'fr' ? `Renvoyer dans ${resendIn}s` : `Resend in ${resendIn}s`}</span>
               ) : (
                 <button onClick={requestCode} disabled={sending} className="font-semibold text-[#CEFF8F] transition-opacity hover:opacity-80 disabled:opacity-50">
-                  Renvoyer le code
+                  {lang === 'fr' ? 'Renvoyer le code' : 'Resend code'}
                 </button>
               )}
             </div>

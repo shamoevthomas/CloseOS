@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { X, Paperclip, Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useSignLang, type SignLang } from '../contexts/SignLangContext';
 
 /**
  * CloseOS Sign — modal de contact support (DA Sign : dark + lime).
@@ -7,15 +8,17 @@ import { X, Paperclip, Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-r
  */
 
 const CATEGORIES = [
-  { value: 'Help', label: 'Aide / question' },
-  { value: 'Bug', label: 'Signaler un bug' },
-  { value: 'Feature', label: 'Suggestion de fonctionnalité' },
-  { value: 'Billing', label: 'Facturation / abonnement' },
-  { value: 'Partnership', label: 'Partenariat' },
-  { value: 'Other', label: 'Autre' },
+  { value: 'Help', label: 'Aide / question', labelEn: 'Help / question' },
+  { value: 'Bug', label: 'Signaler un bug', labelEn: 'Report a bug' },
+  { value: 'Feature', label: 'Suggestion de fonctionnalité', labelEn: 'Feature suggestion' },
+  { value: 'Billing', label: 'Facturation / abonnement', labelEn: 'Billing / subscription' },
+  { value: 'Partnership', label: 'Partenariat', labelEn: 'Partnership' },
+  { value: 'Other', label: 'Autre', labelEn: 'Other' },
 ];
+const catLabelOf = (c: { label: string; labelEn: string }, lang: SignLang) => (lang === 'fr' ? c.label : c.labelEn);
 
 export default function SignContactModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { lang } = useSignLang();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [category, setCategory] = useState('');
@@ -44,7 +47,8 @@ export default function SignContactModal({ open, onClose }: { open: boolean; onC
         const buffer = await attachment.arrayBuffer();
         attachmentBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
       }
-      const catLabel = CATEGORIES.find((c) => c.value === category)?.label || category;
+      const cat = CATEGORIES.find((c) => c.value === category);
+      const catLabel = cat ? catLabelOf(cat, lang) : category;
       const res = await fetch('/api/contact-form', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -67,8 +71,8 @@ export default function SignContactModal({ open, onClose }: { open: boolean; onC
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#3A4242] bg-[#222828] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[#3A4242] p-4 sm:p-6">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-white">Contacter le support</h2>
-            <p className="mt-0.5 text-xs text-[#A1A9A9]">On vous répond sous 24 h ouvrées.</p>
+            <h2 className="text-lg font-semibold tracking-tight text-white">{lang === 'fr' ? 'Contacter le support' : 'Contact support'}</h2>
+            <p className="mt-0.5 text-xs text-[#A1A9A9]">{lang === 'fr' ? 'On vous répond sous 24 h ouvrées.' : 'We reply within 24 business hours.'}</p>
           </div>
           <button onClick={close} className="rounded-lg p-1 text-[#A1A9A9] transition-colors hover:bg-[#191E1E] hover:text-white">
             <X className="h-5 w-5" />
@@ -77,56 +81,56 @@ export default function SignContactModal({ open, onClose }: { open: boolean; onC
 
         <form onSubmit={handleSubmit} className="space-y-4 p-4 sm:p-6">
           <div>
-            <label className="mb-1 block text-sm font-medium text-[#F3F4F6]">Nom</label>
-            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Votre nom" className={field} />
+            <label className="mb-1 block text-sm font-medium text-[#F3F4F6]">{lang === 'fr' ? 'Nom' : 'Name'}</label>
+            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder={lang === 'fr' ? 'Votre nom' : 'Your name'} className={field} />
           </div>
 
           <div>
             <label className="mb-1 block text-sm font-medium text-[#F3F4F6]">Email</label>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@exemple.fr" className={field} />
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={lang === 'fr' ? 'vous@exemple.fr' : 'you@example.com'} className={field} />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[#F3F4F6]">Catégorie</label>
+            <label className="mb-1 block text-sm font-medium text-[#F3F4F6]">{lang === 'fr' ? 'Catégorie' : 'Category'}</label>
             <select required value={category} onChange={(e) => setCategory(e.target.value)} className={`${field} appearance-none`}>
-              <option value="" disabled>Choisir une catégorie</option>
-              {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              <option value="" disabled>{lang === 'fr' ? 'Choisir une catégorie' : 'Choose a category'}</option>
+              {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{catLabelOf(c, lang)}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-[#F3F4F6]">Objet</label>
-            <input type="text" required value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Résumé en quelques mots" className={field} />
+            <label className="mb-1 block text-sm font-medium text-[#F3F4F6]">{lang === 'fr' ? 'Objet' : 'Subject'}</label>
+            <input type="text" required value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={lang === 'fr' ? 'Résumé en quelques mots' : 'A few words summary'} className={field} />
           </div>
 
           <div>
             <label className="mb-1 block text-sm font-medium text-[#F3F4F6]">Message</label>
-            <textarea required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Décrivez votre demande…" className={`${field} resize-none`} />
+            <textarea required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={lang === 'fr' ? 'Décrivez votre demande…' : 'Describe your request…'} className={`${field} resize-none`} />
           </div>
 
           <div>
             <input ref={fileRef} type="file" className="hidden" onChange={(e) => setAttachment(e.target.files?.[0] || null)} />
             <button type="button" onClick={() => fileRef.current?.click()} className="flex items-center gap-2 text-sm text-[#A1A9A9] transition-colors hover:text-[#CEFF8F]">
               <Paperclip className="h-4 w-4" />
-              {attachment ? attachment.name : 'Joindre un fichier (optionnel)'}
+              {attachment ? attachment.name : (lang === 'fr' ? 'Joindre un fichier (optionnel)' : 'Attach a file (optional)')}
             </button>
           </div>
 
           {status === 'success' && (
             <div className="flex items-center gap-2 rounded-lg border border-[#CEFF8F]/30 bg-[#CEFF8F]/10 px-3 py-2 text-sm text-[#CEFF8F]">
-              <CheckCircle2 className="h-4 w-4 shrink-0" /> Message envoyé. Merci, on revient vers vous vite.
+              <CheckCircle2 className="h-4 w-4 shrink-0" /> {lang === 'fr' ? 'Message envoyé. Merci, on revient vers vous vite.' : 'Message sent. Thanks, we’ll get back to you soon.'}
             </div>
           )}
           {status === 'error' && (
             <div className="flex items-center gap-2 rounded-lg border border-[#ef6b6b]/30 bg-[#ef6b6b]/10 px-3 py-2 text-sm text-[#ef6b6b]">
-              <AlertCircle className="h-4 w-4 shrink-0" /> Envoi impossible. Réessayez ou écrivez à support@closeos.fr.
+              <AlertCircle className="h-4 w-4 shrink-0" /> {lang === 'fr' ? 'Envoi impossible. Réessayez ou écrivez à support@closeos.fr.' : 'Unable to send. Try again or email support@closeos.fr.'}
             </div>
           )}
 
           <button type="submit" disabled={status === 'sending' || status === 'success'}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#CEFF8F] py-2.5 text-sm font-semibold text-[#191E1E] transition-colors hover:bg-[#bdf06f] disabled:opacity-60">
             {status === 'sending' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {status === 'sending' ? 'Envoi…' : 'Envoyer le message'}
+            {status === 'sending' ? (lang === 'fr' ? 'Envoi…' : 'Sending…') : (lang === 'fr' ? 'Envoyer le message' : 'Send message')}
           </button>
         </form>
       </div>
