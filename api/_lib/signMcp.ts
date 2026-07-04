@@ -7,10 +7,11 @@
 // Mono-compte : agit pour SIGN_OWNER_EMAIL via la clé service-role.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { createClient } from '@supabase/supabase-js'
-import { PDFDocument } from 'pdf-lib'
 import { z } from 'zod'
+// McpServer (SDK) et pdf-lib sont importés DYNAMIQUEMENT (dans buildSignMcpServer / loadPdf)
+// pour éviter tout crash au chargement du module côté serverless : les éventuelles erreurs
+// de chargement deviennent catchables et renvoyées proprement au lieu d'un 500 opaque.
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
@@ -79,6 +80,7 @@ async function getOwnedContract(contractId: string, cols = '*'): Promise<any> {
 }
 
 async function loadPdf(a: { pdf_base64?: string; pdf_path?: string; pdf_url?: string }) {
+  const { PDFDocument } = await import('pdf-lib')
   let bytes: Buffer
   if (a.pdf_base64) {
     const b64 = a.pdf_base64.includes(',') ? a.pdf_base64.split(',')[1] : a.pdf_base64
@@ -111,6 +113,7 @@ function pagePixelHeight(sourceType: string, pageSizes: Array<{ w: number; h: nu
 async function pdfPageSizesFromDataUrl(pdfData: string | null): Promise<Array<{ w: number; h: number }> | null> {
   if (!pdfData) return null
   try {
+    const { PDFDocument } = await import('pdf-lib')
     const b64 = pdfData.includes(',') ? pdfData.split(',')[1] : pdfData
     const doc = await PDFDocument.load(Buffer.from(b64, 'base64'), { ignoreEncryption: true })
     return doc.getPages().map((p) => { const s = p.getSize(); return { w: s.width, h: s.height } })
@@ -120,7 +123,8 @@ async function pdfPageSizesFromDataUrl(pdfData: string | null): Promise<Array<{ 
 }
 
 /** Construit un serveur MCP CloseOS Sign avec les 5 outils. */
-export function buildSignMcpServer(): McpServer {
+export async function buildSignMcpServer(): Promise<any> {
+  const { McpServer } = await import('@modelcontextprotocol/sdk/server/mcp.js')
   const server = new McpServer({ name: 'closeos-sign', version: '1.0.0' })
 
   // 1) IMPORT (brouillon)
