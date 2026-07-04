@@ -45,18 +45,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  const server = buildSignMcpServer()
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined, // stateless (serverless-friendly)
-    enableJsonResponse: true,      // réponses JSON (pas de SSE persistant)
-  })
-
-  res.on('close', () => {
-    transport.close()
-    server.close()
-  })
-
   try {
+    const server = buildSignMcpServer()
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // stateless (serverless-friendly)
+      enableJsonResponse: true,      // réponses JSON (pas de SSE persistant)
+    })
+    res.on('close', () => {
+      transport.close()
+      server.close()
+    })
     await server.connect(transport)
     await transport.handleRequest(req as any, res as any, req.body)
   } catch (e: any) {

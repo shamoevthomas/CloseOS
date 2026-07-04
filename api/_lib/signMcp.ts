@@ -17,9 +17,19 @@ const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 const OWNER_EMAIL = process.env.SIGN_OWNER_EMAIL || ''
 const APP_URL = (process.env.SIGN_APP_URL || 'https://sign.closeos.fr').replace(/\/$/, '')
 
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
-  auth: { persistSession: false, autoRefreshToken: false },
-})
+// Client Supabase créé à la 1re utilisation (jamais au chargement du module) :
+// évite tout crash d'init serverless (createClient throw si l'URL est vide) → l'endpoint
+// peut répondre 404 / faire le handshake MCP même si l'env est incomplet.
+let _sb: any = null
+function getClient(): any {
+  if (!_sb) {
+    if (!SUPABASE_URL || !SERVICE_ROLE) {
+      throw new Error('Configuration serveur incomplète (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquant).')
+    }
+    _sb = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false, autoRefreshToken: false } })
+  }
+  return _sb
+}
 
 // Repère de rendu : pages posées à largeur fixe ; coordonnées = pixels absolus
 // (origine coin haut-gauche). Aligné sur src/lib/signContracts.ts / SignContractEditor.
@@ -50,7 +60,7 @@ let _ownerId: string | null = null
 async function ownerId(): Promise<string> {
   if (_ownerId) return _ownerId
   if (!OWNER_EMAIL) throw new Error('SIGN_OWNER_EMAIL non configuré côté serveur.')
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('sign_users').select('id, email').ilike('email', OWNER_EMAIL).maybeSingle()
   if (error) throw new Error(`Lecture sign_users échouée : ${error.message}`)
   if (!data) throw new Error(`Aucun propriétaire Sign avec l'email ${OWNER_EMAIL}.`)
@@ -60,7 +70,7 @@ async function ownerId(): Promise<string> {
 
 async function getOwnedContract(contractId: string, cols = '*'): Promise<any> {
   const uid = await ownerId()
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('sign_contracts').select(cols).eq('id', contractId).maybeSingle()
   if (error) throw new Error(`Lecture du contrat échouée : ${error.message}`)
   if (!data) throw new Error(`Contrat ${contractId} introuvable.`)
@@ -144,14 +154,14 @@ export function buildSignMcpServer(): McpServer {
           const html = args.html && args.html.trim() ? args.html : '<p><br></p>'
           insert = { ...insert, source_type: 'text', content_html: html, page_count: 1 }
         }
-        const { data: contract, error } = await supabase
+        const { data: contract, error } = await getClient()
           .from('sign_contracts').insert(insert).select('id, status, source_type, page_count').single()
         if (error) throw new Error(error.message)
 
         const signerRow: any = { contract_id: contract.id, signer_index: 1, status: 'pending' }
         if (args.contact_name) signerRow.name = args.contact_name
         if (args.contact_email) signerRow.email = args.contact_email
-        const { error: sErr } = await supabase.from('sign_contract_signers').insert(signerRow)
+        const { error: sErr } = await getClient().from('sign_contract_signers').insert(signerRow)
         if (sErr) throw new Error(`Contrat créé mais création du signataire échouée : ${sErr.message}`)
 
         const pages = []
@@ -214,30 +224,30 @@ export function buildSignMcpServer(): McpServer {
         const maxSignerFromArg = (args.signers || []).reduce((m: number, s: any) => Math.max(m, s.index), 0)
         const neededSigners = Math.max(contract.signer_count || 1, maxSignerFromFields, maxSignerFromArg, 1)
 
-        const { data: existingSigners } = await supabase
+        const { data: existingSigners } = await getClient()
           .from('sign_contract_signers').select('id, signer_index').eq('contract_id', contract.id)
         const have = new Set((existingSigners || []).map((s: any) => s.signer_index))
         const toCreate: any[] = []
         for (let i = 1; i <= neededSigners; i++) if (!have.has(i)) toCreate.push({ contract_id: contract.id, signer_index: i, status: 'pending' })
         if (toCreate.length) {
-          const { error } = await supabase.from('sign_contract_signers').insert(toCreate)
+          const { error } = await getClient().from('sign_contract_signers').insert(toCreate)
           if (error) throw new Error(`Création des signataires échouée : ${error.message}`)
         }
         if (neededSigners !== (contract.signer_count || 1)) {
-          await supabase.from('sign_contracts').update({ signer_count: neededSigners }).eq('id', contract.id)
+          await getClient().from('sign_contracts').update({ signer_count: neededSigners }).eq('id', contract.id)
         }
         for (const s of args.signers || []) {
           const patch: any = {}
           if (s.name !== undefined) patch.name = s.name
           if (s.email !== undefined) patch.email = s.email
           if (s.phone !== undefined) patch.phone = s.phone
-          if (Object.keys(patch).length) await supabase.from('sign_contract_signers').update(patch).eq('contract_id', contract.id).eq('signer_index', s.index)
+          if (Object.keys(patch).length) await getClient().from('sign_contract_signers').update(patch).eq('contract_id', contract.id).eq('signer_index', s.index)
         }
 
         if (args.mode === 'replace') {
-          await supabase.from('sign_contract_fields').delete().eq('contract_id', contract.id).eq('placement', 'free')
+          await getClient().from('sign_contract_fields').delete().eq('contract_id', contract.id).eq('placement', 'free')
         }
-        const { data: last } = await supabase
+        const { data: last } = await getClient()
           .from('sign_contract_fields').select('sort_order').eq('contract_id', contract.id).order('sort_order', { ascending: false }).limit(1)
         let sort = ((last && last[0] ? last[0].sort_order : -1) as number) + 1
 
@@ -263,7 +273,7 @@ export function buildSignMcpServer(): McpServer {
           })
           summary.push({ type, page, x: px, y: py, w: size.w, h: size.h, assignee, signer_index: assignee === 'signer' ? (f.signer_index ?? 1) : null })
         }
-        const { error: insErr } = await supabase.from('sign_contract_fields').insert(rows)
+        const { error: insErr } = await getClient().from('sign_contract_fields').insert(rows)
         if (insErr) throw new Error(`Insertion des champs échouée : ${insErr.message}`)
 
         return ok({
@@ -286,13 +296,13 @@ export function buildSignMcpServer(): McpServer {
     async (args: any) => {
       try {
         const c = await getOwnedContract(args.contract_id, 'id, title, status, signed_at, paid_at, sent_at, viewed_at, signer_count')
-        const { data: signers } = await supabase
+        const { data: signers } = await getClient()
           .from('sign_contract_signers').select('signer_index, name, email, status, signed_at, paid_at, payment_status')
           .eq('contract_id', c.id).order('signer_index', { ascending: true })
         const list = signers || []
         const allSigned = list.length > 0 && list.every((s: any) => s.status === 'signed')
         const fullySigned = c.status === 'signed' || c.status === 'paid' || allSigned
-        const { count: fieldCount } = await supabase
+        const { count: fieldCount } = await getClient()
           .from('sign_contract_fields').select('id', { count: 'exact', head: true }).eq('contract_id', c.id)
         return ok({
           contract_id: c.id, title: c.title, status: c.status, fully_signed: fullySigned,
@@ -317,7 +327,7 @@ export function buildSignMcpServer(): McpServer {
     async (args: any) => {
       try {
         const uid = await ownerId()
-        let q = supabase
+        let q = getClient()
           .from('sign_contracts').select('id, title, status, signer_count, created_at, updated_at, signed_at')
           .eq('user_id', uid).eq('is_template', false).order('created_at', { ascending: false }).limit(args.limit ?? 25)
         if (args.status) q = q.eq('status', args.status)
@@ -342,9 +352,9 @@ export function buildSignMcpServer(): McpServer {
         const pageSizes = c.source_type === 'pdf' ? await pdfPageSizesFromDataUrl(c.pdf_data) : null
         const pages = []
         for (let p = 1; p <= (c.page_count || 1); p++) pages.push({ page: p, width_px: PAGE_W, height_px: pagePixelHeight(c.source_type, pageSizes, p) })
-        const { data: signers } = await supabase
+        const { data: signers } = await getClient()
           .from('sign_contract_signers').select('signer_index, name, email, phone, status, signed_at').eq('contract_id', c.id).order('signer_index', { ascending: true })
-        const { data: fields } = await supabase
+        const { data: fields } = await getClient()
           .from('sign_contract_fields').select('id, field_type, page, pos_x, pos_y, width, height, assignee, signer_index, label, value, placement').eq('contract_id', c.id).order('sort_order', { ascending: true })
         return ok({
           contract: { id: c.id, title: c.title, status: c.status, source_type: c.source_type, page_count: c.page_count, signer_count: c.signer_count, signing_order: c.signing_order, locked: c.locked, created_at: c.created_at, updated_at: c.updated_at },
