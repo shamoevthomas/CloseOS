@@ -115,7 +115,8 @@ export function CloserDashboard() {
         for (const row of data) {
           if (!map[row.formula_id]) map[row.formula_id] = { roles: {}, members: {} }
           if (row.team_member_id) {
-            map[row.formula_id].members[row.team_member_id] = row.rate
+            const sfx = row.role === 'Setter-Closer:setter' ? ':setter' : row.role === 'Setter-Closer:full' ? ':full' : ''
+            map[row.formula_id].members[row.team_member_id + sfx] = row.rate
           } else {
             map[row.formula_id].roles[row.role] = row.rate
           }
@@ -170,22 +171,66 @@ export function CloserDashboard() {
   const commissionRate = teamMember?.commission_rate ? Number(teamMember.commission_rate) : 10
   const fallbackRate = commissionRate / 100
   const isSetterCloser = teamMember?.role === 'Setter-Closer'
+  const countSetterComm = teamMember?.count_setter_commission !== false
   const memberId = teamMember?.id
   const memberRole = teamMember?.role
 
-  const closerRevenue = wonProspects.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
-  const closerCommission = useMemo(() => Math.round(wonProspects.reduce((sum, p) => {
-    const value = getProspectCA(p, formulaBillingTypes)
-    const formulaId = p.formula_id || (p as any).offer_id
+  const getCloserRate = useCallback((p: any) => {
+    const formulaId = p.formula_id || p.offer_id
     const rates = formulaId ? formulaCommRates[formulaId] : null
-    let r = fallbackRate
     if (rates) {
-      if (memberId && rates.members[memberId] !== undefined) r = rates.members[memberId] / 100
-      else if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer'] !== undefined) r = rates.roles['Setter-Closer'] / 100
-      else if (rates.roles['Closer'] !== undefined) r = rates.roles['Closer'] / 100
+      if (memberId && rates.members[memberId] !== undefined) return rates.members[memberId] / 100
+      if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer'] !== undefined) return rates.roles['Setter-Closer'] / 100
+      if (rates.roles['Closer'] !== undefined) return rates.roles['Closer'] / 100
     }
-    return sum + value * r
-  }, 0)), [wonProspects, formulaCommRates, memberId, memberRole, fallbackRate, formulaBillingTypes])
+    return fallbackRate
+  }, [formulaCommRates, memberId, memberRole, fallbackRate])
+
+  const getSetterRate = useCallback((p: any) => {
+    const formulaId = p.formula_id || p.offer_id
+    const rates = formulaId ? formulaCommRates[formulaId] : null
+    if (rates) {
+      if (memberId && rates.members[`${memberId}:setter`] !== undefined) return rates.members[`${memberId}:setter`] / 100
+      if (memberId && rates.members[memberId] !== undefined && memberRole !== 'Setter-Closer') return rates.members[memberId] / 100
+      if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer:setter'] !== undefined) return rates.roles['Setter-Closer:setter'] / 100
+      if (rates.roles['Setter'] !== undefined) return rates.roles['Setter'] / 100
+    }
+    return fallbackRate
+  }, [formulaCommRates, memberId, memberRole, fallbackRate])
+
+  // Full-cycle rate: null when not configured → stack closing + setting
+  const getFullRate = useCallback((p: any): number | null => {
+    if (memberRole !== 'Setter-Closer') return null
+    const formulaId = p.formula_id || p.offer_id
+    const rates = formulaId ? formulaCommRates[formulaId] : null
+    if (!rates) return null
+    const mo = memberId ? rates.members[`${memberId}:full`] : undefined
+    if (mo !== undefined && mo > 0) return mo / 100
+    const rl = rates.roles['Setter-Closer:full']
+    if (rl !== undefined && rl > 0) return rl / 100
+    return null
+  }, [formulaCommRates, memberId, memberRole])
+
+  // Per-deal split into closer/setter buckets; full-cycle earns one dedicated rate
+  const dealSplit = useCallback((p: any) => {
+    const value = getProspectCA(p, formulaBillingTypes)
+    const isCloserDeal = p.assigned_to === memberId
+    const isSetterDeal = p.assigned_setter === memberId && countSetterComm
+    const fullCycle = isCloserDeal && p.assigned_setter === memberId && countSetterComm
+    const fullRate = getFullRate(p)
+    if (fullCycle && fullRate != null) {
+      const cr = getCloserRate(p), sr = getSetterRate(p)
+      const denom = cr + sr
+      const amt = value * fullRate
+      return denom > 0 ? { closer: amt * cr / denom, setter: amt * sr / denom } : { closer: amt, setter: 0 }
+    }
+    return {
+      closer: isCloserDeal ? value * getCloserRate(p) : 0,
+      setter: isSetterDeal ? value * getSetterRate(p) : 0,
+    }
+  }, [formulaBillingTypes, memberId, countSetterComm, getFullRate, getCloserRate, getSetterRate])
+
+  const closerRevenue = wonProspects.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
 
   // Setter commission: for Setter-Closer, include deals they also closed
   const wonAsSetter = useMemo(() => prospects.filter(p => {
@@ -195,19 +240,17 @@ export function CloserDashboard() {
   }), [prospects, teamMember?.id, isSetterCloser])
 
   const setterRevenue = wonAsSetter.reduce((s, p) => s + getProspectCA(p, formulaBillingTypes), 0)
-  const setterCommission = useMemo(() => Math.round(wonAsSetter.reduce((sum, p) => {
-    const value = getProspectCA(p, formulaBillingTypes)
-    const formulaId = p.formula_id || (p as any).offer_id
-    const rates = formulaId ? formulaCommRates[formulaId] : null
-    let r = fallbackRate
-    if (rates) {
-      if (memberId && rates.members[`${memberId}:setter`] !== undefined) r = rates.members[`${memberId}:setter`] / 100
-      else if (memberId && rates.members[memberId] !== undefined && memberRole !== 'Setter-Closer') r = rates.members[memberId] / 100
-      else if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer:setter'] !== undefined) r = rates.roles['Setter-Closer:setter'] / 100
-      else if (rates.roles['Setter'] !== undefined) r = rates.roles['Setter'] / 100
-    }
-    return sum + value * r
-  }, 0)), [wonAsSetter, formulaCommRates, memberId, memberRole, fallbackRate, formulaBillingTypes])
+
+  // Deduped union of my won deals (as closer and/or setter) — avoids double-counting full-cycle
+  const wonUnion = useMemo(() => prospects.filter(p => {
+    if (p.stage !== 'won') return false
+    if (p.assigned_to === teamMember?.id) return true
+    if (p.assigned_setter === teamMember?.id) return isSetterCloser || p.assigned_to !== teamMember?.id
+    return false
+  }), [prospects, teamMember?.id, isSetterCloser])
+
+  const closerCommission = useMemo(() => Math.round(wonUnion.reduce((sum, p) => sum + dealSplit(p).closer, 0)), [wonUnion, dealSplit])
+  const setterCommission = useMemo(() => Math.round(wonUnion.reduce((sum, p) => sum + dealSplit(p).setter, 0)), [wonUnion, dealSplit])
 
   const totalCommission = closerCommission + setterCommission
 

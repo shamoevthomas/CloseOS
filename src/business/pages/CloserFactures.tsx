@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase'
 import {
   TrendingUp, DollarSign, FileText, CreditCard, Clock,
   Info, Eye, Download, Loader2, Plus, X, ExternalLink,
-  Building2, Copy, Wallet,
+  Building2, Copy, Wallet, CalendarCheck,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
@@ -93,7 +93,10 @@ export function CloserFactures() {
       for (const row of data) {
         if (!map[row.formula_id]) map[row.formula_id] = { roles: {}, members: {} }
         if (row.team_member_id) {
-          map[row.formula_id].members[row.team_member_id] = row.rate
+          // Setter-Closer members store closer / setter / full overrides on the same uuid,
+          // distinguished by role — rebuild the composite key the calc helpers expect.
+          const sfx = row.role === 'Setter-Closer:setter' ? ':setter' : row.role === 'Setter-Closer:full' ? ':full' : ''
+          map[row.formula_id].members[row.team_member_id + sfx] = row.rate
         } else {
           map[row.formula_id].roles[row.role] = row.rate
         }
@@ -187,6 +190,23 @@ export function CloserFactures() {
     [prospects, teamMember?.id, periodStart, periodEnd, isDealInPeriod, countSetterComm, isSetterCloser]
   )
 
+  // ─── Fixe par RDV booké (distinct des commissions, respecte la période) ───
+  const isSetterRole = teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer'
+  const perBookingAmount = teamMember?.per_booking_amount ? Number(teamMember.per_booking_amount) : 0
+  // RDV bookés par ce setter dont la date de booking tombe dans la période sélectionnée
+  const mySetterBookedDeals = useMemo(() => {
+    if (!isSetterRole || perBookingAmount <= 0) return []
+    return prospects.filter(p => {
+      if (p.assigned_setter !== teamMember?.id) return false
+      if (p.stage === 'prospect' || p.stage === 'noanswer' || p.stage === 'partial') return false
+      if (p.stage === 'unqualified' && p.stage_changed_by === teamMember?.id) return false
+      const d = new Date(p.last_contact || p.created_at || '')
+      if (isNaN(d.getTime())) return false
+      return d >= periodStart && d <= periodEnd
+    })
+  }, [prospects, teamMember?.id, isSetterRole, perBookingAmount, periodStart, periodEnd])
+  const rdvGain = mySetterBookedDeals.length * perBookingAmount
+
   // Filter invoices by date range + only mine
   const filteredInvoices = useMemo(() => {
     const start = new Date(startDate)
@@ -232,20 +252,59 @@ export function CloserFactures() {
     return fallbackRate
   }, [formulaCommRates, memberId, memberRole, fallbackRate])
 
+  // Full-cycle rate (Setter-Closer who set AND closed the same deal). Returns null when
+  // not configured (rate 0/absent) → caller falls back to stacking closing + setting.
+  const getFullRate = useCallback((p: any): number | null => {
+    if (memberRole !== 'Setter-Closer') return null
+    const formulaId = p.formula_id || p.offer_id
+    const rates = formulaId ? formulaCommRates[formulaId] : null
+    if (!rates) return null
+    const mo = memberId ? rates.members[`${memberId}:full`] : undefined
+    if (mo !== undefined && mo > 0) return mo / 100
+    const rl = rates.roles['Setter-Closer:full']
+    if (rl !== undefined && rl > 0) return rl / 100
+    return null
+  }, [formulaCommRates, memberId, memberRole])
+
+  // Per-deal commission split into closer/setter buckets (for KPI cards).
+  // Full-cycle deals earn a single dedicated rate, split proportionally so the cards stay honest.
+  const dealCommission = useCallback((p: any) => {
+    const rev = revenueInPeriod(p, periodStart, periodEnd)
+    const isCloserDeal = p.assigned_to === memberId
+    const isSetterDeal = p.assigned_setter === memberId && countSetterComm
+    const fullCycle = isCloserDeal && p.assigned_setter === memberId && countSetterComm
+    const fullRate = getFullRate(p)
+    if (fullCycle && fullRate != null) {
+      const cr = getCloserRate(p)
+      const sr = getSetterRate(p)
+      const denom = cr + sr
+      const fullAmt = rev * fullRate
+      return denom > 0
+        ? { closer: fullAmt * cr / denom, setter: fullAmt * sr / denom }
+        : { closer: fullAmt, setter: 0 }
+    }
+    return {
+      closer: isCloserDeal ? rev * getCloserRate(p) : 0,
+      setter: isSetterDeal ? rev * getSetterRate(p) : 0,
+    }
+  }, [revenueInPeriod, periodStart, periodEnd, memberId, countSetterComm, getFullRate, getCloserRate, getSetterRate])
+
   // KPIs — compute revenue & commission for the selected period (with installment proration)
   const totalRevenue = useMemo(() =>
     myWonProspects.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd), 0),
     [myWonProspects, periodStart, periodEnd, revenueInPeriod]
   )
 
+  // Iterate the deduped union (myWonProspects) once: a self-set+closed deal would otherwise
+  // be counted in both myCloserDeals and mySetterDeals. dealCommission handles full-cycle.
   const commissionCloser = useMemo(() =>
-    myCloserDeals.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd) * getCloserRate(p), 0),
-    [myCloserDeals, periodStart, periodEnd, revenueInPeriod, getCloserRate]
+    myWonProspects.reduce((sum, p) => sum + dealCommission(p).closer, 0),
+    [myWonProspects, dealCommission]
   )
 
   const commissionSetter = useMemo(() =>
-    mySetterDeals.reduce((sum, p) => sum + revenueInPeriod(p, periodStart, periodEnd) * getSetterRate(p), 0),
-    [mySetterDeals, periodStart, periodEnd, revenueInPeriod, getSetterRate]
+    myWonProspects.reduce((sum, p) => sum + dealCommission(p).setter, 0),
+    [myWonProspects, dealCommission]
   )
 
   const commissionEstimee = commissionCloser + commissionSetter
@@ -473,6 +532,23 @@ export function CloserFactures() {
           <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
           <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {totalRevenue.toLocaleString('fr-FR')} <span className="text-base">€</span>
+          </p>
+        </div>
+        )}
+
+        {/* Fixe RDV bookés — distinct des commissions, respecte la période */}
+        {isSetterRole && perBookingAmount > 0 && (
+        <div className="bg-white dark:bg-white/5 rounded-xl p-6 shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-100/50 dark:border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full -mr-12 -mt-12 blur-3xl" />
+          <div className="flex justify-between items-start mb-4">
+            <span className="p-3 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400">
+              <CalendarCheck className="h-5 w-5" />
+            </span>
+            <span className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-widest uppercase">{mySetterBookedDeals.length} RDV × {perBookingAmount}€</span>
+          </div>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm font-medium">{lang === 'en' ? 'Booking fee' : 'Fixe RDV bookés'}</p>
+          <p className="text-2xl font-extrabold mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            {rdvGain.toLocaleString('fr-FR')} <span className="text-base">€</span>
           </p>
         </div>
         )}
@@ -714,13 +790,15 @@ export function CloserFactures() {
         isOpen={isGenModalOpen}
         onClose={() => { setIsGenModalOpen(false); fetchInvoices() }}
         deals={myWonProspects}
-        commission={isFixedComp ? fixedSalary : commissionEstimee}
+        commission={(isFixedComp ? fixedSalary : commissionEstimee) + rdvGain}
         commissionRate={isFixedComp ? 0 : commissionRateNum}
         startDate={startDate}
         endDate={endDate}
         isFixedCompensation={isFixedComp}
         fixedSalary={(isFixedComp || isFixedPlusComm) ? fixedSalary : 0}
         formulaCommRates={formulaCommRates}
+        perBookingAmount={perBookingAmount}
+        bookedCount={mySetterBookedDeals.length}
       />
     </div>
   )

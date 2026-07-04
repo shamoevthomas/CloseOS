@@ -216,7 +216,8 @@ export function BusinessDashboard() {
           ;(data || []).forEach(c => {
             if (!map[c.formula_id]) map[c.formula_id] = { roles: {}, members: {} }
             if (c.team_member_id) {
-              map[c.formula_id].members[c.team_member_id] = c.rate
+              const sfx = c.role === 'Setter-Closer:setter' ? ':setter' : c.role === 'Setter-Closer:full' ? ':full' : ''
+              map[c.formula_id].members[c.team_member_id + sfx] = c.rate
             } else if (c.role) {
               map[c.formula_id].roles[c.role] = c.rate
             }
@@ -243,15 +244,22 @@ export function BusinessDashboard() {
   useEffect(() => { fetchAll() }, [fetchAll])
 
   // Total commission for a team member (sum of all won prospects assigned to them)
-  const getMemberCommission = (memberId: string, memberRole: string): number => {
+  const getMemberCommission = (memberId: string, memberRole: string, countSetter = true): number => {
     const wonProspects = prospects.filter(p => p.stage === 'won' && p.assigned_to === memberId && p.value)
     let total = 0
     for (const p of wonProspects) {
       if (!p.formula_id || !commissionRates[p.formula_id]) continue
       const rates = commissionRates[p.formula_id]
       const pValue = getProspectCA(p, formulaBillingTypes)
-      // Member-specific rate first
-      if (rates.members[memberId] !== undefined) {
+      // Full-cycle: Setter-Closer who also set this deal → one dedicated rate (replaces closing+setting)
+      const fullCycle = memberRole === 'Setter-Closer' && countSetter && p.assigned_setter === memberId
+      const fullPct = fullCycle
+        ? ((rates.members[`${memberId}:full`] ?? 0) > 0 ? rates.members[`${memberId}:full`] : ((rates.roles['Setter-Closer:full'] ?? 0) > 0 ? rates.roles['Setter-Closer:full'] : null))
+        : null
+      if (fullPct != null) {
+        total += pValue * fullPct / 100
+      } else if (rates.members[memberId] !== undefined) {
+        // Member-specific closer rate
         total += pValue * rates.members[memberId] / 100
       } else if (rates.roles[memberRole] !== undefined) {
         total += pValue * rates.roles[memberRole] / 100
@@ -826,7 +834,7 @@ export function BusinessDashboard() {
                             </td>
                             <td className="py-4 px-3 text-right">
                               {(() => {
-                                const com = getMemberCommission(m.id, m.role)
+                                const com = getMemberCommission(m.id, m.role, (m as any).count_setter_commission !== false)
                                 return com > 0 ? (
                                   <span className="text-sm font-bold text-emerald-600">{com.toLocaleString()} €</span>
                                 ) : (

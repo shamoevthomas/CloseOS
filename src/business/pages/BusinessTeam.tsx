@@ -40,6 +40,7 @@ interface TeamMember {
   fixed_salary?: number | null
   commission_rate?: number | null
   count_setter_commission?: boolean | null
+  per_booking_amount?: number | null
   team_id?: string | null
   _isOwner?: boolean
 }
@@ -759,11 +760,14 @@ function IndividualView({
   const [fixedSalary, setFixedSalary] = useState<string>(String(member.fixed_salary || 0))
   const [commissionRate, setCommissionRate] = useState<string>(String(member.commission_rate ?? 10))
   const [countSetterCommission, setCountSetterCommission] = useState(member.count_setter_commission !== false)
+  const [perBookingAmount, setPerBookingAmount] = useState<string>(String(member.per_booking_amount || 0))
+  const isSetterRole = member.role === 'Setter' || member.role === 'Setter-Closer'
   const [savingComp, setSavingComp] = useState(false)
   const compChanged = compType !== (member.compensation_type || 'commission')
     || fixedSalary !== String(member.fixed_salary || 0)
     || commissionRate !== String(member.commission_rate ?? 10)
     || countSetterCommission !== (member.count_setter_commission !== false)
+    || (isSetterRole && perBookingAmount !== String(member.per_booking_amount || 0))
 
   const handleSaveCompensation = async () => {
     setSavingComp(true)
@@ -772,6 +776,7 @@ function IndividualView({
       fixed_salary: parseFloat(fixedSalary) || 0,
       commission_rate: parseFloat(commissionRate) || 0,
       count_setter_commission: countSetterCommission,
+      per_booking_amount: isSetterRole ? (parseFloat(perBookingAmount) || 0) : 0,
     }
     const { error } = await supabase
       .from('business_team_members')
@@ -1153,6 +1158,31 @@ function IndividualView({
                         countSetterCommission && 'translate-x-5'
                       )} />
                     </button>
+                  </div>
+                )}
+
+                {/* Fixe par RDV booké — Setter / Setter-Closer uniquement (cumulable avec commissions) */}
+                {isSetterRole && (
+                  <div>
+                    <p className="text-xs font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-widest mb-2">
+                      {lang === 'en' ? 'Fixed amount per booked appointment (€)' : 'Fixe par RDV booké (€)'}
+                    </p>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={0}
+                        value={perBookingAmount}
+                        onChange={e => setPerBookingAmount(e.target.value)}
+                        className="w-full bg-stone-50 dark:bg-neutral-800 border-none rounded-full px-4 py-3 pr-10 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-[#006c49]/20 transition-all"
+                        placeholder="0"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-stone-400 font-bold">€</span>
+                    </div>
+                    <p className="text-[11px] text-stone-400 dark:text-neutral-500 mt-1.5">
+                      {lang === 'en'
+                        ? 'Fixed amount earned for each booked appointment. Adds on top of commissions.'
+                        : 'Montant gagné à chaque RDV booké. S’ajoute en plus des commissions.'}
+                    </p>
                   </div>
                 )}
 

@@ -58,6 +58,7 @@ interface TeamSetter {
   first_name: string
   last_name: string
   role: string
+  per_booking_amount?: number | null
 }
 
 const formatCurrency = (n: number) => n.toLocaleString('fr-FR')
@@ -150,7 +151,7 @@ export function SetterKPI() {
     Promise.all([
       supabase
         .from('business_team_members')
-        .select('id, first_name, last_name, role')
+        .select('id, first_name, last_name, role, per_booking_amount')
         .eq('business_owner_id', effectiveOwnerId),
       supabase
         .from('business_users')
@@ -199,7 +200,8 @@ export function SetterKPI() {
         ;(data || []).forEach(c => {
           if (!map[c.formula_id]) map[c.formula_id] = { roles: {}, members: {} }
           if (c.team_member_id) {
-            map[c.formula_id].members[c.team_member_id] = c.rate
+            const sfx = c.role === 'Setter-Closer:setter' ? ':setter' : c.role === 'Setter-Closer:full' ? ':full' : ''
+            map[c.formula_id].members[c.team_member_id + sfx] = c.rate
           } else if (c.role) {
             map[c.formula_id].roles[c.role] = c.rate
           }
@@ -308,25 +310,62 @@ export function SetterKPI() {
       const formulaId = p.formula_id || p.offer_id
       const rates = formulaId ? formulaCommRates[formulaId] : null
       if (rates) {
-        // Member-specific setter override first (key = "memberId:setter")
+        // Resolve setting rate % (member override → role → fallback)
+        let setterPct: number
         if (memberId && rates.members[`${memberId}:setter`] !== undefined) {
-          total += value * rates.members[`${memberId}:setter`] / 100
+          setterPct = rates.members[`${memberId}:setter`]
         } else if (memberId && rates.members[memberId] !== undefined && memberRole !== 'Setter-Closer') {
-          // Member-specific rate (only for pure Setters, not Setter-Closers since their default key is closing rate)
-          total += value * rates.members[memberId] / 100
+          setterPct = rates.members[memberId]
         } else if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer:setter'] !== undefined) {
-          // Setter-Closer setting rate
-          total += value * rates.roles['Setter-Closer:setter'] / 100
+          setterPct = rates.roles['Setter-Closer:setter']
         } else if (rates.roles['Setter'] !== undefined) {
-          total += value * rates.roles['Setter'] / 100
+          setterPct = rates.roles['Setter']
         } else {
-          total += value * (kpiConfig.commission_rate / 100)
+          setterPct = kpiConfig.commission_rate
+        }
+
+        // Full-cycle: this Setter-Closer also closed the deal → show the setting share of the
+        // dedicated full rate (the closing share appears in CloserKPI), so the two never double-count.
+        const isSelfClosed = memberRole === 'Setter-Closer' && !!memberId && p.assigned_to === memberId
+        const fullPct = isSelfClosed
+          ? ((rates.members[`${memberId}:full`] ?? 0) > 0 ? rates.members[`${memberId}:full`] : ((rates.roles['Setter-Closer:full'] ?? 0) > 0 ? rates.roles['Setter-Closer:full'] : null))
+          : null
+        if (fullPct != null) {
+          let closerPct: number
+          if (memberId && rates.members[memberId] !== undefined) closerPct = rates.members[memberId]
+          else if (rates.roles['Setter-Closer'] !== undefined) closerPct = rates.roles['Setter-Closer']
+          else if (rates.roles['Closer'] !== undefined) closerPct = rates.roles['Closer']
+          else closerPct = kpiConfig.commission_rate
+          const denom = closerPct + setterPct
+          total += denom > 0 ? value * (fullPct / 100) * (setterPct / denom) : 0
+        } else {
+          total += value * setterPct / 100
         }
       } else {
         total += value * (kpiConfig.commission_rate / 100)
       }
     }
     return Math.round(total)
+  }
+
+  // ─── Fixe par RDV booké (per_booking_amount) ───
+  // Montant fixe gagné par RDV booké, distinct des commissions.
+  const myPerBooking = Number(teamMember?.per_booking_amount || 0)
+  const perBookingByMember = useMemo(() => {
+    const map: Record<string, number> = {}
+    teamSetters.forEach(s => { map[s.id] = Number(s.per_booking_amount || 0) })
+    if (teamMember?.id) map[teamMember.id] = myPerBooking
+    return map
+  }, [teamSetters, teamMember?.id, myPerBooking])
+  const hasPerBooking = myPerBooking > 0 || Object.values(perBookingByMember).some(v => v > 0)
+  // Gain RDV = nb de RDV bookés × montant fixe (par membre).
+  // memberId défini → montant de ce membre ; sinon somme par setter assigné (vue "tous").
+  const computeRdvGain = (bookedProspects: any[], memberId?: string | null) => {
+    if (memberId) {
+      const amt = perBookingByMember[memberId] ?? (memberId === teamMember?.id ? myPerBooking : 0)
+      return Math.round(bookedProspects.length * amt)
+    }
+    return Math.round(bookedProspects.reduce((s, p) => s + (perBookingByMember[p.assigned_setter] || 0), 0))
   }
 
   // Setter prospects = prospects assigned to this setter via assigned_setter
@@ -463,6 +502,16 @@ export function SetterKPI() {
 
   const v = getTabValues()
   const avgCommission = v.sales > 0 ? Math.round(v.commission / v.sales) : 0
+
+  // Gain RDV (fixe par RDV booké) pour l'onglet actif — basé sur les vrais RDV bookés (hors saisie manuelle)
+  const rdvGainBooked = activeTab === 'org' ? orgKpis.booked
+    : activeTab === 'offer' ? formulaKpis.booked
+    : activeTab === 'campaign' ? campaignKpis.booked
+    : activeTab === 'source' ? sourceKpis.booked
+    : personal.booked
+  const rdvGainMemberId = activeTab === 'personal' ? teamMember?.id : globalMemberId
+  const rdvGain = computeRdvGain(rdvGainBooked, rdvGainMemberId)
+  const totalEarnings = v.commission + rdvGain
 
   // Setter-specific display values (follows active tab)
   const setterDisplay = activeTab === 'org' ? orgKpis : activeTab === 'offer' ? formulaKpis : activeTab === 'campaign' ? campaignKpis : activeTab === 'source' ? sourceKpis : {
@@ -712,6 +761,8 @@ export function SetterKPI() {
         <KpiCard title={t.kpi_total_sales} value={v.sales} icon={ShoppingCart} color="blue" />
         <KpiCard title={t.kpi_closing_rate} value={`${formatPercent(v.conversion)}%`} icon={Target} color="purple" subtitle={showSetterCards ? t.kpi_won_qualified.replace('{won}', String(setterDisplay.won.length)).replace('{qualified}', String(setterDisplay.qualifiedAll.length)) : undefined} />
         {!hideSetterCommission && !isSolo && <KpiCard title={isOwnerView ? t.kpi_commissions : t.kpi_my_commissions} value={`${formatCurrency(v.commission)} €`} icon={Award} color="stone" highlight />}
+        {hasPerBooking && !isSolo && <KpiCard title={lang === 'en' ? 'Booking earnings' : 'Gain pour RDV'} value={`${formatCurrency(rdvGain)} €`} icon={CalendarCheck} color="purple" subtitle={(lang === 'en' ? '{n} booked × fixed' : '{n} RDV × fixe').replace('{n}', String(rdvGainBooked.length))} />}
+        {hasPerBooking && !hideSetterCommission && !isSolo && <KpiCard title="Total" value={`${formatCurrency(totalEarnings)} €`} icon={DollarSign} color="emerald" highlight subtitle={lang === 'en' ? 'Commissions + bookings' : 'Commissions + RDV'} />}
         <KpiCard title={t.kpi_noshow_rate} value={`${formatPercent(v.noShowRate)}%`} icon={UserX} color="rose" subtitle={showSetterCards ? t.kpi_noshow_qualified.replace('{noshow}', String(setterDisplay.noShow.length)).replace('{qualified}', String(setterDisplay.qualifiedAll.length)) : undefined} />
         <KpiCard title={t.kpi_deals_lost} value={v.lost} icon={Ban} color="stone" />
       </div>

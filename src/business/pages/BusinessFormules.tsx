@@ -6,7 +6,7 @@ import {
   Plus, Package, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, FileText, Video, Link2, File,
   Percent, ChevronDown, ChevronUp, Users, Eye, Upload,
-  CreditCard, CheckCircle2,
+  CreditCard, CheckCircle2, AlertTriangle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -169,7 +169,11 @@ export function BusinessFormules() {
     const mr: Record<string, number | null> = {}
     ;(data || []).forEach((c: FormulaCommission) => {
       if (c.team_member_id) {
-        mr[c.team_member_id] = c.rate
+        // Setter-Closer members carry up to 3 overrides distinguished by role
+        const suffix = c.role === 'Setter-Closer:setter' ? ':setter'
+          : c.role === 'Setter-Closer:full' ? ':full'
+          : ''
+        mr[c.team_member_id + suffix] = c.rate
       } else if (c.role) {
         rr[c.role] = c.rate
       }
@@ -218,15 +222,22 @@ export function BusinessFormules() {
       rows.push({ business_owner_id: effectiveUserId!, formula_id: formulaId, role, team_member_id: null, rate })
     }
 
-    // Member-level overrides
+    // Member-level overrides.
+    // Keys like "memberId:setter" / "memberId:full" store setter-closer variants;
+    // the real member uuid goes in team_member_id (the column is a strict uuid FK),
+    // and the variant is carried by `role`.
     for (const [key, rate] of Object.entries(memberRates)) {
       if (rate !== null) {
-        // Keys like "memberId:setter" store setter-closer setter overrides
         const isSetterKey = key.endsWith(':setter')
-        const realMemberId = isSetterKey ? key.replace(':setter', '') : key
+        const isFullKey = key.endsWith(':full')
+        const realMemberId = isSetterKey ? key.slice(0, -':setter'.length)
+          : isFullKey ? key.slice(0, -':full'.length)
+          : key
         const member = teamMembers.find(m => m.id === realMemberId)
-        const roleVal = isSetterKey ? 'Setter-Closer:setter' : (member?.role || null)
-        rows.push({ business_owner_id: effectiveUserId!, formula_id: formulaId, role: roleVal, team_member_id: key, rate })
+        const roleVal = isSetterKey ? 'Setter-Closer:setter'
+          : isFullKey ? 'Setter-Closer:full'
+          : (member?.role || null)
+        rows.push({ business_owner_id: effectiveUserId!, formula_id: formulaId, role: roleVal, team_member_id: realMemberId, rate })
       }
     }
 
@@ -686,6 +697,7 @@ export function BusinessFormules() {
                       const roleRate = roleRates[role] ?? 0
                       const isSetterCloser = role === 'Setter-Closer'
                       const setterCloserSetterRate = roleRates['Setter-Closer:setter'] ?? 0
+                      const setterCloserFullRate = roleRates['Setter-Closer:full'] ?? 0
                       const roleMembers = commissionMembers.filter(m => m.role === role)
                       const isExpanded = expandedRoles[role] || false
                       const rateInputCls = `w-20 rounded-xl border border-stone-200 dark:border-neutral-800 px-3 py-1.5 text-sm text-right font-medium text-stone-900 dark:text-white bg-white dark:bg-neutral-900 focus:border-stone-900 focus:outline-none ${isHoSOrAdmin ? '!bg-stone-50 dark:!bg-neutral-800 !text-stone-500 dark:!text-neutral-400 cursor-not-allowed' : ''}`
@@ -723,6 +735,20 @@ export function BusinessFormules() {
                                     onChange={e => {
                                       const v = parseFloat(e.target.value) || 0
                                       setRoleRates(prev => ({ ...prev, 'Setter-Closer:setter': v }))
+                                    }}
+                                    disabled={isHoSOrAdmin}
+                                    className={rateInputCls}
+                                  />
+                                  <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-bold uppercase tracking-wide text-stone-500 dark:text-neutral-400">{t.formulas_fullcycle_label}</span>
+                                  <input
+                                    type="number" min="0" max="100" step="0.5"
+                                    value={setterCloserFullRate}
+                                    onChange={e => {
+                                      const v = parseFloat(e.target.value) || 0
+                                      setRoleRates(prev => ({ ...prev, 'Setter-Closer:full': v }))
                                     }}
                                     disabled={isHoSOrAdmin}
                                     className={rateInputCls}
@@ -767,6 +793,14 @@ export function BusinessFormules() {
                             )}
                           </div>
 
+                          {/* Full-cycle empty warning: set+close by one person will stack closing + setting */}
+                          {isSetterCloser && setterCloserFullRate === 0 && (roleRate > 0 || setterCloserSetterRate > 0) && (
+                            <div className="flex items-start gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-500/10 border-t border-amber-200/60 dark:border-amber-500/20">
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
+                              <span className="text-[11px] text-amber-700 dark:text-amber-300">{t.formulas_fullcycle_warning}</span>
+                            </div>
+                          )}
+
                           {/* Expanded member list */}
                           {isExpanded && (
                             <div className="border-t border-stone-200 dark:border-neutral-800 divide-y divide-stone-100 dark:divide-neutral-800">
@@ -779,7 +813,10 @@ export function BusinessFormules() {
                                   const memberSetterRate = memberRates[member.id + ':setter'] ?? null
                                   const displaySetterRate = memberSetterRate !== null ? memberSetterRate : setterCloserSetterRate
                                   const isSetterOverridden = memberSetterRate !== null
-                                  const hasAnyOverride = isOverridden || isSetterOverridden
+                                  const memberFullRate = memberRates[member.id + ':full'] ?? null
+                                  const displayFullRate = memberFullRate !== null ? memberFullRate : setterCloserFullRate
+                                  const isFullOverridden = memberFullRate !== null
+                                  const hasAnyOverride = isOverridden || isSetterOverridden || isFullOverridden
 
                                   return (
                                     <div key={member.id} className="flex items-center gap-3 px-4 py-2.5 pl-10 flex-wrap">
@@ -820,9 +857,24 @@ export function BusinessFormules() {
                                           />
                                           <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
                                         </div>
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[10px] font-bold uppercase tracking-wide text-stone-400 dark:text-neutral-500">Cyc.</span>
+                                          <input
+                                            type="number" min="0" max="100" step="0.5"
+                                            value={displayFullRate}
+                                            onChange={e => {
+                                              const v = parseFloat(e.target.value) || 0
+                                              setMemberRates(prev => ({ ...prev, [member.id + ':full']: v }))
+                                            }}
+                                            className={`w-20 rounded-xl border px-3 py-1.5 text-sm text-right font-medium focus:border-stone-900 focus:outline-none ${
+                                              isFullOverridden ? 'border-stone-400 dark:border-neutral-600 text-stone-900 dark:text-white bg-stone-50 dark:bg-neutral-800' : 'border-stone-200 dark:border-neutral-800 text-stone-600 dark:text-neutral-300'
+                                            }`}
+                                          />
+                                          <span className="text-sm text-stone-500 dark:text-neutral-400">%</span>
+                                        </div>
                                         {hasAnyOverride && (
                                           <button
-                                            onClick={() => setMemberRates(prev => ({ ...prev, [member.id]: null, [member.id + ':setter']: null }))}
+                                            onClick={() => setMemberRates(prev => ({ ...prev, [member.id]: null, [member.id + ':setter']: null, [member.id + ':full']: null }))}
                                             className="ml-1 text-xs text-stone-400 dark:text-neutral-500 hover:text-red-500 transition-colors"
                                             title={t.formulas_reset_role_rate}
                                           >

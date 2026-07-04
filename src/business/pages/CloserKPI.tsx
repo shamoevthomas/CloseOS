@@ -60,6 +60,7 @@ interface TeamCloser {
   first_name: string
   last_name: string
   role: string
+  count_setter_commission?: boolean | null
 }
 
 const formatCurrency = (n: number) => n.toLocaleString('fr-FR')
@@ -179,7 +180,7 @@ export function CloserKPI() {
     Promise.all([
       supabase
         .from('business_team_members')
-        .select('id, first_name, last_name, role')
+        .select('id, first_name, last_name, role, count_setter_commission')
         .eq('business_owner_id', effectiveOwnerId),
       supabase
         .from('business_users')
@@ -240,7 +241,8 @@ export function CloserKPI() {
         ;(data || []).forEach(c => {
           if (!map[c.formula_id]) map[c.formula_id] = { roles: {}, members: {} }
           if (c.team_member_id) {
-            map[c.formula_id].members[c.team_member_id] = c.rate
+            const sfx = c.role === 'Setter-Closer:setter' ? ':setter' : c.role === 'Setter-Closer:full' ? ':full' : ''
+            map[c.formula_id].members[c.team_member_id + sfx] = c.rate
           } else if (c.role) {
             map[c.formula_id].roles[c.role] = c.rate
           }
@@ -393,8 +395,16 @@ export function CloserKPI() {
       const formulaId = p.formula_id || p.offer_id
       const rates = formulaId ? formulaCommRates[formulaId] : null
       if (rates) {
+        // Full-cycle: this Setter-Closer also set the deal → one dedicated rate replaces closing+setting
+        const countSetter = member?.count_setter_commission !== false
+        const fullCycle = memberRole === 'Setter-Closer' && countSetter && memberId && p.assigned_setter === memberId
+        const fullRate = fullCycle
+          ? ((rates.members[`${memberId}:full`] ?? 0) > 0 ? rates.members[`${memberId}:full`] : ((rates.roles['Setter-Closer:full'] ?? 0) > 0 ? rates.roles['Setter-Closer:full'] : null))
+          : null
         // Member-specific rate first (the default key for Setter-Closers is their closing rate)
-        if (memberId && rates.members[memberId] !== undefined) {
+        if (fullRate != null) {
+          total += value * fullRate / 100
+        } else if (memberId && rates.members[memberId] !== undefined) {
           total += value * rates.members[memberId] / 100
         } else if (memberRole === 'Setter-Closer' && rates.roles['Setter-Closer'] !== undefined) {
           // Setter-Closer closing rate

@@ -210,6 +210,34 @@ export function CaptureForm() {
   const [searchParams] = useSearchParams()
   const isEmbed = searchParams.get('embed') === 'true'
 
+  // ─── Tracking « temps sur page » : si arrivée via un lien de tracking CloseOS (?_tk=eventId) ───
+  useEffect(() => {
+    const eventId = searchParams.get('_tk')
+    if (!eventId) return
+    const start = Date.now()
+    let sent = false
+    const send = () => {
+      if (sent) return
+      sent = true
+      const duration = Math.round((Date.now() - start) / 1000)
+      try {
+        const payload = JSON.stringify({ event_id: eventId, duration })
+        const blob = new Blob([payload], { type: 'application/json' })
+        navigator.sendBeacon('/api/track?action=beacon', blob)
+      } catch {
+        /* no-op */
+      }
+    }
+    const onHidden = () => { if (document.visibilityState === 'hidden') send() }
+    document.addEventListener('visibilitychange', onHidden)
+    window.addEventListener('pagehide', send)
+    return () => {
+      document.removeEventListener('visibilitychange', onHidden)
+      window.removeEventListener('pagehide', send)
+      send()
+    }
+  }, [searchParams])
+
   // Style customization from URL params
   const paramPc = searchParams.get('pc')
   const paramBg = searchParams.get('bg')

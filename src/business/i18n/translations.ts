@@ -1977,6 +1977,8 @@ export interface BusinessTranslations {
   formulas_commission_label: string;
   formulas_closing_label: string;
   formulas_setting_label: string;
+  formulas_fullcycle_label: string;
+  formulas_fullcycle_warning: string;
   formulas_advanced: string;
   formulas_customized: string;
   formulas_reset_role_rate: string;
@@ -4385,6 +4387,8 @@ export const fr: BusinessTranslations = {
   formulas_commission_label: 'Commission',
   formulas_closing_label: 'Closing',
   formulas_setting_label: 'Setting',
+  formulas_fullcycle_label: 'Cycle complet',
+  formulas_fullcycle_warning: 'Cycle complet vide : un Setter-Closer qui set ET close le même deal cumulera closing + setting.',
   formulas_advanced: 'Avancé',
   formulas_customized: 'Personnalisé',
   formulas_reset_role_rate: 'Réinitialiser au taux du rôle',
@@ -6260,6 +6264,8 @@ export const en: BusinessTranslations = {
   formulas_commission_label: 'Commission',
   formulas_closing_label: 'Closing',
   formulas_setting_label: 'Setting',
+  formulas_fullcycle_label: 'Full cycle',
+  formulas_fullcycle_warning: 'Full cycle empty: a Setter-Closer who sets AND closes the same deal will earn closing + setting combined.',
   formulas_advanced: 'Advanced',
   formulas_customized: 'Custom',
   formulas_reset_role_rate: 'Reset to role rate',

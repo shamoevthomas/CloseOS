@@ -63,6 +63,11 @@ interface Campaign {
   booking_assign_mode: 'specific' | 'all_role' | 'multiple'
   booking_assigned_members: string[]
   booking_distribution: 'round_robin' | 'random'
+  // "Passe par un setter" : only when booking_with === 'closer' — a setter is assigned in addition to the closer
+  booking_via_setter: boolean
+  setter_assign_mode: 'specific' | 'all_role' | 'multiple'
+  setter_assigned_members: string[]
+  setter_distribution: 'round_robin' | 'random'
   team_id: string | null
   created_at: string
   business_prospects: { count: number }[]
@@ -172,6 +177,11 @@ export function BusinessCampaigns() {
   const [formBookingAssignMode, setFormBookingAssignMode] = useState<'specific' | 'all_role' | 'multiple'>('all_role')
   const [formBookingAssignedMembers, setFormBookingAssignedMembers] = useState<string[]>([])
   const [formBookingDistribution, setFormBookingDistribution] = useState<'round_robin' | 'random'>('round_robin')
+  // "Passe par un setter" (only when booking_with === 'closer'): assign a setter in addition to the closer
+  const [formBookingViaSetter, setFormBookingViaSetter] = useState(false)
+  const [formSetterAssignMode, setFormSetterAssignMode] = useState<'specific' | 'all_role' | 'multiple'>('all_role')
+  const [formSetterAssignedMembers, setFormSetterAssignedMembers] = useState<string[]>([])
+  const [formSetterDistribution, setFormSetterDistribution] = useState<'round_robin' | 'random'>('round_robin')
 
   // Questionnaire config
   const [formQuestionnaireEnabled, setFormQuestionnaireEnabled] = useState(false)
@@ -323,6 +333,8 @@ export function BusinessCampaigns() {
     setFormBookingDuration(30); setFormBookingTitle(''); setFormBookingDescription('')
     setFormBookingWith('closer'); setFormBookingAssignMode('all_role')
     setFormBookingAssignedMembers([]); setFormBookingDistribution('round_robin')
+    setFormBookingViaSetter(false); setFormSetterAssignMode('all_role')
+    setFormSetterAssignedMembers([]); setFormSetterDistribution('round_robin')
     setFormTeamId(null)
     setFormQuestionnaireEnabled(false); setFormQuestionnaireRequired(false)
     setFormQuestionnaireQualifying(true); setFormMaxEliminatory(0); setFormQuestions([]); setQuestionnaireId(null)
@@ -355,6 +367,10 @@ export function BusinessCampaigns() {
     setFormBookingAssignMode(campaign.booking_assign_mode || 'all_role')
     setFormBookingAssignedMembers(campaign.booking_assigned_members || [])
     setFormBookingDistribution(campaign.booking_distribution || 'round_robin')
+    setFormBookingViaSetter(campaign.booking_via_setter ?? false)
+    setFormSetterAssignMode(campaign.setter_assign_mode || 'all_role')
+    setFormSetterAssignedMembers(campaign.setter_assigned_members || [])
+    setFormSetterDistribution(campaign.setter_distribution || 'round_robin')
     // Stripe payment fields (prices stored in cents, display in units)
     setFormStripeEnabled(campaign.stripe_enabled ?? false)
     setFormStripePrice((campaign.stripe_price ?? 0) / 100)
@@ -421,6 +437,11 @@ export function BusinessCampaigns() {
     booking_assign_mode: isSolo ? 'specific' : formBookingAssignMode,
     booking_assigned_members: isSolo ? (effectiveUserId ? [effectiveUserId] : []) : formBookingAssignedMembers,
     booking_distribution: isSolo ? 'round_robin' : formBookingDistribution,
+    // "Passe par un setter" only applies to a real closer RDV on a team account
+    booking_via_setter: (!isSolo && formCaptureType === 'with_rdv' && formBookingWith === 'closer') ? formBookingViaSetter : false,
+    setter_assign_mode: formSetterAssignMode,
+    setter_assigned_members: formSetterAssignedMembers,
+    setter_distribution: formSetterDistribution,
     team_id: formTeamId || null,
     stripe_enabled: formStripeEnabled,
     stripe_price: Math.round(formStripePrice * 100),
@@ -888,6 +909,149 @@ window.addEventListener('message',function(e){
                               <UserCheck className="h-4 w-4" /> Setter
                             </button>
                           </div>
+                        </div>
+                      )}
+
+                      {/* "Passe par un setter" — only when RDV is with a Closer */}
+                      {formCaptureType === 'with_rdv' && formBookingWith === 'closer' && (
+                        <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                          <button
+                            type="button"
+                            onClick={() => { setFormBookingViaSetter(v => !v); setFormSetterAssignedMembers([]) }}
+                            className="w-full flex items-center justify-between gap-3 text-left"
+                          >
+                            <div>
+                              <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{lang === 'fr' ? 'Passe-t-il par un setter ?' : 'Does it go through a setter?'}</p>
+                              <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">{lang === 'fr' ? 'Un setter est assigné en plus du closer. Le RDV reste sur l’agenda du closer.' : 'A setter is assigned in addition to the closer. The appointment stays on the closer’s calendar.'}</p>
+                            </div>
+                            <div className={`shrink-0 w-10 h-5 rounded-full relative p-1 transition-colors ${formBookingViaSetter ? 'bg-[#006c49]/20' : 'bg-[#eae8e7] dark:bg-neutral-700'}`}>
+                              <div className={`w-3 h-3 rounded-full absolute transition-all ${formBookingViaSetter ? 'bg-[#006c49] right-1' : 'bg-[#747878] left-1'}`} />
+                            </div>
+                          </button>
+
+                          {formBookingViaSetter && (
+                            <div className="mt-4 pt-4 border-t border-[#c4c7c7]/15 dark:border-neutral-700">
+                              <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">
+                                {t.campaigns_assign_mode} Setters
+                              </label>
+                              <div className="flex gap-2 flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={() => { setFormSetterAssignMode('specific'); setFormSetterAssignedMembers([]) }}
+                                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                                    formSetterAssignMode === 'specific'
+                                      ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                      : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
+                                  }`}
+                                >
+                                  <UserCheck className="h-3.5 w-3.5" /> {t.campaigns_specific_member}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setFormSetterAssignMode('all_role'); setFormSetterAssignedMembers([]) }}
+                                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                                    formSetterAssignMode === 'all_role'
+                                      ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                      : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
+                                  }`}
+                                >
+                                  <UsersRound className="h-3.5 w-3.5" /> {t.campaigns_all_role}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setFormSetterAssignMode('multiple'); setFormSetterAssignedMembers([]) }}
+                                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                                    formSetterAssignMode === 'multiple'
+                                      ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                      : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
+                                  }`}
+                                >
+                                  <Users className="h-3.5 w-3.5" /> {t.campaigns_multiple_members}
+                                </button>
+                              </div>
+
+                              {/* Specific setter selector */}
+                              {formSetterAssignMode === 'specific' && (
+                                <div className="mt-3">
+                                  <div className="relative">
+                                    <select
+                                      value={formSetterAssignedMembers[0] || ''}
+                                      onChange={(e) => setFormSetterAssignedMembers(e.target.value ? [e.target.value] : [])}
+                                      className={selectCls}
+                                    >
+                                      <option value="">{t.campaigns_choose_member}</option>
+                                      {filteredTeamMembers
+                                        .filter(m => m.role === 'Setter' || m.role === 'Setter-Closer' || (m.owner_assignable_roles || []).includes('Setter'))
+                                        .map(m => (
+                                          <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#747878] pointer-events-none" />
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Multiple setters selector */}
+                              {formSetterAssignMode === 'multiple' && (
+                                <div className="mt-3 space-y-2">
+                                  <p className="text-xs text-[#444748]/60 dark:text-neutral-500">{t.campaigns_select_members}</p>
+                                  <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-2">
+                                    {filteredTeamMembers
+                                      .filter(m => m.role === 'Setter' || m.role === 'Setter-Closer' || (m.owner_assignable_roles || []).includes('Setter'))
+                                      .map(m => (
+                                        <label key={m.id} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={formSetterAssignedMembers.includes(m.id)}
+                                            onChange={(e) => {
+                                              if (e.target.checked) {
+                                                setFormSetterAssignedMembers(prev => [...prev, m.id])
+                                              } else {
+                                                setFormSetterAssignedMembers(prev => prev.filter(id => id !== m.id))
+                                              }
+                                            }}
+                                            className="rounded border-[#c4c7c7]/30 text-[#1b1c1b] focus:ring-[#1b1c1b]"
+                                          />
+                                          <span className="text-sm text-[#1b1c1b] dark:text-white">{m.first_name} {m.last_name}</span>
+                                          <span className="text-[10px] font-bold text-[#747878] dark:text-neutral-400 bg-[#f5f3f2] dark:bg-neutral-700 px-1.5 py-0.5 rounded">{m.role}</span>
+                                        </label>
+                                      ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Distribution mode for setters (all_role and multiple) */}
+                              {(formSetterAssignMode === 'all_role' || formSetterAssignMode === 'multiple') && (
+                                <div className="mt-4 pt-3 border-t border-[#c4c7c7]/15 dark:border-neutral-700">
+                                  <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_distribution}</label>
+                                  <div className="flex gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => setFormSetterDistribution('round_robin')}
+                                      className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
+                                        formSetterDistribution === 'round_robin'
+                                          ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                          : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
+                                      }`}
+                                    >
+                                      <ArrowRightCircle className="h-4 w-4" /> {t.campaigns_round_robin}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setFormSetterDistribution('random')}
+                                      className={`flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
+                                        formSetterDistribution === 'random'
+                                          ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
+                                          : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
+                                      }`}
+                                    >
+                                      <Shuffle className="h-4 w-4" /> {t.campaigns_random}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
 

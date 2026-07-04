@@ -2154,7 +2154,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'campaigns-create' && req.method === 'POST') {
-      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, team_id, stripe_enabled, stripe_price, stripe_currency, refund_enabled, refund_tiers, reschedule_enabled, reschedule_paid, reschedule_price, reschedule_currency } = req.body
+      const { user_id, name, description, source, utm_source, utm_medium, utm_campaign, custom_fields, redirect_url, landing_title, landing_subtitle, landing_text, landing_video_url, email_required, phone_required, formula_id, capture_type, popup_delay, booking_duration, booking_title, booking_description, booking_with, booking_assign_mode, booking_assigned_members, booking_distribution, booking_via_setter, setter_assign_mode, setter_assigned_members, setter_distribution, team_id, stripe_enabled, stripe_price, stripe_currency, refund_enabled, refund_tiers, reschedule_enabled, reschedule_paid, reschedule_price, reschedule_currency } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -2199,6 +2199,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           booking_assign_mode: booking_assign_mode || 'all_role',
           booking_assigned_members: booking_assigned_members || [],
           booking_distribution: booking_distribution || 'round_robin',
+          booking_via_setter: booking_via_setter ?? false,
+          setter_assign_mode: setter_assign_mode || 'all_role',
+          setter_assigned_members: setter_assigned_members || [],
+          setter_distribution: setter_distribution || 'round_robin',
           team_id: team_id || null,
           stripe_enabled: stripe_enabled ?? false,
           stripe_price: stripe_price ?? 0,
@@ -6225,6 +6229,57 @@ ${notesSection}
       // Assign the member (owner or team member) directly
       const prospectAssignId = assigned_member_id
 
+      // ─── "Passe par un setter": when the RDV is with a Closer, also assign a Setter ───
+      // (in addition to the closer). The closer is always assigned; the appointment stays
+      // on the closer's agenda. If no setter is configured/available, leave it unassigned.
+      let assigned_setter_id: string | null = null
+      if (campaign.booking_with === 'closer' && campaign.booking_via_setter) {
+        const setterMode = campaign.setter_assign_mode || 'all_role'
+        let setterEligible: string[] = []
+        if ((setterMode === 'specific' || setterMode === 'multiple') && Array.isArray(campaign.setter_assigned_members) && campaign.setter_assigned_members.length > 0) {
+          setterEligible = campaign.setter_assigned_members
+        } else {
+          const { data: setterMembers } = await supabase
+            .from('business_team_members')
+            .select('id, role')
+            .eq('business_owner_id', campaign.user_id)
+            .in('role', ['Setter', 'Setter-Closer'])
+          setterEligible = (setterMembers || []).map((m: any) => m.id)
+          const { data: setterOwnerData } = await supabase.from('business_users').select('owner_assignable, owner_assignable_roles').eq('id', campaign.user_id).single()
+          if (setterOwnerData?.owner_assignable) {
+            const roles: string[] = setterOwnerData.owner_assignable_roles || []
+            if (roles.length === 0 || roles.includes('Setter')) setterEligible.push(campaign.user_id)
+          }
+        }
+        // Never assign the same person as both closer and setter for this lead
+        setterEligible = setterEligible.filter((id: string) => id !== prospectAssignId)
+        if (setterEligible.length === 1) {
+          assigned_setter_id = setterEligible[0]
+        } else if (setterEligible.length > 1) {
+          if ((campaign.setter_distribution || 'round_robin') === 'random') {
+            assigned_setter_id = setterEligible[Math.floor(Math.random() * setterEligible.length)]
+          } else {
+            const sortedSetters = [...setterEligible].sort()
+            const setterCounts = await Promise.all(sortedSetters.map(async (memberId: string) => {
+              const { count } = await supabase
+                .from('business_prospects')
+                .select('*', { count: 'exact', head: true })
+                .eq('campaign_id', campaign.id)
+                .eq('assigned_setter', memberId)
+                .neq('stage', 'partial')
+              return { memberId, count: count || 0 }
+            }))
+            setterCounts.sort((a, b) => a.count - b.count || a.memberId.localeCompare(b.memberId))
+            assigned_setter_id = setterCounts[0].memberId
+          }
+        }
+      }
+
+      // Assignment fields written to the prospect (closer via assigned_to, optional setter via assigned_setter)
+      const assignmentFields: Record<string, string> = {}
+      if (prospectAssignId) assignmentFields[campaign.booking_with === 'setter' ? 'assigned_setter' : 'assigned_to'] = prospectAssignId
+      if (assigned_setter_id) assignmentFields.assigned_setter = assigned_setter_id
+
       // Create prospect (or upgrade partial lead)
       const nameParts = name.trim().split(' ')
       const firstName = nameParts[0] || ''
@@ -6245,7 +6300,7 @@ ${notesSection}
           // Upgrade partial to full prospect — preserve an existing timezone, only fill if absent
           const { data: updated, error: upErr } = await supabase
             .from('business_prospects')
-            .update({ contact: name, firstName, lastName, phone: phone || data.phone, stage: 'prospect', formula_id: campaign.formula_id || null, notes: custom_data ? JSON.stringify(custom_data) : null, timezone: data.timezone || prospect_timezone || null, ...(prospectAssignId ? { [campaign.booking_with === 'setter' ? 'assigned_setter' : 'assigned_to']: prospectAssignId } : {}) })
+            .update({ contact: name, firstName, lastName, phone: phone || data.phone, stage: 'prospect', formula_id: campaign.formula_id || null, notes: custom_data ? JSON.stringify(custom_data) : null, timezone: data.timezone || prospect_timezone || null, ...assignmentFields })
             .eq('id', data.id)
             .select()
             .single()
@@ -6270,7 +6325,7 @@ ${notesSection}
             formula_id: campaign.formula_id || null,
             notes: custom_data ? JSON.stringify(custom_data) : null,
             timezone: prospect_timezone || null,
-            ...(prospectAssignId ? { [campaign.booking_with === 'setter' ? 'assigned_setter' : 'assigned_to']: prospectAssignId } : {}),
+            ...assignmentFields,
           })
           .select()
           .single()
@@ -8449,7 +8504,7 @@ ${notesSection}
       // Commissions
       const { data: teamMembers } = await supabase
         .from('business_team_members')
-        .select('id, first_name, last_name, role, commission_rate, compensation_type, fixed_salary')
+        .select('id, first_name, last_name, role, commission_rate, compensation_type, fixed_salary, count_setter_commission')
         .eq('business_owner_id', user_id)
 
       const { data: formulaCommissions } = await supabase
@@ -8476,10 +8531,42 @@ ${notesSection}
           }
         }
 
+        const isSetterCloserMember = member.role === 'Setter-Closer'
+        const countSetter = member.count_setter_commission !== false
+        // Setter-Closer members carry role-tagged rows (closer / setter / full) on one uuid.
+        // Resolve a member override first, then role-level; treat 0/absent as "not set".
+        const resolveSCRate = (formulaId: string, roleKey: string): number | null => {
+          if (!formulaCommissions) return null
+          const mo = formulaCommissions.find(fc => fc.formula_id === formulaId && fc.team_member_id === member.id && fc.role === roleKey)
+          if (mo && Number(mo.rate) > 0) return Number(mo.rate)
+          const rl = formulaCommissions.find(fc => fc.formula_id === formulaId && fc.role === roleKey && !fc.team_member_id)
+          if (rl && Number(rl.rate) > 0) return Number(rl.rate)
+          return null
+        }
+
         let memberTotal = 0
         memberWon.forEach(p => {
           const val = Number(p.value) || 0
-          let rate = Number(member.commission_rate) || 0
+          const fallback = Number(member.commission_rate) || 0
+
+          if (isSetterCloserMember) {
+            const isCloser = p.assigned_to === member.id
+            const isSetter = p.assigned_setter === member.id && countSetter
+            const fullCycle = isCloser && p.assigned_setter === member.id && countSetter
+            const fullRate = resolveSCRate(p.formula_id, 'Setter-Closer:full')
+            // Full-cycle: one dedicated rate replaces stacking closing + setting
+            if (fullCycle && fullRate != null) {
+              memberTotal += val * (fullRate / 100)
+              return
+            }
+            const closerRate = isCloser ? (resolveSCRate(p.formula_id, 'Setter-Closer') ?? fallback) : 0
+            const setterRate = isSetter ? (resolveSCRate(p.formula_id, 'Setter-Closer:setter') ?? fallback) : 0
+            memberTotal += val * ((closerRate + setterRate) / 100)
+            return
+          }
+
+          // Pure roles: single rate (member override, then role-level, then fallback)
+          let rate = fallback
           if (formulaCommissions && p.formula_id) {
             const memberSpecific = formulaCommissions.find(fc => fc.formula_id === p.formula_id && fc.team_member_id === member.id)
             const roleLevel = formulaCommissions.find(fc => fc.formula_id === p.formula_id && fc.role === member.role && !fc.team_member_id)

@@ -23,6 +23,8 @@ interface BusinessInvoiceGeneratorModalProps {
   isFixedCompensation?: boolean
   fixedSalary?: number
   formulaCommRates?: Record<string, { roles: Record<string, number>, members: Record<string, number> }>
+  perBookingAmount?: number
+  bookedCount?: number
 }
 
 type PaymentMethodType = 'paypal' | 'virement' | 'revolut' | 'stripe'
@@ -47,6 +49,8 @@ export function BusinessInvoiceGeneratorModal({
   isFixedCompensation = false,
   fixedSalary = 0,
   formulaCommRates = {},
+  perBookingAmount = 0,
+  bookedCount = 0,
 }: BusinessInvoiceGeneratorModalProps) {
   const { user, teamMember, ownerUserId, businessSettings } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
@@ -108,6 +112,7 @@ export function BusinessInvoiceGeneratorModal({
 
   const fallbackRate = commissionRate / 100
   const isSetterCloser = teamMember?.role === 'Setter-Closer'
+  const countSetterComm = (teamMember as any)?.count_setter_commission !== false
   const memberId = teamMember?.id
   const memberRole = teamMember?.role
 
@@ -136,6 +141,25 @@ export function BusinessInvoiceGeneratorModal({
     return fallbackRate
   }, [formulaCommRates, memberId, memberRole, fallbackRate])
 
+  // Full-cycle rate (Setter-Closer who set AND closed). null when not configured → stack closing + setting.
+  const getFullRate = useCallback((deal: BusinessProspect): number | null => {
+    if (!isSetterCloser) return null
+    const formulaId = deal.formula_id || (deal as any).offer_id
+    const rates = formulaId ? formulaCommRates[formulaId] : null
+    if (!rates) return null
+    const mo = memberId ? rates.members[`${memberId}:full`] : undefined
+    if (mo !== undefined && mo > 0) return mo / 100
+    const rl = rates.roles['Setter-Closer:full']
+    if (rl !== undefined && rl > 0) return rl / 100
+    return null
+  }, [formulaCommRates, memberId, isSetterCloser])
+
+  // A deal the same Setter-Closer both set and closed, with a configured full-cycle rate
+  const isFullCycleDeal = useCallback((d: BusinessProspect) =>
+    isSetterCloser && countSetterComm && d.assigned_to === memberId && d.assigned_setter === memberId && getFullRate(d) != null,
+    [isSetterCloser, countSetterComm, memberId, getFullRate]
+  )
+
   // Exclude prospects pending HOS approval (commission custom non encore validée)
   const eligibleDeals = useMemo(() =>
     deals.filter(d => d.commission_approval_status !== 'pending'),
@@ -143,20 +167,28 @@ export function BusinessInvoiceGeneratorModal({
   )
   const pendingApprovalCount = deals.length - eligibleDeals.length
 
-  // Closer deals: assigned_to = teamMember.id
-  const closerDeals = useMemo(() =>
-    eligibleDeals.filter(d => d.assigned_to === teamMember?.id),
-    [eligibleDeals, teamMember?.id]
+  // Full-cycle deals: one dedicated line at the full rate (instead of a closer + a setter line)
+  const fullCycleDeals = useMemo(() =>
+    eligibleDeals.filter(isFullCycleDeal),
+    [eligibleDeals, isFullCycleDeal]
   )
 
-  // Setter deals: for Setter-Closer, include deals they also closed
+  // Closer deals: assigned_to = teamMember.id (excluding full-cycle, billed separately)
+  const closerDeals = useMemo(() =>
+    eligibleDeals.filter(d => d.assigned_to === teamMember?.id && !isFullCycleDeal(d)),
+    [eligibleDeals, teamMember?.id, isFullCycleDeal]
+  )
+
+  // Setter deals: for Setter-Closer, include deals they also closed — unless full-cycle,
+  // and only when their setter commissions are counted
   const setterDeals = useMemo(() =>
     eligibleDeals.filter(d => {
       if (d.assigned_setter !== teamMember?.id) return false
-      if (isSetterCloser) return true
+      if (isFullCycleDeal(d)) return false
+      if (isSetterCloser) return countSetterComm
       return d.assigned_to !== teamMember?.id
     }),
-    [eligibleDeals, teamMember?.id, isSetterCloser]
+    [eligibleDeals, teamMember?.id, isSetterCloser, countSetterComm, isFullCycleDeal]
   )
 
   // Group deals into line items (like Sales), with period-aware installment proration
@@ -232,6 +264,7 @@ export function BusinessInvoiceGeneratorModal({
 
   const closerLineItems = useMemo(() => groupDeals(closerDeals, getCloserRate), [closerDeals, getCloserRate])
   const setterLineItems = useMemo(() => groupDeals(setterDeals, getSetterRate), [setterDeals, getSetterRate])
+  const fullCycleLineItems = useMemo(() => groupDeals(fullCycleDeals, (d) => getFullRate(d) ?? 0), [fullCycleDeals, getFullRate])
 
   // ---------- EDITABLE LINE ITEMS (Step 2) ----------
   const [editableItems, setEditableItems] = useState<EditableLineItem[]>([])
@@ -242,17 +275,31 @@ export function BusinessInvoiceGeneratorModal({
   const [editablePenaltyText, setEditablePenaltyText] = useState('')
 
   // Initialize editable items when entering step 2
+    // Ligne dédiée "Fixe RDV bookés" (distincte des commissions)
+  const rdvLineItem: EditableLineItem | null = (perBookingAmount > 0 && bookedCount > 0)
+    ? {
+        id: 'rdv-booking',
+        description: lang === 'en' ? 'Booked appointments (fixed)' : 'RDV bookés (fixe)',
+        subtitle: '',
+        count: bookedCount,
+        unitPrice: perBookingAmount,
+        section: 'setter',
+      }
+    : null
+
   const initEditableItems = useCallback(() => {
     if (isFixedCompensation) {
       // Fixed compensation: single line item for fixed salary
-      setEditableItems([{
+      const fixedItems: EditableLineItem[] = [{
         id: 'fixed-salary',
         description: t.invoice_gen_fixed_salary,
         subtitle: '',
         count: 1,
         unitPrice: fixedSalary,
         section: 'closer',
-      }])
+      }]
+      if (rdvLineItem) fixedItems.push(rdvLineItem)
+      setEditableItems(fixedItems)
       return
     }
     const items: EditableLineItem[] = []
@@ -267,6 +314,16 @@ export function BusinessInvoiceGeneratorModal({
         section: 'closer',
       })
     }
+    fullCycleLineItems.forEach((item, i) => {
+      items.push({
+        id: `full-${i}`,
+        description: item.description,
+        subtitle: lang === 'en' ? 'Full cycle (set + close)' : 'Cycle complet (setting + closing)',
+        count: item.count,
+        unitPrice: item.unitPrice,
+        section: 'closer',
+      })
+    })
     closerLineItems.forEach((item, i) => {
       items.push({
         id: `closer-${i}`,
@@ -287,8 +344,9 @@ export function BusinessInvoiceGeneratorModal({
         section: 'setter',
       })
     })
+    if (rdvLineItem) items.push(rdvLineItem)
     setEditableItems(items)
-  }, [closerLineItems, setterLineItems, isFixedCompensation, fixedSalary])
+  }, [closerLineItems, setterLineItems, fullCycleLineItems, lang, isFixedCompensation, fixedSalary, rdvLineItem])
 
   const updateItem = (id: string, field: keyof EditableLineItem, value: any) => {
     setEditableItems(prev => prev.map(item =>

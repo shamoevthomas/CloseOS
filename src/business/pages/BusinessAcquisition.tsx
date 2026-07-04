@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Megaphone, Eye, UserCheck, Loader2, TrendingUp, TrendingDown } from 'lucide-react'
+import { Megaphone, Eye, UserCheck, Loader2, TrendingUp, TrendingDown, Radar, Plus, MousePointerClick, Users, Repeat, ExternalLink, Trash2 } from 'lucide-react'
 import {
   PieChart, Pie, Cell,
   BarChart, Bar,
@@ -8,6 +8,39 @@ import {
 } from 'recharts'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
+import { CreateTrackingModal } from '../components/CreateTrackingModal'
+import { TrackingDetailModal } from '../components/TrackingDetailModal'
+
+interface TrackingLink {
+  id: string
+  name: string
+  slug: string
+  destination_url: string
+  is_internal: boolean
+  is_active: boolean
+  clicks: number
+  uniqueVisitors: number
+  returningClicks: number
+}
+
+const TRK = {
+  fr: {
+    create: 'Créer un tracking',
+    section_title: 'Liens de tracking',
+    section_desc: 'Liens courts traçables : clics, visiteurs uniques / récurrents, pays et temps sur page.',
+    clicks: 'clics', unique: 'uniques', recurring: 'récurrents',
+    empty: 'Aucun lien de tracking. Créez-en un pour analyser vos clics.',
+    view: 'Voir le détail', confirm_delete: 'Supprimer ce lien de tracking et toutes ses données ?',
+  },
+  en: {
+    create: 'Create a tracking',
+    section_title: 'Tracking links',
+    section_desc: 'Trackable short links: clicks, unique / returning visitors, country and time on page.',
+    clicks: 'clicks', unique: 'unique', recurring: 'returning',
+    empty: 'No tracking link yet. Create one to analyze your clicks.',
+    view: 'View details', confirm_delete: 'Delete this tracking link and all its data?',
+  },
+}
 
 interface CampaignStat {
   id: string
@@ -44,6 +77,38 @@ export function BusinessAcquisition() {
   const [loading, setLoading] = useState(true)
   const [pieView, setPieView] = useState<'views' | 'conversion'>('views')
   const [countAsUneducated, setCountAsUneducated] = useState(false)
+  const trk = TRK[lang]
+  const [trackings, setTrackings] = useState<TrackingLink[]>([])
+  const [createOpen, setCreateOpen] = useState(false)
+  const [detailLink, setDetailLink] = useState<{ id: string; name: string } | null>(null)
+
+  const fetchTrackings = useCallback(async () => {
+    if (!effectiveUserId) return
+    try {
+      const res = await fetch(`/api/track?action=list&user_id=${effectiveUserId}`)
+      const data = await res.json()
+      if (data.links) setTrackings(data.links)
+    } catch (err) {
+      console.error('Error fetching trackings:', err)
+    }
+  }, [effectiveUserId])
+
+  useEffect(() => { fetchTrackings() }, [fetchTrackings])
+
+  const deleteTracking = async (id: string) => {
+    if (!effectiveUserId || !window.confirm(trk.confirm_delete)) return
+    setTrackings((prev) => prev.filter((l) => l.id !== id))
+    try {
+      await fetch('/api/track?action=delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, user_id: effectiveUserId }),
+      })
+    } catch (err) {
+      console.error('Error deleting tracking:', err)
+      fetchTrackings()
+    }
+  }
 
   const fetchStats = useCallback(async () => {
     if (!effectiveUserId) { setLoading(false); return }
@@ -138,6 +203,13 @@ export function BusinessAcquisition() {
             {t.acquisition_subtitle}
           </p>
         </div>
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="shrink-0 flex items-center gap-2 rounded-full bg-stone-900 dark:bg-white dark:text-black px-5 py-3 text-sm font-bold text-white shadow-lg hover:bg-stone-800 active:scale-95 transition-all"
+        >
+          <Radar className="h-4 w-4" />
+          {trk.create}
+        </button>
       </section>
 
       {/* ─── Summary Cards ─── */}
@@ -204,6 +276,82 @@ export function BusinessAcquisition() {
             <div className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{totalWon} {totalWon !== 1 ? t.acquisition_clients_won_plural : t.acquisition_clients_won}</div>
           </div>
         </div>
+      </section>
+
+      {/* ─── Liens de tracking ─── */}
+      <section className="space-y-6">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white flex items-center gap-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <Radar className="h-6 w-6 text-red-600" />
+              {trk.section_title}
+            </h3>
+            <p className="text-stone-500 dark:text-neutral-400 mt-1.5 text-sm max-w-xl">{trk.section_desc}</p>
+          </div>
+        </div>
+
+        {trackings.length === 0 ? (
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="w-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-300 dark:border-neutral-600 bg-stone-50/50 dark:bg-neutral-800/40 py-12 hover:border-red-400 dark:hover:border-red-500/50 transition-colors group"
+          >
+            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <Plus className="h-6 w-6 text-red-600" />
+            </div>
+            <p className="text-sm text-stone-500 dark:text-neutral-400 max-w-xs text-center">{trk.empty}</p>
+          </button>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {trackings.map((l) => (
+              <div
+                key={l.id}
+                className="bg-white/70 dark:bg-white/5 backdrop-blur-md border border-stone-200/30 dark:border-neutral-700/30 rounded-2xl p-6 flex flex-col gap-5 group hover:-translate-y-1 transition-transform duration-300"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="text-lg font-extrabold text-stone-900 dark:text-white truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>{l.name}</h4>
+                    <div className="flex items-center gap-1.5 mt-1 text-xs text-stone-400 dark:text-neutral-500 min-w-0">
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                      <span className="font-mono truncate">{l.destination_url.replace(/^https?:\/\//, '')}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteTracking(l.id)}
+                    className="shrink-0 text-stone-300 dark:text-neutral-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-red-600 mb-1"><MousePointerClick className="h-3.5 w-3.5" /></div>
+                    <div className="text-xl font-black text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{l.clicks}</div>
+                    <div className="text-[9px] uppercase font-bold tracking-wider text-stone-400 dark:text-neutral-500">{trk.clicks}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-blue-600 mb-1"><Users className="h-3.5 w-3.5" /></div>
+                    <div className="text-xl font-black text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{l.uniqueVisitors}</div>
+                    <div className="text-[9px] uppercase font-bold tracking-wider text-stone-400 dark:text-neutral-500">{trk.unique}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-amber-600 mb-1"><Repeat className="h-3.5 w-3.5" /></div>
+                    <div className="text-xl font-black text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{l.returningClicks}</div>
+                    <div className="text-[9px] uppercase font-bold tracking-wider text-stone-400 dark:text-neutral-500">{trk.recurring}</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setDetailLink({ id: l.id, name: l.name })}
+                  className="w-full rounded-full border border-stone-300 dark:border-neutral-600 py-2.5 text-sm font-bold text-stone-700 dark:text-neutral-200 hover:bg-stone-900 hover:text-white dark:hover:bg-white dark:hover:text-black active:scale-95 transition-all"
+                >
+                  {trk.view}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ─── Performance par Campagne ─── */}
@@ -487,6 +635,20 @@ export function BusinessAcquisition() {
           <p className="text-sm text-stone-500 dark:text-neutral-400">{t.acquisition_empty_desc}</p>
         </div>
       )}
+
+      <CreateTrackingModal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        userId={effectiveUserId}
+        onCreated={fetchTrackings}
+      />
+      <TrackingDetailModal
+        isOpen={!!detailLink}
+        onClose={() => setDetailLink(null)}
+        linkId={detailLink?.id || null}
+        linkName={detailLink?.name || ''}
+        userId={effectiveUserId}
+      />
     </div>
   )
 }
