@@ -23,6 +23,8 @@ export interface BusinessProspect {
   notes?: string
   created_at?: string
   last_contact?: string
+  contacted_at?: string
+  relance_step?: number
   formula_id?: string
   payment_type?: 'once' | 'installments' | 'cash' | 'comptant'
   installments?: number

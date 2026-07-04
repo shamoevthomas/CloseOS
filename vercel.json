@@ -177,6 +177,8 @@
     { "source": "/api/sign-portal", "destination": "/api/sign-checkout?action=portal" },
     { "source": "/api/sign-stripe-webhook", "destination": "/api/sign-stripe-webhook" },
 
+    { "source": "/api/mcp/:key", "destination": "/api/mcp?key=:key" },
+
     { "source": "/api/business-stripe-webhook", "destination": "/api/business-stripe-webhook" },
     { "source": "/api/business-revenue-summary", "destination": "/api/business?action=revenue-summary" },
     { "source": "/api/business-stripe-search", "destination": "/api/business?action=stripe-search" },

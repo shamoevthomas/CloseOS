@@ -452,6 +452,8 @@ export function BusinessProspectView({
 
   // Client edit
   const [editingClient, setEditingClient] = useState(false)
+  const [editingHeaderName, setEditingHeaderName] = useState(false)
+  const [headerNameDraft, setHeaderNameDraft] = useState(prospect.contact || '')
   const [editedContact, setEditedContact] = useState(prospect.contact)
   const [editedCompany, setEditedCompany] = useState(prospect.company)
   const [editedEmail, setEditedEmail] = useState(prospect.email)
@@ -542,6 +544,8 @@ export function BusinessProspectView({
     setLocal(p)
     setTempNotes(parseNotesField(p.notes).internal)
     setEditedContact(p.contact)
+    setHeaderNameDraft(p.contact || '')
+    setEditingHeaderName(false)
     setEditedCompany(p.company)
     setEditedEmail(p.email)
     setEditedPhone(p.phone)
@@ -884,6 +888,18 @@ export function BusinessProspectView({
     setEditingClient(false)
   }
 
+  // -- Inline header name edit --
+  const handleSaveHeaderName = () => {
+    setEditingHeaderName(false)
+    const next = headerNameDraft.trim()
+    if (!next || next === (local.contact || '')) return
+    const nameParts = next.split(' ')
+    const firstName = nameParts[0] || ''
+    const lastName = nameParts.slice(1).join(' ') || ''
+    handleUpdate({ contact: next, firstName, lastName })
+    setEditedContact(next)
+  }
+
   // -- Notes --
   const handleSaveNotes = () => {
     const { capture } = parseNotesField(local.notes)
@@ -1101,9 +1117,29 @@ export function BusinessProspectView({
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 min-w-0">
-                  <h2 className="text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate">
-                    {local.contact || t.prospect_no_name}
-                  </h2>
+                  {editingHeaderName ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={headerNameDraft}
+                      onChange={e => setHeaderNameDraft(e.target.value)}
+                      onBlur={handleSaveHeaderName}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') { e.preventDefault(); handleSaveHeaderName() }
+                        else if (e.key === 'Escape') { setHeaderNameDraft(local.contact || ''); setEditingHeaderName(false) }
+                      }}
+                      className="min-w-0 flex-1 text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white bg-transparent border-b-2 border-stone-300 dark:border-neutral-600 focus:border-stone-900 dark:focus:border-white outline-none"
+                      placeholder={t.prospect_no_name}
+                    />
+                  ) : (
+                    <h2
+                      onClick={() => { setHeaderNameDraft(local.contact || ''); setEditingHeaderName(true) }}
+                      title={t.prospect_field_contact}
+                      className="text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate cursor-text rounded px-1 -mx-1 hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors"
+                    >
+                      {local.contact || t.prospect_no_name}
+                    </h2>
+                  )}
                   <DMRBadge prospect={local} size="sm" />
                 </div>
                 {local.company && (

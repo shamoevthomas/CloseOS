@@ -10,6 +10,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { useCustomStages } from '../hooks/useCustomStages'
+import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import { supabase } from '../../lib/supabase'
 
 const GLASS_CARD = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700'
@@ -47,6 +48,7 @@ export function CloserPipeline() {
   const { teamMember, user } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
   const { customStages } = useCustomStages()
+  const relanceDelays = useContactedReminders()
 
   // Next appointments per prospect
   const [nextAppointments, setNextAppointments] = useState<Record<number, { date: string; time: string }>>({})
@@ -109,26 +111,44 @@ export function CloserPipeline() {
   const isDraggingRef = useRef(false)
   const animFrameRef = useRef<number>(0)
   const lastMouseY = useRef(0)
+  const lastMouseX = useRef(0)
 
   const onDragStart = useCallback(() => {
     isDraggingRef.current = true
     const tick = () => {
       if (!isDraggingRef.current) return
       const y = lastMouseY.current
+      const x = lastMouseX.current
       const vh = window.innerHeight
+      const vw = window.innerWidth
       const ZONE = 120
       const MAX_SPEED = 20
+
+      // Vertical auto-scroll (page)
       const main = document.querySelector('main')
-      if (!main) { animFrameRef.current = requestAnimationFrame(tick); return }
-
-      const distFromBottom = vh - y
-      const distFromTop = y
-
-      if (distFromBottom < ZONE && distFromBottom > 0) {
-        main.scrollTop += MAX_SPEED * (1 - distFromBottom / ZONE)
-      } else if (distFromTop < ZONE && distFromTop > 0) {
-        main.scrollTop -= MAX_SPEED * (1 - distFromTop / ZONE)
+      if (main) {
+        const distFromBottom = vh - y
+        const distFromTop = y
+        if (distFromBottom < ZONE && distFromBottom > 0) {
+          main.scrollTop += MAX_SPEED * (1 - distFromBottom / ZONE)
+        } else if (distFromTop < ZONE && distFromTop > 0) {
+          main.scrollTop -= MAX_SPEED * (1 - distFromTop / ZONE)
+        }
       }
+
+      // Horizontal auto-scroll (colonnes) — la rangée sous le curseur défile près des bords G/D
+      const distFromRight = vw - x
+      const distFromLeft = x
+      document.querySelectorAll<HTMLElement>('[data-pipeline-hscroll]').forEach(col => {
+        const rect = col.getBoundingClientRect()
+        if (y < rect.top || y > rect.bottom) return
+        if (distFromRight < ZONE && distFromRight > 0) {
+          col.scrollLeft += MAX_SPEED * (1 - distFromRight / ZONE)
+        } else if (distFromLeft < ZONE && distFromLeft > 0) {
+          col.scrollLeft -= MAX_SPEED * (1 - distFromLeft / ZONE)
+        }
+      })
+
       animFrameRef.current = requestAnimationFrame(tick)
     }
     animFrameRef.current = requestAnimationFrame(tick)
@@ -144,9 +164,18 @@ export function CloserPipeline() {
   }
 
   useEffect(() => {
-    const track = (e: MouseEvent) => { lastMouseY.current = e.clientY }
+    const track = (e: MouseEvent) => { lastMouseY.current = e.clientY; lastMouseX.current = e.clientX }
     window.addEventListener('mousemove', track, true)
-    return () => window.removeEventListener('mousemove', track, true)
+    // Suivi tactile pour le drag horizontal sur mobile/tablette
+    const trackTouch = (e: TouchEvent) => {
+      const t = e.touches[0]
+      if (t) { lastMouseY.current = t.clientY; lastMouseX.current = t.clientX }
+    }
+    window.addEventListener('touchmove', trackTouch, true)
+    return () => {
+      window.removeEventListener('mousemove', track, true)
+      window.removeEventListener('touchmove', trackTouch, true)
+    }
   }, [])
 
   const toggleColumn = (stageId: string) => {
@@ -221,7 +250,7 @@ export function CloserPipeline() {
                 <span className={LABEL_STYLE}>{t.pipeline_priority_ops}</span>
               </div>
 
-              <div className="flex overflow-x-auto gap-6 pb-2">
+              <div data-pipeline-hscroll className="flex overflow-x-auto gap-6 pb-2">
                 {ACTIVE_STAGES.map((stage) => {
                   const stageDeals = getDealsForStage(stage.id)
                   const stageTotal = getTotalForStage(stage.id)
@@ -297,6 +326,30 @@ export function CloserPipeline() {
                                             {(deal.value || 0).toLocaleString()} €
                                           </p>
                                         </div>
+                                        {stage.id === 'contacted' && (() => {
+                                          const badge = computeRelanceBadge(deal.contacted_at, relanceDelays, deal.relance_step)
+                                          if (!badge) return null
+                                          return (
+                                            <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                                              <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300">
+                                                {relanceLabel(badge.number, lang !== 'en')}
+                                              </span>
+                                              {badge.due && (
+                                                <>
+                                                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#ba1a1a]/10 dark:bg-red-500/15 text-[#ba1a1a] dark:text-red-300">
+                                                    {lang === 'en' ? 'Follow up today' : 'Relance aujourd’hui'}
+                                                  </span>
+                                                  <button
+                                                    onClick={(e) => { e.stopPropagation(); updateProspect(deal.id, { relance_step: (deal.relance_step || 0) + 1 }) }}
+                                                    className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#006c49] text-white hover:bg-[#005a3d] transition-colors"
+                                                  >
+                                                    {lang === 'en' ? 'Follow-up done' : 'Relance faite'}
+                                                  </button>
+                                                </>
+                                              )}
+                                            </div>
+                                          )
+                                        })()}
                                         {nextAppointments[deal.id] && (
                                           <div className="flex items-center gap-1.5 mt-3 px-2.5 py-1.5 rounded-lg bg-[#006c49]/8 dark:bg-emerald-900/20">
                                             <Calendar className="h-3 w-3 text-[#006c49] dark:text-emerald-400 shrink-0" strokeWidth={2} />
@@ -330,7 +383,7 @@ export function CloserPipeline() {
                 <span className={LABEL_STYLE}>{t.pipeline_archives}</span>
               </div>
 
-              <div className="flex overflow-x-auto gap-6 pb-2">
+              <div data-pipeline-hscroll className="flex overflow-x-auto gap-6 pb-2">
                 {INACTIVE_STAGES.map((stage) => {
                   const stageDeals = getDealsForStage(stage.id)
                   const isCollapsed = collapsedColumns.has(stage.id)
@@ -409,7 +462,7 @@ export function CloserPipeline() {
                   <span className={LABEL_STYLE}>{t.pipeline_created_by_team}</span>
                 </div>
 
-                <div className="flex overflow-x-auto gap-6 pb-2">
+                <div data-pipeline-hscroll className="flex overflow-x-auto gap-6 pb-2">
                   {customStages.map((cs) => {
                     const stageId = `custom_${cs.id}`
                     const stageDeals = filteredProspects.filter(d => d.stage === stageId)

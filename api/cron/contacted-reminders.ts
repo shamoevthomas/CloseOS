@@ -126,7 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // 2. Prospects actuellement en "Contacté"
       const { data: prospects } = await supabaseAdmin
         .from('business_prospects')
-        .select('id, contact, firstName, lastName, email, phone, assigned_setter, assigned_to, contacted_at')
+        .select('id, contact, firstName, lastName, email, phone, assigned_setter, assigned_to, contacted_at, relance_step')
         .eq('user_id', ownerId)
         .eq('stage', 'contacted')
         .not('contacted_at', 'is', null);
@@ -175,8 +175,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ? `${p.firstName || ''} ${p.lastName || ''}`.trim()
             : (p.contact || 'Ce prospect');
 
+        const relanceStep = Number((p as any).relance_step) || 0;
+
         for (const rem of rems) {
           if (daysElapsed < rem.days) continue;
+          // Relance déjà marquée "faite" manuellement par le commercial → on ne relance pas par email
+          if (relanceNumber[rem.id] <= relanceStep) continue;
 
           // Anti-doublon : déjà envoyé pour cette entrée en "Contacté" ?
           const { data: existing } = await supabaseAdmin

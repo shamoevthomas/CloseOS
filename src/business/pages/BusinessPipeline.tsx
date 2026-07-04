@@ -13,6 +13,7 @@ import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { BusinessContactedRemindersModal } from '../components/BusinessContactedRemindersModal'
 import { useCustomStages, type CustomStage } from '../hooks/useCustomStages'
+import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
@@ -103,6 +104,7 @@ export function BusinessPipeline() {
   }), [t])
 
   const effectiveUserId = ownerUserId || user?.id
+  const relanceDelays = useContactedReminders()
   const { customStages, addCustomStage, deleteCustomStage, canManage } = useCustomStages()
   const crmProvider = businessSettings?.crm_provider || 'closeos'
   const hasCrmIntegration = crmProvider !== 'closeos' && crmProvider !== 'zapier' && crmProvider !== 'make' && crmProvider !== 'n8n'
@@ -439,26 +441,44 @@ export function BusinessPipeline() {
   const isDraggingRef = useRef(false)
   const animFrameRef = useRef<number>(0)
   const lastMouseY = useRef(0)
+  const lastMouseX = useRef(0)
 
   const onDragStart = useCallback(() => {
     isDraggingRef.current = true
     const tick = () => {
       if (!isDraggingRef.current) return
       const y = lastMouseY.current
+      const x = lastMouseX.current
       const vh = window.innerHeight
+      const vw = window.innerWidth
       const ZONE = 120
       const MAX_SPEED = 20
+
+      // Vertical auto-scroll (page)
       const main = document.querySelector('main')
-      if (!main) { animFrameRef.current = requestAnimationFrame(tick); return }
-
-      const distFromBottom = vh - y
-      const distFromTop = y
-
-      if (distFromBottom < ZONE && distFromBottom > 0) {
-        main.scrollTop += MAX_SPEED * (1 - distFromBottom / ZONE)
-      } else if (distFromTop < ZONE && distFromTop > 0) {
-        main.scrollTop -= MAX_SPEED * (1 - distFromTop / ZONE)
+      if (main) {
+        const distFromBottom = vh - y
+        const distFromTop = y
+        if (distFromBottom < ZONE && distFromBottom > 0) {
+          main.scrollTop += MAX_SPEED * (1 - distFromBottom / ZONE)
+        } else if (distFromTop < ZONE && distFromTop > 0) {
+          main.scrollTop -= MAX_SPEED * (1 - distFromTop / ZONE)
+        }
       }
+
+      // Horizontal auto-scroll (colonnes) — la rangée sous le curseur défile près des bords G/D
+      const distFromRight = vw - x
+      const distFromLeft = x
+      document.querySelectorAll<HTMLElement>('[data-pipeline-hscroll]').forEach(col => {
+        const rect = col.getBoundingClientRect()
+        if (y < rect.top || y > rect.bottom) return
+        if (distFromRight < ZONE && distFromRight > 0) {
+          col.scrollLeft += MAX_SPEED * (1 - distFromRight / ZONE)
+        } else if (distFromLeft < ZONE && distFromLeft > 0) {
+          col.scrollLeft -= MAX_SPEED * (1 - distFromLeft / ZONE)
+        }
+      })
+
       animFrameRef.current = requestAnimationFrame(tick)
     }
     animFrameRef.current = requestAnimationFrame(tick)
@@ -474,9 +494,17 @@ export function BusinessPipeline() {
   }
 
   useEffect(() => {
-    const track = (e: MouseEvent) => { lastMouseY.current = e.clientY }
+    const track = (e: MouseEvent) => { lastMouseY.current = e.clientY; lastMouseX.current = e.clientX }
     window.addEventListener('mousemove', track, true)
-    return () => window.removeEventListener('mousemove', track, true)
+    const trackTouch = (e: TouchEvent) => {
+      const t = e.touches[0]
+      if (t) { lastMouseY.current = t.clientY; lastMouseX.current = t.clientX }
+    }
+    window.addEventListener('touchmove', trackTouch, true)
+    return () => {
+      window.removeEventListener('mousemove', track, true)
+      window.removeEventListener('touchmove', trackTouch, true)
+    }
   }, [])
 
   return (
@@ -760,7 +788,7 @@ export function BusinessPipeline() {
                 <div className="h-1 w-1 rounded-full bg-stone-300" />
                 <span className={LABEL_STYLE}>{t.pipeline_priority_ops}</span>
               </div>
-              <div className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '400px' }}>
+              <div data-pipeline-hscroll className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '400px' }}>
                 {ACTIVE_STAGES.map((stage) => {
                   const stageDeals = filtered.filter(d => d.stage === stage.id)
 
@@ -844,6 +872,30 @@ export function BusinessPipeline() {
                                           })}
                                         </div>
                                       )}
+                                      {stage.id === 'contacted' && (() => {
+                                        const badge = computeRelanceBadge(deal.contacted_at, relanceDelays, deal.relance_step)
+                                        if (!badge) return null
+                                        return (
+                                          <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                                            <span className="inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300">
+                                              {relanceLabel(badge.number, lang !== 'en')}
+                                            </span>
+                                            {badge.due && (
+                                              <>
+                                                <span className="inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#ba1a1a]/10 dark:bg-red-500/15 text-[#ba1a1a] dark:text-red-300">
+                                                  {lang === 'en' ? 'Follow up today' : 'Relance aujourd’hui'}
+                                                </span>
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); updateProspect(deal.id, { relance_step: (deal.relance_step || 0) + 1 }) }}
+                                                  className="inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#006c49] text-white hover:bg-[#005a3d] transition-colors"
+                                                >
+                                                  {lang === 'en' ? 'Follow-up done' : 'Relance faite'}
+                                                </button>
+                                              </>
+                                            )}
+                                          </div>
+                                        )
+                                      })()}
                                       {deal.value && (
                                         <p className="text-xs font-extrabold text-emerald-600 mt-1">{deal.value.toLocaleString()} €</p>
                                       )}
@@ -881,7 +933,7 @@ export function BusinessPipeline() {
                 <div className="h-1 w-1 rounded-full bg-stone-300" />
                 <span className={LABEL_STYLE}>{t.pipeline_archives}</span>
               </div>
-              <div className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '150px' }}>
+              <div data-pipeline-hscroll className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '150px' }}>
                 {INACTIVE_STAGES.map((stage) => {
                   const stageDeals = filtered.filter(d => d.stage === stage.id)
 
@@ -965,7 +1017,7 @@ export function BusinessPipeline() {
                   <div className="h-1 w-1 rounded-full bg-stone-300" />
                   <span className={LABEL_STYLE}>{t.pipeline_created_by_team}</span>
                 </div>
-                <div className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '250px' }}>
+                <div data-pipeline-hscroll className="flex overflow-x-auto gap-4 pb-2" style={{ minHeight: '250px' }}>
                   {customStages.map((cs) => {
                     const stageId = `custom_${cs.id}`
                     const stageDeals = filtered.filter(d => d.stage === stageId)
