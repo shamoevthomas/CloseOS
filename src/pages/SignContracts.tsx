@@ -190,7 +190,8 @@ export default function SignContracts() {
 
   const filtered = rows.filter((r) => {
     if (query.trim() && !r.title.toLowerCase().includes(query.trim().toLowerCase())) return false;
-    if (statusFilter && r.status !== statusFilter) return false;
+    if (statusFilter === '__template__') { if (!r.isTemplate) return false; }
+    else if (statusFilter && r.status !== statusFilter) return false;
     if (payFilter === 'with' && !r.hasPayment) return false;
     if (payFilter === 'without' && r.hasPayment) return false;
     if (contactFilter === '__any__' && !r.contactId) return false;
@@ -249,6 +250,7 @@ export default function SignContracts() {
           className="min-w-0 flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-[#F3F4F6] outline-none transition-colors focus:border-[#CEFF8F] sm:flex-none"
         >
           <option value="">{lang === 'fr' ? 'Tous les statuts' : 'All statuses'}</option>
+          {rows.some((r) => r.isTemplate) && <option value="__template__">{lang === 'fr' ? 'Modèle' : 'Template'}</option>}
           {distinctStatuses.map((s) => (
             <option key={s} value={s}>{statusLabel(s, lang)}</option>
           ))}
