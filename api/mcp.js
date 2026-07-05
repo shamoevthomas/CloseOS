@@ -401,6 +401,42 @@ const impl = {
     await sbUpdate('sign_owner_sign_sessions', `token=eq.${encodeURIComponent(args.session_token)}`, { status: 'consumed' })
     return { signed: results, note: 'Signature propriétaire appliquée. Transmets les signer_links au(x) client(s).' }
   },
+
+  // ── Modifier un contrat EN BROUILLON (titre, contenu, thème, ou remplacement du PDF) ──
+  async sign_update_contract(args) {
+    if (!args.contract_id) throw new Error('contract_id requis.')
+    const c = await getOwnedContract(args.contract_id, 'id,user_id,status,locked,source_type')
+    if (c.locked) throw new Error('Contrat verrouillé (signé côté propriétaire) — non modifiable.')
+    if (c.status !== 'draft') throw new Error(`Seuls les brouillons sont modifiables (statut actuel : '${c.status}').`)
+    const patch = {}
+    if (args.title != null) patch.title = String(args.title)
+    if (args.theme != null) patch.theme = String(args.theme)
+    if (args.pdf_base64 || args.pdf_url) {
+      const pdf = await loadPdf(args)
+      patch.source_type = 'pdf'; patch.pdf_data = pdf.dataUrl; patch.content_html = null; patch.page_count = pdf.pageCount
+    } else if (args.html != null) {
+      patch.source_type = 'text'; patch.content_html = String(args.html) || '<p><br></p>'; patch.pdf_data = null; patch.page_count = 1
+    }
+    if (!Object.keys(patch).length) throw new Error('Rien à modifier (fournis title, html, theme ou un PDF).')
+    patch.updated_at = new Date().toISOString()
+    await sbUpdate('sign_contracts', `id=eq.${c.id}`, patch)
+    return { contract_id: c.id, updated: Object.keys(patch).filter((k) => k !== 'pdf_data'), editor_url: `${APP_URL}/sign/app/contrat/${c.id}` }
+  },
+
+  // ── Supprimer un contrat (garde-fou sur les contrats signés/certifiés) ──
+  async sign_delete_contract(args) {
+    if (!args.contract_id) throw new Error('contract_id requis.')
+    const c = await getOwnedContract(args.contract_id, 'id,user_id,title,status,certificate_id')
+    const protectedC = c.status === 'signed' || c.status === 'paid' || !!c.certificate_id
+    if (protectedC && !args.confirm) {
+      throw new Error(`Le contrat « ${c.title} » est '${c.status}'${c.certificate_id ? '/certifié' : ''} : le supprimer efface la preuve juridique. Rappelle avec confirm=true pour forcer.`)
+    }
+    for (const t of ['sign_contract_fields', 'sign_contract_signers', 'sign_signature_events', 'sign_verification_codes', 'sign_otp_codes']) {
+      try { await sbDelete(t, `contract_id=eq.${c.id}`) } catch (e) { /* table sans contract_id ou déjà vide */ }
+    }
+    await sbDelete('sign_contracts', `id=eq.${c.id}`)
+    return { deleted: true, contract_id: c.id, title: c.title }
+  },
 }
 
 // ───────── Schémas des outils (exposés à Claude) ─────────
@@ -501,6 +537,27 @@ const TOOLS = [
     name: 'sign_owner_sign',
     description: "SIGNATURE PROPRIÉTAIRE — étape 2. Une fois la page d'autorisation validée (code + signature), applique ta signature à tous tes champs 'owner' des contrats de la session, génère les liens signataires et te les renvoie. À appeler avec le session_token de sign_owner_authorize.",
     inputSchema: { type: 'object', properties: { session_token: { type: 'string' } }, required: ['session_token'] },
+  },
+  {
+    name: 'sign_update_contract',
+    description: "Modifie un contrat EN BROUILLON uniquement : titre, contenu HTML (bascule en contrat texte), thème, ou remplacement du PDF (pdf_base64/pdf_url). Refuse si le contrat n'est pas 'draft' ou est verrouillé.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        contract_id: { type: 'string' },
+        title: { type: 'string', description: 'Nouveau titre' },
+        html: { type: 'string', description: 'Nouveau contenu HTML (remplace, bascule en contrat texte)' },
+        theme: { type: 'string' },
+        pdf_base64: { type: 'string', description: 'Remplace par ce PDF (base64)' },
+        pdf_url: { type: 'string', description: 'Remplace par ce PDF (URL)' },
+      },
+      required: ['contract_id'],
+    },
+  },
+  {
+    name: 'sign_delete_contract',
+    description: "Supprime définitivement un contrat (et ses champs, signataires, événements). Un contrat signé/payé/certifié nécessite confirm=true (sa suppression efface la preuve juridique).",
+    inputSchema: { type: 'object', properties: { contract_id: { type: 'string' }, confirm: { type: 'boolean', description: "true pour forcer la suppression d'un contrat signé/certifié" } }, required: ['contract_id'] },
   },
 ]
 
