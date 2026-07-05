@@ -29,6 +29,7 @@ export default function SignNewContract() {
   const [searchParams] = useSearchParams();
   const contactId = searchParams.get('contact'); // contact à pré-assigner (depuis la fiche contact)
   const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
   const create = async (init: { title: string; content_html: string; theme: ThemeId }) => {
@@ -48,9 +49,8 @@ export default function SignNewContract() {
   const useTemplate = (id: ThemeId) =>
     create({ title: lang === 'fr' ? 'Contrat de prestation' : 'Service agreement', content_html: CONTRACT_TEMPLATE_HTML, theme: id });
 
-  const onPdfFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
+  const importPdf = async (file: File) => {
+    if (busy) return;
     if (!file || file.type !== 'application/pdf') return;
     setBusy(true);
     try {
@@ -62,6 +62,17 @@ export default function SignNewContract() {
       console.error('[sign] import PDF', err);
       setBusy(false);
     }
+  };
+  const onPdfFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) importPdf(file);
+  };
+  const onDropPdf = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) importPdf(file); // importPdf ignore les fichiers non-PDF
   };
 
   return (
@@ -96,15 +107,23 @@ export default function SignNewContract() {
         <input ref={pdfInputRef} type="file" accept="application/pdf" className="hidden" onChange={onPdfFile} />
         <button
           onClick={() => pdfInputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); if (!busy) setDragging(true); }}
+          onDragEnter={(e) => { e.preventDefault(); if (!busy) setDragging(true); }}
+          onDragLeave={(e) => { e.preventDefault(); setDragging(false); }}
+          onDrop={onDropPdf}
           disabled={busy}
-          className="group flex items-center gap-4 rounded-xl border border-[#3A4242] bg-[#222828] p-5 text-left transition-colors hover:border-[#CEFF8F] disabled:opacity-60"
+          className={`group flex items-center gap-4 rounded-xl border bg-[#222828] p-5 text-left transition-colors disabled:opacity-60 ${dragging ? 'border-[#CEFF8F] bg-[#CEFF8F]/5 ring-2 ring-[#CEFF8F]/40' : 'border-[#3A4242] hover:border-[#CEFF8F]'}`}
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-[#3A4242] bg-[#191E1E]">
+          <div className={`flex h-12 w-12 items-center justify-center rounded-lg border ${dragging ? 'border-[#CEFF8F] bg-[#CEFF8F]/10' : 'border-[#3A4242] bg-[#191E1E]'}`}>
             <FileUp className="h-6 w-6 text-[#CEFF8F]" />
           </div>
           <div>
             <div className="font-semibold text-white">{lang === 'fr' ? 'Importer un PDF' : 'Import a PDF'}</div>
-            <div className="text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Posez des champs sur un PDF existant' : 'Place fields on an existing PDF'}</div>
+            <div className="text-xs text-[#A1A9A9]">
+              {dragging
+                ? (lang === 'fr' ? 'Déposez le PDF ici' : 'Drop the PDF here')
+                : (lang === 'fr' ? 'Cliquez ou glissez-déposez un PDF' : 'Click or drag & drop a PDF')}
+            </div>
           </div>
         </button>
       </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, FileSignature, Search, Trash2, Loader2, X, ChevronDown, Check, Copy, Download, Pencil, Files, Send, CheckCircle2, AlertCircle } from 'lucide-react';
-import { listContractsWithCounts, deleteContract, duplicateContract, downloadContractDocument, getContractPdfData, resendContract, type SignContractRow } from '../lib/signContracts';
+import { Plus, FileText, FileSignature, Search, Trash2, Loader2, X, ChevronDown, Check, Copy, Download, Pencil, Files, Send, CheckCircle2, AlertCircle, Folder, FolderPlus, ChevronRight } from 'lucide-react';
+import { listContractsWithCounts, deleteContract, duplicateContract, downloadContractDocument, getContractPdfData, resendContract, listFolders, createFolder, renameFolder, deleteFolder, moveContractToFolder, moveFolder, type SignContractRow, type SignFolder } from '../lib/signContracts';
 import { renderPdfFirstPage } from '../lib/signPdfThumb';
 import { THEME_CSS } from '../lib/signThemes';
 import { useSignLang, signLocale, type SignLang } from '../contexts/SignLangContext';
@@ -67,11 +67,17 @@ export default function SignContracts() {
   const [actionBusy, setActionBusy] = useState<{ id: string; kind: 'dup' | 'dl' | 'send' } | null>(null);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const contactMenuRef = useRef<HTMLDivElement>(null);
+  // Dossiers de rangement (arborescence) + navigation
+  const [folders, setFolders] = useState<SignFolder[]>([]);
+  const [currentFolder, setCurrentFolder] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null); // id de dossier survolé, '__root__', ou null
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(await listContractsWithCounts());
+      const [contracts, fs] = await Promise.all([listContractsWithCounts(), listFolders().catch(() => [])]);
+      setRows(contracts);
+      setFolders(fs);
     } catch (e) {
       console.error('[sign] liste contrats', e);
     } finally {
@@ -204,6 +210,63 @@ export default function SignContracts() {
   const fmtDate = (ts: string) =>
     new Date(ts).toLocaleDateString(signLocale(lang), { day: '2-digit', month: 'short', year: 'numeric' });
 
+  // ── Dossiers : navigation + drag-drop ──
+  const flat = query.trim().length > 0; // recherche active → vue à plat (tous dossiers)
+  const foldersById = useMemo(() => new Map(folders.map((f) => [f.id, f])), [folders]);
+  const folderPath = useMemo(() => {
+    const path: SignFolder[] = [];
+    let id: string | null = currentFolder;
+    while (id) { const f = foldersById.get(id); if (!f) break; path.unshift(f); id = f.parentId; }
+    return path;
+  }, [currentFolder, foldersById]);
+  const subfolders = flat ? [] : folders.filter((f) => (f.parentId ?? null) === currentFolder);
+  const visibleContracts = flat ? filtered : filtered.filter((r) => (r.folderId ?? null) === currentFolder);
+  const contractsInFolder = (fid: string) => rows.filter((r) => (r.folderId ?? null) === fid).length;
+
+  const isInSubtree = (folderId: string, targetId: string | null): boolean => {
+    let id: string | null = targetId;
+    while (id) { if (id === folderId) return true; id = foldersById.get(id)?.parentId ?? null; }
+    return false;
+  };
+  const startDrag = (kind: 'contract' | 'folder', id: string) => (e: React.DragEvent) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ kind, id }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const allowDrop = (target: string) => (e: React.DragEvent) => { e.preventDefault(); setDragOver(target); };
+  const dropTo = async (targetFolderId: string | null, e: React.DragEvent) => {
+    e.preventDefault(); setDragOver(null);
+    let data: any = {};
+    try { data = JSON.parse(e.dataTransfer.getData('text/plain') || '{}'); } catch { return; }
+    if (data.kind === 'contract') {
+      setRows((prev) => prev.map((r) => (r.id === data.id ? { ...r, folderId: targetFolderId } : r)));
+      try { await moveContractToFolder(data.id, targetFolderId); } catch (err) { console.error('[sign] move contract', err); load(); }
+    } else if (data.kind === 'folder') {
+      if (data.id === targetFolderId || isInSubtree(data.id, targetFolderId)) return; // pas de cycle
+      setFolders((prev) => prev.map((f) => (f.id === data.id ? { ...f, parentId: targetFolderId } : f)));
+      try { await moveFolder(data.id, targetFolderId); } catch (err) { console.error('[sign] move folder', err); load(); }
+    }
+  };
+  const addFolder = async () => {
+    const name = window.prompt(lang === 'fr' ? 'Nom du dossier' : 'Folder name');
+    if (!name || !name.trim()) return;
+    try { const f = await createFolder(name, currentFolder); setFolders((prev) => [...prev, f]); }
+    catch (e) { console.error('[sign] create folder', e); setToast({ type: 'err', text: lang === 'fr' ? 'Création du dossier impossible.' : 'Could not create folder.' }); }
+  };
+  const onRenameFolder = async (e: React.MouseEvent, f: SignFolder) => {
+    e.stopPropagation();
+    const name = window.prompt(lang === 'fr' ? 'Renommer le dossier' : 'Rename folder', f.name);
+    if (!name || !name.trim() || name.trim() === f.name) return;
+    setFolders((prev) => prev.map((x) => (x.id === f.id ? { ...x, name: name.trim() } : x)));
+    try { await renameFolder(f.id, name); } catch (err) { console.error('[sign] rename folder', err); load(); }
+  };
+  const onDeleteFolder = async (e: React.MouseEvent, f: SignFolder) => {
+    e.stopPropagation();
+    if (!window.confirm(lang === 'fr' ? `Supprimer le dossier « ${f.name} » ? Son contenu remonte d'un niveau.` : `Delete folder "${f.name}"? Its content moves up one level.`)) return;
+    setFolders((prev) => prev.filter((x) => x.id !== f.id).map((x) => (x.parentId === f.id ? { ...x, parentId: f.parentId } : x)));
+    setRows((prev) => prev.map((r) => (r.folderId === f.id ? { ...r, folderId: f.parentId } : r)));
+    try { await deleteFolder(f.id); } catch (err) { console.error('[sign] delete folder', err); load(); }
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:px-10">
       <style dangerouslySetInnerHTML={{ __html: DOC_BASE_CSS + THEME_CSS }} />
@@ -313,12 +376,83 @@ export default function SignContracts() {
         )}
       </div>
 
+      {/* Fil d'Ariane + nouveau dossier */}
+      {!flat && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-1 text-sm">
+            <button
+              onClick={() => setCurrentFolder(null)}
+              onDragOver={allowDrop('__root__')}
+              onDragLeave={() => setDragOver((d) => (d === '__root__' ? null : d))}
+              onDrop={(e) => dropTo(null, e)}
+              className={`rounded px-2 py-1 font-medium transition-colors ${currentFolder === null ? 'text-white' : 'text-[#A1A9A9] hover:text-white'} ${dragOver === '__root__' ? 'bg-[#CEFF8F]/15 text-[#CEFF8F]' : ''}`}
+            >
+              {lang === 'fr' ? 'Tous les contrats' : 'All contracts'}
+            </button>
+            {folderPath.map((f) => (
+              <span key={f.id} className="flex items-center gap-1">
+                <ChevronRight className="h-3.5 w-3.5 text-[#3A4242]" />
+                <button
+                  onClick={() => setCurrentFolder(f.id)}
+                  onDragOver={allowDrop(f.id)}
+                  onDragLeave={() => setDragOver((d) => (d === f.id ? null : d))}
+                  onDrop={(e) => dropTo(f.id, e)}
+                  className={`rounded px-2 py-1 font-medium transition-colors ${f.id === currentFolder ? 'text-white' : 'text-[#A1A9A9] hover:text-white'} ${dragOver === f.id ? 'bg-[#CEFF8F]/15 text-[#CEFF8F]' : ''}`}
+                >
+                  {f.name}
+                </button>
+              </span>
+            ))}
+          </div>
+          <button onClick={addFolder} className="flex items-center gap-1.5 rounded border border-[#3A4242] px-3 py-2 text-xs font-medium text-[#F3F4F6] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F]">
+            <FolderPlus className="h-4 w-4" /> {lang === 'fr' ? 'Nouveau dossier' : 'New folder'}
+          </button>
+        </div>
+      )}
+
+      {/* Dossiers (draggables + cibles de drop) */}
+      {!flat && subfolders.length > 0 && (
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {subfolders.map((f) => {
+            const c = contractsInFolder(f.id);
+            const s = folders.filter((x) => x.parentId === f.id).length;
+            const meta = [lang === 'fr' ? `${c} contrat${c > 1 ? 's' : ''}` : `${c} contract${c !== 1 ? 's' : ''}`];
+            if (s) meta.push(lang === 'fr' ? `${s} dossier${s > 1 ? 's' : ''}` : `${s} folder${s !== 1 ? 's' : ''}`);
+            return (
+              <div
+                key={f.id}
+                draggable
+                onDragStart={startDrag('folder', f.id)}
+                onDragEnd={() => setDragOver(null)}
+                onDragOver={allowDrop(f.id)}
+                onDragLeave={() => setDragOver((d) => (d === f.id ? null : d))}
+                onDrop={(e) => dropTo(f.id, e)}
+                onClick={() => setCurrentFolder(f.id)}
+                className={`group relative flex cursor-pointer items-center gap-3 rounded-xl border bg-[#222828] p-3.5 transition-all ${dragOver === f.id ? 'border-[#CEFF8F] ring-2 ring-[#CEFF8F]/40' : 'border-[#3A4242] hover:border-[#CEFF8F]'}`}
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#CEFF8F]/30 bg-[#CEFF8F]/10">
+                  <Folder className="h-5 w-5 text-[#CEFF8F]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-white" title={f.name}>{f.name}</p>
+                  <p className="text-[11px] text-[#A1A9A9]">{meta.join(' · ')}</p>
+                </div>
+                <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button onClick={(e) => onRenameFolder(e, f)} title={lang === 'fr' ? 'Renommer' : 'Rename'} className="rounded p-1.5 text-[#A1A9A9] hover:bg-[#191E1E] hover:text-white"><Pencil className="h-3.5 w-3.5" /></button>
+                  <button onClick={(e) => onDeleteFolder(e, f)} title={lang === 'fr' ? 'Supprimer' : 'Delete'} className="rounded p-1.5 text-[#A1A9A9] hover:bg-[#191E1E] hover:text-[#ef6b6b]"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Grille de contrats — max 4 par ligne */}
       {loading ? (
         <div className="flex items-center justify-center rounded-xl border border-[#3A4242] bg-[#222828] px-6 py-24 text-[#A1A9A9]">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : visibleContracts.length === 0 && subfolders.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-[#3A4242] bg-[#222828] px-6 py-24 text-center">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded border border-dashed border-[#3A4242] bg-[#191E1E]">
             <FileText className="h-6 w-6 text-[#A1A9A9]" />
@@ -331,11 +465,14 @@ export default function SignContracts() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((r) => {
+          {visibleContracts.map((r) => {
             const st = STATUS[r.status] ?? STATUS.draft;
             return (
               <div
                 key={r.id}
+                draggable
+                onDragStart={startDrag('contract', r.id)}
+                onDragEnd={() => setDragOver(null)}
                 onClick={() => navigate(r.isTemplate ? `/sign/app/template/${r.id}` : `/sign/app/contrat/${r.id}`)}
                 className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[#3A4242] bg-[#222828] transition-all duration-300 hover:-translate-y-1 hover:border-[#CEFF8F] hover:shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
               >

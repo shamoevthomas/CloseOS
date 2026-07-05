@@ -152,7 +152,55 @@ export type SignContractRow = {
   contentHtml: string | null; // pour la prévisualisation (contrats texte)
   sourceType: string; // 'text' | 'pdf'
   theme: string; // thème du document (rendu fidèle de la prévisu)
+  folderId: string | null; // dossier de rangement (null = racine)
 };
+
+// ─── Dossiers de rangement des contrats (arborescence) ───
+export type SignFolder = { id: string; name: string; parentId: string | null; createdAt: string };
+
+export async function listFolders(): Promise<SignFolder[]> {
+  const { data, error } = await supabase
+    .from('sign_contract_folders')
+    .select('id,name,parent_id,created_at')
+    .eq('user_id', await sessionUserId())
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((f: any) => ({ id: f.id, name: f.name, parentId: f.parent_id ?? null, createdAt: f.created_at }));
+}
+
+export async function createFolder(name: string, parentId: string | null): Promise<SignFolder> {
+  const { data, error } = await supabase
+    .from('sign_contract_folders')
+    .insert({ user_id: await sessionUserId(), name: name.trim(), parent_id: parentId })
+    .select('id,name,parent_id,created_at').single();
+  if (error) throw error;
+  return { id: data.id, name: data.name, parentId: data.parent_id ?? null, createdAt: data.created_at };
+}
+
+export async function renameFolder(id: string, name: string): Promise<void> {
+  const { error } = await supabase.from('sign_contract_folders').update({ name: name.trim() }).eq('id', id);
+  if (error) throw error;
+}
+
+/** Supprime un dossier : ses sous-dossiers et contrats remontent dans le parent. */
+export async function deleteFolder(id: string): Promise<void> {
+  const { data: f } = await supabase.from('sign_contract_folders').select('parent_id').eq('id', id).single();
+  const parent = (f as any)?.parent_id ?? null;
+  await supabase.from('sign_contract_folders').update({ parent_id: parent }).eq('parent_id', id);
+  await supabase.from('sign_contracts').update({ folder_id: parent }).eq('folder_id', id);
+  const { error } = await supabase.from('sign_contract_folders').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function moveContractToFolder(contractId: string, folderId: string | null): Promise<void> {
+  const { error } = await supabase.from('sign_contracts').update({ folder_id: folderId }).eq('id', contractId);
+  if (error) throw error;
+}
+
+export async function moveFolder(folderId: string, parentId: string | null): Promise<void> {
+  const { error } = await supabase.from('sign_contract_folders').update({ parent_id: parentId }).eq('id', folderId);
+  if (error) throw error;
+}
 
 /** Lit le PDF (base64) d'un contrat — à la demande, pour la miniature (jamais en masse). */
 export async function getContractPdfData(id: string): Promise<string | null> {
@@ -1569,7 +1617,7 @@ export async function getSignStats(): Promise<{ signed: number; pending: number;
 export async function listContractsWithCounts(): Promise<SignContractRow[]> {
   const { data, error } = await supabase
     .from('sign_contracts')
-    .select('id,title,status,updated_at,content_html,contact_id,verification_email,verification_method,payment_enabled,payment_status,is_template,template_id,source_type,theme')
+    .select('id,title,status,updated_at,content_html,contact_id,verification_email,verification_method,payment_enabled,payment_status,is_template,template_id,source_type,theme,folder_id')
     .eq('user_id', await sessionUserId())
     .is('template_id', null) // exclut les instances (générées depuis un template)
     .order('updated_at', { ascending: false });
@@ -1653,6 +1701,7 @@ export async function listContractsWithCounts(): Promise<SignContractRow[]> {
     contentHtml: c.content_html ?? null,
     sourceType: c.source_type ?? 'text',
     theme: c.theme ?? 'blank',
+    folderId: c.folder_id ?? null,
   }));
 }
 
