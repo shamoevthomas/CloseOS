@@ -166,6 +166,32 @@ export default function SignTemplateDashboard() {
     }
   };
 
+  // Aperçu « en grand » du MODÈLE lui-même (document seul, lecture seule).
+  const openTemplateDoc = async () => {
+    if (!id) return;
+    setViewerLoading('template');
+    try {
+      const c = await getContract(id);
+      if (!c) { alert(lang === 'fr' ? "Impossible d'afficher le contrat." : 'Unable to display the contract.'); return; }
+      const doc: SignDocData = {
+        title: c.title,
+        sourceType: c.source_type,
+        contentHtml: c.content_html,
+        theme: c.theme,
+        pdfData: c.pdf_data,
+        images: c.images,
+        inlineValues: mergedInlineValues(c.inline_values, c.signers),
+        fields: c.fields,
+      };
+      setViewer({ title: c.title || (lang === 'fr' ? 'Contrat' : 'Contract'), subtitle: lang === 'fr' ? 'Aperçu du modèle' : 'Template preview', doc });
+    } catch (e) {
+      console.error('[sign] aperçu modèle', e);
+      alert(lang === 'fr' ? "Impossible d'afficher le contrat." : 'Unable to display the contract.');
+    } finally {
+      setViewerLoading(null);
+    }
+  };
+
   // Ouvre le certificat de preuve scellé (bucket privé) dans un nouvel onglet.
   const openCertificate = async (inst: SignInstanceRow) => {
     setCertBusy(inst.id);
@@ -236,9 +262,14 @@ export default function SignTemplateDashboard() {
             <p className="mt-1 text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Générez des liens de signature, suivez les signatures, gérez vos closers.' : 'Generate signing links, track signatures, manage your closers.'}</p>
           </div>
         </div>
-        <button onClick={() => navigate(`/sign/app/contrat/${id}`)} className="flex w-full items-center justify-center gap-2 rounded border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-[#F3F4F6] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F] md:w-auto">
-          <Pencil className="h-4 w-4" /> {lang === 'fr' ? 'Éditer le modèle' : 'Edit template'}
-        </button>
+        <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
+          <button onClick={openTemplateDoc} disabled={viewerLoading === 'template'} className="flex w-full items-center justify-center gap-2 rounded border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-[#F3F4F6] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F] disabled:opacity-50 md:w-auto">
+            {viewerLoading === 'template' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />} {lang === 'fr' ? 'Voir le contrat' : 'View contract'}
+          </button>
+          <button onClick={() => navigate(`/sign/app/contrat/${id}`)} className="flex w-full items-center justify-center gap-2 rounded border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-[#F3F4F6] transition-colors hover:border-[#CEFF8F] hover:text-[#CEFF8F] md:w-auto">
+            <Pencil className="h-4 w-4" /> {lang === 'fr' ? 'Éditer le modèle' : 'Edit template'}
+          </button>
+        </div>
       </div>
 
       {/* Compteurs */}
