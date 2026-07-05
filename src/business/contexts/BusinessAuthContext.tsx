@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
+import { retryOnAbort, isTransientAbort } from '../../lib/supabaseHelpers';
 import { getBrowserTimezone } from '../../lib/timezone';
 
 export const BusinessAuthContext = createContext<any>(null);
@@ -61,23 +62,40 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
 
     try {
       console.log('[BusinessAuth] initUser called for:', userId);
-      // Fetch business_users AND Sales profile (with active org) in parallel
+      // Fetch business_users AND Sales profile (with active org) in parallel.
+      // retryOnAbort : rejoue les requêtes annulées (verrou d'auth multi-onglets / réseau)
+      // pour ne PAS conclure à tort "pas de compte" → écran onboarding / déconnexion.
       const [profileRes, salesRes] = await Promise.all([
-        supabase.from('business_users').select('*').eq('id', userId).maybeSingle(),
-        supabase.from('profiles').select('id, business_owner_id').eq('id', userId).maybeSingle(),
+        retryOnAbort(() => supabase.from('business_users').select('*').eq('id', userId).maybeSingle()),
+        retryOnAbort(() => supabase.from('profiles').select('id, business_owner_id').eq('id', userId).maybeSingle()),
       ]);
 
       // Fetch team member scoped to active org (supports multi-org)
-      let teamQuery = supabase.from('business_team_members').select('*').eq('user_id', userId);
-      if (salesRes.data?.business_owner_id) {
-        teamQuery = teamQuery.eq('business_owner_id', salesRes.data.business_owner_id);
-      }
-      const teamRes = await teamQuery.maybeSingle();
+      const teamRes = await retryOnAbort(() => {
+        let teamQuery = supabase.from('business_team_members').select('*').eq('user_id', userId);
+        if (salesRes.data?.business_owner_id) {
+          teamQuery = teamQuery.eq('business_owner_id', salesRes.data.business_owner_id);
+        }
+        return teamQuery.maybeSingle();
+      });
 
       console.log('[BusinessAuth] profileRes:', profileRes.data, profileRes.error);
       console.log('[BusinessAuth] teamRes:', teamRes.data, teamRes.error);
 
       if (!isMountedRef.current || initVersionRef.current !== version) return;
+
+      // Filet de sécurité : si les requêtes déterminantes ont échoué sur une erreur
+      // transitoire (abort/réseau) sans aucune donnée, l'état est INDÉTERMINÉ.
+      // On affiche "Erreur de connexion / Réessayer" au lieu de déconnecter ou de
+      // rebasculer vers l'onboarding.
+      const inconclusive =
+        !profileRes.data && !teamRes.data && !salesRes.data &&
+        (isTransientAbort(profileRes.error) || isTransientAbort(teamRes.error) || isTransientAbort(salesRes.error));
+      if (inconclusive) {
+        console.warn('[BusinessAuth] init indéterminée (erreurs transitoires) — pas de déconnexion');
+        if (isMountedRef.current) { setAuthError(true); setLoading(false); }
+        return;
+      }
 
       // Block Sales users: has a profiles row but NO business_users/team_members row
       const hasBusinessAccount = !!(profileRes.data || teamRes.data);

@@ -83,6 +83,13 @@ async function getOwnedContract(id, cols) {
   if (c.user_id && c.user_id !== uid) throw new Error(`Le contrat ${id} n'appartient pas à ${OWNER_EMAIL}.`)
   return c
 }
+async function getOwnedFolder(id) {
+  const uid = await ownerId()
+  const rows = await sbSelect(`sign_contract_folders?id=eq.${encodeURIComponent(id)}&select=id,user_id,name,parent_id&limit=1`)
+  if (!rows || !rows[0]) throw new Error(`Dossier ${id} introuvable.`)
+  if (rows[0].user_id !== uid) throw new Error(`Le dossier ${id} n'appartient pas à ${OWNER_EMAIL}.`)
+  return rows[0]
+}
 
 // Compte de pages best-effort (sans pdf-lib) : compte les objets /Type /Page.
 function pdfPageCount(bytes) {
@@ -437,6 +444,89 @@ const impl = {
     await sbDelete('sign_contracts', `id=eq.${c.id}`)
     return { deleted: true, contract_id: c.id, title: c.title }
   },
+
+  // ── Récupérer les liens de signature d'un contrat (/sign/s/<token>) ──
+  async sign_get_signer_links(args) {
+    if (!args.contract_id) throw new Error('contract_id requis.')
+    const c = await getOwnedContract(args.contract_id, 'id,user_id,title,status,is_template')
+    if (c.is_template) throw new Error("C'est un modèle : utilise sign_list_closers pour les liens closers.")
+    const links = await ensureSignerLinks(c.id)
+    if (!links.length) throw new Error('Aucun signataire (configure-les via sign_configure_contract).')
+    return { contract_id: c.id, title: c.title, status: c.status, signer_links: links }
+  },
+
+  // ── Récupérer les liens des closers d'un modèle (/sign/rep/<token>) ──
+  async sign_list_closers(args) {
+    if (!args.template_id) throw new Error('template_id requis.')
+    const uid = await ownerId()
+    const c = await getOwnedContract(args.template_id, 'id,user_id,title,is_template')
+    const reps = await sbSelect(`sign_template_reps?template_id=eq.${c.id}&user_id=eq.${uid}&select=id,label,email,access_token,status,created_at&order=created_at.asc`)
+    return {
+      template_id: c.id,
+      title: c.title,
+      is_template: !!c.is_template,
+      closers: (reps || []).map((r) => ({ name: r.label, email: r.email, status: r.status, rep_link: `${APP_URL}/sign/rep/${r.access_token}` })),
+    }
+  },
+
+  // ── Dossiers de rangement (arborescence) ──
+  async sign_list_folders() {
+    const uid = await ownerId()
+    const folders = await sbSelect(`sign_contract_folders?user_id=eq.${uid}&select=id,name,parent_id,created_at&order=name.asc`)
+    return { count: (folders || []).length, folders: (folders || []).map((f) => ({ id: f.id, name: f.name, parent_id: f.parent_id ?? null })) }
+  },
+
+  async sign_create_folder(args) {
+    if (!args.name || !String(args.name).trim()) throw new Error('name requis.')
+    const uid = await ownerId()
+    const parent_id = args.parent_id ?? null
+    if (parent_id) await getOwnedFolder(parent_id)
+    const ins = await sbInsert('sign_contract_folders', { user_id: uid, name: String(args.name).trim(), parent_id }, true)
+    const f = Array.isArray(ins) ? ins[0] : ins
+    return { folder_id: f.id, name: f.name, parent_id: f.parent_id ?? null }
+  },
+
+  async sign_update_folder(args) {
+    if (!args.folder_id) throw new Error('folder_id requis.')
+    const f = await getOwnedFolder(args.folder_id)
+    const patch = {}
+    if (args.name != null && String(args.name).trim()) patch.name = String(args.name).trim()
+    if (args.parent_id !== undefined) {
+      const newParent = args.parent_id ?? null
+      if (newParent) {
+        if (newParent === f.id) throw new Error('Un dossier ne peut pas être son propre parent.')
+        await getOwnedFolder(newParent)
+        const all = await sbSelect(`sign_contract_folders?user_id=eq.${await ownerId()}&select=id,parent_id`)
+        const byId = new Map((all || []).map((x) => [x.id, x.parent_id ?? null]))
+        let cur = newParent
+        while (cur) { if (cur === f.id) throw new Error('Déplacement impossible (cycle).'); cur = byId.get(cur) ?? null }
+      }
+      patch.parent_id = newParent
+    }
+    if (!Object.keys(patch).length) throw new Error('Rien à modifier (fournis name et/ou parent_id).')
+    await sbUpdate('sign_contract_folders', `id=eq.${f.id}`, patch)
+    return { folder_id: f.id, updated: patch }
+  },
+
+  async sign_delete_folder(args) {
+    if (!args.folder_id) throw new Error('folder_id requis.')
+    const f = await getOwnedFolder(args.folder_id)
+    const parent = f.parent_id ?? null
+    // sous-dossiers et contrats du dossier remontent d'un niveau
+    await sbUpdate('sign_contract_folders', `parent_id=eq.${f.id}`, { parent_id: parent })
+    await sbUpdate('sign_contracts', `folder_id=eq.${f.id}`, { folder_id: parent })
+    await sbDelete('sign_contract_folders', `id=eq.${f.id}`)
+    return { deleted: true, folder_id: f.id, name: f.name, contents_moved_to: parent }
+  },
+
+  async sign_move_contract(args) {
+    if (!args.contract_id) throw new Error('contract_id requis.')
+    const c = await getOwnedContract(args.contract_id, 'id,user_id,title')
+    const folder_id = args.folder_id ?? null
+    if (folder_id) await getOwnedFolder(folder_id)
+    await sbUpdate('sign_contracts', `id=eq.${c.id}`, { folder_id })
+    return { contract_id: c.id, title: c.title, folder_id }
+  },
 }
 
 // ───────── Schémas des outils (exposés à Claude) ─────────
@@ -558,6 +648,41 @@ const TOOLS = [
     name: 'sign_delete_contract',
     description: "Supprime définitivement un contrat (et ses champs, signataires, événements). Un contrat signé/payé/certifié nécessite confirm=true (sa suppression efface la preuve juridique).",
     inputSchema: { type: 'object', properties: { contract_id: { type: 'string' }, confirm: { type: 'boolean', description: "true pour forcer la suppression d'un contrat signé/certifié" } }, required: ['contract_id'] },
+  },
+  {
+    name: 'sign_get_signer_links',
+    description: "Récupère les liens de signature (/sign/s/<token>) d'un contrat, un par signataire (génère le token s'il manque, sans marquer 'envoyé'). Pour copier/transmettre les liens.",
+    inputSchema: { type: 'object', properties: { contract_id: { type: 'string' } }, required: ['contract_id'] },
+  },
+  {
+    name: 'sign_list_closers',
+    description: "Liste les closers d'un modèle avec leur lien d'espace closer (/sign/rep/<token>), leur nom, email et statut. Pour copier/transmettre les liens des closers.",
+    inputSchema: { type: 'object', properties: { template_id: { type: 'string', description: 'UUID du modèle' } }, required: ['template_id'] },
+  },
+  {
+    name: 'sign_list_folders',
+    description: 'Liste les dossiers de rangement (id, nom, parent_id). parent_id=null = à la racine. Utile pour connaître les id avant de créer/déplacer.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'sign_create_folder',
+    description: "Crée un dossier de rangement. Fournir parent_id pour l'imbriquer dans un dossier existant (sinon à la racine).",
+    inputSchema: { type: 'object', properties: { name: { type: 'string' }, parent_id: { type: 'string', description: 'UUID du dossier parent (optionnel = racine)' } }, required: ['name'] },
+  },
+  {
+    name: 'sign_update_folder',
+    description: 'Modifie un dossier : renommer (name) et/ou le déplacer dans un autre dossier (parent_id ; null = racine). Empêche les cycles.',
+    inputSchema: { type: 'object', properties: { folder_id: { type: 'string' }, name: { type: 'string' }, parent_id: { type: ['string', 'null'], description: 'Nouveau parent (null = racine)' } }, required: ['folder_id'] },
+  },
+  {
+    name: 'sign_delete_folder',
+    description: "Supprime un dossier. Son contenu (sous-dossiers et contrats) remonte d'un niveau (dans le dossier parent, ou à la racine).",
+    inputSchema: { type: 'object', properties: { folder_id: { type: 'string' } }, required: ['folder_id'] },
+  },
+  {
+    name: 'sign_move_contract',
+    description: 'Range un contrat dans un dossier. folder_id = UUID du dossier, ou null pour le remettre à la racine.',
+    inputSchema: { type: 'object', properties: { contract_id: { type: 'string' }, folder_id: { type: ['string', 'null'], description: 'UUID du dossier (null = racine)' } }, required: ['contract_id'] },
   },
 ]
 
