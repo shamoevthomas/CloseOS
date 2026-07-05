@@ -335,6 +335,7 @@ export function BusinessPipeline() {
         (p.contact || '').toLowerCase().includes(q) ||
         (p.company || '').toLowerCase().includes(q) ||
         (p.email || '').toLowerCase().includes(q) ||
+        (p.phone || '').toLowerCase().includes(q) ||
         (p.firstName || '').toLowerCase().includes(q) ||
         (p.lastName || '').toLowerCase().includes(q)
       )
@@ -809,7 +810,7 @@ export function BusinessPipeline() {
                               <Settings className="h-3.5 w-3.5" />
                             </button>
                           )}
-                          <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5">
+                          <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500 dark:text-neutral-400">
                             {stageDeals.length}
                           </span>
                         </div>
@@ -944,7 +945,7 @@ export function BusinessPipeline() {
                           <div className={cn("h-2.5 w-2.5 rounded-full", stage.id === 'lost' ? 'bg-[#ba1a1a]/40' : 'bg-stone-300')} />
                           <span className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-neutral-300">{stageNames[stage.id] || stage.name}</span>
                         </div>
-                        <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500">
+                        <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500 dark:text-neutral-400">
                           {stageDeals.length}
                         </span>
                       </div>
@@ -1030,7 +1031,7 @@ export function BusinessPipeline() {
                             <span className="text-sm font-extrabold tracking-tight text-stone-900 dark:text-white">{cs.name}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5">
+                            <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500 dark:text-neutral-400">
                               {stageDeals.length}
                             </span>
                             {canManage && (

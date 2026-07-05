@@ -1902,7 +1902,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'formulas-create' && req.method === 'POST') {
-      const { user_id, name, price, description, resources, team_id, billing_type, billing_interval, yearly_price } = req.body
+      const { user_id, name, price, description, pitch, resources, team_id, billing_type, billing_interval, yearly_price } = req.body
       if (!user_id || !name) return res.status(400).json({ error: 'user_id and name required' })
 
       // Ensure business_users entry exists
@@ -1927,6 +1927,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           user_id, name,
           price: price || 0,
           description: description || null,
+          pitch: pitch || null,
           resources: resources || [],
           is_active: true,
           team_id: team_id || null,

@@ -1966,6 +1966,12 @@ export interface BusinessTranslations {
   formulas_stripe_not_connected_desc: string;
   formulas_description_label: string;
   formulas_description_placeholder: string;
+  formulas_tab_details: string;
+  formulas_tab_pitch: string;
+  formulas_pitch_label: string;
+  formulas_pitch_hint: string;
+  formulas_pitch_placeholder: string;
+  formulas_pitch_empty: string;
   formulas_team_assigned: string;
   formulas_all_team: string;
   formulas_team_hint: string;
@@ -2164,6 +2170,9 @@ export interface BusinessTranslations {
   callroom_record: string;
   callroom_end: string;
   callroom_formulas_tab: string;
+  callroom_view_pitch: string;
+  callroom_back_to_script: string;
+  callroom_pitch_empty: string;
   callroom_resources_tab: string;
   callroom_subscription: string;
   callroom_quote: string;
@@ -2670,7 +2679,9 @@ export const fr: BusinessTranslations = {
 
   // ─── CRM ───
   crm_title: 'CRM',
-  crm_search_placeholder: 'Rechercher un prospect...',
+  crm_search_placeholder: 'Rechercher par nom, email ou téléphone...',
+  closer_crm_search_placeholder: 'Rechercher par nom, email ou téléphone...',
+  closer_pipeline_search_placeholder: 'Rechercher par nom, email ou téléphone...',
   crm_add_prospect: 'Ajouter un prospect',
   crm_no_prospects: 'Aucun prospect pour le moment',
   crm_status_new: 'Nouveau',
@@ -4381,6 +4392,12 @@ export const fr: BusinessTranslations = {
   formulas_stripe_not_connected_desc: 'Connectez Stripe dans Chiffre d\'affaires pour lier automatiquement les paiements récurrents.',
   formulas_description_label: 'Description',
   formulas_description_placeholder: 'Décrivez cette formule...',
+  formulas_tab_details: 'Détails',
+  formulas_tab_pitch: 'Pitch',
+  formulas_pitch_label: "Pitch de l'offre",
+  formulas_pitch_hint: "Rédigez ici tout l'argumentaire de vente : bénéfices, contenu détaillé, garanties, réponses aux objections. Ce pitch sera consultable par les closers pendant leurs appels.",
+  formulas_pitch_placeholder: "Écrivez le pitch complet de l'offre, avec titres, listes et mise en forme...",
+  formulas_pitch_empty: 'Aucun pitch renseigné pour cette formule.',
   formulas_team_assigned: 'Équipe assignée',
   formulas_all_team: 'Toute l\'équipe',
   formulas_team_hint: 'Les commissions avancées ne montreront que les membres de cette équipe.',
@@ -4579,6 +4596,9 @@ export const fr: BusinessTranslations = {
   callroom_record: 'Enregistrer',
   callroom_end: 'Fin d\'appel',
   callroom_formulas_tab: 'Formules',
+  callroom_view_pitch: 'Pitch',
+  callroom_back_to_script: 'Script',
+  callroom_pitch_empty: 'Aucun pitch renseigné pour cette formule.',
   callroom_resources_tab: 'Ressources',
   callroom_subscription: 'Abonnement',
   callroom_quote: 'Sur devis',
@@ -4704,7 +4724,7 @@ export const fr: BusinessTranslations = {
   pipeline_elements: 'elements',
   pipeline_no_prospects: 'Aucun prospect trouve',
   pipeline_create_status: 'Creer le statut',
-  pipeline_search: 'Rechercher...',
+  pipeline_search: 'Rechercher par nom, email ou téléphone...',
   pipeline_filters: 'Filtres',
   pipeline_reset_all: 'Réinitialiser tout',
   pipeline_new_status: 'Nouveau statut',
@@ -5701,7 +5721,9 @@ export const en: BusinessTranslations = {
 
   // ─── CRM ───
   crm_title: 'CRM',
-  crm_search_placeholder: 'Search a prospect...',
+  crm_search_placeholder: 'Search by name, email or phone...',
+  closer_crm_search_placeholder: 'Search by name, email or phone...',
+  closer_pipeline_search_placeholder: 'Search by name, email or phone...',
   crm_add_prospect: 'Add prospect',
   crm_no_prospects: 'No prospects yet',
   crm_status_new: 'New',
@@ -6269,6 +6291,12 @@ export const en: BusinessTranslations = {
   formulas_stripe_not_connected_desc: 'Connect Stripe in Revenue to automatically link recurring payments.',
   formulas_description_label: 'Description',
   formulas_description_placeholder: 'Describe this plan...',
+  formulas_tab_details: 'Details',
+  formulas_tab_pitch: 'Pitch',
+  formulas_pitch_label: 'Offer pitch',
+  formulas_pitch_hint: 'Write the full sales argument here: benefits, detailed content, guarantees, objection handling. This pitch will be available to closers during their calls.',
+  formulas_pitch_placeholder: 'Write the full offer pitch, with headings, lists and formatting...',
+  formulas_pitch_empty: 'No pitch set for this plan.',
   formulas_team_assigned: 'Assigned team',
   formulas_all_team: 'All team',
   formulas_team_hint: 'Advanced commissions will only show members from this team.',
@@ -6720,6 +6748,9 @@ export const en: BusinessTranslations = {
 
   // ─── Call Room ───
   callroom_title: 'Call cockpit',
+  callroom_view_pitch: 'Pitch',
+  callroom_back_to_script: 'Script',
+  callroom_pitch_empty: 'No pitch set for this plan.',
   callroom_script: 'Script',
   callroom_notes: 'Notes',
   callroom_offer: 'Offer',
@@ -7618,7 +7649,7 @@ export const en: BusinessTranslations = {
   pipeline_elements: 'items',
   pipeline_no_prospects: 'No prospects found',
   pipeline_create_status: 'Create status',
-  pipeline_search: 'Search...',
+  pipeline_search: 'Search by name, email or phone...',
   pipeline_filters: 'Filters',
   pipeline_reset_all: 'Reset all',
   pipeline_new_status: 'New status',

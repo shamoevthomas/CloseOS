@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
-  Monitor, PhoneOff, ChevronDown, ChevronUp, ExternalLink, FileText,
+  Monitor, PhoneOff, ChevronDown, ChevronUp, ChevronLeft, ExternalLink, FileText,
   Briefcase, BookOpen, ScrollText, Tag, User, Clock,
   Bold, List, Share2, Mic, Zap, Settings, Package, Copy, Check,
   Download, Mail, X, Loader2, Send,
 } from 'lucide-react'
+import { sanitizeRichHtml } from '../components/RichTextEditor'
 import { supabase } from '../../lib/supabase'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
@@ -64,6 +65,8 @@ export function CloserCallRoom() {
 
   // All business formulas
   const [allFormulas, setAllFormulas] = useState<any[]>([])
+  // When set, the upper "Script" panel shows this formula's pitch instead of the script
+  const [pitchFormula, setPitchFormula] = useState<any | null>(null)
   const [expandedFormulas, setExpandedFormulas] = useState<Set<string>>(new Set())
   const [selectedResourceFormulaId, setSelectedResourceFormulaId] = useState<string>('')
   const [copiedResourceIdx, setCopiedResourceIdx] = useState<number | null>(null)
@@ -343,21 +346,44 @@ export function CloserCallRoom() {
 
           {/* Upper: Script */}
           <div className="h-1/2 flex flex-col p-7 space-y-5 overflow-hidden">
-            <div className="flex items-center justify-between">
-              <h2 className="font-extrabold text-2xl tracking-tight text-stone-900 dark:text-white">Script</h2>
-              <div className="relative">
-                <select value={selectedScriptId} onChange={(e) => setSelectedScriptId(e.target.value)}
-                  className="appearance-none bg-white dark:bg-neutral-800 border-none rounded-full px-5 py-2 pr-10 text-xs font-bold shadow-sm focus:ring-2 focus:ring-emerald-600/20 cursor-pointer dark:text-white">
-                  {scripts.map(s => <option key={s.id} value={s.id}>{s.title || t.callroom_no_title}</option>)}
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
-              </div>
-            </div>
-            <div className="flex-1 bg-white dark:bg-white/5 rounded-2xl p-7 overflow-y-auto no-scrollbar shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-stone-200/10 dark:border-white/10">
-              <div className="space-y-7 max-w-prose">
-                <div className="prose prose-sm max-w-none text-stone-800 dark:text-neutral-100 whitespace-pre-wrap leading-relaxed font-medium">{currentScriptContent}</div>
-              </div>
-            </div>
+            {pitchFormula ? (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    onClick={() => setPitchFormula(null)}
+                    className="flex items-center gap-1.5 shrink-0 rounded-full bg-white dark:bg-neutral-800 px-4 py-2 text-xs font-bold shadow-sm text-stone-600 dark:text-neutral-300 hover:text-stone-900 dark:hover:text-white transition-colors"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" /> {t.callroom_back_to_script}
+                  </button>
+                  <h2 className="font-extrabold text-xl tracking-tight text-stone-900 dark:text-white truncate">{pitchFormula.name}</h2>
+                </div>
+                <div className="flex-1 bg-white dark:bg-white/5 rounded-2xl p-7 overflow-y-auto no-scrollbar shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-stone-200/10 dark:border-white/10">
+                  {pitchFormula.pitch ? (
+                    <div className="prose prose-sm max-w-none text-stone-800 dark:text-neutral-100 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(pitchFormula.pitch) }} />
+                  ) : (
+                    <p className="text-sm text-stone-400 dark:text-neutral-500">{t.callroom_pitch_empty}</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-extrabold text-2xl tracking-tight text-stone-900 dark:text-white">Script</h2>
+                  <div className="relative">
+                    <select value={selectedScriptId} onChange={(e) => setSelectedScriptId(e.target.value)}
+                      className="appearance-none bg-white dark:bg-neutral-800 border-none rounded-full px-5 py-2 pr-10 text-xs font-bold shadow-sm focus:ring-2 focus:ring-emerald-600/20 cursor-pointer dark:text-white">
+                      {scripts.map(s => <option key={s.id} value={s.id}>{s.title || t.callroom_no_title}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div className="flex-1 bg-white dark:bg-white/5 rounded-2xl p-7 overflow-y-auto no-scrollbar shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-stone-200/10 dark:border-white/10">
+                  <div className="space-y-7 max-w-prose">
+                    <div className="prose prose-sm max-w-none text-stone-800 dark:text-neutral-100 whitespace-pre-wrap leading-relaxed font-medium">{currentScriptContent}</div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Lower: Offer & Resources */}
@@ -389,7 +415,7 @@ export function CloserCallRoom() {
                 <div className="space-y-2.5">
                   {allFormulas.length > 0 ? (
                     allFormulas.map((formula: any) => {
-                      const isExpandable = formula.billing_type === 'subscription' || formula.billing_type === 'quote'
+                      const isExpandable = formula.billing_type === 'subscription' || formula.billing_type === 'quote' || (formula.billing_type === 'one_time' && !!formula.description)
                       const isExpanded = expandedFormulas.has(formula.id)
                       const toggleExpand = () => {
                         setExpandedFormulas(prev => {
@@ -414,13 +440,24 @@ export function CloserCallRoom() {
                               {formula.description && !isExpanded && (
                                 <p className="text-xs text-stone-400 dark:text-neutral-500 truncate mt-0.5">{formula.description}</p>
                               )}
+                              {formula.pitch && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setPitchFormula(formula) }}
+                                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all"
+                                >
+                                  <FileText className="h-3.5 w-3.5" /> {t.callroom_view_pitch}
+                                </button>
+                              )}
                             </div>
 
-                            {/* One-time: prix directement affiché, pas de chevron */}
+                            {/* One-time: prix affiché, + chevron si description à dérouler */}
                             {formula.billing_type === 'one_time' && (
-                              <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 shrink-0">
-                                {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                              </span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-sm font-black text-emerald-700 dark:text-emerald-400">
+                                  {formula.price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                </span>
+                                {isExpandable && (isExpanded ? <ChevronUp className="h-4 w-4 text-stone-400" /> : <ChevronDown className="h-4 w-4 text-stone-400" />)}
+                              </div>
                             )}
 
                             {/* Subscription: badge + chevron */}

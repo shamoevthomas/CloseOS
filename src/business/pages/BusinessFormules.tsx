@@ -9,6 +9,7 @@ import {
   CreditCard, CheckCircle2, AlertTriangle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { RichTextEditor, sanitizeRichHtml } from '../components/RichTextEditor'
 
 interface Resource {
   name: string
@@ -21,6 +22,7 @@ interface Formula {
   name: string
   price: number
   description: string | null
+  pitch?: string | null
   resources: Resource[]
   is_active: boolean
   created_at: string
@@ -72,6 +74,8 @@ export function BusinessFormules() {
   const [formName, setFormName] = useState('')
   const [formPrice, setFormPrice] = useState('')
   const [formDescription, setFormDescription] = useState('')
+  const [formPitch, setFormPitch] = useState('')
+  const [modalTab, setModalTab] = useState<'details' | 'pitch'>('details')
   const [formResources, setFormResources] = useState<Resource[]>([])
   const [formBillingType, setFormBillingType] = useState<'one_time' | 'subscription' | 'quote'>('one_time')
   const [formQuarterlyPrice, setFormQuarterlyPrice] = useState('')
@@ -92,13 +96,13 @@ export function BusinessFormules() {
   useEffect(() => {
     if (!isModalOpen) return
     const draft = {
-      formName, formPrice, formDescription, formResources,
+      formName, formPrice, formDescription, formPitch, formResources,
       formBillingType, formQuarterlyPrice, formYearlyPrice, formTeamId,
       roleRates, memberRates,
       editingFormulaId: editingFormula?.id || null,
     }
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
-  }, [isModalOpen, formName, formPrice, formDescription, formResources, formBillingType, formQuarterlyPrice, formYearlyPrice, formTeamId, roleRates, memberRates, editingFormula])
+  }, [isModalOpen, formName, formPrice, formDescription, formPitch, formResources, formBillingType, formQuarterlyPrice, formYearlyPrice, formTeamId, roleRates, memberRates, editingFormula])
 
   // Restore draft on mount if one exists
   useEffect(() => {
@@ -109,6 +113,7 @@ export function BusinessFormules() {
       setFormName(d.formName || '')
       setFormPrice(d.formPrice || '')
       setFormDescription(d.formDescription || '')
+      setFormPitch(d.formPitch || '')
       setFormResources(d.formResources || [])
       setFormBillingType(d.formBillingType || 'one_time')
       setFormQuarterlyPrice(d.formQuarterlyPrice || '')
@@ -183,7 +188,8 @@ export function BusinessFormules() {
   }
 
   const resetForm = () => {
-    setFormName(''); setFormPrice(''); setFormDescription('')
+    setFormName(''); setFormPrice(''); setFormDescription(''); setFormPitch('')
+    setModalTab('details')
     setFormResources([]); setEditingFormula(null)
     setRoleRates({}); setMemberRates({}); setExpandedRoles({})
     setFormTeamId(null); setFormBillingType('one_time'); setFormQuarterlyPrice(''); setFormYearlyPrice('')
@@ -197,6 +203,8 @@ export function BusinessFormules() {
     setFormName(formula.name)
     setFormPrice(formula.price?.toString() || '0')
     setFormDescription(formula.description || '')
+    setFormPitch(formula.pitch || '')
+    setModalTab('details')
     setFormResources(formula.resources || [])
     setFormTeamId(formula.team_id || null)
     setFormBillingType(formula.billing_type || 'one_time')
@@ -255,6 +263,7 @@ export function BusinessFormules() {
         user_id: user?.id,
         name: formName,
         description: formDescription || null,
+        pitch: formPitch || null,
         resources: formResources,
         team_id: formTeamId || null,
         billing_type: formBillingType,
@@ -494,8 +503,31 @@ export function BusinessFormules() {
               </button>
             </div>
 
+            {/* Tabs */}
+            <div className="flex items-center gap-1 border-b border-stone-100 dark:border-neutral-800 px-4 md:px-8 flex-shrink-0">
+              {([
+                { id: 'details', label: t.formulas_tab_details },
+                { id: 'pitch', label: t.formulas_tab_pitch },
+              ] as const).map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setModalTab(tab.id)}
+                  className={`px-4 py-3 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+                    modalTab === tab.id
+                      ? 'border-stone-900 dark:border-white text-stone-900 dark:text-white'
+                      : 'border-transparent text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             {/* Content - scrollable */}
-            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-6 space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-6">
+              {/* DETAILS TAB */}
+              <div className={`space-y-6 ${modalTab !== 'details' ? 'hidden' : ''}`}>
               {/* Name */}
               <div>
                 <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-2">{t.formulas_formula_name_label}</label>
@@ -928,6 +960,21 @@ export function BusinessFormules() {
                   </div>
                 </div>
               )}
+              </div>
+
+              {/* PITCH TAB */}
+              <div className={modalTab !== 'pitch' ? 'hidden' : ''}>
+                <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.formulas_pitch_label}</label>
+                <p className="text-xs text-stone-400 dark:text-neutral-500 mb-3">{t.formulas_pitch_hint}</p>
+                {isTeamMember ? (
+                  <div
+                    className="prose-pitch rounded-2xl border border-stone-200 dark:border-neutral-800 bg-stone-50 dark:bg-neutral-800 px-4 py-3 text-sm text-stone-700 dark:text-neutral-300 leading-relaxed min-h-[220px]"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(formPitch) || `<span class="text-stone-400">${t.formulas_pitch_empty}</span>` }}
+                  />
+                ) : (
+                  <RichTextEditor value={formPitch} onChange={setFormPitch} rows={12} placeholder={t.formulas_pitch_placeholder} />
+                )}
+              </div>
             </div>
 
             {/* Footer */}

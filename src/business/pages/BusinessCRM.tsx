@@ -321,6 +321,7 @@ export function BusinessCRM() {
         (p.contact || '').toLowerCase().includes(q) ||
         (p.company || '').toLowerCase().includes(q) ||
         (p.email || '').toLowerCase().includes(q) ||
+        (p.phone || '').toLowerCase().includes(q) ||
         (p.firstName || '').toLowerCase().includes(q) ||
         (p.lastName || '').toLowerCase().includes(q)
       )

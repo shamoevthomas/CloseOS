@@ -48,7 +48,7 @@ function sortReminders(reminders: Reminder[]): Reminder[] {
   })
 }
 
-function formatReminderDate(dateStr: string, timezone: string): { date: string; time: string; isOverdue: boolean } {
+function formatReminderDate(dateStr: string, timezone: string, t: Record<string, string>, lang: string): { date: string; time: string; isOverdue: boolean } {
   const local = fromUTC(dateStr, timezone)
   const d = new Date(`${local.date}T${local.time}:00`)
   const now = new Date()
@@ -342,7 +342,7 @@ export function BusinessReminders() {
               const config = statusConfig[status]
               const prospectName = getProspectName(reminder.prospect_id)
               const isLoading = actionLoading === reminder.id
-              const { date: fmtDate, time: fmtTime, isOverdue } = formatReminderDate(reminder.reminder_date, userTimezone)
+              const { date: fmtDate, time: fmtTime, isOverdue } = formatReminderDate(reminder.reminder_date, userTimezone, t, lang)
 
               return (
                 <div
