@@ -677,7 +677,7 @@ export default function SignPublic() {
       {/* Page verrouillée (3 essais ratés) : flou + cadenas */}
       {locked && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#191E1E]/80 px-4 backdrop-blur-xl">
-          <div className="max-w-md rounded-2xl border border-[#3A4242] bg-[#222828] p-8 text-center shadow-2xl">
+          <div className="max-h-[90vh] max-w-md overflow-y-auto rounded-2xl border border-[#3A4242] bg-[#222828] p-8 text-center shadow-2xl">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#ef6b6b]/15">
               <Lock className="h-8 w-8 text-[#ef6b6b]" />
             </div>
@@ -704,7 +704,7 @@ export default function SignPublic() {
       {/* Modale : recevoir une copie PDF par email */}
       {showDownload && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Recevoir une copie PDF' : 'Receive a PDF copy'}</h3>
               <button onClick={() => setShowDownload(false)} className="text-[#A1A9A9] transition-colors hover:text-white">

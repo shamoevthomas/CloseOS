@@ -2786,7 +2786,7 @@ export default function SignContractEditor() {
       {/* Étape 1 : donner un titre au contrat */}
       {showTitlePrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Titre du contrat' : 'Contract title'}</h3>
               <button onClick={() => setShowTitlePrompt(false)} className="text-[#A1A9A9] transition-colors hover:text-white">
@@ -2830,7 +2830,7 @@ export default function SignContractEditor() {
       {/* Modal de confirmation */}
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Valider l’édition du contrat' : 'Validate contract editing'}</h3>
               <button onClick={() => setShowConfirm(false)} className="text-[#A1A9A9] transition-colors hover:text-white">
@@ -2885,7 +2885,7 @@ export default function SignContractEditor() {
       {/* Pop-up : champs à remplir côté propriétaire */}
       {showOwnerPrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#A0E7EC]/15">
                 <PenLine className="h-5 w-5 text-[#A0E7EC]" />
@@ -2940,7 +2940,7 @@ export default function SignContractEditor() {
       {/* Modal : envoyer le PDF signé par email */}
       {showSendPdf && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">{lang === 'fr' ? 'Envoyer le PDF par email' : 'Send the PDF by email'}</h3>
               <button onClick={() => setShowSendPdf(false)} className="text-[#A1A9A9] transition-colors hover:text-white">

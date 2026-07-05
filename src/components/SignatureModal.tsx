@@ -47,6 +47,14 @@ export default function SignatureModal({
     }
   }, [open]);
 
+  // Verrouille le scroll de la page tant que la modale est ouverte.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
   if (!open) return null;
 
   const initials = computeInitials(prenom, nom);
@@ -122,8 +130,8 @@ export default function SignatureModal({
   );
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm">
+      <div className="max-h-[calc(100dvh-3rem)] w-full max-w-lg overflow-y-auto rounded-xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white">{confirmStep ? (lang === 'fr' ? 'Confirmer la signature' : 'Confirm signature') : (lang === 'fr' ? 'Votre signature' : 'Your signature')}</h3>
           <button onClick={onClose} className="text-[#A1A9A9] transition-colors hover:text-white">

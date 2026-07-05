@@ -113,6 +113,7 @@ const SignRepSpace = lazy(() => import('./pages/SignRepSpace'))
 const SignCGV = lazy(() => import('./pages/SignCGV'))
 const SignConfidentialite = lazy(() => import('./pages/SignConfidentialite'))
 const SignSecurite = lazy(() => import('./pages/SignSecurite'))
+const SignOwnerSign = lazy(() => import('./pages/SignOwnerSign'))
 import { SignLangProvider } from './contexts/SignLangContext'
 
 // Business Module Imports
@@ -439,6 +440,7 @@ function AuthenticatedApp() {
         <Route path="/sign/s/:token" element={<SignPublic />} />
         <Route path="/sign/rep/:token" element={<SignRepSpace />} />
         <Route path="/sign/verify/:certificateId" element={<SignVerify />} />
+        <Route path="/sign/owner/:token" element={<SignOwnerSign />} />
         <Route path="/sign/abonnement" element={<SignCheckout />} />
         <Route path="/sign/cgv" element={<SignCGV />} />
         <Route path="/sign/confidentialite" element={<SignConfidentialite />} />

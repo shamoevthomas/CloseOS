@@ -107,7 +107,49 @@ async function loadPdf(a) {
   return { dataUrl: `data:application/pdf;base64,${bytes.toString('base64')}`, pageCount: pdfPageCount(bytes) }
 }
 
-// ───────── Implémentation des 5 outils ─────────
+// Token aléatoire (Web Crypto global, zéro import).
+function randHex(bytes) {
+  const a = new Uint8Array(bytes)
+  crypto.getRandomValues(a)
+  return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+// Garantit un access_token par signataire → renvoie les liens /sign/s/<token>.
+async function ensureSignerLinks(contractId) {
+  const signers = await sbSelect(`sign_contract_signers?contract_id=eq.${contractId}&select=id,signer_index,name,email,access_token&order=signer_index.asc`)
+  const links = []
+  for (const s of signers || []) {
+    let tok = s.access_token
+    if (!tok) { tok = randHex(16); await sbUpdate('sign_contract_signers', `id=eq.${s.id}`, { access_token: tok }) }
+    links.push({ signer_index: s.signer_index, name: s.name, email: s.email, url: `${APP_URL}/sign/s/${tok}` })
+  }
+  return links
+}
+
+// Valeur à écrire dans un champ 'owner' selon son type (signature + préremplissage profil).
+function ownerFieldValue(type, signature, prof, today) {
+  switch (type) {
+    case 'signature': case 'initials': return signature
+    case 'name': return prof.full_name || null
+    case 'email': return prof.email || null
+    case 'tel': return prof.phone || null
+    case 'address': return prof.address || null
+    case 'city': return prof.city || null
+    case 'siret': return prof.siret || null
+    case 'siren': return prof.siren || null
+    case 'tva': return prof.tva || null
+    case 'company_id': return prof.company_id || null
+    case 'ape': return prof.ape || null
+    case 'date': return today.toLocaleDateString('fr-FR')
+    case 'time': return today.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    case 'checkbox': return '1'
+    default: return null
+  }
+}
+
+const VERIF_METHODS = new Set(['none', 'email', 'sms', 'email_sms', 'pay'])
+
+// ───────── Implémentation des outils ─────────
 const impl = {
   async sign_import_contract(args) {
     if (!args.title) throw new Error('title requis.')
@@ -226,6 +268,139 @@ const impl = {
       editor_url: `${APP_URL}/sign/app/contrat/${c.id}`,
     }
   },
+
+  // ── Configuration (vérification, paiement, modèle, ordre, signataires) ──
+  async sign_configure_contract(args) {
+    if (!args.contract_id) throw new Error('contract_id requis.')
+    const c = await getOwnedContract(args.contract_id, 'id,user_id,status,locked,signer_count')
+    if (c.locked) throw new Error('Contrat verrouillé (déjà signé côté propriétaire).')
+    const patch = {}
+    const vm = args.verification_method
+    if (vm) { if (!VERIF_METHODS.has(vm)) throw new Error('verification_method invalide (none|email|sms|email_sms|pay).'); patch.verification_method = vm }
+    if (args.is_template !== undefined) patch.is_template = !!args.is_template
+    if (args.signing_order) { if (!['parallel', 'sequential'].includes(args.signing_order)) throw new Error('signing_order invalide (parallel|sequential).'); patch.signing_order = args.signing_order }
+    if (args.payment && typeof args.payment === 'object') {
+      const p = args.payment
+      patch.payment_enabled = true
+      if (p.mode) { if (!['one_shot', 'subscription'].includes(p.mode)) throw new Error('payment.mode invalide (one_shot|subscription).'); patch.payment_mode = p.mode }
+      if (p.amount != null) patch.payment_amount = Math.round(Number(p.amount) * 100) // euros → centimes
+      if (p.interval) patch.payment_interval = p.interval
+      if (p.duration_months != null) patch.payment_duration_months = p.duration_months
+      if (p.trial_days != null) patch.payment_trial_days = p.trial_days
+      if (p.tva_rate != null) patch.payment_tva_rate = p.tva_rate
+      if (p.currency) patch.currency = p.currency
+      if (!patch.verification_method) patch.verification_method = 'pay'
+    } else if (args.payment === false) {
+      patch.payment_enabled = false
+    }
+    if (Array.isArray(args.signers) && args.signers.length) {
+      const n = args.signers.length
+      patch.signer_count = n
+      const existing = await sbSelect(`sign_contract_signers?contract_id=eq.${c.id}&select=signer_index`)
+      const have = new Set((existing || []).map((s) => s.signer_index))
+      const toCreate = []
+      for (let i = 1; i <= n; i++) if (!have.has(i)) toCreate.push({ contract_id: c.id, signer_index: i, status: 'pending' })
+      if (toCreate.length) await sbInsert('sign_contract_signers', toCreate)
+      const method = patch.verification_method || vm
+      for (let i = 0; i < n; i++) {
+        const s = args.signers[i]
+        const ps = { name: s.name ?? null, email: s.email ?? null }
+        if (s.phone) ps.phone = s.phone
+        if (method === 'email' && s.email) ps.verification_emails = [s.email]
+        if (method === 'sms' && s.phone) ps.verification_phones = [s.phone]
+        if (method === 'email_sms' && s.email && s.phone) ps.verification_pairs = [{ email: s.email, phone: s.phone }]
+        if (patch.payment_enabled) ps.payment_required = true
+        await sbUpdate('sign_contract_signers', `contract_id=eq.${c.id}&signer_index=eq.${i + 1}`, ps)
+      }
+    }
+    if (Object.keys(patch).length) await sbUpdate('sign_contracts', `id=eq.${c.id}`, patch)
+    return { contract_id: c.id, configured: patch, signers: (args.signers || []).map((s, i) => ({ index: i + 1, name: s.name, email: s.email })) }
+  },
+
+  // ── Envoi : génère les liens signataires, passe en 'sent' (n'envoie PAS d'email) ──
+  async sign_send_contract(args) {
+    if (!args.contract_id) throw new Error('contract_id requis.')
+    const c = await getOwnedContract(args.contract_id, 'id,user_id,status,is_template,locked')
+    if (c.is_template) throw new Error("C'est un modèle : utilise sign_add_closer, ou génère une instance côté app.")
+    const links = await ensureSignerLinks(c.id)
+    if (!links.length) throw new Error('Aucun signataire configuré (utilise sign_configure_contract avec signers).')
+    const patch = { status: 'sent', sent_at: new Date().toISOString() }
+    await sbUpdate('sign_contracts', `id=eq.${c.id}`, patch)
+    return { contract_id: c.id, status: 'sent', signer_links: links, note: 'Aucun email envoyé — transmets ces liens toi-même.' }
+  },
+
+  // ── Modèle : ajoute un closer (nom+email) → lien /sign/rep/<token> ──
+  async sign_add_closer(args) {
+    if (!args.template_id || !args.email || !args.name) throw new Error('template_id, email et name requis.')
+    const uid = await ownerId()
+    const c = await getOwnedContract(args.template_id, 'id,user_id,is_template')
+    if (!c.is_template) throw new Error("Ce contrat n'est pas un modèle (mets is_template=true via sign_configure_contract).")
+    const token = randHex(16)
+    const ins = await sbInsert('sign_template_reps', { template_id: c.id, user_id: uid, label: args.name, email: args.email, access_token: token, status: 'active' }, true)
+    const row = Array.isArray(ins) ? ins[0] : ins
+    return { template_id: c.id, closer: { name: args.name, email: args.email }, rep_link: `${APP_URL}/sign/rep/${(row && row.access_token) || token}` }
+  },
+
+  // ── Signature propriétaire : ÉTAPE 1 — crée la session, renvoie le lien d'autorisation ──
+  async sign_owner_authorize(args) {
+    const uid = await ownerId()
+    const ids = Array.isArray(args.contract_ids) ? args.contract_ids.filter(Boolean) : []
+    if (!ids.length) throw new Error('contract_ids (liste des contrats à signer) requis.')
+    const idList = ids.map((x) => `"${x}"`).join(',')
+    const rows = await sbSelect(`sign_contracts?id=in.(${idList})&select=id,user_id,title,status`)
+    const owned = (rows || []).filter((r) => r.user_id === uid)
+    if (!owned.length) throw new Error("Aucun contrat t'appartenant dans contract_ids.")
+    const ownedIds = owned.map((r) => r.id)
+    const ownerFields = await sbSelect(`sign_contract_fields?contract_id=in.(${ownedIds.map((x) => `"${x}"`).join(',')})&assignee=eq.owner&select=contract_id`)
+    const withOwner = new Set((ownerFields || []).map((f) => f.contract_id))
+    const token = randHex(24)
+    await sbInsert('sign_owner_sign_sessions', {
+      token, owner_id: uid, owner_email: OWNER_EMAIL, contract_ids: ownedIds, status: 'pending',
+      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    })
+    return {
+      session_token: token,
+      authorize_url: `${APP_URL}/sign/owner/${token}`,
+      contracts: owned.map((r) => ({ id: r.id, title: r.title, status: r.status, has_owner_fields: withOwner.has(r.id) })),
+      instructions: "Ouvre authorize_url : entre le code reçu par email puis fournis ta signature. Ensuite rappelle sign_owner_sign avec ce session_token. (1 autorisation = 1 signature.)",
+    }
+  },
+
+  // ── Signature propriétaire : ÉTAPE 2 — applique la signature aux champs 'owner' ──
+  async sign_owner_sign(args) {
+    if (!args.session_token) throw new Error('session_token requis (obtenu via sign_owner_authorize).')
+    const uid = await ownerId()
+    const sess = (await sbSelect(`sign_owner_sign_sessions?token=eq.${encodeURIComponent(args.session_token)}&limit=1`))[0]
+    if (!sess) throw new Error('Session introuvable.')
+    if (sess.owner_id !== uid) throw new Error('Session non autorisée.')
+    if (sess.status === 'consumed') throw new Error('Session déjà utilisée (1 autorisation = 1 signature). Relance sign_owner_authorize.')
+    if (sess.expires_at && new Date(sess.expires_at).getTime() < Date.now()) throw new Error('Session expirée. Relance sign_owner_authorize.')
+    if (sess.status !== 'ready' || !sess.signature_value) throw new Error("En attente : ouvre le lien d'autorisation, entre le code email et fournis ta signature, puis réessaie.")
+
+    const prof = (await sbSelect(`sign_users?id=eq.${uid}&select=full_name,email,phone,address,city,siret,siren,tva,company_id,ape&limit=1`))[0] || {}
+    const today = new Date()
+    const results = []
+    for (const cid of sess.contract_ids || []) {
+      try {
+        const c = (await sbSelect(`sign_contracts?id=eq.${cid}&select=id,user_id,title,status,locked,is_template&limit=1`))[0]
+        if (!c || c.user_id !== uid) { results.push({ contract_id: cid, error: 'introuvable ou non autorisé' }); continue }
+        const fields = await sbSelect(`sign_contract_fields?contract_id=eq.${cid}&assignee=eq.owner&select=id,field_type,value`)
+        let filled = 0
+        for (const f of fields || []) {
+          if (f.value) continue
+          const v = ownerFieldValue(f.field_type, sess.signature_value, prof, today)
+          if (v != null) { await sbUpdate('sign_contract_fields', `id=eq.${f.id}`, { value: v, filled_at: new Date().toISOString() }); filled++ }
+        }
+        const links = c.is_template ? [] : await ensureSignerLinks(cid)
+        const patch = { locked: true }
+        if (!c.is_template && (c.status === 'draft' || c.status === 'pending')) { patch.status = 'sent'; patch.sent_at = new Date().toISOString() }
+        await sbUpdate('sign_contracts', `id=eq.${cid}`, patch)
+        results.push({ contract_id: cid, title: c.title, owner_fields_filled: filled, status: patch.status || c.status, signer_links: links })
+      } catch (e) { results.push({ contract_id: cid, error: e.message || String(e) }) }
+    }
+    await sbUpdate('sign_owner_sign_sessions', `token=eq.${encodeURIComponent(args.session_token)}`, { status: 'consumed' })
+    return { signed: results, note: 'Signature propriétaire appliquée. Transmets les signer_links au(x) client(s).' }
+  },
 }
 
 // ───────── Schémas des outils (exposés à Claude) ─────────
@@ -279,6 +454,54 @@ const TOOLS = [
   { name: 'sign_get_status', description: "Statut de signature d'un contrat : global (draft/sent/viewed/signed/paid) + détail par signataire. Indique fully_signed.", inputSchema: { type: 'object', properties: { contract_id: { type: 'string' } }, required: ['contract_id'] } },
   { name: 'sign_list_contracts', description: 'Liste les contrats du propriétaire (id, titre, statut, dates). Filtre optionnel par statut.', inputSchema: { type: 'object', properties: { status: { type: 'string', enum: ['draft', 'sent', 'viewed', 'signed', 'paid'] }, limit: { type: 'integer', description: 'Défaut 25, max 100' } } } },
   { name: 'sign_get_contract', description: 'Détail d’un contrat : signataires, champs posés, dimensions de page.', inputSchema: { type: 'object', properties: { contract_id: { type: 'string' } }, required: ['contract_id'] } },
+  {
+    name: 'sign_configure_contract',
+    description: "Configure un contrat avant signature/envoi : méthode de vérification, paiement, modèle, ordre de signature, signataires (nom+email+téléphone). Écrit les colonnes et les listes blanches de vérification par signataire.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        contract_id: { type: 'string' },
+        verification_method: { type: 'string', enum: ['none', 'email', 'sms', 'email_sms', 'pay'], description: "Vérification du signataire avant signature. 'pay' = paiement obligatoire." },
+        payment: {
+          type: 'object',
+          description: 'Active un paiement à la signature (Stripe). Omettre = pas de paiement ; false = désactive.',
+          properties: {
+            mode: { type: 'string', enum: ['one_shot', 'subscription'], description: 'Paiement unique ou abonnement' },
+            amount: { type: 'number', description: 'Montant en EUROS (ex. 1500 = 1 500 €) — converti en centimes' },
+            interval: { type: 'string', enum: ['month', 'quarter', 'year'], description: 'Si abonnement' },
+            duration_months: { type: 'integer', description: 'Durée en mois (abonnement ; omettre = à vie)' },
+            trial_days: { type: 'integer', description: "Jours d'essai gratuit (abonnement)" },
+            tva_rate: { type: 'number', description: 'Taux de TVA (ex. 20). Omettre = non assujetti' },
+            currency: { type: 'string', description: "Devise (défaut 'eur')" },
+          },
+        },
+        is_template: { type: 'boolean', description: 'true = transforme le contrat en modèle réutilisable' },
+        signing_order: { type: 'string', enum: ['parallel', 'sequential'], description: 'Ordre de signature multi-signataires' },
+        signers: { type: 'array', description: 'Signataires (destinataires). Configure aussi leur liste blanche de vérification selon verification_method.', items: { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string' }, phone: { type: 'string' } } } },
+      },
+      required: ['contract_id'],
+    },
+  },
+  {
+    name: 'sign_send_contract',
+    description: "Prépare l'envoi d'un contrat : génère un lien de signature par signataire (/sign/s/<token>) et passe le contrat en 'sent'. N'ENVOIE PAS d'email — te renvoie les liens à transmettre toi-même.",
+    inputSchema: { type: 'object', properties: { contract_id: { type: 'string' } }, required: ['contract_id'] },
+  },
+  {
+    name: 'sign_add_closer',
+    description: "Ajoute un closer (commercial) à un MODÈLE : fournir email + nom → configure tout et renvoie son lien d'espace closer (/sign/rep/<token>).",
+    inputSchema: { type: 'object', properties: { template_id: { type: 'string', description: 'UUID du modèle (is_template=true)' }, email: { type: 'string' }, name: { type: 'string' } }, required: ['template_id', 'email', 'name'] },
+  },
+  {
+    name: 'sign_owner_authorize',
+    description: "SIGNATURE PROPRIÉTAIRE — étape 1. Crée une session de signature pour les contrats indiqués et renvoie un lien d'autorisation. Le propriétaire ouvre le lien, reçoit un code par email, le valide, puis fournit sa signature. Une autorisation = une signature (par prompt).",
+    inputSchema: { type: 'object', properties: { contract_ids: { type: 'array', items: { type: 'string' }, description: 'Liste des UUID de contrats à signer côté propriétaire' } }, required: ['contract_ids'] },
+  },
+  {
+    name: 'sign_owner_sign',
+    description: "SIGNATURE PROPRIÉTAIRE — étape 2. Une fois la page d'autorisation validée (code + signature), applique ta signature à tous tes champs 'owner' des contrats de la session, génère les liens signataires et te les renvoie. À appeler avec le session_token de sign_owner_authorize.",
+    inputSchema: { type: 'object', properties: { session_token: { type: 'string' } }, required: ['session_token'] },
+  },
 ]
 
 // ───────── JSON-RPC (un message) ─────────
