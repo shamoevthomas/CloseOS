@@ -3444,7 +3444,9 @@ ${notesSection}
 
       const oldAssigned: string | null = appt.assigned_to || null
       const newAssigned: string | null = new_assigned_to || null
-      if ((oldAssigned || null) === (newAssigned || null)) return res.status(200).json({ unchanged: true })
+      // business_appointments.assigned_to has a FK to business_team_members → the owner is stored as null
+      const apptAssignedTo: string | null = (newAssigned && newAssigned !== user_id) ? newAssigned : null
+      if ((oldAssigned || null) === (apptAssignedTo || null)) return res.status(200).json({ unchanged: true })
 
       // Resolve auth user ids (owner if null or owner id, else the team member's user_id)
       const resolveAuthUser = async (memberId: string | null): Promise<{ authUserId: string | null; tz: string }> => {
@@ -3521,7 +3523,7 @@ ${notesSection}
       // Update the appointment + keep the prospect's closer in sync
       const { data: updated, error: upErr } = await supabase
         .from('business_appointments')
-        .update({ assigned_to: newAssigned, google_calendar_event_id: newEventId, google_meet_link: meetLink })
+        .update({ assigned_to: apptAssignedTo, google_calendar_event_id: newEventId, google_meet_link: meetLink })
         .eq('id', appt.id)
         .select()
         .single()
