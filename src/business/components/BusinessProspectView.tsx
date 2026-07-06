@@ -20,6 +20,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { createPortal } from 'react-dom'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BookingAgendaPanel } from './BookingAgendaPanel'
+import { ReassignAppointmentButton } from './ReassignAppointmentButton'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
@@ -269,6 +270,9 @@ export function BusinessProspectView({
     setEditedInstallments(prospect.installments || 1)
   }, [prospect.id, prospect.value, prospect.payment_type, prospect.installments])
 
+  // Réassignation de RDV : Owner / HOS / Admin / Setter / Setter-Closer (pas les Closers)
+  const canReassignAppt = !isTeamMember || ['Head of Sales', 'Admin', 'Setter', 'Setter-Closer'].includes(teamMember?.role || '')
+
   // Permission: everyone can edit payment mode/installments, only owner+HOS can edit price
   const isOwner = !isTeamMember
   const canEditPrice = isOwner || isHosOrAdmin
@@ -340,7 +344,7 @@ export function BusinessProspectView({
   }
 
   // Next appointment + tous les RDV liés (pour la modale planning)
-  type LinkedAppt = { id: string; date: string; time: string; status: string; datetime_utc?: string | null; duration?: number }
+  type LinkedAppt = { id: string; date: string; time: string; status: string; datetime_utc?: string | null; duration?: number; assigned_to?: string | null }
   const [nextAppointment, setNextAppointment] = useState<LinkedAppt | null>(null)
   const [allAppointments, setAllAppointments] = useState<LinkedAppt[]>([])
   const [showApptsModal, setShowApptsModal] = useState(false)
@@ -351,7 +355,7 @@ export function BusinessProspectView({
     const nowUtc = new Date().toISOString()
     supabase
       .from('business_appointments')
-      .select('id, date, time, status, datetime_utc, duration')
+      .select('id, date, time, status, datetime_utc, duration, assigned_to')
       .eq('prospect_id', prospect.id)
       .order('date', { ascending: true })
       .order('time', { ascending: true })
@@ -360,9 +364,9 @@ export function BusinessProspectView({
         const rows: LinkedAppt[] = (data || []).map(a => {
           if (a.datetime_utc) {
             const l = fromUTC(a.datetime_utc, userTimezone)
-            return { id: a.id, date: l.date, time: l.time, status: a.status, datetime_utc: a.datetime_utc, duration: a.duration }
+            return { id: a.id, date: l.date, time: l.time, status: a.status, datetime_utc: a.datetime_utc, duration: a.duration, assigned_to: a.assigned_to }
           }
-          return { id: a.id, date: a.date, time: a.time?.slice(0, 5) || '00:00', status: a.status, datetime_utc: null, duration: a.duration }
+          return { id: a.id, date: a.date, time: a.time?.slice(0, 5) || '00:00', status: a.status, datetime_utc: null, duration: a.duration, assigned_to: a.assigned_to }
         })
         setAllAppointments(rows)
         // Prochain RDV = premier RDV futur en attente/confirmé.
@@ -2245,7 +2249,7 @@ export function BusinessProspectView({
                             </button>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-3 pl-14">
+                        <div className="flex items-center flex-wrap gap-2 mt-3 pl-14">
                           <button
                             onClick={openRescheduleModal}
                             disabled={cancelLoading || rescheduleLoading}
@@ -2262,6 +2266,16 @@ export function BusinessProspectView({
                             {cancelLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} /> : <XCircle className="h-3.5 w-3.5" strokeWidth={1.5} />}
                             Annuler
                           </button>
+                          <ReassignAppointmentButton
+                            appointmentId={nextAppointment.id}
+                            currentAssignedTo={nextAppointment.assigned_to ?? null}
+                            ownerId={isTeamMember ? ownerUserId : user?.id}
+                            actorUserId={user?.id}
+                            canReassign={canReassignAppt}
+                            members={teamMembers}
+                            onReassigned={() => setApptRefreshKey(k => k + 1)}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-stone-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors"
+                          />
                         </div>
                       </div>
                     )}

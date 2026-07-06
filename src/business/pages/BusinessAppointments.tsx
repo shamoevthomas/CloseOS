@@ -13,6 +13,7 @@ import { supabase } from '../../lib/supabase'
 import { toUTC, fromUTC, getTimezoneLabel } from '../../lib/timezone'
 import { BookingQuestionCard } from '../components/BookingQuestionCard'
 import { BookingAgendaPanel } from '../components/BookingAgendaPanel'
+import { ReassignAppointmentButton } from '../components/ReassignAppointmentButton'
 import type { ConditionalRule } from '../../lib/questionnaireConditions'
 
 function genClientId(): string {
@@ -459,6 +460,8 @@ export function BusinessAppointments() {
   const isSetter = isTeamMember && (teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer')
   const isOwnerOrHoS = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
   const isCloserOnly = isTeamMember && teamMember?.role === 'Closer'
+  // Réassignation de RDV : Owner / HOS / Admin / Setter / Setter-Closer (pas les Closers)
+  const canReassign = !isTeamMember || ['Head of Sales', 'Admin', 'Setter', 'Setter-Closer'].includes(teamMember?.role || '')
   const isSetterCloserSelf = isTeamMember && teamMember?.role === 'Setter-Closer' && teamMember?.setter_scope === 'self'
   const showBookingSection = isSetter || isOwnerOrHoS || isCloserOnly
   const canBookForOthers = !isCloserOnly && !isSetterCloserSelf // closers and setter-closer(self) can't book for others
@@ -2194,6 +2197,19 @@ export function BusinessAppointments() {
                       )}
                     </div>
                     <div className="flex gap-3">
+                      {canReassign && (appt.status === 'pending' || appt.status === 'confirmed') && (
+                        <ReassignAppointmentButton
+                          appointmentId={appt.id}
+                          currentAssignedTo={(appt as any).assigned_to ?? null}
+                          ownerId={effectiveUserId}
+                          actorUserId={user?.id}
+                          canReassign={canReassign}
+                          members={teamMembers}
+                          onReassigned={fetchAppointments}
+                          stopPropagation
+                          className="px-5 py-2 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700/30 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all flex items-center gap-1.5"
+                        />
+                      )}
                       {isOwnerOrHoS && appt.status === 'pending' && (
                         <>
                           <button
@@ -3416,6 +3432,21 @@ export function BusinessAppointments() {
                     </>
                   )}
                 </div>
+                {canReassign && (appt.status === 'pending' || appt.status === 'confirmed') && (
+                  <div className="mt-3 pt-3 border-t border-[#c4c7c7]/15 dark:border-neutral-700/40">
+                    <ReassignAppointmentButton
+                      appointmentId={appt.id}
+                      currentAssignedTo={(appt as any).assigned_to ?? null}
+                      ownerId={effectiveUserId}
+                      actorUserId={user?.id}
+                      canReassign={canReassign}
+                      members={teamMembers}
+                      onReassigned={() => { fetchAppointments(); setSelectedAppointment(null) }}
+                      label="Réassigner le rendez-vous"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700 px-5 py-2.5 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-all"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>

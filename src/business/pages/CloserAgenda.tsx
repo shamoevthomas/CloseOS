@@ -11,6 +11,7 @@ import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarCon
 import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
 import { BusinessProspectView } from '../components/BusinessProspectView'
+import { ReassignAppointmentButton } from '../components/ReassignAppointmentButton'
 import { type BusinessProspect } from '../contexts/BusinessProspectsContext'
 
 /* ─── Types ───────────────────────────────────────── */
@@ -27,6 +28,7 @@ interface Appointment {
   campaign: { id: string; name: string } | null
   datetime_utc?: string | null
   timezone?: string | null
+  google_calendar_event_id?: string | null
 }
 
 interface Reminder {
@@ -282,6 +284,8 @@ export function CloserAgenda() {
   const [loadingProspect, setLoadingProspect] = useState(false)
 
   const canAssign = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Setter' || teamMember?.role === 'Setter-Closer'
+  // Réassignation de RDV : Owner / HOS / Admin / Setter / Setter-Closer (pas les Closers)
+  const canReassignAgenda = !isTeamMember || ['Head of Sales', 'Admin', 'Setter', 'Setter-Closer'].includes(teamMember?.role || '')
 
   // "Assignable en Closer" = Closer (par rôle) OU membre ayant activé owner_assignable + rôle Closer.
   const isAssignableCloser = (m: TeamMemberOption) =>
@@ -536,6 +540,21 @@ export function CloserAgenda() {
     const key = formatDateKey(date)
     const events: CalendarEvent[] = []
 
+    // Dé-doublonnage : un RDV CloseOS synchronisé dans Google Agenda revient sinon aussi en
+    // event Google (par id) et en créneau "Occupé" (par instant). On masque ces reflets.
+    const syncedEventIds = new Set<string>()
+    const syncedApptMs: number[] = []
+    for (const a of appointments) {
+      if (a.status === 'cancelled') continue
+      const gid = a.google_calendar_event_id
+      if (gid) syncedEventIds.add(gid)
+      if (gid && a.datetime_utc) syncedApptMs.push(new Date(a.datetime_utc).getTime())
+    }
+    const isSyncedApptInstant = (d: Date) => {
+      const t = d.getTime()
+      return syncedApptMs.some(ms => Math.abs(ms - t) < 120000)
+    }
+
     for (const a of appointments) {
       let apptDate = a.date
       let apptTime = a.time ? a.time.slice(0, 5) : ''
@@ -576,6 +595,7 @@ export function CloserAgenda() {
     const showGoogleEvents = (!isOwnerView && !isSetterView) || selectedMemberId === 'perso' || (isOwnerView && selectedMemberId === 'all')
     for (const ge of (showGoogleEvents ? googleEvents : [])) {
       if (!ge.start || ge.allDay) continue
+      if (ge.id && syncedEventIds.has(ge.id)) continue // reflet Google d'un RDV CloseOS déjà affiché
       const start = ge.start instanceof Date ? ge.start : new Date(ge.start)
       if (!isSameDay(start, date)) continue
       const end = ge.end instanceof Date ? ge.end : new Date(ge.end)
@@ -599,6 +619,7 @@ export function CloserAgenda() {
     for (const b of memberBusy) {
       const bStart = new Date(b.start)
       if (!isSameDay(bStart, date)) continue
+      if (isSyncedApptInstant(bStart)) continue // "Occupé" Google qui double un RDV CloseOS déjà affiché
       const bEnd = new Date(b.end)
       const st = `${bStart.getHours().toString().padStart(2, '0')}:${bStart.getMinutes().toString().padStart(2, '0')}`
       const et = `${bEnd.getHours().toString().padStart(2, '0')}:${bEnd.getMinutes().toString().padStart(2, '0')}`
@@ -1518,6 +1539,19 @@ export function CloserAgenda() {
                   {resendingConfirmation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   {t.closer_agenda_resend_confirmation}
                 </button>
+              )}
+              {selectedEvent.type === 'appointment' && canReassignAgenda && (selectedEvent.data as Appointment)?.id && (
+                <ReassignAppointmentButton
+                  appointmentId={(selectedEvent.data as Appointment).id}
+                  currentAssignedTo={(selectedEvent.data as Appointment).assigned_to ?? null}
+                  ownerId={effectiveUserId}
+                  actorUserId={user?.id}
+                  canReassign={canReassignAgenda}
+                  members={teamMembers}
+                  onReassigned={() => { fetchAppointments(); setSelectedEvent(null) }}
+                  label="Réassigner"
+                  className="flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
+                />
               )}
               {(selectedEvent.type === 'appointment' || selectedEvent.type === 'reminder' || selectedEvent.type === 'google') && (
                 <button

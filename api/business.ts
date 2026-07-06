@@ -3416,6 +3416,167 @@ ${notesSection}
       return res.status(200).json({ rescheduled: true, email_sent: emailSent, appointment: updated, old: { date: oldDate, time: oldTime } })
     }
 
+    // ─── Reassign an appointment to another member (moves it to their Google Calendar, keeps the SAME Meet link) ───
+    if (action === 'appointment-reassign' && req.method === 'POST') {
+      const { user_id, appointment_id, new_assigned_to, actor_user_id } = req.body || {}
+      if (!user_id || !appointment_id || typeof new_assigned_to === 'undefined') {
+        return res.status(400).json({ error: 'user_id, appointment_id and new_assigned_to required' })
+      }
+
+      // Permission: actor must be the owner, or a team member whose role is Admin / Head of Sales / Setter / Setter-Closer
+      const REASSIGN_ROLES = ['Admin', 'Head of Sales', 'Setter', 'Setter-Closer']
+      let actorAllowed = false
+      if (actor_user_id && actor_user_id === user_id) {
+        actorAllowed = true
+      } else if (actor_user_id) {
+        const { data: actorTm } = await supabase.from('business_team_members').select('role').eq('user_id', actor_user_id).eq('business_owner_id', user_id).maybeSingle()
+        if (actorTm && REASSIGN_ROLES.includes(actorTm.role)) actorAllowed = true
+      }
+      if (!actorAllowed) return res.status(403).json({ error: 'forbidden' })
+
+      const { data: appt } = await supabase
+        .from('business_appointments')
+        .select('id, status, user_id, assigned_to, date, time, datetime_utc, timezone, duration, prospect_id, google_calendar_event_id, google_meet_link, title, cancel_token, reschedule_token')
+        .eq('id', appointment_id)
+        .eq('user_id', user_id)
+        .single()
+      if (!appt) return res.status(404).json({ error: 'Appointment not found' })
+
+      const oldAssigned: string | null = appt.assigned_to || null
+      const newAssigned: string | null = new_assigned_to || null
+      if ((oldAssigned || null) === (newAssigned || null)) return res.status(200).json({ unchanged: true })
+
+      // Resolve auth user ids (owner if null or owner id, else the team member's user_id)
+      const resolveAuthUser = async (memberId: string | null): Promise<{ authUserId: string | null; tz: string }> => {
+        if (!memberId || memberId === user_id) {
+          const { data: o } = await supabase.from('business_users').select('timezone').eq('id', user_id).single()
+          return { authUserId: user_id, tz: o?.timezone || appt.timezone || 'Europe/Paris' }
+        }
+        const { data: tm } = await supabase.from('business_team_members').select('user_id, timezone').eq('id', memberId).single()
+        return { authUserId: tm?.user_id || null, tz: tm?.timezone || appt.timezone || 'Europe/Paris' }
+      }
+      const oldResolved = await resolveAuthUser(oldAssigned)
+      const newResolved = await resolveAuthUser(newAssigned)
+
+      // ── Google Calendar: create on the new assignee (reusing the SAME Meet link), then delete the old event ──
+      let newEventId: string | null = null
+      let meetLink: string | null = appt.google_meet_link || null
+      try {
+        const dur = appt.duration || 30
+        let startIso: string, endIso: string
+        if (appt.datetime_utc) {
+          startIso = new Date(appt.datetime_utc).toISOString()
+          endIso = new Date(new Date(appt.datetime_utc).getTime() + dur * 60_000).toISOString()
+        } else {
+          const [hh, mm] = (appt.time || '00:00').slice(0, 5).split(':').map(Number)
+          const endMins = hh * 60 + mm + dur
+          startIso = `${appt.date}T${(appt.time || '00:00:00')}`
+          endIso = `${appt.date}T${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}:00`
+        }
+
+        const { data: prospectRow } = appt.prospect_id
+          ? await supabase.from('business_prospects').select('contact, email').eq('id', appt.prospect_id).single()
+          : { data: null as any }
+        const summary = prospectRow?.contact ? `RDV — ${prospectRow.contact}` : (appt.title || 'Rendez-vous')
+
+        const cancelLink = `https://www.closeos.fr/appointment/${appt.cancel_token}?action=cancel`
+        const rescheduleLink = `https://www.closeos.fr/appointment/${appt.reschedule_token}?action=reschedule`
+        // Preserve the original event description (base) if we can read the old event
+        let baseDesc = ''
+        if (appt.google_calendar_event_id && oldResolved.authUserId) {
+          try {
+            const t = await getGoogleAccessToken(supabase, oldResolved.authUserId)
+            if (t) baseDesc = extractBaseEventDescription(await getGoogleCalendarEventDescription(t, appt.google_calendar_event_id))
+          } catch {}
+        }
+        const qaSection = await buildQuestionnaireSectionForAppointment(supabase, appt.id)
+        let description = buildRescheduledEventDescription(baseDesc, rescheduleLink, cancelLink, qaSection)
+        if (meetLink) description = `Lien Google Meet : ${meetLink}\n\n${description}`
+
+        // Create the event on the new assignee's calendar. Only generate a fresh Meet if there was none.
+        if (newResolved.authUserId) {
+          const newToken = await getGoogleAccessToken(supabase, newResolved.authUserId)
+          if (newToken) {
+            const withMeet = !meetLink
+            const created = await createGoogleCalendarEvent(newToken, {
+              summary, description,
+              startDateTime: startIso, endDateTime: endIso, timeZone: newResolved.tz,
+              withMeet,
+            })
+            if (created.success) {
+              newEventId = created.eventId || null
+              if (withMeet && created.hangoutLink) meetLink = created.hangoutLink
+            }
+          }
+        }
+        // Remove the event from the old assignee's calendar
+        if (appt.google_calendar_event_id && oldResolved.authUserId) {
+          const oldToken = await getGoogleAccessToken(supabase, oldResolved.authUserId)
+          if (oldToken) await deleteGoogleCalendarEvent(oldToken, appt.google_calendar_event_id)
+        }
+      } catch (e) {
+        console.error('[appointment-reassign] GCal move failed:', e)
+      }
+
+      // Update the appointment + keep the prospect's closer in sync
+      const { data: updated, error: upErr } = await supabase
+        .from('business_appointments')
+        .update({ assigned_to: newAssigned, google_calendar_event_id: newEventId, google_meet_link: meetLink })
+        .eq('id', appt.id)
+        .select()
+        .single()
+      if (upErr) return res.status(500).json({ error: upErr.message })
+      if (appt.prospect_id) {
+        await supabase.from('business_prospects').update({ assigned_to: newAssigned }).eq('id', appt.prospect_id)
+      }
+
+      // ── Email the person who was initially assigned ──
+      const resolvePerson = async (memberId: string | null): Promise<{ email: string | null; name: string; tz: string }> => {
+        if (!memberId || memberId === user_id) {
+          const { data: o } = await supabase.from('business_users').select('email, full_name, timezone').eq('id', user_id).single()
+          return { email: o?.email || null, name: o?.full_name || 'Vous', tz: o?.timezone || 'Europe/Paris' }
+        }
+        const { data: tm } = await supabase.from('business_team_members').select('email, first_name, last_name, timezone').eq('id', memberId).single()
+        return { email: tm?.email || null, name: tm ? `${tm.first_name || ''} ${tm.last_name || ''}`.trim() : '', tz: tm?.timezone || 'Europe/Paris' }
+      }
+      const oldPerson = await resolvePerson(oldAssigned)
+      const newPerson = await resolvePerson(newAssigned)
+
+      let emailSent = false
+      if (oldPerson.email) {
+        const { data: prospectRow2 } = appt.prospect_id
+          ? await supabase.from('business_prospects').select('contact').eq('id', appt.prospect_id).single()
+          : { data: null as any }
+        const prospectName = prospectRow2?.contact || 'un prospect'
+        const whenUtc = appt.datetime_utc ? new Date(appt.datetime_utc) : null
+        const dateFr = whenUtc ? formatInTimeZone(whenUtc, oldPerson.tz, 'EEEE d MMMM yyyy', { locale: frLocale }) : (appt.date || '')
+        const timeFr = whenUtc ? formatInTimeZone(whenUtc, oldPerson.tz, 'HH:mm') : (appt.time || '').slice(0, 5)
+
+        const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><img src="https://closeos.fr/closeos-business-logo-ecrit.png" alt="CloseOS Business" width="160" style="display:block;"></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:32px;color:#111111;letter-spacing:-0.04em;line-height:1.1;margin:0 0 16px;">Rendez-vous réassigné</h1><p style="font-family:'Inter',Helvetica,sans-serif;font-size:16px;color:#1b1c1b;line-height:1.6;margin:0 0 32px;">Bonjour <strong style="color:#111111;">${oldPerson.name || ''}</strong>, le rendez-vous avec <strong style="color:#111111;">${prospectName}</strong> ne t'est plus assigné : il a été réassigné à <strong style="color:#111111;">${newPerson.name || 'un autre membre'}</strong>.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:8px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:16px;"><span style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#747878;text-transform:uppercase;letter-spacing:0.08em;">Date</span><br><span style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:18px;color:#111111;">${dateFr}</span></td></tr><tr><td><span style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#747878;text-transform:uppercase;letter-spacing:0.08em;">Heure</span><br><span style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:18px;color:#111111;">${timeFr}</span></td></tr></table></div><p style="font-family:'Inter',Helvetica,sans-serif;font-size:14px;color:#1b1c1b;line-height:1.6;margin:24px 0 0;opacity:0.75;">L'événement a été retiré de ton Google Agenda. Aucune action de ta part n'est nécessaire.</p></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:13px;color:#1b1c1b;opacity:0.6;">© 2026 CloseOS - Tous droits réservés</p></td></tr></table></td></tr></table></body></html>`
+
+        try {
+          const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+          if (BREVO_API_KEY) {
+            const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+              method: 'POST',
+              headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+              body: JSON.stringify({
+                sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+                to: [{ email: oldPerson.email, name: oldPerson.name || '' }],
+                subject: `Rendez-vous réassigné — ${dateFr}`,
+                htmlContent: html,
+              }),
+            })
+            emailSent = r.ok
+          }
+        } catch (e) {
+          console.error('[appointment-reassign] Brevo error:', e)
+        }
+      }
+
+      return res.status(200).json({ reassigned: true, email_sent: emailSent, appointment: updated })
+    }
+
     if (action === 'appointments-update' && req.method === 'PUT') {
       const { user_id, id, status, notes, google_meet_link } = req.body
       if (!user_id || !id) return res.status(400).json({ error: 'user_id and id required' })
@@ -6309,8 +6470,9 @@ ${notesSection}
             if (roles.length === 0 || roles.includes('Setter')) setterEligible.push(campaign.user_id)
           }
         }
-        // Never assign the same person as both closer and setter for this lead
-        setterEligible = setterEligible.filter((id: string) => id !== prospectAssignId)
+        // The setter is assigned strictly per its own config, even if that person is
+        // also the closer for this lead (e.g. a specific setter who happens to be picked
+        // as closer by the round-robin). A configured setter must never be dropped.
         if (setterEligible.length === 1) {
           assigned_setter_id = setterEligible[0]
         } else if (setterEligible.length > 1) {
