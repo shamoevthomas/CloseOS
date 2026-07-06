@@ -79,28 +79,32 @@ const TIME_SLOTS = generateTimeSlots()
 const isValidEmail = (e: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(e)
 
 // Phone formatting per country code
-const PHONE_FORMATS: Record<string, { maxDigits: number; groups: number[] }> = {
-  '+33': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },     // France: 6 12 34 56 78
-  '+32': { maxDigits: 9, groups: [3, 2, 2, 2] },          // Belgique: 456 12 34 56
-  '+41': { maxDigits: 9, groups: [2, 3, 2, 2] },          // Suisse: 79 123 45 67
-  '+352': { maxDigits: 9, groups: [3, 3, 3] },             // Luxembourg
-  '+377': { maxDigits: 8, groups: [2, 2, 2, 2] },          // Monaco
+// trunkZero: pays où le numéro national s'écrit avec un « 0 » de préfixe qui saute à l'international
+// (France, Belgique…). On retire ce 0 automatiquement si l'utilisateur le laisse.
+const PHONE_FORMATS: Record<string, { maxDigits: number; groups: number[]; trunkZero?: boolean }> = {
+  '+33': { maxDigits: 9, groups: [1, 2, 2, 2, 2], trunkZero: true },     // France: 6 12 34 56 78
+  '+32': { maxDigits: 9, groups: [3, 2, 2, 2], trunkZero: true },          // Belgique: 456 12 34 56
+  '+41': { maxDigits: 9, groups: [2, 3, 2, 2], trunkZero: true },          // Suisse: 79 123 45 67
+  '+352': { maxDigits: 9, groups: [3, 3, 3] },             // Luxembourg (pas de 0)
+  '+377': { maxDigits: 8, groups: [2, 2, 2, 2] },          // Monaco (pas de 0)
   '+1': { maxDigits: 10, groups: [3, 3, 4] },              // US/CA: 555 123 4567
-  '+44': { maxDigits: 10, groups: [4, 3, 3] },             // UK: 7911 123 456
-  '+49': { maxDigits: 11, groups: [3, 4, 4] },             // Allemagne
-  '+34': { maxDigits: 9, groups: [3, 3, 3] },              // Espagne: 612 345 678
-  '+39': { maxDigits: 10, groups: [3, 3, 4] },             // Italie
-  '+351': { maxDigits: 9, groups: [3, 3, 3] },             // Portugal
-  '+31': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },       // Pays-Bas
-  '+212': { maxDigits: 9, groups: [3, 3, 3] },             // Maroc
-  '+216': { maxDigits: 8, groups: [2, 3, 3] },             // Tunisie
-  '+213': { maxDigits: 9, groups: [3, 3, 3] },             // Algérie
+  '+44': { maxDigits: 10, groups: [4, 3, 3], trunkZero: true },              // UK: 7911 123 456
+  '+49': { maxDigits: 11, groups: [3, 4, 4], trunkZero: true },             // Allemagne
+  '+34': { maxDigits: 9, groups: [3, 3, 3] },              // Espagne: 612 345 678 (pas de 0)
+  '+39': { maxDigits: 10, groups: [3, 3, 4] },             // Italie (garde le 0 des fixes)
+  '+351': { maxDigits: 9, groups: [3, 3, 3] },             // Portugal (pas de 0)
+  '+31': { maxDigits: 9, groups: [1, 2, 2, 2, 2], trunkZero: true },       // Pays-Bas
+  '+212': { maxDigits: 9, groups: [3, 3, 3], trunkZero: true },             // Maroc
+  '+216': { maxDigits: 8, groups: [2, 3, 3] },             // Tunisie (pas de 0)
+  '+213': { maxDigits: 9, groups: [3, 3, 3], trunkZero: true },             // Algérie
 }
 
 function formatPhoneByCountry(raw: string, code: string): string {
-  const digits = raw.replace(/\D/g, '')
+  let digits = raw.replace(/\D/g, '')
   const fmt = PHONE_FORMATS[code]
   if (!fmt) return digits.slice(0, 15)
+  // Retire le 0 de préfixe que certains oublient d'enlever (ex. FR : 06… → 6…)
+  if (fmt.trunkZero) digits = digits.replace(/^0+/, '')
   const limited = digits.slice(0, fmt.maxDigits)
   const parts: string[] = []
   let idx = 0

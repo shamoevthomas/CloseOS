@@ -177,6 +177,21 @@ async function getGoogleCalendarEventDescription(accessToken: string, eventId: s
   } catch { return null }
 }
 
+/** Read an event's summary (title) + description, e.g. to clone it onto another calendar. */
+async function getGoogleCalendarEventInfo(accessToken: string, eventId: string): Promise<{ summary: string | null; description: string | null }> {
+  try {
+    const res = await fetch(`${GOOGLE_CALENDAR_API}/calendars/primary/events/${eventId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!res.ok) return { summary: null, description: null }
+    const data: any = await res.json()
+    return {
+      summary: typeof data?.summary === 'string' ? data.summary : null,
+      description: typeof data?.description === 'string' ? data.description : null,
+    }
+  } catch { return { summary: null, description: null } }
+}
+
 /**
  * Strip a previous "Rendez-vous reprogrammé" header, any trailing
  * action-links section (delimiter `─────` style OR legacy `Reporter:` lines)
@@ -3479,21 +3494,25 @@ ${notesSection}
         const { data: prospectRow } = appt.prospect_id
           ? await supabase.from('business_prospects').select('contact, email').eq('id', appt.prospect_id).single()
           : { data: null as any }
-        const summary = prospectRow?.contact ? `RDV — ${prospectRow.contact}` : (appt.title || 'Rendez-vous')
-
-        const cancelLink = `https://www.closeos.fr/appointment/${appt.cancel_token}?action=cancel`
-        const rescheduleLink = `https://www.closeos.fr/appointment/${appt.reschedule_token}?action=reschedule`
-        // Preserve the original event description (base) if we can read the old event
-        let baseDesc = ''
+        // Reuse the ORIGINAL event's title + description verbatim so the reassigned event stays identical
+        // (no "Rendez-vous reprogrammé" header, correct name). Fall back only if the old event can't be read.
+        let origSummary: string | null = null
+        let origDescription: string | null = null
         if (appt.google_calendar_event_id && oldResolved.authUserId) {
           try {
             const t = await getGoogleAccessToken(supabase, oldResolved.authUserId)
-            if (t) baseDesc = extractBaseEventDescription(await getGoogleCalendarEventDescription(t, appt.google_calendar_event_id))
+            if (t) {
+              const info = await getGoogleCalendarEventInfo(t, appt.google_calendar_event_id)
+              origSummary = info.summary
+              origDescription = info.description
+            }
           } catch {}
         }
-        const qaSection = await buildQuestionnaireSectionForAppointment(supabase, appt.id)
-        let description = buildRescheduledEventDescription(baseDesc, rescheduleLink, cancelLink, qaSection)
-        if (meetLink) description = `Lien Google Meet : ${meetLink}\n\n${description}`
+        const summary = origSummary || (prospectRow?.contact ? `Rendez-vous avec ${prospectRow.contact}` : (appt.title || 'Rendez-vous'))
+        let description = origDescription || ''
+        if (meetLink && !description.includes(meetLink)) {
+          description = `Lien Google Meet : ${meetLink}${description ? `\n\n${description}` : ''}`
+        }
 
         // Create the event on the new assignee's calendar. Only generate a fresh Meet if there was none.
         if (newResolved.authUserId) {
