@@ -139,6 +139,7 @@ async function updateProspectStripeData(
         subscription_status: subscription.status,
         subscription_amount: amount,
         subscription_interval: item?.price?.recurring?.interval || 'month',
+        subscription_interval_count: item?.price?.recurring?.interval_count || 1,
         matched_via: matchedVia,
         last_payment_date: (subscription as any).current_period_start
             ? new Date((subscription as any).current_period_start * 1000).toISOString()
@@ -381,6 +382,7 @@ export default async function handler(req: Request) {
                             subscription_status: subscription.status,
                             subscription_amount: amount,
                             subscription_interval: item?.price?.recurring?.interval || 'month',
+                            subscription_interval_count: item?.price?.recurring?.interval_count || 1,
                             matched_via: 'auto-created',
                             last_payment_date: (subscription as any).current_period_start
                                 ? new Date((subscription as any).current_period_start * 1000).toISOString()

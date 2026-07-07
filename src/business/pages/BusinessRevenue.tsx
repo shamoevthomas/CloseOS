@@ -10,6 +10,18 @@ import { supabase } from '../../lib/supabase'
 import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectModal'
 import toast from 'react-hot-toast'
 
+interface SubRow {
+  id: number
+  contact: string
+  email: string
+  subscription_amount: number
+  subscription_interval: string
+  subscription_interval_count?: number | null
+  subscription_status: string
+  last_payment_date: string | null
+  next_payment_date: string | null
+}
+
 interface RevenueSummary {
   mrr: number
   ca: number
@@ -17,16 +29,8 @@ interface RevenueSummary {
   newClients: number
   canceledCount: number
   churnRate: number
-  activeSubscriptions: {
-    id: number
-    contact: string
-    email: string
-    subscription_amount: number
-    subscription_interval: string
-    subscription_status: string
-    last_payment_date: string | null
-    next_payment_date: string | null
-  }[]
+  activeSubscriptions: SubRow[]
+  canceledSubscriptions: SubRow[]
   commissions: {
     total: number
     details: {
@@ -73,6 +77,16 @@ type PeriodKey = '1m' | '3m' | '6m' | '12m' | 'all'
 export function BusinessRevenue() {
   const { user } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
+  // Libellé d'intervalle en tenant compte de interval_count (trimestriel = month × 3, etc.)
+  const intervalLabel = (interval: string, count?: number | null): string => {
+    const c = Number(count) || 1
+    if (interval === 'year') return c > 1 ? (lang === 'en' ? `${c} years` : `${c} ans`) : t.revenue_per_year
+    if (c === 3) return lang === 'en' ? 'quarter' : 'trimestre'
+    if (c === 6) return lang === 'en' ? 'semester' : 'semestre'
+    if (c === 12) return t.revenue_per_year
+    if (c > 1) return lang === 'en' ? `${c} months` : `${c} mois`
+    return t.revenue_per_month
+  }
 
   const MONTH_LABELS: Record<string, string> = {
     '01': t.revenue_month_jan, '02': t.revenue_month_feb, '03': t.revenue_month_mar, '04': t.revenue_month_apr, '05': t.revenue_month_may, '06': t.revenue_month_jun,
@@ -513,13 +527,50 @@ export function BusinessRevenue() {
                         <p className="font-extrabold text-[#1b1c1b] dark:text-white text-sm font-['Manrope']">
                           {Number(sub.subscription_amount).toFixed(2)} EUR
                         </p>
-                        <p className="text-[10px] text-[#444748] dark:text-neutral-500">/ {sub.subscription_interval === 'month' ? t.revenue_per_month : t.revenue_per_year}</p>
+                        <p className="text-[10px] text-[#444748] dark:text-neutral-500">/ {intervalLabel(sub.subscription_interval, sub.subscription_interval_count)}</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+          )}
+
+          {/* Désabonnements / échecs de paiement */}
+          {hasSubscriptionFormula && data.canceledSubscriptions && data.canceledSubscriptions.length > 0 && (
+          <div className="rounded-3xl bg-white dark:bg-white/5 p-4 sm:p-7 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-none">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444748] dark:text-neutral-400">
+                {lang === 'en' ? 'Cancellations' : 'Désabonnements'} <span className="text-red-400 ml-1">{data.canceledSubscriptions.length}</span>
+              </h3>
+            </div>
+            <div className="space-y-1">
+              {data.canceledSubscriptions.map(sub => (
+                <div key={sub.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 px-4 -mx-4 rounded-2xl hover:bg-[#f5f3f2] dark:hover:bg-white/5 transition-colors gap-3 sm:gap-0">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-500/10 to-red-500/5 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-extrabold text-red-400">{sub.contact.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-[#1b1c1b] dark:text-white text-sm truncate">{sub.contact}</p>
+                      <p className="text-xs text-[#444748] dark:text-neutral-500">{sub.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${sub.subscription_status === 'canceled' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                      {sub.subscription_status === 'canceled' ? (lang === 'en' ? 'Cancelled' : 'Désabonné') : (lang === 'en' ? 'Payment failed' : 'Paiement en échec')}
+                    </span>
+                    <div className="text-right">
+                      <p className="font-extrabold text-[#444748] dark:text-neutral-400 text-sm font-['Manrope'] line-through">
+                        {Number(sub.subscription_amount).toFixed(2)} EUR
+                      </p>
+                      <p className="text-[10px] text-[#444748] dark:text-neutral-500">/ {intervalLabel(sub.subscription_interval, sub.subscription_interval_count)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
           )}
         </div>

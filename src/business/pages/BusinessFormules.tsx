@@ -6,7 +6,7 @@ import {
   Plus, Package, Pencil, Trash2, X, Loader2,
   ToggleLeft, ToggleRight, FileText, Video, Link2, File,
   Percent, ChevronDown, ChevronUp, Users, Eye, Upload,
-  CreditCard, CheckCircle2, AlertTriangle,
+  CreditCard, CheckCircle2, AlertTriangle, Copy,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { RichTextEditor, sanitizeRichHtml } from '../components/RichTextEditor'
@@ -706,6 +706,16 @@ export function BusinessFormules() {
                           disabled={isTeamMember}
                           className={`flex-[2] ${smallInputCls} ${isTeamMember ? 'bg-stone-50 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 cursor-not-allowed' : ''}`}
                         />
+                      )}
+                      {resource.url && (
+                        <button
+                          type="button"
+                          onClick={() => { navigator.clipboard.writeText(resource.url); toast.success(lang === 'en' ? 'Link copied' : 'Lien copié') }}
+                          title={lang === 'en' ? 'Copy link' : 'Copier le lien'}
+                          className="text-stone-400 dark:text-neutral-500 hover:text-[#006c49] dark:hover:text-[#4ade80] flex-shrink-0 transition-colors"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
                       )}
                       {!isTeamMember && (
                         <button onClick={() => removeResource(idx)} className="text-stone-400 dark:text-neutral-500 hover:text-red-500 flex-shrink-0 transition-colors">

@@ -3509,24 +3509,23 @@ ${notesSection}
           } catch {}
         }
         const summary = origSummary || (prospectRow?.contact ? `Rendez-vous avec ${prospectRow.contact}` : (appt.title || 'Rendez-vous'))
-        let description = origDescription || ''
-        if (meetLink && !description.includes(meetLink)) {
-          description = `Lien Google Meet : ${meetLink}${description ? `\n\n${description}` : ''}`
-        }
+        // Strip any stale "Lien Google Meet" line: the new event will carry its OWN native Meet.
+        const description = (origDescription || '').replace(/^[ \t]*Lien Google Meet\s*:.*$/gim, '').replace(/\n{3,}/g, '\n\n').trim()
 
-        // Create the event on the new assignee's calendar. Only generate a fresh Meet if there was none.
+        // Create the event on the new assignee's calendar WITH a fresh Meet → the new assignee
+        // becomes the host (full management rights), unlike inheriting the old organiser's link.
         if (newResolved.authUserId) {
           const newToken = await getGoogleAccessToken(supabase, newResolved.authUserId)
           if (newToken) {
-            const withMeet = !meetLink
             const created = await createGoogleCalendarEvent(newToken, {
               summary, description,
               startDateTime: startIso, endDateTime: endIso, timeZone: newResolved.tz,
-              withMeet,
+              withMeet: true,
+              attendeeEmail: prospectRow?.email || undefined, // → Google envoie une invitation au prospect
             })
             if (created.success) {
               newEventId = created.eventId || null
-              if (withMeet && created.hangoutLink) meetLink = created.hangoutLink
+              if (created.hangoutLink) meetLink = created.hangoutLink
             }
           }
         }
@@ -3549,6 +3548,53 @@ ${notesSection}
       if (upErr) return res.status(500).json({ error: upErr.message })
       if (appt.prospect_id) {
         await supabase.from('business_prospects').update({ assigned_to: newAssigned }).eq('id', appt.prospect_id)
+      }
+
+      // ── Notify the PROSPECT of the new Meet link (date/time unchanged) ──
+      const meetChanged = !!meetLink && meetLink !== (appt.google_meet_link || null)
+      if (meetChanged && appt.prospect_id) {
+        const { data: prospectFull } = await supabase.from('business_prospects').select('contact, email, timezone').eq('id', appt.prospect_id).single()
+        if (prospectFull?.email) {
+          const ptz = prospectFull.timezone || newResolved.tz || 'Europe/Paris'
+          const whenUtc = appt.datetime_utc ? new Date(appt.datetime_utc) : null
+          const dateFr = whenUtc ? formatInTimeZone(whenUtc, ptz, 'EEEE d MMMM yyyy', { locale: frLocale }) : (appt.date || '')
+          const startFr = whenUtc ? formatInTimeZone(whenUtc, ptz, 'HH:mm') : (appt.time || '').slice(0, 5)
+          const endFr = whenUtc ? formatInTimeZone(new Date(whenUtc.getTime() + (appt.duration || 30) * 60_000), ptz, 'HH:mm') : ''
+          const timeFr = endFr ? `${startFr} — ${endFr}` : startFr
+          // Pièce jointe ICS (le prospect peut l'ajouter à son agenda)
+          const icsAttach: { content: string; name: string; type: string }[] = []
+          if (whenUtc) {
+            const icsStamp = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+            const icsTitle = appt.title || `Rendez-vous avec ${prospectFull.contact || 'CloseOS'}`
+            const ics = [
+              'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//CloseOS//Booking//FR', 'CALSCALE:GREGORIAN', 'METHOD:REQUEST',
+              'BEGIN:VEVENT', `UID:closeos-${appt.id}@closeos.fr`, `DTSTAMP:${icsStamp(new Date())}`,
+              `DTSTART:${icsStamp(whenUtc)}`, `DTEND:${icsStamp(new Date(whenUtc.getTime() + (appt.duration || 30) * 60_000))}`,
+              `SUMMARY:${icsTitle}`,
+              `LOCATION:${meetLink}`, `DESCRIPTION:Rejoindre le Google Meet : ${meetLink}`,
+              'ORGANIZER;CN=CloseOS:mailto:support@closeos.fr', 'STATUS:CONFIRMED',
+              'END:VEVENT', 'END:VCALENDAR',
+            ].join('\r\n')
+            icsAttach.push({ content: Buffer.from(ics).toString('base64'), name: 'invitation.ics', type: 'text/calendar' })
+          }
+          const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet"></head><body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;"><tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;"><tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;"><img src="https://closeos.fr/closeos-business-logo-ecrit.png" alt="CloseOS Business" width="160" style="display:block;"></td></tr><tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);"><h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:32px;color:#111111;letter-spacing:-0.04em;line-height:1.1;margin:0 0 16px;">Nouveau lien pour<br>votre rendez-vous</h1><p style="font-family:'Inter',Helvetica,sans-serif;font-size:16px;color:#1b1c1b;line-height:1.6;margin:0 0 32px;">Bonjour <strong style="color:#111111;">${prospectFull.contact || ''}</strong>, le lien de visioconférence de votre rendez-vous a été mis à jour. <strong>La date et l'heure ne changent pas</strong> — merci d'utiliser ce nouveau lien pour nous rejoindre le jour J.</p><div style="background-color:#f5f3f2;border-radius:24px;padding:32px;margin-bottom:32px;"><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td style="padding-bottom:16px;"><span style="font-family:'Inter',Helvetica,sans-serif;font-size:14px;color:#1b1c1b;opacity:0.6;">📅 Date</span><br><span style="font-family:'Inter',Helvetica,sans-serif;font-size:18px;color:#111111;font-weight:500;">${dateFr}</span></td></tr><tr><td><span style="font-family:'Inter',Helvetica,sans-serif;font-size:14px;color:#1b1c1b;opacity:0.6;">🕐 Horaire</span><br><span style="font-family:'Inter',Helvetica,sans-serif;font-size:18px;color:#111111;font-weight:500;">${timeFr}</span></td></tr></table></div><div style="background-color:#eef6f1;border-radius:16px;padding:16px 20px;margin-bottom:24px;"><p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:13px;color:#1b1c1b;opacity:0.85;line-height:1.5;">📎 Un fichier d'invitation (.ics) est joint à cet email — ouvrez-le pour ajouter le rendez-vous à votre agenda. Vous recevrez aussi une invitation Google Agenda.</p></div><table cellpadding="0" cellspacing="0" style="width:100%;"><tr><td align="center"><a href="${meetLink}" style="display:inline-block;background-color:#006c49;color:#ffffff;font-family:'Inter',Helvetica,sans-serif;font-size:15px;font-weight:600;text-decoration:none;padding:16px 48px;border-radius:99px;">Rejoindre le Google Meet</a></td></tr></table><p style="font-family:'Inter',Helvetica,sans-serif;font-size:13px;color:#1b1c1b;opacity:0.55;line-height:1.6;margin:24px 0 0;text-align:center;">Ou copiez ce lien : <a href="${meetLink}" style="color:#006c49;word-break:break-all;">${meetLink}</a></p></td></tr><tr><td style="padding-top:48px;text-align:left;padding-left:24px;"><p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:13px;color:#1b1c1b;opacity:0.6;">© 2026 CloseOS - Tous droits réservés</p></td></tr></table></td></tr></table></body></html>`
+          try {
+            const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+            if (BREVO_API_KEY) {
+              await fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+                body: JSON.stringify({
+                  sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+                  to: [{ email: prospectFull.email, name: prospectFull.contact || '' }],
+                  subject: `Nouveau lien pour votre rendez-vous — ${dateFr}`,
+                  htmlContent: html,
+                  ...(icsAttach.length ? { attachment: icsAttach } : {}),
+                }),
+              })
+            }
+          } catch (e) { console.error('[appointment-reassign] prospect Brevo error:', e) }
+        }
       }
 
       // ── Email the person who was initially assigned ──
@@ -8227,6 +8273,7 @@ ${notesSection}
         subscription_status: sub.status,
         subscription_amount: amount,
         subscription_interval: item?.price?.recurring?.interval || 'month',
+        subscription_interval_count: item?.price?.recurring?.interval_count || 1,
         matched_via: 'auto_won',
         last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
         next_payment_date: subPeriodEndIso(sub),
@@ -8239,6 +8286,7 @@ ${notesSection}
         subscription_status: sub.status,
         subscription_amount: amount,
         subscription_interval: item?.price?.recurring?.interval || 'month',
+        subscription_interval_count: item?.price?.recurring?.interval_count || 1,
         matched_via: 'auto_won',
         last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
         next_payment_date: subPeriodEndIso(sub),
@@ -8388,6 +8436,7 @@ ${notesSection}
         const item = sub.items.data[0]
         const baseAmount = item?.price?.unit_amount ? item.price.unit_amount / 100 : 0
         const interval = item?.price?.recurring?.interval || 'month'
+        const intervalCount = item?.price?.recurring?.interval_count || 1
 
         // Get the real amount the customer is actually paying right now (after discounts).
         // Uses the latest real invoice so one-time ("duration: once") discounts are reflected too.
@@ -8403,6 +8452,7 @@ ${notesSection}
               subscription_amount: amount,
               subscription_status: sub.status,
               subscription_interval: interval,
+              subscription_interval_count: intervalCount,
               last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
               next_payment_date: subPeriodEndIso(sub),
             }).eq('id', prospectId)
@@ -8427,6 +8477,7 @@ ${notesSection}
           subscription_status: sub.status,
           subscription_amount: amount,
           subscription_interval: interval,
+          subscription_interval_count: intervalCount,
           matched_via: 'sync',
           last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
           next_payment_date: subPeriodEndIso(sub),
@@ -8574,6 +8625,8 @@ ${notesSection}
           subscription_status: sub.status,
           subscription_amount: amount,
           subscription_interval: item?.price?.recurring?.interval || 'month',
+          subscription_interval_count: item?.price?.recurring?.interval_count || 1,
+        subscription_interval_count: item?.price?.recurring?.interval_count || 1,
           matched_via: 'manual',
           last_payment_date: (sub as any).current_period_start ? new Date((sub as any).current_period_start * 1000).toISOString() : null,
           next_payment_date: subPeriodEndIso(sub),
@@ -8584,6 +8637,8 @@ ${notesSection}
           subscription_status: sub.status,
           subscription_amount: amount,
           subscription_interval: item?.price?.recurring?.interval || 'month',
+          subscription_interval_count: item?.price?.recurring?.interval_count || 1,
+        subscription_interval_count: item?.price?.recurring?.interval_count || 1,
         })
       }
 
@@ -8639,7 +8694,7 @@ ${notesSection}
       // Fetch all prospects
       const { data: allProspects } = await supabase
         .from('business_prospects')
-        .select('id, contact, email, value, stage, assigned_to, assigned_setter, formula_id, stripe_customer_id, stripe_subscription_id, subscription_status, subscription_amount, subscription_interval, matched_via, last_payment_date, next_payment_date, created_at')
+        .select('id, contact, email, value, stage, assigned_to, assigned_setter, formula_id, stripe_customer_id, stripe_subscription_id, subscription_status, subscription_amount, subscription_interval, subscription_interval_count, matched_via, last_payment_date, next_payment_date, created_at')
         .eq('user_id', user_id)
 
       const prospects = allProspects || []
@@ -8665,7 +8720,9 @@ ${notesSection}
         matchedProspects.forEach(p => {
           if (p.subscription_status === 'active' || p.subscription_status === 'trialing') {
             const amount = Number(p.subscription_amount) || 0
-            mrr += p.subscription_interval === 'year' ? amount / 12 : amount
+            // Normalise to a MONTHLY-equivalent: quarterly (month×3), semester (month×6), yearly all count pro-rata
+            const cycleMonths = (p.subscription_interval === 'year' ? 12 : 1) * (Number(p.subscription_interval_count) || 1)
+            mrr += amount / Math.max(1, cycleMonths)
           }
         })
 
@@ -8729,18 +8786,24 @@ ${notesSection}
         : 0
 
       // Active subscriptions list
+      const mapSub = (p: any) => ({
+        id: p.id,
+        contact: p.contact,
+        email: p.email,
+        subscription_amount: p.subscription_amount,
+        subscription_interval: p.subscription_interval,
+        subscription_interval_count: p.subscription_interval_count,
+        subscription_status: p.subscription_status,
+        last_payment_date: p.last_payment_date,
+        next_payment_date: p.next_payment_date,
+      })
       const activeSubscriptions = matchedProspects
         .filter(p => p.subscription_status === 'active' || p.subscription_status === 'trialing')
-        .map(p => ({
-          id: p.id,
-          contact: p.contact,
-          email: p.email,
-          subscription_amount: p.subscription_amount,
-          subscription_interval: p.subscription_interval,
-          subscription_status: p.subscription_status,
-          last_payment_date: p.last_payment_date,
-          next_payment_date: p.next_payment_date,
-        }))
+        .map(mapSub)
+      // Désabonnés / en échec de paiement (→ tableau "churn" plus bas)
+      const canceledSubscriptions = matchedProspects
+        .filter(p => p.subscription_status === 'canceled' || p.subscription_status === 'past_due')
+        .map(mapSub)
 
       // Commissions
       const { data: teamMembers } = await supabase
@@ -8868,6 +8931,7 @@ ${notesSection}
         canceledCount,
         churnRate,
         activeSubscriptions,
+        canceledSubscriptions,
         commissions: { total: Math.round(totalCommissions * 100) / 100, details: commissionDetails },
         charges: { fixed: fixedCharges, variable: variableCharges, totalFixed, totalVariable },
         netMargin: Math.round(netMargin * 100) / 100,

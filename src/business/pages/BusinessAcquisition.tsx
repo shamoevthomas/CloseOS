@@ -61,7 +61,7 @@ const API_URL = '/api/business'
 
 const COLORS = ['#111111', '#006c49', '#9ca3af', '#d97706', '#2563eb', '#7c3aed', '#e11d48', '#0891b2']
 
-const formatCurrency = (value: number): string =>
+const formatCurrency = (value: number, lang: 'fr' | 'en' = 'fr'): string =>
   new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value)
 
 const formatCompact = (value: number): string => {
