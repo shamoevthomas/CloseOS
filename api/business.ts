@@ -4896,8 +4896,8 @@ ${notesSection}
         : supabase.from('business_absences').select('start_date, end_date').eq('team_member_id', link.team_member_id).gte('end_date', today)
 
       const appointmentsQuery = isOwnerLink
-        ? supabase.from('business_appointments').select('date, time, duration, datetime_utc').eq('user_id', ownerId).is('assigned_to', null).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
-        : supabase.from('business_appointments').select('date, time, duration, datetime_utc').eq('assigned_to', link.team_member_id).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
+        ? supabase.from('business_appointments').select('date, time, duration, datetime_utc, timezone').eq('user_id', ownerId).is('assigned_to', null).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
+        : supabase.from('business_appointments').select('date, time, duration, datetime_utc, timezone').eq('assigned_to', link.team_member_id).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
 
       // Soft lock: include pending booking payment sessions (last 30 min)
       const pendingLockCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString()
@@ -4913,6 +4913,15 @@ ${notesSection}
       const weeklySlots = slotsRes.data || []
       const absences = absencesRes.data || []
       const existingAppointments = appointmentsRes.data || []
+      // Précompute chaque RDV comme un intervalle en UTC absolu. On NE compare JAMAIS les
+      // heures locales "time" entre elles : un RDV pris à 12:00 Réunion (=10:00 Paris) ne doit pas
+      // entrer en collision avec un créneau "12:00" d'un autre fuseau. On raisonne en instants.
+      const apptUtcIntervals = existingAppointments.map((a: any) => {
+        let start: number
+        if (a.datetime_utc) start = new Date(a.datetime_utc).getTime()
+        else { try { start = fromZonedTime(`${a.date}T${a.time}:00`, a.timezone || memberTz).getTime() } catch { start = NaN } }
+        return { start, end: start + (a.duration || 30) * 60000 }
+      }).filter((iv: any) => !Number.isNaN(iv.start))
       const pendingHeldUtc = new Set<string>(
         ((pendingSessionsRes.data as any[]) || [])
           .map((s: any) => s.prospect_data?.datetime_utc)
@@ -4976,27 +4985,24 @@ ${notesSection}
               if (slotTime <= now) continue
             }
 
+            // Instant absolu du créneau (UTC) — sert à TOUS les contrôles de conflit
+            const slotStartUtc = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
+            const slotEndUtc = slotStartUtc + duration * 60 * 1000
+            const bufferMs = buffer * 60 * 1000
+
             // Min booking notice
             if (constraints.min_booking_notice > 0) {
-              const slotUtcTime = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
               const minNoticeMs = constraints.min_booking_notice * 60 * 60 * 1000
-              if (slotUtcTime - now.getTime() < minNoticeMs) continue
+              if (slotStartUtc - now.getTime() < minNoticeMs) continue
             }
 
-            // Check appointment conflicts (with buffer)
-            const hasConflict = dayAppointments.some((appt: any) => {
-              const [aH, aM] = appt.time.split(':').map(Number)
-              const apptStart = aH * 60 + aM
-              const apptEnd = apptStart + (appt.duration || 30)
-              return mins < (apptEnd + buffer) && (mins + duration) > (apptStart - buffer)
-            })
+            // Conflit RDV — comparaison en UTC absolu (robuste aux fuseaux différents entre prospects)
+            const hasConflict = apptUtcIntervals.some((iv: any) =>
+              slotStartUtc < (iv.end + bufferMs) && slotEndUtc > (iv.start - bufferMs))
             if (hasConflict) continue
 
             // Check Google Calendar conflicts (with buffer)
             if (googleEvents.length > 0) {
-              const slotStartUtc = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz).getTime()
-              const slotEndUtc = slotStartUtc + duration * 60 * 1000
-              const bufferMs = buffer * 60 * 1000
               const hasGcalConflict = googleEvents.some(ev => {
                 const evStart = new Date(ev.start).getTime()
                 const evEnd = new Date(ev.end).getTime()
@@ -5006,8 +5012,7 @@ ${notesSection}
             }
 
             // Convert to UTC
-            const utcDate = fromZonedTime(`${dateStr}T${timeStr}:00`, memberTz)
-            const utcIso = utcDate.toISOString()
+            const utcIso = new Date(slotStartUtc).toISOString()
             // Soft lock: skip slots reserved by an active pending payment
             if (pendingHeldUtc.has(utcIso)) continue
             availableSlots.push({ date: dateStr, time: timeStr, datetime_utc: utcIso })
@@ -5542,21 +5547,27 @@ ${notesSection}
 
       // If no existing appointment, create one (fallback for direct API calls)
       if (!appointment) {
-        // Re-validate slot availability
+        // Re-validate slot availability — comparaison en UTC absolu (pas d'heures locales entre fuseaux).
+        // On ne filtre plus par 'date' (la date locale du prospect peut différer de celle des autres RDV) :
+        // on charge les RDV proches et on compare les instants.
+        const dayBefore = new Date(`${date}T00:00:00Z`); dayBefore.setUTCDate(dayBefore.getUTCDate() - 1)
+        const dayAfter = new Date(`${date}T00:00:00Z`); dayAfter.setUTCDate(dayAfter.getUTCDate() + 2)
+        const lo = dayBefore.toISOString().slice(0, 10), hi = dayAfter.toISOString().slice(0, 10)
         const apptQuery = isOwnerLink
-          ? supabase.from('business_appointments').select('id, time, duration').eq('user_id', ownerId).is('assigned_to', null).eq('date', date).in('status', ['upcoming', 'pending', 'confirmed'])
-          : supabase.from('business_appointments').select('id, time, duration').eq('assigned_to', link.team_member_id).eq('date', date).in('status', ['upcoming', 'pending', 'confirmed'])
+          ? supabase.from('business_appointments').select('id, date, time, duration, datetime_utc, timezone').eq('user_id', ownerId).is('assigned_to', null).gte('date', lo).lte('date', hi).in('status', ['upcoming', 'pending', 'confirmed'])
+          : supabase.from('business_appointments').select('id, date, time, duration, datetime_utc, timezone').eq('assigned_to', link.team_member_id).gte('date', lo).lte('date', hi).in('status', ['upcoming', 'pending', 'confirmed'])
 
         const { data: conflicts } = await apptQuery
 
-        const [rH, rM] = time.split(':').map(Number)
-        const reqStart = rH * 60 + rM
-        const reqEnd = reqStart + apptDuration
+        const memberTzForConflict = prospect_timezone || 'Europe/Paris'
+        const reqStartUtc = datetime_utc ? new Date(datetime_utc).getTime() : fromZonedTime(`${date}T${time}:00`, memberTzForConflict).getTime()
+        const reqEndUtc = reqStartUtc + apptDuration * 60000
         const hasConflict = (conflicts || []).some((appt: any) => {
-          const [aH, aM] = appt.time.split(':').map(Number)
-          const apptStart = aH * 60 + aM
-          const apptEnd = apptStart + (appt.duration || 30)
-          return reqStart < apptEnd && reqEnd > apptStart
+          let aStart: number
+          if (appt.datetime_utc) aStart = new Date(appt.datetime_utc).getTime()
+          else { try { aStart = fromZonedTime(`${appt.date}T${appt.time}:00`, appt.timezone || 'Europe/Paris').getTime() } catch { return false } }
+          const aEnd = aStart + (appt.duration || 30) * 60000
+          return reqStartUtc < aEnd && reqEndUtc > aStart
         })
         if (hasConflict) return res.status(409).json({ error: 'Ce créneau vient d\'être réservé. Veuillez en choisir un autre.' })
 

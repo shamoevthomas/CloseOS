@@ -521,20 +521,21 @@ export function PublicBooking() {
       const matchSlot = prospectSlots.find(s => s.date === selectedDate && s.time === selectedTime)
       const datetimeUtc = matchSlot?.datetime_utc || toUTC(selectedDate, selectedTime, prospectTimezone).toISOString()
 
-      // Re-validate: check no conflicting appointment
+      // Re-validate: conflit calculé en UTC absolu (les RDV d'autres prospects peuvent être dans
+      // d'autres fuseaux — comparer les heures locales "12:00" produirait de faux conflits).
       const conflictQuery = linkMeta.team_member_id
-        ? supabase.from('business_appointments').select('id, time, duration').eq('assigned_to', linkMeta.team_member_id).eq('date', selectedDate).in('status', ['upcoming', 'pending', 'confirmed'])
-        : supabase.from('business_appointments').select('id, time, duration').eq('user_id', linkMeta.business_owner_id).is('assigned_to', null).eq('date', selectedDate).in('status', ['upcoming', 'pending', 'confirmed'])
+        ? supabase.from('business_appointments').select('id, date, time, duration, datetime_utc, timezone').eq('assigned_to', linkMeta.team_member_id).in('status', ['upcoming', 'pending', 'confirmed'])
+        : supabase.from('business_appointments').select('id, date, time, duration, datetime_utc, timezone').eq('user_id', linkMeta.business_owner_id).is('assigned_to', null).in('status', ['upcoming', 'pending', 'confirmed'])
 
       const { data: conflicts } = await conflictQuery
-      const [rH, rM] = selectedTime.split(':').map(Number)
-      const reqStart = rH * 60 + rM
-      const reqEnd = reqStart + linkMeta.duration
+      const reqStartUtc = new Date(datetimeUtc).getTime()
+      const reqEndUtc = reqStartUtc + linkMeta.duration * 60000
       const hasConflict = (conflicts || []).some((appt: any) => {
-        const [aH, aM] = appt.time.split(':').map(Number)
-        const apptStart = aH * 60 + aM
-        const apptEnd = apptStart + (appt.duration || 30)
-        return reqStart < apptEnd && reqEnd > apptStart
+        const aStartUtc = appt.datetime_utc
+          ? new Date(appt.datetime_utc).getTime()
+          : toUTC(appt.date, appt.time, appt.timezone || 'Europe/Paris').getTime()
+        const aEndUtc = aStartUtc + (appt.duration || 30) * 60000
+        return reqStartUtc < aEndUtc && reqEndUtc > aStartUtc
       })
       if (hasConflict) {
         alert(lang === 'fr' ? 'Ce créneau vient d\'être réservé. Veuillez en choisir un autre.' : 'This slot has just been booked. Please choose another.')
@@ -684,9 +685,15 @@ export function PublicBooking() {
 
       // Fetch all conflicting appointments once (across the whole window)
       const conflictQuery = linkMeta.team_member_id
-        ? supabase.from('business_appointments').select('date, time, duration').eq('assigned_to', linkMeta.team_member_id).in('status', ['upcoming', 'pending', 'confirmed'])
-        : supabase.from('business_appointments').select('date, time, duration').eq('user_id', linkMeta.business_owner_id).is('assigned_to', null).in('status', ['upcoming', 'pending', 'confirmed'])
+        ? supabase.from('business_appointments').select('date, time, duration, datetime_utc, timezone').eq('assigned_to', linkMeta.team_member_id).in('status', ['upcoming', 'pending', 'confirmed'])
+        : supabase.from('business_appointments').select('date, time, duration, datetime_utc, timezone').eq('user_id', linkMeta.business_owner_id).is('assigned_to', null).in('status', ['upcoming', 'pending', 'confirmed'])
       const { data: existing } = await conflictQuery
+
+      // Intervalles UTC absolus des RDV existants (robuste aux fuseaux différents entre prospects)
+      const existingUtc = (existing || []).map((a: any) => {
+        const start = a.datetime_utc ? new Date(a.datetime_utc).getTime() : toUTC(a.date, a.time, a.timezone || 'Europe/Paris').getTime()
+        return { start, end: start + (a.duration || 30) * 60000 }
+      })
 
       const created: { appointment_id: string; date: string; time: string; datetime_utc?: string }[] = []
       const conflicted: SlotData[] = []
@@ -698,20 +705,15 @@ export function PublicBooking() {
         const matchSlot = prospectSlots.find(s => s.date === slot.date && s.time === slot.time)
         const datetimeUtc = slot.datetime_utc || matchSlot?.datetime_utc || toUTC(slot.date, slot.time, prospectTimezone).toISOString()
 
-        const [rH, rM] = slot.time.split(':').map(Number)
-        const reqStart = rH * 60 + rM
-        const reqEnd = reqStart + linkMeta.duration
-        // Conflict against existing appointments AND already-created ones in this batch (same date)
-        const dayBusy = [
-          ...(existing || []).filter((a: any) => a.date === slot.date),
-          ...created.filter(c => c.date === slot.date).map(c => ({ time: c.time, duration: linkMeta.duration })),
-        ]
-        const hasConflict = dayBusy.some((appt: any) => {
-          const [aH, aM] = appt.time.split(':').map(Number)
-          const apptStart = aH * 60 + aM
-          const apptEnd = apptStart + (appt.duration || 30)
-          return reqStart < apptEnd && reqEnd > apptStart
+        const reqStartUtc = new Date(datetimeUtc).getTime()
+        const reqEndUtc = reqStartUtc + linkMeta.duration * 60000
+        // Conflit contre les RDV existants ET ceux déjà créés dans ce lot — tout en UTC absolu
+        const batchUtc = created.map(c => {
+          const start = c.datetime_utc ? new Date(c.datetime_utc).getTime() : toUTC(c.date, c.time, prospectTimezone).getTime()
+          return { start, end: start + linkMeta.duration * 60000 }
         })
+        const hasConflict = [...existingUtc, ...batchUtc].some(iv =>
+          reqStartUtc < iv.end && reqEndUtc > iv.start)
         if (hasConflict) { conflicted.push(slot); continue }
 
         const cancelToken = crypto.randomUUID()
