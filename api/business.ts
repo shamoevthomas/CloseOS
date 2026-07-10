@@ -5085,11 +5085,21 @@ ${notesSection}
               memberTz = tmTz?.timezone || 'Europe/Paris'
             }
 
-            const startDateTime = `${date}T${time}:00`
-            const [eH, eM] = time.split(':').map(Number)
-            const endMins = eH * 60 + eM + apptDuration
-            const endTimeCalc = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
-            const endDateTime = `${date}T${endTimeCalc}:00`
+            // Use datetime_utc (absolute instant) so the Google event lands at the correct time
+            // regardless of the prospect's timezone. Fallback to naive local only if missing.
+            const effUtc = datetime_utc || appointment.datetime_utc || null
+            let startDateTime: string
+            let endDateTime: string
+            if (effUtc) {
+              startDateTime = new Date(effUtc).toISOString()
+              endDateTime = new Date(new Date(effUtc).getTime() + apptDuration * 60000).toISOString()
+            } else {
+              startDateTime = `${date}T${time}:00`
+              const [eH, eM] = time.split(':').map(Number)
+              const endMins = eH * 60 + eM + apptDuration
+              const endTimeCalc = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+              endDateTime = `${date}T${endTimeCalc}:00`
+            }
 
             let assigneeName = ''
             if (isOwnerLink) {
@@ -5339,10 +5349,20 @@ ${notesSection}
         if (!gcalToken) continue
         try {
           const { date, time } = slot
-          const startDateTime = `${date}T${time}:00`
-          const [eH, eM] = time.split(':').map(Number)
-          const endMins = eH * 60 + eM + apptDuration
-          const endDateTime = `${date}T${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}:00`
+          // Use the appointment's absolute instant (datetime_utc) so the Google event is at the
+          // correct time even when the prospect is in another timezone than the closer.
+          const effUtc = slot.datetime_utc || appt.datetime_utc || null
+          let startDateTime: string
+          let endDateTime: string
+          if (effUtc) {
+            startDateTime = new Date(effUtc).toISOString()
+            endDateTime = new Date(new Date(effUtc).getTime() + apptDuration * 60000).toISOString()
+          } else {
+            startDateTime = `${date}T${time}:00`
+            const [eH, eM] = time.split(':').map(Number)
+            const endMins = eH * 60 + eM + apptDuration
+            endDateTime = `${date}T${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}:00`
+          }
 
           const cancelLink = `https://www.closeos.fr/appointment/${appt.cancel_token}?action=cancel`
           const rescheduleLink = `https://www.closeos.fr/appointment/${appt.reschedule_token}?action=reschedule`
@@ -5593,11 +5613,21 @@ ${notesSection}
               memberTz = tmTz?.timezone || 'Europe/Paris'
             }
 
-            const startDateTime = `${date}T${time}:00`
-            const [eH, eM] = time.split(':').map(Number)
-            const endMins = eH * 60 + eM + apptDuration
-            const endTimeCalc = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
-            const endDateTime = `${date}T${endTimeCalc}:00`
+            // Use datetime_utc (absolute instant) so the Google event lands at the correct time
+            // regardless of the prospect's timezone. Fallback to naive local only if missing.
+            const effUtc = datetime_utc || appointment.datetime_utc || null
+            let startDateTime: string
+            let endDateTime: string
+            if (effUtc) {
+              startDateTime = new Date(effUtc).toISOString()
+              endDateTime = new Date(new Date(effUtc).getTime() + apptDuration * 60000).toISOString()
+            } else {
+              startDateTime = `${date}T${time}:00`
+              const [eH, eM] = time.split(':').map(Number)
+              const endMins = eH * 60 + eM + apptDuration
+              const endTimeCalc = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`
+              endDateTime = `${date}T${endTimeCalc}:00`
+            }
 
             // Get assignee name
             let assigneeName = ''
