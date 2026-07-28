@@ -79,7 +79,7 @@ export function LoadingScreen() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #111111;
+          background: #f4f2f1;
           overflow: hidden;
         }
 
@@ -99,7 +99,7 @@ export function LoadingScreen() {
         .loading-screen__orb--1 {
           width: 400px;
           height: 400px;
-          background: #10b981;
+          background: #38bdf8;
           top: -100px;
           right: -100px;
           animation: loading-orbit1 8s ease-in-out infinite;
@@ -108,7 +108,7 @@ export function LoadingScreen() {
         .loading-screen__orb--2 {
           width: 300px;
           height: 300px;
-          background: #059669;
+          background: #0284c7;
           bottom: -80px;
           left: -80px;
           animation: loading-orbit2 10s ease-in-out infinite;
@@ -117,7 +117,7 @@ export function LoadingScreen() {
         .loading-screen__orb--3 {
           width: 200px;
           height: 200px;
-          background: #34d399;
+          background: #7dd3fc;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
@@ -157,11 +157,11 @@ export function LoadingScreen() {
         }
 
         .loading-screen__logo-text {
-          color: #f1f5f9;
+          color: #0f172a;
         }
 
         .loading-screen__logo-accent {
-          background: linear-gradient(135deg, #10b981, #059669);
+          background: linear-gradient(135deg, #38bdf8, #0284c7);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -177,8 +177,8 @@ export function LoadingScreen() {
           width: 100%;
           height: 100%;
           border-radius: 50%;
-          border: 3px solid rgba(16, 185, 129, 0.15);
-          border-top-color: #10b981;
+          border: 3px solid rgba(2, 132, 199, 0.15);
+          border-top-color: #0284c7;
           animation: loading-spin 0.9s linear infinite;
         }
 
@@ -187,7 +187,7 @@ export function LoadingScreen() {
         }
 
         .loading-screen__status {
-          color: #94a3b8;
+          color: #64748b;
           font-size: 1rem;
           font-weight: 500;
           margin: 0;
@@ -196,7 +196,7 @@ export function LoadingScreen() {
 
         .loading-screen__fact {
           max-width: 480px;
-          color: #64748b;
+          color: #475569;
           font-size: 0.875rem;
           line-height: 1.6;
           min-height: 48px;

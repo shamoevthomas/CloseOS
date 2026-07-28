@@ -8,6 +8,7 @@ export const BUSINESS_EVENTS = [
   { id: 'prospect.stage_changed',  label: 'Stage modifié',                description: 'Le stage du prospect a changé. Le payload inclut previous_stage et new_stage.' },
   { id: 'prospect.deleted',        label: 'Prospect supprimé',            description: 'Le prospect a été supprimé.' },
   { id: 'campaign.lead_captured',  label: 'Lead capturé via campagne',    description: 'Un nouveau lead arrive depuis un formulaire de capture.' },
+  { id: 'form.submitted',          label: 'Formulaire soumis',            description: 'Un visiteur a répondu à un formulaire. Le payload inclut les réponses et le prospect créé le cas échéant.' },
   { id: 'appointment.booked',      label: 'Rendez-vous réservé',          description: 'Un RDV a été pris pour ce prospect.' },
   { id: 'appointment.cancelled',   label: 'Rendez-vous annulé',           description: 'Un RDV a été annulé.' },
   { id: 'appointment.completed',   label: 'Rendez-vous terminé',          description: 'Un RDV a été marqué comme terminé.' },

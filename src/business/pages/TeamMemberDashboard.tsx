@@ -359,7 +359,7 @@ export function TeamMemberDashboard() {
                     </div>
                   </div>
                 )
-              })}}
+              })}
             </div>
           )}
         </div>

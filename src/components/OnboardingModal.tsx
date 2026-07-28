@@ -115,7 +115,6 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
       // Sauvegarde des informations dans les métadonnées de l'utilisateur Supabase
       await updateProfile({
         full_name: formData.full_name,
-        phone: `${countryCode}${formData.phone}`,
         role: formData.role,
         avatar_url: formData.avatar_url,
         onboarding_completed: true
@@ -262,37 +261,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
               </div>
             </div>
 
-            {/* ÉTAPE 2 : TÉLÉPHONE */}
-            <div>
-              <label className="mb-1.5 block text-xs uppercase tracking-widest font-bold text-white/40 text-left">Téléphone</label>
-              <div className="flex gap-2">
-                <div className="relative w-28">
-                  <select
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pl-3 pr-8 text-white focus:border-emerald-500 focus:outline-none cursor-pointer text-sm"
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                  >
-                    {countries.map((country) => (
-                      <option key={country.code} value={country.dial_code}>
-                        {country.code === 'FR' ? '🇫🇷' : ''} {country.name} ({country.dial_code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all text-sm"
-                    placeholder="6 12 34 56 78"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* ÉTAPE 3 : RÔLE */}
+            {/* ÉTAPE 2 : RÔLE (le téléphone est désormais demandé à l'inscription) */}
             <div>
               <label className="mb-1.5 block text-xs uppercase tracking-widest font-bold text-white/40 text-left">Votre spécialité</label>
               <div className="relative">
@@ -312,7 +281,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps = {}) {
 
             <button
               onClick={handleSubmit}
-              disabled={loading || !formData.role || !formData.full_name || !formData.phone.trim()}
+              disabled={loading || !formData.role || !formData.full_name}
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 py-3.5 font-bold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
             >
               {loading ? (

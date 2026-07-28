@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { PhoneInput } from '../components/PhoneInput'
 import { CommissionApprovalModal } from '../components/CommissionApprovalModal'
+import { BusinessDuplicatesModal } from '../components/BusinessDuplicatesModal'
+import { useBusinessDuplicates } from '../hooks/useBusinessDuplicates'
 import {
   User,
+  Users,
   Search,
   Plus,
   Trash2,
@@ -147,6 +150,10 @@ export function BusinessCRM() {
   const isSetterCloser = isTeamMember && teamMember?.role === 'Setter-Closer'
   const isPureCloser = isTeamMember && teamMember?.role === 'Closer'
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
+
+  // Doublons — gérable uniquement par Owner / Head of Sales / Admin
+  const { total: duplicateGroupsCount } = useBusinessDuplicates()
+  const [isDuplicatesOpen, setIsDuplicatesOpen] = useState(false)
   // Setter & Setter-Closer auto-assign setter; Closer & others need picker
   const needsSetterPicker = !isPureSetter && !isSetterCloser
   // Setter auto-assigns setter only; Closer auto-assigns closer only; Setter-Closer auto-assigns both
@@ -280,7 +287,13 @@ export function BusinessCRM() {
 
     for (const p of prospects) {
       byStage[p.stage] = (byStage[p.stage] || 0) + 1
-      if (p.assigned_to) byMember[p.assigned_to] = (byMember[p.assigned_to] || 0) + 1
+      // Member — compter le lead pour son closer ET son setter (sans doublon)
+      {
+        const mIds = new Set<string>()
+        if (p.assigned_to) mIds.add(p.assigned_to)
+        if (p.assigned_setter) mIds.add(p.assigned_setter)
+        for (const mId of mIds) byMember[mId] = (byMember[mId] || 0) + 1
+      }
       if (p.formula_id) byOffer[p.formula_id] = (byOffer[p.formula_id] || 0) + 1
       if (p.offer_id) byOffer[String(p.offer_id)] = (byOffer[String(p.offer_id)] || 0) + 1
       const pTags = prospectTags[p.id] || []
@@ -335,11 +348,17 @@ export function BusinessCRM() {
 
     if (selectedTeams.length > 0) {
       const teamMemberIds = new Set(allTeamMembers.filter(m => m.team_id && selectedTeams.includes(m.team_id)).map(m => m.id))
-      result = result.filter(p => p.assigned_to && teamMemberIds.has(p.assigned_to))
+      result = result.filter(p =>
+        (p.assigned_to && teamMemberIds.has(p.assigned_to)) ||
+        (p.assigned_setter && teamMemberIds.has(p.assigned_setter))
+      )
     }
 
     if (selectedMembers.length > 0) {
-      result = result.filter(p => p.assigned_to && selectedMembers.includes(p.assigned_to))
+      result = result.filter(p =>
+        (p.assigned_to && selectedMembers.includes(p.assigned_to)) ||
+        (p.assigned_setter && selectedMembers.includes(p.assigned_setter))
+      )
     }
 
     if (selectedStages.length > 0) {
@@ -543,6 +562,18 @@ export function BusinessCRM() {
             className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
         </div>
+
+        {/* Doublons — Owner / HOS / Admin uniquement */}
+        {isOwnerView && duplicateGroupsCount > 0 && (
+          <button
+            onClick={() => setIsDuplicatesOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-2.5 text-sm font-bold text-amber-700 dark:text-amber-400 hover:border-amber-400 transition-all shrink-0"
+            title={lang === 'en' ? 'Manage duplicates' : 'Gérer les doublons'}
+          >
+            <Users className="h-4 w-4" />
+            {duplicateGroupsCount} {lang === 'en' ? (duplicateGroupsCount > 1 ? 'duplicates' : 'duplicate') : (duplicateGroupsCount > 1 ? 'doublons' : 'doublon')}
+          </button>
+        )}
 
         {/* Filter toggle */}
         <button
@@ -1252,6 +1283,10 @@ export function BusinessCRM() {
             </div>
           </div>
         </div>
+      )}
+
+      {isOwnerView && (
+        <BusinessDuplicatesModal isOpen={isDuplicatesOpen} onClose={() => setIsDuplicatesOpen(false)} />
       )}
     </div>
   )

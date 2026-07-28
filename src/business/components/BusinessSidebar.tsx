@@ -24,6 +24,7 @@ import {
   MoreVertical,
   Clock,
   DollarSign,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
@@ -47,6 +48,7 @@ const getOwnerNavigation = (t: BusinessTranslations): NavItem[] => [
   { name: t.sidebar_crm, href: '/business/crm', icon: GitBranch },
   { name: t.sidebar_pipeline, href: '/business/pipeline-owner', icon: Target },
   { name: t.sidebar_campaigns, href: '/business/campagnes', icon: Megaphone },
+  { name: t.sidebar_forms, href: '/business/formulaires', icon: ClipboardList },
   { name: t.sidebar_acquisition, href: '/business/acquisition', icon: BarChart3 },
   { name: t.sidebar_objectives, href: '/business/objectifs', icon: Target },
   { name: t.sidebar_formulas, href: '/business/formules', icon: Package },
@@ -68,7 +70,12 @@ const getHeadOfSalesNavigation = (t: BusinessTranslations, canManageCampaigns?: 
     { name: t.sidebar_dashboard, href: '/business/dashboard', icon: LayoutDashboard },
     { name: t.sidebar_crm, href: '/business/crm', icon: GitBranch },
     { name: t.sidebar_pipeline, href: '/business/pipeline-owner', icon: Target },
-    ...(canManageCampaigns ? [{ name: t.sidebar_campaigns, href: '/business/campagnes', icon: Megaphone }] : []),
+    ...(canManageCampaigns
+      ? [
+          { name: t.sidebar_campaigns, href: '/business/campagnes', icon: Megaphone },
+          { name: t.sidebar_forms, href: '/business/formulaires', icon: ClipboardList },
+        ]
+      : []),
     { name: t.sidebar_acquisition, href: '/business/acquisition', icon: BarChart3 },
     { name: t.sidebar_objectives, href: '/business/objectifs', icon: Target },
     { name: t.sidebar_formulas, href: '/business/formules', icon: Package },
@@ -132,7 +139,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
   const pendingApprovalsCount = usePendingApprovalsCount()
 
   const SOLO_HIDDEN_ROUTES = ['/business/team', '/business/factures', '/business/report']
-  const ACQUISITION_ROUTES = ['/business/campagnes', '/business/acquisition']
+  const ACQUISITION_ROUTES = ['/business/campagnes', '/business/formulaires', '/business/acquisition']
 
   const navigation = useMemo(() => {
     let baseNav: NavItem[]
@@ -203,15 +210,24 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
     fetchAvatar()
   }, [user?.id])
 
-  // Accès CloseOS Sign : l'utilisateur a-t-il une ligne sign_users (provisionnée avec l'abonnement Business) ?
+  // Accès CloseOS Sign : owner (sign_users) OU membre d'équipe relié à Sign (sign_team_members actif).
   const [hasSign, setHasSign] = useState(false)
+  const [signIsMember, setSignIsMember] = useState(false)
   useEffect(() => {
     let cancelled = false
     const checkSign = async () => {
-      // Réservé au propriétaire : un membre d'équipe n'a pas son propre accès Sign.
-      if (!user?.id || isTeamMember) { setHasSign(false); return }
-      const { data } = await supabase.from('sign_users').select('id').eq('id', user.id).maybeSingle()
-      if (!cancelled) setHasSign(!!data)
+      if (!user?.id) { setHasSign(false); return }
+      if (isTeamMember) {
+        const { data } = await supabase.from('sign_team_members').select('id').eq('user_id', user.id).eq('status', 'active').limit(1).maybeSingle()
+        if (!cancelled) { setHasSign(!!data); setSignIsMember(!!data) }
+      } else {
+        const { data } = await supabase.from('sign_users').select('id').eq('id', user.id).maybeSingle()
+        if (!cancelled) {
+          setHasSign(!!data); setSignIsMember(false)
+          // L'owner ayant Sign provisionne automatiquement son équipe Business dans Sign.
+          if (data) supabase.rpc('sign_sync_business_team').then(() => {}, () => {})
+        }
+      }
     }
     checkSign()
     return () => { cancelled = true }
@@ -231,7 +247,7 @@ export function BusinessSidebar({ isOpen, onClose, onOpenSettings, isCollapsed, 
     } catch (e) {
       console.error('[business] passage vers Sign', e)
     }
-    window.location.href = '/sign/app'
+    window.location.href = signIsMember ? '/sign/team' : '/sign/app'
   }
 
   // Auto-collapse after 3 seconds on desktop

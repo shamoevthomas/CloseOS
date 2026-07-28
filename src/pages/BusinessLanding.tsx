@@ -45,16 +45,23 @@ import {
   Webhook,
   Sparkles,
   Star,
+  Bot,
 } from 'lucide-react';
 import { translations, detectLang, LangContext, useLang } from './businessLandingI18n';
 import type { Lang } from './businessLandingI18n';
+import {
+  DoodleSquiggle, DoodleCircle, DoodleBubble, DoodleFace, DoodlePlane, DoodleSparkle,
+  DoodleCross, DoodleDashes, DoodleBolt, DoodleTarget, DoodleRocket, DoodleCoin,
+  DoodleChartUp, DoodleHeart, DoodleStar5, DoodleBurst, DoodleCheck, DoodleBulb,
+  DoodleTrophy, DoodleClock, DoodleZigzag,
+} from '../components/doodles';
 
 export const BusinessLanding: React.FC = () => {
   const navigate = useNavigate();
   const pageRef = useRef<HTMLDivElement>(null);
   const demoIframeRef = useRef<HTMLIFrameElement>(null);
   const [isExiting, setIsExiting] = useState(false);
-  // WaitingListModal removed — replaced with direct checkout links
+  // WaitingListModal removed, replaced with direct checkout links
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDemoPopup, setShowDemoPopup] = useState(false);
@@ -450,6 +457,16 @@ export const BusinessLanding: React.FC = () => {
             <div className="absolute -bottom-8 left-1/3 w-64 h-64 bg-[#8a43e1] rounded-full filter blur-[100px] animate-blob animation-delay-4000"></div>
           </div>
 
+          {/* Doodles hero (discrets) */}
+          <div className="pointer-events-none select-none absolute inset-0 hidden md:block z-0" aria-hidden="true">
+            <DoodleBubble className="absolute left-[2%] top-[34%] w-14 text-neutral-800/70 -rotate-6" />
+            <DoodleFace className="absolute right-[3%] top-[26%] w-12 text-neutral-800/70 rotate-6" />
+            <DoodleSparkle className="absolute left-[8%] top-[16%] w-6 text-emerald-500" />
+            <DoodleStar5 className="absolute right-[9%] top-[14%] w-5 text-emerald-500" />
+            <DoodlePlane className="absolute right-[5%] top-[64%] w-20 text-emerald-500" />
+            <DoodleCross className="absolute left-[10%] top-[64%] w-4 text-emerald-500" />
+          </div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -470,8 +487,9 @@ export const BusinessLanding: React.FC = () => {
               </div>
             </div>
 
-            <h1 className="text-5xl md:text-7xl lg:text-[80px] font-bold leading-[1.1] tracking-tight text-[#111111]">
+            <h1 className="relative text-5xl md:text-7xl lg:text-[80px] font-bold leading-[1.1] tracking-tight text-[#111111]">
               {t.hero_title}
+              <DoodleSquiggle className="pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-4 w-48 md:w-56 text-emerald-500" aria-hidden="true" />
             </h1>
 
             <p className="text-stone-500 text-base font-semibold bg-red-50 border border-red-100 px-5 py-2.5 rounded-full">
@@ -529,6 +547,9 @@ export const BusinessLanding: React.FC = () => {
               { name: 'Make', logo: '/make.webp' },
               { name: 'n8n', logo: '/n8n.webp' },
               { name: 'CSV', logo: '/logocsv.webp' },
+              { name: 'MCP', logo: '/mcp.webp' },
+              { name: 'Claude', logo: '/claude.webp' },
+              { name: 'ChatGPT', logo: '/chatgpt.webp' },
             ];
             const topRow = allIntegrations.filter((_, i) => i % 2 === 0);
             const bottomRow = allIntegrations.filter((_, i) => i % 2 === 1);
@@ -574,9 +595,19 @@ export const BusinessLanding: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="px-6 md:px-20 py-24 max-w-7xl mx-auto"
+          className="relative overflow-hidden px-6 md:px-20 py-24 max-w-7xl mx-auto"
           id="features"
         >
+          <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+            <DoodleChartUp className="absolute left-[1%] top-[8%] w-14 text-emerald-500 -rotate-3" />
+            <DoodleBolt className="absolute left-[5%] top-[30%] w-5 text-emerald-500" />
+            <DoodleTarget className="absolute left-[1%] top-[52%] w-12 text-neutral-800/70" />
+            <DoodleStar5 className="absolute left-[5%] top-[76%] w-5 text-emerald-500" />
+            <DoodleSparkle className="absolute right-[5%] top-[8%] w-6 text-emerald-500" />
+            <DoodleBulb className="absolute right-[1%] top-[30%] w-11 text-neutral-800/70" />
+            <DoodlePlane className="absolute right-[2%] top-[54%] w-20 text-emerald-500 rotate-6" />
+            <DoodleZigzag className="absolute right-[4%] top-[78%] w-12 text-stone-300" />
+          </div>
           <div className="text-center mb-16 space-y-4">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
               <span className="text-sm font-semibold text-stone-800">{t.management_badge}</span>
@@ -611,6 +642,9 @@ export const BusinessLanding: React.FC = () => {
 
             {/* Onboarding */}
             <Onboarding />
+
+            {/* Tracking Links */}
+            <TrackingLinksTile />
           </div>
         </motion.section>
 
@@ -623,6 +657,20 @@ export const BusinessLanding: React.FC = () => {
           className="px-6 md:px-20 py-32 bg-white border-t border-stone-200 relative overflow-hidden"
           id="crm"
         >
+          <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+            <DoodleTarget className="absolute left-[2%] top-[6%] w-12 text-neutral-800/70" />
+            <DoodleCoin className="absolute left-[5%] top-[22%] w-11 text-emerald-500 -rotate-6" />
+            <DoodleBulb className="absolute left-[2%] top-[38%] w-11 text-neutral-800/70" />
+            <DoodleCheck className="absolute left-[5%] top-[54%] w-8 text-emerald-500" />
+            <DoodleStar5 className="absolute left-[2%] top-[70%] w-5 text-emerald-500" />
+            <DoodleFace className="absolute left-[3%] top-[86%] w-12 text-neutral-800/70 -rotate-3" />
+            <DoodleChartUp className="absolute right-[2%] top-[6%] w-12 text-emerald-500 rotate-3" />
+            <DoodleBubble className="absolute right-[2%] top-[24%] w-14 text-neutral-800/70 rotate-6" />
+            <DoodleBolt className="absolute right-[6%] top-[42%] w-5 text-emerald-500" />
+            <DoodleHeart className="absolute right-[3%] top-[58%] w-6 text-emerald-500" />
+            <DoodleZigzag className="absolute right-[4%] top-[74%] w-12 text-stone-300" />
+            <DoodleBurst className="absolute right-[6%] top-[90%] w-6 text-emerald-500" />
+          </div>
           <div className="max-w-7xl mx-auto relative z-10">
             <div className="text-center mb-20">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6">
@@ -651,6 +699,9 @@ export const BusinessLanding: React.FC = () => {
 
             {/* Qualification Section */}
             <QualificationSection />
+
+            {/* Forms Section */}
+            <FormsSection />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-16 border-t border-stone-200">
               <CRMKPIBox index={0} titleKey="crm_kpi_pipeline_title" valueKey="crm_kpi_pipeline_value" descKey="crm_kpi_pipeline_desc" />
@@ -691,8 +742,14 @@ export const BusinessLanding: React.FC = () => {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8 }}
           id="demo"
-          className="px-6 md:px-12 pt-24 pb-8 max-w-[1800px] mx-auto"
+          className="relative overflow-hidden px-6 md:px-12 pt-24 pb-8 max-w-[1800px] mx-auto"
         >
+          <div className="pointer-events-none select-none absolute inset-x-0 top-0 h-72 hidden lg:block" aria-hidden="true">
+            <DoodleBulb className="absolute left-[6%] top-[20%] w-11 text-neutral-800/70 -rotate-6" />
+            <DoodleSparkle className="absolute left-[16%] top-[54%] w-6 text-emerald-500" />
+            <DoodleTarget className="absolute right-[6%] top-[18%] w-12 text-emerald-500" />
+            <DoodleStar5 className="absolute right-[16%] top-[56%] w-5 text-emerald-500" />
+          </div>
           <div className="space-y-8">
             <div className="text-center max-w-2xl mx-auto">
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400 mb-3">{t.demo_label}</p>
@@ -726,6 +783,9 @@ export const BusinessLanding: React.FC = () => {
         {/* Pricing Section */}
         <PricingSection />
 
+        {/* Savings comparison (honest) */}
+        <SavingsSection />
+
         {/* Partners Section */}
         <PartnerSection />
 
@@ -738,9 +798,19 @@ export const BusinessLanding: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="px-6 md:px-20 py-32 bg-white text-center border-t border-stone-200"
+          className="relative overflow-hidden px-6 md:px-20 py-32 bg-white text-center border-t border-stone-200"
         >
-          <div className="max-w-3xl mx-auto space-y-10">
+          <div className="pointer-events-none select-none absolute inset-0 hidden md:block" aria-hidden="true">
+            <DoodleRocket className="absolute right-[10%] top-[18%] w-14 text-emerald-500 rotate-6" />
+            <DoodleBurst className="absolute left-[12%] top-[22%] w-7 text-emerald-500" />
+            <DoodleBolt className="absolute left-[7%] top-[54%] w-6 text-emerald-500" />
+            <DoodleStar5 className="absolute right-[16%] top-[60%] w-5 text-emerald-500" />
+            <DoodleHeart className="absolute left-[16%] top-[64%] w-6 text-emerald-500" />
+            <DoodleZigzag className="absolute left-[7%] top-[38%] w-12 text-stone-300" />
+            <DoodleTrophy className="absolute right-[7%] top-[54%] w-11 text-neutral-800/70 rotate-6" />
+            <DoodleDashes className="absolute right-[6%] top-[36%] w-11 text-stone-300 -rotate-6" />
+          </div>
+          <div className="max-w-3xl mx-auto space-y-10 relative z-10">
             <h2 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight text-[#111111]">{t.final_cta_title}</h2>
             <p className="text-stone-500 text-xl">{t.final_cta_subtitle}</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
@@ -791,7 +861,7 @@ export const BusinessLanding: React.FC = () => {
         }
       `}</style>
 
-      {/* Demo popup — appears after 45s */}
+      {/* Demo popup, appears after 45s */}
       {showDemoPopup && (
         <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 md:py-10 animate-in fade-in duration-300" onClick={() => setShowDemoPopup(false)}>
           <div className="bg-white rounded-3xl p-6 md:p-8 max-w-3xl w-full mx-4 shadow-2xl my-auto animate-in slide-in-from-bottom-4 duration-500" onClick={(e) => e.stopPropagation()}>
@@ -802,8 +872,8 @@ export const BusinessLanding: React.FC = () => {
                 </h3>
                 <p className="text-sm text-stone-500 mt-1">
                   {lang === 'fr'
-                    ? 'Réservez un appel de 15 min avec notre équipe — on vous montre comment CloseOS s\'adapte à votre business.'
-                    : 'Book a 15-min call with our team — we\'ll show you how CloseOS fits your business.'}
+                    ? 'Réservez un appel de 15 min avec notre équipe, on vous montre comment CloseOS s\'adapte à votre business.'
+                    : 'Book a 15-min call with our team, we\'ll show you how CloseOS fits your business.'}
                 </p>
               </div>
               <button onClick={() => setShowDemoPopup(false)} className="text-stone-400 hover:text-stone-600 transition-colors p-1">
@@ -924,7 +994,7 @@ const RevenueStripe = () => {
       <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#635BFF]/10 to-emerald-500/5 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 relative z-10">
-        {/* Left — Texte */}
+        {/* Left, Texte */}
         <div className="lg:col-span-2 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-12 h-12 rounded-xl bg-[#635BFF]/10 flex items-center justify-center">
@@ -952,7 +1022,7 @@ const RevenueStripe = () => {
           </ul>
         </div>
 
-        {/* Right — Mini dashboard preview */}
+        {/* Right, Mini dashboard preview */}
         <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">{t.revenue_kpi_mrr}</p>
@@ -1002,6 +1072,14 @@ const Onboarding = () => {
     >
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#ff2f2f]/20 to-[#8a43e1]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
 
+      <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+        <DoodleRocket className="absolute right-[6%] top-[12%] w-11 text-emerald-400 rotate-6" />
+        <DoodleStar5 className="absolute right-[16%] top-[8%] w-5 text-emerald-400" />
+        <DoodleBurst className="absolute right-[10%] top-[70%] w-6 text-emerald-400/80" />
+        <DoodleCheck className="absolute left-[46%] top-[10%] w-7 text-emerald-400" />
+        <DoodleZigzag className="absolute right-[4%] top-[44%] w-12 text-white/25" />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
         <div className="flex flex-col justify-center">
           <span className="text-stone-400 font-bold text-sm tracking-[0.2em] uppercase mb-4">{t.onboarding_label}</span>
@@ -1023,6 +1101,58 @@ const Onboarding = () => {
           <BoxItem index={1} icon={<Video className="size-6 text-white" />} title={t.onboarding_box_videos_title} description={t.onboarding_box_videos_desc} dark />
           <BoxItem index={2} icon={<CheckCircle className="size-6 text-white" />} title={t.onboarding_box_progress_title} description={t.onboarding_box_progress_desc} dark />
           <BoxItem index={3} icon={<ArrowDown className="size-6 text-white" />} title={t.onboarding_box_exports_title} description={t.onboarding_box_exports_desc} dark />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const TrackingLinksTile = () => {
+  const { t } = useLang();
+  const stats = [
+    { country: t.tracking_stat_country_1, pct: 62 },
+    { country: t.tracking_stat_country_2, pct: 23 },
+    { country: t.tracking_stat_country_3, pct: 15 },
+  ];
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, delay: 0.2 }}
+      className="lg:col-span-3 bg-white rounded-3xl p-8 md:p-10 border border-stone-200 shadow-sm"
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+        <div className="lg:col-span-2 flex flex-col justify-center">
+          <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center mb-6">
+            <Globe className="size-6 text-stone-800" />
+          </div>
+          <h3 className="text-2xl font-bold text-[#111111] mb-3">{t.tracking_title}</h3>
+          <p className="text-stone-500">
+            {t.tracking_description}
+          </p>
+        </div>
+        <div className="lg:col-span-3 flex items-center">
+          <div className="bg-stone-50 rounded-2xl p-6 border border-stone-100 w-full">
+            <span className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-4 block">{t.tracking_stat_label}</span>
+            <div className="space-y-3">
+              {stats.map((s, i) => (
+                <div key={s.country} className="flex items-center gap-3">
+                  <span className="text-xs font-semibold text-stone-600 w-16 shrink-0">{s.country}</span>
+                  <div className="flex-1 h-2 rounded-full bg-stone-200 overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-sky-400 to-emerald-400"
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${s.pct}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.8, delay: 0.3 + i * 0.1, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-stone-400 w-8 text-right">{s.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -1117,6 +1247,7 @@ const CRMFeatureRelances = () => {
     <CRMFeature
       icon={<Bell className="size-5" />}
       title={t.crm_feature_relances_title}
+      description={t.crm_feature_relances_desc}
       extra={
         <div className="mt-3 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 w-fit">
           <ArrowUp className="size-3.5" /> {t.crm_feature_relances_reminder}
@@ -1149,7 +1280,7 @@ const CaptureSection = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
-      {/* Left — Text */}
+      {/* Left, Text */}
       <div className="lg:col-span-5 flex flex-col justify-center">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6 w-fit">
           <Megaphone className="size-3.5 text-stone-600" />
@@ -1189,7 +1320,7 @@ const CaptureSection = () => {
         </div>
       </div>
 
-      {/* Right — Preview */}
+      {/* Right, Preview */}
       <div className="lg:col-span-7 flex items-center mt-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
@@ -1234,9 +1365,9 @@ const CaptureSection = () => {
                     closeos.fr/capture/mastermind-2026
                   </div>
                 </div>
-                {/* Capture page — two columns: form left, agenda right */}
+                {/* Capture page, two columns: form left, agenda right */}
                 <div className="bg-gradient-to-br from-[#111111] to-[#1a1a2e] rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Left — Registration form */}
+                  {/* Left, Registration form */}
                   <div className="space-y-3">
                     <h4 className="text-white text-lg font-bold leading-tight">{t.capture_page_title}</h4>
                     <p className="text-stone-400 text-xs font-medium">{t.capture_page_subtitle}</p>
@@ -1247,7 +1378,7 @@ const CaptureSection = () => {
                     </div>
                     <div className="bg-white text-[#111111] rounded-lg px-4 py-2.5 text-xs font-bold text-center">{t.capture_page_continue}</div>
                   </div>
-                  {/* Right — Blurred agenda */}
+                  {/* Right, Blurred agenda */}
                   <div className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10 p-4">
                     <div className="absolute inset-0 backdrop-blur-md bg-white/5 z-10 flex items-center justify-center">
                       <div className="text-center px-4">
@@ -1284,7 +1415,7 @@ const CaptureSection = () => {
 
             {captureTab === 'embed' && (
               <div className="space-y-4">
-                {/* Browser bar — CloseOS Sales site */}
+                {/* Browser bar, CloseOS Sales site */}
                 <div className="bg-stone-100 rounded-xl p-3 flex items-center gap-3">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
@@ -1414,7 +1545,7 @@ const QualificationSection = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
-      {/* Left — Text */}
+      {/* Left, Text */}
       <div className="lg:col-span-5 flex flex-col justify-center">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6 w-fit">
           <ShieldCheck className="size-3.5 text-stone-600" />
@@ -1434,7 +1565,7 @@ const QualificationSection = () => {
         </div>
       </div>
 
-      {/* Right — Mockup */}
+      {/* Right, Mockup */}
       <div className="lg:col-span-7">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
@@ -1443,7 +1574,7 @@ const QualificationSection = () => {
           transition={{ duration: 0.8 }}
           className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
         >
-          {/* Header — Prospect avatar + score ring */}
+          {/* Header, Prospect avatar + score ring */}
           <div className="p-6 border-b border-stone-100 bg-stone-50 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold text-xl shadow-inner">SM</div>
@@ -1513,7 +1644,7 @@ const QualificationSection = () => {
             })}
           </div>
 
-          {/* Footer — Summary */}
+          {/* Footer, Summary */}
           <div className="px-6 pb-6">
             <div className="rounded-2xl bg-stone-50 border border-stone-200 p-4 flex items-center justify-between">
               <div>
@@ -1523,6 +1654,109 @@ const QualificationSection = () => {
               <div className="text-right">
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-1">{t.qualification_mock_eliminatory}</p>
                 <p className="text-2xl font-black text-red-500">1<span className="text-stone-300 text-lg">/2</span></p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+const FormsSection = () => {
+  const { t } = useLang();
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
+      {/* Left, Text */}
+      <div className="lg:col-span-5 flex flex-col justify-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-6 w-fit">
+          <FileText className="size-3.5 text-stone-600" />
+          <span className="text-xs font-bold text-stone-600 uppercase tracking-widest">{t.forms_badge}</span>
+        </div>
+        <h3 className="text-3xl md:text-4xl font-bold text-[#111111] tracking-tight mb-4">{t.forms_title}</h3>
+        <p className="text-stone-500 text-lg font-medium leading-relaxed mb-6">
+          {t.forms_subtitle}
+        </p>
+        <div className="space-y-3">
+          {([t.forms_check_1, t.forms_check_2, t.forms_check_3, t.forms_check_4]).map((item, i) => (
+            <div key={i} className="flex items-start gap-3 text-stone-700 font-medium">
+              <CheckCircle className="size-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right, Mockup */}
+      <div className="lg:col-span-7">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
+        >
+          {/* Browser bar */}
+          <div className="p-5 pb-0">
+            <div className="bg-stone-100 rounded-xl p-3 flex items-center gap-3">
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              </div>
+              <div className="flex-1 bg-white rounded-lg px-3 py-1.5 text-xs text-stone-400 font-mono">
+                {t.forms_mock_url}
+              </div>
+            </div>
+          </div>
+
+          {/* Form blocks */}
+          <div className="p-6 space-y-4">
+            <div>
+              <p className="text-lg font-bold text-[#111111] mb-2">{t.forms_mock_block_heading}</p>
+              <div className="h-10 rounded-lg bg-stone-50 border border-stone-200" />
+            </div>
+
+            <div className="rounded-2xl border border-stone-200 bg-stone-900 p-4 relative overflow-hidden">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="size-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                  <Video className="size-3.5 text-white" />
+                </div>
+                <p className="text-sm font-semibold text-white">{t.forms_mock_block_video}</p>
+              </div>
+              <div className="aspect-video rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-2">
+                <div className="size-10 rounded-full bg-white/15 flex items-center justify-center">
+                  <div className="w-0 h-0 border-y-[6px] border-y-transparent border-l-[9px] border-l-white ml-0.5" />
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-400/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+                <Lock className="size-3" /> {t.forms_mock_block_video_gate}
+              </span>
+            </div>
+
+            <div>
+              <p className="text-sm font-bold text-stone-700 mb-2">{t.forms_mock_block_choice}</p>
+              <div className="flex gap-2">
+                <div className="flex-1 rounded-lg border-2 border-[#111111] bg-stone-50 px-3 py-2 text-center text-sm font-bold text-[#111111]">{t.forms_mock_block_choice_option_1}</div>
+                <div className="flex-1 rounded-lg border border-stone-200 px-3 py-2 text-center text-sm font-semibold text-stone-400">{t.forms_mock_block_choice_option_2}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-stone-400 text-xs font-mono px-1">
+              <span className="text-stone-300">/</span> {t.forms_mock_slash_hint}
+            </div>
+          </div>
+
+          {/* CRM bridge footer */}
+          <div className="px-6 pb-6">
+            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 flex items-center gap-3">
+              <div className="size-9 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <ArrowRight className="size-4 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-0.5">{t.forms_mock_bridge_label}</p>
+                <p className="text-sm font-semibold text-emerald-800">{t.forms_mock_bridge_value}</p>
               </div>
             </div>
           </div>
@@ -1726,8 +1960,8 @@ const getPricingPlans = (lang: string) => [
     annualTotal: '336',
     popular: false,
     description: lang === 'fr'
-      ? '1 seul utilisateur — l\'infopreneur qui close seul'
-      : '1 user — the solopreneur who closes alone',
+      ? '1 seul utilisateur, l\'infopreneur qui close seul'
+      : '1 user, the solopreneur who closes alone',
     features: lang === 'fr' ? [
       'CloseOS Sign inclus',
       'CRM & Pipeline visuel',
@@ -1769,8 +2003,8 @@ const getPricingPlans = (lang: string) => [
     annualTotal: '504',
     popular: false,
     description: lang === 'fr'
-      ? '3 équipiers inclus — tout pour gérer une équipe'
-      : '3 team members included — everything to manage a team',
+      ? '3 équipiers inclus, tout pour gérer une équipe'
+      : '3 team members included, everything to manage a team',
     features: lang === 'fr' ? [
       'CloseOS Sign inclus',
       'Tout ce que le Solo a, SAUF le système d\'acquisition',
@@ -1817,8 +2051,8 @@ const getPricingPlans = (lang: string) => [
     annualTotal: '852',
     popular: true,
     description: lang === 'fr'
-      ? '5 équipiers inclus — l\'arsenal complet'
-      : '5 team members included — the full arsenal',
+      ? '5 équipiers inclus, l\'arsenal complet'
+      : '5 team members included, the full arsenal',
     features: lang === 'fr' ? [
       'CloseOS Sign inclus',
       'Tout ce que Business a',
@@ -1855,8 +2089,8 @@ const getPricingPlans = (lang: string) => [
     annualTotal: null,
     popular: false,
     description: lang === 'fr'
-      ? 'Sur devis — idéal pour les challenges & grandes organisations'
-      : 'Custom pricing — ideal for challenges & large organizations',
+      ? 'Sur devis, idéal pour les challenges & grandes organisations'
+      : 'Custom pricing, ideal for challenges & large organizations',
     features: lang === 'fr' ? [
       'CloseOS Sign inclus',
       'Membres illimités',
@@ -1886,7 +2120,7 @@ const getPricingExtras = (lang: string) => [
     type: 'one-shot',
     description: lang === 'fr'
       ? 'Configuration complète de l\'outil : campagnes, formules, pipeline, équipe, onboarding des membres. L\'infopreneur n\'a rien à toucher, tout est livré prêt à l\'emploi.'
-      : 'Full tool setup: campaigns, plans, pipeline, team, member onboarding. The business owner doesn\'t have to touch anything — everything is delivered ready to use.',
+      : 'Full tool setup: campaigns, plans, pipeline, team, member onboarding. The business owner doesn\'t have to touch anything, everything is delivered ready to use.',
   },
   {
     name: lang === 'fr' ? 'Intégration' : 'Integration',
@@ -1933,10 +2167,20 @@ const PricingSection = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="px-6 md:px-20 py-32 bg-white border-y border-stone-200"
+      className="relative overflow-hidden px-6 md:px-20 py-32 bg-white border-y border-stone-200"
       id="pricing"
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+        <DoodleCoin className="absolute left-[5%] top-[10%] w-11 text-emerald-500 -rotate-6" />
+        <DoodleTrophy className="absolute left-[2%] top-[36%] w-11 text-neutral-800/70" />
+        <DoodleStar5 className="absolute left-[6%] top-[62%] w-5 text-emerald-500" />
+        <DoodleDashes className="absolute left-[3%] top-[84%] w-11 text-stone-300 rotate-6" />
+        <DoodleBurst className="absolute right-[6%] top-[12%] w-6 text-emerald-500" />
+        <DoodleFace className="absolute right-[3%] top-[36%] w-12 text-neutral-800/70 rotate-6" />
+        <DoodleBolt className="absolute right-[7%] top-[62%] w-5 text-emerald-500" />
+        <DoodleStar5 className="absolute right-[4%] top-[84%] w-5 text-emerald-500" />
+      </div>
+      <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-16 space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-100 border border-stone-200 shadow-sm mb-4">
             <span className="text-sm font-semibold text-stone-800">{lang === 'fr' ? 'Tarifs' : 'Pricing'}</span>
@@ -1946,8 +2190,8 @@ const PricingSection = () => {
           </h2>
           <p className="text-stone-500 text-lg max-w-2xl mx-auto">
             {lang === 'fr'
-              ? 'Du solopreneur à l\'entreprise — choisissez la formule qui correspond à votre stade de croissance.'
-              : 'From solopreneur to enterprise — choose the plan that matches your growth stage.'}
+              ? 'Du solopreneur à l\'entreprise, choisissez la formule qui correspond à votre stade de croissance.'
+              : 'From solopreneur to enterprise, choose the plan that matches your growth stage.'}
             <br />
             <span className="font-semibold text-emerald-600">🎁 {lang === 'fr' ? '20 jours offerts sur toutes les formules.' : '20 free days on all plans.'}</span>
           </p>
@@ -2076,7 +2320,29 @@ const PricingSection = () => {
                       ) : (
                         <Check className={`size-4 mt-0.5 flex-shrink-0 ${plan.popular ? 'text-emerald-400' : 'text-emerald-600'}`} />
                       )}
-                      <span className={`text-sm leading-relaxed ${isSign ? 'font-bold' : 'font-medium'} ${plan.popular ? 'text-stone-300' : 'text-stone-600'}`}>{feature}</span>
+                      {isSign ? (
+                        <span
+                          tabIndex={0}
+                          className={`group relative text-sm leading-relaxed font-bold cursor-help underline decoration-dotted decoration-from-font underline-offset-4 outline-none ${plan.popular ? 'text-stone-300 decoration-stone-500' : 'text-stone-600 decoration-stone-300'}`}
+                        >
+                          {feature}
+                          <span className="pointer-events-none absolute bottom-full left-0 z-30 mb-3 w-64 origin-bottom-left scale-95 opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100 group-focus:scale-100 group-focus:opacity-100">
+                            <span className="relative block rounded-2xl border-2 border-[#111111] bg-white px-4 py-3 text-left shadow-[3px_3px_0_0_#111111]">
+                              <span className="mb-1 block text-[11px] font-black uppercase tracking-widest text-emerald-600">
+                                CloseOS Sign
+                              </span>
+                              <span className="block text-xs font-medium leading-relaxed text-stone-600">
+                                {lang === 'fr'
+                                  ? 'Notre module de signature électronique : envoyez vos contrats, faites-les signer et payer en ligne. Valeur juridique, certificat de preuve, multi-signataires. Inclus sans surcoût dans votre abonnement.'
+                                  : 'Our e-signature module: send your contracts, get them signed and paid online. Legally binding, proof certificate, multi-signer. Included at no extra cost in your plan.'}
+                              </span>
+                              <span className="absolute -bottom-[9px] left-7 size-3.5 rotate-45 border-b-2 border-r-2 border-[#111111] bg-white" />
+                            </span>
+                          </span>
+                        </span>
+                      ) : (
+                        <span className={`text-sm font-medium leading-relaxed ${plan.popular ? 'text-stone-300' : 'text-stone-600'}`}>{feature}</span>
+                      )}
                     </li>
                   )
                 })}
@@ -2128,7 +2394,7 @@ const PricingSection = () => {
                   >
                     <div className="flex items-baseline gap-2 mb-1">
                       <h4 className="text-white font-bold text-lg">{extra.name}</h4>
-                      <span className="text-stone-400 text-sm font-medium">— {extra.price} {extra.type}</span>
+                      <span className="text-stone-400 text-sm font-medium">{extra.price} {extra.type}</span>
                     </div>
                     <p className="text-stone-400 text-sm font-medium leading-relaxed mt-3">{extra.description}</p>
                   </motion.div>
@@ -2282,10 +2548,18 @@ const PartnerSection = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="px-6 md:px-20 py-24 bg-[#f4f2f1]"
+      className="relative overflow-hidden px-6 md:px-20 py-24 bg-[#f4f2f1]"
       id="partners"
     >
-      <div className="max-w-6xl mx-auto">
+      <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+        <DoodleRocket className="absolute left-[4%] top-[14%] w-11 text-emerald-500 -rotate-6" />
+        <DoodleStar5 className="absolute left-[9%] top-[42%] w-5 text-emerald-500" />
+        <DoodleTrophy className="absolute left-[3%] top-[68%] w-11 text-neutral-800/70" />
+        <DoodleBurst className="absolute right-[6%] top-[16%] w-6 text-emerald-500" />
+        <DoodleBubble className="absolute right-[3%] top-[42%] w-14 text-neutral-800/70 rotate-6" />
+        <DoodleHeart className="absolute right-[8%] top-[70%] w-6 text-emerald-500" />
+      </div>
+      <div className="max-w-6xl mx-auto relative z-10">
         <div className="text-center mb-16 space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
             <Handshake className="h-4 w-4 text-stone-700" />
@@ -2481,6 +2755,17 @@ const API_EVENT_CATALOG: { id: string; label_fr: string; label_en: string }[] = 
   { id: 'deal.lost', label_fr: 'Deal perdu', label_en: 'Deal lost' },
 ];
 
+const MCP_TOOL_CATEGORIES: { id: string; label_fr: string; label_en: string }[] = [
+  { id: 'prospects', label_fr: 'Prospects & CRM', label_en: 'Prospects & CRM' },
+  { id: 'campaigns', label_fr: 'Campagnes & Formulaires', label_en: 'Campaigns & Forms' },
+  { id: 'agenda', label_fr: 'Rendez-vous & Agenda', label_en: 'Appointments & Calendar' },
+  { id: 'team', label_fr: 'Équipe & Rôles', label_en: 'Team & Roles' },
+  { id: 'noshow', label_fr: 'Relances No Show', label_en: 'No Show follow-ups' },
+  { id: 'invoicing', label_fr: 'Facturation', label_en: 'Invoicing' },
+  { id: 'tracking', label_fr: 'Tracking & Acquisition', label_en: 'Tracking & Acquisition' },
+  { id: 'objectives', label_fr: 'Objectifs', label_en: 'Objectives' },
+];
+
 const CodeBlock = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="rounded-2xl overflow-hidden border border-white/10 bg-[#0d1117] shadow-2xl shadow-black/40">
     <div className="flex items-center justify-between px-4 py-2.5 bg-[#161b22] border-b border-white/5">
@@ -2535,6 +2820,15 @@ X-CloseOS-Signature: 7f3a9b2e1c4d...
 
   const restItems = [t.api_card_rest_item_1, t.api_card_rest_item_2, t.api_card_rest_item_3, t.api_card_rest_item_4];
   const webhookItems = [t.api_card_webhook_item_1, t.api_card_webhook_item_2, t.api_card_webhook_item_3, t.api_card_webhook_item_4];
+  const mcpItems = [t.api_mcp_item_1, t.api_mcp_item_2, t.api_mcp_item_3, t.api_mcp_item_4];
+
+  const mcpConfigExample = `{
+  "mcpServers": {
+    "closeos-business": {
+      "url": "https://closeos.fr/api/business-mcp/cos_live_••••••••"
+    }
+  }
+}`;
 
   return (
     <motion.section
@@ -2588,6 +2882,53 @@ X-CloseOS-Signature: 7f3a9b2e1c4d...
             {t.api_title}
           </h2>
           <p className="text-stone-400 text-lg leading-relaxed">{t.api_subtitle}</p>
+        </div>
+
+        {/* MCP / AI Assistant hero card */}
+        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-transparent backdrop-blur-sm p-8 md:p-10 relative overflow-hidden mb-6">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-emerald-500/15 to-[#8a43e1]/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div className="lg:col-span-6 flex flex-col justify-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-400/10 border border-emerald-400/20 mb-5 w-fit">
+                <Bot className="size-3.5 text-emerald-400" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-400">{t.api_mcp_badge}</span>
+              </div>
+              <h3 className="text-2xl md:text-3xl font-bold tracking-tight mb-4">{t.api_mcp_title}</h3>
+              <p className="text-stone-400 mb-6 leading-relaxed">{t.api_mcp_desc}</p>
+              <ul className="space-y-3 mb-6">
+                {mcpItems.map((item, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-stone-300">
+                    <CheckCircle className="size-4 mt-0.5 text-emerald-400 shrink-0" />
+                    <span className="leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-center gap-3 pt-5 border-t border-white/10">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">{t.api_mcp_compatible_label}</span>
+                <div className="flex items-center gap-2">
+                  <img src="/claude.webp" alt="Claude" className="size-7 rounded-lg" />
+                  <img src="/chatgpt.webp" alt="ChatGPT" className="size-7 rounded-lg" />
+                  <img src="/mcp.webp" alt="MCP" className="size-7 rounded-lg" />
+                </div>
+              </div>
+            </div>
+            <div className="lg:col-span-6 flex flex-col justify-center gap-4">
+              <CodeBlock label={t.api_mcp_key_label}>{mcpConfigExample}</CodeBlock>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 mb-2 block">{t.api_mcp_tools_label}</span>
+                <div className="flex flex-wrap gap-2">
+                  {MCP_TOOL_CATEGORIES.map((cat) => (
+                    <div
+                      key={cat.id}
+                      className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-stone-300"
+                    >
+                      {lang === 'fr' ? cat.label_fr : cat.label_en}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Two cards grid */}
@@ -2693,7 +3034,199 @@ X-CloseOS-Signature: 7f3a9b2e1c4d...
           >
             {t.api_cta_docs}
           </a>
+          <a
+            href="/business/docs/api#mcp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl h-14 px-8 text-[#0a0a0a] text-base font-semibold bg-white hover:bg-stone-100 hover:-translate-y-0.5 transition-all shadow-xl"
+          >
+            <Bot className="size-4" />
+            {t.api_cta_connect_ai}
+          </a>
         </div>
+      </div>
+    </motion.section>
+  );
+};
+
+const SavingsSection = () => {
+  const { lang } = useLang();
+  const fr = lang !== 'en';
+  // raw = valeur continue du curseur (déplacement fluide) ; n = nombre de membres entier.
+  const [raw, setRaw] = useState(4);
+  const n = Math.round(raw);
+  const solo = n === 0;
+  const closers = solo ? 0 : Math.ceil(n / 2); // ~moitié closers, moitié setters
+  const crmSeats = 1 + closers;                // owner + closers (les setters n'ont pas de licence CRM pleine)
+  const schedSeats = solo ? 1 : n;             // tous les membres customer-facing
+  const callSeats = solo ? 1 : Math.max(2, closers); // closers, min 2 sièges (offre Team)
+  const seatLabel = (s: number) => (fr ? ` · ${s} sièges` : ` · ${s} seats`);
+
+  const tools = [
+    { name: 'CRM (Pipedrive)' + (solo ? '' : seatLabel(crmSeats)), price: crmSeats * 36 },
+    { name: (fr ? 'Prise de RDV (Calendly)' : 'Scheduling (Calendly)') + (solo ? '' : seatLabel(schedSeats)), price: schedSeats * (solo ? 9 : 15) },
+    { name: (fr ? "Enregistrement d'appels (Fathom)" : 'Call recording (Fathom)') + (solo ? '' : seatLabel(callSeats)), price: callSeats * (solo ? 15 : 14) },
+    { name: 'Email (Brevo)', price: solo ? 23 : 60 },
+    { name: fr ? 'Signature (Yousign)' : 'E-signature (Yousign)', price: solo ? 9 : 25 },
+    { name: fr ? 'Facturation (Abby)' : 'Invoicing (Abby)', price: 9 },
+  ];
+  const stack = tools.reduce((s, t) => s + t.price, 0);
+  const closeos = solo ? 39 : 99 + Math.max(0, n - 3) * 6; // B+A inclut 3 membres, +6€/siège au-delà
+  const plan = solo ? 'CloseOS Solo' : 'CloseOS Business + Acquisition';
+  const factorNum = stack / closeos;
+  const factor = (fr ? factorNum.toFixed(1).replace('.', ',') : factorNum.toFixed(1)) + '×';
+  const saveYear = Math.round((stack - closeos) * 12);
+  const closeosPct = Math.max(16, Math.round((closeos / stack) * 100));
+  const d = { tools, stack, closeos, plan, factor, saveYear };
+  const sliderPct = (raw / 20) * 100;
+  const thumbPos = `calc(${sliderPct}% + ${14 - sliderPct * 0.28}px)`; // pouce centré (28px)
+
+  const chaos = [
+    { icon: Layers, tool: fr ? 'CRM sur Google Sheet + Notion' : 'CRM on Google Sheet + Notion', cost: fr ? 'Leads oubliés, zéro relance automatique' : 'Leads forgotten, no automatic follow-up' },
+    { icon: Calendar, tool: fr ? 'Calendly gratuit (1 type de RDV)' : 'Free Calendly (1 event type)', cost: fr ? 'No-shows, aucun rappel intégré' : 'No-shows, no built-in reminders' },
+    { icon: ClipboardList, tool: fr ? 'Qualification sur Google Forms' : 'Qualification on Google Forms', cost: fr ? 'Réponses jamais reliées à la fiche prospect' : 'Answers never linked to the prospect record' },
+    { icon: Video, tool: fr ? 'Meet + notes à la main' : 'Meet + manual notes', cost: fr ? "10 min de saisie par appel, résumés perdus" : '10 min of typing per call, summaries lost' },
+    { icon: DollarSign, tool: fr ? 'Commissions dans un tableur' : 'Commissions in a spreadsheet', cost: fr ? 'Erreurs, disputes, heures perdues' : 'Errors, disputes, hours lost' },
+    { icon: BarChart3, tool: fr ? 'KPI mis à jour à la main' : 'KPIs updated by hand', cost: fr ? "Chiffres faux ou vieux d'une semaine" : 'Numbers wrong or a week old' },
+  ];
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-100px' }}
+      transition={{ duration: 0.8, ease: 'easeOut' }}
+      className="relative overflow-hidden px-6 md:px-20 pt-4 pb-28 bg-white"
+    >
+      <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+        <DoodleCoin className="absolute left-[4%] top-[12%] w-11 text-emerald-500 -rotate-6" />
+        <DoodleChartUp className="absolute left-[7%] top-[42%] w-12 text-emerald-500 rotate-3" />
+        <DoodleClock className="absolute left-[3%] top-[74%] w-11 text-neutral-800/70" />
+        <DoodleBurst className="absolute right-[5%] top-[14%] w-6 text-emerald-500" />
+        <DoodleTrophy className="absolute right-[3%] top-[44%] w-11 text-neutral-800/70" />
+        <DoodleStar5 className="absolute right-[7%] top-[76%] w-5 text-emerald-500" />
+      </div>
+
+      <div className="max-w-5xl mx-auto relative z-10">
+        <div className="text-center mb-10 space-y-3">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200">
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-700">{fr ? 'Comparatif honnête' : 'Honest comparison'}</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-[#111111] tracking-tight">{fr ? 'Combien vous économisez vraiment' : 'How much you really save'}</h2>
+          <p className="text-stone-500 text-lg max-w-2xl mx-auto">{fr ? "Pas de chiffres gonflés. Voici ce qu'un business de closing paie vraiment, et ce que ça devient avec CloseOS." : "No inflated numbers. Here's what a closing business really pays, and what it becomes with CloseOS."}</p>
+        </div>
+
+        {/* Curseur : nombre de membres */}
+        <div className="max-w-xl mx-auto mb-12">
+          <p className="text-center text-sm font-semibold text-stone-500 mb-3">{fr ? "Combien de personnes dans votre équipe ?" : 'How many people on your team?'}</p>
+          <div className="text-center mb-4">
+            <span className="text-5xl font-extrabold text-[#111111] tabular-nums">{n}</span>
+            <span className="text-lg font-semibold text-stone-500 ml-2">
+              {solo ? (fr ? 'membre · Solo' : 'member · Solo') : (fr ? (n > 1 ? 'membres' : 'membre') : (n > 1 ? 'members' : 'member'))}
+            </span>
+          </div>
+          <div className="group relative flex items-center h-12 px-2 rounded-full bg-stone-100 border border-stone-200 shadow-[inset_0_2px_4px_rgba(120,113,108,0.12)]">
+            <div className="relative w-full h-2.5">
+              {/* Piste vide */}
+              <div className="absolute inset-0 rounded-full bg-stone-200/90" />
+              {/* Remplissage noir */}
+              <div className="absolute left-0 top-0 h-full rounded-full bg-[#111111]" style={{ width: thumbPos }} />
+              {/* Pouce, bulle liquid glass (grossit au survol) */}
+              <div
+                className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-white/55 backdrop-blur-xl border border-white/90 shadow-[0_4px_14px_rgba(17,17,17,0.3),inset_0_1px_3px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(120,113,108,0.15)] transition-transform duration-200 ease-out group-hover:scale-[1.35]"
+                style={{ left: thumbPos }}
+              >
+                <div className="absolute top-1.5 left-2 h-2.5 w-2.5 rounded-full bg-white/80 blur-[1.5px]" />
+              </div>
+              {/* Input natif transparent (interaction + accessibilité) */}
+              <input
+                type="range"
+                min={0}
+                max={20}
+                step="any"
+                value={raw}
+                onChange={(e) => setRaw(Number(e.target.value))}
+                className="absolute inset-x-0 -top-5 -bottom-5 w-full opacity-0 cursor-pointer"
+                aria-label={fr ? "Nombre de membres d'équipe" : 'Number of team members'}
+              />
+            </div>
+          </div>
+          <div className="flex justify-between text-xs font-medium text-stone-400 mt-2.5">
+            <span>0</span>
+            <span>{fr ? '20 membres' : '20 members'}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Stack remplacée */}
+          <div className="rounded-3xl border border-stone-200 bg-stone-50/60 p-7">
+            <p className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-4">{fr ? 'La stack que vous remplacez' : 'The stack you replace'}</p>
+            <ul className="space-y-2.5">
+              {d.tools.map((tool) => (
+                <li key={tool.name} className="flex items-center justify-between text-sm">
+                  <span className="text-stone-600">{tool.name}</span>
+                  <span className="font-semibold text-stone-500 tabular-nums">{tool.price}&nbsp;€</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 pt-4 border-t border-stone-200 flex items-center justify-between">
+              <span className="text-sm font-bold text-[#111111]">{fr ? 'Total réellement payé' : 'Actually paid'}</span>
+              <span className="text-lg font-extrabold text-[#111111] tabular-nums">≈ {d.stack}&nbsp;€/{fr ? 'mois' : 'mo'}</span>
+            </div>
+          </div>
+
+          {/* Barres + résultat */}
+          <div className="rounded-3xl border border-emerald-200 bg-emerald-50/40 p-7 flex flex-col justify-center">
+            <div className="space-y-5">
+              <div>
+                <div className="flex items-center justify-between text-sm mb-1.5">
+                  <span className="text-stone-500 font-medium">{fr ? 'Stack actuelle' : 'Current stack'}</span>
+                  <span className="font-bold text-stone-500 tabular-nums">≈ {d.stack}&nbsp;€</span>
+                </div>
+                <div className="h-6 rounded-full bg-stone-200/80 w-full" />
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-sm mb-1.5">
+                  <span className="text-[#111111] font-bold">{d.plan}</span>
+                  <span className="font-extrabold text-emerald-700 tabular-nums">{d.closeos}&nbsp;€</span>
+                </div>
+                <div className="h-6 rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${closeosPct}%` }} />
+              </div>
+            </div>
+            <div className="mt-7 text-center">
+              <p className="text-4xl font-extrabold text-emerald-700 tracking-tight">{d.factor} {fr ? 'moins cher' : 'cheaper'}</p>
+              <p className="text-stone-500 text-sm mt-1">{fr ? 'soit' : 'that is'} <span className="font-bold text-[#111111]">≈ {d.saveYear.toLocaleString(fr ? 'fr-FR' : 'en-US')} €</span> {fr ? 'économisés par an' : 'saved per year'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Le bricolage gratuit */}
+        <div className="mt-14">
+          <h3 className="text-2xl font-bold text-[#111111] text-center mb-2">{fr ? 'Ou vous bricolez en gratuit…' : 'Or you patch it together for free…'}</h3>
+          <p className="text-stone-500 text-center max-w-2xl mx-auto mb-8">{fr ? "Le cas le plus courant. Là, le coût ne se compte plus en euros." : "The most common case. Here the cost is no longer counted in euros."}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {chaos.map((c) => (
+              <div key={c.tool} className="rounded-2xl border border-stone-200 bg-white p-5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-stone-100 text-stone-500 mb-3">
+                  <c.icon className="size-4" />
+                </div>
+                <p className="text-sm font-bold text-[#111111]">{c.tool}</p>
+                <p className="text-sm text-red-500/90 mt-1 font-medium">{c.cost}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-stone-600 text-center max-w-2xl mx-auto mt-8 leading-relaxed">
+            {fr
+              ? "Le vrai coût n'est pas en euros : c'est l'heure par jour et par personne perdue à copier-coller entre des outils qui ne se parlent pas, et les deals qui fuitent au passage. Pour un business qui facture 5 000 € le deal, un seul lead sauvé par mois paie l'abonnement dix fois."
+              : "The real cost isn't in euros: it's the hour per day, per person, lost copy-pasting between tools that don't talk to each other, and the deals leaking in between. For a business billing €5,000 per deal, a single saved lead per month pays for the subscription ten times over."}
+          </p>
+        </div>
+
+        <p className="text-[11px] text-stone-400 text-center max-w-3xl mx-auto mt-10 leading-relaxed">
+          {fr
+            ? "Prix indicatifs des offres concurrentes à périmètre équivalent (facturation annuelle). CloseOS remplace la stack dont un business de closing a besoin, pas chaque fonctionnalité avancée de chaque outil."
+            : "Indicative competitor prices at equivalent scope (annual billing). CloseOS replaces the stack a closing business needs, not every advanced feature of every tool."}
+        </p>
       </div>
     </motion.section>
   );
@@ -2707,10 +3240,20 @@ const FAQSection = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="px-6 md:px-20 pt-16 pb-32 bg-[#f4f2f1]"
+      className="relative overflow-hidden px-6 md:px-20 pt-16 pb-32 bg-[#f4f2f1]"
       id="faq"
     >
-      <div className="max-w-3xl mx-auto">
+      <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+        <DoodleBulb className="absolute left-[6%] top-[12%] w-11 text-neutral-800/70 -rotate-6" />
+        <DoodleStar5 className="absolute left-[12%] top-[38%] w-5 text-emerald-500" />
+        <DoodleCheck className="absolute left-[7%] top-[64%] w-7 text-emerald-500" />
+        <DoodleDashes className="absolute left-[5%] top-[86%] w-11 text-stone-300 rotate-6" />
+        <DoodleFace className="absolute right-[6%] top-[16%] w-12 text-neutral-800/70 rotate-6" />
+        <DoodleBurst className="absolute right-[12%] top-[42%] w-6 text-emerald-500" />
+        <DoodleBubble className="absolute right-[4%] top-[66%] w-14 text-neutral-800/70 rotate-3" />
+        <DoodleCross className="absolute right-[9%] top-[88%] w-3.5 text-emerald-500" />
+      </div>
+      <div className="max-w-3xl mx-auto relative z-10">
         <div className="text-center mb-16 space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-4">
             <span className="text-sm font-semibold text-stone-800">{t.faq_badge}</span>
@@ -2945,7 +3488,7 @@ const getRolesData = (t: typeof translations.fr): RoleData[] => [
     description: t.role_owner.description,
     color: 'from-amber-500 to-orange-600',
     features: t.role_owner.features.map((f, i) => ({
-      icon: [<Layers className="size-5" />, <Megaphone className="size-5" />, <Phone className="size-5" />, <BarChart3 className="size-5" />, <DollarSign className="size-5" />, <Users className="size-5" />, <Calendar className="size-5" />][i],
+      icon: [<Layers className="size-5" />, <Megaphone className="size-5" />, <Phone className="size-5" />, <BarChart3 className="size-5" />, <DollarSign className="size-5" />, <Users className="size-5" />, <Calendar className="size-5" />, <Bot className="size-5" />][i],
       title: f.title,
       items: f.items,
     })),
@@ -3033,7 +3576,7 @@ const FeaturesByRole = () => {
         </p>
       </motion.div>
 
-      {/* Role Tabs — Desktop: single row with bubble / Mobile: 2x2 grid */}
+      {/* Role Tabs, Desktop: single row with bubble / Mobile: 2x2 grid */}
       {/* Desktop */}
       <div className="hidden sm:flex justify-center mb-12">
         <div

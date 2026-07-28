@@ -24,6 +24,7 @@ import {
   Files,
   UserCheck,
   LayoutDashboard,
+  Bot,
 } from 'lucide-react';
 import { SignLogo } from '../components/SignLogo';
 import SignContactModal from '../components/SignContactModal';
@@ -31,7 +32,7 @@ import SignLangToggle from '../components/SignLangToggle';
 import { useSignLang } from '../contexts/SignLangContext';
 
 /**
- * CloseOS Sign — landing (sign.closeos.fr)
+ * CloseOS Sign, landing (sign.closeos.fr)
  * DA Sign : lime #CEFF8F sur fond sombre #191E1E, mockups produit, bento-grid pour le faisceau de preuves.
  * Angle produit : Sign + Pay. Valeur réelle : le faisceau de preuves opposable + le certificat de preuve.
  * Le module est complet ; Sign est INCLUS avec CloseOS Business (pas d'inscription publique).
@@ -53,8 +54,8 @@ export default function SignLanding() {
     document.getElementById('canonical')?.setAttribute('href', 'https://sign.closeos.fr/');
     document.getElementById('og-url')?.setAttribute('content', 'https://sign.closeos.fr/');
     document.getElementById('og-title')?.setAttribute('content', lang === 'fr'
-      ? 'CloseOS Sign — Signez le contrat, encaissez le paiement'
-      : 'CloseOS Sign — Sign the contract, collect the payment');
+      ? 'CloseOS Sign, Signez le contrat, encaissez le paiement'
+      : 'CloseOS Sign, Sign the contract, collect the payment');
     document.getElementById('og-description')?.setAttribute('content', lang === 'fr'
       ? "Sign + Pay : faites signer le contrat et encaissez le paiement dans le même geste, avec un certificat de preuve vérifiable."
       : "Sign + Pay: get the contract signed and collect the payment in a single motion, with a verifiable proof certificate.");
@@ -112,6 +113,7 @@ export default function SignLanding() {
             <a href="#concept" className="transition-colors hover:text-[#F3F4F6]">Sign + Pay</a>
             <a href="#multi" className="transition-colors hover:text-[#F3F4F6]">{lang === 'fr' ? 'Multi-signataire' : 'Multi-signer'}</a>
             <a href="#modeles" className="transition-colors hover:text-[#F3F4F6]">{lang === 'fr' ? 'Modèles' : 'Templates'}</a>
+            <a href="#assistant-ia" className="transition-colors hover:text-[#F3F4F6]">{lang === 'fr' ? 'Assistant IA' : 'AI Assistant'}</a>
             <a href="#preuve" className="transition-colors hover:text-[#F3F4F6]">{lang === 'fr' ? 'Faisceau de preuves' : 'Evidence bundle'}</a>
             <a href="#securite" className="transition-colors hover:text-[#F3F4F6]">{lang === 'fr' ? 'Sécurité' : 'Security'}</a>
           </nav>
@@ -150,8 +152,8 @@ export default function SignLanding() {
             </h1>
             <p className="max-w-xl text-lg leading-relaxed text-[#A1A9A9]">
               {lang === 'fr'
-                ? 'La signature électronique qui encaisse. Ne laissez plus un deal refroidir entre la signature et le virement : CloseOS Sign lie la validation du contrat à son paiement sur un seul écran — avec un faisceau de preuves opposable et un certificat vérifiable.'
-                : 'The e-signature that collects payment. Never let a deal cool off between the signature and the transfer: CloseOS Sign ties the contract validation to its payment on a single screen — with an enforceable evidence bundle and a verifiable certificate.'}
+                ? 'La signature électronique qui encaisse. Ne laissez plus un deal refroidir entre la signature et le virement : CloseOS Sign lie la validation du contrat à son paiement sur un seul écran, avec un faisceau de preuves opposable et un certificat vérifiable.'
+                : 'The e-signature that collects payment. Never let a deal cool off between the signature and the transfer: CloseOS Sign ties the contract validation to its payment on a single screen, with an enforceable evidence bundle and a verifiable certificate.'}
             </p>
             <div className="flex flex-col gap-4 pt-4 sm:flex-row">
               <a href="/sign/abonnement" className="flex items-center justify-center gap-2 rounded bg-[#CEFF8F] px-8 py-3 text-center font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC]">
@@ -252,8 +254,8 @@ export default function SignLanding() {
               <h3 className="mb-4 text-2xl font-medium text-white">{lang === 'fr' ? 'Signature fluide, sans friction.' : 'Smooth, frictionless signing.'}</h3>
               <p className="mb-8 text-sm leading-relaxed text-[#A1A9A9]">
                 {lang === 'fr'
-                  ? 'Composez le contrat depuis un modèle, une feuille blanche ou un PDF importé. Posez les champs en glisser-déposer. Votre client ouvre le lien sur mobile ou desktop — aucune création de compte requise — et signe en un clic.'
-                  : 'Build the contract from a template, a blank page or an imported PDF. Drop the fields in with drag-and-drop. Your client opens the link on mobile or desktop — no account required — and signs in one click.'}
+                  ? 'Composez le contrat depuis un modèle, une feuille blanche ou un PDF importé. Posez les champs en glisser-déposer. Votre client ouvre le lien sur mobile ou desktop, aucune création de compte requise, et signe en un clic.'
+                  : 'Build the contract from a template, a blank page or an imported PDF. Drop the fields in with drag-and-drop. Your client opens the link on mobile or desktop, no account required, and signs in one click.'}
               </p>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3 text-sm">
@@ -358,8 +360,8 @@ export default function SignLanding() {
               <h4 className="mb-2 text-lg font-medium text-white">{lang === 'fr' ? 'Vérification par signataire' : 'Per-signer verification'}</h4>
               <p className="text-sm text-[#A1A9A9]">
                 {lang === 'fr'
-                  ? 'Chaque signataire a sa propre liste de vérification (email / SMS), et le paiement peut être demandé à un signataire précis — indépendamment de sa vérification.'
-                  : 'Each signer has their own verification checklist (email / SMS), and payment can be requested from a specific signer — independently of their verification.'}
+                  ? 'Chaque signataire a sa propre liste de vérification (email / SMS), et le paiement peut être demandé à un signataire précis, indépendamment de sa vérification.'
+                  : 'Each signer has their own verification checklist (email / SMS), and payment can be requested from a specific signer, independently of their verification.'}
               </p>
             </div>
           </div>
@@ -388,8 +390,8 @@ export default function SignLanding() {
             </h2>
             <p className="mt-5 text-base leading-relaxed text-[#A1A9A9]">
               {lang === 'fr'
-                ? 'Créez un contrat-type une seule fois. Chaque envoi génère une copie figée et indépendante, avec son propre certificat de preuve — modifier le modèle n’altère jamais les documents déjà signés.'
-                : 'Create a standard contract once. Every send generates a frozen, independent copy, with its own proof certificate — editing the template never alters documents that have already been signed.'}
+                ? 'Créez un contrat-type une seule fois. Chaque envoi génère une copie figée et indépendante, avec son propre certificat de preuve, modifier le modèle n’altère jamais les documents déjà signés.'
+                : 'Create a standard contract once. Every send generates a frozen, independent copy, with its own proof certificate, editing the template never alters documents that have already been signed.'}
             </p>
           </div>
 
@@ -399,8 +401,8 @@ export default function SignLanding() {
               <h4 className="mb-2 text-lg font-medium text-white">{lang === 'fr' ? 'Modèle réutilisable' : 'Reusable template'}</h4>
               <p className="text-sm text-[#A1A9A9]">
                 {lang === 'fr'
-                  ? 'Le même contrat envoyé à l’infini. Chaque signature crée une instance scellée à part — le modèle, lui, ne se consomme jamais et reste modifiable.'
-                  : 'The same contract sent endlessly. Each signature creates a separate, sealed instance — the template itself is never consumed and stays editable.'}
+                  ? 'Le même contrat envoyé à l’infini. Chaque signature crée une instance scellée à part, le modèle, lui, ne se consomme jamais et reste modifiable.'
+                  : 'The same contract sent endlessly. Each signature creates a separate, sealed instance, the template itself is never consumed and stays editable.'}
               </p>
             </div>
             <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
@@ -408,8 +410,8 @@ export default function SignLanding() {
               <h4 className="mb-2 text-lg font-medium text-white">{lang === 'fr' ? 'Un espace par membre' : 'A workspace per member'}</h4>
               <p className="text-sm text-[#A1A9A9]">
                 {lang === 'fr'
-                  ? 'Donnez à chaque commercial, closer ou collaborateur son propre accès sécurisé (code email + appareil de confiance) pour générer ses liens et suivre ses signatures — sans jamais voir celles des autres.'
-                  : 'Give every sales rep, closer or team member their own secure access (email code + trusted device) to generate their links and track their signatures — without ever seeing anyone else’s.'}
+                  ? 'Donnez à chaque commercial, closer ou collaborateur son propre accès sécurisé (code email + appareil de confiance) pour générer ses liens et suivre ses signatures, sans jamais voir celles des autres.'
+                  : 'Give every sales rep, closer or team member their own secure access (email code + trusted device) to generate their links and track their signatures, without ever seeing anyone else’s.'}
               </p>
             </div>
             <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
@@ -417,15 +419,74 @@ export default function SignLanding() {
               <h4 className="mb-2 text-lg font-medium text-white">{lang === 'fr' ? 'Suivi & attribution' : 'Tracking & attribution'}</h4>
               <p className="text-sm text-[#A1A9A9]">
                 {lang === 'fr'
-                  ? 'Qui a généré quoi, combien de contrats signés, en attente ou expirés. Liens valables 7 jours et révocation d’un accès en un clic — l’historique reste intact.'
-                  : 'Who generated what, how many contracts signed, pending or expired. Links valid for 7 days and access revoked in one click — the history stays intact.'}
+                  ? 'Qui a généré quoi, combien de contrats signés, en attente ou expirés. Liens valables 7 jours et révocation d’un accès en un clic, l’historique reste intact.'
+                  : 'Who generated what, how many contracts signed, pending or expired. Links valid for 7 days and access revoked in one click, the history stays intact.'}
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Faisceau de preuves — bento grid */}
+      {/* Assistant IA, connecteur MCP */}
+      <section id="assistant-ia" className="border-b border-[#3A4242] px-4 py-16 sm:px-6 sm:py-24 md:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-12 max-w-2xl sm:mb-16">
+            <div className="mb-4 inline-flex items-center gap-2 rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
+              <Bot className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Nouveau · Assistant IA' : 'New · AI Assistant'}
+            </div>
+            <h2 className="text-[28px] font-semibold tracking-tight text-white sm:text-[36px] lg:text-[44px]">
+              {lang === 'fr' ? (
+                <>
+                  Pilotez votre équipe Sign<br />
+                  <span className="text-[#A1A9A9]">depuis Claude ou ChatGPT.</span>
+                </>
+              ) : (
+                <>
+                  Run your Sign team<br />
+                  <span className="text-[#A1A9A9]">from Claude or ChatGPT.</span>
+                </>
+              )}
+            </h2>
+            <p className="mt-5 text-base leading-relaxed text-[#A1A9A9]">
+              {lang === 'fr'
+                ? 'Un vrai connecteur MCP (Model Context Protocol), activable en un clic depuis vos Paramètres : demandez à votre assistant IA de lister vos modèles, voir votre équipe, ou assigner un contrat à un collaborateur, il le fait, directement dans CloseOS Sign.'
+                : 'A real MCP (Model Context Protocol) connector, activated in one click from your Settings: ask your AI assistant to list your templates, see your team, or assign a contract to a team member, it does it, directly inside CloseOS Sign.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <KeyRound className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">{lang === 'fr' ? 'Clé personnelle par compte' : 'Personal per-account key'}</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                {lang === 'fr'
+                  ? "Activez, copiez ou révoquez votre clé de connexion depuis Paramètres → Assistant IA. Compatible Claude, ChatGPT et tout client MCP standard."
+                  : 'Activate, copy or revoke your connection key from Settings → AI Assistant. Works with Claude, ChatGPT and any standard MCP client.'}
+              </p>
+            </div>
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <Users className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">{lang === 'fr' ? 'Modèles & équipe en un message' : 'Templates & team in one message'}</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                {lang === 'fr'
+                  ? 'Demandez à votre assistant la liste de vos contrats-types et de vos collaborateurs, en langage naturel.'
+                  : "Ask your assistant for the list of your contract templates and your team members, in plain language."}
+              </p>
+            </div>
+            <div className="hover-lift rounded border border-[#3A4242] bg-[#222828] p-8">
+              <GitBranch className="mb-6 h-8 w-8 text-[#CEFF8F]" />
+              <h4 className="mb-2 text-lg font-medium text-white">{lang === 'fr' ? 'Assignation à la volée' : 'On-the-fly assignment'}</h4>
+              <p className="text-sm text-[#A1A9A9]">
+                {lang === 'fr'
+                  ? "Ajoutez ou retirez l'accès d'un membre à un modèle, sans ouvrir l'interface, votre assistant s'en charge."
+                  : "Grant or remove a team member's access to a template without opening the interface, your assistant handles it."}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Faisceau de preuves, bento grid */}
       <section id="preuve" className="border-b border-[#3A4242] px-4 py-16 sm:px-6 sm:py-24 md:px-12">
         <div className="mx-auto max-w-7xl">
           <div className="mb-12 sm:mb-16">
@@ -484,8 +545,8 @@ export default function SignLanding() {
               </div>
               <p className="text-xs text-[#A1A9A9]">
                 {lang === 'fr'
-                  ? 'Code à 6 chiffres par email, par SMS, ou les deux — avant la signature. Blocage anti-fraude après plusieurs tentatives échouées.'
-                  : '6-digit code by email, by SMS, or both — before signing. Anti-fraud lockout after several failed attempts.'}
+                  ? 'Code à 6 chiffres par email, par SMS, ou les deux, avant la signature. Blocage anti-fraude après plusieurs tentatives échouées.'
+                  : '6-digit code by email, by SMS, or both, before signing. Anti-fraud lockout after several failed attempts.'}
               </p>
             </div>
 
@@ -542,8 +603,8 @@ export default function SignLanding() {
                 <h4 className="mb-2 text-xl font-medium text-white">{lang === 'fr' ? 'Vérification publique' : 'Public verification'}</h4>
                 <p className="text-sm text-[#A1A9A9]">
                   {lang === 'fr'
-                    ? 'Une page de vérification permet à n’importe qui de contrôler l’authenticité d’un document et de son certificat — les coordonnées sensibles restant masquées hors des parties concernées.'
-                    : 'A verification page lets anyone check the authenticity of a document and its certificate — with sensitive contact details kept hidden from anyone outside the parties involved.'}
+                    ? 'Une page de vérification permet à n’importe qui de contrôler l’authenticité d’un document et de son certificat, les coordonnées sensibles restant masquées hors des parties concernées.'
+                    : 'A verification page lets anyone check the authenticity of a document and its certificate, with sensitive contact details kept hidden from anyone outside the parties involved.'}
                 </p>
               </div>
             </div>
@@ -651,7 +712,7 @@ export default function SignLanding() {
             </a>
           </div>
           <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-[#A1A9A9]">
-            <Lock className="h-3 w-3" fill="currentColor" /> <span>{lang === 'fr' ? 'Signature électronique conforme RGPD — vos données ne sont jamais revendues.' : 'GDPR-compliant e-signature — your data is never resold.'}</span>
+            <Lock className="h-3 w-3" fill="currentColor" /> <span>{lang === 'fr' ? 'Signature électronique conforme RGPD, vos données ne sont jamais revendues.' : 'GDPR-compliant e-signature, your data is never resold.'}</span>
           </div>
         </div>
       </section>

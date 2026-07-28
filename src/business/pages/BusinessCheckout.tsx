@@ -8,6 +8,10 @@ import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { PhoneInput, buildFullPhone, parsePhoneValue } from '../components/PhoneInput';
+import {
+  DoodleCoin, DoodleRocket, DoodleTrophy, DoodleStar5, DoodleSparkle,
+  DoodleCheck, DoodleBubble, DoodleCross, DoodleDashes, DoodleBurst,
+} from '../../components/doodles';
 
 const stripePromise = loadStripe('pk_live_51SxnxC33xpuYLywqRhYvxhWrChlI3Ckjj1AfJLqRQJQwaXNyVLuLAPaURbnEcrKRAQJTneB3ZjhUHSHuFQ9Xekdt00k1ho4IEt');
 
@@ -786,6 +790,20 @@ export default function BusinessCheckout() {
     <div className="relative min-h-screen bg-stone-50 overflow-hidden">
       <div className="absolute top-[-10%] left-[15%] w-[600px] h-[600px] bg-emerald-100/30 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] bg-stone-200/30 blur-[120px] rounded-full pointer-events-none" />
+
+      {/* Doodles dans les marges (hors carte) */}
+      <div className="pointer-events-none select-none absolute inset-0 hidden lg:block z-0" aria-hidden="true">
+        <DoodleCoin className="absolute left-[10%] top-[16%] w-11 text-emerald-500 -rotate-6" />
+        <DoodleTrophy className="absolute left-[7%] top-[38%] w-11 text-neutral-800/70" />
+        <DoodleStar5 className="absolute left-[12%] top-[58%] w-5 text-emerald-500" />
+        <DoodleDashes className="absolute left-[8%] top-[76%] w-11 text-stone-300 rotate-6" />
+        <DoodleRocket className="absolute right-[9%] top-[18%] w-12 text-emerald-500 rotate-6" />
+        <DoodleSparkle className="absolute right-[14%] top-[14%] w-6 text-emerald-500" />
+        <DoodleBubble className="absolute right-[7%] top-[42%] w-14 text-neutral-800/70 rotate-6" />
+        <DoodleCheck className="absolute right-[12%] top-[62%] w-7 text-emerald-500" />
+        <DoodleBurst className="absolute right-[9%] top-[80%] w-6 text-emerald-500" />
+        <DoodleCross className="absolute left-[13%] top-[30%] w-4 text-emerald-500" />
+      </div>
 
       <header className="relative z-10 flex items-center justify-between px-6 sm:px-10 py-5">
         <Link to="/business" className="flex items-center gap-2">

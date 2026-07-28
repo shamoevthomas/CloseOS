@@ -1517,6 +1517,95 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true, days })
     }
 
+    // ─── Relances "No Show" (emails au prospect, max 7) ───
+
+    if (action === 'noshow-relances-list' || action === 'noshow-relances-save') {
+      const authHeader = (req.headers['authorization'] || '') as string
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+      if (!token) return res.status(401).json({ error: 'Missing bearer token' })
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token)
+      if (userErr || !userData?.user) return res.status(401).json({ error: 'Invalid token' })
+      const uid = userData.user.id
+      const ownerId = ((req.query.owner_id as string) || (req.body?.owner_id as string) || uid).trim()
+
+      let allowed = uid === ownerId
+      if (!allowed) {
+        const { data: tm } = await supabase
+          .from('business_team_members')
+          .select('role')
+          .eq('user_id', uid)
+          .eq('business_owner_id', ownerId)
+          .maybeSingle()
+        allowed = !!tm && ['Head of Sales', 'Admin'].includes(tm.role || '')
+      }
+      if (!allowed) return res.status(403).json({ error: 'Forbidden' })
+
+      if (action === 'noshow-relances-list') {
+        const [{ data: relances, error }, { data: links }] = await Promise.all([
+          supabase
+            .from('business_noshow_relances')
+            .select('id, position, delay_days, subject, body, booking_link_id, is_active')
+            .eq('business_owner_id', ownerId)
+            .order('position', { ascending: true }),
+          supabase
+            .from('business_booking_links')
+            .select('id, label, slug, link, duration')
+            .eq('business_owner_id', ownerId)
+            .order('created_at', { ascending: false }),
+        ])
+        if (error) return res.status(500).json({ error: error.message })
+        return res.status(200).json({ relances: relances || [], booking_links: links || [] })
+      }
+
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+      const raw: any[] = Array.isArray(req.body?.relances) ? req.body.relances : []
+      const rows = raw.slice(0, 7).map((r, index) => {
+        const delay = Math.floor(Number(r?.delay_days))
+        return {
+          business_owner_id: ownerId,
+          position: index + 1,
+          delay_days: Number.isFinite(delay) ? Math.min(60, Math.max(0, delay)) : 1,
+          subject: String(r?.subject || '').trim().slice(0, 200) || 'On vous a manqué',
+          body: String(r?.body || '').slice(0, 5000),
+          booking_link_id: r?.booking_link_id || null,
+          is_active: r?.is_active !== false,
+        }
+      })
+
+      // Les liens de booking référencés doivent appartenir au propriétaire
+      const linkIds = rows.map(r => r.booking_link_id).filter(Boolean)
+      if (linkIds.length > 0) {
+        const { data: owned } = await supabase
+          .from('business_booking_links')
+          .select('id')
+          .eq('business_owner_id', ownerId)
+          .in('id', linkIds)
+        const ownedIds = new Set((owned || []).map((l: any) => l.id))
+        for (const row of rows) {
+          if (row.booking_link_id && !ownedIds.has(row.booking_link_id)) row.booking_link_id = null
+        }
+      }
+
+      // Upsert par position plutôt que delete + insert : les logs anti-doublon
+      // référencent relance_id en cascade, une recréation renverrait des relances
+      // déjà envoyées aux prospects actuellement en "no show".
+      if (rows.length > 0) {
+        const { error: upErr } = await supabase
+          .from('business_noshow_relances')
+          .upsert(rows, { onConflict: 'business_owner_id,position' })
+        if (upErr) return res.status(500).json({ error: upErr.message })
+      }
+      // Retire uniquement les positions devenues excédentaires
+      await supabase
+        .from('business_noshow_relances')
+        .delete()
+        .eq('business_owner_id', ownerId)
+        .gt('position', rows.length)
+
+      return res.status(200).json({ ok: true, count: rows.length })
+    }
+
     // ─── Invitation actions (method-based routing for backward compat) ───
     const PLAN_SEAT_LIMITS: Record<string, number> = { solo: 0, business: 3, business_acquisition: 5, enterprise: 999999 }
 
@@ -2385,9 +2474,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await supabase.from('campaign_questions').delete().in('id', toDelete)
       }
 
-      // Upsert all questions — id may be a client-generated UUID for new questions
+      // Upsert all questions — id may be a client-generated UUID for new questions.
+      // Fallback serveur : un lot supabase-js unifie les colonnes, un id absent
+      // deviendrait id:null et violerait le NOT NULL (échec silencieux).
       const upsertData = (questions || []).map((q: any, i: number) => ({
-        id: q.id || undefined,
+        id: q.id || crypto.randomUUID(),
         questionnaire_id: questionnaire.id,
         question_text: q.question_text,
         question_type: q.question_type || 'text',
@@ -2409,7 +2500,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const toUpdate = upsertData.filter((q: any) => q.id && existingIdSet.has(q.id))
 
         if (toInsert.length > 0) {
-          const { data: inserted } = await supabase.from('campaign_questions').insert(toInsert).select()
+          const { data: inserted, error: insQErr } = await supabase.from('campaign_questions').insert(toInsert).select()
+          if (insQErr) return res.status(500).json({ error: insQErr.message })
           savedQuestions.push(...(inserted || []))
         }
         for (const q of toUpdate) {
@@ -7264,6 +7356,21 @@ ${notesSection}
       if (!email) return res.status(400).json({ error: 'Email is required' })
       const data = await sendWelcomeEmail(email)
       return res.status(200).json(data)
+    }
+
+    // ─── Ajout à Brevo à l'inscription Business : listes générale (5) + Business (22) + Sign (23) ───
+    // (Un utilisateur Business a aussi accès à Sign, donc il est rangé dans les deux.)
+    if (req.method === 'POST' && action === 'brevo-signup') {
+      const { email, name } = req.body
+      if (!email) return res.status(400).json({ error: 'Email is required' })
+      try {
+        await fetch('https://api.brevo.com/v3/contacts', {
+          method: 'POST',
+          headers: { accept: 'application/json', 'api-key': process.env.BREVO_API_KEY || '', 'content-type': 'application/json' },
+          body: JSON.stringify({ email, attributes: { NOM: name || String(email).split('@')[0] }, listIds: [5, 22, 23], updateEnabled: true }),
+        })
+      } catch (e) { console.error('Brevo business signup error:', e) }
+      return res.status(200).json({ success: true })
     }
 
     // ─── Team member dashboard ───

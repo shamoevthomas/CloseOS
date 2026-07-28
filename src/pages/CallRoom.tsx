@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useProspects } from '../contexts/ProspectsContext';
 import { ProspectView } from '../components/ProspectView';
+import { CreateEventModal } from '../components/CreateEventModal';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -45,6 +46,7 @@ export default function CallRoom() {
 
     // Prospect view
     const [showProspectView, setShowProspectView] = useState(false);
+    const [isEventModalOpen, setIsEventModalOpen] = useState(false);
     const prospect = prospectIdFromParams ? prospects.find(p => String(p.id) === prospectIdFromParams) : null;
 
     // Previous call notes
@@ -571,8 +573,16 @@ export default function CallRoom() {
                     onClose={() => setShowProspectView(false)}
                     onUpdate={(id, updates) => updateProspect(id, updates)}
                     onDelete={(id) => { deleteProspect(id); setShowProspectView(false); }}
+                    onCreateEvent={() => setIsEventModalOpen(true)}
                 />
             )}
+
+            <CreateEventModal
+                isOpen={isEventModalOpen}
+                onClose={() => setIsEventModalOpen(false)}
+                prospectId={prospect?.id}
+                prospectName={prospect?.contact || `${prospect?.firstName || ''} ${prospect?.lastName || ''}`.trim()}
+            />
         </div>
     );
 }

@@ -96,14 +96,14 @@ export default function CloseosVsIclosed() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
-    document.title = 'CloseOS vs iClosed — Comparatif détaillé 2026';
+    document.title = 'CloseOS vs iClosed, Comparatif détaillé 2026';
     document.querySelector('meta[name="description"]')?.setAttribute('content', "CloseOS vs iClosed : quel outil choisir pour votre activité de closing ? Comparatif complet des fonctionnalités, tarifs et cas d'usage.");
     document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed');
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed');
-    document.getElementById('og-title')?.setAttribute('content', 'CloseOS vs iClosed — Comparatif détaillé 2026');
+    document.getElementById('og-title')?.setAttribute('content', 'CloseOS vs iClosed, Comparatif détaillé 2026');
     document.getElementById('og-description')?.setAttribute('content', "CloseOS vs iClosed : quel outil choisir ? Comparatif complet des fonctionnalités, tarifs et cas d'usage.");
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed');
-    document.getElementById('tw-title')?.setAttribute('content', 'CloseOS vs iClosed — Comparatif détaillé 2026');
+    document.getElementById('tw-title')?.setAttribute('content', 'CloseOS vs iClosed, Comparatif détaillé 2026');
     document.getElementById('tw-description')?.setAttribute('content', 'Comparatif complet CloseOS vs iClosed : fonctionnalités, tarifs, cas d\'usage.');
     document.documentElement.lang = 'fr';
 
@@ -169,11 +169,11 @@ export default function CloseosVsIclosed() {
             Comparatif 2026
           </motion.p>
           <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
-            CloseOS vs iClosed <span className="text-slate-400">—</span><br />
+            CloseOS vs iClosed <span className="text-slate-400">:</span><br />
             <span className="text-slate-400">Quel outil pour votre activité de closing ?</span>
           </motion.h1>
           <motion.p variants={fadeUp} className="mx-auto mt-6 max-w-2xl text-lg text-slate-400 leading-relaxed">
-            CloseOS et iClosed sont deux outils présents dans l'écosystème francophone du closing, mais ils ne font pas la même chose. iClosed est un outil de booking et de qualification de leads. CloseOS est un CRM complet pour closers avec pipeline, callroom VoIP, facturation et gestion d'équipe. Ce comparatif vous aide à comprendre quel outil correspond à votre besoin — ou si vous devriez utiliser les deux.
+            CloseOS et iClosed sont deux outils présents dans l'écosystème francophone du closing, mais ils ne font pas la même chose. iClosed est un outil de booking et de qualification de leads. CloseOS est un CRM complet pour closers avec pipeline, callroom VoIP, facturation et gestion d'équipe. Ce comparatif vous aide à comprendre quel outil correspond à votre besoin, ou si vous devriez utiliser les deux.
           </motion.p>
         </div>
       </motion.section>

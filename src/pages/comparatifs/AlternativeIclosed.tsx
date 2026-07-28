@@ -7,14 +7,14 @@ export default function AlternativeIclosed() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
-    document.title = 'Alternative à iClosed — Découvrez CloseOS';
+    document.title = 'Alternative à iClosed, Découvrez CloseOS';
     document.querySelector('meta[name="description"]')?.setAttribute('content', 'Vous cherchez une alternative à iClosed ? CloseOS est le CRM tout-en-un pour closers : pipeline, callroom VoIP, facturation et gestion d\'équipe. Essai gratuit.');
     document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/comparatifs/alternative-iclosed');
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/comparatifs/alternative-iclosed');
-    document.getElementById('og-title')?.setAttribute('content', 'Alternative à iClosed — Découvrez CloseOS');
+    document.getElementById('og-title')?.setAttribute('content', 'Alternative à iClosed, Découvrez CloseOS');
     document.getElementById('og-description')?.setAttribute('content', 'Vous cherchez une alternative à iClosed ? CloseOS est le CRM tout-en-un pour closers : pipeline, callroom VoIP, facturation et gestion d\'équipe. Essai gratuit.');
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/comparatifs/alternative-iclosed');
-    document.getElementById('tw-title')?.setAttribute('content', 'Alternative à iClosed — Découvrez CloseOS');
+    document.getElementById('tw-title')?.setAttribute('content', 'Alternative à iClosed, Découvrez CloseOS');
     document.getElementById('tw-description')?.setAttribute('content', 'Vous cherchez une alternative à iClosed ? CloseOS est le CRM tout-en-un pour closers.');
     document.documentElement.lang = 'fr';
 
@@ -126,7 +126,7 @@ export default function AlternativeIclosed() {
       >
         <div className="mx-auto max-w-4xl px-6 pt-12 text-center">
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-            Alternative à iClosed —{' '}
+            Alternative à iClosed :{' '}
             <span className="text-[#00E676]">Pourquoi les closers choisissent CloseOS</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">
@@ -146,7 +146,7 @@ export default function AlternativeIclosed() {
         className="pb-20"
       >
         <div className="mx-auto max-w-5xl px-6">
-          <h2 className="text-3xl font-bold text-center mb-4">iClosed et CloseOS — deux outils complémentaires</h2>
+          <h2 className="text-3xl font-bold text-center mb-4">iClosed et CloseOS, deux outils complémentaires</h2>
           <p className="text-center text-slate-400 mb-12 max-w-2xl mx-auto">
             Il est important de comprendre que iClosed et CloseOS ne sont pas des concurrents directs.
             Ils répondent à des besoins différents et peuvent même fonctionner ensemble.

@@ -608,9 +608,9 @@ export function RendezVous() {
 
    const getStatusStyle = (s: string) => {
       s = s?.toLowerCase() || '';
-      if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      if (['annulé', 'cancelled', 'rejected', 'canceled', 'annule'].includes(s)) return 'bg-red-500/20 text-red-400 border-red-500/30';
-      return 'bg-white/5 text-white/40 border-white/10';
+      if (['upcoming', 'confirmé', 'confirmed', 'scheduled', 'accepted'].includes(s)) return 'bg-sky-500/20 text-sky-600 dark:text-sky-400 border-sky-500/30';
+      if (['annulé', 'cancelled', 'rejected', 'canceled', 'annule'].includes(s)) return 'bg-red-500/20 text-red-600 border-red-500/30';
+      return 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-neutral-500 border-slate-200 dark:border-white/10';
    }
 
    const getStatusLabel = (s: string) => {
@@ -655,38 +655,38 @@ export function RendezVous() {
       <div className="mb-12">
          <div className="mb-6 flex items-center justify-between px-2">
             <div className="flex items-center gap-3">
-               <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                  <Icon className="h-4 w-4 text-emerald-400" />
+               <div className="flex items-center justify-center h-9 w-9 rounded-xl bg-sky-500/10 border border-sky-500/20">
+                  <Icon className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                </div>
-               <h2 className="text-xl font-extrabold text-white">{title}</h2>
-               <span className="ml-1 rounded-full bg-white/5 border border-white/[0.08] px-2.5 py-0.5 text-xs font-bold text-white/40">{data.length}</span>
+               <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{title}</h2>
+               <span className="ml-1 rounded-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 px-2.5 py-0.5 text-xs font-bold text-slate-400 dark:text-neutral-500">{data.length}</span>
                {/* BOUTON SYNC MANUEL */}
                {onRefresh && (
                   <button
                      onClick={onRefresh}
-                     className={`ml-1 p-2 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all ${isSyncing ? 'animate-spin text-emerald-500' : ''}`}
+                     className={`ml-1 p-2 rounded-xl hover:bg-slate-100 text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-all ${isSyncing ? 'animate-spin text-sky-600 dark:text-sky-400' : ''}`}
                      title={lang === 'fr' ? "Forcer la synchronisation (MàJ Statuts)" : "Force sync (Update Statuses)"}
                   >
                      <RefreshCw className="h-4 w-4" />
                   </button>
                )}
             </div>
-            {showDeleteAction && data.length > 0 && (<button onClick={handleDeleteAllPast} disabled={isDeleting} className="flex items-center gap-2 rounded-full bg-red-500/10 px-4 py-2 text-xs font-bold text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">{isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} {lang === 'fr' ? 'Tout supprimer' : 'Delete all'}</button>)}
+            {showDeleteAction && data.length > 0 && (<button onClick={handleDeleteAllPast} disabled={isDeleting} className="flex items-center gap-2 rounded-full bg-red-500/10 px-4 py-2 text-xs font-bold text-red-600 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">{isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} {lang === 'fr' ? 'Tout supprimer' : 'Delete all'}</button>)}
          </div>
-         <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+         <div className="rounded-2xl bg-white dark:bg-[#1a1a1a] overflow-hidden shadow-[0_1px_3px_rgba(15,23,42,0.05),0_18px_40px_-20px_rgba(15,23,42,0.12)]">
             <table className="w-full">
-               <thead><tr className="text-[10px] font-bold uppercase tracking-widest text-white/30 text-left"><th className="px-6 py-5">{lang === 'fr' ? 'Date & Heure' : 'Date & Time'}</th><th className="px-6 py-5">Contact</th><th className="px-6 py-5">{lang === 'fr' ? 'Lieu' : 'Location'}</th><th className="px-6 py-5">{lang === 'fr' ? 'Statut' : 'Status'}</th><th className="px-6 py-5 text-right">{lang === 'fr' ? 'Détails' : 'Details'}</th></tr></thead>
+               <thead><tr className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-neutral-500 text-left"><th className="px-6 py-5">{lang === 'fr' ? 'Date & Heure' : 'Date & Time'}</th><th className="px-6 py-5">Contact</th><th className="px-6 py-5">{lang === 'fr' ? 'Lieu' : 'Location'}</th><th className="px-6 py-5">{lang === 'fr' ? 'Statut' : 'Status'}</th><th className="px-6 py-5 text-right">{lang === 'fr' ? 'Détails' : 'Details'}</th></tr></thead>
                <tbody>
                   {loading ? (
-                     <tr><td colSpan={5} className="px-6 py-12 text-center"><div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-emerald-500" /></div></td></tr>
-                  ) : data.length === 0 ? (<tr><td colSpan={5} className="px-6 py-12 text-center text-white/40 font-medium italic">{emptyText}</td></tr>) : (
+                     <tr><td colSpan={5} className="px-6 py-12 text-center"><div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-sky-600 dark:text-sky-400" /></div></td></tr>
+                  ) : data.length === 0 ? (<tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 dark:text-neutral-500 font-medium italic">{emptyText}</td></tr>) : (
                      data.map((m: any) => (
-                        <tr key={m.id} onClick={() => setSelectedMeeting(m)} className="cursor-pointer hover:bg-white/[0.04] transition-all">
-                           <td className="px-6 py-4"><div className="flex items-center gap-3 text-white"><div className="flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-white/5 font-bold"><span className="text-[10px] text-emerald-400 uppercase">{safeFormat(m.date, 'MMM')}</span><span className="text-sm">{safeFormat(m.date, 'dd')}</span></div><div><div className="font-bold text-sm">{safeFormat(m.date, 'eeee d MMMM')}</div><div className="text-xs text-white/40">{m.time}</div></div></div></td>
-                           <td className="px-6 py-4 font-bold text-white/80 text-sm">{maskData(m.contact || 'Prospect', 'name')}</td>
-                           <td className="px-6 py-4 text-sm text-emerald-400 font-medium">{getMeetingLocation(m)}</td>
+                        <tr key={m.id} onClick={() => setSelectedMeeting(m)} className="cursor-pointer hover:bg-slate-50 transition-all">
+                           <td className="px-6 py-4"><div className="flex items-center gap-3 text-slate-900 dark:text-white"><div className="flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-white/10 font-bold"><span className="text-[10px] text-sky-600 dark:text-sky-400 uppercase">{safeFormat(m.date, 'MMM')}</span><span className="text-sm">{safeFormat(m.date, 'dd')}</span></div><div><div className="font-bold text-sm">{safeFormat(m.date, 'eeee d MMMM')}</div><div className="text-xs text-slate-400 dark:text-neutral-500">{m.time}</div></div></div></td>
+                           <td className="px-6 py-4 font-bold text-slate-600 dark:text-neutral-300 text-sm">{maskData(m.contact || 'Prospect', 'name')}</td>
+                           <td className="px-6 py-4 text-sm text-sky-600 dark:text-sky-400 font-medium">{getMeetingLocation(m)}</td>
                            <td className="px-6 py-4"><span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(m.status)}`}>{getStatusLabel(m.status)}</span></td>
-                           <td className="px-6 py-4 text-right"><ExternalLink className="h-4 w-4 text-white/20 ml-auto" /></td>
+                           <td className="px-6 py-4 text-right"><ExternalLink className="h-4 w-4 text-slate-300 dark:text-neutral-600 ml-auto" /></td>
                         </tr>
                      ))
                   )}
@@ -811,17 +811,17 @@ export function RendezVous() {
 
    // Ne plus bloquer toute la page : afficher le contenu immédiatement, loading uniquement sur les tableaux
    return (
-      <div className="h-full overflow-y-auto bg-[#111111] p-8 md:p-12 text-left">
+      <div className="text-left">
          <div className="mx-auto max-w-6xl">
             <div className="mb-10 flex items-end justify-between">
                <div>
-                  <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white mb-2">{lang === 'fr' ? 'Rendez-vous' : 'Appointments'}</h1>
-                  <p className="text-white/40 text-sm font-medium">{lang === 'fr' ? 'Consultez vos rendez-vous et gérez votre agenda.' : 'View your appointments and manage your calendar.'}</p>
+                  <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-slate-900 dark:text-white mb-2">{lang === 'fr' ? 'Rendez-vous' : 'Appointments'}</h1>
+                  <p className="text-slate-400 dark:text-neutral-500 text-sm font-medium">{lang === 'fr' ? 'Consultez vos rendez-vous et gérez votre agenda.' : 'View your appointments and manage your calendar.'}</p>
                </div>
                {/* BOUTON D'OUVERTURE DE LA CONFIGURATION */}
                <button
                   onClick={() => setIsConfigModalOpen(true)}
-                  className="flex items-center gap-2 rounded-full bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] px-6 py-3 text-sm font-bold text-white/80 hover:bg-white/[0.06] hover:border-white/[0.15] transition-all shadow-[0_20px_40px_rgba(0,0,0,0.2)]"
+                  className="flex items-center gap-2 rounded-full bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 px-6 py-3 text-sm font-bold text-slate-600 dark:text-neutral-300 hover:bg-slate-100 hover:border-slate-200 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)]"
                >
                   <Settings className="h-4 w-4" /> {lang === 'fr' ? 'Configurer les Booking' : 'Configure Bookings'}
                </button>
@@ -832,52 +832,52 @@ export function RendezVous() {
                <div className="mb-12">
                   <div className="flex items-center justify-between mb-8">
                      <div className="flex items-start gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-xl"><LinkIcon className="h-6 w-6" /></div>
-                        <div><h2 className="text-xl font-extrabold text-white">{lang === 'fr' ? 'Vos Liens de Réservation' : 'Your Booking Links'}</h2><p className="text-sm text-white/40 mt-1">{lang === 'fr' ? "Vos types d'événements actifs sur Cal.com." : 'Your active event types on Cal.com.'}</p></div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-600 dark:text-sky-400 font-bold text-xl"><LinkIcon className="h-6 w-6" /></div>
+                        <div><h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{lang === 'fr' ? 'Vos Liens de Réservation' : 'Your Booking Links'}</h2><p className="text-sm text-slate-400 dark:text-neutral-500 mt-1">{lang === 'fr' ? "Vos types d'événements actifs sur Cal.com." : 'Your active event types on Cal.com.'}</p></div>
                      </div>
-                     <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"><Plus className="h-4 w-4" /> {lang === 'fr' ? 'Nouveau' : 'New'}</button>
+                     <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 rounded-full bg-sky-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-sky-600 transition-all shadow-lg shadow-sky-500/20"><Plus className="h-4 w-4" /> {lang === 'fr' ? 'Nouveau' : 'New'}</button>
                   </div>
 
-                  {isLoadingEvents ? (<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-white/40" /></div>) : (
+                  {isLoadingEvents ? (<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-slate-400 dark:text-neutral-500" /></div>) : (
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {eventTypes.map(evt => (
-                           <div key={evt.id} className="group relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] p-6 hover:border-emerald-500/30 hover:bg-white/[0.05] transition-all flex flex-col justify-between shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+                           <div key={evt.id} className="group relative rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-6 hover:border-sky-500/30 hover:bg-slate-100 transition-all flex flex-col justify-between shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)]">
                               <div>
                                  <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-2">
-                                       <div className="flex items-center justify-center h-8 w-8 rounded-full bg-emerald-500/10">
-                                          <Clock className="h-3.5 w-3.5 text-emerald-400" />
+                                       <div className="flex items-center justify-center h-8 w-8 rounded-full bg-sky-500/10">
+                                          <Clock className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
                                        </div>
-                                       <span className="text-xs font-bold text-white/50">{evt.length} min</span>
+                                       <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">{evt.length} min</span>
                                     </div>
                                     <div className="flex gap-1">
                                        {/* BOUTON SUPPRIMER LE LIEN (POUBELLE) */}
                                        <button
                                           onClick={() => handleDeleteEventType(evt.id)}
                                           disabled={isDeletingEvent === evt.id}
-                                          className="p-2 rounded-xl hover:bg-red-500/10 text-white/30 hover:text-red-500 transition-all"
+                                          className="p-2 rounded-xl hover:bg-red-500/10 text-slate-400 dark:text-neutral-500 hover:text-red-600 transition-all"
                                           title={lang === 'fr' ? "Supprimer ce lien" : "Delete this link"}
                                        >
                                           {isDeletingEvent === evt.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                        </button>
                                        {/* BOUTON OUVRIR */}
-                                       <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="p-2 rounded-xl hover:bg-white/5 text-white/30 hover:text-white transition-all" title={lang === 'fr' ? "Ouvrir le lien" : "Open link"}><ExternalLink className="h-4 w-4" /></a>
+                                       <a href={`https://cal.com/${calUsername || 'user'}/${evt.slug}`} target="_blank" rel="noreferrer" className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-all" title={lang === 'fr' ? "Ouvrir le lien" : "Open link"}><ExternalLink className="h-4 w-4" /></a>
                                     </div>
                                  </div>
-                                 <h3 className="font-extrabold text-white text-lg mb-1">{evt.title}</h3>
-                                 <p className="text-xs text-white/30 font-mono mb-4">/{evt.slug}</p>
+                                 <h3 className="font-extrabold text-slate-900 dark:text-white text-lg mb-1">{evt.title}</h3>
+                                 <p className="text-xs text-slate-400 dark:text-neutral-500 font-mono mb-4">/{evt.slug}</p>
                               </div>
 
                               <div className="flex gap-2 mt-auto pt-4">
                                  <button
                                     onClick={() => handleCopyLink(evt.slug, evt.id)}
-                                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-white/[0.04] py-2.5 text-xs font-bold text-white/70 hover:text-white hover:bg-white/[0.08] transition-all"
+                                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-50 dark:bg-white/5 py-2.5 text-xs font-bold text-slate-600 dark:text-neutral-300 hover:text-slate-900 hover:bg-slate-100 transition-all"
                                  >
-                                    {linkCopiedId === evt.id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />} {lang === 'fr' ? 'Copier' : 'Copy'}
+                                    {linkCopiedId === evt.id ? <Check className="h-3 w-3 text-sky-600 dark:text-sky-400" /> : <Copy className="h-3 w-3" />} {lang === 'fr' ? 'Copier' : 'Copy'}
                                  </button>
                                  <button
                                     onClick={() => handleOpenEdit(evt)}
-                                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 py-2.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-sky-500/10 py-2.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 transition-all"
                                  >
                                     <Pencil className="h-3 w-3" /> {lang === 'fr' ? 'Modifier' : 'Edit'}
                                  </button>
@@ -885,7 +885,7 @@ export function RendezVous() {
                                     href={`https://app.cal.com/event-types/${evt.id}`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="flex items-center justify-center rounded-xl bg-white/[0.04] px-3 text-white/30 hover:text-white hover:bg-white/[0.08] transition-all"
+                                    className="flex items-center justify-center rounded-xl bg-slate-50 dark:bg-white/5 px-3 text-slate-400 dark:text-neutral-500 hover:text-slate-900 hover:bg-slate-100 transition-all"
                                     title={lang === 'fr' ? "Paramètres avancés sur Cal.com" : "Advanced settings on Cal.com"}
                                  >
                                     <Settings className="h-4 w-4" />
@@ -893,7 +893,7 @@ export function RendezVous() {
                               </div>
                            </div>
                         ))}
-                        {eventTypes.length === 0 && (<div className="col-span-full text-center py-12 text-white/40 italic border border-dashed border-white/[0.08] rounded-2xl bg-white/[0.02]">{lang === 'fr' ? 'Aucun événement trouvé. Créez-en un !' : 'No events found. Create one!'}</div>)}
+                        {eventTypes.length === 0 && (<div className="col-span-full text-center py-12 text-slate-400 dark:text-neutral-500 italic border border-dashed border-slate-200 dark:border-white/10 rounded-2xl bg-slate-50 dark:bg-white/5">{lang === 'fr' ? 'Aucun événement trouvé. Créez-en un !' : 'No events found. Create one!'}</div>)}
                      </div>
                   )}
                </div>
@@ -915,53 +915,53 @@ export function RendezVous() {
          {isConfigModalOpen && (
             <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
                <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setIsConfigModalOpen(false)} />
-               <div className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl bg-[#1a1a1a] border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] flex flex-col animate-in fade-in zoom-in-95 overflow-hidden">
+               <div className="relative w-full max-w-2xl max-h-[90vh] rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] flex flex-col animate-in fade-in zoom-in-95 overflow-hidden">
 
                   {/* Header Modale */}
-                  <div className="flex items-center justify-between px-8 py-6 bg-[#1a1a1a] z-10 shrink-0">
+                  <div className="flex items-center justify-between px-8 py-6 bg-white dark:bg-[#1a1a1a] z-10 shrink-0">
                      <div>
-                        <h2 className="text-xl font-extrabold text-white flex items-center gap-3">
+                        <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
                            <div className="h-8 w-8 flex items-center justify-center overflow-hidden rounded-full">
                               <img src="/Calcom.png" alt="Cal.com" className="w-full h-full object-contain" />
                            </div>
                            {lang === 'fr' ? 'Configuration Cal.com' : 'Cal.com Configuration'}
                         </h2>
-                        <p className="text-white/40 text-sm mt-1">{lang === 'fr' ? 'Paramètres de connexion et synchronisation.' : 'Connection and sync settings.'}</p>
+                        <p className="text-slate-400 dark:text-neutral-500 text-sm mt-1">{lang === 'fr' ? 'Paramètres de connexion et synchronisation.' : 'Connection and sync settings.'}</p>
                      </div>
-                     <button onClick={() => setIsConfigModalOpen(false)} className="p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all">
+                     <button onClick={() => setIsConfigModalOpen(false)} className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-all">
                         <X className="h-5 w-5" />
                      </button>
                   </div>
 
                   {/* Corps Modale */}
-                  <div className="px-8 pb-8 space-y-8 bg-[#111111]/50 overflow-y-auto custom-scrollbar">
-                     <section className="rounded-2xl bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] p-8">
-                        <h3 className="text-[10px] font-bold text-white/40 mb-6 uppercase tracking-widest">{lang === 'fr' ? '1. Connexion Cal.com' : '1. Cal.com Connection'}</h3>
+                  <div className="px-8 pb-8 space-y-8 bg-slate-1000 overflow-y-auto custom-scrollbar">
+                     <section className="rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 p-8">
+                        <h3 className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 mb-6 uppercase tracking-widest">{lang === 'fr' ? '1. Connexion Cal.com' : '1. Cal.com Connection'}</h3>
 
                         {!calAccessToken ? (
-                           <div className="rounded-2xl bg-white/5 border border-white/5 p-6 text-center">
-                              <p className="text-sm text-white/60 mb-6 leading-relaxed">
+                           <div className="rounded-2xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 p-6 text-center">
+                              <p className="text-sm text-slate-500 dark:text-neutral-400 mb-6 leading-relaxed">
                                  {lang === 'fr' ? 'Connectez votre compte Cal.com pour synchroniser automatiquement vos rendez-vous et gérer vos liens de réservation.' : 'Connect your Cal.com account to automatically sync your appointments and manage your booking links.'}
                               </p>
                               <button
                                  onClick={handleConnectCal}
-                                 className="w-full flex justify-center items-center gap-2 rounded-full bg-white py-3.5 text-sm font-bold text-black hover:bg-white/90 transition-all shadow-lg"
+                                 className="w-full flex justify-center items-center gap-2 rounded-full bg-white dark:bg-[#1a1a1a] py-3.5 text-sm font-bold text-slate-900 dark:text-white hover:bg-white/90 transition-all shadow-lg"
                               >
-                                 <div className="h-5 w-5 rounded-full bg-black flex items-center justify-center p-0.5">
+                                 <div className="h-5 w-5 rounded-full bg-slate-900 flex items-center justify-center p-0.5">
                                     <img src="/Calcom.png" alt="" className="w-full h-full object-contain" />
                                  </div>
                                  {lang === 'fr' ? 'Se connecter avec Cal.com' : 'Connect with Cal.com'}
                               </button>
                            </div>
                         ) : (
-                           <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-6 flex items-center justify-between">
+                           <div className="rounded-2xl bg-sky-500/10 border border-sky-500/20 p-6 flex items-center justify-between">
                               <div className="flex items-center gap-4">
-                                 <div className="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                                 <div className="h-10 w-10 flex items-center justify-center rounded-full bg-sky-600 text-white shadow-lg shadow-sky-500/20">
                                     <Check className="h-5 w-5" />
                                  </div>
                                  <div>
-                                    <p className="font-bold text-emerald-400 text-sm">{lang === 'fr' ? 'Compte Connecté' : 'Account Connected'}</p>
-                                    <p className="text-xs text-emerald-500/70 mt-0.5">@{calUsername || 'Utilisateur'}</p>
+                                    <p className="font-bold text-sky-600 dark:text-sky-400 text-sm">{lang === 'fr' ? 'Compte Connecté' : 'Account Connected'}</p>
+                                    <p className="text-xs text-sky-600/70 mt-0.5">@{calUsername || 'Utilisateur'}</p>
                                  </div>
                               </div>
                               <button onClick={async () => {
@@ -978,20 +978,20 @@ export function RendezVous() {
                                        }).eq('id', user.id)
                                     }
                                  }
-                              }} className="text-xs font-bold text-white/40 hover:text-white underline">{lang === 'fr' ? 'Déconnecter' : 'Disconnect'}</button>
+                              }} className="text-xs font-bold text-slate-400 dark:text-neutral-500 hover:text-slate-900 underline">{lang === 'fr' ? 'Déconnecter' : 'Disconnect'}</button>
                            </div>
                         )}
                      </section>
 
                      {/* 2. Webhook */}
                      {calAccessToken && (
-                        <section className="rounded-2xl bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] p-8">
-                           <h3 className="text-[10px] font-bold text-white/40 mb-4 uppercase tracking-widest">{lang === 'fr' ? '2. Synchronisation (Webhook)' : '2. Sync (Webhook)'}</h3>
-                           <div className="flex items-center gap-2 bg-white/5 border border-white/5 rounded-2xl p-3 pl-5">
-                              <code className="text-xs font-mono text-emerald-300 truncate flex-1 select-all">{webhookUrl}</code>
-                              <button onClick={handleCopyWebhook} className="p-2.5 rounded-xl hover:bg-white/[0.08] text-white/40 hover:text-white transition-all" title={lang === 'fr' ? "Copier l'URL" : "Copy URL"}>{webhookCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}</button>
+                        <section className="rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 p-8">
+                           <h3 className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 mb-4 uppercase tracking-widest">{lang === 'fr' ? '2. Synchronisation (Webhook)' : '2. Sync (Webhook)'}</h3>
+                           <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-2xl p-3 pl-5">
+                              <code className="text-xs font-mono text-sky-700 dark:text-sky-400 truncate flex-1 select-all">{webhookUrl}</code>
+                              <button onClick={handleCopyWebhook} className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-all" title={lang === 'fr' ? "Copier l'URL" : "Copy URL"}>{webhookCopied ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}</button>
                            </div>
-                           <p className="text-xs text-white/40 mt-3 leading-relaxed">
+                           <p className="text-xs text-slate-400 dark:text-neutral-500 mt-3 leading-relaxed">
                               {lang === 'fr' ? <>Copiez cette URL et ajoutez-la dans la section <b>Webhooks</b> de vos paramètres Cal.com pour recevoir les notifications de réservation.</> : <>Copy this URL and add it in the <b>Webhooks</b> section of your Cal.com settings to receive booking notifications.</>}
                            </p>
                         </section>
@@ -1005,47 +1005,47 @@ export function RendezVous() {
          {isCreateModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setIsCreateModalOpen(false)} />
-               <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1a1a1a] border border-white/[0.08] p-10 shadow-[0_20px_40px_rgba(0,0,0,0.2)] animate-in fade-in zoom-in-95 custom-scrollbar">
+               <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 p-10 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] animate-in fade-in zoom-in-95 custom-scrollbar">
                   <div className="flex items-start justify-between mb-10">
                      <div>
-                        <h3 className="text-2xl font-extrabold text-white">{lang === 'fr' ? "Nouveau Type d'Événement" : 'New Event Type'}</h3>
-                        <p className="text-white/40 text-sm mt-1">{lang === 'fr' ? 'Configurez les détails et les limites de votre nouveau lien.' : 'Configure the details and limits of your new link.'}</p>
+                        <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">{lang === 'fr' ? "Nouveau Type d'Événement" : 'New Event Type'}</h3>
+                        <p className="text-slate-400 dark:text-neutral-500 text-sm mt-1">{lang === 'fr' ? 'Configurez les détails et les limites de votre nouveau lien.' : 'Configure the details and limits of your new link.'}</p>
                      </div>
-                     <button onClick={() => setIsCreateModalOpen(false)} className="p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all"><X className="h-5 w-5" /></button>
+                     <button onClick={() => setIsCreateModalOpen(false)} className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-all"><X className="h-5 w-5" /></button>
                   </div>
 
                   <div className="space-y-10">
                      {/* 1. INFO GÉNÉRALES */}
-                     <section className="space-y-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] p-8">
-                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Plus className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Informations Générales' : 'General Information'}</h4>
+                     <section className="space-y-6 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-8">
+                        <h4 className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-widest flex items-center gap-2"><Plus className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Informations Générales' : 'General Information'}</h4>
                         <div className="grid grid-cols-2 gap-8">
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Titre' : 'Title'}</label>
-                              <input type="text" value={newEventTitle} onChange={(e) => { setNewEventTitle(e.target.value); setNewEventSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) }} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none" placeholder={lang === 'fr' ? "Ex: Appel Découverte" : "Ex: Discovery Call"} />
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Titre' : 'Title'}</label>
+                              <input type="text" value={newEventTitle} onChange={(e) => { setNewEventTitle(e.target.value); setNewEventSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')) }} className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium focus:ring-0 outline-none" placeholder={lang === 'fr' ? "Ex: Appel Découverte" : "Ex: Discovery Call"} />
                            </div>
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Durée (min)' : 'Duration (min)'}</label>
-                              <input type="number" value={newEventDuration} onChange={(e) => setNewEventDuration(parseInt(e.target.value))} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none" />
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Durée (min)' : 'Duration (min)'}</label>
+                              <input type="number" value={newEventDuration} onChange={(e) => setNewEventDuration(parseInt(e.target.value))} className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium focus:ring-0 outline-none" />
                            </div>
                            <div className="col-span-2 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">URL / Slug</label>
-                              <div className="flex items-center border-b border-white/10 focus-within:border-emerald-500 transition-colors">
-                                 <span className="text-white/40 text-xs whitespace-nowrap pr-1">cal.com/{calUsername || 'user'}/</span>
-                                 <input type="text" value={newEventSlug} onChange={(e) => setNewEventSlug(e.target.value)} className="w-full bg-transparent py-2 text-white font-medium focus:ring-0 outline-none" />
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">URL / Slug</label>
+                              <div className="flex items-center border-b border-slate-200 dark:border-white/10 focus-within:border-sky-500 transition-colors">
+                                 <span className="text-slate-400 dark:text-neutral-500 text-xs whitespace-nowrap pr-1">cal.com/{calUsername || 'user'}/</span>
+                                 <input type="text" value={newEventSlug} onChange={(e) => setNewEventSlug(e.target.value)} className="w-full bg-transparent py-2 text-slate-900 dark:text-white font-medium focus:ring-0 outline-none" />
                               </div>
                            </div>
                            <div className="col-span-2 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Description</label>
-                              <textarea rows={3} value={newEventDescription} onChange={(e) => setNewEventDescription(e.target.value)} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none resize-none" placeholder={lang === 'fr' ? "Détails du rendez-vous..." : "Appointment details..."} />
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">Description</label>
+                              <textarea rows={3} value={newEventDescription} onChange={(e) => setNewEventDescription(e.target.value)} className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium focus:ring-0 outline-none resize-none" placeholder={lang === 'fr' ? "Détails du rendez-vous..." : "Appointment details..."} />
                            </div>
 
                            <div className="col-span-2 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Lieu / Location' : 'Location'}</label>
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Lieu / Location' : 'Location'}</label>
                               <div className="space-y-3">
-                                 <div className="flex items-center gap-2 border-b border-white/10 focus-within:border-emerald-500 transition-colors py-2">
-                                    <MapPin className="h-4 w-4 text-emerald-400 shrink-0" />
+                                 <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 focus-within:border-sky-500 transition-colors py-2">
+                                    <MapPin className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
                                     <select
-                                       className="bg-transparent outline-none w-full text-white cursor-pointer font-medium text-sm"
+                                       className="bg-transparent outline-none w-full text-slate-900 dark:text-white cursor-pointer font-medium text-sm"
                                        onChange={(e) => setNewEventLocationType(e.target.value)}
                                        value={newEventLocationType}
                                     >
@@ -1070,7 +1070,7 @@ export function RendezVous() {
 
                                  {['in_person', 'link', 'phone'].includes(newEventLocationType) && (
                                     <div className="animate-in fade-in slide-in-from-top-2 space-y-1">
-                                       <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
+                                       <label className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-widest">
                                           {newEventLocationType === 'phone' ? (lang === 'fr' ? 'Numéro à appeler' : 'Number to call') : newEventLocationType === 'link' ? (lang === 'fr' ? 'URL du lien' : 'Link URL') : (lang === 'fr' ? 'Adresse exacte' : 'Exact address')}
                                        </label>
                                        <input
@@ -1078,7 +1078,7 @@ export function RendezVous() {
                                           placeholder="..."
                                           value={newEventLocationAddress}
                                           onChange={(e) => setNewEventLocationAddress(e.target.value)}
-                                          className="w-full bg-transparent border-b border-emerald-500/50 py-2 text-white text-sm font-medium focus:border-emerald-500 outline-none focus:ring-0"
+                                          className="w-full bg-transparent border-b border-sky-500/50 py-2 text-slate-900 dark:text-white text-sm font-medium focus:border-sky-500 outline-none focus:ring-0"
                                        />
                                     </div>
                                  )}
@@ -1088,43 +1088,43 @@ export function RendezVous() {
                      </section>
 
                      {/* 2. DISPONIBILITÉS */}
-                     <section className="space-y-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] p-8">
-                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Clock className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Disponibilités & Limites' : 'Availability & Limits'}</h4>
+                     <section className="space-y-6 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-8">
+                        <h4 className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-widest flex items-center gap-2"><Clock className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Disponibilités & Limites' : 'Availability & Limits'}</h4>
                         <div className="grid grid-cols-2 gap-8">
                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Marge avant (min)' : 'Buffer before (min)'}</label>
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Marge avant (min)' : 'Buffer before (min)'}</label>
                               <select
                                  value={newEventBeforeBuffer}
                                  onChange={(e) => setNewEventBeforeBuffer(parseInt(e.target.value))}
-                                 className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
+                                 className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium outline-none cursor-pointer"
                               >
                                  <option value={0}>{lang === 'fr' ? 'Aucune' : 'None'}</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
                               </select>
                            </div>
                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Marge après (min)' : 'Buffer after (min)'}</label>
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Marge après (min)' : 'Buffer after (min)'}</label>
                               <select
                                  value={newEventAfterBuffer}
                                  onChange={(e) => setNewEventAfterBuffer(parseInt(e.target.value))}
-                                 className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
+                                 className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium outline-none cursor-pointer"
                               >
                                  <option value={0}>{lang === 'fr' ? 'Aucune' : 'None'}</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
                               </select>
                            </div>
 
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Préavis minimum' : 'Minimum notice'}</label>
-                              <div className="flex border-b border-white/10 focus-within:border-emerald-500 transition-colors">
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Préavis minimum' : 'Minimum notice'}</label>
+                              <div className="flex border-b border-slate-200 dark:border-white/10 focus-within:border-sky-500 transition-colors">
                                  <input
                                     type="number"
                                     value={newEventNotice}
                                     onChange={(e) => setNewEventNotice(parseInt(e.target.value))}
-                                    className="w-20 bg-transparent py-2 px-1 text-white font-medium outline-none focus:ring-0"
+                                    className="w-20 bg-transparent py-2 px-1 text-slate-900 dark:text-white font-medium outline-none focus:ring-0"
                                  />
                                  <select
                                     value={newEventNoticeUnit}
                                     onChange={(e) => setNewEventNoticeUnit(e.target.value as 'minutes' | 'hours')}
-                                    className="flex-1 bg-transparent py-2 px-1 text-white font-medium outline-none cursor-pointer"
+                                    className="flex-1 bg-transparent py-2 px-1 text-slate-900 dark:text-white font-medium outline-none cursor-pointer"
                                  >
                                     <option value="minutes">Minutes</option>
                                     <option value="hours">{lang === 'fr' ? 'Heures' : 'Hours'}</option>
@@ -1133,11 +1133,11 @@ export function RendezVous() {
                            </div>
 
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Fréquence des créneaux' : 'Slot frequency'}</label>
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Fréquence des créneaux' : 'Slot frequency'}</label>
                               <select
                                  value={newEventSlotInterval || 'default'}
                                  onChange={(e) => setNewEventSlotInterval(e.target.value === 'default' ? null : parseInt(e.target.value))}
-                                 className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
+                                 className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium outline-none cursor-pointer"
                               >
                                  <option value="default">{lang === 'fr' ? 'Par défaut (Durée)' : 'Default (Duration)'}</option>
                                  <option value={15}>15 min</option><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
@@ -1148,11 +1148,11 @@ export function RendezVous() {
                   </div>
 
                   <div className="mt-10 flex gap-4">
-                     <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3.5 rounded-full font-bold text-white/40 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/[0.08]">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
+                     <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3.5 rounded-full font-bold text-slate-400 dark:text-neutral-500 hover:text-slate-900 hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                      <button
                         onClick={handleCreateEventType}
                         disabled={isCreatingEvent || !newEventTitle}
-                        className="flex-1 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                        className="flex-1 py-3.5 rounded-full bg-sky-600 hover:bg-sky-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20"
                      >
                         {isCreatingEvent ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                         {lang === 'fr' ? "Créer l'événement" : 'Create event'}
@@ -1166,40 +1166,40 @@ export function RendezVous() {
          {isEditModalOpen && editingEvent && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setIsEditModalOpen(false)} />
-               <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1a1a1a] border border-white/[0.08] p-10 shadow-[0_20px_40px_rgba(0,0,0,0.2)] animate-in fade-in zoom-in-95 custom-scrollbar">
+               <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 p-10 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] animate-in fade-in zoom-in-95 custom-scrollbar">
 
                   <div className="flex items-start justify-between mb-10">
                      <div>
-                        <h3 className="text-2xl font-extrabold text-white">{lang === 'fr' ? "Modifier l'événement" : 'Edit event'}</h3>
-                        <p className="text-white/40 text-sm mt-1">{lang === 'fr' ? 'Configurez les détails et les disponibilités.' : 'Configure details and availability.'}</p>
+                        <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">{lang === 'fr' ? "Modifier l'événement" : 'Edit event'}</h3>
+                        <p className="text-slate-400 dark:text-neutral-500 text-sm mt-1">{lang === 'fr' ? 'Configurez les détails et les disponibilités.' : 'Configure details and availability.'}</p>
                      </div>
-                     <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 rounded-xl hover:bg-white/5 text-white/40 hover:text-white transition-all"><X className="h-5 w-5" /></button>
+                     <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-all"><X className="h-5 w-5" /></button>
                   </div>
 
                   <div className="space-y-10">
-                     <section className="space-y-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] p-8">
-                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Pencil className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Informations Générales' : 'General Information'}</h4>
+                     <section className="space-y-6 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-8">
+                        <h4 className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-widest flex items-center gap-2"><Pencil className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Informations Générales' : 'General Information'}</h4>
                         <div className="grid grid-cols-2 gap-8">
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Titre' : 'Title'}</label>
-                              <input type="text" value={editingEvent.title} onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none" />
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Titre' : 'Title'}</label>
+                              <input type="text" value={editingEvent.title} onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })} className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium focus:ring-0 outline-none" />
                            </div>
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Durée (min)' : 'Duration (min)'}</label>
-                              <input type="number" value={editingEvent.length} onChange={(e) => setEditingEvent({ ...editingEvent, length: parseInt(e.target.value) })} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none" />
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Durée (min)' : 'Duration (min)'}</label>
+                              <input type="number" value={editingEvent.length} onChange={(e) => setEditingEvent({ ...editingEvent, length: parseInt(e.target.value) })} className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium focus:ring-0 outline-none" />
                            </div>
                            <div className="col-span-2 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Description</label>
-                              <textarea rows={3} value={editingEvent.description} onChange={(e) => setEditingEvent({ ...editingEvent, description: e.target.value })} className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium focus:ring-0 outline-none resize-none" />
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">Description</label>
+                              <textarea rows={3} value={editingEvent.description} onChange={(e) => setEditingEvent({ ...editingEvent, description: e.target.value })} className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium focus:ring-0 outline-none resize-none" />
                            </div>
 
                            <div className="col-span-2 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Lieu / Location' : 'Location'}</label>
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Lieu / Location' : 'Location'}</label>
                               <div className="space-y-3">
-                                 <div className="flex items-center gap-2 border-b border-white/10 focus-within:border-emerald-500 transition-colors py-2">
-                                    <MapPin className="h-4 w-4 text-emerald-400 shrink-0" />
+                                 <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 focus-within:border-sky-500 transition-colors py-2">
+                                    <MapPin className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
                                     <select
-                                       className="bg-transparent outline-none w-full text-white cursor-pointer font-medium text-sm"
+                                       className="bg-transparent outline-none w-full text-slate-900 dark:text-white cursor-pointer font-medium text-sm"
                                        onChange={(e) => {
                                           const newType = e.target.value
                                           const currentLoc = editingEvent.locations[0] || {}
@@ -1232,7 +1232,7 @@ export function RendezVous() {
 
                                  {editingEvent.locations[0]?.type === 'in_person' && (
                                     <div className="animate-in fade-in slide-in-from-top-2 space-y-1">
-                                       <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{lang === 'fr' ? 'Adresse exacte du RDV' : 'Exact appointment address'}</label>
+                                       <label className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-widest">{lang === 'fr' ? 'Adresse exacte du RDV' : 'Exact appointment address'}</label>
                                        <input
                                           type="text"
                                           placeholder="Ex: 12 Rue de la Paix, Paris"
@@ -1242,14 +1242,14 @@ export function RendezVous() {
                                              newLocs[0] = { ...newLocs[0], address: e.target.value }
                                              setEditingEvent({ ...editingEvent, locations: newLocs })
                                           }}
-                                          className="w-full bg-transparent border-b border-emerald-500/50 py-2 text-white text-sm font-medium focus:border-emerald-500 outline-none focus:ring-0"
+                                          className="w-full bg-transparent border-b border-sky-500/50 py-2 text-slate-900 dark:text-white text-sm font-medium focus:border-sky-500 outline-none focus:ring-0"
                                        />
                                     </div>
                                  )}
 
                                  {editingEvent.locations[0]?.type === 'link' && (
                                     <div className="animate-in fade-in slide-in-from-top-2 space-y-1">
-                                       <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{lang === 'fr' ? 'URL du lien' : 'Link URL'}</label>
+                                       <label className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-widest">{lang === 'fr' ? 'URL du lien' : 'Link URL'}</label>
                                        <input
                                           type="text"
                                           placeholder="https://..."
@@ -1259,14 +1259,14 @@ export function RendezVous() {
                                              newLocs[0] = { ...newLocs[0], link: e.target.value }
                                              setEditingEvent({ ...editingEvent, locations: newLocs })
                                           }}
-                                          className="w-full bg-transparent border-b border-emerald-500/50 py-2 text-white text-sm font-medium focus:border-emerald-500 outline-none focus:ring-0"
+                                          className="w-full bg-transparent border-b border-sky-500/50 py-2 text-slate-900 dark:text-white text-sm font-medium focus:border-sky-500 outline-none focus:ring-0"
                                        />
                                     </div>
                                  )}
 
                                  {editingEvent.locations[0]?.type === 'phone' && (
                                     <div className="animate-in fade-in slide-in-from-top-2 space-y-1">
-                                       <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{lang === 'fr' ? 'Numéro à appeler' : 'Number to call'}</label>
+                                       <label className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-widest">{lang === 'fr' ? 'Numéro à appeler' : 'Number to call'}</label>
                                        <input
                                           type="text"
                                           placeholder="+33 6..."
@@ -1276,7 +1276,7 @@ export function RendezVous() {
                                              newLocs[0] = { ...newLocs[0], phone: e.target.value }
                                              setEditingEvent({ ...editingEvent, locations: newLocs })
                                           }}
-                                          className="w-full bg-transparent border-b border-emerald-500/50 py-2 text-white text-sm font-medium focus:border-emerald-500 outline-none focus:ring-0"
+                                          className="w-full bg-transparent border-b border-sky-500/50 py-2 text-slate-900 dark:text-white text-sm font-medium focus:border-sky-500 outline-none focus:ring-0"
                                        />
                                     </div>
                                  )}
@@ -1285,43 +1285,43 @@ export function RendezVous() {
                         </div>
                      </section>
 
-                     <section className="space-y-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] p-8">
-                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><Clock className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Disponibilités & Limites' : 'Availability & Limits'}</h4>
+                     <section className="space-y-6 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-8">
+                        <h4 className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-widest flex items-center gap-2"><Clock className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Disponibilités & Limites' : 'Availability & Limits'}</h4>
                         <div className="grid grid-cols-2 gap-8">
                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? "Marge avant l'événement (min)" : 'Buffer before event (min)'}</label>
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? "Marge avant l'événement (min)" : 'Buffer before event (min)'}</label>
                               <select
                                  value={editingEvent.beforeEventBuffer}
                                  onChange={(e) => setEditingEvent({ ...editingEvent, beforeEventBuffer: parseInt(e.target.value) })}
-                                 className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
+                                 className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium outline-none cursor-pointer"
                               >
                                  <option value={0}>{lang === 'fr' ? 'Aucune' : 'None'}</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
                               </select>
                            </div>
                            <div className="space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? "Marge après l'événement (min)" : 'Buffer after event (min)'}</label>
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? "Marge après l'événement (min)" : 'Buffer after event (min)'}</label>
                               <select
                                  value={editingEvent.afterEventBuffer}
                                  onChange={(e) => setEditingEvent({ ...editingEvent, afterEventBuffer: parseInt(e.target.value) })}
-                                 className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
+                                 className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium outline-none cursor-pointer"
                               >
                                  <option value={0}>{lang === 'fr' ? 'Aucune' : 'None'}</option><option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option><option value={30}>30 min</option><option value={60}>1h</option>
                               </select>
                            </div>
 
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Préavis minimum' : 'Minimum notice'}</label>
-                              <div className="flex border-b border-white/10 focus-within:border-emerald-500 transition-colors">
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Préavis minimum' : 'Minimum notice'}</label>
+                              <div className="flex border-b border-slate-200 dark:border-white/10 focus-within:border-sky-500 transition-colors">
                                  <input
                                     type="number"
                                     value={editingEvent.minimumBookingNotice}
                                     onChange={(e) => setEditingEvent({ ...editingEvent, minimumBookingNotice: parseInt(e.target.value) })}
-                                    className="w-20 bg-transparent py-2 px-1 text-white font-medium outline-none focus:ring-0"
+                                    className="w-20 bg-transparent py-2 px-1 text-slate-900 dark:text-white font-medium outline-none focus:ring-0"
                                  />
                                  <select
                                     value={noticeUnit}
                                     onChange={(e) => setNoticeUnit(e.target.value as 'minutes' | 'hours')}
-                                    className="flex-1 bg-transparent py-2 px-1 text-white font-medium outline-none cursor-pointer"
+                                    className="flex-1 bg-transparent py-2 px-1 text-slate-900 dark:text-white font-medium outline-none cursor-pointer"
                                  >
                                     <option value="minutes">Minutes</option>
                                     <option value="hours">{lang === 'fr' ? 'Heures' : 'Hours'}</option>
@@ -1330,11 +1330,11 @@ export function RendezVous() {
                            </div>
 
                            <div className="col-span-2 md:col-span-1 space-y-1">
-                              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{lang === 'fr' ? 'Fréquence des créneaux' : 'Slot frequency'}</label>
+                              <label className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-neutral-500 font-bold">{lang === 'fr' ? 'Fréquence des créneaux' : 'Slot frequency'}</label>
                               <select
                                  value={editingEvent.slotInterval || 'default'}
                                  onChange={(e) => setEditingEvent({ ...editingEvent, slotInterval: e.target.value === 'default' ? null : parseInt(e.target.value) })}
-                                 className="w-full bg-transparent border-b border-white/10 focus:border-emerald-500 transition-colors py-2 text-white font-medium outline-none cursor-pointer"
+                                 className="w-full bg-transparent border-b border-slate-200 dark:border-white/10 focus:border-sky-500 transition-colors py-2 text-slate-900 dark:text-white font-medium outline-none cursor-pointer"
                               >
                                  <option value="default">{lang === 'fr' ? 'Par défaut (Durée)' : 'Default (Duration)'}</option>
                                  <option value={15}>15 min</option><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
@@ -1343,12 +1343,12 @@ export function RendezVous() {
                         </div>
                      </section>
 
-                     <div className="p-6 rounded-2xl bg-white/5 border border-white/5 flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                     <div className="p-6 rounded-2xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
                         <div>
-                           <p className="text-sm text-white/60 font-medium">{lang === 'fr' ? 'Besoin de plus de réglages ?' : 'Need more settings?'}</p>
-                           <p className="text-xs text-white/40 mt-1">{lang === 'fr' ? "Pour les règles avancées (questions, paiements, workflows), utilisez l'interface native." : 'For advanced rules (questions, payments, workflows), use the native interface.'}</p>
-                           <a href={`https://app.cal.com/event-types/${editingEvent.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 mt-2 hover:underline">
+                           <p className="text-sm text-slate-500 dark:text-neutral-400 font-medium">{lang === 'fr' ? 'Besoin de plus de réglages ?' : 'Need more settings?'}</p>
+                           <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1">{lang === 'fr' ? "Pour les règles avancées (questions, paiements, workflows), utilisez l'interface native." : 'For advanced rules (questions, payments, workflows), use the native interface.'}</p>
+                           <a href={`https://app.cal.com/event-types/${editingEvent.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 dark:text-sky-400 mt-2 hover:underline">
                               {lang === 'fr' ? 'Ouvrir les paramètres avancés' : 'Open advanced settings'} <ExternalLink className="h-3 w-3" />
                            </a>
                         </div>
@@ -1357,8 +1357,8 @@ export function RendezVous() {
                   </div>
 
                   <div className="mt-10 flex gap-4">
-                     <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3.5 rounded-full font-bold text-white/40 hover:text-white hover:bg-white/5 transition-all border border-transparent hover:border-white/[0.08]">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
-                     <button onClick={handleUpdateEvent} disabled={isUpdatingEvent} className="flex-1 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20">
+                     <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3.5 rounded-full font-bold text-slate-400 dark:text-neutral-500 hover:text-slate-900 hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
+                     <button onClick={handleUpdateEvent} disabled={isUpdatingEvent} className="flex-1 py-3.5 rounded-full bg-sky-600 hover:bg-sky-600 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20">
                         {isUpdatingEvent ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {lang === 'fr' ? 'Enregistrer' : 'Save'}
                      </button>
                   </div>
@@ -1370,19 +1370,19 @@ export function RendezVous() {
          {/* Modal Détails (Enrichi) */}
          {selectedMeeting && (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 text-left">
-               <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.08] bg-[#1a1a1a] p-10 shadow-[0_20px_40px_rgba(0,0,0,0.2)] custom-scrollbar">
+               <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-10 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] custom-scrollbar">
                   <div className="mb-10 flex items-center justify-between">
-                     <h2 className="text-2xl font-extrabold text-white">{lang === 'fr' ? "Détails de l'appel" : 'Call details'}</h2>
-                     <button onClick={() => setSelectedMeeting(null)} className="rounded-xl p-2.5 hover:bg-white/5 text-white/40 transition-all"><X className="h-5 w-5" /></button>
+                     <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">{lang === 'fr' ? "Détails de l'appel" : 'Call details'}</h2>
+                     <button onClick={() => setSelectedMeeting(null)} className="rounded-xl p-2.5 hover:bg-slate-100 text-slate-400 dark:text-neutral-500 transition-all"><X className="h-5 w-5" /></button>
                   </div>
                   <div className="space-y-4">
                      {/* Header: Contact + Status */}
-                     <div className="p-5 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
+                     <div className="p-5 rounded-2xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                           <div className="h-12 w-12 rounded-xl bg-emerald-500 flex items-center justify-center text-xl font-bold text-white">{selectedMeeting.contact?.charAt(0)}</div>
+                           <div className="h-12 w-12 rounded-xl bg-sky-600 flex items-center justify-center text-xl font-bold text-white">{selectedMeeting.contact?.charAt(0)}</div>
                            <div>
-                              <p className="text-lg font-bold text-white">{maskData(selectedMeeting.contact, 'name')}</p>
-                              <p className="text-sm text-white/40">{getMeetingLocation(selectedMeeting)}</p>
+                              <p className="text-lg font-bold text-slate-900 dark:text-white">{maskData(selectedMeeting.contact, 'name')}</p>
+                              <p className="text-sm text-slate-400 dark:text-neutral-500">{getMeetingLocation(selectedMeeting)}</p>
                            </div>
                         </div>
                         <div className="relative">
@@ -1395,23 +1395,23 @@ export function RendezVous() {
 
                      {/* Email + Phone */}
                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-                           <p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Mail size={10} /> Email</p>
-                           <p className="text-white font-bold truncate text-sm">{maskData(selectedMeeting.email || (lang === 'fr' ? 'Non renseigné' : 'Not provided'), 'email')}</p>
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                           <p className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase mb-1 flex items-center gap-2"><Mail size={10} /> Email</p>
+                           <p className="text-slate-900 dark:text-white font-bold truncate text-sm">{maskData(selectedMeeting.email || (lang === 'fr' ? 'Non renseigné' : 'Not provided'), 'email')}</p>
                         </div>
-                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-                           <p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Phone size={10} /> {lang === 'fr' ? 'Téléphone' : 'Phone'}</p>
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                           <p className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase mb-1 flex items-center gap-2"><Phone size={10} /> {lang === 'fr' ? 'Téléphone' : 'Phone'}</p>
                            <div className="flex items-center gap-2">
-                              <p className="text-white font-bold text-sm flex-1 truncate">{maskData(selectedMeeting.phone || (lang === 'fr' ? 'Non renseigné' : 'Not provided'), 'phone')}</p>
+                              <p className="text-slate-900 dark:text-white font-bold text-sm flex-1 truncate">{maskData(selectedMeeting.phone || (lang === 'fr' ? 'Non renseigné' : 'Not provided'), 'phone')}</p>
                               {selectedMeeting.phone && (
                                  <a
                                     href={`https://wa.me/${selectedMeeting.phone.replace(/[\s\-\(\)]/g, '')}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-green-600 hover:bg-green-500 transition-colors shadow-lg shadow-green-600/20"
+                                    className="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-sky-600 hover:bg-sky-600 transition-colors shadow-lg shadow-sky-500/20"
                                     title={lang === 'fr' ? "Ouvrir WhatsApp" : "Open WhatsApp"}
                                  >
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4 text-white fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                                    <svg viewBox="0 0 24 24" className="h-4 w-4 text-slate-900 dark:text-white fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                                  </a>
                               )}
                            </div>
@@ -1420,27 +1420,27 @@ export function RendezVous() {
 
                      {/* Date + Heure */}
                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]"><p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Calendar size={10} /> Date</p><p className="text-white font-bold">{safeFormat(selectedMeeting.date, 'dd MMMM yyyy')}</p></div>
-                        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]"><p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Clock size={10} /> {lang === 'fr' ? 'Heure' : 'Time'}</p><p className="text-white font-bold">{selectedMeeting.time}</p></div>
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10"><p className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase mb-1 flex items-center gap-2"><Calendar size={10} /> Date</p><p className="text-slate-900 dark:text-white font-bold">{safeFormat(selectedMeeting.date, 'dd MMMM yyyy')}</p></div>
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10"><p className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase mb-1 flex items-center gap-2"><Clock size={10} /> {lang === 'fr' ? 'Heure' : 'Time'}</p><p className="text-slate-900 dark:text-white font-bold">{selectedMeeting.time}</p></div>
                      </div>
 
                      {/* Lieu / Lien visio */}
-                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-                        <p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><MapPin size={10} /> {lang === 'fr' ? 'Lieu' : 'Location'}</p>
+                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase mb-1 flex items-center gap-2"><MapPin size={10} /> {lang === 'fr' ? 'Lieu' : 'Location'}</p>
                         {(() => {
                            const videoLink = selectedMeeting.video_link || selectedMeeting.location;
                            const isVideoUrl = videoLink && (videoLink.startsWith('http') || videoLink.startsWith('https'));
                            if (isVideoUrl) {
-                              return <a href={videoLink} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 font-bold text-sm truncate block underline">{videoLink}</a>;
+                              return <a href={videoLink} target="_blank" rel="noopener noreferrer" className="text-sky-600 dark:text-sky-400 hover:text-sky-700 font-bold text-sm truncate block underline">{videoLink}</a>;
                            }
-                           return <p className="text-white font-bold text-sm">{selectedMeeting.location || (lang === 'fr' ? 'Non renseigné' : 'Not provided')}</p>;
+                           return <p className="text-slate-900 dark:text-white font-bold text-sm">{selectedMeeting.location || (lang === 'fr' ? 'Non renseigné' : 'Not provided')}</p>;
                         })()}
                      </div>
 
                      {/* Notes */}
-                     <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-                        <p className="text-[10px] font-bold text-white/40 uppercase mb-1 flex items-center gap-2"><Pencil size={10} /> Notes</p>
-                        <p className="text-white text-sm whitespace-pre-wrap">{selectedMeeting.notes || selectedMeeting.description || (lang === 'fr' ? 'Aucune note' : 'No notes')}</p>
+                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase mb-1 flex items-center gap-2"><Pencil size={10} /> Notes</p>
+                        <p className="text-slate-900 dark:text-white text-sm whitespace-pre-wrap">{selectedMeeting.notes || selectedMeeting.description || (lang === 'fr' ? 'Aucune note' : 'No notes')}</p>
                      </div>
                   </div>
 
@@ -1456,7 +1456,7 @@ export function RendezVous() {
                            // 2. Ouvrir CallRoom dans CloseOS
                            const contactName = selectedMeeting.contact || 'Appel';
                            navigate(`/live-call?name=${encodeURIComponent(contactName)}&from=/rendez-vous`);
-                        }} className="w-full flex items-center justify-center gap-2 rounded-full bg-emerald-500 py-3.5 font-bold text-black hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 transition-all">
+                        }} className="w-full flex items-center justify-center gap-2 rounded-full bg-sky-600 py-3.5 font-bold text-white hover:bg-sky-600 shadow-lg shadow-sky-500/20 transition-all">
                            <Video className="h-5 w-5" /> {lang === 'fr' ? "Rejoindre l'appel" : 'Join the call'}
                         </button>
                      )}
@@ -1466,7 +1466,7 @@ export function RendezVous() {
                            <button
                               onClick={handleRescheduleBooking}
                               disabled={!selectedMeeting.cal_booking_uid}
-                              className="flex items-center justify-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 py-3 font-bold text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="flex items-center justify-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 py-3 font-bold text-amber-600 hover:bg-amber-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               title={!selectedMeeting.cal_booking_uid ? (lang === 'fr' ? 'Pas de lien Cal.com disponible' : 'No Cal.com link available') : (lang === 'fr' ? 'Reporter ce rendez-vous' : 'Reschedule this appointment')}
                            >
                               <CalendarClock className="h-4 w-4" /> {lang === 'fr' ? 'Reporter' : 'Reschedule'}
@@ -1474,13 +1474,13 @@ export function RendezVous() {
                            <button
                               onClick={handleCancelBooking}
                               disabled={isCancellingBooking}
-                              className="flex items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 py-3 font-bold text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                              className="flex items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 py-3 font-bold text-red-600 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                            >
                               {isCancellingBooking ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />} {lang === 'fr' ? 'Annuler' : 'Cancel'}
                            </button>
                         </div>
                      )}
-                     <button onClick={() => setSelectedMeeting(null)} className="w-full rounded-full border border-white/[0.08] bg-white/[0.02] py-3.5 font-bold text-white/60 hover:bg-white/5 transition-all">{lang === 'fr' ? 'Fermer' : 'Close'}</button>
+                     <button onClick={() => setSelectedMeeting(null)} className="w-full rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 py-3.5 font-bold text-slate-500 dark:text-neutral-400 hover:bg-slate-100 transition-all">{lang === 'fr' ? 'Fermer' : 'Close'}</button>
                   </div>
                </div>
             </div>

@@ -55,15 +55,15 @@ export default function CrmCloser() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
-    document.title = 'CRM Closer — Pipeline de vente pour closers | CloseOS';
+    document.title = 'CRM Closer, Pipeline de vente pour closers | CloseOS';
     document.querySelector('meta[name="description"]')?.setAttribute('content', "Le CRM conçu pour les closers : pipeline visuel, suivi des prospects, historique d'appels, et KPIs de closing. Gérez toute votre activité dans un seul outil.");
     document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/fonctionnalites/crm-closer');
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/fonctionnalites/crm-closer');
-    document.getElementById('og-title')?.setAttribute('content', 'CRM Closer — Pipeline de vente pour closers | CloseOS');
+    document.getElementById('og-title')?.setAttribute('content', 'CRM Closer, Pipeline de vente pour closers | CloseOS');
     document.getElementById('og-description')?.setAttribute('content', "Le CRM conçu pour les closers : pipeline visuel, suivi des prospects, historique d'appels, et KPIs de closing.");
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/fonctionnalites/crm-closer');
-    document.getElementById('tw-title')?.setAttribute('content', 'CRM Closer — Pipeline de vente pour closers | CloseOS');
-    document.getElementById('tw-description')?.setAttribute('content', 'Pipeline visuel, callroom VoIP, facturation et KPIs dans un seul CRM.');
+    document.getElementById('tw-title')?.setAttribute('content', 'CRM Closer, Pipeline de vente pour closers | CloseOS');
+    document.getElementById('tw-description')?.setAttribute('content', 'Pipeline visuel, callroom intégrée, facturation et KPIs dans un seul CRM.');
     document.documentElement.lang = 'fr';
 
     document.querySelectorAll('script[data-crm-ld]').forEach(el => el.remove());
@@ -109,6 +109,7 @@ export default function CrmCloser() {
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <Link to="/landing" className="hover:text-white transition-colors">Sales</Link>
             <Link to="/business" className="hover:text-white transition-colors">Business</Link>
+            <Link to="/sign" className="hover:text-white transition-colors">Sign</Link>
             <Link to="/fonctionnalites" className="hover:text-white transition-colors">Fonctionnalités</Link>
             <Link to="/tarifs" className="hover:text-white transition-colors">Tarifs</Link>
           </div>
@@ -130,7 +131,7 @@ export default function CrmCloser() {
             className="max-w-3xl"
           >
             <motion.h1 variants={fadeUp} className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-              CRM Closer — Le pipeline de vente conçu pour les{' '}
+              CRM Closer, Le pipeline de vente conçu pour les{' '}
               <span className="text-[#00E676]">closers</span>
             </motion.h1>
             <motion.p variants={fadeUp} className="mt-6 text-lg leading-relaxed text-slate-400 sm:text-xl">
@@ -209,7 +210,7 @@ export default function CrmCloser() {
                 {
                   icon: Phone,
                   title: "Callroom intégrée, pas d'outil d'appel séparé",
-                  text: "Avec un CRM classique, vous devez utiliser un outil tiers pour vos appels (Aircall, Ringover, votre téléphone). Avec CloseOS, la callroom VoIP est intégrée. Vous appelez directement depuis la fiche prospect, l'appel est automatiquement enregistré et loggé.",
+                  text: "Avec un CRM classique, vous devez utiliser un outil tiers pour vos appels (Aircall, Ringover, votre téléphone). Avec CloseOS, la callroom est intégrée. Vous appelez directement depuis la fiche prospect, l'appel est automatiquement enregistré et loggé.",
                 },
                 {
                   icon: CreditCard,
@@ -224,7 +225,7 @@ export default function CrmCloser() {
                 {
                   icon: Globe,
                   title: 'Interface en français',
-                  text: "CloseOS est conçu pour le marché francophone. L'interface, le support, la documentation — tout est en français. Pas besoin de naviguer dans un outil en anglais.",
+                  text: "CloseOS est conçu pour le marché francophone. L'interface, le support, la documentation, tout est en français. Pas besoin de naviguer dans un outil en anglais.",
                 },
               ].map((item, i) => (
                 <motion.div key={i} variants={fadeUp} className="flex gap-5">
@@ -255,7 +256,7 @@ export default function CrmCloser() {
               Les intégrations CRM
             </motion.h2>
             <motion.p variants={fadeUp} className="mt-4 max-w-2xl text-lg text-slate-400">
-              CloseOS n'est pas un silo. Votre infopreneur utilise HubSpot ? Synchronisez. Votre équipe est sur Pipedrive ? Bidirectionnel. GoHighLevel, Airtable, Systeme.io — tout se connecte.
+              CloseOS n'est pas un silo. Votre infopreneur utilise HubSpot ? Synchronisez. Votre équipe est sur Pipedrive ? Bidirectionnel. GoHighLevel, Airtable, Systeme.io, tout se connecte.
             </motion.p>
 
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -300,7 +301,7 @@ export default function CrmCloser() {
                   Vous travaillez seul ou avec 2-3 infopreneurs. Vous avez besoin d'un outil simple pour suivre vos prospects, passer vos appels et facturer.
                 </p>
                 <Link to="/tarifs" className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-[#00E676] hover:underline">
-                  CloseOS Sales a 39€/mois <ArrowRight className="h-4 w-4" />
+                  CloseOS Sales dès 18€/mois <ArrowRight className="h-4 w-4" />
                 </Link>
               </motion.div>
 
@@ -313,7 +314,7 @@ export default function CrmCloser() {
                   Vous avez des closers et setters. Vous avez besoin de leur attribuer des leads, suivre leurs performances et piloter vos campagnes.
                 </p>
                 <Link to="/tarifs" className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-[#00E676] hover:underline">
-                  CloseOS Business a 59€/mois <ArrowRight className="h-4 w-4" />
+                  CloseOS Business dès 42€/mois <ArrowRight className="h-4 w-4" />
                 </Link>
               </motion.div>
             </div>
@@ -378,6 +379,7 @@ export default function CrmCloser() {
               <Link to="/fonctionnalites" className="hover:text-white transition-colors">Toutes les fonctionnalités</Link>
               <Link to="/landing" className="hover:text-white transition-colors">CloseOS Sales</Link>
               <Link to="/comparatifs/alternative-iclosed" className="hover:text-white transition-colors">Alternative iClosed</Link>
+              <Link to="/sign" className="hover:text-white transition-colors">CloseOS Sign</Link>
             </motion.div>
           </motion.div>
         </div>

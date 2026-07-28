@@ -1511,17 +1511,27 @@ function IndividualView({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {absences.map(absence => (
-                    <div key={absence.id} className="flex items-center gap-3 p-2 bg-stone-50 dark:bg-neutral-800 rounded-xl">
-                      <div className="w-2 h-2 rounded-full bg-[#ffb95f] shrink-0" />
+                  {absences.map(absence => {
+                    const isPast = new Date(absence.end_date + 'T23:59:59') < new Date()
+                    return (
+                    <div key={absence.id} className={cn('flex items-center gap-3 p-2 rounded-xl', isPast ? 'bg-stone-100 dark:bg-neutral-800/50 opacity-60' : 'bg-stone-50 dark:bg-neutral-800')}>
+                      <div className={cn('w-2 h-2 rounded-full shrink-0', isPast ? 'bg-stone-300 dark:bg-neutral-600' : 'bg-[#ffb95f]')} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-stone-900 dark:text-white truncate">{absence.reason || absence.type || t.team_absence_label}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-stone-900 dark:text-white truncate">{absence.reason || absence.type || t.team_absence_label}</p>
+                          {isPast && (
+                            <span className="rounded-full bg-stone-200 dark:bg-white/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-stone-500 dark:text-neutral-400 shrink-0">
+                              {lang === 'en' ? 'Past' : 'Passé'}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-stone-500 dark:text-neutral-400">
                           {formatDateLocalized(absence.start_date, lang)} — {formatDateLocalized(absence.end_date, lang)}
                         </p>
                       </div>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>

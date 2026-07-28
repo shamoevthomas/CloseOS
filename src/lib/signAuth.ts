@@ -11,7 +11,10 @@ export type SignOwner = { id: string; email: string; name: string };
 /** Vrai si l'utilisateur auth possède un compte Sign (ligne sign_users = propriétaire Sign). */
 async function hasSignAccess(userId: string): Promise<boolean> {
   const { data } = await signSupabase.from('sign_users').select('id').eq('id', userId).maybeSingle();
-  return !!data;
+  if (data) return true;
+  // Un équipier actif (compte membre d'équipe) a aussi accès à Sign (espace dédié).
+  const { data: m } = await signSupabase.from('sign_team_members').select('id').eq('user_id', userId).eq('status', 'active').limit(1).maybeSingle();
+  return !!m;
 }
 
 /** Connexion email + mot de passe. Refuse si pas de compte Sign (ex. compte Sales sans Business). */

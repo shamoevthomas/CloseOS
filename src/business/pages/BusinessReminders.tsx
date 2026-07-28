@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Bell, Trash2, Check, Clock, AlertTriangle, CheckCircle2, Loader2, Plus, X, Search, User, ChevronDown, Users, Calendar } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
@@ -14,6 +14,7 @@ interface Reminder {
   user_id: string
   call_id: number | null
   prospect_id: number | null
+  business_prospect_id: number | null
   title: string
   description: string | null
   reminder_date: string
@@ -75,6 +76,8 @@ export function BusinessReminders() {
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null)
   const [viewProspect, setViewProspect] = useState<number | null>(null)
   const [filterMember, setFilterMember] = useState<string>('all')
+  const [showOverdueOnly, setShowOverdueOnly] = useState(false)
+  const tableRef = useRef<HTMLDivElement>(null)
   const [filterDate, setFilterDate] = useState<string>('')
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
 
@@ -140,7 +143,7 @@ export function BusinessReminders() {
         title: data.title,
         description: data.description || null,
         reminder_date: data.reminder_date,
-        prospect_id: data.prospect_id,
+        business_prospect_id: data.prospect_id,
         is_done: false,
       }
       if (data.assigned_to) insertPayload.assigned_to = data.assigned_to
@@ -164,6 +167,9 @@ export function BusinessReminders() {
     const p = prospects.find(pr => pr.id === prospectId)
     return p ? (p.contact || p.company || t.reminders_prospect_fallback) : null
   }
+
+  // Un rappel Business est lié via business_prospect_id (fiche) OU prospect_id (legacy page Rappels)
+  const reminderProspectId = (r: Reminder): number | null => r.business_prospect_id ?? r.prospect_id
 
   const getMemberName = (memberId?: string): string | null => {
     if (!memberId) return null
@@ -193,11 +199,17 @@ export function BusinessReminders() {
       const reminderDate = fromUTC(r.reminder_date, userTimezone).date
       if (reminderDate !== filterDate) return false
     }
+    if (showOverdueOnly && getStatus(r) !== 'overdue') return false
     return true
   })
 
-  const overdueCount = filteredReminders.filter(r => getStatus(r) === 'overdue').length
-  const hasActiveFilters = filterMember !== 'all' || filterDate !== ''
+  // Total en retard (ignore le filtre « en retard uniquement » pour garder le badge stable)
+  const overdueCount = sorted.filter(r => {
+    if (canAssign && filterMember !== 'all' && r.assigned_to !== filterMember && r.created_by_member_id !== filterMember) return false
+    if (filterDate) { const rd = fromUTC(r.reminder_date, userTimezone).date; if (rd !== filterDate) return false }
+    return getStatus(r) === 'overdue'
+  }).length
+  const hasActiveFilters = filterMember !== 'all' || filterDate !== '' || showOverdueOnly
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-stone-400 dark:text-neutral-500" /></div>
@@ -239,8 +251,15 @@ export function BusinessReminders() {
               {t.reminders_overdue_alert}
             </p>
           </div>
-          <button className="px-6 py-2.5 bg-red-800 text-white rounded-full text-xs font-bold hover:bg-red-900 transition-colors shrink-0 ml-4">
-            {t.reminders_view_urgent}
+          <button
+            onClick={() => {
+              const next = !showOverdueOnly
+              setShowOverdueOnly(next)
+              if (next) requestAnimationFrame(() => tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+            }}
+            className="px-6 py-2.5 bg-red-800 text-white rounded-full text-xs font-bold hover:bg-red-900 transition-colors shrink-0 ml-4"
+          >
+            {showOverdueOnly ? t.reminders_view_all : t.reminders_view_urgent}
           </button>
         </div>
       )}
@@ -286,7 +305,7 @@ export function BusinessReminders() {
             <>
               <div className="h-6 w-px bg-stone-300/30 dark:bg-neutral-700/30" />
               <button
-                onClick={() => { setFilterMember('all'); setFilterDate('') }}
+                onClick={() => { setFilterMember('all'); setFilterDate(''); setShowOverdueOnly(false) }}
                 className="text-xs text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white font-semibold transition-colors"
               >
                 {t.reminders_filter_reset}
@@ -320,7 +339,8 @@ export function BusinessReminders() {
         </div>
       ) : (
         <div
-          className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden"
+          ref={tableRef}
+          className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden scroll-mt-6"
           style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}
         >
           {/* Table header — desktop */}
@@ -340,7 +360,7 @@ export function BusinessReminders() {
             {filteredReminders.map(reminder => {
               const status = getStatus(reminder)
               const config = statusConfig[status]
-              const prospectName = getProspectName(reminder.prospect_id)
+              const prospectName = getProspectName(reminderProspectId(reminder))
               const isLoading = actionLoading === reminder.id
               const { date: fmtDate, time: fmtTime, isOverdue } = formatReminderDate(reminder.reminder_date, userTimezone, t, lang)
 
@@ -555,15 +575,15 @@ export function BusinessReminders() {
               </div>
 
               {/* Linked prospect */}
-              {selectedReminder.prospect_id && (
+              {reminderProspectId(selectedReminder) && (
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">{t.reminders_label_linked_prospect}</label>
                   <button
-                    onClick={() => { setViewProspect(selectedReminder.prospect_id) }}
+                    onClick={() => { setViewProspect(reminderProspectId(selectedReminder)) }}
                     className="flex items-center gap-2 px-4 py-2.5 bg-stone-50 dark:bg-neutral-800 hover:bg-stone-100 dark:hover:bg-neutral-700 rounded-xl transition-colors w-full text-left"
                   >
                     <User className="h-4 w-4 text-stone-500 dark:text-neutral-400" strokeWidth={1.5} />
-                    <span className="text-sm font-semibold text-stone-900 dark:text-white">{getProspectName(selectedReminder.prospect_id) || t.reminders_prospect_fallback}</span>
+                    <span className="text-sm font-semibold text-stone-900 dark:text-white">{getProspectName(reminderProspectId(selectedReminder)) || t.reminders_prospect_fallback}</span>
                     <span className="ml-auto text-xs text-stone-400 dark:text-neutral-500">{t.reminders_view_prospect}</span>
                   </button>
                 </div>

@@ -54,6 +54,7 @@ export interface BusinessTranslations {
   sidebar_crm: string;
   sidebar_pipeline: string;
   sidebar_campaigns: string;
+  sidebar_forms: string;
   sidebar_acquisition: string;
   sidebar_objectives: string;
   sidebar_formulas: string;
@@ -838,6 +839,18 @@ export interface BusinessTranslations {
   reminders_status_upcoming: string;
   reminders_status_overdue: string;
   reminders_status_done: string;
+  reminders_col_title: string;
+  reminders_col_description: string;
+  reminders_col_datetime: string;
+  reminders_col_assigned: string;
+  reminders_col_linked: string;
+  reminders_col_status: string;
+  reminders_col_actions: string;
+  reminders_reminder: string;
+  reminders_reminders: string;
+  reminders_total: string;
+  reminders_overdue_count: string;
+  reminders_filter_team_all: string;
   reminders_created_toast: string;
   reminders_create_error: string;
   reminders_page_title: string;
@@ -845,6 +858,8 @@ export interface BusinessTranslations {
   reminders_late_count: string;
   reminders_overdue_alert: string;
   reminders_view_urgent: string;
+  reminders_view_all: string;
+  reminders_filter_reset: string;
   reminders_team_all: string;
   reminders_reset_filters: string;
   reminders_new_reminder: string;
@@ -2534,6 +2549,7 @@ export const fr: BusinessTranslations = {
   sidebar_crm: 'CRM',
   sidebar_pipeline: 'Pipeline',
   sidebar_campaigns: 'Campagnes',
+  sidebar_forms: 'Formulaires',
   sidebar_acquisition: 'Acquisition',
   sidebar_objectives: 'Objectifs',
   sidebar_formulas: 'Formules',
@@ -3228,9 +3244,21 @@ export const fr: BusinessTranslations = {
   reminders_completed: 'Termine',
   reminders_tomorrow: 'Demain',
   reminders_yesterday: 'Hier',
-  reminders_status_upcoming: 'Upcoming',
+  reminders_status_upcoming: 'À venir',
   reminders_status_overdue: 'Passé',
   reminders_status_done: 'Fait',
+  reminders_col_title: 'Rappel',
+  reminders_col_description: 'Description',
+  reminders_col_datetime: 'Date & heure',
+  reminders_col_assigned: 'Assigné à',
+  reminders_col_linked: 'Prospect',
+  reminders_col_status: 'Statut',
+  reminders_col_actions: 'Actions',
+  reminders_reminder: 'rappel',
+  reminders_reminders: 'rappels',
+  reminders_total: 'au total',
+  reminders_overdue_count: 'en retard',
+  reminders_filter_team_all: 'Tous les membres',
   reminders_created_toast: 'Rappel créé',
   reminders_create_error: 'Impossible de créer le rappel',
   reminders_page_title: 'Rappels',
@@ -3238,6 +3266,8 @@ export const fr: BusinessTranslations = {
   reminders_late_count: 'en retard',
   reminders_overdue_alert: 'Attention : Vous avez des rappels critiques qui n\'ont pas été traités depuis plus de 24h.',
   reminders_view_urgent: 'Voir les urgences',
+  reminders_view_all: 'Voir tout',
+  reminders_filter_reset: 'Réinitialiser',
   reminders_team_all: 'Équipe : Tous',
   reminders_reset_filters: 'Réinitialiser',
   reminders_new_reminder: 'Nouveau rappel',
@@ -5576,6 +5606,7 @@ export const en: BusinessTranslations = {
   sidebar_crm: 'CRM',
   sidebar_pipeline: 'Pipeline',
   sidebar_campaigns: 'Campaigns',
+  sidebar_forms: 'Forms',
   sidebar_acquisition: 'Acquisition',
   sidebar_objectives: 'Objectives',
   sidebar_formulas: 'Plans',
@@ -6356,6 +6387,18 @@ export const en: BusinessTranslations = {
   reminders_status_upcoming: 'Upcoming',
   reminders_status_overdue: 'Overdue',
   reminders_status_done: 'Done',
+  reminders_col_title: 'Reminder',
+  reminders_col_description: 'Description',
+  reminders_col_datetime: 'Date & time',
+  reminders_col_assigned: 'Assigned to',
+  reminders_col_linked: 'Prospect',
+  reminders_col_status: 'Status',
+  reminders_col_actions: 'Actions',
+  reminders_reminder: 'reminder',
+  reminders_reminders: 'reminders',
+  reminders_total: 'total',
+  reminders_overdue_count: 'overdue',
+  reminders_filter_team_all: 'All members',
   reminders_created_toast: 'Reminder created',
   reminders_create_error: 'Unable to create reminder',
   reminders_page_title: 'Reminders',
@@ -6363,6 +6406,8 @@ export const en: BusinessTranslations = {
   reminders_late_count: 'overdue',
   reminders_overdue_alert: 'Warning: You have critical reminders that have not been handled for over 24h.',
   reminders_view_urgent: 'View urgent',
+  reminders_view_all: 'Show all',
+  reminders_filter_reset: 'Reset',
   reminders_team_all: 'Team: All',
   reminders_reset_filters: 'Reset',
   reminders_new_reminder: 'New reminder',

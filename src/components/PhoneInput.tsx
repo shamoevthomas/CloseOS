@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Search } from 'lucide-react';
 import { COUNTRY_CODES, flagOf } from '../lib/countryCodes';
-import { AsYouType } from 'libphonenumber-js';
+import { AsYouType, getExampleNumber, type CountryCode } from 'libphonenumber-js';
+import examples from 'libphonenumber-js/examples.mobile.json';
 
 /** Formate le numéro NATIONAL (sans indicatif) avec les espaces du pays, déduit du dial. */
 function formatNational(digits: string, dial: string): string {
@@ -25,7 +26,7 @@ export default function PhoneInput({
   value,
   onChange,
   defaultIso = 'FR',
-  placeholder = '6 12 34 56 78',
+  placeholder,
   variant = 'dark',
   fontSize,
 }: {
@@ -33,10 +34,11 @@ export default function PhoneInput({
   onChange: (v: string) => void;
   defaultIso?: string;
   placeholder?: string;
-  variant?: 'dark' | 'plain';
+  variant?: 'dark' | 'plain' | 'sales';
   fontSize?: number;
 }) {
   const plain = variant === 'plain';
+  const sales = variant === 'sales';
   const [iso, setIso] = useState(defaultIso);
   const [num, setNum] = useState('');
   const [open, setOpen] = useState(false);
@@ -47,6 +49,16 @@ export default function PhoneInput({
   const dropRef = useRef<HTMLDivElement>(null);
 
   const country = COUNTRY_CODES.find((c) => c.iso === iso) ?? COUNTRY_CODES.find((c) => c.iso === 'FR')!;
+
+  // Exemple de numéro dynamique selon le pays sélectionné (formaté comme la saisie réelle)
+  const examplePlaceholder = useMemo(() => {
+    if (placeholder) return placeholder; // placeholder explicite prioritaire
+    try {
+      const ex = getExampleNumber(country.iso as CountryCode, examples as any);
+      if (ex) return formatNational(ex.nationalNumber, country.dial);
+    } catch { /* pays sans exemple → fallback */ }
+    return '6 12 34 56 78';
+  }, [placeholder, country.iso, country.dial]);
 
   // Réinitialise le numéro local si le parent vide la valeur
   useEffect(() => {
@@ -118,7 +130,11 @@ export default function PhoneInput({
   });
 
   return (
-    <div ref={rootRef} className={plain ? 'relative flex h-full w-full items-center' : 'relative flex gap-2'}>
+    <div ref={rootRef} className={
+      sales
+        ? 'relative flex h-full w-full items-center gap-1 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-2.5 py-2 transition-colors focus-within:border-sky-500'
+        : plain ? 'relative flex h-full w-full items-center' : 'relative flex gap-2'
+    }>
       {/* Sélecteur d'indicatif */}
       <button
         ref={btnRef}
@@ -126,14 +142,16 @@ export default function PhoneInput({
         onClick={() => setOpen((v) => !v)}
         style={plain && fontSize ? { fontSize } : undefined}
         className={
-          plain
+          sales
+            ? 'flex shrink-0 items-center gap-1 pr-1.5 text-sm text-slate-900 dark:text-white outline-none'
+            : plain
             ? 'flex shrink-0 items-center gap-1 px-1.5 text-[#1a1a1a] outline-none'
             : 'flex shrink-0 items-center gap-1.5 rounded border border-[#3A4242] bg-[#191E1E] px-3 py-2.5 text-sm text-white outline-none transition-colors hover:border-[#A1A9A9]'
         }
       >
         <span className="leading-none" style={{ fontSize: plain && fontSize ? fontSize : 16 }}>{flagOf(country.iso)}</span>
-        <span className={plain ? 'text-[#1a1a1a]' : 'text-[#F3F4F6]'}>{country.dial}</span>
-        <ChevronDown className="h-3.5 w-3.5 text-[#A1A9A9]" />
+        <span className={sales ? 'text-slate-900 dark:text-white' : plain ? 'text-[#1a1a1a]' : 'text-[#F3F4F6]'}>{country.dial}</span>
+        <ChevronDown className={sales ? 'h-3.5 w-3.5 text-slate-400' : 'h-3.5 w-3.5 text-[#A1A9A9]'} />
       </button>
 
       {/* Numéro */}
@@ -145,10 +163,12 @@ export default function PhoneInput({
           setNum(formatted);
           emit(country.dial, formatted);
         }}
-        placeholder={placeholder}
+        placeholder={examplePlaceholder}
         style={plain && fontSize ? { fontSize } : undefined}
         className={
-          plain
+          sales
+            ? 'min-w-0 flex-1 bg-transparent px-1 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 dark:placeholder:text-neutral-500'
+            : plain
             ? 'min-w-0 flex-1 bg-transparent px-1 text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/40'
             : 'min-w-0 flex-1 rounded border border-[#3A4242] bg-[#191E1E] px-4 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-[#A1A9A9]/40 focus:border-[#CEFF8F]'
         }
@@ -159,16 +179,20 @@ export default function PhoneInput({
         <div
           ref={dropRef}
           style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
-          className="overflow-hidden rounded-lg border border-[#3A4242] bg-[#222828] shadow-2xl"
+          className={sales
+            ? 'overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-2xl'
+            : 'overflow-hidden rounded-lg border border-[#3A4242] bg-[#222828] shadow-2xl'}
         >
-          <div className="relative border-b border-[#3A4242] p-2">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#A1A9A9]" />
+          <div className={sales ? 'relative border-b border-slate-200 dark:border-white/10 p-2' : 'relative border-b border-[#3A4242] p-2'}>
+            <Search className={sales ? 'pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400' : 'pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#A1A9A9]'} />
             <input
               autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher un pays / indicatif…"
-              className="w-full rounded border border-[#3A4242] bg-[#191E1E] py-2 pl-8 pr-3 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]"
+              className={sales
+                ? 'w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 py-2 pl-8 pr-3 text-sm text-slate-900 dark:text-white outline-none placeholder:text-slate-400 focus:border-sky-500'
+                : 'w-full rounded border border-[#3A4242] bg-[#191E1E] py-2 pl-8 pr-3 text-sm text-white outline-none placeholder:text-[#A1A9A9]/50 focus:border-[#CEFF8F]'}
             />
           </div>
           <ul className="max-h-60 overflow-y-auto py-1">
@@ -177,17 +201,17 @@ export default function PhoneInput({
                 <button
                   type="button"
                   onClick={() => pick(c.iso, c.dial)}
-                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[#191E1E] ${
-                    c.iso === iso ? 'text-[#CEFF8F]' : 'text-[#F3F4F6]'
-                  }`}
+                  className={sales
+                    ? `flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-slate-50 dark:hover:bg-white/5 ${c.iso === iso ? 'text-sky-600 dark:text-sky-400' : 'text-slate-900 dark:text-white'}`
+                    : `flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[#191E1E] ${c.iso === iso ? 'text-[#CEFF8F]' : 'text-[#F3F4F6]'}`}
                 >
                   <span className="text-base leading-none">{flagOf(c.iso)}</span>
                   <span className="flex-1 truncate">{c.name}</span>
-                  <span className="text-[#A1A9A9]">{c.dial}</span>
+                  <span className={sales ? 'text-slate-400' : 'text-[#A1A9A9]'}>{c.dial}</span>
                 </button>
               </li>
             ))}
-            {filtered.length === 0 && <li className="px-3 py-3 text-center text-xs text-[#A1A9A9]">Aucun résultat</li>}
+            {filtered.length === 0 && <li className={sales ? 'px-3 py-3 text-center text-xs text-slate-400' : 'px-3 py-3 text-center text-xs text-[#A1A9A9]'}>Aucun résultat</li>}
           </ul>
         </div>,
         document.body,

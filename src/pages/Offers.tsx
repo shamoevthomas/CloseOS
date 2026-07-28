@@ -71,20 +71,20 @@ export function Offers() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#111111] p-8 md:p-10 overflow-hidden font-sans text-white">
+    <div className="relative min-h-screen bg-transparent p-8 md:p-10 overflow-hidden font-sans text-slate-900 dark:text-white">
 
       {/* Ambient Glows */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
       <div className="relative mx-auto max-w-7xl space-y-12 z-10">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white">
-              {lang === 'fr' ? 'Catalogue' : 'Offers'} <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-300">{lang === 'fr' ? "d'Offres" : 'Catalog'}</span>
+            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-slate-900 dark:text-white">
+              {lang === 'fr' ? 'Catalogue' : 'Offers'} <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-sky-400">{lang === 'fr' ? "d'Offres" : 'Catalog'}</span>
             </h2>
-            <p className="mt-2 text-white/40 text-sm font-medium">
+            <p className="mt-2 text-slate-500 dark:text-neutral-400 text-sm font-medium">
               {activeOffers.length} {lang === 'fr' ? (activeOffers.length > 1 ? 'offres actives' : 'offre active') : (activeOffers.length > 1 ? 'active offers' : 'active offer')} {lang === 'fr' ? 'au total' : 'total'}
             </p>
           </div>
@@ -98,12 +98,12 @@ export function Offers() {
                 className={cn(
                   "flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-bold transition-all shadow-lg",
                   isSyncingHubspot
-                    ? "bg-orange-500/10 border-orange-500/30 text-orange-400 opacity-70"
-                    : "bg-white/[0.03] border-white/[0.08] text-white/60 hover:bg-white/10 hover:border-orange-500/30 hover:text-orange-400"
+                    ? "bg-orange-500/10 border-orange-500/30 text-orange-500 opacity-70"
+                    : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 hover:border-orange-500/30 hover:text-orange-500"
                 )}
                 title={`Prochaine synchro : ${Math.floor(nextSyncSeconds / 60)}:${(nextSyncSeconds % 60).toString().padStart(2, '0')}`}
               >
-                <RefreshCw className={cn("h-4 w-4", isSyncingHubspot && "animate-spin text-orange-400")} />
+                <RefreshCw className={cn("h-4 w-4", isSyncingHubspot && "animate-spin text-orange-500")} />
                 {!isSyncingHubspot && (
                   <span className="hidden lg:inline">{Math.floor(nextSyncSeconds / 60)}:{(nextSyncSeconds % 60).toString().padStart(2, '0')}</span>
                 )}
@@ -119,12 +119,12 @@ export function Offers() {
                 className={cn(
                   "flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-bold transition-all shadow-lg",
                   isSyncingGhl
-                    ? "bg-teal-500/10 border-teal-500/30 text-teal-400 opacity-70"
-                    : "bg-white/[0.03] border-white/[0.08] text-white/60 hover:bg-white/10 hover:border-teal-500/30 hover:text-teal-400"
+                    ? "bg-sky-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400 opacity-70"
+                    : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 hover:border-sky-500/30 hover:text-sky-600"
                 )}
                 title={`Prochaine synchro : ${Math.floor(nextSyncSeconds / 60)}:${(nextSyncSeconds % 60).toString().padStart(2, '0')}`}
               >
-                <RefreshCw className={cn("h-4 w-4", isSyncingGhl && "animate-spin text-teal-400")} />
+                <RefreshCw className={cn("h-4 w-4", isSyncingGhl && "animate-spin text-sky-600 dark:text-sky-400")} />
                 {!isSyncingGhl && (
                   <span className="hidden lg:inline">{Math.floor(nextSyncSeconds / 60)}:{(nextSyncSeconds % 60).toString().padStart(2, '0')}</span>
                 )}
@@ -134,7 +134,7 @@ export function Offers() {
 
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-600/20 active:scale-95"
+              className="flex items-center gap-2 rounded-full bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-sky-500 shadow-lg shadow-sky-600/20 active:scale-95"
             >
               <Plus className="h-5 w-5" />
               {t.add_offer}
@@ -144,9 +144,9 @@ export function Offers() {
 
         {/* Section 1: Offres Actuelles */}
         <div>
-          <h3 className="mb-8 text-xl font-bold text-white flex items-center gap-3">
-            <span className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-              <Briefcase className="h-5 w-5 text-emerald-400" />
+          <h3 className="mb-8 text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            <span className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20">
+              <Briefcase className="h-5 w-5 text-sky-600 dark:text-sky-400" />
             </span>
             {lang === 'fr' ? 'Offres Actuelles' : 'Current Offers'}
           </h3>
@@ -156,47 +156,47 @@ export function Offers() {
                 <div
                   key={offer.id}
                   onClick={() => setSelectedOffer(offer)}
-                  className="group cursor-pointer rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] p-8 transition-all duration-500 hover:bg-white/[0.06] hover:border-emerald-500/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.2),inset_0_0_20px_rgba(16,185,129,0.05)] hover:-translate-y-1 backdrop-blur-[16px] relative overflow-hidden flex flex-col h-full"
+                  className="group cursor-pointer rounded-2xl border-[0.5px] border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-8 transition-all duration-500 hover:bg-slate-50 hover:border-sky-500/30 hover:shadow-[0_20px_40px_rgba(15,23,42,0.12),inset_0_0_20px_rgba(14,165,233,0.05)] hover:-translate-y-1 backdrop-blur-[16px] relative overflow-hidden flex flex-col h-full shadow-sm"
                 >
                   <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none transform group-hover:scale-110 duration-500">
-                    <Briefcase className="w-32 h-32 text-emerald-500" />
+                    <Briefcase className="w-32 h-32 text-sky-500" />
                   </div>
 
                   <div className="mb-8 flex items-start justify-between relative z-10">
-                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center ring-1 ring-emerald-500/30 group-hover:ring-emerald-500/50 transition-all">
-                      <Briefcase className="h-6 w-6 text-emerald-400" />
+                    <div className="h-12 w-12 rounded-2xl bg-sky-500/20 flex items-center justify-center ring-1 ring-sky-500/30 group-hover:ring-sky-500/50 transition-all">
+                      <Briefcase className="h-6 w-6 text-sky-600 dark:text-sky-400" />
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-[10px] font-black text-emerald-400 uppercase tracking-widest shadow-sm">
+                      <span className="rounded-full bg-sky-500/10 border border-sky-500/20 px-3 py-1 text-[10px] font-black text-sky-700 dark:text-sky-400 uppercase tracking-widest shadow-sm">
                         Active
                       </span>
                     </div>
                   </div>
 
                   <div className="relative z-10 flex flex-col flex-1">
-                    <h4 className="mb-2 text-xl font-black text-white group-hover:text-emerald-400 transition-colors tracking-tight">
+                    <h4 className="mb-2 text-xl font-black text-slate-900 dark:text-white group-hover:text-sky-600 transition-colors tracking-tight">
                       {offer.name}
                     </h4>
-                    <p className="mb-10 line-clamp-2 text-sm text-white/40 leading-relaxed font-medium">
+                    <p className="mb-10 line-clamp-2 text-sm text-slate-500 dark:text-neutral-400 leading-relaxed font-medium">
                       {offer.description}
                     </p>
 
-                    <div className="mt-auto pt-6 space-y-5" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
+                    <div className="mt-auto pt-6 space-y-5" style={{ borderTop: '0.5px solid rgba(15,23,42,0.08)' }}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full bg-white/40" />
-                          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? 'Valeur Offre' : 'Offer Value'}</span>
+                          <div className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-widest">{lang === 'fr' ? 'Valeur Offre' : 'Offer Value'}</span>
                         </div>
-                        <span className="text-lg font-black text-white">{offer.price}€</span>
+                        <span className="text-lg font-black text-slate-900 dark:text-white">{offer.price}€</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? 'Votre Commission' : 'Your Commission'}</span>
+                          <div className="h-1.5 w-1.5 rounded-full bg-sky-600" />
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-widest">{lang === 'fr' ? 'Votre Commission' : 'Your Commission'}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-base font-black text-emerald-400">{offer.commission}%</span>
-                          <span className="text-[10px] font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded border border-white/[0.08]">
+                          <span className="text-base font-black text-sky-600 dark:text-sky-400">{offer.commission}%</span>
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded border border-slate-200 dark:border-white/10">
                             Net
                           </span>
                         </div>
@@ -207,12 +207,12 @@ export function Offers() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/[0.08] bg-white/[0.02] py-20 backdrop-blur-[16px]">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/5 border border-white/[0.08]">
-                <Briefcase className="h-8 w-8 text-white/40" />
+            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 py-20 backdrop-blur-[16px]">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10">
+                <Briefcase className="h-8 w-8 text-slate-400 dark:text-neutral-500" />
               </div>
-              <p className="text-lg font-bold text-white">{lang === 'fr' ? 'Aucune offre active' : 'No active offers'}</p>
-              <p className="mt-2 text-sm text-white/40">
+              <p className="text-lg font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Aucune offre active' : 'No active offers'}</p>
+              <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
                 {lang === 'fr' ? 'Créez votre première offre pour commencer à closer.' : 'Create your first offer to start closing.'}
               </p>
             </div>
@@ -220,28 +220,28 @@ export function Offers() {
         </div>
 
         {/* Section 2: Historique (Contient les archivées ET les expirées) */}
-        <div className="rounded-2xl border-[0.5px] border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden">
+        <div className="rounded-2xl border-[0.5px] border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] backdrop-blur-[16px] shadow-sm overflow-hidden">
           <button
             onClick={() => setShowArchived(!showArchived)}
-            className="flex w-full items-center justify-between px-8 py-7 transition-colors duration-300 hover:bg-white/[0.04]"
+            className="flex w-full items-center justify-between px-8 py-7 transition-colors duration-300 hover:bg-slate-50"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-white/5 text-white/40">
+              <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-neutral-400">
                 <Archive className="h-5 w-5" />
               </div>
               <div className="text-left">
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                   {lang === 'fr' ? 'Historique / Anciennes Offres' : 'History / Past Offers'}
                 </h3>
-                <p className="text-xs text-white/40 font-medium uppercase tracking-wider">
+                <p className="text-xs text-slate-500 dark:text-neutral-400 font-medium uppercase tracking-wider">
                   {archivedOffers.length} {lang === 'fr' ? `archivée${archivedOffers.length > 1 ? 's' : ''}` : 'archived'}
                 </p>
               </div>
             </div>
             {showArchived ? (
-              <ChevronUp className="h-5 w-5 text-white/40" />
+              <ChevronUp className="h-5 w-5 text-slate-400 dark:text-neutral-500" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-white/40" />
+              <ChevronDown className="h-5 w-5 text-slate-400 dark:text-neutral-500" />
             )}
           </button>
 
@@ -254,32 +254,32 @@ export function Offers() {
                     <div
                       key={offer.id}
                       onClick={() => setSelectedOffer(offer)}
-                      className="group cursor-pointer rounded-xl border-[0.5px] border-white/[0.08] bg-white/[0.03] p-5 transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.12]"
+                      className="group cursor-pointer rounded-xl border-[0.5px] border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-5 transition-all duration-300 hover:bg-slate-50 hover:border-slate-300"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/[0.08]">
-                            <Archive className="h-5 w-5 text-white/40" />
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10">
+                            <Archive className="h-5 w-5 text-slate-500 dark:text-neutral-400" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-white/60 group-hover:text-white transition-colors">
+                              <h4 className="font-bold text-slate-600 dark:text-neutral-300 group-hover:text-slate-900 transition-colors">
                                 {offer.name}
                               </h4>
                               {expired && (
-                                <span className="rounded-md px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 uppercase tracking-wide">
+                                <span className="rounded-md px-2 py-0.5 text-[10px] font-bold bg-red-500/10 text-red-600 border border-red-500/20 uppercase tracking-wide">
                                   {lang === 'fr' ? 'Expirée' : 'Expired'}
                                 </span>
                               )}
                             </div>
-                            <p className="mt-1 line-clamp-1 text-sm text-white/40">
+                            <p className="mt-1 line-clamp-1 text-sm text-slate-500 dark:text-neutral-400">
                               {offer.description}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-white/40">{offer.price}€</p>
-                          <p className="text-xs font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded border border-white/[0.08] inline-block mt-1">
+                          <p className="text-sm font-bold text-slate-500 dark:text-neutral-400">{offer.price}€</p>
+                          <p className="text-xs font-bold text-slate-500 dark:text-neutral-400 bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded border border-slate-200 dark:border-white/10 inline-block mt-1">
                             {offer.commission}%
                           </p>
                         </div>
@@ -289,7 +289,7 @@ export function Offers() {
                 })
               ) : (
                 <div className="py-12 text-center">
-                  <p className="text-sm text-white/40 italic">{lang === 'fr' ? 'Aucune offre archivée ou expirée.' : 'No archived or expired offers.'}</p>
+                  <p className="text-sm text-slate-500 dark:text-neutral-400 italic">{lang === 'fr' ? 'Aucune offre archivée ou expirée.' : 'No archived or expired offers.'}</p>
                 </div>
               )}
             </div>
@@ -313,21 +313,21 @@ export function Offers() {
       {/* MODALE DE CONFIRMATION */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-          <div className="bg-[#1a1a1a] border border-white/[0.08] p-8 rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
-            <h3 className="text-xl font-bold text-white mb-4">Créer une nouvelle offre ?</h3>
-            <p className="text-white/40 mb-8 leading-relaxed">
+          <div className="bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 p-8 rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Créer une nouvelle offre ?</h3>
+            <p className="text-slate-600 dark:text-neutral-300 mb-8 leading-relaxed">
               Cela ajoutera une offre "Nouvelle Offre" à votre catalogue. Vous pourrez ensuite la personnaliser (prix, commission, description) en cliquant dessus.
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="flex-1 px-4 py-3 rounded-full border border-white/[0.08] bg-white/[0.03] text-white/80 font-bold hover:bg-white/10 hover:text-white transition-all"
+                className="flex-1 px-4 py-3 rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-neutral-300 font-bold hover:bg-slate-100 hover:text-slate-900 transition-all"
               >
                 Annuler
               </button>
               <button
                 onClick={handleConfirmCreate}
-                className="flex-1 px-4 py-3 rounded-full bg-emerald-500 text-black font-semibold hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-600/20"
+                className="flex-1 px-4 py-3 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-500 transition-all shadow-lg shadow-sky-600/20"
               >
                 Confirmer
               </button>

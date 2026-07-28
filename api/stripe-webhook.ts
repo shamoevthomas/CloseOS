@@ -30,47 +30,33 @@ const stripe = new Stripe(stripeSecretKey, {
     httpClient: Stripe.createFetchHttpClient(), // Required for Edge
 });
 
-// ─── Email wrapper (même DA que tous les mails CloseOS) ─────────────────────
+// ─── Charte CloseOS Sales (fond crème, carte blanche, accent sky, logo-sales.png) ───
+// même gabarit que api/email.ts / api/cron/sales-weekly-report.ts. Remplace emailWrap
+// (ancien thème sombre #020617) pour les emails Sales de ce fichier.
 
-function emailWrap(badge: string, badgeColor: string, borderColor: string, title: string, body: string, ctaText: string, ctaUrl: string) {
+function wrapEmailHtml(bodyContent: string): string {
     return `<!DOCTYPE html>
-<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark">
-    <style>
-        :root { color-scheme: dark; }
-        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-        img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
-        body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-    </style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@800&display=swap" rel="stylesheet">
 </head>
-<body style="margin: 0; padding: 0; -webkit-font-smoothing: antialiased; background-color: #020617;">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #020617; background-image: linear-gradient(#020617, #020617);">
-        <tr><td align="center" style="padding-bottom: 60px;">
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                <tr><td align="center" style="padding: 40px 20px 20px 20px;">
-                    <img src="https://closeos.fr/logo.PNG" alt="CloseOS" width="140" style="display: block;">
-                </td></tr>
-                <tr><td align="center" style="padding: 0 20px; font-family: 'Segoe UI', Arial, sans-serif;">
-                    <span style="background-color: ${badgeColor}; background-image: linear-gradient(${badgeColor}, ${badgeColor}); border: 1px solid ${borderColor}; color: ${borderColor}; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: bold; text-transform: uppercase; display: inline-block;">${badge}</span>
-                    <h1 style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent); font-size: 28px; margin-top: 20px; margin-bottom: 16px;">${title}</h1>
-                    ${body}
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 25px;">
-                        <tr><td align="center">
-                            <a href="${ctaUrl}" style="background-color: #3b82f6; background-image: linear-gradient(#3b82f6, #3b82f6); color: #fdfdfd; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: bold; display: block; font-family: 'Segoe UI', Arial, sans-serif; font-size: 18px;">${ctaText}</a>
-                        </td></tr>
-                    </table>
-                </td></tr>
-                <tr><td align="center" style="padding: 40px 20px 0 20px; font-family: 'Segoe UI', Arial, sans-serif;">
-                    <p style="color: #475569; font-size: 12px; margin-bottom: 4px;">&copy; 2026 CloseOS.fr &mdash; Le Syst&egrave;me d'Exploitation des Closers</p>
-                    <p style="color: #475569; font-size: 12px;"><a href="https://closeos.fr/cgu" style="color: #475569; text-decoration: none;">CGU</a> &middot; <a href="https://closeos.fr/cgv" style="color: #475569; text-decoration: none;">CGV</a> &middot; <a href="https://closeos.fr/confidentialite" style="color: #475569; text-decoration: none;">Confidentialit&eacute;</a></p>
-                    <p style="color: #475569; font-size: 11px; margin-top: 30px;">Vous recevez cet email car vous &ecirc;tes inscrit sur CloseOS.</p>
-                </td></tr>
-            </table>
-        </td></tr>
+<body style="margin:0;padding:0;background-color:#f4f2f1;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f2f1;padding:64px 20px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+      <tr><td style="padding-bottom:40px;text-align:left;padding-left:24px;">
+        <img src="https://closeos.fr/logo-sales.png" alt="CloseOS" width="150" style="display:block;">
+      </td></tr>
+      <tr><td style="background-color:#ffffff;border-radius:32px;padding:48px 40px;box-shadow:0 20px 40px rgba(15,23,42,0.05);border:1px solid rgba(2,132,199,0.08);">
+        ${bodyContent}
+      </td></tr>
+      <tr><td style="padding-top:40px;text-align:left;padding-left:24px;">
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">
+          Cet e-mail a été envoyé automatiquement par <a href="https://closeos.fr" style="color:#0284c7;text-decoration:none;font-weight:500;">CloseOS</a>, merci de ne pas y répondre.
+        </p>
+      </td></tr>
     </table>
+  </td></tr>
+</table>
 </body></html>`;
 }
 
@@ -154,23 +140,26 @@ async function sendRetentionEmail(to: string, userId: string, name: string) {
                 sender: { email: 'thomas@closeos.fr', name: 'Thomas de CloseOS' },
                 to: [{ email: to }],
                 subject: 'Avant de partir... 👋',
-                htmlContent: `
-                <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
-                    <h1>C'est vraiment la fin ?</h1>
-                    <p>Bonjour ${name},</p>
-                    <p>Je viens de voir que vous avez demandé l'annulation de votre abonnement.</p>
-                    <p>Je respecte totalement votre décision, mais j'aimerais beaucoup comprendre ce qui n'a pas fonctionné pour vous. Votre feedback est précieux.</p>
-                    <p>Si vous acceptez d'en discuter 5 minutes avec moi, je vous propose de <strong>suspendre cette annulation</strong>.</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${retentionLink}" style="background-color: #2563EB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Je prends rendez-vous avant de partir</a>
-                    </div>
-                     <p style="text-align: center; margin-top: 10px;">
-                        <a href="https://closeos.app" style="color: #999; text-decoration: none; font-size: 14px;">Non merci, je confirme mon départ</a>
-                    </p>
-                    <p>Merci pour la confiance que vous nous avez accordée jusque là.</p>
-                    <p>Thomas<br/>Fondateur CloseOS</p>
-                </div>
-                `
+                htmlContent: wrapEmailHtml(`
+                <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 16px;font-size:30px;color:#111111;line-height:1.2;letter-spacing:-0.04em;">C'est vraiment la fin ?</h1>
+                <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 20px;font-size:16px;color:#1b1c1b;line-height:1.6;">
+                    Bonjour ${name}, je viens de voir que vous avez demandé l'annulation de votre abonnement.
+                </p>
+                <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 20px;font-size:16px;color:#1b1c1b;line-height:1.6;">
+                    Je respecte totalement votre décision, mais j'aimerais beaucoup comprendre ce qui n'a pas fonctionné pour vous — votre retour est précieux. Si vous acceptez d'en discuter 5 minutes avec moi, je vous propose de <strong style="color:#111111;">suspendre cette annulation</strong>.
+                </p>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
+                    <tr><td align="center">
+                        <a href="${retentionLink}" style="display:inline-block;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;color:#ffffff;background-color:#111111;border-radius:9999px;padding:16px 32px;text-decoration:none;">Je prends rendez-vous avant de partir</a>
+                    </td></tr>
+                </table>
+                <p style="text-align:center;margin:0 0 24px;">
+                    <a href="https://closeos.app" style="font-family:'Inter',Helvetica,sans-serif;color:#94a3b8;text-decoration:none;font-size:13px;">Non merci, je confirme mon départ</a>
+                </p>
+                <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:16px;color:#1b1c1b;line-height:1.6;">
+                    Merci pour la confiance que vous nous avez accordée jusque-là.<br>Thomas — Fondateur CloseOS
+                </p>
+                `)
             })
         });
         return response.ok;
@@ -391,29 +380,32 @@ export default async function handler(req: Request) {
                     billingCycle === 'yearly' ? '18€/mois (216€/an)' :
                     billingCycle === 'quarterly' ? '20€/mois (60€/trimestre)' :
                     '24€/mois';
-                await sendBrevoEmail(customerEmail!, 'Bienvenue dans l\'aventure CloseOS 🚀', emailWrap(
-                    'Confirmation', '#042f2e', '#14b8a6',
-                    'Bienvenue dans l\'aventure CloseOS \u{1F680}',
-                    `<p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 16px; line-height: 1.6; text-align: left; margin-bottom: 20px;">
+                await sendBrevoEmail(customerEmail!, 'Bienvenue dans l\'aventure CloseOS 🚀', wrapEmailHtml(`
+                    <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#0284c7;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">✅ Confirmation</p>
+                    <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 16px;font-size:32px;color:#111111;line-height:1.15;letter-spacing:-0.04em;">Bienvenue dans l'aventure CloseOS 🚀</h1>
+                    <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:16px;color:#1b1c1b;line-height:1.6;">
                         Bonjour ${userName},<br><br>
-                        Votre paiement a bien \u00e9t\u00e9 confirm\u00e9. Vous faites maintenant partie de la communaut\u00e9 des closers qui ont d\u00e9cid\u00e9 de <strong style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent);">professionnaliser leur activit\u00e9</strong>.
+                        Votre paiement a bien été confirmé. Vous faites maintenant partie de la communauté des closers qui ont décidé de <strong style="color:#111111;">professionnaliser leur activité</strong>.
                     </p>
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; background-image: linear-gradient(#0f172a, #0f172a); border: 1px solid #14b8a6; border-radius: 20px; margin-bottom: 20px;">
-                        <tr><td style="padding: 25px; text-align: left; font-family: 'Segoe UI', Arial, sans-serif;">
-                            <h3 style="color: #2dd4bf; background-image: linear-gradient(transparent, transparent); font-size: 20px; margin-top: 0; margin-bottom: 16px;">\u2705 R\u00e9capitulatif</h3>
-                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.8; margin: 0;">
-                                \u2022 <strong style="color: #fdfdfd;">Plan :</strong> Pro<br>
-                                \u2022 <strong style="color: #fdfdfd;">Tarif :</strong> ${priceLabel}<br>
-                                \u2022 <strong style="color: #fdfdfd;">Acc\u00e8s :</strong> CRM, Pipeline, Agenda, Factures, KPI, Call Room
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                        <tr><td style="padding:20px;background-color:#f5f9ff;border-radius:16px;">
+                            <p style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 10px;font-size:15px;color:#0284c7;">✅ Récapitulatif</p>
+                            <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:14px;color:#1b1c1b;line-height:1.8;">
+                                • <strong>Plan :</strong> Pro<br>
+                                • <strong>Tarif :</strong> ${priceLabel}<br>
+                                • <strong>Accès :</strong> CRM, Pipeline, Agenda, Factures, KPI, Call Room
                             </p>
                         </td></tr>
                     </table>
-                    <p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; text-align: left; margin-bottom: 10px;">
-                        Vous avez acc\u00e8s \u00e0 <strong style="color: #fdfdfd;">toutes les fonctionnalit\u00e9s</strong> de l'outil. C'est le moment de centraliser votre activit\u00e9 et de closer comme un pro.
-                    </p>`,
-                    '\u{1F4BB} Acc\u00e9der \u00e0 mon espace',
-                    'https://closeos.fr/dashboard'
-                ));
+                    <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:16px;color:#1b1c1b;line-height:1.6;">
+                        Vous avez accès à <strong style="color:#111111;">toutes les fonctionnalités</strong> de l'outil. C'est le moment de centraliser votre activité et de closer comme un pro.
+                    </p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr><td align="center">
+                            <a href="https://closeos.fr/dashboard" style="display:inline-block;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;color:#ffffff;background-color:#111111;border-radius:9999px;padding:16px 32px;text-decoration:none;">💻 Accéder à mon espace</a>
+                        </td></tr>
+                    </table>
+                `));
 
             } else {
                 console.log(`⚠️ User not found for email ${customerEmail}. They might register later.`);
@@ -673,32 +665,35 @@ export default async function handler(req: Request) {
                     ? `Bonjour ${failName},<br><br>Le renouvellement de votre abonnement CloseOS n'a pas pu \u00eatre effectu\u00e9. Votre moyen de paiement a \u00e9t\u00e9 refus\u00e9 ou est expir\u00e9.`
                     : `Bonjour ${failName},<br><br>Nous n'avons pas pu proc\u00e9der au paiement de votre abonnement CloseOS. Votre moyen de paiement semble avoir \u00e9t\u00e9 refus\u00e9.`;
 
-                await sendBrevoEmail(failedProfile.email, subject, emailWrap(
-                    'Action requise', '#451a03', '#f97316',
-                    title,
-                    `<p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 16px; line-height: 1.6; text-align: left; margin-bottom: 20px;">
+                await sendBrevoEmail(failedProfile.email, subject, wrapEmailHtml(`
+                    <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#ea580c;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">⚠️ Action requise</p>
+                    <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 16px;font-size:32px;color:#111111;line-height:1.15;letter-spacing:-0.04em;">${title}</h1>
+                    <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:16px;color:#1b1c1b;line-height:1.6;">
                         ${bodyText}
                     </p>
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; background-image: linear-gradient(#0f172a, #0f172a); border: 1px solid #f97316; border-radius: 20px; margin-bottom: 20px;">
-                        <tr><td style="padding: 25px; text-align: left; font-family: 'Segoe UI', Arial, sans-serif;">
-                            <h3 style="color: #fb923c; background-image: linear-gradient(transparent, transparent); font-size: 20px; margin-top: 0; margin-bottom: 16px;">\u26A0\uFE0F Ce qu'il se passe</h3>
-                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">
-                                \u2022 Votre acc\u00e8s \u00e0 CloseOS est <strong style="color: #fdfdfd;">temporairement suspendu</strong>.
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                        <tr><td style="padding:20px;background-color:#fff7ed;border-radius:16px;">
+                            <p style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 10px;font-size:15px;color:#ea580c;">⚠️ Ce qu'il se passe</p>
+                            <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 6px;font-size:14px;color:#1b1c1b;line-height:1.6;">
+                                • Votre accès à CloseOS est <strong>temporairement suspendu</strong>.
                             </p>
-                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">
-                                \u2022 Vos donn\u00e9es sont <strong style="color: #fdfdfd;">en s\u00e9curit\u00e9</strong> et ne seront pas supprim\u00e9es.
+                            <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 6px;font-size:14px;color:#1b1c1b;line-height:1.6;">
+                                • Vos données sont <strong>en sécurité</strong> et ne seront pas supprimées.
                             </p>
-                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0;">
-                                \u2022 Mettez \u00e0 jour votre moyen de paiement pour <strong style="color: #fdfdfd;">r\u00e9activer votre acc\u00e8s imm\u00e9diatement</strong>.
+                            <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:14px;color:#1b1c1b;line-height:1.6;">
+                                • Mettez à jour votre moyen de paiement pour <strong>réactiver votre accès immédiatement</strong>.
                             </p>
                         </td></tr>
                     </table>
-                    <p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; text-align: left; margin-bottom: 10px;">
-                        Si vous pensez qu'il s'agit d'une erreur, contactez-nous \u00e0 <a href="mailto:support@closeos.fr" style="color: #60a5fa; text-decoration: none;">support@closeos.fr</a>.
-                    </p>`,
-                    '\u{1F4B3} Mettre \u00e0 jour mon paiement',
-                    'https://closeos.fr/dashboard'
-                ));
+                    <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:15px;color:#1b1c1b;line-height:1.6;">
+                        Si vous pensez qu'il s'agit d'une erreur, contactez-nous à <a href="mailto:support@closeos.fr" style="color:#0284c7;text-decoration:none;font-weight:500;">support@closeos.fr</a>.
+                    </p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr><td align="center">
+                            <a href="https://closeos.fr/dashboard" style="display:inline-block;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;color:#ffffff;background-color:#111111;border-radius:9999px;padding:16px 32px;text-decoration:none;">💳 Mettre à jour mon paiement</a>
+                        </td></tr>
+                    </table>
+                `));
             }
 
             // ─── Business seat payment failed → Start grace period ───

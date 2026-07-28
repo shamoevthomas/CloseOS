@@ -20,6 +20,10 @@ Serveur MCP (local, stdio) pour piloter CloseOS Sign depuis un client MCP
 | `sign_get_status` | Indique si le contrat est signé (global + détail par signataire). |
 | `sign_list_contracts` | Liste les contrats (filtre optionnel par statut). |
 | `sign_get_contract` | Détail : signataires, champs déjà posés, dimensions de page. |
+| `sign_list_templates` | Liste les modèles (templates) du propriétaire (id, titre). |
+| `sign_list_team` | Liste les équipiers (id, nom, email, statut). |
+| `sign_assign_template` | Assigne un modèle à un équipier (par `team_member_id` ou `member_email`) → il peut le générer depuis son espace. |
+| `sign_unassign_template` | Retire l'accès d'un équipier à un modèle. |
 
 ## Système de coordonnées
 

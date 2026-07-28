@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
-  User, ChevronDown, Search, LayoutGrid, List,
+  User, Users, ChevronDown, Search, LayoutGrid, List,
   X, Filter, Calendar, Trash2, Plus, AlertTriangle, Tag, Settings, ToggleLeft, ToggleRight, RefreshCw,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -11,7 +11,10 @@ import { DMRBadge } from '../components/DMRBadge'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
+import { BusinessDuplicatesModal } from '../components/BusinessDuplicatesModal'
+import { useBusinessDuplicates } from '../hooks/useBusinessDuplicates'
 import { BusinessContactedRemindersModal } from '../components/BusinessContactedRemindersModal'
+import { BusinessNoShowRelancesModal } from '../components/BusinessNoShowRelancesModal'
 import { useCustomStages, type CustomStage } from '../hooks/useCustomStages'
 import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import { supabase } from '../../lib/supabase'
@@ -81,8 +84,13 @@ const ROLE_OPTIONS = [
 
 export function BusinessPipeline() {
   const { prospects, updateProspect, deleteProspect } = useBusinessProspects()
-  const { user, ownerUserId, businessSettings, userTimezone, isSolo } = useBusinessAuth()
+  const { user, ownerUserId, businessSettings, userTimezone, isSolo, isTeamMember, teamMember } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
+
+  // Doublons — gérable uniquement par Owner / Head of Sales / Admin
+  const canManageDuplicates = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
+  const { total: duplicateGroupsCount } = useBusinessDuplicates()
+  const [isDuplicatesOpen, setIsDuplicatesOpen] = useState(false)
 
   const PERIOD_OPTIONS = useMemo(() => [
     { label: t.pipeline_period_all, days: 0 },
@@ -111,6 +119,7 @@ export function BusinessPipeline() {
 
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban')
   const [contactedRemindersOpen, setContactedRemindersOpen] = useState(false)
+  const [noShowRelancesOpen, setNoShowRelancesOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
@@ -348,15 +357,21 @@ export function BusinessPipeline() {
       result = result.filter(p => p.created_at && new Date(p.created_at) >= cutoff)
     }
 
-    // Teams filter
+    // Teams filter — un lead compte si son closer OU son setter est dans l'équipe
     if (selectedTeams.length > 0) {
       const teamMemberIds = new Set(teamMembers.filter(m => m.team_id && selectedTeams.includes(m.team_id)).map(m => m.id))
-      result = result.filter(p => p.assigned_to && teamMemberIds.has(p.assigned_to))
+      result = result.filter(p =>
+        (p.assigned_to && teamMemberIds.has(p.assigned_to)) ||
+        (p.assigned_setter && teamMemberIds.has(p.assigned_setter))
+      )
     }
 
-    // Members (assigned_to)
+    // Members — un lead compte si le membre sélectionné est son closer OU son setter
     if (selectedMembers.length > 0) {
-      result = result.filter(p => p.assigned_to && selectedMembers.includes(p.assigned_to))
+      result = result.filter(p =>
+        (p.assigned_to && selectedMembers.includes(p.assigned_to)) ||
+        (p.assigned_setter && selectedMembers.includes(p.assigned_setter))
+      )
     }
 
     // Stages
@@ -397,8 +412,13 @@ export function BusinessPipeline() {
     for (const p of prospects) {
       // Stage
       byStage[p.stage] = (byStage[p.stage] || 0) + 1
-      // Member
-      if (p.assigned_to) byMember[p.assigned_to] = (byMember[p.assigned_to] || 0) + 1
+      // Member — compter le lead pour son closer ET son setter (sans doublon)
+      {
+        const mIds = new Set<string>()
+        if (p.assigned_to) mIds.add(p.assigned_to)
+        if (p.assigned_setter) mIds.add(p.assigned_setter)
+        for (const mId of mIds) byMember[mId] = (byMember[mId] || 0) + 1
+      }
       // Offer
       if (p.formula_id) byOffer[p.formula_id] = (byOffer[p.formula_id] || 0) + 1
       if (p.offer_id) byOffer[String(p.offer_id)] = (byOffer[String(p.offer_id)] || 0) + 1
@@ -522,6 +542,18 @@ export function BusinessPipeline() {
             className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
         </div>
+
+        {/* Doublons — Owner / HOS / Admin uniquement */}
+        {canManageDuplicates && duplicateGroupsCount > 0 && (
+          <button
+            onClick={() => setIsDuplicatesOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-2.5 text-sm font-bold text-amber-700 dark:text-amber-400 hover:border-amber-400 transition-all shrink-0"
+            title={lang === 'en' ? 'Manage duplicates' : 'Gérer les doublons'}
+          >
+            <Users className="h-4 w-4" />
+            {duplicateGroupsCount} {lang === 'en' ? (duplicateGroupsCount > 1 ? 'duplicates' : 'duplicate') : (duplicateGroupsCount > 1 ? 'doublons' : 'doublon')}
+          </button>
+        )}
 
         {/* View toggle */}
         <div className="flex rounded-full bg-stone-100 dark:bg-neutral-800 p-1">
@@ -945,9 +977,20 @@ export function BusinessPipeline() {
                           <div className={cn("h-2.5 w-2.5 rounded-full", stage.id === 'lost' ? 'bg-[#ba1a1a]/40' : 'bg-stone-300')} />
                           <span className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-neutral-300">{stageNames[stage.id] || stage.name}</span>
                         </div>
-                        <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500 dark:text-neutral-400">
-                          {stageDeals.length}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {stage.id === 'noshow' && (
+                            <button
+                              onClick={() => setNoShowRelancesOpen(true)}
+                              title={lang === 'en' ? 'Configure no-show follow-up emails' : 'Configurer les relances No Show'}
+                              className="p-1 rounded-full text-stone-400 hover:text-[#006c49] dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                            >
+                              <Settings className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          <span className="bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold rounded-full px-2 py-0.5 text-stone-500 dark:text-neutral-400">
+                            {stageDeals.length}
+                          </span>
+                        </div>
                       </div>
 
                       <Droppable droppableId={stage.id}>
@@ -1282,6 +1325,18 @@ export function BusinessPipeline() {
           onClose={() => setContactedRemindersOpen(false)}
           ownerId={effectiveUserId}
         />
+      )}
+
+      {noShowRelancesOpen && effectiveUserId && (
+        <BusinessNoShowRelancesModal
+          isOpen={noShowRelancesOpen}
+          onClose={() => setNoShowRelancesOpen(false)}
+          ownerId={effectiveUserId}
+        />
+      )}
+
+      {canManageDuplicates && (
+        <BusinessDuplicatesModal isOpen={isDuplicatesOpen} onClose={() => setIsDuplicatesOpen(false)} />
       )}
 
       {/* Pipeline Auto-Reset Config Modal */}

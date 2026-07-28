@@ -502,6 +502,142 @@ server.registerTool(
   },
 )
 
+// 6) LISTER LES MODÈLES (templates) ───────────────────────────────────────────
+server.registerTool(
+  'sign_list_templates',
+  {
+    title: 'Lister les modèles',
+    description: 'Liste les modèles (templates) du propriétaire (id, titre). Utile pour récupérer les template_id à assigner.',
+    inputSchema: { limit: z.number().int().min(1).max(200).default(100) },
+  },
+  async (args) => {
+    try {
+      const uid = await ownerId()
+      const { data, error } = await supabase
+        .from('sign_contracts')
+        .select('id, title, created_at')
+        .eq('user_id', uid)
+        .eq('is_template', true)
+        .order('title', { ascending: true })
+        .limit(args.limit ?? 100)
+      if (error) throw new Error(error.message)
+      return ok({ count: (data || []).length, templates: data || [] })
+    } catch (e) {
+      return fail(e.message)
+    }
+  },
+)
+
+// 7) LISTER LES ÉQUIPIERS ──────────────────────────────────────────────────────
+server.registerTool(
+  'sign_list_team',
+  {
+    title: "Lister l'équipe",
+    description: 'Liste les équipiers du propriétaire (id, nom, email, statut). Un équipier peut se voir assigner des modèles.',
+    inputSchema: { include_revoked: z.boolean().default(false).describe('Inclure les membres révoqués') },
+  },
+  async (args) => {
+    try {
+      const uid = await ownerId()
+      let q = supabase
+        .from('sign_team_members')
+        .select('id, first_name, last_name, email, status, source, created_at')
+        .eq('owner_id', uid)
+        .order('created_at', { ascending: true })
+      if (!args.include_revoked) q = q.neq('status', 'revoked')
+      const { data, error } = await q
+      if (error) throw new Error(error.message)
+      const members = (data || []).map((m) => ({
+        id: m.id,
+        name: `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email,
+        email: m.email,
+        status: m.status,
+        source: m.source,
+      }))
+      return ok({ count: members.length, members })
+    } catch (e) {
+      return fail(e.message)
+    }
+  },
+)
+
+// Résout un équipier par id ou email (dans l'équipe du propriétaire).
+async function resolveTeamMember(uid, { team_member_id, member_email }) {
+  if (team_member_id) {
+    const { data } = await supabase.from('sign_team_members').select('id, owner_id, email').eq('id', team_member_id).maybeSingle()
+    if (!data) throw new Error(`Équipier ${team_member_id} introuvable.`)
+    if (data.owner_id !== uid) throw new Error(`Cet équipier n'appartient pas à ton équipe.`)
+    return data
+  }
+  if (member_email) {
+    const { data } = await supabase.from('sign_team_members').select('id, owner_id, email').eq('owner_id', uid).ilike('email', member_email.trim()).maybeSingle()
+    if (!data) throw new Error(`Aucun équipier avec l'email ${member_email} dans ton équipe.`)
+    return data
+  }
+  throw new Error('Fournir team_member_id ou member_email.')
+}
+
+// Vérifie que le template appartient bien au propriétaire.
+async function assertOwnsTemplate(uid, templateId) {
+  const { data } = await supabase.from('sign_contracts').select('id, user_id, is_template, title').eq('id', templateId).maybeSingle()
+  if (!data) throw new Error(`Modèle ${templateId} introuvable.`)
+  if (!data.is_template) throw new Error(`Le contrat ${templateId} n'est pas un modèle (template).`)
+  if (data.user_id !== uid) throw new Error(`Ce modèle ne t'appartient pas.`)
+  return data
+}
+
+// 8) ASSIGNER UN MODÈLE À UN ÉQUIPIER ──────────────────────────────────────────
+server.registerTool(
+  'sign_assign_template',
+  {
+    title: 'Assigner un modèle à un équipier',
+    description: "Autorise un équipier (compte réel) à générer ce modèle depuis son espace. Identifie l'équipier par team_member_id OU member_email.",
+    inputSchema: {
+      template_id: z.string().uuid().describe('ID du modèle (voir sign_list_templates)'),
+      team_member_id: z.string().uuid().optional().describe("ID de l'équipier (voir sign_list_team)"),
+      member_email: z.string().email().optional().describe("Email de l'équipier (alternative à team_member_id)"),
+    },
+  },
+  async (args) => {
+    try {
+      const uid = await ownerId()
+      const tpl = await assertOwnsTemplate(uid, args.template_id)
+      const member = await resolveTeamMember(uid, args)
+      const { error } = await supabase.from('sign_template_members').insert({ template_id: args.template_id, team_member_id: member.id })
+      if (error && error.code !== '23505') throw new Error(error.message) // 23505 = déjà assigné
+      return ok({ assigned: true, template: { id: tpl.id, title: tpl.title }, member: { id: member.id, email: member.email }, already: error?.code === '23505' })
+    } catch (e) {
+      return fail(e.message)
+    }
+  },
+)
+
+// 9) RETIRER L'ASSIGNATION D'UN MODÈLE ──────────────────────────────────────────
+server.registerTool(
+  'sign_unassign_template',
+  {
+    title: "Retirer l'assignation d'un modèle",
+    description: "Retire l'accès d'un équipier à un modèle. Identifie l'équipier par team_member_id OU member_email.",
+    inputSchema: {
+      template_id: z.string().uuid().describe('ID du modèle'),
+      team_member_id: z.string().uuid().optional(),
+      member_email: z.string().email().optional(),
+    },
+  },
+  async (args) => {
+    try {
+      const uid = await ownerId()
+      await assertOwnsTemplate(uid, args.template_id)
+      const member = await resolveTeamMember(uid, args)
+      const { error } = await supabase.from('sign_template_members').delete().eq('template_id', args.template_id).eq('team_member_id', member.id)
+      if (error) throw new Error(error.message)
+      return ok({ unassigned: true, template_id: args.template_id, member: { id: member.id, email: member.email } })
+    } catch (e) {
+      return fail(e.message)
+    }
+  },
+)
+
 // ── Démarrage ──────────────────────────────────────────────────────────────
 const transport = new StdioServerTransport()
 await server.connect(transport)

@@ -10,9 +10,12 @@ export default defineConfig({
     allowedHosts: ['local.closeos.dev'],
     proxy: {
       '/api': {
-        target: 'https://close-os.vercel.app',
+        // Par défaut la prod, pour ne rien changer au flux habituel.
+        // `npm run dev:local` pointe sur le serveur d'API local (scripts/dev-api.ts),
+        // utile pour tester une route pas encore déployée.
+        target: process.env.VITE_API_PROXY || 'https://close-os.vercel.app',
         changeOrigin: true,
-        secure: true,
+        secure: !process.env.VITE_API_PROXY,
       }
     }
   },

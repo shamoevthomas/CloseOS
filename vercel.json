@@ -3,29 +3,106 @@
     {
       "source": "/assets/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
     },
     {
       "source": "/capture/(.*)",
-      "has": [{ "type": "query", "key": "embed", "value": "true" }],
+      "has": [
+        {
+          "type": "query",
+          "key": "embed",
+          "value": "true"
+        }
+      ],
       "headers": [
-        { "key": "Content-Security-Policy", "value": "frame-ancestors *" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(self), geolocation=()" },
-        { "key": "X-DNS-Prefetch-Control", "value": "on" }
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors *"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(self), geolocation=()"
+        },
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "on"
+        }
+      ]
+    },
+    {
+      "source": "/f/(.*)",
+      "has": [
+        {
+          "type": "query",
+          "key": "embed",
+          "value": "true"
+        }
+      ],
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors *"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "on"
+        }
       ]
     },
     {
       "source": "/(.*)",
-      "missing": [{ "type": "query", "key": "embed", "value": "true" }],
+      "missing": [
+        {
+          "type": "query",
+          "key": "embed",
+          "value": "true"
+        }
+      ],
       "headers": [
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(self), geolocation=()" },
-        { "key": "X-DNS-Prefetch-Control", "value": "on" }
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(self), geolocation=()"
+        },
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "on"
+        }
       ]
     }
   ],
@@ -60,7 +137,23 @@
     },
     {
       "path": "/api/cron/contacted-reminders",
-      "schedule": "0 9 * * *"
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/sales-contacted-reminders",
+      "schedule": "2 12 * * *"
+    },
+    {
+      "path": "/api/cron/noshow-relances",
+      "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/sales-weekly-report",
+      "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/cron/reminder-time-emails",
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/appointment-confirmations",
@@ -100,110 +193,373 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/hubspot/callback", "destination": "/api/hubspot?action=callback" },
-    { "source": "/api/hubspot/sync", "destination": "/api/hubspot?action=sync" },
-    { "source": "/api/hubspot/push", "destination": "/api/hubspot?action=push" },
-    { "source": "/api/hubspot/refresh", "destination": "/api/hubspot?action=refresh" },
-    { "source": "/api/hubspot/webhook", "destination": "/api/hubspot?action=webhook" },
-    { "source": "/api/pipedrive/callback", "destination": "/api/pipedrive?action=callback" },
-    { "source": "/api/pipedrive/sync", "destination": "/api/pipedrive?action=sync" },
-    { "source": "/api/pipedrive/push", "destination": "/api/pipedrive?action=push" },
-    { "source": "/api/pipedrive/webhook", "destination": "/api/pipedrive?action=webhook" },
-    { "source": "/api/pipedrive/pipelines", "destination": "/api/pipedrive?action=pipelines" },
-    { "source": "/api/pipedrive/saveMapping", "destination": "/api/pipedrive?action=saveMapping" },
-
-    { "source": "/api/checkout", "destination": "/api/stripe?action=checkout" },
-    { "source": "/api/connect-stripe", "destination": "/api/stripe?action=connect" },
-    { "source": "/api/create-invoice-session", "destination": "/api/stripe?action=invoice-session" },
-    { "source": "/api/create-portal-session", "destination": "/api/stripe?action=portal-session" },
-    { "source": "/api/session-status", "destination": "/api/stripe?action=session-status" },
-    { "source": "/api/campaign-checkout", "destination": "/api/stripe?action=campaign-checkout" },
-
-    { "source": "/api/cancel-subscription", "destination": "/api/subscription?action=cancel" },
-    { "source": "/api/reactivate-subscription", "destination": "/api/subscription?action=reactivate" },
-    { "source": "/api/subscription-status", "destination": "/api/subscription?action=status" },
-    { "source": "/api/sync-subscription", "destination": "/api/subscription?action=sync" },
-
-    { "source": "/api/send-email", "destination": "/api/email?action=send" },
-    { "source": "/api/welcome-email", "destination": "/api/email?action=welcome" },
-    { "source": "/api/notify-password-change", "destination": "/api/email?action=notify-password-change" },
-    { "source": "/api/request-email-change", "destination": "/api/email?action=request-email-change" },
-    { "source": "/api/confirm-email-change", "destination": "/api/email?action=confirm-email-change" },
-    { "source": "/api/request-password-reset", "destination": "/api/email?action=request-password-reset" },
-    { "source": "/api/send-deletion-code", "destination": "/api/email?action=send-deletion-code" },
-    { "source": "/api/contact-form", "destination": "/api/email?action=contact-form" },
-
-    { "source": "/api/cal-callback", "destination": "/api/cal?action=callback" },
-    { "source": "/api/cal-proxy", "destination": "/api/cal?action=proxy" },
-    { "source": "/api/cal-webhook", "destination": "/api/cal?action=webhook" },
-    { "source": "/api/refresh-cal-token", "destination": "/api/cal?action=refresh" },
-
-    { "source": "/api/request-deletion", "destination": "/api/account?action=request-deletion" },
-    { "source": "/api/cancel-deletion", "destination": "/api/account?action=cancel-deletion" },
-
-    { "source": "/api/webhook", "destination": "/api/webhooks?action=crm-webhook" },
-    { "source": "/api/sync-brevo", "destination": "/api/webhooks?action=sync-brevo" },
-
-    { "source": "/api/business-invitation", "destination": "/api/business?action=invitation" },
-    { "source": "/api/business-crm-sync", "destination": "/api/business" },
-    { "source": "/api/business-welcome-email", "destination": "/api/business?action=welcome-email" },
-    { "source": "/api/business-send-verification-code", "destination": "/api/business?action=send-verification-code" },
-    { "source": "/api/business-verify-code", "destination": "/api/business?action=verify-code" },
-    { "source": "/api/business-check-device", "destination": "/api/business?action=check-device" },
-    { "source": "/api/business-revoke-device", "destination": "/api/business?action=revoke-device" },
-    { "source": "/api/business-send-leave-code", "destination": "/api/business?action=send-leave-code" },
-    { "source": "/api/business-test-webhook", "destination": "/api/business?action=test-webhook" },
-    { "source": "/api/business-leave-organization", "destination": "/api/business?action=leave-organization" },
-    { "source": "/api/business-send-notification-email", "destination": "/api/business?action=send-notification-email" },
-    { "source": "/api/business-send-invitation-email", "destination": "/api/business?action=send-invitation-email" },
-    { "source": "/api/business-send-reset-org-code", "destination": "/api/business?action=send-reset-org-code" },
-    { "source": "/api/business-reset-organization", "destination": "/api/business?action=reset-organization" },
-    { "source": "/api/business-delete-member", "destination": "/api/business?action=delete-member" },
-    { "source": "/api/business-send-delete-owner-code", "destination": "/api/business?action=send-delete-owner-code" },
-    { "source": "/api/business-delete-owner-account", "destination": "/api/business?action=delete-owner-account" },
-    { "source": "/api/business-send-login-code", "destination": "/api/business?action=send-login-code" },
-    { "source": "/api/business-verify-login-code", "destination": "/api/business?action=verify-login-code" },
-
-    { "source": "/api/sign-send-verification-code", "destination": "/api/sign-auth?action=send-verification-code" },
-    { "source": "/api/sign-verify-code", "destination": "/api/sign-auth?action=verify-code" },
-    { "source": "/api/sign-check-device", "destination": "/api/sign-auth?action=check-device" },
-    { "source": "/api/sign-revoke-device", "destination": "/api/sign-auth?action=revoke-device" },
-    { "source": "/api/sign-list-devices", "destination": "/api/sign-auth?action=list-devices" },
-    { "source": "/api/sign-revoke-device-id", "destination": "/api/sign-auth?action=revoke-device-id" },
-    { "source": "/api/sign-revoke-all-devices", "destination": "/api/sign-auth?action=revoke-all-devices" },
-    { "source": "/api/sign-trust-device", "destination": "/api/sign-auth?action=trust-device" },
-    { "source": "/api/sign-setup-intent", "destination": "/api/sign-checkout?action=setup-intent" },
-    { "source": "/api/sign-register", "destination": "/api/sign-checkout?action=register" },
-    { "source": "/api/sign-portal", "destination": "/api/sign-checkout?action=portal" },
-    { "source": "/api/sign-stripe-webhook", "destination": "/api/sign-stripe-webhook" },
-
-    { "source": "/api/mcp/:key", "destination": "/api/mcp?key=:key" },
-    { "source": "/.well-known/oauth-authorization-server", "destination": "/api/well-known-oauth" },
-    { "source": "/.well-known/oauth-authorization-server/(.*)", "destination": "/api/well-known-oauth" },
-    { "source": "/.well-known/oauth-protected-resource", "destination": "/api/well-known-oauth" },
-    { "source": "/.well-known/oauth-protected-resource/(.*)", "destination": "/api/well-known-oauth" },
-
-    { "source": "/api/business-stripe-webhook", "destination": "/api/business-stripe-webhook" },
-    { "source": "/api/business-revenue-summary", "destination": "/api/business?action=revenue-summary" },
-    { "source": "/api/business-stripe-search", "destination": "/api/business?action=stripe-search" },
-    { "source": "/api/business-stripe-match", "destination": "/api/business?action=stripe-match" },
-    { "source": "/api/business-auto-match-stripe", "destination": "/api/business?action=auto-match-stripe" },
-    { "source": "/api/business-charges", "destination": "/api/business?action=charges" },
-    { "source": "/api/business-payments-summary", "destination": "/api/business?action=payments-summary" },
-    { "source": "/api/business-stripe-sync-all", "destination": "/api/business?action=stripe-sync-all" },
-
-    { "source": "/api/business-referral-list", "destination": "/api/business-referral?action=list" },
-    { "source": "/api/business-referral-detail", "destination": "/api/business-referral?action=detail" },
-    { "source": "/api/business-referral-create", "destination": "/api/business-referral?action=create" },
-    { "source": "/api/business-referral-update", "destination": "/api/business-referral?action=update" },
-    { "source": "/api/business-referral-delete", "destination": "/api/business-referral?action=delete" },
-    { "source": "/api/business-referral-track-view", "destination": "/api/business-referral?action=track-view" },
-
-    { "source": "/book/:slug", "destination": "/api/social-meta?type=booking&slug=:slug" },
-    { "source": "/capture/:slug", "destination": "/api/social-meta?type=capture&slug=:slug" },
-
-    { "source": "/t/:slug", "destination": "/api/track?action=redirect&slug=:slug" },
-
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/hubspot/callback",
+      "destination": "/api/hubspot?action=callback"
+    },
+    {
+      "source": "/api/hubspot/sync",
+      "destination": "/api/hubspot?action=sync"
+    },
+    {
+      "source": "/api/hubspot/push",
+      "destination": "/api/hubspot?action=push"
+    },
+    {
+      "source": "/api/hubspot/refresh",
+      "destination": "/api/hubspot?action=refresh"
+    },
+    {
+      "source": "/api/hubspot/webhook",
+      "destination": "/api/hubspot?action=webhook"
+    },
+    {
+      "source": "/api/pipedrive/callback",
+      "destination": "/api/pipedrive?action=callback"
+    },
+    {
+      "source": "/api/pipedrive/sync",
+      "destination": "/api/pipedrive?action=sync"
+    },
+    {
+      "source": "/api/pipedrive/push",
+      "destination": "/api/pipedrive?action=push"
+    },
+    {
+      "source": "/api/pipedrive/webhook",
+      "destination": "/api/pipedrive?action=webhook"
+    },
+    {
+      "source": "/api/pipedrive/pipelines",
+      "destination": "/api/pipedrive?action=pipelines"
+    },
+    {
+      "source": "/api/pipedrive/saveMapping",
+      "destination": "/api/pipedrive?action=saveMapping"
+    },
+    {
+      "source": "/api/checkout",
+      "destination": "/api/stripe?action=checkout"
+    },
+    {
+      "source": "/api/connect-stripe",
+      "destination": "/api/stripe?action=connect"
+    },
+    {
+      "source": "/api/create-invoice-session",
+      "destination": "/api/stripe?action=invoice-session"
+    },
+    {
+      "source": "/api/create-portal-session",
+      "destination": "/api/stripe?action=portal-session"
+    },
+    {
+      "source": "/api/session-status",
+      "destination": "/api/stripe?action=session-status"
+    },
+    {
+      "source": "/api/campaign-checkout",
+      "destination": "/api/stripe?action=campaign-checkout"
+    },
+    {
+      "source": "/api/cancel-subscription",
+      "destination": "/api/subscription?action=cancel"
+    },
+    {
+      "source": "/api/reactivate-subscription",
+      "destination": "/api/subscription?action=reactivate"
+    },
+    {
+      "source": "/api/subscription-status",
+      "destination": "/api/subscription?action=status"
+    },
+    {
+      "source": "/api/sync-subscription",
+      "destination": "/api/subscription?action=sync"
+    },
+    {
+      "source": "/api/send-email",
+      "destination": "/api/email?action=send"
+    },
+    {
+      "source": "/api/welcome-email",
+      "destination": "/api/email?action=welcome"
+    },
+    {
+      "source": "/api/notify-password-change",
+      "destination": "/api/email?action=notify-password-change"
+    },
+    {
+      "source": "/api/request-email-change",
+      "destination": "/api/email?action=request-email-change"
+    },
+    {
+      "source": "/api/confirm-email-change",
+      "destination": "/api/email?action=confirm-email-change"
+    },
+    {
+      "source": "/api/request-password-reset",
+      "destination": "/api/email?action=request-password-reset"
+    },
+    {
+      "source": "/api/send-deletion-code",
+      "destination": "/api/email?action=send-deletion-code"
+    },
+    {
+      "source": "/api/contact-form",
+      "destination": "/api/email?action=contact-form"
+    },
+    {
+      "source": "/api/cal-callback",
+      "destination": "/api/cal?action=callback"
+    },
+    {
+      "source": "/api/cal-proxy",
+      "destination": "/api/cal?action=proxy"
+    },
+    {
+      "source": "/api/cal-webhook",
+      "destination": "/api/cal?action=webhook"
+    },
+    {
+      "source": "/api/refresh-cal-token",
+      "destination": "/api/cal?action=refresh"
+    },
+    {
+      "source": "/api/request-deletion",
+      "destination": "/api/account?action=request-deletion"
+    },
+    {
+      "source": "/api/cancel-deletion",
+      "destination": "/api/account?action=cancel-deletion"
+    },
+    {
+      "source": "/api/webhook",
+      "destination": "/api/webhooks?action=crm-webhook"
+    },
+    {
+      "source": "/api/sync-brevo",
+      "destination": "/api/webhooks?action=sync-brevo"
+    },
+    {
+      "source": "/api/business-invitation",
+      "destination": "/api/business?action=invitation"
+    },
+    {
+      "source": "/api/business-crm-sync",
+      "destination": "/api/business"
+    },
+    {
+      "source": "/api/business-welcome-email",
+      "destination": "/api/business?action=welcome-email"
+    },
+    {
+      "source": "/api/business-send-verification-code",
+      "destination": "/api/business?action=send-verification-code"
+    },
+    {
+      "source": "/api/business-verify-code",
+      "destination": "/api/business?action=verify-code"
+    },
+    {
+      "source": "/api/business-check-device",
+      "destination": "/api/business?action=check-device"
+    },
+    {
+      "source": "/api/business-revoke-device",
+      "destination": "/api/business?action=revoke-device"
+    },
+    {
+      "source": "/api/business-send-leave-code",
+      "destination": "/api/business?action=send-leave-code"
+    },
+    {
+      "source": "/api/business-test-webhook",
+      "destination": "/api/business?action=test-webhook"
+    },
+    {
+      "source": "/api/business-leave-organization",
+      "destination": "/api/business?action=leave-organization"
+    },
+    {
+      "source": "/api/business-send-notification-email",
+      "destination": "/api/business?action=send-notification-email"
+    },
+    {
+      "source": "/api/business-send-invitation-email",
+      "destination": "/api/business?action=send-invitation-email"
+    },
+    {
+      "source": "/api/business-send-reset-org-code",
+      "destination": "/api/business?action=send-reset-org-code"
+    },
+    {
+      "source": "/api/business-reset-organization",
+      "destination": "/api/business?action=reset-organization"
+    },
+    {
+      "source": "/api/business-delete-member",
+      "destination": "/api/business?action=delete-member"
+    },
+    {
+      "source": "/api/business-send-delete-owner-code",
+      "destination": "/api/business?action=send-delete-owner-code"
+    },
+    {
+      "source": "/api/business-delete-owner-account",
+      "destination": "/api/business?action=delete-owner-account"
+    },
+    {
+      "source": "/api/business-send-login-code",
+      "destination": "/api/business?action=send-login-code"
+    },
+    {
+      "source": "/api/business-verify-login-code",
+      "destination": "/api/business?action=verify-login-code"
+    },
+    {
+      "source": "/api/sign-send-verification-code",
+      "destination": "/api/sign-auth?action=send-verification-code"
+    },
+    {
+      "source": "/api/sign-verify-code",
+      "destination": "/api/sign-auth?action=verify-code"
+    },
+    {
+      "source": "/api/sign-check-device",
+      "destination": "/api/sign-auth?action=check-device"
+    },
+    {
+      "source": "/api/sign-revoke-device",
+      "destination": "/api/sign-auth?action=revoke-device"
+    },
+    {
+      "source": "/api/sign-list-devices",
+      "destination": "/api/sign-auth?action=list-devices"
+    },
+    {
+      "source": "/api/sign-revoke-device-id",
+      "destination": "/api/sign-auth?action=revoke-device-id"
+    },
+    {
+      "source": "/api/sign-revoke-all-devices",
+      "destination": "/api/sign-auth?action=revoke-all-devices"
+    },
+    {
+      "source": "/api/sign-trust-device",
+      "destination": "/api/sign-auth?action=trust-device"
+    },
+    {
+      "source": "/api/sign-setup-intent",
+      "destination": "/api/sign-checkout?action=setup-intent"
+    },
+    {
+      "source": "/api/sign-register",
+      "destination": "/api/sign-checkout?action=register"
+    },
+    {
+      "source": "/api/sign-portal",
+      "destination": "/api/sign-checkout?action=portal"
+    },
+    {
+      "source": "/api/sign-stripe-webhook",
+      "destination": "/api/sign-stripe-webhook"
+    },
+    {
+      "source": "/api/mcp/:key",
+      "destination": "/api/mcp?key=:key"
+    },
+    {
+      "source": "/api/business-mcp/:key",
+      "destination": "/api/business-mcp?key=:key"
+    },
+    {
+      "source": "/.well-known/oauth-authorization-server",
+      "destination": "/api/well-known-oauth"
+    },
+    {
+      "source": "/.well-known/oauth-authorization-server/(.*)",
+      "destination": "/api/well-known-oauth"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource",
+      "destination": "/api/well-known-oauth"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource/(.*)",
+      "destination": "/api/well-known-oauth"
+    },
+    {
+      "source": "/api/business-stripe-webhook",
+      "destination": "/api/business-stripe-webhook"
+    },
+    {
+      "source": "/api/business-revenue-summary",
+      "destination": "/api/business?action=revenue-summary"
+    },
+    {
+      "source": "/api/business-stripe-search",
+      "destination": "/api/business?action=stripe-search"
+    },
+    {
+      "source": "/api/business-stripe-match",
+      "destination": "/api/business?action=stripe-match"
+    },
+    {
+      "source": "/api/business-auto-match-stripe",
+      "destination": "/api/business?action=auto-match-stripe"
+    },
+    {
+      "source": "/api/business-charges",
+      "destination": "/api/business?action=charges"
+    },
+    {
+      "source": "/api/business-payments-summary",
+      "destination": "/api/business?action=payments-summary"
+    },
+    {
+      "source": "/api/business-stripe-sync-all",
+      "destination": "/api/business?action=stripe-sync-all"
+    },
+    {
+      "source": "/api/business-referral-list",
+      "destination": "/api/business-referral?action=list"
+    },
+    {
+      "source": "/api/business-referral-detail",
+      "destination": "/api/business-referral?action=detail"
+    },
+    {
+      "source": "/api/business-referral-create",
+      "destination": "/api/business-referral?action=create"
+    },
+    {
+      "source": "/api/business-referral-update",
+      "destination": "/api/business-referral?action=update"
+    },
+    {
+      "source": "/api/business-referral-delete",
+      "destination": "/api/business-referral?action=delete"
+    },
+    {
+      "source": "/api/business-referral-track-view",
+      "destination": "/api/business-referral?action=track-view"
+    },
+    {
+      "source": "/book/:slug",
+      "destination": "/api/social-meta?type=booking&slug=:slug"
+    },
+    {
+      "source": "/capture/:slug",
+      "destination": "/api/social-meta?type=capture&slug=:slug"
+    },
+    {
+      "source": "/t/:slug",
+      "destination": "/api/track?action=redirect&slug=:slug"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

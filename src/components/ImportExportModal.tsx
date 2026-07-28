@@ -245,13 +245,13 @@ export function ImportExportModal({ isOpen, onClose, source, prospects }: Import
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
       <div
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[#1a1a1a] border border-white/[0.08] rounded-3xl p-6 relative animate-in zoom-in-95 duration-200"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 rounded-3xl p-6 relative animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-white">{t.btn_label}</h2>
-          <button onClick={onClose} className="rounded-full p-2 text-white/40 hover:text-white hover:bg-white/10 transition-colors">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t.btn_label}</h2>
+          <button onClick={onClose} className="rounded-full p-2 text-slate-400 dark:text-neutral-500 hover:text-slate-900 hover:bg-slate-100 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -262,7 +262,7 @@ export function ImportExportModal({ isOpen, onClose, source, prospects }: Import
             onClick={() => setActiveTab('export')}
             className={cn(
               'flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all',
-              activeTab === 'export' ? 'bg-emerald-500 text-black' : 'text-white/40 hover:bg-white/5 hover:text-white'
+              activeTab === 'export' ? 'bg-sky-600 text-white' : 'text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900'
             )}
           >
             <Download className="h-4 w-4" />
@@ -272,7 +272,7 @@ export function ImportExportModal({ isOpen, onClose, source, prospects }: Import
             onClick={() => setActiveTab('import')}
             className={cn(
               'flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all',
-              activeTab === 'import' ? 'bg-emerald-500 text-black' : 'text-white/40 hover:bg-white/5 hover:text-white'
+              activeTab === 'import' ? 'bg-sky-600 text-white' : 'text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900'
             )}
           >
             <Upload className="h-4 w-4" />
@@ -283,7 +283,7 @@ export function ImportExportModal({ isOpen, onClose, source, prospects }: Import
         {/* ─── EXPORT TAB ───────────────────────────────── */}
         {activeTab === 'export' && (
           <div className="space-y-5">
-            <p className="text-sm text-white/50">{t.export_title}</p>
+            <p className="text-sm text-slate-500 dark:text-neutral-400">{t.export_title}</p>
 
             {/* Offer filter pills */}
             <div className="flex flex-wrap gap-2">
@@ -291,7 +291,7 @@ export function ImportExportModal({ isOpen, onClose, source, prospects }: Import
                 onClick={() => setExportOfferFilter('all')}
                 className={cn(
                   'px-4 py-1.5 text-xs font-medium rounded-full transition-all',
-                  exportOfferFilter === 'all' ? 'bg-emerald-500 text-black' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+                  exportOfferFilter === 'all' ? 'bg-sky-600 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900'
                 )}
               >
                 {t.export_all}
@@ -302,7 +302,7 @@ export function ImportExportModal({ isOpen, onClose, source, prospects }: Import
                   onClick={() => setExportOfferFilter(name)}
                   className={cn(
                     'px-4 py-1.5 text-xs font-medium rounded-full transition-all',
-                    exportOfferFilter === name ? 'bg-emerald-500 text-black' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+                    exportOfferFilter === name ? 'bg-sky-600 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900'
                   )}
                 >
                   {name}
@@ -311,15 +311,15 @@ export function ImportExportModal({ isOpen, onClose, source, prospects }: Import
             </div>
 
             {/* Count */}
-            <p className="text-sm text-white/60">
-              <span className="text-emerald-400 font-semibold">{exportProspects.length}</span> {t.export_count}
+            <p className="text-sm text-slate-500 dark:text-neutral-400">
+              <span className="text-sky-600 dark:text-sky-400 font-semibold">{exportProspects.length}</span> {t.export_count}
             </p>
 
             {/* Download button */}
             <button
               onClick={handleExport}
               disabled={exportProspects.length === 0}
-              className="w-full flex items-center justify-center gap-2 rounded-full bg-emerald-500 py-3 text-sm font-semibold text-black transition-all hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-sky-600 py-3 text-sm font-semibold text-white transition-all hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Download className="h-4 w-4" />
               {t.export_download}
@@ -330,19 +330,19 @@ export function ImportExportModal({ isOpen, onClose, source, prospects }: Import
         {/* ─── IMPORT TAB ───────────────────────────────── */}
         {activeTab === 'import' && (
           <div className="space-y-5">
-            <p className="text-sm text-white/50">{t.import_title}</p>
+            <p className="text-sm text-slate-500 dark:text-neutral-400">{t.import_title}</p>
 
             {/* Offer selector */}
             <div>
-              <label className="block text-xs font-medium text-white/40 mb-2">{t.import_select_offer}</label>
+              <label className="block text-xs font-medium text-slate-400 dark:text-neutral-500 mb-2">{t.import_select_offer}</label>
               <select
                 value={importOfferId ?? ''}
                 onChange={e => setImportOfferId(e.target.value ? Number(e.target.value) : null)}
-                className="w-full rounded-xl bg-white/5 border border-white/10 py-3 px-4 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all appearance-none"
+                className="w-full rounded-xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 py-3 px-4 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none transition-all appearance-none"
               >
-                <option value="" className="bg-[#1a1a1a]">{t.import_select_offer_placeholder}</option>
+                <option value="" className="bg-white dark:bg-[#1a1a1a]">{t.import_select_offer_placeholder}</option>
                 {activeOffers.map(o => (
-                  <option key={o.id} value={o.id} className="bg-[#1a1a1a]">{o.name}</option>
+                  <option key={o.id} value={o.id} className="bg-white dark:bg-[#1a1a1a]">{o.name}</option>
                 ))}
               </select>
             </div>
@@ -350,44 +350,44 @@ export function ImportExportModal({ isOpen, onClose, source, prospects }: Import
             {/* Warning box */}
             <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-                <p className="text-xs font-medium text-amber-300">{t.import_warning_title}</p>
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-xs font-medium text-amber-600">{t.import_warning_title}</p>
               </div>
-              <p className="text-xs text-white/50">{t.import_warning_text}</p>
-              <code className="block text-xs text-emerald-400 bg-black/30 rounded-xl p-3 font-mono overflow-x-auto">
+              <p className="text-xs text-slate-500 dark:text-neutral-400">{t.import_warning_text}</p>
+              <code className="block text-xs text-sky-600 dark:text-sky-400 bg-black/30 rounded-xl p-3 font-mono overflow-x-auto">
                 Prénom;Nom;Email;Téléphone;Entreprise;Statut;Valeur;Notes
               </code>
-              <p className="text-[10px] text-white/30">{t.import_statuses}</p>
-              <p className="text-xs text-white/40 mt-2">{t.import_warning_footer}</p>
+              <p className="text-[10px] text-slate-400 dark:text-neutral-500">{t.import_statuses}</p>
+              <p className="text-xs text-slate-400 dark:text-neutral-500 mt-2">{t.import_warning_footer}</p>
             </div>
 
             {/* LLM Prompt */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-white/40">{t.import_prompt_title}</p>
+              <p className="text-xs font-medium text-slate-400 dark:text-neutral-500">{t.import_prompt_title}</p>
               <div className="relative">
-                <pre className="text-[11px] text-white/50 bg-black/30 rounded-xl p-4 pr-12 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto border border-white/[0.05]">
+                <pre className="text-[11px] text-slate-500 dark:text-neutral-400 bg-black/30 rounded-xl p-4 pr-12 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto border border-slate-200 dark:border-white/10">
                   {LLM_PROMPT}
                 </pre>
                 <button
                   onClick={handleCopyPrompt}
-                  className="absolute top-3 right-3 rounded-lg p-1.5 text-white/30 hover:text-white hover:bg-white/10 transition-colors"
+                  className="absolute top-3 right-3 rounded-lg p-1.5 text-slate-400 dark:text-neutral-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                   title={t.import_prompt_copy}
                 >
-                  {promptCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                  {promptCopied ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}
                 </button>
               </div>
-              {promptCopied && <p className="text-xs text-emerald-400">{t.import_prompt_copied}</p>}
+              {promptCopied && <p className="text-xs text-sky-600 dark:text-sky-400">{t.import_prompt_copied}</p>}
             </div>
 
             {/* File input */}
             <div>
-              <label className="block text-xs font-medium text-white/40 mb-2">{t.import_file_label}</label>
+              <label className="block text-xs font-medium text-slate-400 dark:text-neutral-500 mb-2">{t.import_file_label}</label>
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-3 rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 cursor-pointer hover:border-emerald-500/30 transition-colors"
+                className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 cursor-pointer hover:border-sky-500/30 transition-colors"
               >
-                <FileUp className="h-5 w-5 text-white/30" />
-                <span className="text-sm text-white/40">
+                <FileUp className="h-5 w-5 text-slate-400 dark:text-neutral-500" />
+                <span className="text-sm text-slate-400 dark:text-neutral-500">
                   {importFile ? importFile.name : t.import_file_placeholder}
                 </span>
               </div>
@@ -404,7 +404,7 @@ export function ImportExportModal({ isOpen, onClose, source, prospects }: Import
             <button
               onClick={handleImport}
               disabled={!importFile || !importOfferId || isImporting}
-              className="w-full flex items-center justify-center gap-2 rounded-full bg-emerald-500 py-3 text-sm font-semibold text-black transition-all hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-sky-600 py-3 text-sm font-semibold text-white transition-all hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isImporting ? (
                 <div className="h-4 w-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />

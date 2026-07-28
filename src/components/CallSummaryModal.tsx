@@ -37,10 +37,10 @@ const getOutcomes = (lang: 'fr' | 'en') => [
     description: lang === 'fr' ? 'Le prospect a accepté l\'offre' : 'The prospect accepted the offer',
     icon: CheckCircle2,
     color: 'emerald',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/30',
-    textColor: 'text-emerald-400',
-    hoverBg: 'hover:bg-emerald-500/20'
+    bgColor: 'bg-sky-500/10',
+    borderColor: 'border-sky-500/30',
+    textColor: 'text-sky-600 dark:text-sky-400',
+    hoverBg: 'hover:bg-sky-500/20'
   },
   {
     id: 'followup' as const,
@@ -50,7 +50,7 @@ const getOutcomes = (lang: 'fr' | 'en') => [
     color: 'orange',
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/30',
-    textColor: 'text-orange-400',
+    textColor: 'text-orange-600',
     hoverBg: 'hover:bg-orange-500/20'
   },
   {
@@ -61,7 +61,7 @@ const getOutcomes = (lang: 'fr' | 'en') => [
     color: 'red',
     bgColor: 'bg-red-500/10',
     borderColor: 'border-red-500/30',
-    textColor: 'text-red-400',
+    textColor: 'text-red-600',
     hoverBg: 'hover:bg-red-500/20'
   }
 ]
@@ -182,19 +182,19 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
 
       {/* Modal - Structure Flexbox Stricte */}
       <div className="relative w-full max-w-2xl mx-4">
-        <div className="flex flex-col rounded-2xl bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] border border-white/[0.08] max-h-[90vh]">
+        <div className="flex flex-col rounded-2xl bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] border border-slate-200 dark:border-white/10 max-h-[90vh]">
           {/* Header - Ne s'écrase jamais */}
-          <div className="flex-shrink-0 border-b border-white/[0.08] px-6 py-5">
+          <div className="flex-shrink-0 border-b border-slate-200 dark:border-white/10 px-6 py-5">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">{t.title}</h2>
-                <p className="mt-1 text-sm text-white/40">
-                  {lang === 'fr' ? 'Qualifiez votre appel avec' : 'Qualify your call with'} <span className="font-semibold text-white">{prospectName}</span>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t.title}</h2>
+                <p className="mt-1 text-sm text-slate-400 dark:text-neutral-500">
+                  {lang === 'fr' ? 'Qualifiez votre appel avec' : 'Qualify your call with'} <span className="font-semibold text-slate-900 dark:text-white">{prospectName}</span>
                 </p>
               </div>
               <button
                 onClick={handleClose}
-                className="rounded-lg p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
+                className="rounded-lg p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -205,8 +205,8 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
           <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6">
             {/* Outcome Selection */}
             <div>
-              <label className="mb-3 block text-sm font-semibold text-white">
-                {t.outcome} <span className="text-red-400">*</span>
+              <label className="mb-3 block text-sm font-semibold text-slate-900 dark:text-white">
+                {t.outcome} <span className="text-red-600">*</span>
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {outcomes.map((outcome) => {
@@ -221,30 +221,30 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                         'group relative flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all',
                         isSelected
                           ? `${outcome.bgColor} ${outcome.borderColor} shadow-lg`
-                          : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.15] hover:bg-white/[0.05]'
+                          : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:border-slate-200 hover:bg-slate-100'
                       )}
                     >
                       <div className={cn(
                         'flex h-12 w-12 items-center justify-center rounded-full transition-all',
                         isSelected
                           ? outcome.bgColor
-                          : 'bg-white/5 group-hover:bg-white/10'
+                          : 'bg-slate-100 dark:bg-white/10 group-hover:bg-slate-100'
                       )}>
                         <Icon className={cn(
                           'h-6 w-6 transition-colors',
                           isSelected
                             ? outcome.textColor
-                            : 'text-white/40 group-hover:text-white/60'
+                            : 'text-slate-400 dark:text-neutral-500 group-hover:text-slate-500'
                         )} />
                       </div>
                       <div className="text-center">
                         <p className={cn(
                           'text-sm font-semibold transition-colors',
-                          isSelected ? outcome.textColor : 'text-white/60 group-hover:text-white'
+                          isSelected ? outcome.textColor : 'text-slate-500 dark:text-neutral-400 group-hover:text-slate-900'
                         )}>
                           {outcome.label}
                         </p>
-                        <p className="mt-1 text-xs text-white/40">
+                        <p className="mt-1 text-xs text-slate-400 dark:text-neutral-500">
                           {outcome.description}
                         </p>
                       </div>
@@ -265,30 +265,30 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
 
             {/* Won Fields - Plan de Financement */}
             {selectedOutcome === 'won' && (
-              <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
-                <p className="text-sm font-semibold text-emerald-400">
+              <div className="space-y-4 rounded-xl border border-sky-500/30 bg-sky-500/5 p-4">
+                <p className="text-sm font-semibold text-sky-600 dark:text-sky-400">
                   {lang === 'fr' ? 'Plan de Financement' : 'Payment Plan'}
                 </p>
 
                 {/* Prix de l'offre (read-only) */}
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white">
+                  <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
                     {lang === 'fr' ? 'Prix de l\'offre' : 'Offer price'}
                   </label>
-                  <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/40">
+                  <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-400 dark:text-neutral-500">
                     {offerPrice.toFixed(2)} €
                   </div>
                 </div>
 
                 {/* Type de paiement */}
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white">
-                    {lang === 'fr' ? 'Mode de paiement' : 'Payment method'} <span className="text-red-400">*</span>
+                  <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                    {lang === 'fr' ? 'Mode de paiement' : 'Payment method'} <span className="text-red-600">*</span>
                   </label>
                   <select
                     value={paymentType}
                     onChange={(e) => setPaymentType(e.target.value as 'comptant' | 'installments')}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
+                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none transition-all"
                   >
                     <option value="comptant">{lang === 'fr' ? 'Comptant' : 'Upfront'}</option>
                     <option value="installments">{lang === 'fr' ? 'En plusieurs fois' : 'Installments'}</option>
@@ -297,11 +297,11 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
 
                 {/* Champs conditionnels si paiement en plusieurs fois */}
                 {paymentType === 'installments' && (
-                  <div className="space-y-4 pl-4 border-l-2 border-emerald-500/30">
+                  <div className="space-y-4 pl-4 border-l-2 border-sky-500/30">
                     <div className="grid grid-cols-2 gap-3">
                       {/* Nombre de mensualités */}
                       <div>
-                        <label className="mb-2 block text-sm font-medium text-white">
+                        <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
                           {lang === 'fr' ? 'Nombre d\'échéances' : 'Number of installments'}
                         </label>
                         <input
@@ -310,19 +310,19 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                           max="12"
                           value={installmentsCount}
                           onChange={(e) => setInstallmentsCount(parseInt(e.target.value) || 2)}
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
+                          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none transition-all"
                         />
                       </div>
 
                       {/* Fréquence */}
                       <div>
-                        <label className="mb-2 block text-sm font-medium text-white">
+                        <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
                           {lang === 'fr' ? 'Fréquence' : 'Frequency'}
                         </label>
                         <select
                           value={installmentsFrequency}
                           onChange={(e) => setInstallmentsFrequency(e.target.value as 'mensuel' | 'trimestriel')}
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
+                          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none transition-all"
                         >
                           <option value="mensuel">{lang === 'fr' ? 'Mensuel' : 'Monthly'}</option>
                           <option value="trimestriel">{lang === 'fr' ? 'Trimestriel' : 'Quarterly'}</option>
@@ -331,8 +331,8 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                     </div>
 
                     {/* Calcul affiché */}
-                    <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
-                      <p className="text-sm font-medium text-emerald-400">
+                    <div className="rounded-lg bg-sky-500/10 border border-sky-500/20 p-3">
+                      <p className="text-sm font-medium text-sky-600 dark:text-sky-400">
                         {lang === 'fr' ? `💰 Montant par échéance : ${amountPerInstallment.toFixed(2)} €` : `💰 Amount per installment: ${amountPerInstallment.toFixed(2)} €`}
                       </p>
                     </div>
@@ -340,15 +340,15 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                 )}
 
                 {/* Section Commission */}
-                <div className="mt-4 pt-4 border-t border-emerald-500/20">
-                  <p className="text-sm font-semibold text-emerald-400 mb-3">
+                <div className="mt-4 pt-4 border-t border-sky-500/20">
+                  <p className="text-sm font-semibold text-sky-600 dark:text-sky-400 mb-3">
                     {lang === 'fr' ? 'Votre Commission' : 'Your Commission'}
                   </p>
 
                   {/* Taux de commission */}
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                      {lang === 'fr' ? 'Taux de commission (%)' : 'Commission rate (%)'} <span className="text-red-400">*</span>
+                    <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                      {lang === 'fr' ? 'Taux de commission (%)' : 'Commission rate (%)'} <span className="text-red-600">*</span>
                     </label>
                     <input
                       type="number"
@@ -357,7 +357,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                       step="0.5"
                       value={commissionRate}
                       onChange={(e) => setCommissionRate(parseFloat(e.target.value) || 0)}
-                      className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
+                      className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none transition-all"
                       placeholder="Ex: 10"
                     />
                   </div>
@@ -373,9 +373,9 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                             onChange={(e) => setCommissionSpread(e.target.checked)}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                          <div className="w-11 h-6 bg-slate-100 dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-slate-200 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
                         </div>
-                        <span className="text-sm font-medium text-white">
+                        <span className="text-sm font-medium text-slate-900 dark:text-white">
                           {lang === 'fr' ? 'Commission étalée sur les échéances' : 'Commission spread across installments'}
                         </span>
                       </label>
@@ -383,13 +383,13 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                   )}
 
                   {/* Calcul de la commission */}
-                  <div className="mt-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
+                  <div className="mt-3 rounded-lg bg-sky-500/10 border border-sky-500/20 p-3">
                     {commissionSpread && paymentType === 'installments' ? (
-                      <p className="text-sm font-medium text-emerald-400">
+                      <p className="text-sm font-medium text-sky-600 dark:text-sky-400">
                         {lang === 'fr' ? `💵 Commission par échéance : ${commissionPerInstallment.toFixed(2)} € / ${installmentsFrequency === 'mensuel' ? 'mois' : 'trimestre'}` : `💵 Commission per installment: ${commissionPerInstallment.toFixed(2)} € / ${installmentsFrequency === 'mensuel' ? 'month' : 'quarter'}`}
                       </p>
                     ) : (
-                      <p className="text-sm font-medium text-emerald-400">
+                      <p className="text-sm font-medium text-sky-600 dark:text-sky-400">
                         {lang === 'fr' ? `💵 Commission totale à percevoir : ${totalCommission.toFixed(2)} €` : `💵 Total commission: ${totalCommission.toFixed(2)} €`}
                       </p>
                     )}
@@ -401,14 +401,14 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
             {/* Follow Up Fields - Affichage conditionnel */}
             {selectedOutcome === 'followup' && (
               <div className="space-y-4 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4">
-                <p className="text-sm font-semibold text-orange-400">
+                <p className="text-sm font-semibold text-orange-600">
                   {lang === 'fr' ? 'Informations de suivi' : 'Follow-up information'}
                 </p>
 
                 {/* Motif du Follow Up */}
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white">
-                    {lang === 'fr' ? 'Motif du report' : 'Postponement reason'} <span className="text-red-400">*</span>
+                  <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                    {lang === 'fr' ? 'Motif du report' : 'Postponement reason'} <span className="text-red-600">*</span>
                   </label>
                   <select
                     value={followupReason}
@@ -419,7 +419,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                         setFollowupReasonOther('')
                       }
                     }}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
+                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-orange-500 focus:outline-none transition-all"
                   >
                     <option value="">{lang === 'fr' ? 'Sélectionnez un motif' : 'Select a reason'}</option>
                     {followupReasons.map((reason) => (
@@ -432,15 +432,15 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                   {/* Champ conditionnel "Précisez" si motif == "Autre" */}
                   {followupReason === otherLabel && (
                     <div className="mt-3">
-                      <label className="mb-2 block text-sm font-medium text-white">
-                        {lang === 'fr' ? 'Précisez le motif' : 'Specify the reason'} <span className="text-red-400">*</span>
+                      <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                        {lang === 'fr' ? 'Précisez le motif' : 'Specify the reason'} <span className="text-red-600">*</span>
                       </label>
                       <input
                         type="text"
                         value={followupReasonOther}
                         onChange={(e) => setFollowupReasonOther(e.target.value)}
                         placeholder={lang === 'fr' ? 'Ex: Indisponibilité exceptionnelle...' : 'E.g.: Exceptional unavailability...'}
-                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
+                        className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-orange-500 focus:outline-none transition-all"
                       />
                     </div>
                   )}
@@ -448,15 +448,15 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
 
                 {/* Date de reprogrammation */}
                 <div>
-                  <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                  <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
                     <Calendar className="h-4 w-4" />
-                    {lang === 'fr' ? 'Date de reprogrammation' : 'Reschedule date'} <span className="text-red-400">*</span>
+                    {lang === 'fr' ? 'Date de reprogrammation' : 'Reschedule date'} <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="datetime-local"
                     value={followupDate}
                     onChange={(e) => setFollowupDate(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
+                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-orange-500 focus:outline-none transition-all"
                   />
                 </div>
               </div>
@@ -464,7 +464,7 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
 
             {/* Notes */}
             <div>
-              <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+              <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
                 <FileText className="h-4 w-4" />
                 {t.notes}
               </label>
@@ -472,21 +472,21 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder={t.notes_placeholder}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all resize-none"
+                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none transition-all resize-none"
                 rows={6}
               />
-              <p className="mt-2 text-xs text-white/40">
+              <p className="mt-2 text-xs text-slate-400 dark:text-neutral-500">
                 {lang === 'fr' ? 'Ces notes seront ajoutées à la fiche prospect' : 'These notes will be added to the prospect record'}
               </p>
             </div>
           </div>
 
           {/* Footer - Toujours visible en bas */}
-          <div className="flex-shrink-0 border-t border-white/[0.08] px-6 py-4 bg-black/20">
+          <div className="flex-shrink-0 border-t border-slate-200 dark:border-white/10 px-6 py-4 bg-black/20">
             <div className="flex items-center justify-between gap-3">
               <button
                 onClick={handleClose}
-                className="rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10"
+                className="rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-neutral-300 transition-all hover:bg-slate-100"
               >
                 {t.skip}
               </button>
@@ -496,8 +496,8 @@ export function CallSummaryModal({ isOpen, onClose, onSubmit, prospectName, offe
                 className={cn(
                   'rounded-full px-6 py-2.5 text-sm font-semibold transition-all',
                   isFormValid()
-                    ? 'bg-emerald-500 text-black hover:bg-emerald-400 shadow-lg shadow-emerald-500/20'
-                    : 'bg-white/5 text-white/40 cursor-not-allowed opacity-50'
+                    ? 'bg-sky-600 text-white hover:bg-sky-600 shadow-lg shadow-sky-500/20'
+                    : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-neutral-500 cursor-not-allowed opacity-50'
                 )}
               >
                 {t.submit}

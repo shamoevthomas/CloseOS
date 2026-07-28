@@ -1,6 +1,34 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
+// Charte CloseOS Sales (fond crème, carte blanche, accent sky, logo-sales.png) —
+// même gabarit que api/cron/sales-weekly-report.ts / reminder-time-emails.ts.
+function wrapEmailHtml(bodyContent: string): string {
+    return `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#f4f2f1;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f2f1;padding:64px 20px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+      <tr><td style="padding-bottom:40px;text-align:left;padding-left:24px;">
+        <img src="https://closeos.fr/logo-sales.png" alt="CloseOS" width="150" style="display:block;">
+      </td></tr>
+      <tr><td style="background-color:#ffffff;border-radius:32px;padding:48px 40px;box-shadow:0 20px 40px rgba(15,23,42,0.05);border:1px solid rgba(2,132,199,0.08);">
+        ${bodyContent}
+      </td></tr>
+      <tr><td style="padding-top:40px;text-align:left;padding-left:24px;">
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">
+          Cet e-mail a été envoyé automatiquement par <a href="https://closeos.fr" style="color:#0284c7;text-decoration:none;font-weight:500;">CloseOS</a>, merci de ne pas y répondre.
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
 // Shared helper: send email via Brevo
 async function sendEmail({ to, subject, htmlContent }: { to: string; subject: string; htmlContent: string }) {
     const BREVO_API_KEY = process.env.BREVO_API_KEY;
@@ -415,65 +443,30 @@ async function handleWelcome(req: any, res: any) {
         if (!email) return res.status(400).json({ error: 'Email requis' });
         const userName = name || email.split('@')[0];
 
-        const html = `<!DOCTYPE html>
-<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark">
-    <style>:root { color-scheme: dark; } body, table, td, a { -webkit-text-size-adjust: 100%; } table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; } img { border: 0; height: auto; } body { margin: 0 !important; padding: 0 !important; width: 100% !important; }</style>
-</head>
-<body style="margin: 0; padding: 0; -webkit-font-smoothing: antialiased; background-color: #020617;">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #020617; background-image: linear-gradient(#020617, #020617);">
-        <tr><td align="center" style="padding-bottom: 60px;">
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                <tr><td align="center" style="padding: 40px 20px 20px 20px;">
-                    <img src="https://closeos.fr/logo.PNG" alt="CloseOS" width="140" style="display: block;">
-                </td></tr>
-                <tr><td align="center" style="padding: 0 20px; font-family: 'Segoe UI', Arial, sans-serif;">
-                    <span style="background-color: #064e3b; background-image: linear-gradient(#064e3b, #064e3b); border: 1px solid #10b981; color: #10b981; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: bold; text-transform: uppercase; display: inline-block;">Bienvenue</span>
-                    <h1 style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent); font-size: 28px; margin-top: 20px; margin-bottom: 16px;">Bienvenue sur CloseOS &#127881;</h1>
-                    <p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 16px; line-height: 1.6; text-align: left; margin-bottom: 20px;">
-                        Bonjour ${userName},<br><br>
-                        Votre compte est cr&eacute;&eacute; ! Vous b&eacute;n&eacute;ficiez de <strong style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent);">10 jours d'essai gratuit</strong> pour d&eacute;couvrir tout ce que CloseOS peut faire pour votre activit&eacute; de closer.
-                    </p>
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; background-image: linear-gradient(#0f172a, #0f172a); border: 1px solid #1d4ed8; border-radius: 20px; margin-bottom: 20px;">
-                        <tr><td style="padding: 25px; text-align: left; font-family: 'Segoe UI', Arial, sans-serif;">
-                            <h3 style="color: #60a5fa; background-image: linear-gradient(transparent, transparent); font-size: 20px; margin-top: 0; margin-bottom: 16px;">&#128736;&#65039; L'outil est en V1</h3>
-                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">
-                                CloseOS est encore en version 1. Cela signifie que vous pourriez rencontrer quelques <strong style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent);">bugs ou imperfections</strong>. C'est normal et on travaille chaque jour pour am&eacute;liorer l'exp&eacute;rience.
-                            </p>
-                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0;">
-                                Si vous rencontrez le moindre probl&egrave;me, n'h&eacute;sitez pas &agrave; nous contacter &agrave; <a href="mailto:support@closeos.fr" style="color: #60a5fa; text-decoration: none;"><strong>support@closeos.fr</strong></a>. On r&eacute;pond rapidement !
-                            </p>
-                        </td></tr>
-                    </table>
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; background-image: linear-gradient(#0f172a, #0f172a); border: 1px solid #059669; border-radius: 20px; margin-bottom: 20px;">
-                        <tr><td style="padding: 25px; text-align: left; font-family: 'Segoe UI', Arial, sans-serif;">
-                            <h3 style="color: #34d399; background-image: linear-gradient(transparent, transparent); font-size: 20px; margin-top: 0; margin-bottom: 16px;">&#9989; Ce qui vous attend</h3>
-                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">&#8226; <strong style="color: #fdfdfd;">CRM &amp; Pipeline</strong> pour g&eacute;rer tous vos prospects</p>
-                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">&#8226; <strong style="color: #fdfdfd;">Agenda &amp; Booking</strong> pour planifier vos appels</p>
-                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">&#8226; <strong style="color: #fdfdfd;">Facturation automatique</strong> de vos commissions</p>
-                            <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0;">&#8226; <strong style="color: #fdfdfd;">KPI &amp; Call Room</strong> pour suivre vos performances</p>
-                        </td></tr>
-                    </table>
-                    <p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; text-align: left; margin-bottom: 10px;">
-                        Bon closing &#128170;
-                    </p>
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 25px;">
-                        <tr><td align="center">
-                            <a href="https://closeos.fr/dashboard" style="background-color: #3b82f6; background-image: linear-gradient(#3b82f6, #3b82f6); color: #fdfdfd; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: bold; display: block; font-family: 'Segoe UI', Arial, sans-serif; font-size: 18px;">&#128640; D&eacute;couvrir CloseOS</a>
-                        </td></tr>
-                    </table>
-                </td></tr>
-                <tr><td align="center" style="padding: 40px 20px 0 20px; font-family: 'Segoe UI', Arial, sans-serif;">
-                    <p style="color: #475569; font-size: 12px; margin-bottom: 4px;">&copy; 2026 CloseOS.fr &mdash; Le Syst&egrave;me d'Exploitation des Closers</p>
-                    <p style="color: #475569; font-size: 12px;"><a href="https://closeos.fr/cgu" style="color: #475569; text-decoration: none;">CGU</a> &middot; <a href="https://closeos.fr/cgv" style="color: #475569; text-decoration: none;">CGV</a> &middot; <a href="https://closeos.fr/confidentialite" style="color: #475569; text-decoration: none;">Confidentialit&eacute;</a></p>
-                    <p style="color: #475569; font-size: 11px; margin-top: 30px;">Vous recevez cet email car vous venez de cr&eacute;er un compte sur CloseOS.</p>
-                </td></tr>
-            </table>
-        </td></tr>
-    </table>
-</body></html>`;
+        const html = wrapEmailHtml(`
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#0284c7;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">🎉 Bienvenue</p>
+        <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 16px;font-size:32px;color:#111111;line-height:1.15;letter-spacing:-0.04em;">Bienvenue sur CloseOS</h1>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:16px;color:#1b1c1b;line-height:1.6;">
+          Bonjour ${userName}, votre compte est créé ! Vous bénéficiez de <strong style="color:#111111;">10 jours d'essai gratuit</strong> pour découvrir tout ce que CloseOS peut faire pour votre activité de closer.
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+          <tr><td style="padding:20px;background-color:#f5f9ff;border-radius:16px;">
+            <p style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 10px;font-size:15px;color:#0284c7;">✅ Ce qui vous attend</p>
+            <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 6px;font-size:14px;color:#1b1c1b;line-height:1.6;">• <strong>CRM &amp; Pipeline</strong> pour gérer tous vos prospects</p>
+            <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 6px;font-size:14px;color:#1b1c1b;line-height:1.6;">• <strong>Agenda &amp; Booking</strong> pour planifier vos appels</p>
+            <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 6px;font-size:14px;color:#1b1c1b;line-height:1.6;">• <strong>Facturation automatique</strong> de vos commissions</p>
+            <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:14px;color:#1b1c1b;line-height:1.6;">• <strong>KPI &amp; Call Room</strong> pour suivre vos performances</p>
+          </td></tr>
+        </table>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:16px;color:#1b1c1b;line-height:1.6;">
+          Une question, une remarque ? Écrivez-nous à <a href="mailto:support@closeos.fr" style="color:#0284c7;font-weight:600;">support@closeos.fr</a>, on répond rapidement.
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr><td align="center">
+            <a href="https://closeos.fr/dashboard" style="display:inline-block;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;color:#ffffff;background-color:#111111;border-radius:9999px;padding:16px 32px;text-decoration:none;">🚀 Découvrir CloseOS</a>
+          </td></tr>
+        </table>
+      `);
 
         await sendEmail({ to: email, subject: 'Bienvenue sur CloseOS 🎉', htmlContent: html });
         return res.status(200).json({ success: true });

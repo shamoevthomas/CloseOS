@@ -27,6 +27,8 @@ import {
   User,
   Bell,
   Check,
+  Copy,
+  RefreshCw,
   Loader2,
   Building2,
   Settings2,
@@ -34,6 +36,7 @@ import {
 import { cn } from '../lib/utils'
 import { InstallmentScheduleEditor, type ScheduleEntry } from './InstallmentScheduleEditor'
 import { CreateEventModal } from './CreateEventModal'
+import PhoneInput from './PhoneInput'
 import { MaskedText } from '../components/MaskedText'
 import { type Prospect } from '../contexts/ProspectsContext'
 import { useMeetings } from '../contexts/MeetingsContext'
@@ -41,6 +44,7 @@ import { useOffers, type Offer } from '../contexts/OffersContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { useTags } from '../hooks/useTags'
+import { useProspectTasks } from '../hooks/useProspectTasks'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -119,7 +123,18 @@ export function ProspectView({
   const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set())
 
   // Next appointment
-  const [nextAppointment, setNextAppointment] = useState<{ date: string; time: string } | null>(null)
+  const [nextAppointment, setNextAppointment] = useState<{ id?: string; date: string; time: string } | null>(null)
+
+  // Inline name edit (header)
+  const [editingName, setEditingName] = useState(false)
+  const [editedName, setEditedName] = useState('')
+
+  // RDV reschedule / cancel
+  const [showReschedule, setShowReschedule] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleTime, setRescheduleTime] = useState('')
+  const [rdvBusy, setRdvBusy] = useState(false)
+  const [nextApptRefresh, setNextApptRefresh] = useState(0)
 
   const isExpired = (offer: Offer) => {
     if (!offer.endDate) return false
@@ -134,7 +149,13 @@ export function ProspectView({
   const [localProspect, setLocalProspect] = useState<ExtendedProspect>(prospect)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels' | 'historique'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'taches' | 'rappels' | 'historique'>('info')
+
+  // Tâches / to-do du prospect
+  const { tasks, loading: tasksLoading, addTask, toggleTask, deleteTask, openCount: openTasksCount } = useProspectTasks(prospect.id)
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskDue, setNewTaskDue] = useState('')
+  const [addingTask, setAddingTask] = useState(false)
 
   const [editingOffer, setEditingOffer] = useState(false)
   const [editedOfferId, setEditedOfferId] = useState('')
@@ -262,6 +283,7 @@ export function ProspectView({
   const [reminderDesc, setReminderDesc] = useState('')
   const [reminderDate, setReminderDate] = useState('')
   const [reminderTime, setReminderTime] = useState('')
+  const [reminderPreciseTime, setReminderPreciseTime] = useState(false)
   const [reminderSubmitting, setReminderSubmitting] = useState(false)
   const [prospectReminders, setProspectReminders] = useState<any[]>([])
   const [remindersLoading, setRemindersLoading] = useState(false)
@@ -289,10 +311,12 @@ export function ProspectView({
   }, [user, prospect.id])
 
   const handleCreateReminder = async () => {
-    if (!user || !reminderTitle.trim() || !reminderDate || !reminderTime) return
+    if (!user || !reminderTitle.trim() || !reminderDate) return
+    if (reminderPreciseTime && !reminderTime) return
     setReminderSubmitting(true)
     try {
-      const reminder_date = new Date(`${reminderDate}T${reminderTime}`).toISOString()
+      // Sans heure précise : on stocke à 09:00 (aucun email). Avec : datetime exact + email 5 min avant.
+      const reminder_date = new Date(`${reminderDate}T${reminderPreciseTime ? reminderTime : '09:00'}`).toISOString()
       const { data, error } = await supabase
         .from('reminders')
         .insert([{
@@ -302,6 +326,7 @@ export function ProspectView({
           reminder_date,
           prospect_id: prospect.id,
           is_done: false,
+          has_time: reminderPreciseTime,
         }])
         .select()
         .single()
@@ -313,6 +338,7 @@ export function ProspectView({
       setReminderDesc('')
       setReminderDate('')
       setReminderTime('')
+      setReminderPreciseTime(false)
       toast.success(lang === 'fr' ? 'Rappel créé' : 'Reminder created')
     } catch (err) {
       console.error('Erreur création rappel:', err)
@@ -392,7 +418,7 @@ export function ProspectView({
     const nowIso = new Date().toISOString().split('T')[0]
     supabase
       .from('meetings')
-      .select('date, time')
+      .select('id, date, time')
       .eq('user_id', user.id)
       .eq('prospectId', prospect.id)
       .in('status', ['upcoming', 'scheduled'])
@@ -402,12 +428,12 @@ export function ProspectView({
       .limit(1)
       .then(({ data }) => {
         if (data && data.length > 0) {
-          setNextAppointment({ date: data[0].date, time: data[0].time?.slice(0, 5) })
+          setNextAppointment({ id: data[0].id, date: data[0].date, time: data[0].time?.slice(0, 5) })
         } else {
           setNextAppointment(null)
         }
       })
-  }, [user?.id, prospect.id])
+  }, [user?.id, prospect.id, nextApptRefresh])
 
   // --- History ---
   const fetchHistory = useCallback(async () => {
@@ -564,6 +590,83 @@ export function ProspectView({
     setEditedEmail(localProspect.email)
     setEditedPhone(localProspect.phone)
     setEditingClient(false)
+  }
+
+  // --- Inline name edit (header) ---
+  const handleSaveName = () => {
+    const name = editedName.trim()
+    if (!name) { setEditingName(false); return }
+    const parts = name.split(' ')
+    handleOptimisticUpdate({ contact: name, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' })
+    setEditingName(false)
+  }
+
+  // --- Copy to clipboard ---
+  const copyToClipboard = (value: string | undefined | null, label: string) => {
+    if (!value) return
+    navigator.clipboard?.writeText(value).then(
+      () => toast.success(lang === 'fr' ? `${label} copié` : `${label} copied`),
+      () => toast.error(lang === 'fr' ? 'Copie impossible' : 'Copy failed')
+    )
+  }
+
+  // --- RDV reschedule / cancel (with auto email to prospect) ---
+  const sendRdvEmail = async (kind: 'reschedule' | 'cancel', date: string, time: string) => {
+    if (!localProspect.email) return
+    const isFr = lang === 'fr'
+    const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    const subject = kind === 'reschedule'
+      ? (isFr ? 'Votre rendez-vous a été reprogrammé' : 'Your appointment has been rescheduled')
+      : (isFr ? 'Votre rendez-vous a été annulé' : 'Your appointment has been cancelled')
+    const intro = kind === 'reschedule'
+      ? (isFr ? `Votre rendez-vous a été déplacé au <strong>${dateLabel} à ${time}</strong>.` : `Your appointment has been moved to <strong>${dateLabel} at ${time}</strong>.`)
+      : (isFr ? `Votre rendez-vous du <strong>${dateLabel} à ${time}</strong> a été annulé.` : `Your appointment on <strong>${dateLabel} at ${time}</strong> has been cancelled.`)
+    const hello = isFr ? `Bonjour ${localProspect.contact || ''},` : `Hi ${localProspect.contact || ''},`
+    const outro = kind === 'reschedule'
+      ? (isFr ? 'Au plaisir de vous voir.' : 'Looking forward to seeing you.')
+      : (isFr ? "N'hésitez pas à reprendre rendez-vous quand vous le souhaitez." : 'Feel free to book again whenever you like.')
+    const htmlContent = `<div style="font-family:Arial,sans-serif;color:#1e293b;font-size:15px;line-height:1.6;max-width:520px"><p>${hello}</p><p>${intro}</p><p>${outro}</p><p style="color:#64748b;font-size:13px;margin-top:24px">CloseOS</p></div>`
+    try {
+      await fetch('/api/email?action=send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender: { email: 'support@closeos.fr', name: 'CloseOS' }, to: [{ email: localProspect.email }], subject, htmlContent }),
+      })
+    } catch { /* best-effort */ }
+  }
+
+  const handleRescheduleRdv = async () => {
+    if (!nextAppointment?.id || !rescheduleDate || !rescheduleTime) return
+    setRdvBusy(true)
+    try {
+      const { error } = await supabase.from('meetings').update({ date: rescheduleDate, time: rescheduleTime }).eq('id', nextAppointment.id)
+      if (error) throw error
+      await sendRdvEmail('reschedule', rescheduleDate, rescheduleTime)
+      toast.success(lang === 'fr' ? 'RDV reprogrammé, email envoyé' : 'Appointment rescheduled, email sent')
+      setShowReschedule(false)
+      setNextApptRefresh(v => v + 1)
+    } catch {
+      toast.error(lang === 'fr' ? 'Échec de la reprogrammation' : 'Reschedule failed')
+    } finally {
+      setRdvBusy(false)
+    }
+  }
+
+  const handleCancelRdv = async () => {
+    if (!nextAppointment?.id) return
+    if (!window.confirm(lang === 'fr' ? 'Annuler ce rendez-vous ? Un email sera envoyé au prospect.' : 'Cancel this appointment? An email will be sent to the prospect.')) return
+    setRdvBusy(true)
+    try {
+      const { error } = await supabase.from('meetings').update({ status: 'cancelled' }).eq('id', nextAppointment.id)
+      if (error) throw error
+      await sendRdvEmail('cancel', nextAppointment.date, nextAppointment.time)
+      toast.success(lang === 'fr' ? 'RDV annulé, email envoyé' : 'Appointment cancelled, email sent')
+      setNextAppointment(null)
+    } catch {
+      toast.error(lang === 'fr' ? "Échec de l'annulation" : 'Cancel failed')
+    } finally {
+      setRdvBusy(false)
+    }
   }
 
   const handleOfferChange = (offerId: string) => {
@@ -756,7 +859,7 @@ export function ProspectView({
 
       <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
         <div className="w-screen max-w-md">
-          <div className="flex h-full flex-col bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] border-l border-white/[0.08]">
+          <div className="flex h-full flex-col bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] border-l border-slate-200 dark:border-white/10">
 
             {errorMessage && (
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white shadow-xl animate-in fade-in slide-in-from-top-2">
@@ -766,13 +869,13 @@ export function ProspectView({
             )}
 
             {/* Header Fixe */}
-            <div className="border-b border-white/[0.08] bg-[#111111] px-6 pt-6 pb-0">
+            <div className="border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-6 pt-6 pb-0">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {/* Avatar */}
                   <button
                     onClick={() => avatarInputRef.current?.click()}
-                    className="relative w-11 h-11 rounded-full bg-white/5 flex items-center justify-center overflow-hidden text-lg font-extrabold text-white/40 group cursor-pointer shrink-0"
+                    className="relative w-11 h-11 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden text-lg font-extrabold text-slate-400 dark:text-neutral-500 group cursor-pointer shrink-0"
                     title={lang === 'fr' ? "Changer la photo" : "Change photo"}
                   >
                     {localProspect.avatar_url ? (
@@ -782,23 +885,39 @@ export function ProspectView({
                     )}
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                       {avatarUploading ? (
-                        <Loader2 className="h-4 w-4 text-white animate-spin" />
+                        <Loader2 className="h-4 w-4 text-slate-900 dark:text-white animate-spin" />
                       ) : (
-                        <Camera className="h-4 w-4 text-white" />
+                        <Camera className="h-4 w-4 text-slate-900 dark:text-white" />
                       )}
                     </div>
                     <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                   </button>
                   <div className="min-w-0">
-                    <h2 className="text-xl font-bold text-white truncate">
-                      <MaskedText value={localProspect.contact} type="name" />
-                    </h2>
+                    {editingName ? (
+                      <input
+                        autoFocus
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        onBlur={handleSaveName}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false) }}
+                        className="w-full text-xl font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-white/5 border border-sky-500/40 rounded-lg px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-sky-500/30"
+                      />
+                    ) : (
+                      <h2
+                        onClick={() => { setEditedName(localProspect.contact || ''); setEditingName(true) }}
+                        title={lang === 'fr' ? 'Cliquer pour modifier' : 'Click to edit'}
+                        className="group/name text-xl font-bold text-slate-900 dark:text-white truncate flex items-center gap-1.5 cursor-text"
+                      >
+                        <MaskedText value={localProspect.contact} type="name" />
+                        <Pencil className="h-3.5 w-3.5 text-slate-300 dark:text-neutral-600 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
+                      </h2>
+                    )}
                     {localProspect.company && localProspect.company !== 'N/A' && (
-                      <p className="mt-0.5 text-sm text-white/40 truncate">{localProspect.company}</p>
+                      <p className="mt-0.5 text-sm text-slate-400 dark:text-neutral-500 truncate">{localProspect.company}</p>
                     )}
                   </div>
                 </div>
-                <button onClick={onClose} className="rounded-lg p-2 text-white/40 hover:bg-white/5 hover:text-white shrink-0">
+                <button onClick={onClose} className="rounded-lg p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 shrink-0">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -808,13 +927,13 @@ export function ProspectView({
                 {getProspectTagObjects(localProspect.id).map(tag => (
                   <span
                     key={tag.id}
-                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white group/tag cursor-default"
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold text-slate-900 dark:text-white group/tag cursor-default"
                     style={{ backgroundColor: tag.color }}
                   >
                     {tag.name}
                     <button
                       onClick={() => removeTagFromProspect(localProspect.id, tag.id)}
-                      className="ml-0.5 rounded-full p-0.5 hover:bg-white/20 opacity-0 group-hover/tag:opacity-100 transition-opacity"
+                      className="ml-0.5 rounded-full p-0.5 hover:bg-slate-100 opacity-0 group-hover/tag:opacity-100 transition-opacity"
                     >
                       <X className="h-2.5 w-2.5" />
                     </button>
@@ -822,15 +941,15 @@ export function ProspectView({
                 ))}
                 <button
                   onClick={() => setShowTagPicker(!showTagPicker)}
-                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-white/[0.08] px-2 py-0.5 text-[11px] text-white/40 hover:border-white/20 hover:text-white/60 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-200 dark:border-white/10 px-2 py-0.5 text-[11px] text-slate-400 dark:text-neutral-500 hover:border-slate-200 hover:text-slate-500 transition-colors"
                 >
                   <Plus className="h-3 w-3" /> tag
                 </button>
                 {showTagPicker && (
-                  <div className="absolute left-0 top-full mt-1.5 z-10 min-w-[200px] max-w-[300px] rounded-lg border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+                  <div className="absolute left-0 top-full mt-1.5 z-10 min-w-[200px] max-w-[300px] rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)]">
                     <div className="max-h-48 overflow-y-auto p-1.5">
                       {tags.length === 0 ? (
-                        <p className="px-3 py-2 text-xs text-white/40">{lang === 'fr' ? 'Aucun tag. Créez-en dans Personnaliser.' : 'No tags. Create them in Customize.'}</p>
+                        <p className="px-3 py-2 text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Aucun tag. Créez-en dans Personnaliser.' : 'No tags. Create them in Customize.'}</p>
                       ) : (
                         tags.map(tag => {
                           const isAssigned = (getProspectTagObjects(localProspect.id)).some(t => t.id === tag.id)
@@ -843,12 +962,12 @@ export function ProspectView({
                               }}
                               className={cn(
                                 'flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs transition-colors',
-                                isAssigned ? 'bg-white/5 text-white' : 'text-white/60 hover:bg-white/5'
+                                isAssigned ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white' : 'text-slate-500 dark:text-neutral-400 hover:bg-slate-100'
                               )}
                             >
                               <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
                               <span className="flex-1 text-left">{tag.name}</span>
-                              {isAssigned && <Check className="h-3.5 w-3.5 text-emerald-400" />}
+                              {isAssigned && <Check className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />}
                             </button>
                           )
                         })
@@ -860,29 +979,65 @@ export function ProspectView({
 
               {/* Next appointment */}
               {nextAppointment && (
-                <div className="flex items-center gap-3 mb-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-2.5">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
-                    <Calendar className="h-4 w-4" />
+                <div className="mb-3 rounded-lg border border-sky-500/20 bg-sky-500/5 px-4 py-2.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-600 dark:text-sky-400 shrink-0">
+                      <Calendar className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">{lang === 'fr' ? 'Prochain rendez-vous' : 'Next appointment'}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
+                          weekday: 'short', day: 'numeric', month: 'long'
+                        })} {lang === 'fr' ? 'à' : 'at'} {nextAppointment.time}
+                      </p>
+                    </div>
+                    {nextAppointment.id && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => { setRescheduleDate(nextAppointment.date); setRescheduleTime(nextAppointment.time); setShowReschedule(v => !v) }}
+                          title={lang === 'fr' ? 'Reprogrammer' : 'Reschedule'}
+                          className="p-1.5 rounded-lg text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition-colors"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={handleCancelRdv}
+                          disabled={rdvBusy}
+                          title={lang === 'fr' ? 'Annuler (email au prospect)' : 'Cancel (emails the prospect)'}
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{lang === 'fr' ? 'Prochain rendez-vous' : 'Next appointment'}</p>
-                    <p className="text-sm font-semibold text-white">
-                      {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
-                        weekday: 'short', day: 'numeric', month: 'long'
-                      })} {lang === 'fr' ? 'à' : 'at'} {nextAppointment.time}
-                    </p>
-                  </div>
+                  {showReschedule && nextAppointment.id && (
+                    <div className="mt-3 pt-3 border-t border-sky-500/10 flex flex-wrap items-end gap-2">
+                      <div className="flex-1 min-w-[110px]">
+                        <label className="block text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase mb-1">Date</label>
+                        <input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-2 py-1.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500" />
+                      </div>
+                      <div className="w-24">
+                        <label className="block text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase mb-1">{lang === 'fr' ? 'Heure' : 'Time'}</label>
+                        <input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-2 py-1.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500" />
+                      </div>
+                      <button onClick={handleRescheduleRdv} disabled={rdvBusy || !rescheduleDate || !rescheduleTime} className="flex items-center justify-center rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-sky-500 disabled:opacity-50">
+                        {rdvBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : (lang === 'fr' ? 'Valider' : 'Save')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
               <div className="flex gap-2 mb-3">
-                <button onClick={handleOpenGmail} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm font-medium text-white/60 transition-all hover:bg-white/5 hover:text-white">
+                <button onClick={handleOpenGmail} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2 text-sm font-medium text-slate-500 dark:text-neutral-400 transition-all hover:bg-slate-100 hover:text-slate-900">
                   <Mail className="h-4 w-4" /> Email
                 </button>
-                <button onClick={handleOpenWhatsApp} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-500/20 hover:text-emerald-300">
+                <button onClick={handleOpenWhatsApp} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-sky-500/20 bg-sky-500/10 px-3 py-2 text-sm font-medium text-sky-600 dark:text-sky-400 transition-all hover:bg-sky-500/20 hover:text-sky-700">
                   <MessageCircle className="h-4 w-4" /> WhatsApp
                 </button>
-                <button onClick={() => { if (onCreateEvent) onCreateEvent() }} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-bold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20">
+                <button onClick={() => { if (onCreateEvent) onCreateEvent() }} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-bold text-white transition-all hover:bg-sky-600 shadow-lg shadow-sky-500/20">
                   <Calendar className="h-4 w-4" /> {lang === 'fr' ? 'RDV' : 'Appt'}
                 </button>
               </div>
@@ -895,48 +1050,65 @@ export function ProspectView({
                 </button>
                 <button
                   onClick={() => navigate(`/live-call?name=${encodeURIComponent(localProspect.contact)}&prospectId=${localProspect.id}&from=/pipeline`)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white/5 border border-white/[0.08] px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-white/10"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 px-3 py-2.5 text-sm font-bold text-slate-900 dark:text-white transition-all hover:bg-slate-100"
                 >
                   <PhoneCall className="h-4 w-4" /> Call
                 </button>
               </div>
 
               {/* TABS */}
-              <div className="flex border-b border-white/[0.08]">
+              <div className="flex border-b border-slate-200 dark:border-white/10">
                 <button
                   onClick={() => setActiveTab('info')}
                   className={cn(
                     "flex-1 pb-3 text-sm font-medium transition-all relative",
-                    activeTab === 'info' ? "text-white" : "text-white/40 hover:text-white"
+                    activeTab === 'info' ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-neutral-500 hover:text-slate-900"
                   )}
                 >
                   {lang === 'fr' ? 'Informations' : 'Info'}
                   {activeTab === 'info' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-600" />
                   )}
                 </button>
                 <button
                   onClick={() => setActiveTab('notes')}
                   className={cn(
                     "flex-1 pb-3 text-sm font-medium transition-all relative",
-                    activeTab === 'notes' ? "text-white" : "text-white/40 hover:text-white"
+                    activeTab === 'notes' ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-neutral-500 hover:text-slate-900"
                   )}
                 >
                   {lang === 'fr' ? "Notes d'Appel" : 'Call Notes'}
                   {activeTab === 'notes' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500" />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-600" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('taches')}
+                  className={cn(
+                    "flex-1 pb-3 text-sm font-medium transition-all relative flex items-center justify-center gap-1.5",
+                    activeTab === 'taches' ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-neutral-500 hover:text-slate-900"
+                  )}
+                >
+                  {lang === 'fr' ? 'Tâches' : 'Tasks'}
+                  {openTasksCount > 0 && (
+                    <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-sky-500/20 px-1.5 text-[10px] font-bold text-sky-600 dark:text-sky-400">
+                      {openTasksCount}
+                    </span>
+                  )}
+                  {activeTab === 'taches' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-600" />
                   )}
                 </button>
                 <button
                   onClick={() => setActiveTab('rappels')}
                   className={cn(
                     "flex-1 pb-3 text-sm font-medium transition-all relative flex items-center justify-center gap-1.5",
-                    activeTab === 'rappels' ? "text-white" : "text-white/40 hover:text-white"
+                    activeTab === 'rappels' ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-neutral-500 hover:text-slate-900"
                   )}
                 >
                   {lang === 'fr' ? 'Rappels' : 'Reminders'}
                   {activeRemindersCount > 0 && (
-                    <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-orange-500/20 px-1.5 text-[10px] font-bold text-orange-400">
+                    <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-orange-500/20 px-1.5 text-[10px] font-bold text-orange-600">
                       {activeRemindersCount}
                     </span>
                   )}
@@ -948,12 +1120,12 @@ export function ProspectView({
                   onClick={() => setActiveTab('historique')}
                   className={cn(
                     "flex-1 pb-3 text-sm font-medium transition-all relative",
-                    activeTab === 'historique' ? "text-white" : "text-white/40 hover:text-white"
+                    activeTab === 'historique' ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-neutral-500 hover:text-slate-900"
                   )}
                 >
                   {lang === 'fr' ? 'Historique' : 'History'}
                   {activeTab === 'historique' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-500" />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-600" />
                   )}
                 </button>
               </div>
@@ -968,7 +1140,7 @@ export function ProspectView({
 
                   {/* Étape Pipeline */}
                   <div>
-                    <label className="mb-2 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Étape actuelle' : 'Current stage'}</label>
+                    <label className="mb-2 block text-xs font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Étape actuelle' : 'Current stage'}</label>
                     <select
                       value={localProspect.stage}
                       onChange={(e) => {
@@ -979,7 +1151,7 @@ export function ProspectView({
                           setShowFollowupRdv(true)
                         }
                       }}
-                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                      className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                     >
                       {allStages.map((stage) => (
                         <option key={stage.id} value={stage.id}>
@@ -993,31 +1165,31 @@ export function ProspectView({
                   {localProspect.stage === 'won' && (
                     <div className="animate-in slide-in-from-top-4 fade-in duration-300">
                       <div className="mb-3 flex items-center justify-between">
-                        <h3 className="flex items-center gap-2 text-sm font-bold text-emerald-400">
+                        <h3 className="flex items-center gap-2 text-sm font-bold text-sky-600 dark:text-sky-400">
                           <CreditCard className="h-4 w-4" /> {lang === 'fr' ? 'Détails du Paiement' : 'Payment Details'}
                         </h3>
-                        <button onClick={() => setEditingPayment(!editingPayment)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
+                        <button onClick={() => setEditingPayment(!editingPayment)} className="rounded p-1 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                       </div>
 
                       {editingPayment ? (
-                        <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+                        <div className="space-y-4 rounded-xl border border-sky-500/30 bg-sky-500/5 p-4">
                           <div>
-                            <label className="text-xs text-white/40">{lang === 'fr' ? 'Montant final (€)' : 'Final amount (€)'}</label>
+                            <label className="text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Montant final (€)' : 'Final amount (€)'}</label>
                             <input
                               type="number"
                               value={editScheduleMode === 'custom' ? effectiveEditedValue : editedValue}
                               onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
                               readOnly={editScheduleMode === 'custom'}
-                              className={cn("mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none", editScheduleMode === 'custom' && 'opacity-60 cursor-not-allowed')}
+                              className={cn("mt-1 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm font-bold text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none", editScheduleMode === 'custom' && 'opacity-60 cursor-not-allowed')}
                             />
                             {editScheduleMode === 'custom' && (
-                              <p className="mt-1.5 text-[10px] text-white/40">{lang === 'fr' ? 'Montant calculé depuis l\'échéancier' : 'Amount calculated from schedule'}</p>
+                              <p className="mt-1.5 text-[10px] text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Montant calculé depuis l\'échéancier' : 'Amount calculated from schedule'}</p>
                             )}
                           </div>
-                          <div className="flex rounded-lg bg-white/[0.03] p-1">
-                            <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); setEditScheduleMode('equal'); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>{lang === 'fr' ? 'Comptant' : 'Cash'}</button>
+                          <div className="flex rounded-lg bg-slate-50 dark:bg-white/5 p-1">
+                            <button type="button" onClick={() => { setPaymentMode('cash'); setInstallments(1); setEditScheduleMode('equal'); }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'cash' ? "bg-sky-600 text-white shadow" : "text-slate-400 dark:text-neutral-500 hover:text-slate-900")}>{lang === 'fr' ? 'Comptant' : 'Cash'}</button>
                             <button type="button" onClick={() => {
                               setPaymentMode('installments')
                               const savedSchedule = (localProspect as any).installments_schedule
@@ -1033,11 +1205,11 @@ export function ProspectView({
                                 setEditScheduleMode('equal')
                                 setInstallments(2)
                               }
-                            }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-emerald-600 text-white shadow" : "text-white/40 hover:text-white")}>{lang === 'fr' ? 'Plusieurs fois' : 'Installments'}</button>
+                            }} className={cn("flex-1 rounded-md py-1.5 text-xs font-medium transition-all", paymentMode === 'installments' ? "bg-sky-600 text-white shadow" : "text-slate-400 dark:text-neutral-500 hover:text-slate-900")}>{lang === 'fr' ? 'Plusieurs fois' : 'Installments'}</button>
                           </div>
                           {paymentMode === 'installments' && (
                             <div className="animate-in fade-in slide-in-from-top-1 space-y-3">
-                              <label className="text-xs text-white/40">{lang === 'fr' ? 'Nombre de mensualités' : 'Number of installments'}</label>
+                              <label className="text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Nombre de mensualités' : 'Number of installments'}</label>
                               <select
                                 value={editScheduleMode === 'custom' ? 'custom' : String(installments)}
                                 onChange={(e) => {
@@ -1053,13 +1225,13 @@ export function ProspectView({
                                     setInstallments(parseInt(v))
                                   }
                                 }}
-                                className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                                className="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                               >
                                 <option value="custom">{lang === 'fr' ? 'Autre (montants personnalisés)' : 'Other (custom amounts)'}</option>
                                 {[2, 3, 4, 5, 6, 10, 12].map(n => <option key={n} value={n}>{n} {lang === 'fr' ? 'fois' : 'times'} ({(editedValue / n).toFixed(2)}€/{lang === 'fr' ? 'mois' : 'mo'})</option>)}
                               </select>
                               {editScheduleMode === 'custom' && (
-                                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                                <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3">
                                   <InstallmentScheduleEditor
                                     value={editCustomSchedule}
                                     onChange={setEditCustomSchedule}
@@ -1078,18 +1250,18 @@ export function ProspectView({
                           )}
 
                           {/* Acompte */}
-                          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 space-y-3">
+                          <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3 space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-white flex items-center gap-1">
-                                <Wallet className="h-3 w-3 text-emerald-400" />
+                              <span className="text-xs font-medium text-slate-900 dark:text-white flex items-center gap-1">
+                                <Wallet className="h-3 w-3 text-sky-600 dark:text-sky-400" />
                                 {lang === 'fr' ? 'Acompte' : 'Deposit'}
-                                <span className="ml-1 font-normal text-white/40">({lang === 'fr' ? 'optionnel' : 'optional'})</span>
+                                <span className="ml-1 font-normal text-slate-400 dark:text-neutral-500">({lang === 'fr' ? 'optionnel' : 'optional'})</span>
                               </span>
                               {hasEditDeposit && (
                                 <button
                                   type="button"
                                   onClick={() => { setEditDepositAmount(0); setEditDepositToRefund(false); setEditDepositDate('') }}
-                                  className="text-[10px] text-white/40 hover:text-white/70 underline underline-offset-2"
+                                  className="text-[10px] text-slate-400 dark:text-neutral-500 hover:text-slate-600 underline underline-offset-2"
                                 >
                                   {lang === 'fr' ? 'Retirer' : 'Remove'}
                                 </button>
@@ -1097,7 +1269,7 @@ export function ProspectView({
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <label className="text-[10px] text-white/40">{lang === 'fr' ? 'Montant (€)' : 'Amount (€)'}</label>
+                                <label className="text-[10px] text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Montant (€)' : 'Amount (€)'}</label>
                                 <input
                                   type="number"
                                   min="0"
@@ -1105,13 +1277,13 @@ export function ProspectView({
                                   value={editDepositAmount || ''}
                                   onChange={(e) => setEditDepositAmount(parseFloat(e.target.value) || 0)}
                                   placeholder="0"
-                                  className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                                  className="mt-1 w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-2 py-1.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                                 />
                               </div>
                               <div>
-                                <label className="text-[10px] text-white/40">
+                                <label className="text-[10px] text-slate-400 dark:text-neutral-500">
                                   {lang === 'fr' ? 'Date' : 'Date'}
-                                  {hasEditDeposit && <span className="text-red-400 ml-0.5">*</span>}
+                                  {hasEditDeposit && <span className="text-red-600 ml-0.5">*</span>}
                                 </label>
                                 <input
                                   type="date"
@@ -1119,7 +1291,7 @@ export function ProspectView({
                                   onChange={(e) => setEditDepositDate(e.target.value)}
                                   disabled={!hasEditDeposit}
                                   className={cn(
-                                    "mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none",
+                                    "mt-1 w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-2 py-1.5 text-xs text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none",
                                     !hasEditDeposit && "opacity-40 cursor-not-allowed"
                                   )}
                                 />
@@ -1131,18 +1303,18 @@ export function ProspectView({
                                   type="checkbox"
                                   checked={editDepositToRefund}
                                   onChange={(e) => setEditDepositToRefund(e.target.checked)}
-                                  className="h-3.5 w-3.5 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+                                  className="h-3.5 w-3.5 rounded border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 text-sky-600 dark:text-sky-400 focus:ring-sky-500 focus:ring-offset-0"
                                 />
-                                <span className="text-xs text-white">
+                                <span className="text-xs text-slate-900 dark:text-white">
                                   {lang === 'fr' ? 'Acompte à rembourser' : 'Deposit to refund'}
                                 </span>
                               </label>
                             )}
                           </div>
 
-                          <div className="rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20 space-y-3">
+                          <div className="rounded-lg bg-sky-500/10 p-3 border border-sky-500/20 space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-emerald-400 flex items-center gap-1"><Wallet className="h-3 w-3" /> {lang === 'fr' ? 'Ta Commission' : 'Your Commission'} ({effectiveCommissionRate}%)</span>
+                              <span className="text-xs font-medium text-sky-600 dark:text-sky-400 flex items-center gap-1"><Wallet className="h-3 w-3" /> {lang === 'fr' ? 'Ta Commission' : 'Your Commission'} ({effectiveCommissionRate}%)</span>
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
@@ -1158,8 +1330,8 @@ export function ProspectView({
                                   className={cn(
                                     'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold transition-all',
                                     editCustomCommissionEnabled
-                                      ? 'border-amber-500/60 bg-amber-500/15 text-amber-300'
-                                      : 'border-white/15 bg-white/[0.03] text-white/50 hover:border-amber-500/40 hover:text-amber-300'
+                                      ? 'border-amber-500/60 bg-amber-500/15 text-amber-600'
+                                      : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-neutral-400 hover:border-amber-500/40 hover:text-amber-600'
                                   )}
                                 >
                                   <Settings2 className="h-2.5 w-2.5" />
@@ -1167,97 +1339,97 @@ export function ProspectView({
                                     ? (lang === 'fr' ? 'Revenir au standard' : 'Revert to standard')
                                     : (lang === 'fr' ? 'Commission inhabituelle' : 'Unusual commission')}
                                 </button>
-                                <span className="text-lg font-bold text-emerald-400">{commissionAmount.toFixed(2)}€</span>
+                                <span className="text-lg font-bold text-sky-600 dark:text-sky-400">{commissionAmount.toFixed(2)}€</span>
                               </div>
                             </div>
                             {editCustomCommissionEnabled && (
                               <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5">
-                                <label className="text-[10px] font-bold text-amber-300 mb-1 block">
-                                  {lang === 'fr' ? 'Taux personnalisé' : 'Custom rate'} <span className="font-normal text-white/40">(standard : {standardCommissionRate}%)</span>
+                                <label className="text-[10px] font-bold text-amber-600 mb-1 block">
+                                  {lang === 'fr' ? 'Taux personnalisé' : 'Custom rate'} <span className="font-normal text-slate-400 dark:text-neutral-500">(standard : {standardCommissionRate}%)</span>
                                 </label>
                                 <div className="relative">
                                   <input
                                     type="number" min="0" max="100" step="0.1"
                                     value={editCustomCommissionRate || ''}
                                     onChange={(e) => setEditCustomCommissionRate(parseFloat(e.target.value) || 0)}
-                                    className="w-full rounded-lg border border-amber-500/40 bg-white/5 px-3 py-2 pr-7 text-sm text-white focus:border-amber-500 focus:outline-none"
+                                    className="w-full rounded-lg border border-amber-500/40 bg-slate-100 dark:bg-white/10 px-3 py-2 pr-7 text-sm text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                                   />
-                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-300 text-xs">%</span>
+                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-600 text-xs">%</span>
                                 </div>
                               </div>
                             )}
                             {paymentMode === 'installments' && editScheduleMode === 'equal' && (
-                              <p className="mt-1 text-[10px] text-emerald-300/70">
+                              <p className="mt-1 text-[10px] text-sky-700/70">
                                 {lang === 'fr' ? 'Tu recevras' : "You'll receive"} : {(commissionAmount / installments).toFixed(2)}€ / {lang === 'fr' ? 'mois' : 'mo'}
                               </p>
                             )}
                           </div>
-                          <button onClick={handleSavePayment} className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500">{lang === 'fr' ? 'Valider les détails' : 'Confirm details'}</button>
+                          <button onClick={handleSavePayment} className="w-full rounded-lg bg-sky-600 py-2 text-sm font-bold text-white hover:bg-sky-600">{lang === 'fr' ? 'Valider les détails' : 'Confirm details'}</button>
                         </div>
                       ) : (
-                        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+                        <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-white/40">{lang === 'fr' ? 'Montant Vente' : 'Sale Amount'}</span>
-                            <span className="text-sm font-bold text-white">{(localProspect.value || 0).toLocaleString()}€</span>
+                            <span className="text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Montant Vente' : 'Sale Amount'}</span>
+                            <span className="text-sm font-bold text-slate-900 dark:text-white">{(localProspect.value || 0).toLocaleString()}€</span>
                           </div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-white/40">{lang === 'fr' ? 'Commission Totale' : 'Total Commission'} ({savedCommissionRate}%)</span>
-                            <span className="text-sm font-bold text-emerald-400">+{savedCommission.toFixed(2)}€</span>
+                            <span className="text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Commission Totale' : 'Total Commission'} ({savedCommissionRate}%)</span>
+                            <span className="text-sm font-bold text-sky-600 dark:text-sky-400">+{savedCommission.toFixed(2)}€</span>
                           </div>
 
                           {hasSavedDeposit && (
-                            <div className="mt-2 pt-2 border-t border-emerald-500/20 flex items-start justify-between gap-2">
+                            <div className="mt-2 pt-2 border-t border-sky-500/20 flex items-start justify-between gap-2">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <Wallet className="h-3 w-3 text-emerald-400 shrink-0" />
+                                <Wallet className="h-3 w-3 text-sky-600 dark:text-sky-400 shrink-0" />
                                 <div className="flex flex-col min-w-0">
-                                  <span className="text-xs text-white/60 truncate">
+                                  <span className="text-xs text-slate-500 dark:text-neutral-400 truncate">
                                     {lang === 'fr' ? 'Acompte' : 'Deposit'}
                                     {savedDepositDate && (
-                                      <span className="ml-1 text-white/40">
+                                      <span className="ml-1 text-slate-400 dark:text-neutral-500">
                                         ({new Date(savedDepositDate).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')})
                                       </span>
                                     )}
                                   </span>
                                   {savedDepositToRefund && (
-                                    <span className="text-[10px] font-medium text-amber-300">
+                                    <span className="text-[10px] font-medium text-amber-600">
                                       {lang === 'fr' ? 'À rembourser' : 'To refund'}
                                     </span>
                                   )}
                                 </div>
                               </div>
-                              <span className="text-sm font-bold text-white shrink-0">{savedDepositAmount.toFixed(2)}€</span>
+                              <span className="text-sm font-bold text-slate-900 dark:text-white shrink-0">{savedDepositAmount.toFixed(2)}€</span>
                             </div>
                           )}
 
                           {isPayingInInstallments && (
-                            <div className="mt-3 pt-3 border-t border-emerald-500/20 space-y-2">
+                            <div className="mt-3 pt-3 border-t border-sky-500/20 space-y-2">
                               <button
                                 type="button"
                                 onClick={() => setShowScheduleModal(true)}
-                                className="group flex w-full justify-between items-center rounded-md -mx-1 px-1 py-0.5 hover:bg-white/[0.03] transition-colors"
+                                className="group flex w-full justify-between items-center rounded-md -mx-1 px-1 py-0.5 hover:bg-slate-50 transition-colors"
                               >
-                                <span className="text-xs text-white/60">{lang === 'fr' ? `Client paie (x${savedInstallments})` : `Client pays (x${savedInstallments})`} :</span>
-                                <span className="flex items-center gap-1 text-sm font-semibold text-white">
+                                <span className="text-xs text-slate-500 dark:text-neutral-400">{lang === 'fr' ? `Client paie (x${savedInstallments})` : `Client pays (x${savedInstallments})`} :</span>
+                                <span className="flex items-center gap-1 text-sm font-semibold text-slate-900 dark:text-white">
                                   {hasCustomSchedule ? (lang === 'fr' ? 'Voir détail' : 'View detail') : `${savedMonthlyPayment.toFixed(2)}€ / ${lang === 'fr' ? 'mois' : 'mo'}`}
-                                  <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-white/70 transition-colors" />
+                                  <ChevronRight className="h-3 w-3 text-slate-400 dark:text-neutral-500 group-hover:text-slate-600 transition-colors" />
                                 </span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setShowScheduleModal(true)}
-                                className="group flex w-full justify-between items-center rounded-md -mx-1 px-1 py-0.5 hover:bg-emerald-500/[0.06] transition-colors"
+                                className="group flex w-full justify-between items-center rounded-md -mx-1 px-1 py-0.5 hover:bg-sky-500/[0.06] transition-colors"
                               >
-                                <span className="text-xs text-emerald-400/80">{lang === 'fr' ? 'Tu reçois' : 'You receive'} :</span>
-                                <span className="flex items-center gap-1 text-sm font-bold text-emerald-400">
+                                <span className="text-xs text-sky-600/80">{lang === 'fr' ? 'Tu reçois' : 'You receive'} :</span>
+                                <span className="flex items-center gap-1 text-sm font-bold text-sky-600 dark:text-sky-400">
                                   {hasCustomSchedule ? (lang === 'fr' ? 'Voir détail' : 'View detail') : `${savedMonthlyCommission.toFixed(2)}€ / ${lang === 'fr' ? 'mois' : 'mo'}`}
-                                  <ChevronRight className="h-3 w-3 text-emerald-400/50 group-hover:text-emerald-400/80 transition-colors" />
+                                  <ChevronRight className="h-3 w-3 text-sky-600/50 group-hover:text-sky-600/80 transition-colors" />
                                 </span>
                               </button>
                             </div>
                           )}
 
-                          <div className="pt-2 border-t border-emerald-500/20 text-center mt-2">
-                            <span className="text-[10px] font-medium text-emerald-300/60 uppercase tracking-wider">
+                          <div className="pt-2 border-t border-sky-500/20 text-center mt-2">
+                            <span className="text-[10px] font-medium text-sky-700/60 uppercase tracking-wider">
                               {isPayingInInstallments ? (lang === 'fr' ? `Paiement en ${savedInstallments} fois` : `Payment in ${savedInstallments} installments`) : (lang === 'fr' ? 'Paiement Comptant' : 'Cash Payment')}
                             </span>
                           </div>
@@ -1269,34 +1441,34 @@ export function ProspectView({
                   {/* Loss Reason */}
                   {localProspect.stage === 'lost' && (
                     <div className="animate-in slide-in-from-top-4 fade-in duration-300">
-                      <h3 className="flex items-center gap-2 text-sm font-bold text-red-400 mb-3">
+                      <h3 className="flex items-center gap-2 text-sm font-bold text-red-600 mb-3">
                         <X className="h-4 w-4" /> {lang === 'fr' ? 'Raison de la perte' : 'Loss reason'}
                       </h3>
                       <div className="space-y-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
                         <div>
-                          <label className="text-xs font-medium text-white/40 mb-1.5 block">{lang === 'fr' ? 'Motif' : 'Reason'}</label>
+                          <label className="text-xs font-medium text-slate-400 dark:text-neutral-500 mb-1.5 block">{lang === 'fr' ? 'Motif' : 'Reason'}</label>
                           <div className="relative">
                             <select
                               value={localProspect.loss_reason || ''}
                               onChange={(e) => {
                                 handleOptimisticUpdate({ loss_reason: e.target.value } as any)
                               }}
-                              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none appearance-none"
+                              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:border-red-500 focus:outline-none appearance-none"
                             >
                               <option value="">{lang === 'fr' ? 'Sélectionnez un motif' : 'Select a reason'}</option>
                               {LOSS_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
                             </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-white/40" />
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-slate-400 dark:text-neutral-500" />
                           </div>
                         </div>
                         <div>
-                          <label className="text-xs font-medium text-white/40 mb-1.5 block">{lang === 'fr' ? 'Détails' : 'Details'}</label>
+                          <label className="text-xs font-medium text-slate-400 dark:text-neutral-500 mb-1.5 block">{lang === 'fr' ? 'Détails' : 'Details'}</label>
                           <input
                             type="text"
                             value={localProspect.loss_details || ''}
                             onChange={(e) => handleOptimisticUpdate({ loss_details: e.target.value } as any)}
                             placeholder={lang === 'fr' ? "Précisez les détails..." : "Specify details..."}
-                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-red-500 focus:outline-none"
+                            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-red-500 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -1306,19 +1478,19 @@ export function ProspectView({
                   {/* Infos Offre */}
                   <div>
                     <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-white">{lang === 'fr' ? 'Infos Offre' : 'Offer Info'}</h3>
-                      <button onClick={() => setEditingOffer(!editingOffer)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{lang === 'fr' ? 'Infos Offre' : 'Offer Info'}</h3>
+                      <button onClick={() => setEditingOffer(!editingOffer)} className="rounded p-1 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {editingOffer ? (
                       <div className="space-y-3">
                         <div>
-                          <label className="mb-2 block text-xs text-white/40">{lang === 'fr' ? 'Sélectionner une offre' : 'Select an offer'}</label>
+                          <label className="mb-2 block text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Sélectionner une offre' : 'Select an offer'}</label>
                           <select
                             value={editedOfferId}
                             onChange={(e) => handleOfferChange(e.target.value)}
-                            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                           >
                             <option value="">{lang === 'fr' ? '-- Sélectionner --' : '-- Select --'}</option>
                             {availableOffers.map((offer) => (
@@ -1330,13 +1502,13 @@ export function ProspectView({
                         </div>
                         {hasFormulas && (
                           <div className="animate-in fade-in slide-in-from-top-2">
-                            <label className="mb-2 flex items-center gap-2 text-xs text-emerald-400">
+                            <label className="mb-2 flex items-center gap-2 text-xs text-sky-600 dark:text-sky-400">
                               <Tag className="h-3 w-3" /> {lang === 'fr' ? 'Choix de la formule' : 'Formula selection'}
                             </label>
                             <select
                               value={editedFormulaId}
                               onChange={(e) => handleFormulaChange(e.target.value)}
-                              className="w-full rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                              className="w-full rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                             >
                               <option value="">{lang === 'fr' ? '-- Sélectionner la formule --' : '-- Select formula --'}</option>
                               {selectedOfferObj?.formulas?.map((formula) => (
@@ -1345,22 +1517,22 @@ export function ProspectView({
                             </select>
                           </div>
                         )}
-                        {editedValue > 0 && <p className="text-xs font-medium text-emerald-400 text-right">{lang === 'fr' ? 'Nouveau montant' : 'New amount'} : {editedValue.toLocaleString()}€</p>}
+                        {editedValue > 0 && <p className="text-xs font-medium text-sky-600 dark:text-sky-400 text-right">{lang === 'fr' ? 'Nouveau montant' : 'New amount'} : {editedValue.toLocaleString()}€</p>}
                         <div className="flex gap-2">
-                          <button onClick={handleSaveOffer} className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black hover:bg-emerald-400">{lang === 'fr' ? 'Sauvegarder' : 'Save'}</button>
-                          <button onClick={handleCancelOffer} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm font-semibold text-white/60 hover:bg-white/10">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
+                          <button onClick={handleSaveOffer} className="flex-1 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-600">{lang === 'fr' ? 'Sauvegarder' : 'Save'}</button>
+                          <button onClick={handleCancelOffer} className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm font-semibold text-slate-500 dark:text-neutral-400 hover:bg-slate-100">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                         </div>
                       </div>
                     ) : (
-                      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+                      <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-white/40">{lang === 'fr' ? 'Offre concernée' : 'Related offer'}</p>
-                            <p className="mt-1 font-medium text-white">{localProspect.offer || 'N/A'}</p>
+                            <p className="text-sm text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Offre concernée' : 'Related offer'}</p>
+                            <p className="mt-1 font-medium text-slate-900 dark:text-white">{localProspect.offer || 'N/A'}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm text-white/40">{lang === 'fr' ? 'Montant' : 'Amount'}</p>
-                            <p className="mt-1 text-lg font-bold text-emerald-400"><MaskedText value={`${(localProspect.value || 0).toLocaleString()}€`} type="number" /></p>
+                            <p className="text-sm text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Montant' : 'Amount'}</p>
+                            <p className="mt-1 text-lg font-bold text-sky-600 dark:text-sky-400"><MaskedText value={`${(localProspect.value || 0).toLocaleString()}€`} type="number" /></p>
                           </div>
                         </div>
                       </div>
@@ -1370,52 +1542,62 @@ export function ProspectView({
                   {/* Fiche Client */}
                   <div>
                     <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-white">{lang === 'fr' ? 'Fiche Client' : 'Client Info'}</h3>
-                      <button onClick={() => setEditingClient(!editingClient)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{lang === 'fr' ? 'Fiche Client' : 'Client Info'}</h3>
+                      <button onClick={() => setEditingClient(!editingClient)} className="rounded p-1 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {editingClient ? (
                       <div className="space-y-3">
-                        <input type="text" value={editedContact} onChange={(e) => setEditedContact(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder={lang === 'fr' ? 'Nom' : 'Name'} />
-                        <input type="text" value={editedCompany} onChange={(e) => setEditedCompany(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder={lang === 'fr' ? 'Entreprise' : 'Company'} />
-                        <input type="email" value={editedEmail} onChange={(e) => setEditedEmail(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder="Email" />
-                        <input type="tel" value={editedPhone} onChange={(e) => setEditedPhone(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" placeholder={lang === 'fr' ? 'Téléphone' : 'Phone'} />
+                        <input type="text" value={editedContact} onChange={(e) => setEditedContact(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" placeholder={lang === 'fr' ? 'Nom' : 'Name'} />
+                        <input type="text" value={editedCompany} onChange={(e) => setEditedCompany(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" placeholder={lang === 'fr' ? 'Entreprise' : 'Company'} />
+                        <input type="email" value={editedEmail} onChange={(e) => setEditedEmail(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" placeholder="Email" />
+                        <PhoneInput variant="sales" value={editedPhone || ''} onChange={setEditedPhone} />
                         <div className="flex gap-2">
-                          <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black">{lang === 'fr' ? 'Sauvegarder' : 'Save'}</button>
-                          <button onClick={handleCancelClient} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm font-semibold text-white/60">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
+                          <button onClick={handleSaveClient} className="flex-1 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white">{lang === 'fr' ? 'Sauvegarder' : 'Save'}</button>
+                          <button onClick={handleCancelClient} className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm font-semibold text-slate-500 dark:text-neutral-400">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
-                          <Mail className="h-4 w-4 text-emerald-400" />
+                        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3">
+                          <Mail className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-white/40">{lang === 'fr' ? 'Email' : 'Email'}</p>
-                            <button onClick={handleOpenGmail} className="truncate text-sm text-white/60 hover:text-white hover:underline text-left"><MaskedText value={localProspect.email} type="name" /></button>
+                            <p className="text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Email' : 'Email'}</p>
+                            <button onClick={handleOpenGmail} className="truncate text-sm text-slate-500 dark:text-neutral-400 hover:text-slate-900 hover:underline text-left"><MaskedText value={localProspect.email} type="name" /></button>
                           </div>
+                          {localProspect.email && (
+                            <button onClick={() => copyToClipboard(localProspect.email, 'Email')} title={lang === 'fr' ? 'Copier' : 'Copy'} className="shrink-0 p-1.5 rounded-lg text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-sky-600 transition-colors">
+                              <Copy className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
-                        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
-                          <Phone className="h-4 w-4 text-emerald-400" />
+                        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3">
+                          <Phone className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-white/40">{lang === 'fr' ? 'Téléphone' : 'Phone'}</p>
-                            <button onClick={handleOpenWhatsApp} className="text-sm text-white/60 hover:text-white hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
+                            <p className="text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Téléphone' : 'Phone'}</p>
+                            <button onClick={handleOpenWhatsApp} className="text-sm text-slate-500 dark:text-neutral-400 hover:text-slate-900 hover:underline text-left"><MaskedText value={localProspect.phone} type="name" /></button>
                           </div>
+                          {localProspect.phone && (
+                            <button onClick={() => copyToClipboard(localProspect.phone, lang === 'fr' ? 'Téléphone' : 'Phone')} title={lang === 'fr' ? 'Copier' : 'Copy'} className="shrink-0 p-1.5 rounded-lg text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-sky-600 transition-colors">
+                              <Copy className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                         {localProspect.company && localProspect.company !== 'N/A' && (
-                          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
-                            <Building2 className="h-4 w-4 text-orange-400" />
+                          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3">
+                            <Building2 className="h-4 w-4 text-orange-600" />
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs text-white/40">{lang === 'fr' ? 'Entreprise' : 'Company'}</p>
-                              <p className="text-sm text-white/60">{localProspect.company}</p>
+                              <p className="text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Entreprise' : 'Company'}</p>
+                              <p className="text-sm text-slate-500 dark:text-neutral-400">{localProspect.company}</p>
                             </div>
                           </div>
                         )}
-                        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
-                          <Clock className="h-4 w-4 text-purple-400" />
+                        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3">
+                          <Clock className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-white/40">{lang === 'fr' ? 'Date de création' : 'Created on'}</p>
-                            <p className="text-sm text-white/60">
+                            <p className="text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Date de création' : 'Created on'}</p>
+                            <p className="text-sm text-slate-500 dark:text-neutral-400">
                               {new Date(localProspect.created_at || localProspect.dateAdded || '').toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
                                 day: 'numeric',
                                 month: 'long',
@@ -1433,22 +1615,22 @@ export function ProspectView({
                   {/* Notes Internes (Générales) */}
                   <div>
                     <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-white">{lang === 'fr' ? 'Notes Internes' : 'Internal Notes'}</h3>
-                      <button onClick={() => setEditingNotes(!editingNotes)} className="rounded p-1 text-white/40 hover:bg-white/5 hover:text-white">
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{lang === 'fr' ? 'Notes Internes' : 'Internal Notes'}</h3>
+                      <button onClick={() => setEditingNotes(!editingNotes)} className="rounded p-1 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {editingNotes ? (
                       <div>
-                        <textarea value={tempNotes} onChange={(e) => setTempNotes(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" rows={4} />
+                        <textarea value={tempNotes} onChange={(e) => setTempNotes(e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" rows={4} />
                         <div className="mt-2 flex gap-2">
-                          <button onClick={handleSaveNotes} className="rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-black">{lang === 'fr' ? 'Enregistrer' : 'Save'}</button>
-                          <button onClick={() => setEditingNotes(false)} className="rounded-lg border border-white/[0.08] bg-white/5 px-3 py-1.5 text-sm font-medium text-white/60">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
+                          <button onClick={handleSaveNotes} className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white">{lang === 'fr' ? 'Enregistrer' : 'Save'}</button>
+                          <button onClick={() => setEditingNotes(false)} className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-1.5 text-sm font-medium text-slate-500 dark:text-neutral-400">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
                         </div>
                       </div>
                     ) : (
-                      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
-                        <p className="whitespace-pre-wrap text-sm text-white/60">{localProspect.notes || (lang === 'fr' ? 'Aucune note' : 'No notes')}</p>
+                      <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+                        <p className="whitespace-pre-wrap text-sm text-slate-500 dark:text-neutral-400">{localProspect.notes || (lang === 'fr' ? 'Aucune note' : 'No notes')}</p>
                       </div>
                     )}
                   </div>
@@ -1463,31 +1645,31 @@ export function ProspectView({
                   {!isAddingNote ? (
                     <button
                       onClick={() => setIsAddingNote(true)}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-white/[0.08] bg-white/[0.03] py-3 text-sm font-medium text-white/40 hover:bg-white/5 hover:text-white hover:border-white/20 transition-all"
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 py-3 text-sm font-medium text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-200 transition-all"
                     >
                       <Plus className="h-4 w-4" /> {lang === 'fr' ? 'Ajouter une note manuelle' : 'Add a manual note'}
                     </button>
                   ) : (
-                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 shadow-[0_20px_40px_rgba(0,0,0,0.2)] animate-in fade-in zoom-in-95">
-                      <h4 className="text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">{lang === 'fr' ? 'Nouvelle Note' : 'New Note'}</h4>
+                    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] animate-in fade-in zoom-in-95">
+                      <h4 className="text-xs font-semibold text-slate-400 dark:text-neutral-500 mb-2 uppercase tracking-wider">{lang === 'fr' ? 'Nouvelle Note' : 'New Note'}</h4>
                       <textarea
                         value={newNoteContent}
                         onChange={(e) => setNewNoteContent(e.target.value)}
                         placeholder={lang === 'fr' ? "Écrivez votre note d'appel ici..." : "Write your call note here..."}
-                        className="w-full rounded-xl bg-white/5 border border-white/10 p-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-purple-500 min-h-[100px] mb-3"
+                        className="w-full rounded-xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 p-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:outline-none focus:border-sky-500 min-h-[100px] mb-3"
                         autoFocus
                       />
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => { setIsAddingNote(false); setNewNoteContent(''); }}
-                          className="px-4 py-2 text-sm font-medium text-white/40 hover:text-white transition-colors"
+                          className="px-4 py-2 text-sm font-medium text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-colors"
                         >
                           {lang === 'fr' ? 'Annuler' : 'Cancel'}
                         </button>
                         <button
                           onClick={handleAddManualNote}
                           disabled={!newNoteContent.trim()}
-                          className="px-4 py-2 rounded-lg bg-purple-600 text-sm font-bold text-white hover:bg-purple-500 disabled:opacity-50 transition-all shadow-lg shadow-purple-900/20"
+                          className="px-4 py-2 rounded-lg bg-sky-600 text-sm font-bold text-white hover:bg-sky-600 disabled:opacity-50 transition-all shadow-lg shadow-sky-500/20"
                         >
                           {lang === 'fr' ? 'Enregistrer' : 'Save'}
                         </button>
@@ -1495,23 +1677,23 @@ export function ProspectView({
                     </div>
                   )}
 
-                  <div className="h-px bg-white/[0.08] my-4" />
+                  <div className="h-px bg-slate-100 dark:bg-white/10 my-4" />
 
                   {/* LISTE DES NOTES */}
                   <div className="space-y-3">
                     {localProspect.callNotes && localProspect.callNotes.length > 0 ? (
                       localProspect.callNotes.map((note) => (
-                        <details key={note.id} className="group rounded-2xl border border-white/[0.08] bg-white/[0.03] open:bg-white/[0.05] transition-all overflow-hidden">
-                          <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-white/[0.03] transition-colors select-none list-none [&::-webkit-details-marker]:hidden">
+                        <details key={note.id} className="group rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 open:bg-slate-100 transition-all overflow-hidden">
+                          <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-slate-50 transition-colors select-none list-none [&::-webkit-details-marker]:hidden">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white/40 group-open:bg-purple-500/20 group-open:text-purple-400 transition-colors">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-neutral-500 group-open:bg-sky-500/20 group-open:text-sky-600 transition-colors">
                                 <Calendar className="h-4 w-4" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-semibold text-white">
+                                <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
                                   {new Date(note.date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                 </h4>
-                                <div className="flex items-center gap-2 text-xs text-white/40 mt-0.5">
+                                <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
                                   <Clock className="h-3 w-3" />
                                   <span>{new Date(note.date).toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                                   {note.author && (
@@ -1529,18 +1711,18 @@ export function ProspectView({
                                   e.preventDefault()
                                   handleDeleteNote(note.id)
                                 }}
-                                className="rounded p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                                className="rounded p-1.5 text-slate-400 dark:text-neutral-500 hover:text-red-600 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
                                 title={lang === 'fr' ? "Supprimer la note" : "Delete note"}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
-                              <ChevronDown className="h-5 w-5 text-white/40 transition-transform duration-300 group-open:rotate-180" />
+                              <ChevronDown className="h-5 w-5 text-slate-400 dark:text-neutral-500 transition-transform duration-300 group-open:rotate-180" />
                             </div>
                           </summary>
 
-                          <div className="border-t border-white/[0.08] p-4 pt-2">
+                          <div className="border-t border-slate-200 dark:border-white/10 p-4 pt-2">
                             <div className="prose prose-invert prose-sm max-w-none">
-                              <p className="text-white/60 whitespace-pre-wrap leading-relaxed">
+                              <p className="text-slate-500 dark:text-neutral-400 whitespace-pre-wrap leading-relaxed">
                                 {note.content}
                               </p>
                             </div>
@@ -1548,17 +1730,126 @@ export function ProspectView({
                         </details>
                       ))
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.03]">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-3">
-                          <ClipboardList className="h-6 w-6 text-white/40" />
+                      <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 mb-3">
+                          <ClipboardList className="h-6 w-6 text-slate-400 dark:text-neutral-500" />
                         </div>
-                        <p className="text-sm font-medium text-white/40">{lang === 'fr' ? "Aucune note d'appel" : 'No call notes'}</p>
-                        <p className="text-xs text-white/40 mt-1 max-w-[200px]">
+                        <p className="text-sm font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? "Aucune note d'appel" : 'No call notes'}</p>
+                        <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1 max-w-[200px]">
                           {lang === 'fr' ? "L'historique de vos appels et vos notes manuelles apparaîtront ici." : 'Your call history and manual notes will appear here.'}
                         </p>
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* --- ONGLET TÂCHES --- */}
+              {activeTab === 'taches' && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                  {/* Ajout d'une tâche */}
+                  <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3 space-y-2.5">
+                    <input
+                      type="text"
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newTaskTitle.trim() && !addingTask) {
+                          e.preventDefault()
+                          setAddingTask(true)
+                          addTask(newTaskTitle, newTaskDue || null).finally(() => { setNewTaskTitle(''); setNewTaskDue(''); setAddingTask(false) })
+                        }
+                      }}
+                      placeholder={lang === 'fr' ? 'Nouvelle tâche (ex: rappeler, envoyer le devis…)' : 'New task (e.g. call back, send quote…)'}
+                      className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 outline-none transition-all"
+                    />
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <Clock className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-sky-600/60 pointer-events-none" />
+                        <input
+                          type="date"
+                          value={newTaskDue}
+                          onChange={(e) => setNewTaskDue(e.target.value)}
+                          className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-white/10 pl-8 pr-2 py-2 text-sm text-slate-900 dark:text-white outline-none focus:border-sky-500 transition-all"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!newTaskTitle.trim() || addingTask) return
+                          setAddingTask(true)
+                          addTask(newTaskTitle, newTaskDue || null).finally(() => { setNewTaskTitle(''); setNewTaskDue(''); setAddingTask(false) })
+                        }}
+                        disabled={!newTaskTitle.trim() || addingTask}
+                        className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-500 disabled:opacity-40 transition-all shrink-0"
+                      >
+                        {addingTask ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                        {lang === 'fr' ? 'Ajouter' : 'Add'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Liste des tâches */}
+                  {tasksLoading ? (
+                    <div className="flex items-center justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-slate-400 dark:text-neutral-500" /></div>
+                  ) : tasks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-white/5 mb-3">
+                        <ClipboardList className="h-6 w-6 text-slate-400 dark:text-neutral-500" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Aucune tâche' : 'No task'}</p>
+                      <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1 max-w-[220px]">
+                        {lang === 'fr' ? 'Ajoutez les actions à faire pour ce prospect (rappel, devis, relance…).' : 'Add the to-dos for this prospect (call, quote, follow-up…).'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {tasks.map((task) => {
+                        const today = new Date(); today.setHours(0, 0, 0, 0)
+                        const isOverdue = !task.is_done && task.due_date && new Date(task.due_date + 'T00:00') < today
+                        const isTodayDue = !task.is_done && task.due_date && new Date(task.due_date + 'T00:00').getTime() === today.getTime()
+                        return (
+                          <div key={task.id} className={cn(
+                            "group flex items-start gap-3 rounded-xl border p-3 transition-all",
+                            task.is_done ? "border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 opacity-60" : "border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-sky-300"
+                          )}>
+                            <button
+                              onClick={() => toggleTask(task)}
+                              className={cn(
+                                "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all",
+                                task.is_done ? "border-sky-600 bg-sky-600 text-white" : "border-slate-300 dark:border-white/20 hover:border-sky-500"
+                              )}
+                              aria-label={task.is_done ? 'Terminée' : 'À faire'}
+                            >
+                              {task.is_done && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              <p className={cn("text-sm font-medium break-words", task.is_done ? "text-slate-400 dark:text-neutral-500 line-through" : "text-slate-900 dark:text-white")}>
+                                {task.title}
+                              </p>
+                              {task.due_date && (
+                                <span className={cn(
+                                  "mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                                  isOverdue ? "bg-red-500/10 text-red-600 dark:text-red-400" : isTodayDue ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-neutral-400"
+                                )}>
+                                  <Clock className="h-3 w-3" />
+                                  {isOverdue && (lang === 'fr' ? 'En retard · ' : 'Overdue · ')}
+                                  {isTodayDue && (lang === 'fr' ? "Aujourd'hui · " : 'Today · ')}
+                                  {new Date(task.due_date + 'T00:00').toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => deleteTask(task.id)}
+                              className="shrink-0 rounded-lg p-1.5 text-slate-300 dark:text-neutral-600 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all"
+                              aria-label="Supprimer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1568,22 +1859,22 @@ export function ProspectView({
                   {/* Bouton ajouter */}
                   <button
                     onClick={() => setShowReminderForm(true)}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-orange-500/30 bg-orange-500/5 py-3 text-sm font-medium text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/50 transition-all"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-orange-500/30 bg-orange-500/5 py-3 text-sm font-medium text-orange-600 hover:bg-orange-500/10 hover:border-orange-500/50 transition-all"
                   >
                     <Plus className="h-4 w-4" /> {lang === 'fr' ? 'Ajouter un rappel' : 'Add a reminder'}
                   </button>
 
                   {remindersLoading ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-orange-400" />
+                      <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
                     </div>
                   ) : prospectReminders.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.03]">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-3">
-                        <Bell className="h-6 w-6 text-white/40" />
+                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 mb-3">
+                        <Bell className="h-6 w-6 text-slate-400 dark:text-neutral-500" />
                       </div>
-                      <p className="text-sm font-medium text-white/40">{lang === 'fr' ? 'Aucun rappel' : 'No reminders'}</p>
-                      <p className="text-xs text-white/40 mt-1">
+                      <p className="text-sm font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Aucun rappel' : 'No reminders'}</p>
+                      <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1">
                         {lang === 'fr' ? 'Créez un rappel pour ce prospect.' : 'Create a reminder for this prospect.'}
                       </p>
                     </div>
@@ -1602,10 +1893,10 @@ export function ProspectView({
                             className={cn(
                               'rounded-lg border p-3 transition-all cursor-pointer',
                               isDone
-                                ? 'border-white/[0.08] bg-white/[0.03]'
+                                ? 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5'
                                 : isOverdue
                                   ? 'border-red-500/30 bg-red-500/5'
-                                  : 'border-white/[0.08] bg-white/[0.03]',
+                                  : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5',
                               isExpanded && 'ring-1 ring-orange-500/30'
                             )}
                           >
@@ -1613,7 +1904,7 @@ export function ProspectView({
                               <div className="min-w-0 flex-1">
                                 <p className={cn(
                                   'text-sm font-semibold',
-                                  isDone ? 'text-white/40 line-through' : 'text-white'
+                                  isDone ? 'text-slate-400 dark:text-neutral-500 line-through' : 'text-slate-900 dark:text-white'
                                 )}>
                                   {reminder.title}
                                 </p>
@@ -1624,15 +1915,15 @@ export function ProspectView({
                                 )}>
                                   <div className="overflow-hidden">
                                      {reminder.description && (
-                                      <p className="text-xs text-white/60 whitespace-pre-wrap leading-relaxed mb-2">
+                                      <p className="text-xs text-slate-500 dark:text-neutral-400 whitespace-pre-wrap leading-relaxed mb-2">
                                         {reminder.description}
                                       </p>
                                     )}
-                                    <div className="flex items-center gap-2 py-1 px-2 rounded bg-white/[0.03] w-fit">
-                                      <Clock className="h-3 w-3 text-white/40" />
+                                    <div className="flex items-center gap-2 py-1 px-2 rounded bg-slate-50 dark:bg-white/5 w-fit">
+                                      <Clock className="h-3 w-3 text-slate-400 dark:text-neutral-500" />
                                       <span className={cn(
                                         'text-xs',
-                                        isOverdue ? 'text-red-400 font-medium' : 'text-white/40'
+                                        isOverdue ? 'text-red-600 font-medium' : 'text-slate-400 dark:text-neutral-500'
                                       )}>
                                         {new Date(reminder.reminder_date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
                                           weekday: 'long',
@@ -1651,8 +1942,8 @@ export function ProspectView({
 
                                 {!isExpanded && (
                                   <div className="flex items-center gap-2 mt-1.5 opacity-60">
-                                    <Clock className="h-3 w-3 text-white/40" />
-                                    <span className="text-[10px] text-white/40">
+                                    <Clock className="h-3 w-3 text-slate-400 dark:text-neutral-500" />
+                                    <span className="text-[10px] text-slate-400 dark:text-neutral-500">
                                       {new Date(reminder.reminder_date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
                                         day: 'numeric',
                                         month: 'short',
@@ -1669,7 +1960,7 @@ export function ProspectView({
                                   <button
                                     onClick={() => handleMarkReminderDone(reminder.id)}
                                     disabled={isLoading}
-                                    className="rounded-md p-1.5 text-emerald-400 hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
+                                    className="rounded-md p-1.5 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition-colors disabled:opacity-50"
                                     title={lang === 'fr' ? "Marquer comme fait" : "Mark as done"}
                                   >
                                     <Check className="h-4 w-4" />
@@ -1678,13 +1969,13 @@ export function ProspectView({
                                 <button
                                   onClick={() => handleDeleteReminder(reminder.id)}
                                   disabled={isLoading}
-                                  className="rounded-md p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                                  className="rounded-md p-1.5 text-slate-400 dark:text-neutral-500 hover:text-red-600 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                                   title={lang === 'fr' ? "Supprimer" : "Delete"}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                                 <ChevronDown className={cn(
-                                  "h-4 w-4 text-white/40 transition-transform duration-300",
+                                  "h-4 w-4 text-slate-400 dark:text-neutral-500 transition-transform duration-300",
                                   isExpanded && "rotate-180 text-orange-500"
                                 )} />
                               </div>
@@ -1702,15 +1993,15 @@ export function ProspectView({
                 <div className="space-y-1 animate-in fade-in slide-in-from-right-4 duration-300">
                   {historyLoading ? (
                     <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+                      <Loader2 className="h-6 w-6 animate-spin text-sky-600 dark:text-sky-400" />
                     </div>
                   ) : historyGroups.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.03]">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-3">
-                        <Clock className="h-6 w-6 text-white/40" />
+                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 mb-3">
+                        <Clock className="h-6 w-6 text-slate-400 dark:text-neutral-500" />
                       </div>
-                      <p className="text-sm font-medium text-white/40">{lang === 'fr' ? 'Aucun historique' : 'No history'}</p>
-                      <p className="text-xs text-white/40 mt-1">{lang === 'fr' ? 'Les modifications apparaîtront ici.' : 'Changes will appear here.'}</p>
+                      <p className="text-sm font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Aucun historique' : 'No history'}</p>
+                      <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1">{lang === 'fr' ? 'Les modifications apparaîtront ici.' : 'Changes will appear here.'}</p>
                     </div>
                   ) : (
                     <div className="space-y-0">
@@ -1721,9 +2012,9 @@ export function ProspectView({
                         const timeStr = date.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) + (lang === 'fr' ? ' à ' : ' at ') + date.toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
 
                         const CHANGE_STYLES: Record<string, { icon: typeof Plus; bg: string; text: string }> = {
-                          created: { icon: Plus, bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
-                          stage_change: { icon: Tag, bg: 'bg-purple-500/10', text: 'text-purple-400' },
-                          field_update: { icon: Pencil, bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+                          created: { icon: Plus, bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400' },
+                          stage_change: { icon: Tag, bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400' },
+                          field_update: { icon: Pencil, bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400' },
                         }
                         const style = CHANGE_STYLES[group.type] || CHANGE_STYLES.field_update
                         const IconComponent = style.icon
@@ -1749,21 +2040,21 @@ export function ProspectView({
                                 next.has(group.key) ? next.delete(group.key) : next.add(group.key)
                                 return next
                               })}
-                              className="w-full text-left rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 hover:bg-white/[0.05] transition-all"
+                              className="w-full text-left rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 hover:bg-slate-100 transition-all"
                             >
                               <div className="flex items-center gap-3">
                                 <div className={cn('p-1.5 rounded-lg shrink-0', style.bg)}>
                                   <IconComponent className={cn('h-3.5 w-3.5', style.text)} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-bold text-white truncate">{title}</p>
-                                  <p className="text-[10px] text-white/40">{timeStr}</p>
+                                  <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{title}</p>
+                                  <p className="text-[10px] text-slate-400 dark:text-neutral-500">{timeStr}</p>
                                 </div>
-                                <ChevronDown className={cn('h-4 w-4 text-white/40 transition-transform shrink-0', isExpanded && 'rotate-180')} />
+                                <ChevronDown className={cn('h-4 w-4 text-slate-400 dark:text-neutral-500 transition-transform shrink-0', isExpanded && 'rotate-180')} />
                               </div>
 
                               {isExpanded && (
-                                <div className="mt-3 pt-3 border-t border-white/[0.08]">
+                                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-white/10">
                                   <div className="space-y-2">
                                     {group.entries.map((entry: any) => {
                                       const fieldLabel = FIELD_LABELS[entry.field_name] || entry.field_name
@@ -1771,17 +2062,17 @@ export function ProspectView({
                                       const newDisplay = formatHistoryValue(entry.field_name, entry.new_value)
                                       return (
                                         <div key={entry.id} className="flex items-start gap-2">
-                                          <span className="text-[10px] font-bold text-white/40 w-24 shrink-0 pt-0.5 truncate">{fieldLabel}</span>
+                                          <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 w-24 shrink-0 pt-0.5 truncate">{fieldLabel}</span>
                                           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                                             {entry.old_value && (
                                               <>
-                                                <span className="text-xs text-white/40 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20 line-through truncate max-w-[140px]">
+                                                <span className="text-xs text-slate-400 dark:text-neutral-500 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20 line-through truncate max-w-[140px]">
                                                   {oldDisplay}
                                                 </span>
-                                                <span className="text-[10px] text-white/40">→</span>
+                                                <span className="text-[10px] text-slate-400 dark:text-neutral-500">→</span>
                                               </>
                                             )}
-                                            <span className="text-xs text-white bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 font-medium truncate max-w-[140px]">
+                                            <span className="text-xs text-slate-900 dark:text-white bg-sky-500/10 px-2 py-0.5 rounded-md border border-sky-500/20 font-medium truncate max-w-[140px]">
                                               {newDisplay}
                                             </span>
                                           </div>
@@ -1796,9 +2087,9 @@ export function ProspectView({
                             {!isLast && (
                               <div className="flex justify-center py-1">
                                 <div className="flex flex-col items-center">
-                                  <div className="w-px h-2 bg-white/[0.08]" />
-                                  <ChevronDown className="h-3 w-3 text-white/20 -my-0.5" />
-                                  <div className="w-px h-2 bg-white/[0.08]" />
+                                  <div className="w-px h-2 bg-slate-100 dark:bg-white/10" />
+                                  <ChevronDown className="h-3 w-3 text-slate-300 dark:text-neutral-600 -my-0.5" />
+                                  <div className="w-px h-2 bg-slate-100 dark:bg-white/10" />
                                 </div>
                               </div>
                             )}
@@ -1816,64 +2107,86 @@ export function ProspectView({
             {showReminderForm && (
               <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowReminderForm(false)} />
-                <div className="relative w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
-                  <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-3">
-                    <h3 className="text-sm font-bold text-white">{lang === 'fr' ? 'Nouveau rappel' : 'New reminder'}</h3>
-                    <button onClick={() => setShowReminderForm(false)} className="rounded-lg p-1 text-white/40 hover:bg-white/5 hover:text-white">
+                <div className="relative w-full max-w-sm rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)]">
+                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-5 py-3">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Nouveau rappel' : 'New reminder'}</h3>
+                    <button onClick={() => setShowReminderForm(false)} className="rounded-lg p-1 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900">
                       <X className="h-4 w-4" />
                     </button>
                   </div>
                   <div className="p-5 space-y-3">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Titre' : 'Title'} *</label>
+                      <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Titre' : 'Title'} *</label>
                       <input
                         type="text"
                         value={reminderTitle}
                         onChange={(e) => setReminderTitle(e.target.value)}
                         placeholder={lang === 'fr' ? "Ex: Rappeler le prospect" : "E.g.: Call back the prospect"}
-                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none"
+                        className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-orange-500 focus:outline-none"
                         autoFocus
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Description' : 'Description'}</label>
+                      <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Description' : 'Description'}</label>
                       <textarea
                         value={reminderDesc}
                         onChange={(e) => setReminderDesc(e.target.value)}
                         placeholder={lang === 'fr' ? "Détails optionnels..." : "Optional details..."}
                         rows={2}
-                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none resize-none"
+                        className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-orange-500 focus:outline-none resize-none"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className={cn("grid gap-2", reminderPreciseTime ? "grid-cols-2" : "grid-cols-1")}>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Date' : 'Date'} *</label>
+                        <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Date' : 'Date'} *</label>
                         <input
                           type="date"
                           value={reminderDate}
                           onChange={(e) => setReminderDate(e.target.value)}
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-orange-500 focus:outline-none"
                         />
                       </div>
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-white/40">{lang === 'fr' ? 'Heure' : 'Time'} *</label>
-                        <input
-                          type="time"
-                          value={reminderTime}
-                          onChange={(e) => setReminderTime(e.target.value)}
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
-                        />
-                      </div>
+                      {reminderPreciseTime && (
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Heure' : 'Time'} *</label>
+                          <input
+                            type="time"
+                            value={reminderTime}
+                            onChange={(e) => setReminderTime(e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-orange-500 focus:outline-none"
+                          />
+                        </div>
+                      )}
                     </div>
+
+                    {/* Case Heure précise → email 5 min avant */}
+                    <button
+                      type="button"
+                      onClick={() => setReminderPreciseTime(v => !v)}
+                      className="flex w-full items-start gap-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2.5 text-left transition-colors hover:bg-slate-100"
+                    >
+                      <span className={cn(
+                        "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all",
+                        reminderPreciseTime ? "border-orange-500 bg-orange-500 text-white" : "border-slate-300 dark:border-white/20"
+                      )}>
+                        {reminderPreciseTime && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-slate-900 dark:text-white">{lang === 'fr' ? 'Heure précise' : 'Precise time'}</span>
+                        <span className="block text-[11px] text-slate-400 dark:text-neutral-500">
+                          {lang === 'fr' ? 'Recevez un email 5 min avant l’heure indiquée' : 'Get an email 5 min before the set time'}
+                        </span>
+                      </span>
+                    </button>
                     <div className="rounded-lg bg-orange-500/10 border border-orange-500/20 px-3 py-2">
-                      <p className="text-xs text-orange-400">
+                      <p className="text-xs text-orange-600">
                         <Bell className="h-3 w-3 inline mr-1" />
                         {lang === 'fr' ? 'Lié à' : 'Linked to'} : <span className="font-semibold">{localProspect.contact || (lang === 'fr' ? 'Ce prospect' : 'This prospect')}</span>
                       </p>
                     </div>
                     <button
                       onClick={handleCreateReminder}
-                      disabled={!reminderTitle.trim() || !reminderDate || !reminderTime || reminderSubmitting}
+                      disabled={!reminderTitle.trim() || !reminderDate || (reminderPreciseTime && !reminderTime) || reminderSubmitting}
                       className="w-full rounded-lg bg-orange-500 py-2.5 text-sm font-bold text-white hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {reminderSubmitting ? (
@@ -1888,7 +2201,7 @@ export function ProspectView({
             )}
 
             {/* Footer */}
-            <div className="border-t border-white/[0.08] bg-[#111111] p-6 space-y-3">
+            <div className="border-t border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-6 space-y-3">
               <button
                 onClick={async () => {
                   if (!user) return
@@ -1910,8 +2223,8 @@ export function ProspectView({
                 className={cn(
                   "flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all",
                   isDismissed
-                    ? "border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                    : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
+                    ? "border border-sky-500/50 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20"
+                    : "border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-neutral-400 hover:bg-slate-100"
                 )}
               >
                 {isDismissed ? (
@@ -1920,7 +2233,7 @@ export function ProspectView({
                   <><X className="h-4 w-4" /> {lang === 'fr' ? 'Retirer du pipeline' : 'Remove from pipeline'}</>
                 )}
               </button>
-              <button onClick={handleDeleteProspect} className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20">
+              <button onClick={handleDeleteProspect} className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-600 transition-all hover:bg-red-500/20">
                 <Trash2 className="h-4 w-4" /> {lang === 'fr' ? 'Supprimer le prospect' : 'Delete prospect'}
               </button>
             </div>
@@ -1933,53 +2246,53 @@ export function ProspectView({
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0d1117] p-5 shadow-2xl animate-in zoom-in-95 fade-in duration-200"
+            className="relative w-full max-w-md rounded-2xl border border-slate-200 dark:border-white/10 bg-[#0d1117] p-5 shadow-2xl animate-in zoom-in-95 fade-in duration-200"
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-emerald-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                   {lang === 'fr' ? `Échéancier (${savedInstallments} mois)` : `Schedule (${savedInstallments} months)`}
                 </h3>
-                <p className="mt-0.5 text-[11px] text-white/40">
+                <p className="mt-0.5 text-[11px] text-slate-400 dark:text-neutral-500">
                   {lang === 'fr' ? `Commission ${savedCommissionRate}% par échéance` : `${savedCommissionRate}% commission per installment`}
                 </p>
               </div>
               <button
                 onClick={() => setShowScheduleModal(false)}
-                className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                className="rounded-lg p-1.5 text-slate-500 dark:text-neutral-400 hover:bg-slate-100 hover:text-slate-900 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
-              <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-b border-white/10 bg-white/[0.03]">
-                <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{lang === 'fr' ? 'Mois' : 'Month'}</span>
-                <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider text-right">{lang === 'fr' ? 'Client paie' : 'Client pays'}</span>
-                <span className="text-[10px] font-bold text-emerald-400/70 uppercase tracking-wider text-right">{lang === 'fr' ? 'Tu reçois' : 'You receive'}</span>
+            <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 overflow-hidden">
+              <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">{lang === 'fr' ? 'Mois' : 'Month'}</span>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider text-right">{lang === 'fr' ? 'Client paie' : 'Client pays'}</span>
+                <span className="text-[10px] font-bold text-sky-600/70 uppercase tracking-wider text-right">{lang === 'fr' ? 'Tu reçois' : 'You receive'}</span>
               </div>
               <div className="max-h-[50vh] overflow-y-auto">
                 {hasSavedDeposit && (
-                  <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-b border-white/5 bg-white/[0.02]">
+                  <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
                     <div className="flex flex-col">
-                      <span className="text-xs font-medium text-white flex items-center gap-1">
-                        <Wallet className="h-3 w-3 text-emerald-400" />
+                      <span className="text-xs font-medium text-slate-900 dark:text-white flex items-center gap-1">
+                        <Wallet className="h-3 w-3 text-sky-600 dark:text-sky-400" />
                         {lang === 'fr' ? 'Acompte' : 'Deposit'}
                       </span>
-                      <span className="text-[10px] text-white/40">
+                      <span className="text-[10px] text-slate-400 dark:text-neutral-500">
                         {savedDepositDate
                           ? new Date(savedDepositDate).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')
                           : '—'}
                         {savedDepositToRefund && (
-                          <span className="ml-1 text-amber-300">
+                          <span className="ml-1 text-amber-600">
                             {lang === 'fr' ? '· à rembourser' : '· to refund'}
                           </span>
                         )}
                       </span>
                     </div>
-                    <span className="text-xs font-semibold text-white text-right">{savedDepositAmount.toFixed(2)}€</span>
-                    <span className="text-xs font-bold text-emerald-400 text-right">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white text-right">{savedDepositAmount.toFixed(2)}€</span>
+                    <span className="text-xs font-bold text-sky-600 dark:text-sky-400 text-right">
                       {savedDepositKept
                         ? `${((savedDepositAmount * savedCommissionRate) / 100).toFixed(2)}€`
                         : '0.00€'}
@@ -1987,25 +2300,25 @@ export function ProspectView({
                   </div>
                 )}
                 {scheduleBreakdown.map((row) => (
-                  <div key={row.month} className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-b border-white/5 last:border-b-0">
-                    <span className="text-xs font-medium text-white/70">{lang === 'fr' ? `Mois ${row.month}` : `Month ${row.month}`}</span>
-                    <span className="text-xs font-semibold text-white text-right">{row.clientAmount.toFixed(2)}€</span>
-                    <span className="text-xs font-bold text-emerald-400 text-right">{row.commission.toFixed(2)}€</span>
+                  <div key={row.month} className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-b border-slate-200 dark:border-white/10 last:border-b-0">
+                    <span className="text-xs font-medium text-slate-600 dark:text-neutral-300">{lang === 'fr' ? `Mois ${row.month}` : `Month ${row.month}`}</span>
+                    <span className="text-xs font-semibold text-slate-900 dark:text-white text-right">{row.clientAmount.toFixed(2)}€</span>
+                    <span className="text-xs font-bold text-sky-600 dark:text-sky-400 text-right">{row.commission.toFixed(2)}€</span>
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2.5 border-t border-white/10 bg-emerald-500/5">
-                <span className="text-xs font-bold text-white">Total</span>
-                <span className="text-xs font-bold text-white text-right">
+              <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2.5 border-t border-slate-200 dark:border-white/10 bg-sky-500/5">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">Total</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white text-right">
                   {(scheduleBreakdown.reduce((s, r) => s + r.clientAmount, 0) + (hasSavedDeposit ? savedDepositAmount : 0)).toFixed(2)}€
                 </span>
-                <span className="text-xs font-bold text-emerald-400 text-right">
+                <span className="text-xs font-bold text-sky-600 dark:text-sky-400 text-right">
                   {(scheduleBreakdown.reduce((s, r) => s + r.commission, 0) + (savedDepositKept ? (savedDepositAmount * savedCommissionRate) / 100 : 0)).toFixed(2)}€
                 </span>
               </div>
               {hasSavedDeposit && savedDepositToRefund && (
-                <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-t border-white/10 bg-amber-500/5">
-                  <span className="text-[10px] font-medium text-amber-300 col-span-3">
+                <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-3 py-2 border-t border-slate-200 dark:border-white/10 bg-amber-500/5">
+                  <span className="text-[10px] font-medium text-amber-600 col-span-3">
                     {lang === 'fr'
                       ? `Acompte de ${savedDepositAmount.toFixed(2)}€ rendu au client après mise en place du plan.`
                       : `Deposit of ${savedDepositAmount.toFixed(2)}€ returned to client once the plan is in place.`}
@@ -2016,7 +2329,7 @@ export function ProspectView({
 
             <button
               onClick={() => setShowScheduleModal(false)}
-              className="mt-4 w-full rounded-lg bg-emerald-600 py-2 text-sm font-bold text-white hover:bg-emerald-500 transition-colors"
+              className="mt-4 w-full rounded-lg bg-sky-600 py-2 text-sm font-bold text-white hover:bg-sky-600 transition-colors"
             >
               {lang === 'fr' ? 'Fermer' : 'Close'}
             </button>

@@ -143,19 +143,19 @@ export function SetterKPIPage() {
   }, [prospects, locale])
 
   return (
-    <div className="relative min-h-screen bg-[#111111] p-6 md:px-12 md:pb-20 text-white overflow-hidden">
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="relative min-h-screen bg-transparent p-6 md:px-12 md:pb-20 text-slate-700 dark:text-neutral-300 overflow-hidden">
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-sky-500/5 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto space-y-8 z-10">
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pt-4 md:pt-12 pb-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <PhoneIncoming className="w-7 h-7 text-cyan-400" />
-              <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter">{t.setter_view || 'Setter Performance'}</h1>
+              <PhoneIncoming className="w-7 h-7 text-sky-600 dark:text-sky-400" />
+              <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-slate-900 dark:text-white">{t.setter_view || 'Setter Performance'}</h1>
             </div>
-            <p className="text-white/40 text-sm font-medium">
+            <p className="text-slate-500 dark:text-neutral-400 text-sm font-medium">
               {viewMode === 'month'
                 ? (lang === 'fr' ? `Analyse pour ${currentDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}` : `Analysis for ${currentDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}`)
                 : (lang === 'fr' ? 'Analyse approfondie de votre activité de setter' : 'In-depth analysis of your setter activity')}
@@ -166,20 +166,20 @@ export function SetterKPIPage() {
             {hasFullAccess ? (
               <>
                 {viewMode === 'month' && (
-                  <div className="flex items-center bg-white/[0.03] rounded-full p-1 border border-white/[0.08]">
-                    <button onClick={prevMonth} className="p-2 hover:bg-white/10 rounded-full text-white/60"><ChevronLeft className="w-4 h-4" /></button>
-                    <span className="px-4 text-sm font-semibold text-white capitalize min-w-[120px] text-center">
+                  <div className="flex items-center bg-slate-50 dark:bg-white/5 rounded-full p-1 border border-slate-200 dark:border-white/10">
+                    <button onClick={prevMonth} className="p-2 hover:bg-slate-100 rounded-full text-slate-500 dark:text-neutral-400"><ChevronLeft className="w-4 h-4" /></button>
+                    <span className="px-4 text-sm font-semibold text-slate-900 dark:text-white capitalize min-w-[120px] text-center">
                       {currentDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
                     </span>
-                    <button onClick={nextMonth} className="p-2 hover:bg-white/10 rounded-full text-white/60"><ChevronRight className="w-4 h-4" /></button>
+                    <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-full text-slate-500 dark:text-neutral-400"><ChevronRight className="w-4 h-4" /></button>
                   </div>
                 )}
-                <button onClick={() => setViewMode(viewMode === 'month' ? 'all' : 'month')} className="px-6 py-2.5 rounded-full bg-white text-black font-semibold hover:bg-white/90 transition-all">
+                <button onClick={() => setViewMode(viewMode === 'month' ? 'all' : 'month')} className="px-6 py-2.5 rounded-full bg-sky-600 text-white font-semibold hover:bg-sky-500 transition-all">
                   {viewMode === 'month' ? (lang === 'fr' ? 'Vue Globale' : 'Global View') : (lang === 'fr' ? 'Vue Mensuelle' : 'Monthly View')}
                 </button>
               </>
             ) : (
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-sm text-white/40">
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-slate-500 dark:text-neutral-400">
                 <Lock className="w-4 h-4" />
                 {lang === 'fr' ? 'Filtres réservés au Pack Pro' : 'Filters reserved for Pro Pack'}
               </div>
@@ -188,10 +188,10 @@ export function SetterKPIPage() {
         </div>
 
         {/* TABS */}
-        <div className="flex gap-1 p-1 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] rounded-full w-fit mb-4">
-          <button onClick={() => setActiveTab('global')} className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'global' ? 'bg-cyan-500 text-black' : 'text-white/40 hover:text-white'}`}>Global</button>
+        <div className="flex gap-1 p-1 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-full w-fit mb-4">
+          <button onClick={() => setActiveTab('global')} className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'global' ? 'bg-sky-600 text-white' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900'}`}>Global</button>
           {activeOffers.map((offer: any) => (
-            <button key={offer.id} onClick={() => setActiveTab(offer.name)} className={`px-8 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${activeTab === offer.name ? 'bg-cyan-500 text-black' : 'text-white/40 hover:text-white'}`}>
+            <button key={offer.id} onClick={() => setActiveTab(offer.name)} className={`px-8 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${activeTab === offer.name ? 'bg-sky-600 text-white' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900'}`}>
               {offer.name}
             </button>
           ))}
@@ -246,53 +246,53 @@ export function SetterKPIPage() {
         <div className="relative">
           {!hasFullAccess && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl">
-              <button onClick={showUpgrade} className="flex items-center gap-2.5 px-8 py-4 rounded-full bg-cyan-500 text-black font-bold text-base shadow-2xl hover:bg-cyan-400 active:scale-[0.98] transition-all">
+              <button onClick={showUpgrade} className="flex items-center gap-2.5 px-8 py-4 rounded-full bg-sky-600 text-white font-bold text-base shadow-2xl hover:bg-sky-500 active:scale-[0.98] transition-all">
                 <Lock className="w-5 h-5" /> {lang === 'fr' ? 'Débloquer' : 'Unlock'}
               </button>
             </div>
           )}
           <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 ${!hasFullAccess ? 'blur-md select-none pointer-events-none' : ''}`}>
-            <div className="rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+            <div className="rounded-2xl p-8 bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 shadow-sm">
               <div className="flex justify-between items-center mb-8">
-                <h3 className="text-lg font-bold text-white">{lang === 'fr' ? 'Historique Taux de Booking' : 'Booking Rate History'}</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Historique Taux de Booking' : 'Booking Rate History'}</h3>
               </div>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
                     <defs>
                       <linearGradient id="colorBooking" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#0284C7" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#0284C7" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                    <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#fff' }} itemStyle={{ color: '#06b6d4' }} />
-                    <Area type="monotone" dataKey="bookingRate" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorBooking)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} unit="%" />
+                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', color: '#0f172a' }} itemStyle={{ color: '#0284C7' }} />
+                    <Area type="monotone" dataKey="bookingRate" stroke="#0284C7" strokeWidth={2} fillOpacity={1} fill="url(#colorBooking)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            <div className="rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+            <div className="rounded-2xl p-8 bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 shadow-sm">
               <div className="flex justify-between items-center mb-8">
-                <h3 className="text-lg font-bold text-white">{lang === 'fr' ? 'Historique Closing' : 'Closing Rate History'}</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Historique Closing' : 'Closing Rate History'}</h3>
               </div>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
                     <defs>
                       <linearGradient id="colorClosingSetter" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#38BDF8" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#38BDF8" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                    <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                    <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#fff' }} itemStyle={{ color: '#a855f7' }} />
-                    <Area type="monotone" dataKey="closingRate" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorClosingSetter)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} unit="%" />
+                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', color: '#0f172a' }} itemStyle={{ color: '#38BDF8' }} />
+                    <Area type="monotone" dataKey="closingRate" stroke="#38BDF8" strokeWidth={2} fillOpacity={1} fill="url(#colorClosingSetter)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -306,38 +306,38 @@ export function SetterKPIPage() {
 
 const KpiCard = ({ title, value, icon: Icon, color, glow }: any) => {
   const textColors: any = {
-    emerald: 'text-emerald-500', blue: 'text-blue-400', purple: 'text-purple-400',
-    amber: 'text-amber-400', rose: 'text-rose-500', slate: 'text-white/40', cyan: 'text-cyan-400',
+    emerald: 'text-sky-600 dark:text-sky-400', blue: 'text-sky-600 dark:text-sky-400', purple: 'text-sky-600 dark:text-sky-400',
+    amber: 'text-amber-600', rose: 'text-rose-600', slate: 'text-slate-400 dark:text-neutral-500', cyan: 'text-sky-600 dark:text-sky-400',
   }
   const glowStyles: any = {
-    emerald: 'shadow-[0_0_20px_rgba(16,185,129,0.1)]',
+    emerald: 'shadow-[0_0_20px_rgba(2,132,199,0.1)]',
     amber: 'shadow-[0_0_25px_rgba(245,158,11,0.15)] bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/20',
-    cyan: 'shadow-[0_0_20px_rgba(6,182,212,0.15)] bg-gradient-to-br from-cyan-500/10 to-transparent border-cyan-500/20',
+    cyan: 'shadow-[0_0_20px_rgba(2,132,199,0.15)] bg-gradient-to-br from-sky-500/10 to-transparent border-sky-500/20',
   }
   return (
-    <div className={`relative p-8 rounded-2xl bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] transition-all hover:bg-white/5 group ${glow ? glowStyles[color] || '' : ''}`}>
+    <div className={`relative p-8 rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 shadow-sm transition-all hover:bg-slate-50 group ${glow ? glowStyles[color] || '' : ''}`}>
       {glow && color === 'amber' && <div className="absolute -right-4 -top-4 h-24 w-24 bg-amber-500/10 blur-3xl group-hover:bg-amber-500/20 transition-all" />}
-      <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">{title}</p>
-      <h3 className={`text-3xl font-extrabold tracking-tight ${glow ? textColors[color] : 'text-white'}`}>{value}</h3>
+      <p className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-neutral-400 mb-4">{title}</p>
+      <h3 className={`text-3xl font-extrabold tracking-tight ${glow ? textColors[color] : 'text-slate-900 dark:text-white'}`}>{value}</h3>
     </div>
   )
 }
 
 const SetterCard = ({ title, value, subtitle, icon: Icon, color, glow }: any) => {
   const colors: any = {
-    cyan: 'text-cyan-400', purple: 'text-purple-400', emerald: 'text-emerald-500', amber: 'text-amber-400',
+    cyan: 'text-sky-600 dark:text-sky-400', purple: 'text-sky-600 dark:text-sky-400', emerald: 'text-sky-600 dark:text-sky-400', amber: 'text-amber-600',
   }
   const glowStyles: any = {
     amber: 'shadow-[0_0_25px_rgba(245,158,11,0.15)] bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/20',
   }
   return (
-    <div className={`relative p-8 rounded-2xl bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] transition-all hover:bg-white/5 group ${glow ? glowStyles[color] || '' : ''}`}>
+    <div className={`relative p-8 rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 shadow-sm transition-all hover:bg-slate-50 group ${glow ? glowStyles[color] || '' : ''}`}>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-xs font-bold uppercase tracking-widest text-white/40">{title}</p>
-        <Icon className={`w-4 h-4 ${colors[color] || 'text-white/40'}`} />
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-neutral-400">{title}</p>
+        <Icon className={`w-4 h-4 ${colors[color] || 'text-slate-400 dark:text-neutral-500'}`} />
       </div>
-      <h3 className={`text-3xl font-extrabold tracking-tight ${glow ? colors[color] : 'text-white'}`}>{value}</h3>
-      {subtitle && <p className="text-xs text-white/40 mt-1">{subtitle}</p>}
+      <h3 className={`text-3xl font-extrabold tracking-tight ${glow ? colors[color] : 'text-slate-900 dark:text-white'}`}>{value}</h3>
+      {subtitle && <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">{subtitle}</p>}
     </div>
   )
 }

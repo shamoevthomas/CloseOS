@@ -4,8 +4,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { User as UserIcon, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import PhoneInput from '../components/PhoneInput';
 import { useLanguage } from '../contexts/LanguageContext';
 import { registerTranslations } from '../i18n/translations';
+import {
+  DoodleRocket, DoodleSparkle, DoodleStar5, DoodleDashes, DoodleBubble,
+  DoodleBolt, DoodleHeart, DoodleCheck, DoodlePlane, DoodleCross,
+} from '../components/doodles';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -14,6 +19,7 @@ export default function Register() {
   const t = registerTranslations[lang];
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,12 +40,12 @@ export default function Register() {
 
   const PasswordStrengthBar = ({ strength }: { strength: number }) => {
     const labels = [t.password_weak, t.password_weak, t.password_medium, t.password_strong, t.password_very_strong];
-    const colors = ['bg-red-500', 'bg-red-500', 'bg-amber-500', 'bg-green-500', 'bg-green-400'];
+    const colors = ['bg-red-500', 'bg-red-500', 'bg-amber-500', 'bg-sky-600', 'bg-sky-600'];
     return (
       <div className="mt-2">
         <div className="flex gap-1 mb-1">
           {[0, 1, 2, 3].map(i => (
-            <div key={i} className={`h-1 flex-1 rounded-full ${i < strength ? colors[strength] : 'bg-slate-700'}`} />
+            <div key={i} className={`h-1 flex-1 rounded-full ${i < strength ? colors[strength] : 'bg-slate-200'}`} />
           ))}
         </div>
         <p className={`text-xs ${colors[strength].replace('bg-', 'text-')}`}>
@@ -55,6 +61,11 @@ export default function Register() {
 
     if (password !== confirmPassword) {
       setError(t.passwords_mismatch);
+      return;
+    }
+
+    if (!phone.trim()) {
+      setError(lang === 'fr' ? 'Veuillez renseigner votre numéro de téléphone.' : 'Please enter your phone number.');
       return;
     }
 
@@ -125,15 +136,15 @@ export default function Register() {
         if (langUser) {
           await supabase
             .from('profiles')
-            .update({ preferred_language: landingLang })
+            .update({ preferred_language: landingLang, phone: phone.trim() || null })
             .eq('id', langUser.id);
         }
 
-        // Envoyer le mail de bienvenue (fire & forget)
+        // Mail de bienvenue + ajout à la liste Brevo « CloseOS utilisateur » (fire & forget)
         fetch('/api/welcome-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email }),
+          body: JSON.stringify({ name, email, phone: phone.trim() }),
         }).catch(() => {});
 
         // Ambassador attribution (cookie set on landing) — record signup conversion
@@ -170,9 +181,23 @@ export default function Register() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[#020617] px-4 overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-600/20 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
-      <div className="absolute bottom-0 right-0 w-[600px] h-[400px] bg-purple-600/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
+    <div className="relative flex min-h-screen items-center justify-center bg-[#f4f2f1] dark:bg-[#0d0d0d] px-4 overflow-hidden">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-sky-600/20 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
+      <div className="absolute bottom-0 right-0 w-[600px] h-[400px] bg-sky-500/10 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
+
+      {/* Doodles dans les marges (theme-aware) */}
+      <div className="pointer-events-none select-none absolute inset-0 hidden lg:block z-0" aria-hidden="true">
+        <DoodleRocket className="absolute left-[14%] top-[18%] w-12 text-sky-500 -rotate-6" />
+        <DoodleSparkle className="absolute left-[22%] top-[36%] w-6 text-sky-500" />
+        <DoodleBubble className="absolute left-[10%] top-[52%] w-14 text-slate-800/60 dark:text-white/40 -rotate-6" />
+        <DoodleStar5 className="absolute left-[18%] top-[72%] w-5 text-sky-500" />
+        <DoodleDashes className="absolute left-[13%] top-[86%] w-11 text-slate-300 dark:text-white/20 rotate-6" />
+        <DoodleBolt className="absolute right-[16%] top-[16%] w-6 text-sky-500" />
+        <DoodleHeart className="absolute right-[12%] top-[34%] w-6 text-sky-500" />
+        <DoodlePlane className="absolute right-[9%] top-[54%] w-20 text-sky-500 rotate-6" />
+        <DoodleCheck className="absolute right-[20%] top-[70%] w-7 text-sky-500" />
+        <DoodleCross className="absolute right-[15%] top-[86%] w-4 text-slate-300 dark:text-white/25" />
+      </div>
 
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
@@ -181,13 +206,13 @@ export default function Register() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-[#0B1121] p-8 shadow-2xl shadow-blue-900/10">
+        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-8 shadow-2xl shadow-sky-500/10">
           <div className="mb-8 text-center">
-            <h2 className="mb-3 text-2xl font-bold text-white">{t.title}</h2>
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/20 bg-blue-500/10 text-xs font-bold text-blue-300 mb-4">
+            <h2 className="mb-3 text-2xl font-bold text-slate-900 dark:text-white">{t.title}</h2>
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-sky-500/20 bg-sky-500/10 text-xs font-bold text-sky-700 dark:text-sky-400 mb-4">
               {t.trial_badge}
             </span>
-            <p className="text-slate-400">{t.subtitle}</p>
+            <p className="text-slate-500 dark:text-neutral-400">{t.subtitle}</p>
           </div>
 
           {error && (
@@ -200,7 +225,7 @@ export default function Register() {
           <button
             onClick={handleGoogleLogin}
             disabled={googleLoading}
-            className="mb-6 flex w-full items-center justify-center gap-3 rounded-lg border border-slate-700 bg-slate-800 py-3 font-medium text-white transition-all hover:bg-slate-700 disabled:opacity-50"
+            className="mb-6 flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 dark:border-white/15 bg-white dark:bg-[#1a1a1a] py-3 font-medium text-slate-900 dark:text-white transition-all hover:bg-slate-50 disabled:opacity-50"
           >
             {googleLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -211,20 +236,20 @@ export default function Register() {
           </button>
 
           <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0B1121] px-2 text-slate-500">{t.or_email}</span></div>
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-white/10"></div></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white dark:bg-[#1a1a1a] px-2 text-slate-400 dark:text-neutral-500">{t.or_email}</span></div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">{t.full_name}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-neutral-300 text-left">{t.full_name}</label>
               <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                <UserIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-neutral-500" />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 py-3 pl-10 pr-4 text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 py-3 pl-10 pr-4 text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                   placeholder="John Doe"
                   required
                 />
@@ -232,14 +257,14 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">{t.email}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-neutral-300 text-left">{t.email}</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-neutral-500" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 py-3 pl-10 pr-4 text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 py-3 pl-10 pr-4 text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                   placeholder="votre@email.com"
                   required
                 />
@@ -247,19 +272,24 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">{t.password}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-neutral-300 text-left">{lang === 'fr' ? 'Téléphone' : 'Phone'}</label>
+              <PhoneInput variant="sales" value={phone} onChange={setPhone} />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-neutral-300 text-left">{t.password}</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-neutral-500" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 py-3 pl-10 pr-12 text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 py-3 pl-10 pr-12 text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                   placeholder="••••••••"
                   required
                   minLength={8}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 hover:text-slate-700">
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
@@ -267,19 +297,19 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300 text-left">{t.confirm_password}</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-neutral-300 text-left">{t.confirm_password}</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-neutral-500" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full rounded-lg border bg-slate-900 py-3 pl-10 pr-12 text-white focus:border-blue-500 focus:outline-none ${confirmPassword && confirmPassword !== password ? 'border-red-500' : 'border-slate-700'}`}
+                  className={`w-full rounded-lg border bg-slate-50 dark:bg-white/5 py-3 pl-10 pr-12 text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none ${confirmPassword && confirmPassword !== password ? 'border-red-500' : 'border-slate-300 dark:border-white/15'}`}
                   placeholder="••••••••"
                   required
                   minLength={8}
                 />
-                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 hover:text-slate-700">
                   {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
@@ -291,7 +321,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 font-semibold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-500/20 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 py-3 font-semibold text-white transition-all hover:bg-sky-500 shadow-lg shadow-sky-500/20 disabled:opacity-50"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t.submit}
               {!loading && <ArrowRight className="h-5 w-5" />}
@@ -299,17 +329,17 @@ export default function Register() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-slate-400">
+            <p className="text-slate-500 dark:text-neutral-400">
               {t.already_registered}{' '}
-              <Link to="/login" className="font-semibold text-blue-400 hover:text-blue-300">{t.login}</Link>
+              <Link to="/login" className="font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700">{t.login}</Link>
             </p>
           </div>
 
-          <p className="mt-6 text-center text-xs text-slate-600">
+          <p className="mt-6 text-center text-xs text-slate-600 dark:text-neutral-300">
             {t.tos_prefix}{' '}
-            <Link to="/cgu" className="text-blue-400 hover:underline">{t.tos_cgu}</Link>
+            <Link to="/cgu" className="text-sky-600 dark:text-sky-400 hover:underline">{t.tos_cgu}</Link>
             {' '}{t.tos_and}{' '}
-            <Link to="/confidentialite" className="text-blue-400 hover:underline">{t.tos_privacy}</Link>.
+            <Link to="/confidentialite" className="text-sky-600 dark:text-sky-400 hover:underline">{t.tos_privacy}</Link>.
           </p>
         </div>
       </div>

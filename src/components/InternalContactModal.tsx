@@ -63,24 +63,24 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
       />
 
       {/* Modal - Business Card Style */}
-      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto animate-scale-in rounded-2xl bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.08]">
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto animate-scale-in rounded-2xl bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] ring-1 ring-slate-200">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-2 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+          className="absolute right-4 top-4 rounded-full p-2 text-slate-400 dark:text-neutral-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Header - Avatar & Name */}
-        <div className="border-b border-white/[0.08] bg-gradient-to-r from-purple-500/10 to-emerald-500/10 p-8 text-center">
-          <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-3xl font-bold text-white shadow-lg">
+        <div className="border-b border-slate-200 dark:border-white/10 bg-gradient-to-r from-sky-500/10 to-sky-600/10 p-8 text-center">
+          <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-sky-600 text-3xl font-bold text-slate-900 dark:text-white shadow-lg">
             {getInitials(contact.name)}
           </div>
-          <h2 className="text-2xl font-bold text-white">{contact.name}</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{contact.name}</h2>
           <div className="mt-2 flex items-center justify-center gap-2">
-            <Briefcase className="h-4 w-4 text-purple-400" />
-            <p className="text-sm text-purple-300">{contact.role}</p>
+            <Briefcase className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            <p className="text-sm text-sky-600 dark:text-sky-400">{contact.role}</p>
           </div>
         </div>
 
@@ -91,69 +91,69 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
               <>
                 {/* Editing Mode - Name */}
                 <div>
-                  <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-white/40">
+                  <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-slate-400 dark:text-neutral-500">
                     {lang === 'fr' ? 'Nom complet' : 'Full name'}
                   </label>
                   <input
                     type="text"
                     value={editedContact.name}
                     onChange={(e) => setEditedContact({ ...editedContact, name: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                     placeholder={lang === 'fr' ? "Ex: Jean Dupont" : "E.g.: John Doe"}
                   />
                 </div>
 
                 {/* Editing Mode - Role */}
                 <div>
-                  <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-white/40">
+                  <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-slate-400 dark:text-neutral-500">
                     {lang === 'fr' ? 'Rôle/Poste' : 'Role/Position'}
                   </label>
                   <input
                     type="text"
                     value={editedContact.role}
                     onChange={(e) => setEditedContact({ ...editedContact, role: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                     placeholder={lang === 'fr' ? "Ex: Directeur Commercial" : "E.g.: Sales Director"}
                   />
                 </div>
 
                 {/* Editing Mode - Email */}
                 <div>
-                  <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-white/40">
+                  <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-slate-400 dark:text-neutral-500">
                     Email
                   </label>
                   <input
                     type="email"
                     value={editedContact.email}
                     onChange={(e) => setEditedContact({ ...editedContact, email: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                     placeholder="Ex: jean@closeros.com"
                   />
                 </div>
 
                 {/* Editing Mode - Phone */}
                 <div>
-                  <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-white/40">
+                  <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-slate-400 dark:text-neutral-500">
                     {lang === 'fr' ? 'Téléphone' : 'Phone'}
                   </label>
                   <input
                     type="tel"
                     value={editedContact.phone}
                     onChange={(e) => setEditedContact({ ...editedContact, phone: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                     placeholder={lang === 'fr' ? "Ex: +33 6 12 34 56 78" : "E.g.: +1 555 123 4567"}
                   />
                 </div>
 
                 {/* Editing Mode - Notes */}
                 <div>
-                  <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-white/40">
+                  <label className="mb-2 block text-xs uppercase tracking-widest font-bold text-slate-400 dark:text-neutral-500">
                     {lang === 'fr' ? 'Notes (optionnel)' : 'Notes (optional)'}
                   </label>
                   <textarea
                     value={editedContact.notes || ''}
                     onChange={(e) => setEditedContact({ ...editedContact, notes: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                     rows={3}
                     placeholder={lang === 'fr' ? "Ajouter des notes..." : "Add notes..."}
                   />
@@ -164,28 +164,28 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
             ) : (
               <>
                 {/* View Mode - Email */}
-                <div className="group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-all hover:border-blue-500/50 hover:bg-white/[0.03]">
+                <div className="group rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 transition-all hover:border-sky-500/50 hover:bg-slate-50">
                   <div className="mb-1 flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-white/40 group-hover:text-blue-400" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-white/40">Email</span>
+                    <Mail className="h-4 w-4 text-slate-400 dark:text-neutral-500 group-hover:text-sky-600" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">Email</span>
                   </div>
                   <a
                     href={`mailto:${contact.email}`}
-                    className="block text-sm text-blue-400 hover:underline"
+                    className="block text-sm text-sky-600 dark:text-sky-400 hover:underline"
                   >
                     {contact.email}
                   </a>
                 </div>
 
                 {/* View Mode - Phone */}
-                <div className="group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-all hover:border-emerald-500/50 hover:bg-white/[0.03]">
+                <div className="group rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 transition-all hover:border-sky-500/50 hover:bg-slate-50">
                   <div className="mb-1 flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-white/40 group-hover:text-emerald-400" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'Téléphone' : 'Phone'}</span>
+                    <Phone className="h-4 w-4 text-slate-400 dark:text-neutral-500 group-hover:text-sky-600" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Téléphone' : 'Phone'}</span>
                   </div>
                   <a
                     href={`tel:${contact.phone}`}
-                    className="block text-sm text-white/60 hover:text-white"
+                    className="block text-sm text-slate-500 dark:text-neutral-400 hover:text-slate-900"
                   >
                     {contact.phone}
                   </a>
@@ -193,9 +193,9 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
 
                 {/* View Mode - Notes (if any) */}
                 {contact.notes && (
-                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Notes</div>
-                    <p className="text-sm leading-relaxed text-white/60">{contact.notes}</p>
+                  <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">Notes</div>
+                    <p className="text-sm leading-relaxed text-slate-500 dark:text-neutral-400">{contact.notes}</p>
                   </div>
                 )}
 
@@ -206,19 +206,19 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
         </div>
 
         {/* Footer - Actions */}
-        <div className="border-t border-white/[0.08] p-6">
+        <div className="border-t border-slate-200 dark:border-white/10 p-6">
           {isEditing ? (
             <div className="flex gap-3">
               <button
                 onClick={handleSave}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-sky-600"
               >
                 <Save className="h-4 w-4" />
                 {lang === 'fr' ? 'Sauvegarder' : 'Save'}
               </button>
               <button
                 onClick={handleCancel}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-neutral-300 transition-all hover:bg-slate-100"
               >
                 <X className="h-4 w-4" />
                 {lang === 'fr' ? 'Annuler' : 'Cancel'}
@@ -228,14 +228,14 @@ export function InternalContactModal({ contact, onClose, onEdit, onDelete }: Int
             <div className="flex gap-3">
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-neutral-300 transition-all hover:bg-slate-100"
               >
                 <Pencil className="h-4 w-4" />
                 {lang === 'fr' ? 'Modifier' : 'Edit'}
               </button>
               <button
                 onClick={handleDelete}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20"
+                className="flex flex-1 items-center justify-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-600 transition-all hover:bg-red-500/20"
               >
                 <Trash2 className="h-4 w-4" />
                 {lang === 'fr' ? 'Supprimer' : 'Delete'}

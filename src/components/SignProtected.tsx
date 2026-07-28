@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useSignOwner, signOutSign } from '../lib/signAuth';
+import { useSignMember } from '../lib/signMemberAuth';
 import { useDeviceTrust } from '../lib/signDevice';
 import { getSignSubscription, subAccessState, type SignSubscription } from '../lib/signSubscription';
 import SignVerification from './SignVerification';
@@ -20,6 +21,7 @@ const FullScreen = ({ children }: { children: ReactNode }) => (
 
 export default function SignProtected({ children }: { children: ReactNode }) {
   const { loading, owner } = useSignOwner();
+  const { loading: memberLoading, member } = useSignMember();
   const { state, recheck } = useDeviceTrust(owner?.id ?? null);
   const [sub, setSub] = useState<SignSubscription | null>(null);
 
@@ -28,8 +30,9 @@ export default function SignProtected({ children }: { children: ReactNode }) {
     getSignSubscription().then(setSub).catch(() => {});
   }, [owner?.id]);
 
-  if (loading) return <FullScreen><Loader2 className="h-6 w-6 animate-spin text-[#CEFF8F]" /></FullScreen>;
-  if (!owner) return <Navigate to="/sign/login" replace />;
+  if (loading || (!owner && memberLoading)) return <FullScreen><Loader2 className="h-6 w-6 animate-spin text-[#CEFF8F]" /></FullScreen>;
+  // Un équipier (non-owner) est redirigé vers son espace dédié ; sinon page de connexion.
+  if (!owner) return <Navigate to={member ? '/sign/team' : '/sign/login'} replace />;
   if (state === 'checking') return <FullScreen><Loader2 className="h-6 w-6 animate-spin text-[#CEFF8F]" /></FullScreen>;
   if (state === 'untrusted') {
     return (

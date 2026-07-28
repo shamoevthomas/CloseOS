@@ -206,47 +206,47 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
-      <div className="relative w-full max-w-3xl max-h-[85vh] flex flex-col rounded-2xl bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.08]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-white/[0.08] p-6 flex-shrink-0">
-          <div><h2 className="text-2xl font-bold text-white">{lang === 'fr' ? 'Moyens de Paiement' : 'Payment Methods'}</h2></div>
-          <button onClick={onClose} className="rounded-full p-2 text-white/40 hover:bg-white/10 hover:text-white"><X className="h-5 w-5" /></button>
+      <div className="relative w-full max-w-3xl max-h-[85vh] flex flex-col rounded-2xl bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] ring-1 ring-slate-200" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 p-6 flex-shrink-0">
+          <div><h2 className="text-2xl font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Moyens de Paiement' : 'Payment Methods'}</h2></div>
+          <button onClick={onClose} className="rounded-full p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
           {!isAdding && (
-            <button onClick={() => setIsAdding(true)} className="mb-6 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/[0.08] bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white/60 hover:bg-white/10">
+            <button onClick={() => setIsAdding(true)} className="mb-6 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-4 text-sm font-semibold text-slate-500 dark:text-neutral-400 hover:bg-slate-100">
               <Plus className="h-4 w-4" /> {lang === 'fr' ? 'Ajouter un moyen de paiement' : 'Add a payment method'}
             </button>
           )}
 
           {isAdding && (
-            <div className="mb-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-6 animate-in fade-in slide-in-from-bottom-2">
-              <h3 className="mb-4 text-lg font-bold text-white">{editingId ? (lang === 'fr' ? 'Modifier' : 'Edit') : (lang === 'fr' ? 'Nouveau' : 'New')} {lang === 'fr' ? 'moyen de paiement' : 'payment method'}</h3>
+            <div className="mb-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 backdrop-blur-2xl p-6 animate-in fade-in slide-in-from-bottom-2">
+              <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">{editingId ? (lang === 'fr' ? 'Modifier' : 'Edit') : (lang === 'fr' ? 'Nouveau' : 'New')} {lang === 'fr' ? 'moyen de paiement' : 'payment method'}</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div><label className="mb-2 block text-sm font-medium text-white/40">{lang === 'fr' ? 'Nom' : 'Name'}</label><input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" required /></div>
+                <div><label className="mb-2 block text-sm font-medium text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Nom' : 'Name'}</label><input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" required /></div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white/40">Type</label>
+                  <label className="mb-2 block text-sm font-medium text-slate-400 dark:text-neutral-500">Type</label>
                   <div className="grid grid-cols-2 gap-2">
                     {(['VIREMENT', 'PAYPAL', 'REVOLUT', 'STRIPE'] as PaymentMethodType[]).map(type => (
-                      <button key={type} type="button" onClick={() => setFormType(type)} className={cn('flex items-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all', formType === type ? `border-${getColor(type)}-500 bg-${getColor(type)}-500/10 text-${getColor(type)}-400` : 'border-white/[0.08] bg-white/[0.03] text-white/60')}>{getIcon(type)}{type}</button>
+                      <button key={type} type="button" onClick={() => setFormType(type)} className={cn('flex items-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all', formType === type ? `border-${getColor(type)}-500 bg-${getColor(type)}-500/10 text-${getColor(type)}-400` : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-neutral-400')}>{getIcon(type)}{type}</button>
                     ))}
                   </div>
                 </div>
 
                 {formType === 'VIREMENT' && (
-                  <div className="space-y-3 p-4 bg-[#111111] rounded-2xl border border-white/[0.08]">
-                    <input type="text" placeholder={lang === 'fr' ? "Banque" : "Bank"} value={formBankName} onChange={e => setFormBankName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" />
-                    <input type="text" placeholder="IBAN" value={formIban} onChange={e => setFormIban(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" required />
-                    <input type="text" placeholder="BIC" value={formBic} onChange={e => setFormBic(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" required />
-                    <input type="text" placeholder={lang === 'fr' ? "Titulaire" : "Account holder"} value={formAccountHolder} onChange={e => setFormAccountHolder(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" required />
+                  <div className="space-y-3 p-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-slate-200 dark:border-white/10">
+                    <input type="text" placeholder={lang === 'fr' ? "Banque" : "Bank"} value={formBankName} onChange={e => setFormBankName(e.target.value)} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" />
+                    <input type="text" placeholder="IBAN" value={formIban} onChange={e => setFormIban(e.target.value)} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" required />
+                    <input type="text" placeholder="BIC" value={formBic} onChange={e => setFormBic(e.target.value)} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" required />
+                    <input type="text" placeholder={lang === 'fr' ? "Titulaire" : "Account holder"} value={formAccountHolder} onChange={e => setFormAccountHolder(e.target.value)} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" required />
                   </div>
                 )}
-                {(formType === 'PAYPAL' || formType === 'REVOLUT') && <input type="text" placeholder={formType === 'PAYPAL' ? "Email" : "Revtag"} value={formIdentifier} onChange={e => setFormIdentifier(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" required />}
-                {formType === 'STRIPE' && <input type="text" placeholder={lang === 'fr' ? "Lien Stripe" : "Stripe link"} value={formPaymentLink} onChange={e => setFormPaymentLink(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none" required />}
+                {(formType === 'PAYPAL' || formType === 'REVOLUT') && <input type="text" placeholder={formType === 'PAYPAL' ? "Email" : "Revtag"} value={formIdentifier} onChange={e => setFormIdentifier(e.target.value)} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" required />}
+                {formType === 'STRIPE' && <input type="text" placeholder={lang === 'fr' ? "Lien Stripe" : "Stripe link"} value={formPaymentLink} onChange={e => setFormPaymentLink(e.target.value)} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none" required />}
 
                 <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={resetForm} className="flex-1 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/10">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
-                  <button type="submit" disabled={isLoading} className="flex-1 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 flex justify-center items-center">
+                  <button type="button" onClick={resetForm} className="flex-1 rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-neutral-300 hover:bg-slate-100">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
+                  <button type="submit" disabled={isLoading} className="flex-1 rounded-full bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 flex justify-center items-center">
                     {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingId ? (lang === 'fr' ? 'Enregistrer' : 'Save') : (lang === 'fr' ? 'Ajouter' : 'Add'))}
                   </button>
                 </div>
@@ -255,27 +255,27 @@ export function PaymentMethodsModal({ isOpen, onClose }: PaymentMethodsModalProp
           )}
 
           {methods.length === 0 && !isAdding ? (
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-12 text-center">
-              <CreditCard className="mx-auto mb-4 h-12 w-12 text-white/40" />
-              <p className="text-white/40">{lang === 'fr' ? 'Aucun moyen de paiement.' : 'No payment methods.'}</p>
+            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-12 text-center">
+              <CreditCard className="mx-auto mb-4 h-12 w-12 text-slate-400 dark:text-neutral-500" />
+              <p className="text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Aucun moyen de paiement.' : 'No payment methods.'}</p>
             </div>
           ) : (
             <div className="space-y-3">
               {methods.map((method) => (
-                <div key={method.id} className="group relative rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-all hover:bg-white/10">
+                <div key={method.id} className="group relative rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 transition-all hover:bg-slate-100">
                   <div className="flex items-start gap-4">
                     <div className={cn('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full', `bg-${getColor(method.type)}-500/20 text-${getColor(method.type)}-400`)}>{getIcon(method.type)}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-white">{method.name}</h4>
-                        {method.isDefault && <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-semibold text-purple-400"><Check className="h-3 w-3" /> {lang === 'fr' ? 'Défaut' : 'Default'}</span>}
+                        <h4 className="font-semibold text-slate-900 dark:text-white">{method.name}</h4>
+                        {method.isDefault && <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/20 px-2 py-0.5 text-xs font-semibold text-sky-600 dark:text-sky-400"><Check className="h-3 w-3" /> {lang === 'fr' ? 'Défaut' : 'Default'}</span>}
                       </div>
-                      <p className="mt-1 text-sm text-white/40">{method.type}</p>
+                      <p className="mt-1 text-sm text-slate-400 dark:text-neutral-500">{method.type}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {!method.isDefault && <button onClick={() => setDefault(method.id)} className="p-2 text-white/40 hover:text-yellow-400"><Star className="h-4 w-4" /></button>}
-                      <button onClick={() => handleEdit(method)} className="p-2 text-white/40 hover:text-blue-400"><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => confirm(lang === 'fr' ? 'Supprimer ?' : 'Delete?') && deleteMethod(method.id)} className="p-2 text-white/40 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+                      {!method.isDefault && <button onClick={() => setDefault(method.id)} className="p-2 text-slate-400 dark:text-neutral-500 hover:text-yellow-600"><Star className="h-4 w-4" /></button>}
+                      <button onClick={() => handleEdit(method)} className="p-2 text-slate-400 dark:text-neutral-500 hover:text-sky-600"><Pencil className="h-4 w-4" /></button>
+                      <button onClick={() => confirm(lang === 'fr' ? 'Supprimer ?' : 'Delete?') && deleteMethod(method.id)} className="p-2 text-slate-400 dark:text-neutral-500 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </div>
                 </div>

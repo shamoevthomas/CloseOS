@@ -14,6 +14,7 @@ import {
   signerLinkUrl, type SignTemplateRep, type SignInstanceRow,
 } from '../lib/signTemplates';
 import { useSignLang, signLocale, type SignLang } from '../contexts/SignLangContext';
+import { listTeamMembers, listTemplateMemberIds, assignTemplate, unassignTemplate, type SignTeamMember } from '../lib/signTeam';
 
 const instBadge = (lang: SignLang): Record<string, { label: string; cls: string }> => ({
   en_cours: { label: lang === 'fr' ? 'En cours' : 'In progress', cls: 'text-[#A0E7EC] border-[#A0E7EC]/30 bg-[#A0E7EC]/10' },
@@ -38,6 +39,10 @@ export default function SignTemplateDashboard() {
   const [reps, setReps] = useState<SignTemplateRep[]>([]);
   const [instances, setInstances] = useState<SignInstanceRow[]>([]);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  // Équipe (comptes réels) : assignation de ce modèle
+  const [team, setTeam] = useState<SignTeamMember[]>([]);
+  const [assignedMemberIds, setAssignedMemberIds] = useState<string[]>([]);
+  const [assignBusy, setAssignBusy] = useState<string | null>(null);
 
   // formulaires
   const [repLabel, setRepLabel] = useState('');
@@ -65,9 +70,11 @@ export default function SignTemplateDashboard() {
       }
       setTitle(c.title);
       setVerifMethod(c.verification_method);
-      const [r, i] = await Promise.all([listTemplateReps(id), listTemplateInstances(id)]);
+      const [r, i, tm, am] = await Promise.all([listTemplateReps(id), listTemplateInstances(id), listTeamMembers(), listTemplateMemberIds(id)]);
       setReps(r);
       setInstances(i);
+      setTeam(tm.filter((m) => m.status === 'active'));
+      setAssignedMemberIds(am);
     } catch (e) {
       console.error('[sign] dashboard template', e);
     } finally {
@@ -86,6 +93,17 @@ export default function SignTemplateDashboard() {
       setCopiedKey(key);
       window.setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1600);
     } catch { /* noop */ }
+  };
+
+  const toggleMemberAssign = async (memberId: string) => {
+    if (!id) return;
+    const has = assignedMemberIds.includes(memberId);
+    setAssignBusy(memberId);
+    try {
+      if (has) { await unassignTemplate(id, memberId); setAssignedMemberIds((p) => p.filter((x) => x !== memberId)); }
+      else { await assignTemplate(id, memberId); setAssignedMemberIds((p) => [...p, memberId]); }
+    } catch (e) { console.error('[sign] assignation équipier', e); }
+    finally { setAssignBusy(null); }
   };
 
   const addRep = async () => {
@@ -353,6 +371,34 @@ export default function SignTemplateDashboard() {
           </ul>
         </section>
       </div>
+
+      {/* Mon équipe (comptes réels) — assignation de ce modèle */}
+      <section className="mt-6 rounded-xl border border-[#3A4242] bg-[#222828] p-5">
+        <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-white"><Users className="h-4 w-4 text-[#CEFF8F]" /> {lang === 'fr' ? 'Mon équipe' : 'My team'}</h2>
+        <p className="mb-4 text-xs text-[#A1A9A9]">{lang === 'fr' ? 'Cochez les équipiers (comptes CloseOS) autorisés à générer ce modèle depuis leur espace.' : 'Toggle the teammates (CloseOS accounts) allowed to generate this template from their space.'}</p>
+        {team.length === 0 ? (
+          <p className="text-xs text-[#A1A9A9]">
+            {lang === 'fr'
+              ? <>Aucun équipier actif. Ajoutez-en depuis <a href="/sign/app/equipe" className="text-[#CEFF8F] hover:underline">Mon équipe</a>.</>
+              : <>No active teammate. Add one from <a href="/sign/app/equipe" className="text-[#CEFF8F] hover:underline">My team</a>.</>}
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {team.map((m) => {
+              const on = assignedMemberIds.includes(m.id);
+              const busy = assignBusy === m.id;
+              const name = `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email;
+              return (
+                <button key={m.id} onClick={() => toggleMemberAssign(m.id)} disabled={busy}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${on ? 'border-[#CEFF8F] bg-[#CEFF8F]/10 text-[#CEFF8F]' : 'border-[#3A4242] text-[#A1A9A9] hover:border-[#A1A9A9]'}`}>
+                  {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : on ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Instances */}
       <section className="mt-6 overflow-hidden rounded-xl border border-[#3A4242] bg-[#222828]">

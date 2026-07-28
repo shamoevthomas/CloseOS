@@ -339,6 +339,13 @@ export function BusinessAuthProvider({ children }: { children: React.ReactNode }
           console.error('Error inserting business_users:', insertError);
         }
 
+        // Rangement dans les listes Brevo (générale + Business + Sign). Fire & forget.
+        fetch('/api/business?action=brevo-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: credentials.email, name: credentials.full_name }),
+        }).catch(() => {});
+
         // Row exists now — initialize properly (fresh sign-up allows signOut on missing row)
         await initUser(data.user.id, { allowSignOut: true });
       }

@@ -23,7 +23,6 @@ import {
   Database,
   Users,
   Building2,
-  PlusCircle,
   Sheet,
   Clock,
   X,
@@ -44,97 +43,312 @@ import {
 import { salesTranslations, detectSalesLang } from './landingPageI18n'
 import type { SalesLang } from './landingPageI18n'
 
+/* ────────────────────────────────────────────────────────────────
+   DOODLES, petits dessins line-art faits main (style Tally),
+   déclinés dans la DA Sales (bleu ciel + slate). Purement décoratifs :
+   pointer-events-none, aria-hidden, masqués sur très petit écran.
+   ──────────────────────────────────────────────────────────────── */
+type DoodleProps = { className?: string }
+
+/* Souligné ondulé (sous un mot clé) */
+function DoodleSquiggle({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 240 18" fill="none" className={className} aria-hidden="true">
+      <path d="M4 11C24 2 44 2 64 8s40 8 60 1 42-8 60-2 44 6 52 2" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Cercle griffonné autour d'un mot (boucle ouverte qui déborde) */
+function DoodleCircle({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 260 110" fill="none" className={className} aria-hidden="true">
+      <path d="M78 16C40 22 12 40 15 63c4 27 66 34 128 27 47-5 104-20 106-44C251 25 190 10 128 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* Bulle de dialogue avec petits traits (comme le "Yes!" de Tally) */
+function DoodleBubble({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 96 78" fill="none" className={className} aria-hidden="true">
+      <path d="M10 14c0-6 5-10 13-10h50c8 0 13 4 13 10v30c0 6-5 10-13 10H44L26 68l3-14h-6c-8 0-13-4-13-10z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M26 26h44M26 36h30" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* Petit visage esquissé */
+function DoodleFace({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 84 84" fill="none" className={className} aria-hidden="true">
+      <path d="M42 6C22 6 8 22 8 42s14 36 34 36 34-16 34-36S62 6 42 6z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M28 36c2-3 8-3 10 0M46 36c2-3 8-3 10 0" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M30 52c6 8 18 8 24 0" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* Avion en papier avec traînée pointillée */
+function DoodlePlane({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 130 96" fill="none" className={className} aria-hidden="true">
+      <path d="M6 90C34 66 66 26 118 8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="1 9" opacity="0.55" />
+      <path d="M118 8L92 44 82 30 64 40z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M82 30l10 14" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Flèche courbe façon "clique ici" */
+function DoodleArrow({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 120 96" fill="none" className={className} aria-hidden="true">
+      <path d="M12 12c46 4 82 30 86 68" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M74 66l24 16 6-26" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Étincelle 4 branches */
+function DoodleSparkle({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden="true">
+      <path d="M16 3c1 7 5 11 12 13-7 2-11 6-12 13-1-7-5-11-12-13 7-2 11-6 12-13z" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Petite croix / plus */
+function DoodleCross({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M12 4v16M4 12h16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* Tirets de mouvement en diagonale */
+function DoodleDashes({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 60 40" fill="none" className={className} aria-hidden="true">
+      <path d="M4 30L18 12M22 34L36 16M40 30L52 14" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* Éclair */
+function DoodleBolt({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 28 38" fill="none" className={className} aria-hidden="true">
+      <path d="M17 3 5 22h8l-2 13 12-20h-8l2-12z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Cible / bullseye */
+function DoodleTarget({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 48 48" fill="none" className={className} aria-hidden="true">
+      <path d="M24 5C13 6 6 15 6 24s8 18 18 19 18-9 18-19S35 6 24 5z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M24 15c-5 0-9 4-9 9s4 9 9 9 9-4 9-9-4-9-9-9z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M24 21a3 3 0 100 6 3 3 0 000-6z" fill="currentColor" />
+    </svg>
+  )
+}
+
+/* Fusée */
+function DoodleRocket({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 40 48" fill="none" className={className} aria-hidden="true">
+      <path d="M20 3c7 6 9 16 8 24l-5 5h-6l-5-5c-1-8 1-18 8-24z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 15a3 3 0 100 6 3 3 0 000-6z" stroke="currentColor" strokeWidth="2.5" />
+      <path d="M13 28l-5 6 3 2M27 28l5 6-3 2M17 33c1 4 3 8 3 8s2-4 3-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Pièce € */
+function DoodleCoin({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" className={className} aria-hidden="true">
+      <path d="M20 4C11 4 4 11 4 20s7 16 16 16 16-7 16-16S29 4 20 4z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M26 14c-2-2-5-2-7 0-3 3-3 9 0 12 2 2 5 2 7 0M13 18h9M13 23h7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* Courbe qui monte (perf) */
+function DoodleChartUp({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 46 40" fill="none" className={className} aria-hidden="true">
+      <path d="M8 5v29h32" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M13 28l7-9 6 4 10-13" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M31 10h6v6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Cœur */
+function DoodleHeart({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 40 36" fill="none" className={className} aria-hidden="true">
+      <path d="M20 33S5 23 5 13c0-5 4-8 8-8 3 0 5 2 7 4 2-2 4-4 7-4 4 0 8 3 8 8 0 10-15 20-15 20z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Étoile 5 branches */
+function DoodleStar5({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" className={className} aria-hidden="true">
+      <path d="M20 4l5 11 12 1-9 8 3 12-11-7-11 7 3-12-9-8 12-1z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Éclat "pow" (rayons) */
+function DoodleBurst({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" className={className} aria-hidden="true">
+      <path d="M20 4v7M20 29v7M4 20h7M29 20h7M9 9l5 5M26 26l5 5M31 9l-5 5M14 26l-5 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* Check / validé */
+function DoodleCheck({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 34 30" fill="none" className={className} aria-hidden="true">
+      <path d="M4 16l8 9L30 5" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Ampoule (idée) */
+function DoodleBulb({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 36 40" fill="none" className={className} aria-hidden="true">
+      <path d="M18 6c-6 0-10 4-10 10 0 4 2 6 4 8v4h12v-4c2-2 4-4 4-8 0-6-4-10-10-10z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 32h10M15 36h6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M18 1v3M5 8l2 2M31 8l-2 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* Trophée */
+function DoodleTrophy({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 36 42" fill="none" className={className} aria-hidden="true">
+      <path d="M9 5h18v7c0 6-4 10-9 10s-9-4-9-10zM9 8H5c0 5 3 8 6 8M27 8h4c0 5-3 8-6 8M18 22v7M13 34h10l1 5H12z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Horloge */
+function DoodleClock({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" className={className} aria-hidden="true">
+      <path d="M20 5C12 5 5 12 5 20s7 15 15 15 15-7 15-15S28 5 20 5z" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M20 11v9l6 4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Flèche courbe (autre sens) */
+function DoodleArrowDown({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" className={className} aria-hidden="true">
+      <path d="M33 7C17 7 8 17 8 33" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M2 25l6 9 9-3" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/* Zigzag énergique */
+function DoodleZigzag({ className = '' }: DoodleProps) {
+  return (
+    <svg viewBox="0 0 64 22" fill="none" className={className} aria-hidden="true">
+      <path d="M3 11l9-7 8 12 8-12 8 12 8-12 8 12 5-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 /* ─── Constants ─── */
 const INTEGRATIONS = [
-  { label: 'GoHighLevel', color: '#E4573D' },
-  { label: 'Airtable', color: '#FFBF00' },
-  { label: 'Systeme.io', color: '#00B4D8' },
-  { label: 'iClosed', color: '#a855f7' },
-  { label: 'Hubspot', color: '#FF7A59' },
-  { label: 'Pipedrive', color: '#00AB44' },
-  { label: 'Google Calendar', color: '#4285F4' },
-  { label: 'Twilio', color: '#F22F46' },
-  { label: 'Cal.com', color: '#c4c7c7' },
-  { label: 'Stripe', color: '#635BFF' },
-  { label: 'Zapier', color: '#FF4A00' },
-  { label: 'Make', color: '#6D00CC' },
-  { label: 'n8n', color: '#EA4B71' },
+  { name: 'HubSpot', logo: '/hubspot.webp' },
+  { name: 'Pipedrive', logo: '/pipedrive.webp' },
+  { name: 'GoHighLevel', logo: '/ghl.webp' },
+  { name: 'Airtable', logo: '/airtable.webp' },
+  { name: 'Systeme.io', logo: '/systemeio.webp' },
+  { name: 'iClosed', logo: '/iclosed.webp' },
+  { name: 'Google Calendar', logo: '/gcalendar.webp' },
+  { name: 'Stripe', logo: '/stripe.webp' },
+  { name: 'Calendly', logo: '/calendly.webp' },
+  { name: 'Zapier', logo: '/zapier.webp' },
+  { name: 'Make', logo: '/make.webp' },
+  { name: 'n8n', logo: '/n8n.webp' },
+  { name: 'CSV', logo: '/logocsv.webp' },
 ];
 
-/* ─── Integrations Marquee ─── */
+/* ─── Integrations Marquee, logo cards, two rows (Business style) ─── */
 function IntegrationsMarquee() {
-  const [glowing, setGlowing] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const topRow = INTEGRATIONS.filter((_, i) => i % 2 === 0);
+  const bottomRow = INTEGRATIONS.filter((_, i) => i % 2 === 1);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setGlowing(true);
-      setTimeout(() => setGlowing(false), 1500);
-    }, 10000);
-    const initial = setTimeout(() => {
-      setGlowing(true);
-      setTimeout(() => setGlowing(false), 1500);
-    }, 2000);
-    return () => { clearInterval(interval); clearTimeout(initial); };
-  }, []);
-
-  const lit = glowing || hovered;
-
-  const renderItems = (prefix: string) =>
-    INTEGRATIONS.map((item, i) => (
-      <span
-        key={`${prefix}-${i}`}
-        className="shrink-0 font-extrabold text-xl sm:text-2xl whitespace-nowrap cursor-default"
-        style={{
-          color: item.color,
-          fontFamily: "'Manrope', sans-serif",
-          letterSpacing: '-0.02em',
-          opacity: lit ? 0.9 : 0.2,
-          textShadow: lit ? `0 0 20px ${item.color}, 0 0 40px ${item.color}60` : 'none',
-          transition: 'opacity 0.8s ease, text-shadow 0.8s ease',
-        }}
-      >
-        {item.label}
-      </span>
-    ));
+  const IntegrationCard = ({ integration }: { integration: { name: string; logo: string } }) => (
+    <div className="flex items-center gap-2.5 px-4 py-2.5 bg-white rounded-xl border border-slate-200/80 shadow-sm min-w-[130px]">
+      <img src={integration.logo} alt={integration.name} className="h-5 w-auto object-contain" loading="lazy" width={80} height={20} />
+      <span className="text-xs font-semibold text-slate-900 whitespace-nowrap">{integration.name}</span>
+    </div>
+  );
 
   return (
-    <div
-      className="relative overflow-hidden py-8 marquee-container"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ ['--marquee-speed' as string]: hovered ? '120s' : '30s' }}
-    >
-      <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#111111] to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#111111] to-transparent z-10 pointer-events-none" />
-      <div className="marquee-track flex gap-16">
-        <div className="marquee-content flex gap-16 shrink-0">{renderItems('a')}</div>
-        <div className="marquee-content flex gap-16 shrink-0">{renderItems('b')}</div>
+    <div className="relative overflow-hidden space-y-3 mt-8">
+      <div className="absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-[#f4f2f1] to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-[#f4f2f1] to-transparent z-10 pointer-events-none" />
+      <div className="flex int-marquee-left w-max">
+        {[...Array(4)].map((_, dup) => (
+          <div key={dup} className="flex gap-4 pr-4 shrink-0">
+            {topRow.map((integration) => (
+              <IntegrationCard key={`${dup}-${integration.name}`} integration={integration} />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="flex int-marquee-right w-max">
+        {[...Array(4)].map((_, dup) => (
+          <div key={dup} className="flex gap-4 pr-4 shrink-0">
+            {bottomRow.map((integration) => (
+              <IntegrationCard key={`${dup}-${integration.name}`} integration={integration} />
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-/* ─── FAQ Accordion — Glass ─── */
+/* ─── FAQ Accordion, Glass ─── */
 function FAQItem({ question, children }: { question: string, children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className={`glass-card rounded-2xl transition-all duration-500 ${isOpen ? 'shadow-[0_0_30px_rgba(0,108,73,0.06)]' : ''}`}>
+    <div className={`glass-card rounded-2xl transition-all duration-500 ${isOpen ? 'shadow-[0_0_30px_rgba(2,132,199,0.10)]' : ''}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full items-center justify-between gap-6 p-7 text-left group"
       >
-        <span className="font-extrabold text-lg text-stone-100 leading-snug" style={{ fontFamily: "'Manrope', sans-serif" }}>
+        <span className="font-extrabold text-lg text-slate-900 leading-snug" style={{ fontFamily: "'Manrope', sans-serif" }}>
           {question}
         </span>
-        <div className={`shrink-0 p-2.5 rounded-full transition-all duration-400 ${isOpen ? 'bg-secondary rotate-90' : 'bg-white/5 group-hover:bg-white/10'}`}>
-          <ChevronRight className={`h-4 w-4 transition-colors duration-300 ${isOpen ? 'text-white' : 'text-stone-500'}`} strokeWidth={1.5} />
+        <div className={`shrink-0 p-2.5 rounded-full transition-all duration-400 ${isOpen ? 'bg-sky-500 rotate-90' : 'bg-slate-100 group-hover:bg-slate-100'}`}>
+          <ChevronRight className={`h-4 w-4 transition-colors duration-300 ${isOpen ? 'text-white' : 'text-slate-500'}`} strokeWidth={1.5} />
         </div>
       </button>
       <div className={`grid transition-all duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
         <div className="overflow-hidden">
-          <div className="px-7 pb-7 text-stone-400 leading-[1.7] text-[0.94rem]">
+          <div className="px-7 pb-7 text-slate-500 leading-[1.7] text-[0.94rem]">
             {children}
           </div>
         </div>
@@ -189,21 +403,21 @@ function SalesPhoneInput({ value, onChange }: { value: string; onChange: (v: str
   const currentFlag = SALES_PHONE_CODES.find(c => c.code === code)?.flag || '\u{1F30D}'
 
   return (
-    <div className="relative flex items-center rounded-xl bg-white/5" ref={ref}>
-      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1 shrink-0 pl-3 pr-1.5 py-2.5 hover:bg-white/5 rounded-l-xl transition-colors">
+    <div className="relative flex items-center rounded-xl bg-slate-100" ref={ref}>
+      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1 shrink-0 pl-3 pr-1.5 py-2.5 hover:bg-slate-100 rounded-l-xl transition-colors">
         <span className="text-base">{currentFlag}</span>
-        <span className="text-xs text-stone-400 font-medium">{code}</span>
-        <ChevronDown className="h-3 w-3 text-stone-500" />
+        <span className="text-xs text-slate-500 font-medium">{code}</span>
+        <ChevronDown className="h-3 w-3 text-slate-500" />
       </button>
-      <div className="w-px h-5 bg-white/10 shrink-0" />
-      <input type="tel" value={local} onChange={e => handleLocal(e.target.value)} placeholder="6 12 34 56 78" className="flex-1 min-w-0 bg-transparent border-none py-2.5 px-3 text-sm text-stone-100 focus:ring-0 focus:outline-none font-medium placeholder:text-stone-600" />
+      <div className="w-px h-5 bg-slate-100 shrink-0" />
+      <input type="tel" value={local} onChange={e => handleLocal(e.target.value)} placeholder="6 12 34 56 78" className="flex-1 min-w-0 bg-transparent border-none py-2.5 px-3 text-sm text-slate-900 focus:ring-0 focus:outline-none font-medium placeholder:text-slate-400" />
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-1 w-64 max-h-52 overflow-y-auto rounded-xl border border-white/10 bg-[#1a1a1a] shadow-xl">
+        <div className="absolute top-full left-0 z-50 mt-1 w-64 max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
           {SALES_PHONE_CODES.map((c, i) => (
-            <button key={`${c.code}-${i}`} type="button" onClick={() => { setCode(c.code); setLocal(''); onChange(''); setOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-white/5 transition-colors ${code === c.code ? 'bg-white/10 font-medium text-stone-100' : 'text-stone-400'}`}>
+            <button key={`${c.code}-${i}`} type="button" onClick={() => { setCode(c.code); setLocal(''); onChange(''); setOpen(false) }} className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-100 transition-colors ${code === c.code ? 'bg-slate-100 font-medium text-slate-900' : 'text-slate-500'}`}>
               <span className="text-base">{c.flag}</span>
               <span className="flex-1 truncate">{c.name}</span>
-              <span className="text-xs text-stone-500 font-medium">{c.code}</span>
+              <span className="text-xs text-slate-500 font-medium">{c.code}</span>
             </button>
           ))}
         </div>
@@ -252,36 +466,46 @@ function SalesPartnerSection({ t }: { t: any }) {
 
   return (
     <>
-      <motion.section id="partners" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 relative border-t border-white/5">
+      <motion.section id="partners" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 relative border-t border-slate-200 overflow-hidden">
+        <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+          <DoodleRocket className="absolute left-[4%] top-[14%] w-11 text-sky-500 -rotate-6" />
+          <DoodleStar5 className="absolute left-[9%] top-[40%] w-5 text-sky-400" />
+          <DoodleTrophy className="absolute left-[3%] top-[64%] w-11 text-slate-800/80" />
+          <DoodleDashes className="absolute left-[5%] top-[88%] w-11 text-slate-300 rotate-6" />
+          <DoodleBurst className="absolute right-[6%] top-[14%] w-6 text-sky-400" />
+          <DoodleBubble className="absolute right-[3%] top-[38%] w-14 text-slate-800/80 rotate-6" />
+          <DoodleHeart className="absolute right-[9%] top-[64%] w-6 text-sky-400" />
+          <DoodleCross className="absolute right-[7%] top-[88%] w-3.5 text-slate-300" />
+        </div>
         <div className="mx-auto max-w-5xl px-6 relative z-10">
           <div className="text-center mb-16 space-y-4">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-4">
-              <Handshake className="h-4 w-4 text-stone-400" />
-              <span className="text-sm font-semibold text-stone-300">{t.partners_badge}</span>
+              <Handshake className="h-4 w-4 text-slate-500" />
+              <span className="text-sm font-semibold text-slate-700">{t.partners_badge}</span>
             </div>
-            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-stone-50 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.partners_title}</h2>
-            <p className="text-stone-500 mt-5 text-lg">{t.partners_subtitle}</p>
+            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-slate-900 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.partners_title}</h2>
+            <p className="text-slate-500 mt-5 text-lg">{t.partners_subtitle}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
             {/* Partner card */}
             <div className="glass-card rounded-2xl p-8 flex flex-col">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 w-fit mb-6">
-                <Layers className="h-4 w-4 text-stone-400" />
-                <span className="text-sm font-bold text-stone-300">{t.partners_integrate_title}</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 w-fit mb-6">
+                <Layers className="h-4 w-4 text-slate-500" />
+                <span className="text-sm font-bold text-slate-700">{t.partners_integrate_title}</span>
               </div>
-              <p className="text-stone-400 mb-6">{t.partners_integrate_desc}</p>
+              <p className="text-slate-500 mb-6">{t.partners_integrate_desc}</p>
               <ul className="space-y-3 mb-8 flex-1">
                 {t.partners_integrate_items.map((item: string, i: number) => (
                   <li key={i} className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-stone-300">{item}</span>
+                    <CheckCircle className="h-5 w-5 text-sky-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-slate-700">{item}</span>
                   </li>
                 ))}
               </ul>
               <a
                 href="/book/6512796c" target="_blank" rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 rounded-full bg-white text-[#111] h-12 font-bold text-sm hover:bg-stone-200 transition-all active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 rounded-full bg-sky-600 text-white h-12 font-bold text-sm hover:bg-sky-500 transition-all active:scale-[0.98]"
               >
                 {t.partners_integrate_cta}
                 <ArrowRight className="h-4 w-4" />
@@ -290,22 +514,22 @@ function SalesPartnerSection({ t }: { t: any }) {
 
             {/* Ambassador card */}
             <div className="glass-card rounded-2xl p-8 flex flex-col">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 w-fit mb-6">
-                <Gift className="h-4 w-4 text-amber-400" />
-                <span className="text-sm font-bold text-amber-300">{t.partners_ambassador_title}</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 w-fit mb-6">
+                <Gift className="h-4 w-4 text-sky-600" />
+                <span className="text-sm font-bold text-sky-600">{t.partners_ambassador_title}</span>
               </div>
-              <p className="text-stone-400 mb-6">{t.partners_ambassador_desc}</p>
+              <p className="text-slate-500 mb-6">{t.partners_ambassador_desc}</p>
               <ul className="space-y-3 mb-8 flex-1">
                 {t.partners_ambassador_items.map((item: string, i: number) => (
                   <li key={i} className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-stone-300">{item}</span>
+                    <CheckCircle className="h-5 w-5 text-sky-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-slate-700">{item}</span>
                   </li>
                 ))}
               </ul>
               <button
                 onClick={() => { setShowModal(true); setSent(false) }}
-                className="w-full flex items-center justify-center gap-2 rounded-full bg-white text-[#111] h-12 font-bold text-sm hover:bg-stone-200 transition-all active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 rounded-full bg-sky-600 text-white h-12 font-bold text-sm hover:bg-sky-500 transition-all active:scale-[0.98]"
               >
                 {t.partners_ambassador_cta}
                 <ArrowRight className="h-4 w-4" />
@@ -318,28 +542,28 @@ function SalesPartnerSection({ t }: { t: any }) {
       {/* Ambassador modal */}
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-[#1a1a1a] border border-white/10 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                    <Gift className="h-5 w-5 text-amber-400" />
+                  <div className="w-10 h-10 rounded-full bg-sky-500/10 flex items-center justify-center">
+                    <Gift className="h-5 w-5 text-sky-600" />
                   </div>
-                  <h3 className="text-xl font-bold text-stone-100" style={{ fontFamily: "'Manrope', sans-serif" }}>Devenir Ambassadeur</h3>
+                  <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Manrope', sans-serif" }}>Devenir Ambassadeur</h3>
                 </div>
-                <button onClick={() => setShowModal(false)} className="p-2 rounded-full hover:bg-white/5 transition-colors">
-                  <X className="h-5 w-5 text-stone-500" />
+                <button onClick={() => setShowModal(false)} className="p-2 rounded-full hover:bg-slate-100 transition-colors">
+                  <X className="h-5 w-5 text-slate-500" />
                 </button>
               </div>
 
               {sent ? (
                 <div className="text-center py-10">
-                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="h-8 w-8 text-emerald-400" />
+                  <div className="w-16 h-16 rounded-full bg-sky-500/10 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="h-8 w-8 text-sky-600" />
                   </div>
-                  <h4 className="text-lg font-bold text-stone-100 mb-2">Candidature envoyée !</h4>
-                  <p className="text-stone-500 text-sm">Nous reviendrons vers vous rapidement.</p>
-                  <button onClick={() => setShowModal(false)} className="mt-6 px-6 py-2.5 rounded-full bg-white text-[#111] text-sm font-bold hover:bg-stone-200 transition-all">
+                  <h4 className="text-lg font-bold text-slate-900 mb-2">Candidature envoyée !</h4>
+                  <p className="text-slate-500 text-sm">Nous reviendrons vers vous rapidement.</p>
+                  <button onClick={() => setShowModal(false)} className="mt-6 px-6 py-2.5 rounded-full bg-sky-600 text-white text-sm font-bold hover:bg-sky-500 transition-all">
                     Fermer
                   </button>
                 </div>
@@ -347,57 +571,57 @@ function SalesPartnerSection({ t }: { t: any }) {
                 <div className="space-y-5">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Prénom *</label>
-                      <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jean" className="w-full px-4 py-2.5 rounded-xl bg-white/5 border-none text-sm text-stone-100 focus:ring-2 ring-white/10 font-medium placeholder:text-stone-600" />
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Prénom *</label>
+                      <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Jean" className="w-full px-4 py-2.5 rounded-xl bg-slate-100 border-none text-sm text-slate-900 focus:ring-2 ring-slate-200 font-medium placeholder:text-slate-400" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Nom *</label>
-                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Dupont" className="w-full px-4 py-2.5 rounded-xl bg-white/5 border-none text-sm text-stone-100 focus:ring-2 ring-white/10 font-medium placeholder:text-stone-600" />
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Nom *</label>
+                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Dupont" className="w-full px-4 py-2.5 rounded-xl bg-slate-100 border-none text-sm text-slate-900 focus:ring-2 ring-slate-200 font-medium placeholder:text-slate-400" />
                     </div>
                   </div>
 
                   <div>
-                    <button onClick={() => setIsSubscriber(!isSubscriber)} className="flex items-center gap-3 w-full rounded-xl bg-white/5 px-4 py-3 transition-colors hover:bg-white/[0.07]">
-                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSubscriber ? 'bg-emerald-500 border-emerald-500' : 'border-stone-600'}`}>
+                    <button onClick={() => setIsSubscriber(!isSubscriber)} className="flex items-center gap-3 w-full rounded-xl bg-slate-100 px-4 py-3 transition-colors hover:bg-slate-100">
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSubscriber ? 'bg-sky-500 border-sky-500' : 'border-slate-300'}`}>
                         {isSubscriber && <Check className="h-3 w-3 text-white" />}
                       </div>
-                      <span className="text-sm font-medium text-stone-300">Je suis abonné(e) CloseOS</span>
+                      <span className="text-sm font-medium text-slate-700">Je suis abonné(e) CloseOS</span>
                     </button>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">WhatsApp *</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">WhatsApp *</label>
                     <SalesPhoneInput value={whatsapp} onChange={setWhatsapp} />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Ce que vous faites</label>
-                    <input type="text" value={activity} onChange={e => setActivity(e.target.value)} placeholder="Coach, formateur, créateur de contenu..." className="w-full px-4 py-2.5 rounded-xl bg-white/5 border-none text-sm text-stone-100 focus:ring-2 ring-white/10 font-medium placeholder:text-stone-600" />
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Ce que vous faites</label>
+                    <input type="text" value={activity} onChange={e => setActivity(e.target.value)} placeholder="Coach, formateur, créateur de contenu..." className="w-full px-4 py-2.5 rounded-xl bg-slate-100 border-none text-sm text-slate-900 focus:ring-2 ring-slate-200 font-medium placeholder:text-slate-400" />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Taille de votre audience</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Taille de votre audience</label>
                     <div className="px-2">
-                      <input type="range" min={0} max={SALES_AUDIENCE_RANGES.length - 1} value={audienceIdx} onChange={e => setAudienceIdx(Number(e.target.value))} className="w-full h-2 rounded-full appearance-none bg-white/10 accent-emerald-500 cursor-pointer" />
+                      <input type="range" min={0} max={SALES_AUDIENCE_RANGES.length - 1} value={audienceIdx} onChange={e => setAudienceIdx(Number(e.target.value))} className="w-full h-2 rounded-full appearance-none bg-slate-100 accent-sky-500 cursor-pointer" />
                       <div className="flex justify-between mt-1.5">
                         {SALES_AUDIENCE_RANGES.map((r, i) => (
-                          <span key={i} className={`text-[9px] font-bold ${i === audienceIdx ? 'text-stone-100' : 'text-stone-600'}`}>{r}</span>
+                          <span key={i} className={`text-[9px] font-bold ${i === audienceIdx ? 'text-slate-900' : 'text-slate-400'}`}>{r}</span>
                         ))}
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Où vous trouver ? (Insta, LinkedIn, site vitrine…)</label>
-                    <input type="text" value={platforms.join(', ')} onChange={e => setPlatforms(e.target.value ? [e.target.value] : [])} placeholder="https://instagram.com/votre-compte, https://linkedin.com/in/..." className="w-full px-4 py-2.5 rounded-xl bg-white/5 border-none text-sm text-stone-100 focus:ring-2 ring-white/10 font-medium placeholder:text-stone-600" />
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Où vous trouver ? (Insta, LinkedIn, site vitrine…)</label>
+                    <input type="text" value={platforms.join(', ')} onChange={e => setPlatforms(e.target.value ? [e.target.value] : [])} placeholder="https://instagram.com/votre-compte, https://linkedin.com/in/..." className="w-full px-4 py-2.5 rounded-xl bg-slate-100 border-none text-sm text-slate-900 focus:ring-2 ring-slate-200 font-medium placeholder:text-slate-400" />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">Notes</label>
-                    <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Parlez-nous de vous, de votre audience, de vos idées..." rows={3} className="w-full px-4 py-2.5 rounded-xl bg-white/5 border-none text-sm text-stone-100 focus:ring-2 ring-white/10 font-medium resize-none placeholder:text-stone-600" />
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">Notes</label>
+                    <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Parlez-nous de vous, de votre audience, de vos idées..." rows={3} className="w-full px-4 py-2.5 rounded-xl bg-slate-100 border-none text-sm text-slate-900 focus:ring-2 ring-slate-200 font-medium resize-none placeholder:text-slate-400" />
                   </div>
 
-                  <button onClick={handleSubmit} disabled={sending || !firstName.trim() || !lastName.trim() || !whatsapp.trim()} className="w-full flex items-center justify-center gap-2 rounded-full bg-white text-[#111] h-12 font-bold text-sm hover:bg-stone-200 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed">
+                  <button onClick={handleSubmit} disabled={sending || !firstName.trim() || !lastName.trim() || !whatsapp.trim()} className="w-full flex items-center justify-center gap-2 rounded-full bg-sky-600 text-white h-12 font-bold text-sm hover:bg-sky-500 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed">
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                       <>
                         <Send className="h-4 w-4" />
@@ -483,59 +707,59 @@ const SalesContactModal = ({ open, onClose, t }: { open: boolean; onClose: () =>
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-stone-900 border border-stone-700/50 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b border-stone-700/50">
-          <h2 className="text-lg font-bold text-stone-100">{t.contact_title}</h2>
-          <button onClick={() => { resetForm(); onClose(); }} className="p-1 rounded-lg hover:bg-stone-800 transition-colors">
-            <X className="size-5 text-stone-400" />
+      <div className="bg-sky-600 border border-slate-200 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+          <h2 className="text-lg font-bold text-slate-900">{t.contact_title}</h2>
+          <button onClick={() => { resetForm(); onClose(); }} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
+            <X className="size-5 text-slate-500" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-stone-300 mb-1">{t.contact_name}</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t.contact_name}</label>
             <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder={t.contact_name_placeholder}
-              className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg text-sm text-stone-100 placeholder-stone-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none" />
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-300 mb-1">{t.contact_email}</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t.contact_email}</label>
             <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder={t.contact_email_placeholder}
-              className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg text-sm text-stone-100 placeholder-stone-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none" />
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none" />
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={isSubscriber} onChange={e => setIsSubscriber(e.target.checked)}
-              className="w-4 h-4 rounded border-stone-600 bg-stone-800 text-emerald-500 focus:ring-emerald-500" />
-            <span className="text-sm text-stone-300">{t.contact_subscriber}</span>
+              className="w-4 h-4 rounded border-slate-300 bg-slate-100 text-sky-600 focus:ring-sky-500" />
+            <span className="text-sm text-slate-700">{t.contact_subscriber}</span>
           </label>
           <div>
-            <label className="block text-sm font-medium text-stone-300 mb-1">{t.contact_category}</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t.contact_category}</label>
             <select required value={category} onChange={e => setCategory(e.target.value)}
-              className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg text-sm text-stone-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none">
-              <option value="" disabled className="text-stone-500">{t.contact_category_placeholder}</option>
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none">
+              <option value="" disabled className="text-slate-500">{t.contact_category_placeholder}</option>
               {categories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-300 mb-1">{t.contact_subject}</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t.contact_subject}</label>
             <input type="text" required value={subject} onChange={e => setSubject(e.target.value)} placeholder={t.contact_subject_placeholder}
-              className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg text-sm text-stone-100 placeholder-stone-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none" />
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-300 mb-1">{t.contact_message}</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t.contact_message}</label>
             <textarea required rows={5} value={message} onChange={e => setMessage(e.target.value)} placeholder={t.contact_message_placeholder}
-              className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg text-sm text-stone-100 placeholder-stone-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none resize-none" />
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none resize-none" />
           </div>
           <div>
             <input ref={fileRef} type="file" className="hidden" onChange={e => setAttachment(e.target.files?.[0] || null)} />
             <button type="button" onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-2 text-sm text-stone-400 hover:text-stone-200 transition-colors">
+              className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors">
               <Paperclip className="size-4" />
               {attachment ? attachment.name : t.contact_attachment}
             </button>
           </div>
-          {status === 'success' && <p className="text-sm text-emerald-400 font-medium">{t.contact_success}</p>}
+          {status === 'success' && <p className="text-sm text-sky-600 font-medium">{t.contact_success}</p>}
           {status === 'error' && <p className="text-sm text-red-400 font-medium">{t.contact_error}</p>}
           <button type="submit" disabled={status === 'sending'}
-            className="w-full flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-400 transition-colors disabled:opacity-60">
+            className="w-full flex items-center justify-center gap-2 bg-sky-500 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-sky-500 transition-colors disabled:opacity-60">
             {status === 'sending' ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
             {status === 'sending' ? t.contact_sending : t.contact_send}
           </button>
@@ -546,7 +770,7 @@ const SalesContactModal = ({ open, onClose, t }: { open: boolean; onClose: () =>
 };
 
 /* ════════════════════════════════════════════════
-   LANDING PAGE — Liquid Stone & Glass (Dark)
+   LANDING PAGE, Liquid Stone & Glass (Dark)
    ════════════════════════════════════════════════ */
 export function LandingPage() {
   const navigate = useNavigate();
@@ -565,6 +789,19 @@ export function LandingPage() {
     const detected = detectSalesLang();
     setLangState(detected);
     localStorage.setItem('closeos_lang', detected);
+  }, []);
+
+  // Warm off-white page background (matches Business). Prevents the dark global
+  // body bg (slate-950) from flashing through on fast scroll / overscroll bounce.
+  useEffect(() => {
+    const prevBody = document.body.style.backgroundColor;
+    const prevHtml = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = '#f4f2f1';
+    document.documentElement.style.backgroundColor = '#f4f2f1';
+    return () => {
+      document.body.style.backgroundColor = prevBody;
+      document.documentElement.style.backgroundColor = prevHtml;
+    };
   }, []);
 
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'yearly'>('yearly');
@@ -598,7 +835,7 @@ export function LandingPage() {
       document.cookie = `closeos_ref=${encodeURIComponent(ref)};max-age=${30 * 24 * 60 * 60};path=/;SameSite=Lax`;
     }
 
-    // Ambassador attribution (?amb=<slug>[&t=a|b]) — server sets a 30d cookie
+    // Ambassador attribution (?amb=<slug>[&t=a|b]), server sets a 30d cookie
     const amb = params.get('amb');
     if (amb) {
       const tierRaw = (params.get('t') || params.get('tier') || 'a').toLowerCase();
@@ -723,54 +960,54 @@ export function LandingPage() {
 
   /* ─── RENDER ─── */
   return (
-    <div ref={pageRef} className={`min-h-screen bg-[#111111] text-stone-200 selection:bg-secondary/30 overflow-x-hidden transition-all duration-500 ${isExiting ? 'translate-y-full opacity-0' : 'animate-[pageEnterFromTop_0.5s_ease-out]'}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div ref={pageRef} className={`min-h-screen bg-[#f4f2f1] text-slate-800 selection:bg-sky-500/30 overflow-x-hidden transition-all duration-500 ${isExiting ? 'translate-y-full opacity-0' : 'animate-[pageEnterFromTop_0.5s_ease-out]'}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
 
-      {/* ═══ NAVBAR — Glass ═══ */}
-      <nav className="fixed top-0 z-50 w-full bg-[#111111]/80 backdrop-blur-xl border-b border-white/[0.06]">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-8">
+      {/* ═══ NAVBAR, Floating pill (Business style) ═══ */}
+      <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-7xl">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200/60 rounded-2xl px-6 sm:px-8 py-3 flex items-center justify-between shadow-sm">
           <div className="relative group flex items-center gap-1.5 cursor-pointer">
-            <img src="/logo-sales.png" alt="CloseOS Logo" className="h-10 w-auto" fetchPriority="high" width={120} height={48} />
-            <ChevronDown className="h-3.5 w-3.5 text-stone-600 group-hover:text-stone-300 transition-all duration-300 group-hover:rotate-180" strokeWidth={1.5} />
+            <img src="/logo-sales.png" alt="CloseOS Logo" className="h-9 w-auto" fetchPriority="high" width={120} height={48} />
+            <ChevronDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-800 transition-all duration-300 group-hover:rotate-180" strokeWidth={1.5} />
             <div className="absolute top-full left-0 right-0 mt-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-              <a onClick={handleNavigateToBusiness} className="block glass-card rounded-2xl p-4 hover:bg-white/[0.06] transition-colors cursor-pointer">
-                <img src="/closeos-business-logo-ecrit-dark.png" alt="CloseOS Business" className="w-full h-auto" loading="lazy" width={200} height={40} />
+              <a onClick={handleNavigateToBusiness} className="block rounded-xl border border-slate-200/60 bg-white p-4 shadow-lg hover:bg-slate-50 transition-colors cursor-pointer">
+                <img src="/closeos-business-logo-ecrit.png" alt="CloseOS Business" className="w-full h-auto" loading="lazy" width={200} height={40} />
               </a>
-              <a onClick={handleNavigateToSign} className="mt-3 block glass-card rounded-2xl p-4 hover:bg-white/[0.06] transition-colors cursor-pointer">
+              <a onClick={handleNavigateToSign} className="mt-2 block rounded-xl border border-slate-200/60 bg-[#191E1E] p-4 shadow-lg hover:bg-[#222828] transition-colors cursor-pointer">
                 <img src="/CLOSEOS-SIGN-LOGO.png" alt="CloseOS Sign" className="w-full h-auto" loading="lazy" width={200} height={48} />
               </a>
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-8 text-[0.82rem] font-semibold">
-            <a href="#features" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_features}</a>
-            <a href="#roles" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_roles}</a>
-            <a href="#comparison" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_comparison}</a>
-            <a href="#pricing" className="text-emerald-500 font-bold">{t.nav_pricing}</a>
-            <a href="#partners" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_partners}</a>
-            <a href="#faq" className="text-stone-500 hover:text-stone-100 transition-colors">{t.nav_faq}</a>
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+            <a href="#features" className="hover:text-slate-900 transition-colors">{t.nav_features}</a>
+            <a href="#roles" className="hover:text-slate-900 transition-colors">{t.nav_roles}</a>
+            <a href="#comparison" className="hover:text-slate-900 transition-colors">{t.nav_comparison}</a>
+            <a href="#pricing" className="text-sky-600 font-semibold">{t.nav_pricing}</a>
+            <a href="#partners" className="hover:text-slate-900 transition-colors">{t.nav_partners}</a>
+            <a href="#faq" className="hover:text-slate-900 transition-colors">{t.nav_faq}</a>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')} className="hidden sm:flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.7rem] font-bold text-stone-500 hover:text-stone-200 hover:bg-white/5 transition-all uppercase tracking-[0.12em]">
-              <Globe className="h-3.5 w-3.5" strokeWidth={1.5} />
-              {lang === 'fr' ? 'EN' : 'FR'}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')} className="hidden md:flex items-center gap-1.5 p-2.5 rounded-lg hover:bg-slate-100 transition-colors text-slate-500" aria-label="Change language">
+              <Globe className="size-4" strokeWidth={1.5} />
+              <span className="text-xs font-bold uppercase">{lang === 'fr' ? 'EN' : 'FR'}</span>
             </button>
-            <Link to="/login" className="hidden sm:flex items-center rounded-full glass-card px-5 py-2 text-[0.82rem] font-semibold text-stone-200 hover:bg-white/[0.08] transition-all">
+            <Link to="/login" className="hidden sm:flex items-center justify-center rounded-lg h-10 px-5 text-slate-700 text-sm font-semibold hover:text-slate-900 transition-all">
               {t.nav_login}
             </Link>
-            <Link to="/register" className="hidden sm:flex group items-center gap-2 rounded-full bg-white px-5 py-2 text-[0.82rem] font-bold text-[#111] transition-all hover:bg-stone-200 hover:scale-[1.03] active:scale-[0.97]">
+            <Link to="/register" className="hidden sm:flex group items-center gap-2 rounded-lg h-10 px-5 bg-sky-600 text-white text-sm font-semibold hover:bg-sky-500 transition-all">
               {t.nav_cta}
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" strokeWidth={1.5} />
             </Link>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2.5 rounded-xl hover:bg-white/5 transition-colors" aria-label="Menu" aria-expanded={mobileMenuOpen}>
-              {mobileMenuOpen ? <X className="h-5 w-5 text-stone-200" strokeWidth={1.5} /> : <Menu className="h-5 w-5 text-stone-200" strokeWidth={1.5} />}
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2.5 rounded-lg hover:bg-slate-100 transition-colors text-slate-700" aria-label="Menu" aria-expanded={mobileMenuOpen}>
+              {mobileMenuOpen ? <X className="h-5 w-5" strokeWidth={1.5} /> : <Menu className="h-5 w-5" strokeWidth={1.5} />}
             </button>
           </div>
         </div>
 
         {/* Mobile menu */}
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="mx-4 glass-card rounded-2xl px-6 py-5 flex flex-col gap-1">
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-2 bg-white/90 backdrop-blur-md border border-slate-200/60 rounded-2xl px-6 py-4 shadow-lg flex flex-col gap-1 text-sm font-medium text-slate-600">
             {[
               { href: '#features', label: t.nav_features },
               { href: '#roles', label: t.nav_roles },
@@ -779,207 +1016,247 @@ export function LandingPage() {
               { href: '#partners', label: t.nav_partners },
               { href: '#faq', label: t.nav_faq },
             ].map((item) => (
-              <a key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)} className="py-3 px-4 rounded-xl text-sm font-medium text-stone-400 hover:text-stone-100 hover:bg-white/5 transition-colors">
+              <a key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)} className="py-2.5 px-3 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition-colors">
                 {item.label}
               </a>
             ))}
-            <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
-              <button onClick={() => { setLang(lang === 'fr' ? 'en' : 'fr'); setMobileMenuOpen(false) }} className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-stone-400 font-bold text-sm hover:bg-white/5 transition-colors">
+            <div className="mt-2 pt-3 border-t border-slate-200 space-y-2">
+              <button onClick={() => { setLang(lang === 'fr' ? 'en' : 'fr'); setMobileMenuOpen(false) }} className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-slate-600 font-semibold hover:bg-slate-100 transition-colors">
                 <Globe className="h-4 w-4" strokeWidth={1.5} />
                 {lang === 'fr' ? 'English' : 'Français'}
               </button>
-              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center w-full py-3 rounded-xl glass-card text-stone-200 font-bold text-sm">
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center w-full py-2.5 rounded-lg border border-slate-200 text-slate-700 font-semibold">
                 {t.nav_login}
               </Link>
-              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white text-[#111] font-bold text-sm">
+              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-sky-600 text-white font-semibold">
                 {t.nav_cta}
                 <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
               </Link>
             </div>
           </div>
-        </div>
+        )}
       </nav>
 
       {/* ═══ HERO ═══ */}
       <section className="relative pt-28 pb-32 overflow-hidden">
-        <div className="absolute top-0 right-[-10%] w-[600px] h-[600px] bg-secondary/5 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-[-20%] left-[-8%] w-[500px] h-[500px] bg-[#ffb95f]/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-0 right-[-10%] w-[600px] h-[600px] bg-sky-500/5 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-[-20%] left-[-8%] w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[120px] pointer-events-none" />
+
+        {/* Doodles flottants (desktop) */}
+        <div className="pointer-events-none select-none absolute inset-0 hidden md:block z-0" aria-hidden="true">
+          <DoodleBubble className="absolute left-[6%] top-[40%] w-16 text-slate-800/80 -rotate-6" />
+          <DoodleFace className="absolute right-[7%] top-[30%] w-14 text-slate-800/80 rotate-6" />
+          <DoodlePlane className="absolute right-[9%] top-[56%] w-24 text-sky-500" />
+          <DoodleSparkle className="absolute left-[11%] top-[24%] w-6 text-sky-400" />
+          <DoodleSparkle className="absolute right-[16%] top-[18%] w-5 text-sky-400" />
+          <DoodleCross className="absolute left-[17%] top-[62%] w-4 text-sky-400" />
+          <DoodleCross className="absolute right-[22%] top-[68%] w-3.5 text-slate-300" />
+          <DoodleDashes className="absolute left-[8%] top-[70%] w-12 text-slate-300 -rotate-6" />
+        </div>
 
         <div className="relative mx-auto max-w-5xl px-6 z-10">
           {/* Badges */}
           <div className="flex justify-center mb-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="inline-flex items-center gap-2 rounded-full bg-secondary/10 border border-secondary/20 px-4 py-1.5 text-[0.72rem] font-semibold text-emerald-400">
+            <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 border border-sky-500/20 px-4 py-1.5 text-[0.72rem] font-semibold text-sky-600">
               {t.badge_env}
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-1.5 text-[0.72rem] font-semibold text-stone-200">
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1.5 text-[0.72rem] font-semibold text-slate-800">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
               </span>
               {t.badge_system}
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-secondary/10 border border-secondary/20 px-4 py-1.5 text-[0.72rem] font-semibold text-emerald-400">
+            <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 border border-sky-500/20 px-4 py-1.5 text-[0.72rem] font-semibold text-sky-600">
               <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
               {t.badge_rgpd}
             </div>
           </div>
 
           {/* Title */}
-          <h1 className="mx-auto max-w-[52rem] text-center text-[3.2rem] sm:text-[4.5rem] lg:text-[5.5rem] font-extrabold text-stone-50 leading-[0.95] mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
+          <h1 className="mx-auto max-w-[52rem] text-center text-[3.2rem] sm:text-[4.5rem] lg:text-[5.5rem] font-extrabold text-slate-900 leading-[0.95] mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
             {t.hero_title_line1}<br />
             <span className="emerald-gradient-text">{t.hero_title_line2}</span>
             <br />
-            {t.hero_title_line3}
+            <span className="relative inline-block">
+              {t.hero_title_line3}
+              <DoodleSquiggle className="absolute left-1/2 -translate-x-1/2 -bottom-3 w-48 sm:w-56 text-sky-500" />
+            </span>
           </h1>
 
-          <p className="mx-auto max-w-2xl text-center text-[1.05rem] text-stone-400 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 leading-[1.7]">
+          <p className="mx-auto max-w-2xl text-center text-[1.05rem] text-slate-500 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 leading-[1.7]">
             {t.hero_subtitle}
           </p>
 
           <div className="flex items-center justify-center mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-250">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/[0.08] px-5 py-2 text-[0.82rem] font-medium text-stone-300">
+            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 border border-slate-200 px-5 py-2 text-[0.82rem] font-medium text-slate-700">
               {t.hero_badge_focus}
             </span>
           </div>
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
-            <Link to="/register" className="w-full sm:w-auto px-9 py-4 rounded-full bg-white text-[#111] font-bold text-lg transition-all duration-300 hover:bg-secondary hover:text-white hover:shadow-[0_0_30px_rgba(0,108,73,0.3)] hover:-translate-y-1 flex items-center justify-center gap-2.5">
+            <Link to="/register" className="w-full sm:w-auto px-9 py-4 rounded-full bg-sky-600 text-white font-bold text-lg transition-all duration-300 hover:bg-sky-500 hover:text-white hover:shadow-[0_0_30px_rgba(2,132,199,0.25)] hover:-translate-y-1 flex items-center justify-center gap-2.5">
               <Zap className="h-5 w-5" strokeWidth={1.5} />
               {t.hero_cta}
             </Link>
-            <Link to="/login" className="w-full sm:w-auto px-9 py-4 rounded-full glass-card text-stone-200 font-bold text-lg transition-all duration-300 hover:bg-white/[0.08] flex items-center justify-center gap-2">
+            <Link to="/login" className="w-full sm:w-auto px-9 py-4 rounded-full glass-card text-slate-800 font-bold text-lg transition-all duration-300 hover:bg-slate-100 flex items-center justify-center gap-2">
               {t.hero_login}
             </Link>
           </div>
 
           <div className="mt-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-            <a href="https://www.whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-stone-500 hover:text-stone-200 transition-colors group">
-              <span className="text-green-400">📲</span>
-              <span className="underline underline-offset-4 decoration-stone-700 group-hover:decoration-emerald-500 transition-all">{t.hero_whatsapp}</span>
+            <a href="https://www.whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors group">
+              <span className="text-sky-600">📲</span>
+              <span className="underline underline-offset-4 decoration-slate-300 group-hover:decoration-sky-500 transition-all">{t.hero_whatsapp}</span>
             </a>
           </div>
 
-          <p className="text-[0.72rem] text-stone-600 mt-3 text-center tracking-wide">{t.hero_no_card}</p>
+          <p className="text-[0.72rem] text-slate-400 mt-3 text-center tracking-wide">{t.hero_no_card}</p>
 
           {/* Social proof */}
-          <div className="mt-12 flex items-center justify-center gap-4 text-sm font-medium text-stone-400 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
+          <div className="mt-12 flex items-center justify-center gap-4 text-sm font-medium text-slate-500 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
             <div className="flex -space-x-3">
               {["/U1.jpg", "/U2.jpg", "/U3.jpg", "/U1.png"].map((src, i) => (
-                <div key={i} className="h-10 w-10 rounded-full border-[3px] border-[#111111] relative z-0 hover:z-10 transition-all hover:scale-110">
+                <div key={i} className="h-10 w-10 rounded-full border-[3px] border-white relative z-0 hover:z-10 transition-all hover:scale-110">
                   <img src={src} alt="Closer" className="h-full w-full rounded-full object-cover" loading="lazy" width={40} height={40} />
                 </div>
               ))}
             </div>
             <div className="flex flex-col text-left">
-              <div className="flex text-[#ffb95f] gap-0.5">
+              <div className="flex text-sky-600 gap-0.5">
                 {[...Array(5)].map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" />)}
               </div>
-              <span className="text-[0.82rem]">{t.hero_social_proof} <strong className="text-stone-100">{t.hero_social_proof_count}</strong></span>
+              <span className="text-[0.82rem]">{t.hero_social_proof} <strong className="text-slate-900">{t.hero_social_proof_count}</strong></span>
             </div>
           </div>
         </div>
       </section>
 
       {/* ═══ INTEGRATIONS ═══ */}
-      <motion.section id="integrations" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-16 border-t border-white/5">
+      <motion.section id="integrations" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-16 border-t border-slate-200 relative overflow-hidden">
+        <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+          <DoodleBolt className="absolute left-[3%] top-[22%] w-4 text-sky-400" />
+          <DoodleZigzag className="absolute left-[2%] top-[54%] w-12 text-slate-300" />
+          <DoodleCross className="absolute left-[7%] top-[74%] w-3.5 text-slate-300" />
+          <DoodleStar5 className="absolute right-[3%] top-[20%] w-6 text-sky-400" />
+          <DoodleDashes className="absolute right-[2%] top-[54%] w-10 text-slate-300 -rotate-6" />
+          <DoodleBurst className="absolute right-[7%] top-[70%] w-5 text-sky-400" />
+        </div>
         <div className="mx-auto max-w-7xl px-6 text-center">
-          <p className="text-[0.68rem] font-extrabold text-stone-600 mb-10 uppercase tracking-[0.25em]" style={{ fontFamily: "'Manrope', sans-serif" }}>
+          <p className="text-[0.68rem] font-extrabold text-slate-400 mb-10 uppercase tracking-[0.25em]" style={{ fontFamily: "'Manrope', sans-serif" }}>
             {t.integrations_title}
           </p>
           <IntegrationsMarquee />
         </div>
       </motion.section>
 
-      {/* ═══ FEATURES — Glass Grid ═══ */}
+      {/* ═══ FEATURES, Glass Grid ═══ */}
       <motion.section id="features" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 relative">
-        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-secondary/3 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-sky-500/3 rounded-full blur-[120px] pointer-events-none" />
+        <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+          <DoodleChartUp className="absolute left-[2%] top-[8%] w-14 text-sky-500 -rotate-3" />
+          <DoodleBolt className="absolute left-[7%] top-[26%] w-5 text-sky-400" />
+          <DoodleTarget className="absolute left-[2%] top-[42%] w-12 text-slate-800/80" />
+          <DoodleStar5 className="absolute left-[7%] top-[62%] w-5 text-sky-400" />
+          <DoodleBubble className="absolute left-[2%] top-[80%] w-14 text-slate-800/80 -rotate-6" />
+          <DoodleSparkle className="absolute right-[6%] top-[7%] w-6 text-sky-400" />
+          <DoodlePlane className="absolute right-[2%] top-[24%] w-20 text-sky-500 rotate-12" />
+          <DoodleBulb className="absolute right-[3%] top-[44%] w-11 text-slate-800/80" />
+          <DoodleZigzag className="absolute right-[4%] top-[62%] w-12 text-slate-300" />
+          <DoodleHeart className="absolute right-[7%] top-[82%] w-6 text-sky-400" />
+        </div>
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-24 max-w-3xl">
-            <h2 className="text-[2.8rem] sm:text-[3.8rem] font-extrabold text-stone-50 leading-[0.95] mb-7" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
+            <h2 className="text-[2.8rem] sm:text-[3.8rem] font-extrabold text-slate-900 leading-[0.95] mb-7" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
               {t.features_title.split('\n').map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}
             </h2>
-            <p className="text-lg text-stone-400 leading-[1.7]">
+            <p className="text-lg text-slate-500 leading-[1.7]">
               {t.features_subtitle}{' '}
-              <span className="text-emerald-400 font-semibold">{t.features_highlight}</span>
+              <span className="relative inline-block text-sky-600 font-semibold">
+                {t.features_highlight}
+                <DoodleCircle className="absolute -left-3 -right-3 -top-2 -bottom-2 w-[calc(100%+1.5rem)] h-[calc(100%+1rem)] text-sky-400" />
+              </span>
             </p>
           </div>
 
           <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-5" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}>
 
-            {/* CARD 1 — Cockpit */}
-            <motion.div variants={itemVariants} className="md:col-span-2 glass-card rounded-2xl p-10 sm:p-12 hover:bg-white/[0.05] transition-all duration-500 group overflow-hidden relative">
-              <div className="absolute -right-8 -top-8 w-40 h-40 bg-secondary/5 rounded-full blur-[60px] group-hover:bg-secondary/10 transition-all pointer-events-none" />
+            {/* CARD 1, Cockpit */}
+            <motion.div variants={itemVariants} className="md:col-span-2 glass-card rounded-2xl p-10 sm:p-12 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative">
+              <div className="absolute -right-8 -top-8 w-40 h-40 bg-sky-500/5 rounded-full blur-[60px] group-hover:bg-sky-500/10 transition-all pointer-events-none" />
               <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700">
-                <LayoutDashboard className="w-72 h-72 text-emerald-400" strokeWidth={0.8} />
+                <LayoutDashboard className="w-72 h-72 text-sky-600" strokeWidth={0.8} />
               </div>
               <div className="relative z-10">
-                <div className="p-3 rounded-xl bg-white/5 text-emerald-400 w-fit mb-8">
+                <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
                   <BarChart3 className="h-7 w-7" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-[1.6rem] font-extrabold text-stone-50 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat1_title}</h3>
-                <p className="text-stone-400 mb-8 max-w-md leading-[1.7]">{t.feat1_desc}</p>
+                <h3 className="text-[1.6rem] font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat1_title}</h3>
+                <p className="text-slate-500 mb-8 max-w-md leading-[1.7]">{t.feat1_desc}</p>
                 <ul className="grid grid-cols-2 gap-3">
                   {[t.feat1_item1, t.feat1_item2, t.feat1_item3, t.feat1_item4].map((item, i) => (
-                    <li key={i} className="flex items-center gap-2.5 text-sm text-stone-300"><CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" strokeWidth={1.5} /> {item}</li>
+                    <li key={i} className="flex items-center gap-2.5 text-sm text-slate-700"><CheckCircle2 className="h-4 w-4 text-sky-600 shrink-0" strokeWidth={1.5} /> {item}</li>
                   ))}
                 </ul>
               </div>
             </motion.div>
 
-            {/* CARD 2 — VoIP */}
-            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-white/[0.05] transition-all duration-500 group relative overflow-hidden">
+            {/* CARD 2, Calls & WhatsApp */}
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-slate-50 transition-all duration-500 group relative overflow-hidden">
               <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:opacity-[0.1] transition-opacity duration-700">
-                <MessageSquare className="w-36 h-36 text-[#25D366]" strokeWidth={0.8} />
+                <MessageSquare className="w-36 h-36 text-[#0ea5e9]" strokeWidth={0.8} />
               </div>
-              <div className="p-3 rounded-xl bg-white/5 text-[#25D366] w-fit mb-8">
+              <div className="p-3 rounded-xl bg-slate-100 text-[#0ea5e9] w-fit mb-8">
                 <Phone className="h-7 w-7" strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-extrabold text-stone-50 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat2_title}</h3>
-              <p className="text-stone-400 text-sm leading-[1.7] mb-5">{t.feat2_desc}</p>
-              <span className="text-emerald-400 text-[0.68rem] font-extrabold uppercase tracking-[0.18em]">{t.feat2_badge}</span>
+              <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat2_title}</h3>
+              <p className="text-slate-500 text-sm leading-[1.7] mb-5">{t.feat2_desc}</p>
+              <span className="text-sky-600 text-[0.68rem] font-extrabold uppercase tracking-[0.18em]">{t.feat2_badge}</span>
             </motion.div>
 
             {/* Mini-quote 1 */}
-            <motion.div variants={itemVariants} className="md:col-span-3 py-4">
-              <p className="text-stone-500 text-sm italic text-center">
+            <motion.div variants={itemVariants} className="md:col-span-3 py-4 relative">
+              <DoodleStar5 className="pointer-events-none select-none absolute left-[16%] top-1/2 -translate-y-1/2 w-5 text-sky-400 hidden lg:block" aria-hidden="true" />
+              <DoodleArrowDown className="pointer-events-none select-none absolute right-[16%] top-1/2 -translate-y-1/2 w-8 text-slate-300 hidden lg:block" aria-hidden="true" />
+              <p className="text-slate-500 text-sm italic text-center">
                 "{lang === 'fr' ? 'Mon pipeline est passé de chaotique à limpide en une semaine.' : 'My pipeline went from chaotic to crystal clear in one week.'}"
-                <span className="text-stone-600 not-italic ml-2">— Léonie M., {lang === 'fr' ? 'closer indépendante' : 'independent closer'}</span>
+                <span className="text-slate-400 not-italic ml-2">Léonie M., {lang === 'fr' ? 'closer indépendante' : 'independent closer'}</span>
               </p>
             </motion.div>
 
-            {/* CARD 3 — Pipeline */}
-            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-white/[0.05] transition-all duration-500 group">
-              <div className="p-3 rounded-xl bg-white/5 text-[#ffb95f] w-fit mb-8">
+            {/* CARD 3, Pipeline */}
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-slate-50 transition-all duration-500 group">
+              <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
                 <TrendingUp className="h-7 w-7" strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-extrabold text-stone-50 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat3_title}</h3>
-              <p className="text-stone-400 text-sm leading-[1.7]">{t.feat3_desc}</p>
+              <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat3_title}</h3>
+              <p className="text-slate-500 text-sm leading-[1.7]">{t.feat3_desc}</p>
             </motion.div>
 
-            {/* CARD 4 — Profil Closer */}
-            <motion.div variants={itemVariants} className="md:col-span-2 glass-card rounded-2xl p-10 sm:p-12 hover:bg-white/[0.05] transition-all duration-500 group overflow-hidden relative">
+            {/* CARD 4, Profil Closer */}
+            <motion.div variants={itemVariants} className="md:col-span-2 glass-card rounded-2xl p-10 sm:p-12 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative">
               <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700">
-                <Users className="w-72 h-72 text-purple-400" strokeWidth={0.8} />
+                <Users className="w-72 h-72 text-sky-600" strokeWidth={0.8} />
               </div>
               <div className="relative z-10">
-                <div className="p-3 rounded-xl bg-white/5 text-purple-400 w-fit mb-8">
+                <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
                   <ArrowRight className="h-7 w-7" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-[1.6rem] font-extrabold text-stone-50 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat4_title}</h3>
-                <p className="text-stone-400 mb-8 max-w-lg leading-[1.7]">{t.feat4_desc}</p>
+                <h3 className="text-[1.6rem] font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat4_title}</h3>
+                <p className="text-slate-500 mb-8 max-w-lg leading-[1.7]">{t.feat4_desc}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
                     { title: t.feat4_bio, desc: t.feat4_bio_desc },
                     { title: t.feat4_instant, desc: t.feat4_instant_desc },
                     { title: t.feat4_tracking, desc: t.feat4_tracking_desc },
                   ].map((sub, idx) => (
-                    <div key={idx} className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-5">
-                      <p className="text-[0.65rem] font-extrabold text-purple-400 uppercase tracking-[0.18em] mb-3" style={{ fontFamily: "'Manrope', sans-serif" }}>{sub.title}</p>
-                      <p className="text-[0.85rem] text-stone-400 leading-[1.65]">{sub.desc}</p>
+                    <div key={idx} className="rounded-xl bg-slate-50 border border-slate-200 p-5">
+                      <p className="text-[0.65rem] font-extrabold text-sky-600 uppercase tracking-[0.18em] mb-3" style={{ fontFamily: "'Manrope', sans-serif" }}>{sub.title}</p>
+                      <p className="text-[0.85rem] text-slate-500 leading-[1.65]">{sub.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -987,53 +1264,127 @@ export function LandingPage() {
             </motion.div>
 
             {/* Mini-quote 2 */}
-            <motion.div variants={itemVariants} className="md:col-span-3 py-4">
-              <p className="text-stone-500 text-sm italic text-center">
+            <motion.div variants={itemVariants} className="md:col-span-3 py-4 relative">
+              <DoodleHeart className="pointer-events-none select-none absolute left-[15%] top-1/2 -translate-y-1/2 w-5 text-sky-400 hidden lg:block" aria-hidden="true" />
+              <DoodleBurst className="pointer-events-none select-none absolute right-[15%] top-1/2 -translate-y-1/2 w-5 text-sky-400 hidden lg:block" aria-hidden="true" />
+              <p className="text-slate-500 text-sm italic text-center">
                 "{lang === 'fr' ? 'Plus aucun RDV oublié. Mes no-show ont chuté de 40%.' : 'No more forgotten appointments. My no-shows dropped by 40%.'}"
-                <span className="text-stone-600 not-italic ml-2">— Samir K., {lang === 'fr' ? 'closer en agence' : 'agency closer'}</span>
+                <span className="text-slate-400 not-italic ml-2">Samir K., {lang === 'fr' ? 'closer en agence' : 'agency closer'}</span>
               </p>
             </motion.div>
 
-            {/* CARD 5 — Agenda */}
-            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-white/[0.05] transition-all duration-500 group overflow-hidden relative">
+            {/* CARD 5, Agenda */}
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative">
               <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:opacity-[0.1] transition-opacity duration-700">
-                <CalendarCheck className="w-36 h-36 text-purple-500" strokeWidth={0.8} />
+                <CalendarCheck className="w-36 h-36 text-sky-600" strokeWidth={0.8} />
               </div>
               <div className="relative z-10">
-                <div className="p-3 rounded-xl bg-white/5 text-purple-400 w-fit mb-8">
+                <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
                   <CalendarCheck className="h-7 w-7" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-extrabold text-stone-50 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat5_title}</h3>
-                <p className="text-stone-400 text-sm leading-[1.7] mb-5">{t.feat5_desc}</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat5_title}</h3>
+                <p className="text-slate-500 text-sm leading-[1.7] mb-5">{t.feat5_desc}</p>
                 <div className="flex flex-wrap gap-2">
                   {[t.feat5_tag1, t.feat5_tag2, t.feat5_tag3].map((tag, idx) => (
-                    <span key={idx} className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-[0.68rem] font-semibold text-purple-400">{tag}</span>
+                    <span key={idx} className="px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-[0.68rem] font-semibold text-sky-600">{tag}</span>
                   ))}
                 </div>
               </div>
             </motion.div>
 
-            {/* CARD 6 — Facturation */}
-            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-white/[0.05] transition-all duration-500 group">
-              <div className="p-3 rounded-xl bg-white/5 text-emerald-400 w-fit mb-8">
+            {/* CARD 6, Facturation */}
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-slate-50 transition-all duration-500 group">
+              <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
                 <FileText className="h-7 w-7" strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-extrabold text-stone-50 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat6_title}</h3>
-              <p className="text-stone-400 text-sm leading-[1.7]">{t.feat6_desc}</p>
+              <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat6_title}</h3>
+              <p className="text-slate-500 text-sm leading-[1.7]">{t.feat6_desc}</p>
             </motion.div>
 
-            {/* CARD 7 — Sync CRM */}
-            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-white/[0.05] transition-all duration-500 group overflow-hidden relative">
+            {/* CARD 7, Sync CRM */}
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative">
               <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:opacity-[0.1] transition-opacity duration-700">
-                <Zap className="w-36 h-36 text-[#ffb95f]" strokeWidth={0.8} />
+                <Zap className="w-36 h-36 text-sky-600" strokeWidth={0.8} />
               </div>
               <div className="relative z-10">
-                <div className="p-3 rounded-xl bg-white/5 text-[#ffb95f] w-fit mb-8">
+                <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
                   <Zap className="h-7 w-7" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-extrabold text-stone-50 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat7_title}</h3>
-                <p className="text-stone-400 text-sm leading-[1.7]">{t.feat7_desc}</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat7_title}</h3>
+                <p className="text-slate-500 text-sm leading-[1.7]">{t.feat7_desc}</p>
               </div>
+            </motion.div>
+
+            {/* CARD 8, Call Room */}
+            <motion.div variants={itemVariants} className="md:col-span-2 glass-card rounded-2xl p-10 sm:p-12 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700">
+                <Phone className="w-72 h-72 text-sky-600" strokeWidth={0.8} />
+              </div>
+              <div className="relative z-10">
+                <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
+                  <Phone className="h-7 w-7" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-[1.6rem] font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat8_title}</h3>
+                <p className="text-slate-500 mb-8 max-w-lg leading-[1.7]">{t.feat8_desc}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { title: t.feat8_a_title, desc: t.feat8_a_desc },
+                    { title: t.feat8_b_title, desc: t.feat8_b_desc },
+                    { title: t.feat8_c_title, desc: t.feat8_c_desc },
+                  ].map((sub, idx) => (
+                    <div key={idx} className="rounded-xl bg-slate-50 border border-slate-200 p-5">
+                      <p className="text-[0.65rem] font-extrabold text-sky-600 uppercase tracking-[0.18em] mb-3" style={{ fontFamily: "'Manrope', sans-serif" }}>{sub.title}</p>
+                      <p className="text-[0.85rem] text-slate-500 leading-[1.65]">{sub.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* CARD 9, Relances automatiques */}
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative">
+              <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:opacity-[0.1] transition-opacity duration-700">
+                <Clock className="w-36 h-36 text-sky-600" strokeWidth={0.8} />
+              </div>
+              <div className="relative z-10">
+                <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
+                  <Clock className="h-7 w-7" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat9_title}</h3>
+                <p className="text-slate-500 text-sm leading-[1.7]">{t.feat9_desc}</p>
+              </div>
+            </motion.div>
+
+            {/* CARD 10, Rapport de perf hebdo */}
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-slate-50 transition-all duration-500 group">
+              <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
+                <BarChart3 className="h-7 w-7" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat10_title}</h3>
+              <p className="text-slate-500 text-sm leading-[1.7]">{t.feat10_desc}</p>
+            </motion.div>
+
+            {/* CARD 11, Détection de doublons */}
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative">
+              <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:opacity-[0.1] transition-opacity duration-700">
+                <Layers className="w-36 h-36 text-sky-600" strokeWidth={0.8} />
+              </div>
+              <div className="relative z-10">
+                <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
+                  <Layers className="h-7 w-7" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat11_title}</h3>
+                <p className="text-slate-500 text-sm leading-[1.7]">{t.feat11_desc}</p>
+              </div>
+            </motion.div>
+
+            {/* CARD 12, Tâches par prospect */}
+            <motion.div variants={itemVariants} className="glass-card rounded-2xl p-10 hover:bg-slate-50 transition-all duration-500 group">
+              <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
+                <CheckCircle className="h-7 w-7" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat12_title}</h3>
+              <p className="text-slate-500 text-sm leading-[1.7]">{t.feat12_desc}</p>
             </motion.div>
           </motion.div>
         </div>
@@ -1041,11 +1392,24 @@ export function LandingPage() {
 
       {/* ═══ TESTIMONIALS ═══ */}
       <motion.section initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/[0.03] blur-[180px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-sky-500/[0.05] blur-[180px] rounded-full pointer-events-none" />
+        <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+          <DoodleHeart className="absolute left-[4%] top-[12%] w-8 text-sky-400 -rotate-6" />
+          <DoodleStar5 className="absolute left-[9%] top-[34%] w-5 text-sky-400" />
+          <DoodleFace className="absolute left-[3%] top-[56%] w-12 text-slate-800/80 -rotate-3" />
+          <DoodleBurst className="absolute left-[7%] top-[80%] w-5 text-sky-400" />
+          <DoodleStar5 className="absolute right-[7%] top-[10%] w-6 text-sky-400" />
+          <DoodleBubble className="absolute right-[3%] top-[32%] w-14 text-slate-800/80 rotate-6" />
+          <DoodleHeart className="absolute right-[6%] top-[60%] w-6 text-sky-400 rotate-6" />
+          <DoodleCross className="absolute right-[10%] top-[82%] w-3.5 text-slate-300" />
+        </div>
         <div className="mx-auto max-w-6xl px-6 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-stone-50 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.testimonials_title}</h2>
-            <p className="text-stone-500 mt-5 text-lg">{t.testimonials_subtitle}</p>
+            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-slate-900 leading-[0.95] inline-block relative" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
+              {t.testimonials_title}
+              <DoodleSquiggle className="absolute left-1/2 -translate-x-1/2 -bottom-3 w-48 text-sky-500" />
+            </h2>
+            <p className="text-slate-500 mt-5 text-lg">{t.testimonials_subtitle}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -1084,21 +1448,21 @@ export function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: idx * 0.15 }}
-                className="glass-card rounded-2xl p-8 flex flex-col relative group hover:bg-white/[0.05] transition-colors duration-500"
+                className="glass-card rounded-2xl p-8 flex flex-col relative group hover:bg-slate-50 transition-colors duration-500"
               >
-                <Quote className="w-8 h-8 text-white/[0.06] mb-4" strokeWidth={1.5} />
-                <p className="text-stone-300 text-[0.95rem] leading-[1.7] flex-1 italic">"{item.quote}"</p>
-                <div className="flex items-center gap-3 mt-8 pt-6 border-t border-white/[0.06]">
+                <Quote className="w-8 h-8 text-slate-100 mb-4" strokeWidth={1.5} />
+                <p className="text-slate-700 text-[0.95rem] leading-[1.7] flex-1 italic">"{item.quote}"</p>
+                <div className="flex items-center gap-3 mt-8 pt-6 border-t border-slate-200">
                   <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                    item.color === 'emerald' ? 'bg-emerald-500/15 text-emerald-400' :
-                    item.color === 'purple' ? 'bg-purple-500/15 text-purple-400' :
-                    'bg-[#ffb95f]/15 text-[#ffb95f]'
+                    item.color === 'emerald' ? 'bg-sky-500/15 text-sky-600' :
+                    item.color === 'purple' ? 'bg-sky-500/15 text-sky-600' :
+                    'bg-sky-500/15 text-sky-600'
                   }`}>
                     {item.initials}
                   </div>
                   <div>
-                    <p className="text-stone-100 font-bold text-sm" style={{ fontFamily: "'Manrope', sans-serif" }}>{item.name}</p>
-                    <p className="text-stone-500 text-xs">{item.role}</p>
+                    <p className="text-slate-900 font-bold text-sm" style={{ fontFamily: "'Manrope', sans-serif" }}>{item.name}</p>
+                    <p className="text-slate-500 text-xs">{item.role}</p>
                   </div>
                 </div>
               </motion.div>
@@ -1108,15 +1472,25 @@ export function LandingPage() {
       </motion.section>
 
       {/* ═══ ROLES ═══ */}
-      <motion.section id="roles" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 border-t border-white/5 relative overflow-hidden">
-        <div className="absolute top-1/2 left-[-5%] -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/5 blur-[150px] rounded-full pointer-events-none" />
-        <div className="absolute top-1/2 right-[-5%] -translate-y-1/2 w-[500px] h-[500px] bg-secondary/5 blur-[150px] rounded-full pointer-events-none" />
+      <motion.section id="roles" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 border-t border-slate-200 relative overflow-hidden">
+        <div className="absolute top-1/2 left-[-5%] -translate-y-1/2 w-[500px] h-[500px] bg-sky-500/5 blur-[150px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 right-[-5%] -translate-y-1/2 w-[500px] h-[500px] bg-sky-500/5 blur-[150px] rounded-full pointer-events-none" />
+        <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+          <DoodleTarget className="absolute left-[3%] top-[16%] w-12 text-slate-800/80" />
+          <DoodleBolt className="absolute left-[8%] top-[42%] w-5 text-sky-400" />
+          <DoodleStar5 className="absolute left-[5%] top-[66%] w-5 text-sky-400" />
+          <DoodleBubble className="absolute left-[3%] top-[82%] w-14 text-slate-800/80 -rotate-6" />
+          <DoodleBurst className="absolute right-[6%] top-[14%] w-6 text-sky-400" />
+          <DoodleTrophy className="absolute right-[3%] top-[38%] w-11 text-slate-800/80 rotate-6" />
+          <DoodleDashes className="absolute right-[4%] top-[64%] w-12 text-slate-300 rotate-6" />
+          <DoodleCross className="absolute right-[8%] top-[84%] w-3.5 text-slate-300" />
+        </div>
 
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-16">
-            <p className="text-emerald-400 text-[0.7rem] font-extrabold uppercase tracking-[0.2em] mb-4" style={{ fontFamily: "'Manrope', sans-serif" }}>{t.roles_eyebrow}</p>
-            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-stone-50 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.roles_title}</h2>
-            <p className="text-stone-500 mt-5 text-lg max-w-3xl mx-auto">{t.roles_subtitle}</p>
+            <p className="text-sky-600 text-[0.7rem] font-extrabold uppercase tracking-[0.2em] mb-4" style={{ fontFamily: "'Manrope', sans-serif" }}>{t.roles_eyebrow}</p>
+            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-slate-900 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.roles_title}</h2>
+            <p className="text-slate-500 mt-5 text-lg max-w-3xl mx-auto">{t.roles_subtitle}</p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
@@ -1148,28 +1522,28 @@ export function LandingPage() {
               },
             ].map((role, idx) => {
               const accentMap: Record<string, { bg: string; text: string; border: string; glow: string; tag: string }> = {
-                emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', glow: 'bg-emerald-500/10', tag: 'text-emerald-400' },
-                cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20', glow: 'bg-cyan-500/10', tag: 'text-cyan-400' },
-                amber: { bg: 'bg-[#ffb95f]/10', text: 'text-[#ffb95f]', border: 'border-[#ffb95f]/30', glow: 'bg-[#ffb95f]/10', tag: 'text-[#ffb95f]' },
+                emerald: { bg: 'bg-sky-500/10', text: 'text-sky-600', border: 'border-sky-500/20', glow: 'bg-sky-500/10', tag: 'text-sky-600' },
+                cyan: { bg: 'bg-sky-500/10', text: 'text-sky-600', border: 'border-sky-500/20', glow: 'bg-sky-500/10', tag: 'text-sky-600' },
+                amber: { bg: 'bg-sky-500/10', text: 'text-sky-600', border: 'border-sky-500/30', glow: 'bg-sky-500/10', tag: 'text-sky-600' },
               }
               const a = accentMap[role.accent]
               return (
-                <div key={idx} className={`relative rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border ${role.featured ? a.border : 'border-white/[0.08]'} flex flex-col overflow-hidden transition-all hover:bg-white/[0.05] ${role.featured ? 'shadow-[0_0_40px_rgba(255,185,95,0.08)]' : ''}`}>
+                <div key={idx} className={`relative rounded-2xl p-8 bg-white border ${role.featured ? a.border : 'border-slate-200/70'} flex flex-col overflow-hidden transition-all shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] hover:shadow-[0_1px_2px_rgba(15,23,42,0.04),0_18px_40px_-14px_rgba(2,132,199,0.16)] ${role.featured ? 'shadow-[0_0_40px_rgba(2,132,199,0.12)]' : ''}`}>
                   <div className={`absolute -right-8 -top-8 w-32 h-32 ${a.glow} rounded-full blur-[60px] pointer-events-none`} />
 
                   <div className="flex items-center gap-4 mb-5 relative z-10">
                     <div className={`p-3 rounded-xl ${a.bg} ${a.text}`}>{role.icon}</div>
                     <div>
-                      <h3 className="text-[1.5rem] font-extrabold text-stone-100 leading-tight" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{role.name}</h3>
+                      <h3 className="text-[1.5rem] font-extrabold text-slate-900 leading-tight" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{role.name}</h3>
                       <p className={`text-[0.75rem] font-bold uppercase tracking-[0.12em] mt-0.5 ${a.tag}`} style={{ fontFamily: "'Manrope', sans-serif" }}>{role.tag}</p>
                     </div>
                   </div>
 
-                  <p className="text-sm text-stone-400 leading-[1.65] mb-7 relative z-10">{role.desc}</p>
+                  <p className="text-sm text-slate-500 leading-[1.65] mb-7 relative z-10">{role.desc}</p>
 
                   <ul className="space-y-3 flex-1 relative z-10">
                     {role.bullets.map((b, bIdx) => (
-                      <li key={bIdx} className="flex items-start gap-3 text-[0.875rem] text-stone-300">
+                      <li key={bIdx} className="flex items-start gap-3 text-[0.875rem] text-slate-700">
                         <CheckCircle2 className={`w-4 h-4 ${a.text} shrink-0 mt-[3px]`} strokeWidth={2} />
                         <span className="leading-snug">{b}</span>
                       </li>
@@ -1180,19 +1554,29 @@ export function LandingPage() {
             })}
           </div>
 
-          <p className="text-center text-stone-500 mt-12 text-sm">{t.roles_footer}</p>
+          <p className="text-center text-slate-500 mt-12 text-sm">{t.roles_footer}</p>
         </div>
       </motion.section>
 
       {/* ═══ COMPARISON ═══ */}
-      <motion.section id="comparison" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 border-t border-white/5 relative overflow-hidden">
+      <motion.section id="comparison" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 border-t border-slate-200 relative overflow-hidden">
         <div className="absolute top-1/2 left-[-5%] -translate-y-1/2 w-[500px] h-[500px] bg-red-500/3 blur-[150px] rounded-full pointer-events-none" />
-        <div className="absolute top-1/2 right-[-5%] -translate-y-1/2 w-[500px] h-[500px] bg-secondary/5 blur-[150px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 right-[-5%] -translate-y-1/2 w-[500px] h-[500px] bg-sky-500/5 blur-[150px] rounded-full pointer-events-none" />
+        <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+          <DoodleClock className="absolute left-[3%] top-[14%] w-12 text-slate-800/80" />
+          <DoodleDashes className="absolute left-[7%] top-[40%] w-11 text-slate-300 -rotate-6" />
+          <DoodleFace className="absolute left-[3%] top-[62%] w-12 text-slate-800/80 -rotate-3" />
+          <DoodleCross className="absolute left-[8%] top-[84%] w-4 text-slate-300" />
+          <DoodleCheck className="absolute right-[5%] top-[12%] w-8 text-sky-500" />
+          <DoodleChartUp className="absolute right-[3%] top-[36%] w-12 text-sky-500 rotate-3" />
+          <DoodleStar5 className="absolute right-[8%] top-[64%] w-5 text-sky-400" />
+          <DoodleZigzag className="absolute right-[4%] top-[86%] w-12 text-slate-300" />
+        </div>
 
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-20">
-            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-stone-50 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.comp_title}</h2>
-            <p className="text-stone-500 mt-5 text-lg">{t.comp_subtitle}</p>
+            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-slate-900 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.comp_title}</h2>
+            <p className="text-slate-500 mt-5 text-lg">{t.comp_subtitle}</p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-stretch">
@@ -1201,7 +1585,7 @@ export function LandingPage() {
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-red-500/5 rounded-full blur-[60px] pointer-events-none" />
               <div className="flex items-center gap-4 mb-10">
                 <div className="p-3 rounded-xl bg-red-500/10 text-red-500"><XCircle className="w-6 h-6" strokeWidth={1.5} /></div>
-                <h3 className="text-[1.5rem] font-extrabold text-stone-100" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.comp_old_title}</h3>
+                <h3 className="text-[1.5rem] font-extrabold text-slate-900" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.comp_old_title}</h3>
               </div>
               <div className="space-y-3 flex-1">
                 {[
@@ -1212,69 +1596,69 @@ export function LandingPage() {
                   { icon: <Clock className="w-4 h-4" strokeWidth={1.5} />, text: t.comp_old5, badge: t.comp_old5_badge },
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-red-500/[0.04] border border-red-500/10 text-sm">
-                    <div className="flex items-center gap-3 text-stone-400">{item.icon} {item.text}</div>
+                    <div className="flex items-center gap-3 text-slate-500">{item.icon} {item.text}</div>
                     <span className="font-bold text-red-400 text-[0.75rem] shrink-0 ml-2">{item.badge}</span>
                   </div>
                 ))}
               </div>
-              <div className="mt-10 pt-8 border-t border-white/5 text-center">
+              <div className="mt-10 pt-8 border-t border-slate-200 text-center">
                 <div className="mb-6">
-                  <div className="text-lg font-bold text-stone-200">{t.comp_co2_old} <span className="text-sm font-normal text-stone-500">{t.comp_co2_old_unit}</span></div>
+                  <div className="text-lg font-bold text-slate-800">{t.comp_co2_old} <span className="text-sm font-normal text-slate-500">{t.comp_co2_old_unit}</span></div>
                   <p className="text-[0.65rem] text-red-400/60 mt-1 leading-tight">{t.comp_co2_old_note}</p>
                 </div>
-                <div className="pt-6 border-t border-white/5">
+                <div className="pt-6 border-t border-slate-200">
                   <p className="text-red-400 text-[0.65rem] font-extrabold uppercase tracking-[0.2em] mb-1" style={{ fontFamily: "'Manrope', sans-serif" }}>{t.comp_loss_label}</p>
-                  <div className="text-[3rem] font-black text-stone-50" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
-                    10h<span className="text-lg text-stone-600 font-medium">/semaine</span>
+                  <div className="text-[3rem] font-black text-slate-900" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
+                    10h<span className="text-lg text-slate-400 font-medium">/semaine</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* CloseOS — Gradient border */}
+            {/* CloseOS, Gradient border */}
             <div className="relative pt-4">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 premium-gradient text-white text-[0.68rem] font-extrabold px-5 py-2 rounded-full shadow-[0_0_20px_rgba(0,108,73,0.3)]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.08em' }}>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 premium-gradient text-white text-[0.68rem] font-extrabold px-5 py-2 rounded-full shadow-[0_0_20px_rgba(2,132,199,0.25)]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.08em' }}>
                 {t.comp_new_badge}
               </div>
-              <div className="relative rounded-2xl overflow-hidden p-[1px] bg-gradient-to-br from-secondary/40 via-[#c4c7c7]/10 to-[#ffb95f]/20">
-              <div className="bg-[#1a1a1a] rounded-[calc(1rem-1px)] p-10 h-full flex flex-col relative overflow-hidden">
-                <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-secondary/10 blur-[60px] pointer-events-none" />
+              <div className="relative rounded-2xl overflow-hidden p-[1px] bg-gradient-to-br from-sky-500/40 via-[#c4c7c7]/10 to-sky-500/20">
+              <div className="bg-white rounded-[calc(1rem-1px)] p-10 h-full flex flex-col relative overflow-hidden">
+                <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-sky-500/10 blur-[60px] pointer-events-none" />
                 <div className="flex items-center gap-4 mb-10 mt-4">
-                  <div className="p-3 rounded-xl bg-secondary/10 text-emerald-400"><CheckCircle2 className="w-6 h-6" strokeWidth={1.5} /></div>
-                  <h3 className="text-[1.5rem] font-extrabold text-stone-100" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.comp_new_title}</h3>
+                  <div className="p-3 rounded-xl bg-sky-500/10 text-sky-600"><CheckCircle2 className="w-6 h-6" strokeWidth={1.5} /></div>
+                  <h3 className="text-[1.5rem] font-extrabold text-slate-900" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.comp_new_title}</h3>
                 </div>
 
-                <div className="flex-1 bg-white/[0.02] rounded-xl p-7 border border-white/[0.06] space-y-7 flex flex-col justify-center">
+                <div className="flex-1 bg-slate-50 rounded-xl p-7 border border-slate-200 space-y-7 flex flex-col justify-center">
                   {[
-                    { icon: <TrendingUp className="w-5 h-5" strokeWidth={1.5} />, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: t.comp_roi_title, desc: t.comp_roi_desc },
-                    { icon: <BrainCircuit className="w-5 h-5" strokeWidth={1.5} />, color: 'text-purple-400', bg: 'bg-purple-500/10', title: t.comp_brain_title, desc: t.comp_brain_desc },
-                    { icon: <Star className="w-5 h-5" strokeWidth={1.5} />, color: 'text-[#ffb95f]', bg: 'bg-[#ffb95f]/10', title: t.comp_pro_title, desc: t.comp_pro_desc },
+                    { icon: <TrendingUp className="w-5 h-5" strokeWidth={1.5} />, color: 'text-sky-600', bg: 'bg-sky-500/10', title: t.comp_roi_title, desc: t.comp_roi_desc },
+                    { icon: <BrainCircuit className="w-5 h-5" strokeWidth={1.5} />, color: 'text-sky-600', bg: 'bg-sky-500/10', title: t.comp_brain_title, desc: t.comp_brain_desc },
+                    { icon: <Star className="w-5 h-5" strokeWidth={1.5} />, color: 'text-sky-600', bg: 'bg-sky-500/10', title: t.comp_pro_title, desc: t.comp_pro_desc },
                   ].map((item, idx) => (
                     <div key={idx} className="flex items-start gap-4">
                       <div className={`p-2.5 rounded-xl ${item.bg} ${item.color} shrink-0`}>{item.icon}</div>
                       <div>
-                        <h4 className="font-extrabold text-stone-100 text-[0.95rem]" style={{ fontFamily: "'Manrope', sans-serif" }}>{item.title}</h4>
-                        <p className="text-sm text-stone-400 leading-[1.6] mt-0.5">{item.desc}</p>
+                        <h4 className="font-extrabold text-slate-900 text-[0.95rem]" style={{ fontFamily: "'Manrope', sans-serif" }}>{item.title}</h4>
+                        <p className="text-sm text-slate-500 leading-[1.6] mt-0.5">{item.desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-10 pt-8 border-t border-white/5 text-center relative">
+                <div className="mt-10 pt-8 border-t border-slate-200 text-center relative">
                   <div className="mb-6 group relative cursor-help">
-                    <div className="text-lg font-bold text-stone-200">{t.comp_co2_new} <span className="text-sm font-normal text-stone-500">{t.comp_co2_new_unit}</span></div>
-                    <p className="text-[0.75rem] text-emerald-400/80 mt-1 leading-snug">{t.comp_co2_new_note}</p>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-4 glass-card rounded-2xl text-[0.75rem] text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    <div className="text-lg font-bold text-slate-800">{t.comp_co2_new} <span className="text-sm font-normal text-slate-500">{t.comp_co2_new_unit}</span></div>
+                    <p className="text-[0.75rem] text-sky-600/80 mt-1 leading-snug">{t.comp_co2_new_note}</p>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-4 glass-card rounded-2xl text-[0.75rem] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                       {t.comp_co2_tooltip}
-                      <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#1a1a1a] rotate-45 border-b border-r border-white/10"></div>
+                      <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white rotate-45 border-b border-r border-slate-200"></div>
                     </div>
                   </div>
-                  <div className="pt-6 border-t border-white/5">
+                  <div className="pt-6 border-t border-slate-200">
                     <p className="emerald-gradient-text text-sm font-bold uppercase tracking-[0.15em]" style={{ fontFamily: "'Manrope', sans-serif" }}>Pack Pro</p>
-                    <div className="text-[3.2rem] font-black text-stone-50" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
-                      24€<span className="text-lg text-stone-600 font-medium">/mois</span>
+                    <div className="text-[3.2rem] font-black text-slate-900" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
+                      24€<span className="text-lg text-slate-400 font-medium">/mois</span>
                     </div>
-                    <p className="text-emerald-400 text-[0.75rem] font-bold mt-2 flex items-center justify-center gap-1.5">
+                    <p className="text-sky-600 text-[0.75rem] font-bold mt-2 flex items-center justify-center gap-1.5">
                       <Zap className="w-3.5 h-3.5" strokeWidth={1.5} />{t.comp_pack_tagline}
                     </p>
                   </div>
@@ -1287,62 +1671,75 @@ export function LandingPage() {
       </motion.section>
 
       {/* ═══ PRICING ═══ */}
-      <motion.section id="pricing" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 relative border-t border-white/5">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-secondary/5 rounded-full blur-[140px] pointer-events-none" />
+      <motion.section id="pricing" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 relative border-t border-slate-200">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-sky-500/5 rounded-full blur-[140px] pointer-events-none" />
+        <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+          <DoodleCoin className="absolute left-[6%] top-[10%] w-11 text-sky-500 -rotate-6" />
+          <DoodleStar5 className="absolute left-[10%] top-[34%] w-5 text-sky-400" />
+          <DoodleTrophy className="absolute left-[3%] top-[56%] w-11 text-slate-800/80" />
+          <DoodleDashes className="absolute left-[6%] top-[80%] w-11 text-slate-300 rotate-6" />
+          <DoodleBurst className="absolute right-[8%] top-[16%] w-6 text-sky-400" />
+          <DoodleFace className="absolute right-[5%] top-[38%] w-12 text-slate-800/80 rotate-6" />
+          <DoodleBolt className="absolute right-[10%] top-[62%] w-5 text-sky-400" />
+          <DoodleStar5 className="absolute right-[6%] top-[84%] w-5 text-sky-400" />
+        </div>
         <div className="mx-auto max-w-7xl px-6 relative z-10">
           <div className="text-center mb-14">
-            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-stone-50 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.pricing_title}</h2>
-            <p className="text-stone-500 mt-5 text-lg">{t.pricing_subtitle}</p>
-            <p className="text-stone-100 mt-5 text-2xl font-extrabold" style={{ fontFamily: "'Manrope', sans-serif" }}>{t.pricing_trial}</p>
+            <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-slate-900 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.pricing_title}</h2>
+            <p className="text-slate-500 mt-5 text-lg">{t.pricing_subtitle}</p>
+            <p className="text-slate-900 mt-5 text-2xl font-extrabold inline-block relative" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              {t.pricing_trial}
+              <DoodleSquiggle className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-52 text-sky-500" />
+            </p>
           </div>
 
           <div className="flex flex-col items-center mb-14">
-            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/5 border border-white/10">
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-slate-100 border border-slate-200">
               <button
                 onClick={() => setBillingCycle('monthly')}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billingCycle === 'monthly' ? 'bg-white text-[#111]' : 'text-stone-400 hover:text-stone-200'}`}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${billingCycle === 'monthly' ? 'bg-sky-600 text-white' : 'text-slate-500 hover:text-slate-800'}`}
               >
                 {t.pricing_monthly}
               </button>
               <button
                 onClick={() => setBillingCycle('quarterly')}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${billingCycle === 'quarterly' ? 'bg-white text-[#111]' : 'text-stone-400 hover:text-stone-200'}`}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${billingCycle === 'quarterly' ? 'bg-sky-600 text-white' : 'text-slate-500 hover:text-slate-800'}`}
               >
                 {t.pricing_quarterly}
-                <span className={`text-[0.65rem] font-bold px-2 py-0.5 rounded-full ${billingCycle === 'quarterly' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>-17%</span>
+                <span className={`text-[0.65rem] font-bold px-2 py-0.5 rounded-full ${billingCycle === 'quarterly' ? 'bg-sky-500/15 text-sky-700' : 'bg-sky-500/10 text-sky-600 border border-sky-500/20'}`}>-17%</span>
               </button>
               <button
                 onClick={() => setBillingCycle('yearly')}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-white text-[#111]' : 'text-stone-400 hover:text-stone-200'}`}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-sky-600 text-white' : 'text-slate-500 hover:text-slate-800'}`}
               >
                 {t.pricing_yearly}
-                <span className={`text-[0.65rem] font-bold px-2 py-0.5 rounded-full ${billingCycle === 'yearly' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>-25%</span>
+                <span className={`text-[0.65rem] font-bold px-2 py-0.5 rounded-full ${billingCycle === 'yearly' ? 'bg-sky-500/15 text-sky-700' : 'bg-sky-500/10 text-sky-600 border border-sky-500/20'}`}>-25%</span>
               </button>
             </div>
           </div>
 
           <div className="max-w-lg mx-auto relative pt-4">
             <div className="absolute top-0 right-8 z-20">
-              <span className="px-4 py-2 rounded-full premium-gradient text-white text-[0.68rem] font-extrabold uppercase tracking-[0.12em] shadow-[0_0_20px_rgba(0,108,73,0.25)]" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              <span className="px-4 py-2 rounded-full premium-gradient text-white text-[0.68rem] font-extrabold uppercase tracking-[0.12em] shadow-[0_0_20px_rgba(2,132,199,0.22)]" style={{ fontFamily: "'Manrope', sans-serif" }}>
                 {t.pricing_launch_badge}
               </span>
             </div>
-            <div className="relative rounded-2xl overflow-hidden p-[1px] bg-gradient-to-br from-secondary/50 via-purple-500/20 to-[#ffb95f]/30">
-              <div className="bg-[#1a1a1a] rounded-[calc(1rem-1px)] p-10 sm:p-12 flex flex-col relative overflow-hidden">
-                <div className="absolute -right-10 -top-10 w-48 h-48 bg-secondary/8 blur-[60px] pointer-events-none" />
+            <div className="relative rounded-2xl overflow-hidden p-[1px] bg-gradient-to-br from-sky-400/60 via-sky-300/30 to-sky-500/40">
+              <div className="bg-white rounded-[calc(1rem-1px)] p-10 sm:p-12 flex flex-col relative overflow-hidden">
+                <div className="absolute -right-10 -top-10 w-48 h-48 bg-sky-500/8 blur-[60px] pointer-events-none" />
                 <div className="mb-8 relative z-10">
                   <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-2xl font-extrabold text-stone-50" style={{ fontFamily: "'Manrope', sans-serif" }}>PACK PRO</h3>
-                    <Star className="h-5 w-5 text-[#ffb95f] fill-[#ffb95f] animate-pulse" />
+                    <h3 className="text-2xl font-extrabold text-slate-900" style={{ fontFamily: "'Manrope', sans-serif" }}>PACK PRO</h3>
+                    <Star className="h-5 w-5 text-sky-600 fill-sky-500 animate-pulse" />
                   </div>
-                  <p className="text-stone-400 text-sm">{t.pricing_pack_desc}</p>
+                  <p className="text-slate-500 text-sm">{t.pricing_pack_desc}</p>
                   <div className="mt-5 flex items-baseline gap-2.5">
-                    <span className="text-[3.5rem] font-extrabold text-stone-50" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{calculatePrice(24)}€</span>
-                    <span className="text-stone-600 line-through text-lg">34€</span>
-                    <span className="text-stone-500">/mois</span>
+                    <span className="text-[3.5rem] font-extrabold text-slate-900" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{calculatePrice(24)}€</span>
+                    <span className="text-slate-400 line-through text-lg">34€</span>
+                    <span className="text-slate-500">/mois</span>
                   </div>
-                  {billingCycle === 'yearly' && <p className="text-[0.78rem] text-emerald-400 mt-2 font-semibold">{t.pricing_billed_yearly}</p>}
-                  {billingCycle === 'quarterly' && <p className="text-[0.78rem] text-emerald-400 mt-2 font-semibold">{t.pricing_billed_quarterly}</p>}
+                  {billingCycle === 'yearly' && <p className="text-[0.78rem] text-sky-600 mt-2 font-semibold">{t.pricing_billed_yearly}</p>}
+                  {billingCycle === 'quarterly' && <p className="text-[0.78rem] text-sky-600 mt-2 font-semibold">{t.pricing_billed_quarterly}</p>}
                 </div>
 
                 <ul className="space-y-4 mb-10 flex-1 relative z-10">
@@ -1356,44 +1753,35 @@ export function LandingPage() {
                     { bold: t.pricing_feat7_bold, rest: t.pricing_feat7_rest },
                     { bold: t.pricing_feat8, rest: '' },
                   ].map((feat, idx) => (
-                    <li key={idx} className="flex gap-3 text-sm text-stone-300 font-medium">
-                      <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" strokeWidth={1.5} />
-                      <span><strong className="text-stone-100">{feat.bold}</strong>{feat.rest}</span>
+                    <li key={idx} className="flex gap-3 text-sm text-slate-700 font-medium">
+                      <ShieldCheck className="h-5 w-5 text-sky-600 shrink-0" strokeWidth={1.5} />
+                      <span><strong className="text-slate-900">{feat.bold}</strong>{feat.rest}</span>
                     </li>
                   ))}
                 </ul>
 
-                <Link to="/register" className="relative z-10 block w-full py-4 rounded-full bg-white text-[#111] font-bold text-center text-lg transition-all duration-300 hover:bg-secondary hover:text-white hover:shadow-[0_0_30px_rgba(0,108,73,0.3)]">
+                <Link to="/register" className="relative z-10 block w-full py-4 rounded-full bg-sky-600 text-white font-bold text-center text-lg transition-all duration-300 hover:bg-sky-500 hover:text-white hover:shadow-[0_0_30px_rgba(2,132,199,0.25)]">
                   {t.pricing_cta}
                 </Link>
-                <p className="mt-5 text-[0.78rem] text-center text-stone-600">{t.pricing_no_card}</p>
-                <p className="mt-3 text-[0.65rem] text-center text-stone-700">{t.pricing_climate}</p>
+                <p className="mt-5 text-[0.78rem] text-center text-slate-400">{t.pricing_no_card}</p>
+                <p className="mt-3 text-[0.65rem] text-center text-slate-300">{t.pricing_climate}</p>
               </div>
             </div>
           </div>
 
-          <div className="mt-10 flex justify-center">
-            <div className="inline-flex items-center gap-4 px-6 py-4 glass-card rounded-2xl">
-              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400"><PlusCircle className="h-5 w-5" strokeWidth={1.5} /></div>
-              <div className="text-left">
-                <p className="text-sm font-bold text-stone-200">{t.pricing_voip_option}</p>
-                <p className="text-[0.72rem] text-purple-400 font-bold uppercase tracking-[0.12em]">{t.pricing_voip_soon}</p>
-              </div>
-            </div>
-          </div>
         </div>
       </motion.section>
 
       {/* Comparison Modal */}
       {isComparisonOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-[#1a1a1a] rounded-2xl border border-white/[0.08] shadow-[0_40px_80px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setIsComparisonOpen(false)} className="absolute top-5 right-5 p-2.5 text-stone-500 hover:text-stone-200 rounded-full hover:bg-white/5 transition-colors z-10">
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl border border-slate-200 shadow-[0_40px_80px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setIsComparisonOpen(false)} className="absolute top-5 right-5 p-2.5 text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-colors z-10">
               <X className="h-5 w-5" strokeWidth={1.5} />
             </button>
             <PricingComparisonTable isModal={true} />
-            <div className="p-6 bg-[#111] sticky bottom-0 text-center border-t border-white/5">
-              <button onClick={() => setIsComparisonOpen(false)} className="px-7 py-2.5 bg-white hover:bg-stone-200 text-[#111] rounded-full font-bold text-sm transition-colors">
+            <div className="p-6 bg-white sticky bottom-0 text-center border-t border-slate-200">
+              <button onClick={() => setIsComparisonOpen(false)} className="px-7 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-full font-bold text-sm transition-colors">
                 {t.pricing_close_comparison}
               </button>
             </div>
@@ -1405,11 +1793,21 @@ export function LandingPage() {
       <SalesPartnerSection t={t} />
 
       {/* ═══ FAQ ═══ */}
-      <motion.section id="faq" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 relative border-t border-white/5">
+      <motion.section id="faq" initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="py-32 relative border-t border-slate-200 overflow-hidden">
+        <div className="pointer-events-none select-none absolute inset-0 hidden lg:block" aria-hidden="true">
+          <DoodleBulb className="absolute left-[6%] top-[14%] w-11 text-slate-800/80 -rotate-6" />
+          <DoodleStar5 className="absolute left-[12%] top-[40%] w-5 text-sky-400" />
+          <DoodleCheck className="absolute left-[7%] top-[64%] w-7 text-sky-500" />
+          <DoodleDashes className="absolute left-[5%] top-[84%] w-11 text-slate-300 rotate-6" />
+          <DoodleFace className="absolute right-[6%] top-[16%] w-12 text-slate-800/80 rotate-6" />
+          <DoodleBurst className="absolute right-[12%] top-[42%] w-6 text-sky-400" />
+          <DoodleBubble className="absolute right-[4%] top-[64%] w-14 text-slate-800/80 rotate-3" />
+          <DoodleCross className="absolute right-[9%] top-[88%] w-3.5 text-sky-400" />
+        </div>
         <div className="mx-auto max-w-3xl px-6 relative z-10">
           <div className="text-center mb-20">
-            <h2 className="text-[2.5rem] sm:text-[3rem] font-extrabold text-stone-50 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.faq_title}</h2>
-            <p className="text-stone-500 mt-5">{t.faq_subtitle}</p>
+            <h2 className="text-[2.5rem] sm:text-[3rem] font-extrabold text-slate-900 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.faq_title}</h2>
+            <p className="text-slate-500 mt-5">{t.faq_subtitle}</p>
           </div>
           <div className="space-y-3">
             <FAQItem question={t.faq1_q}><p>{t.faq1_a1}</p><p className="mt-3">{t.faq1_a2}</p></FAQItem>
@@ -1422,38 +1820,49 @@ export function LandingPage() {
 
       {/* ═══ CTA FINAL ═══ */}
       <motion.section initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }} className="relative py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-secondary/5 blur-[100px] rounded-full pointer-events-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute inset-0 bg-sky-500/5 blur-[100px] rounded-full pointer-events-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        <div className="pointer-events-none select-none absolute inset-0 hidden md:block" aria-hidden="true">
+          <DoodleRocket className="absolute right-[10%] top-[16%] w-14 text-sky-500 rotate-6" />
+          <DoodleBurst className="absolute left-[12%] top-[22%] w-7 text-sky-400" />
+          <DoodleBolt className="absolute left-[7%] top-[54%] w-6 text-sky-400" />
+          <DoodleStar5 className="absolute right-[16%] top-[62%] w-5 text-sky-400" />
+          <DoodleHeart className="absolute left-[16%] top-[66%] w-6 text-sky-400" />
+          <DoodleZigzag className="absolute left-[7%] top-[38%] w-12 text-slate-300" />
+          <DoodleTrophy className="absolute right-[7%] top-[54%] w-11 text-slate-800/80 rotate-6" />
+          <DoodleStar5 className="absolute right-[14%] top-[24%] w-5 text-sky-400" />
+          <DoodleDashes className="absolute right-[6%] top-[40%] w-11 text-slate-300 -rotate-6" />
+        </div>
         <div className="relative mx-auto max-w-4xl px-6 text-center z-10">
-          <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-stone-50 leading-[0.95] mb-7" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
+          <h2 className="text-[2.5rem] sm:text-[3.5rem] font-extrabold text-slate-900 leading-[0.95] mb-7" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>
             {t.cta_title_line1}<br />{t.cta_title_line2}
           </h2>
-          <p className="text-xl text-stone-400 mb-12">{t.cta_subtitle}</p>
-          <Link to="/register" className="inline-flex items-center gap-2 w-full sm:w-auto px-10 py-4 rounded-full bg-white text-[#111] font-extrabold text-lg hover:bg-secondary hover:text-white hover:shadow-[0_0_40px_rgba(0,108,73,0.3)] transition-all duration-300" style={{ fontFamily: "'Manrope', sans-serif" }}>
+          <p className="text-xl text-slate-500 mb-12">{t.cta_subtitle}</p>
+          <Link to="/register" className="inline-flex items-center gap-2 w-full sm:w-auto px-10 py-4 rounded-full bg-sky-600 text-white font-extrabold text-lg hover:bg-sky-500 hover:text-white hover:shadow-[0_0_40px_rgba(2,132,199,0.25)] transition-all duration-300" style={{ fontFamily: "'Manrope', sans-serif" }}>
             {t.cta_btn}
             <ChevronRight className="h-5 w-5" strokeWidth={1.5} />
           </Link>
-          <p className="mt-7 text-sm text-stone-600">{t.cta_trial}</p>
+          <p className="mt-7 text-sm text-slate-400">{t.cta_trial}</p>
         </div>
       </motion.section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer className="border-t border-white/5 py-8 pb-20">
+      <footer className="border-t border-slate-200 py-8 pb-20">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-5">
           <img src="/logo-sales.png" alt="CloseOS Logo" className="h-6 w-auto" loading="lazy" width={72} height={24} />
-          <div className="flex flex-wrap justify-center gap-4 text-[0.72rem] text-stone-600">
+          <div className="flex flex-wrap justify-center gap-4 text-[0.72rem] text-slate-400">
             <span>© 2026 CloseOS.fr</span>
-            <span className="hidden sm:inline text-stone-800">·</span>
-            <a href="/mentions-legales" className="hover:text-stone-200 transition-colors">{t.footer_legal}</a>
-            <span className="hidden sm:inline text-stone-800">·</span>
-            <a href="/cgu" className="hover:text-stone-200 transition-colors">{t.footer_cgu}</a>
-            <span className="hidden sm:inline text-stone-800">·</span>
-            <a href="/cgv" className="hover:text-stone-200 transition-colors">{t.footer_cgv}</a>
-            <span className="hidden sm:inline text-stone-800">·</span>
-            <a href="/confidentialite" className="hover:text-stone-200 transition-colors">{t.footer_privacy}</a>
+            <span className="hidden sm:inline text-slate-300">·</span>
+            <a href="/mentions-legales" className="hover:text-slate-800 transition-colors">{t.footer_legal}</a>
+            <span className="hidden sm:inline text-slate-300">·</span>
+            <a href="/cgu" className="hover:text-slate-800 transition-colors">{t.footer_cgu}</a>
+            <span className="hidden sm:inline text-slate-300">·</span>
+            <a href="/cgv" className="hover:text-slate-800 transition-colors">{t.footer_cgv}</a>
+            <span className="hidden sm:inline text-slate-300">·</span>
+            <a href="/confidentialite" className="hover:text-slate-800 transition-colors">{t.footer_privacy}</a>
           </div>
           <div className="flex gap-6 text-[0.72rem]">
-            <a href="https://www.linkedin.com/in/thomas-shamoev-570885237/" target="_blank" rel="noopener noreferrer" className="text-stone-600 hover:text-stone-200 transition-colors">LinkedIn</a>
-            <button onClick={() => setShowContact(true)} className="text-stone-600 hover:text-stone-200 transition-colors flex items-center gap-1">
+            <a href="https://www.linkedin.com/in/thomas-shamoev-570885237/" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-800 transition-colors">LinkedIn</a>
+            <button onClick={() => setShowContact(true)} className="text-slate-400 hover:text-slate-800 transition-colors flex items-center gap-1">
               <Mail className="size-3" />
               support@closeos.fr
             </button>
@@ -1462,7 +1871,7 @@ export function LandingPage() {
       </footer>
       <SalesContactModal open={showContact} onClose={() => setShowContact(false)} t={t} />
 
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#111111] via-[#111111]/80 to-transparent pointer-events-none z-[80]" />
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#f4f2f1] via-[#f4f2f1]/80 to-transparent pointer-events-none z-[80]" />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
@@ -1471,28 +1880,31 @@ export function LandingPage() {
           from { opacity: 0; transform: translateY(-60px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes marquee-scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+        /* Seamless integration marquee, track = 4 identical copies,
+           translate by exactly ONE copy (-25%) so the loop has no jump. */
+        @keyframes intMarqueeLeft {
+          from { transform: translateX(0); }
+          to { transform: translateX(-25%); }
         }
-        .marquee-track {
-          display: flex;
-          width: max-content;
-          animation: marquee-scroll var(--marquee-speed, 30s) linear infinite;
+        @keyframes intMarqueeRight {
+          from { transform: translateX(-25%); }
+          to { transform: translateX(0); }
         }
-        .marquee-container:hover .marquee-track {
-          animation-duration: 40s;
+        .int-marquee-left { animation: intMarqueeLeft 45s linear infinite; }
+        .int-marquee-right { animation: intMarqueeRight 45s linear infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .int-marquee-left, .int-marquee-right { animation: none; }
         }
         .glass-card {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(16px);
-          border: 0.5px solid rgba(196, 199, 199, 0.1);
+          background: #ffffff;
+          border: 1px solid rgba(17, 24, 39, 0.06);
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 34px -16px rgba(15, 23, 42, 0.10);
         }
         .premium-gradient {
-          background: linear-gradient(135deg, #006c49 0%, #a855f7 100%);
+          background: linear-gradient(135deg, #38BDF8 0%, #0284C7 100%);
         }
         .emerald-gradient-text {
-          background: linear-gradient(135deg, #006c49 0%, #6cf8bb 100%);
+          background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;

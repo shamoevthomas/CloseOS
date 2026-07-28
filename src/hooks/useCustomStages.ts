@@ -31,10 +31,18 @@ const DEFAULT_STAGES_BASE: StageDefinition[] = [
   { id: 'lost', name: 'Perdu', color: 'bg-red-500', isDefault: true, position: 5 },
 ]
 
-// Stages additionnels pour les rôles Setter / Setter-Closer (alignés avec Business)
-const EXTRA_SETTER_STAGES: StageDefinition[] = [
+// Étapes par défaut pour les rôles Setter / Setter-Closer — ordre aligné sur Business
+// (Prospect → Contacté → Qualifié → Non qualifié → Gagné → Follow Up → Pas de réponse → No Show → Perdu)
+const DEFAULT_STAGES_SETTER: StageDefinition[] = [
+  { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', isDefault: true, position: 0 },
+  { id: 'contacted', name: 'Contacté', color: 'bg-sky-500', isDefault: true, position: 1 },
+  { id: 'qualified', name: 'Qualifié', color: 'bg-purple-500', isDefault: true, position: 2 },
+  { id: 'unqualified', name: 'Non qualifié', color: 'bg-yellow-500', isDefault: true, position: 3 },
+  { id: 'won', name: 'Gagné', color: 'bg-emerald-500', isDefault: true, position: 4 },
+  { id: 'followup', name: 'Follow Up', color: 'bg-orange-500', isDefault: true, position: 5 },
   { id: 'noanswer', name: 'Pas de réponse', color: 'bg-cyan-500', isDefault: true, position: 6 },
-  { id: 'unqualified', name: 'Non qualifié', color: 'bg-yellow-500', isDefault: true, position: 7 },
+  { id: 'noshow', name: 'No Show', color: 'bg-slate-600', isDefault: true, position: 7 },
+  { id: 'lost', name: 'Perdu', color: 'bg-red-500', isDefault: true, position: 8 },
 ]
 
 // Stages par défaut "actifs" (colonnes principales du Kanban)
@@ -60,14 +68,14 @@ export function useCustomStages() {
   const [customStages, setCustomStages] = useState<CustomStage[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Default stages depend on the user's role (Setter / Setter-Closer get noanswer + unqualified)
+  // Default stages depend on the user's role (Setter / Setter-Closer get Contacté + Pas de réponse + Non qualifié)
   const defaultStages = useMemo<StageDefinition[]>(() =>
-    showsSetterFeatures ? [...DEFAULT_STAGES_BASE, ...EXTRA_SETTER_STAGES] : DEFAULT_STAGES_BASE,
+    showsSetterFeatures ? DEFAULT_STAGES_SETTER : DEFAULT_STAGES_BASE,
     [showsSetterFeatures]
   )
   const activeIds = useMemo<Set<string>>(() => {
     const s = new Set(DEFAULT_ACTIVE_IDS_BASE)
-    if (showsSetterFeatures) s.add('noanswer')
+    if (showsSetterFeatures) { s.add('contacted'); s.add('noanswer') }
     return s
   }, [showsSetterFeatures])
   const inactiveIds = useMemo<Set<string>>(() => {

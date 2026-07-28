@@ -1034,13 +1034,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
   const getResourceIcon = (type: string) => {
     switch (type) {
       case 'script':
-        return <FileText className="h-4 w-4 text-emerald-400" />
+        return <FileText className="h-4 w-4 text-sky-600 dark:text-sky-400" />
       case 'payment':
-        return <Euro className="h-4 w-4 text-emerald-400" />
+        return <Euro className="h-4 w-4 text-sky-600 dark:text-sky-400" />
       case 'drive':
-        return <ExternalLink className="h-4 w-4 text-purple-400" />
+        return <ExternalLink className="h-4 w-4 text-sky-600 dark:text-sky-400" />
       default:
-        return <ExternalLink className="h-4 w-4 text-white/40" />
+        return <ExternalLink className="h-4 w-4 text-slate-400 dark:text-neutral-500" />
     }
   }
 
@@ -1066,13 +1066,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.08] custom-scrollbar animate-in fade-in zoom-in duration-300">
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] ring-1 ring-slate-200 custom-scrollbar animate-in fade-in zoom-in duration-300">
 
         {/* Decorative background blobs */}
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-emerald-500/10 opacity-20 blur-[80px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-purple-600/10 opacity-10 blur-[80px] rounded-full pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-sky-500/10 opacity-20 blur-[80px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-sky-500/10 opacity-10 blur-[80px] rounded-full pointer-events-none" />
         {/* Header Section */}
-        <div className="sticky top-0 z-10 border-b border-white/[0.08] bg-[#1a1a1a]/80 backdrop-blur-md px-8 py-8">
+        <div className="sticky top-0 z-10 border-b border-slate-200 dark:border-white/10 bg-white/80 backdrop-blur-md px-8 py-8">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-4">
@@ -1083,15 +1083,15 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     onChange={(e) =>
                       setEditedOffer({ ...editedOffer, name: e.target.value })
                     }
-                    className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xl font-black text-white focus:border-emerald-500 focus:outline-none transition-all"
+                    className="flex-1 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2 text-xl font-black text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none transition-all"
                   />
                 ) : (
-                  <h2 className="text-3xl font-black text-white tracking-tight">{offer.name}</h2>
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{offer.name}</h2>
                 )}
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${offer.status === 'active'
-                    ? 'bg-emerald-500/10 text-emerald-400'
-                    : 'bg-white/5 text-white/40'
+                    ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                    : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-neutral-500'
                     }`}
                 >
                   {offer.status === 'active' ? (lang === 'fr' ? 'Active' : 'Active') : (lang === 'fr' ? 'Archivée' : 'Archived')}
@@ -1104,11 +1104,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   onChange={(e) =>
                     setEditedOffer({ ...editedOffer, company: e.target.value })
                   }
-                  className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/40 focus:border-emerald-500 focus:outline-none transition-all"
+                  className="mt-3 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-1.5 text-sm text-slate-400 dark:text-neutral-500 focus:border-sky-500 focus:outline-none transition-all"
                 />
               ) : (
-                <p className="mt-2 text-sm font-medium text-white/40 flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-white/40" />
+                <p className="mt-2 text-sm font-medium text-slate-400 dark:text-neutral-500 flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-slate-400 dark:text-neutral-500" />
                   {offer.company}
                 </p>
               )}
@@ -1118,14 +1118,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <>
                   <button
                     onClick={handleSave}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 active:scale-95"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-600 text-white shadow-lg shadow-sky-500/20 transition-all hover:bg-sky-600 active:scale-95"
                     title={lang === 'fr' ? 'Sauvegarder' : 'Save'}
                   >
                     <Save className="h-4 w-4" />
                   </button>
                   <button
                     onClick={handleCancel}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/60 transition-all hover:bg-white/10 active:scale-95"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-neutral-400 transition-all hover:bg-slate-100 active:scale-95"
                     title={lang === 'fr' ? 'Annuler' : 'Cancel'}
                   >
                     <X className="h-4 w-4" />
@@ -1135,7 +1135,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <>
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/40 transition-all hover:bg-white/10 hover:text-white"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-400 dark:text-neutral-500 transition-all hover:bg-slate-100 hover:text-slate-900"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -1149,10 +1149,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   )}
                 </>
               )}
-              <div className="h-6 w-px bg-white/10 mx-1" />
+              <div className="h-6 w-px bg-slate-100 dark:bg-white/10 mx-1" />
               <button
                 onClick={onClose}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/40 transition-all hover:bg-white/10 hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-400 dark:text-neutral-500 transition-all hover:bg-slate-100 hover:text-slate-900"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1164,7 +1164,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
         <div className="p-6">
           {/* Target Type Toggle */}
           <div className="mb-10 relative z-10">
-            <p className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+            <p className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-neutral-500">
               {lang === 'fr' ? 'Cible Marketing' : 'Marketing Target'}
             </p>
             {isEditing ? (
@@ -1172,8 +1172,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <button
                   onClick={() => setEditedOffer({ ...editedOffer, target: 'B2C' })}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${editedOffer.target === 'B2C'
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-white/10 text-white/40 hover:bg-white/20'
+                    ? 'bg-sky-600 text-white'
+                    : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-neutral-500 hover:bg-slate-100'
                     }`}
                 >
                   <User className="h-5 w-5" />
@@ -1182,8 +1182,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <button
                   onClick={() => setEditedOffer({ ...editedOffer, target: 'B2B' })}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-all ${editedOffer.target === 'B2B'
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-white/10 text-white/40 hover:bg-white/20'
+                    ? 'bg-sky-600 text-white'
+                    : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-neutral-500 hover:bg-slate-100'
                     }`}
                 >
                   <Building2 className="h-5 w-5" />
@@ -1191,15 +1191,15 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-3 rounded-[20px] border border-white/5 bg-white/[0.03]/30 px-6 py-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <div className="flex items-center gap-3 rounded-[20px] border border-slate-200 dark:border-white/10 bg-slate-50/30 px-6 py-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
                   {offer.target === 'B2C' ? <User className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
                 </div>
                 <div>
-                  <span className="text-base font-bold text-white">
+                  <span className="text-base font-bold text-slate-900 dark:text-white">
                     {offer.target === 'B2C' ? (lang === 'fr' ? 'B2C (Particuliers)' : 'B2C (Individuals)') : (lang === 'fr' ? 'B2B (Entreprises)' : 'B2B (Businesses)')}
                   </span>
-                  <p className="text-xs text-white/40 font-medium tracking-wide">{lang === 'fr' ? 'Configuration du pipeline adaptée' : 'Adapted pipeline configuration'}</p>
+                  <p className="text-xs text-slate-400 dark:text-neutral-500 font-medium tracking-wide">{lang === 'fr' ? 'Configuration du pipeline adaptée' : 'Adapted pipeline configuration'}</p>
                 </div>
               </div>
             )}
@@ -1207,15 +1207,15 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
           <div className="grid gap-8 md:grid-cols-2 relative z-10">
             {/* Zone A - Formules (Multi-Tarification) */}
-            <div className="rounded-3xl border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md">
+            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50/30 p-6 backdrop-blur-md">
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+                <h3 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-neutral-500">
                   <Tag className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Formules & Tarifs' : 'Formulas & Pricing'}
                 </h3>
                 {isEditing && (
                   <button
                     onClick={handleAddFormula}
-                    className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all active:scale-95 uppercase tracking-widest"
+                    className="flex items-center gap-1.5 rounded-full bg-sky-500/10 px-3 py-1.5 text-[10px] font-black text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 border border-sky-500/20 transition-all active:scale-95 uppercase tracking-widest"
                   >
                     <Plus className="h-3 w-3" /> {lang === 'fr' ? 'Ajouter' : 'Add'}
                   </button>
@@ -1226,7 +1226,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 {(editedOffer.formulas || []).map((formula, index) => {
                   const comm = calculateCommission(formula.price, formula.commission)
                   return (
-                    <div key={formula.id} className="relative rounded-2xl border border-white/5 bg-white/5 p-4 transition-all hover:border-white/10 group/formula">
+                    <div key={formula.id} className="relative rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 p-4 transition-all hover:border-slate-200 group/formula">
                       {isEditing ? (
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
@@ -1235,7 +1235,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                               value={formula.name}
                               onChange={(e) => handleUpdateFormula(formula.id, 'name', e.target.value)}
                               placeholder={lang === 'fr' ? 'Nom (ex: Pack Gold)' : 'Name (e.g.: Pack Gold)'}
-                              className="flex-1 rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
+                              className="flex-1 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-2 text-sm font-bold text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                             />
                             <button
                               onClick={() => handleRemoveFormula(formula.id)}
@@ -1246,42 +1246,42 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5 ml-1">{lang === 'fr' ? 'Prix (€)' : 'Price (€)'}</p>
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">{lang === 'fr' ? 'Prix (€)' : 'Price (€)'}</p>
                               <input
                                 type="number"
                                 value={formula.price}
                                 onChange={(e) => handleUpdateFormula(formula.id, 'price', e.target.value)}
-                                className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2 text-sm text-white font-black focus:border-emerald-500/50 focus:outline-none"
+                                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-2 text-sm text-slate-900 dark:text-white font-black focus:border-sky-500/50 focus:outline-none"
                               />
                             </div>
                             <div>
-                              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5 ml-1">{lang === 'fr' ? 'Com. (%)' : 'Com. (%)'}</p>
+                              <p className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">{lang === 'fr' ? 'Com. (%)' : 'Com. (%)'}</p>
                               <input
                                 type="number"
                                 value={formula.commission}
                                 onChange={(e) => handleUpdateFormula(formula.id, 'commission', e.target.value)}
-                                className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2 text-sm text-emerald-400 font-black focus:border-emerald-500 focus:outline-none"
+                                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-2 text-sm text-sky-600 dark:text-sky-400 font-black focus:border-sky-500 focus:outline-none"
                               />
                             </div>
                           </div>
-                          <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? 'Gain estimé' : 'Estimated earnings'}</span>
-                            <span className="text-xs font-black text-emerald-400">{comm.toLocaleString()} €</span>
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-white/10">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-widest">{lang === 'fr' ? 'Gain estimé' : 'Estimated earnings'}</span>
+                            <span className="text-xs font-black text-sky-600 dark:text-sky-400">{comm.toLocaleString()} €</span>
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <h4 className="font-black text-white text-sm tracking-tight">{formula.name}</h4>
+                            <h4 className="font-black text-slate-900 dark:text-white text-sm tracking-tight">{formula.name}</h4>
                             <div className="flex items-center gap-3 mt-1.5 font-medium">
-                              <span className="text-[10px] text-white/40 uppercase tracking-widest">Commission {formula.commission}%</span>
-                              <div className="h-1 w-1 rounded-full bg-white/10" />
-                              <span className="text-xs text-emerald-400 font-bold">{comm.toLocaleString()} € / {lang === 'fr' ? 'vente' : 'sale'}</span>
+                              <span className="text-[10px] text-slate-400 dark:text-neutral-500 uppercase tracking-widest">Commission {formula.commission}%</span>
+                              <div className="h-1 w-1 rounded-full bg-slate-100 dark:bg-white/10" />
+                              <span className="text-xs text-sky-600 dark:text-sky-400 font-bold">{comm.toLocaleString()} € / {lang === 'fr' ? 'vente' : 'sale'}</span>
                             </div>
                           </div>
                           <div className="text-right">
                             <div className="inline-flex flex-col items-end">
-                              <span className="text-lg font-black text-white tracking-tight">{parseFloat(formula.price).toLocaleString()}€</span>
+                              <span className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{parseFloat(formula.price).toLocaleString()}€</span>
                             </div>
                           </div>
                         </div>
@@ -1290,7 +1290,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   )
                 })}
                 {(!editedOffer.formulas || editedOffer.formulas.length === 0) && (
-                  <div className="flex flex-col items-center justify-center py-6 gap-2 text-white/30">
+                  <div className="flex flex-col items-center justify-center py-6 gap-2 text-slate-400 dark:text-neutral-500">
                     <Tag className="h-8 w-8 opacity-20" />
                     <p className="text-[11px] font-bold uppercase tracking-widest italic">{lang === 'fr' ? 'Aucune formule définie' : 'No formula defined'}</p>
                   </div>
@@ -1299,14 +1299,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             </div>
 
             {/* Zone B - Context (Dates) */}
-            <div className="rounded-3xl border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md">
-              <h3 className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50/30 p-6 backdrop-blur-md">
+              <h3 className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-neutral-500">
                 <Calendar className="h-3.5 w-3.5" />
                 {lang === 'fr' ? 'Validité Commerciale' : 'Commercial Validity'}
               </h3>
               <div className="space-y-6">
                 <div>
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2 ml-1">{lang === 'fr' ? "Lancement de l'offre" : 'Offer launch'}</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-widest mb-2 ml-1">{lang === 'fr' ? "Lancement de l'offre" : 'Offer launch'}</p>
                   {isEditing ? (
                     <input
                       type="date"
@@ -1314,19 +1314,19 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       onChange={(e) =>
                         setEditedOffer({ ...editedOffer, startDate: e.target.value })
                       }
-                      className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
+                      className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none transition-all"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/5 px-4 py-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <div className="flex items-center gap-3 rounded-2xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 px-4 py-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
                         <Calendar className="h-4 w-4" />
                       </div>
-                      <span className="text-sm font-bold text-white tracking-tight">{formatDate(offer.startDate)}</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">{formatDate(offer.startDate)}</span>
                     </div>
                   )}
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2 ml-1">{lang === 'fr' ? 'Expiration prévue' : 'Expected expiration'}</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-widest mb-2 ml-1">{lang === 'fr' ? 'Expiration prévue' : 'Expected expiration'}</p>
                   {isEditing ? (
                     <input
                       type="date"
@@ -1334,14 +1334,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       onChange={(e) =>
                         setEditedOffer({ ...editedOffer, endDate: e.target.value || undefined })
                       }
-                      className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
+                      className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none transition-all"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/5 px-4 py-3">
+                    <div className="flex items-center gap-3 rounded-2xl bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 px-4 py-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500/80">
                         <Calendar className="h-4 w-4" />
                       </div>
-                      <span className="text-sm font-bold text-white tracking-tight">
+                      <span className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">
                         {offer.endDate ? formatDate(offer.endDate) : (lang === 'fr' ? 'Illimitée' : 'Unlimited')}
                       </span>
                     </div>
@@ -1352,8 +1352,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
 
           {/* Description */}
-          <div className="mt-8 rounded-3xl border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md relative z-10">
-            <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">
+          <div className="mt-8 rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50/30 p-6 backdrop-blur-md relative z-10">
+            <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-neutral-500 ml-1">
               {lang === 'fr' ? 'Description de la mission' : 'Mission description'}
             </h3>
             {isEditing ? (
@@ -1363,18 +1363,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   setEditedOffer({ ...editedOffer, description: e.target.value })
                 }
                 rows={4}
-                className="w-full rounded-2xl border border-white/10 bg-[#111111]/50 px-4 py-3 text-sm text-white font-medium focus:border-emerald-500 focus:outline-none resize-none transition-all"
+                className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-3 text-sm text-slate-900 dark:text-white font-medium focus:border-sky-500 focus:outline-none resize-none transition-all"
                 placeholder={lang === 'fr' ? "Détails de l'offre, avatar client, etc." : "Offer details, client avatar, etc."}
               />
             ) : (
-              <p className="text-sm leading-relaxed text-white/60 font-medium px-1">{offer.description}</p>
+              <p className="text-sm leading-relaxed text-slate-500 dark:text-neutral-400 font-medium px-1">{offer.description}</p>
             )}
           </div>
 
           {/* Zone C - Contacts Rattachés - MODIFIÉ AVEC CRÉATION */}
-          <div className="mt-6 rounded-lg border border-white/[0.08] bg-[#111111] p-4">
+          <div className="mt-6 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-4">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/40">
+              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
                 <Users className="h-4 w-4" />
                 {lang === 'fr' ? 'Contacts Rattachés' : 'Linked Contacts'}
               </h3>
@@ -1382,7 +1382,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               {isEditing && !isCreatingContact && (
                 <button
                   onClick={() => setIsCreatingContact(true)}
-                  className="flex items-center gap-1 rounded bg-purple-500/10 px-2 py-1 text-xs font-bold text-purple-400 hover:bg-purple-500/20"
+                  className="flex items-center gap-1 rounded bg-sky-500/10 px-2 py-1 text-xs font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-500/20"
                 >
                   <UserPlus className="h-3 w-3" /> {lang === 'fr' ? 'Nouveau Contact' : 'New Contact'}
                 </button>
@@ -1391,18 +1391,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
             {/* FORMULAIRE CRÉATION RAPIDE */}
             {isEditing && isCreatingContact && (
-              <div className="mb-4 rounded-lg border border-purple-500/30 bg-purple-500/5 p-4 animate-in fade-in slide-in-from-top-2">
+              <div className="mb-4 rounded-lg border border-sky-500/30 bg-sky-500/5 p-4 animate-in fade-in slide-in-from-top-2">
                 <div className="mb-3 flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase text-purple-300">{lang === 'fr' ? 'Ajout Rapide' : 'Quick Add'}</p>
-                  <button onClick={() => setIsCreatingContact(false)} className="text-white/40 hover:text-white"><X className="h-3 w-3" /></button>
+                  <p className="text-xs font-bold uppercase text-sky-600 dark:text-sky-400">{lang === 'fr' ? 'Ajout Rapide' : 'Quick Add'}</p>
+                  <button onClick={() => setIsCreatingContact(false)} className="text-slate-400 dark:text-neutral-500 hover:text-slate-900"><X className="h-3 w-3" /></button>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input type="text" placeholder={lang === 'fr' ? 'Nom complet *' : 'Full name *'} value={newContactData.name} onChange={(e) => setNewContactData({ ...newContactData, name: e.target.value })} className="rounded border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
-                  <input type="text" placeholder={lang === 'fr' ? 'Rôle (ex: Closer) *' : 'Role (e.g.: Closer) *'} value={newContactData.role} onChange={(e) => setNewContactData({ ...newContactData, role: e.target.value })} className="rounded border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
-                  <input type="email" placeholder="Email *" value={newContactData.email} onChange={(e) => setNewContactData({ ...newContactData, email: e.target.value })} className="rounded border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
-                  <input type="tel" placeholder={lang === 'fr' ? 'Téléphone' : 'Phone'} value={newContactData.phone} onChange={(e) => setNewContactData({ ...newContactData, phone: e.target.value })} className="rounded border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+                  <input type="text" placeholder={lang === 'fr' ? 'Nom complet *' : 'Full name *'} value={newContactData.name} onChange={(e) => setNewContactData({ ...newContactData, name: e.target.value })} className="rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none" />
+                  <input type="text" placeholder={lang === 'fr' ? 'Rôle (ex: Closer) *' : 'Role (e.g.: Closer) *'} value={newContactData.role} onChange={(e) => setNewContactData({ ...newContactData, role: e.target.value })} className="rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none" />
+                  <input type="email" placeholder="Email *" value={newContactData.email} onChange={(e) => setNewContactData({ ...newContactData, email: e.target.value })} className="rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none" />
+                  <input type="tel" placeholder={lang === 'fr' ? 'Téléphone' : 'Phone'} value={newContactData.phone} onChange={(e) => setNewContactData({ ...newContactData, phone: e.target.value })} className="rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none" />
                 </div>
-                <button onClick={handleCreateAndAttachContact} className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-purple-600 py-2 text-sm font-bold text-white hover:bg-purple-500">
+                <button onClick={handleCreateAndAttachContact} className="mt-3 flex w-full items-center justify-center gap-2 rounded bg-sky-600 py-2 text-sm font-bold text-white hover:bg-sky-600">
                   <Check className="h-4 w-4" /> {lang === 'fr' ? 'Créer et Attacher' : 'Create & Attach'}
                 </button>
               </div>
@@ -1436,51 +1436,51 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   offer.contacts.map((contact) => (
                     <div
                       key={contact.id}
-                      className="flex items-center justify-between rounded-lg border border-white/[0.08] bg-white/5 p-3"
+                      className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 p-3"
                     >
                       <div>
-                        <p className="text-sm font-medium text-white">{contact.name}</p>
-                        <p className="text-xs text-white/40">{contact.role}</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{contact.name}</p>
+                        <p className="text-xs text-slate-400 dark:text-neutral-500">{contact.role}</p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-white/40">{lang === 'fr' ? 'Aucun contact rattaché' : 'No linked contacts'}</p>
+                  <p className="text-sm text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Aucun contact rattaché' : 'No linked contacts'}</p>
                 )}
               </div>
             )}
           </div>
 
           {/* Configuration Facturation */}
-          <div className="mt-6 rounded-lg border border-white/[0.08] bg-[#111111] p-4">
-            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/40">
+          <div className="mt-6 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-4">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
               <Receipt className="h-4 w-4" /> {lang === 'fr' ? 'Configuration Facturation' : 'Billing Configuration'}
             </h3>
 
             {/* Toggle Commission + Fixe */}
-            <div className="mb-4 rounded-lg border border-white/[0.08] bg-white/5 p-3">
+            <div className="mb-4 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-white">{lang === 'fr' ? 'Type de rémunération' : 'Compensation type'}</p>
-                  <p className="text-xs text-white/40 mt-0.5">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{lang === 'fr' ? 'Type de rémunération' : 'Compensation type'}</p>
+                  <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
                     {editedOffer.hasFixedFee ? (lang === 'fr' ? 'Commission + Fixe' : 'Commission + Fixed') : (lang === 'fr' ? 'Commission uniquement' : 'Commission only')}
                   </p>
                 </div>
                 {isEditing ? (
                   <button
                     onClick={() => setEditedOffer({ ...editedOffer, hasFixedFee: !editedOffer.hasFixedFee, fixedFeeAmount: editedOffer.hasFixedFee ? '' : (editedOffer.fixedFeeAmount || '') })}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editedOffer.hasFixedFee ? 'bg-emerald-500' : 'bg-white/10'
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editedOffer.hasFixedFee ? 'bg-sky-600' : 'bg-slate-100 dark:bg-white/10'
                       }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${editedOffer.hasFixedFee ? 'translate-x-6' : 'translate-x-1'
+                      className={`inline-block h-4 w-4 rounded-full bg-white dark:bg-[#1a1a1a] transition-transform ${editedOffer.hasFixedFee ? 'translate-x-6' : 'translate-x-1'
                         }`}
                     />
                   </button>
                 ) : (
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${offer.hasFixedFee
-                    ? 'bg-emerald-500/10 text-emerald-400'
-                    : 'bg-white/5 text-white/40'
+                    ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                    : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-neutral-500'
                     }`}>
                     {offer.hasFixedFee ? (lang === 'fr' ? 'Commission + Fixe' : 'Commission + Fixed') : 'Commission'}
                   </span>
@@ -1490,17 +1490,17 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               {/* Champ Montant Fixe (visible uniquement si activé) */}
               {editedOffer.hasFixedFee && (
                 <div className="mt-3">
-                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">{lang === 'fr' ? 'Montant Fixe (€)' : 'Fixed Amount (€)'}</label>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'Montant Fixe (€)' : 'Fixed Amount (€)'}</label>
                   {isEditing ? (
                     <input
                       type="number"
                       value={editedOffer.fixedFeeAmount || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, fixedFeeAmount: e.target.value })}
                       placeholder="Ex: 500"
-                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-emerald-400 font-bold placeholder-white/30 focus:border-emerald-500 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-sky-600 dark:text-sky-400 font-bold placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm font-bold text-emerald-400">{parseFloat(offer.fixedFeeAmount || '0').toLocaleString()}€</p>
+                    <p className="text-sm font-bold text-sky-600 dark:text-sky-400">{parseFloat(offer.fixedFeeAmount || '0').toLocaleString()}€</p>
                   )}
                 </div>
               )}
@@ -1509,121 +1509,121 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             <div className="space-y-4">
               {/* Raison Sociale */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">{lang === 'fr' ? 'Raison Sociale' : 'Company Name'}</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'Raison Sociale' : 'Company Name'}</label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={editedOffer.billingName || ''}
                     onChange={(e) => setEditedOffer({ ...editedOffer, billingName: e.target.value })}
                     placeholder="Ex: ACME SAS"
-                    className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:outline-none"
                   />
                 ) : (
-                  <p className="text-sm text-white/60">{offer.billingName || (lang === 'fr' ? 'Non définie' : 'Not defined')}</p>
+                  <p className="text-sm text-slate-500 dark:text-neutral-400">{offer.billingName || (lang === 'fr' ? 'Non définie' : 'Not defined')}</p>
                 )}
               </div>
 
               {/* Adresse */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">{lang === 'fr' ? 'Adresse' : 'Address'}</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'Adresse' : 'Address'}</label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={editedOffer.billingAddress || ''}
                     onChange={(e) => setEditedOffer({ ...editedOffer, billingAddress: e.target.value })}
                     placeholder="Ex: 123 Rue de la Paix"
-                    className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:outline-none"
                   />
                 ) : (
-                  <p className="text-sm text-white/60">{offer.billingAddress || (lang === 'fr' ? 'Non définie' : 'Not defined')}</p>
+                  <p className="text-sm text-slate-500 dark:text-neutral-400">{offer.billingAddress || (lang === 'fr' ? 'Non définie' : 'Not defined')}</p>
                 )}
               </div>
 
               {/* Ville / CP / Pays */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">{lang === 'fr' ? 'Ville' : 'City'}</label>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'Ville' : 'City'}</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={editedOffer.billingCity || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, billingCity: e.target.value })}
-                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm text-white/60">{offer.billingCity || '-'}</p>
+                    <p className="text-sm text-slate-500 dark:text-neutral-400">{offer.billingCity || '-'}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">{lang === 'fr' ? 'Code Postal' : 'Zip Code'}</label>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'Code Postal' : 'Zip Code'}</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={editedOffer.billingZip || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, billingZip: e.target.value })}
-                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm text-white/60">{offer.billingZip || '-'}</p>
+                    <p className="text-sm text-slate-500 dark:text-neutral-400">{offer.billingZip || '-'}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">{lang === 'fr' ? 'Pays' : 'Country'}</label>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'Pays' : 'Country'}</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={editedOffer.billingCountry || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, billingCountry: e.target.value })}
-                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm text-white/60">{offer.billingCountry || '-'}</p>
+                    <p className="text-sm text-slate-500 dark:text-neutral-400">{offer.billingCountry || '-'}</p>
                   )}
                 </div>
               </div>
 
               {/* SIRET */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">{lang === 'fr' ? 'SIRET / TVA' : 'SIRET / VAT'}</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'SIRET / TVA' : 'SIRET / VAT'}</label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={editedOffer.siret || ''}
                     onChange={(e) => setEditedOffer({ ...editedOffer, siret: e.target.value })}
                     placeholder="123 456 789 00012"
-                    className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:outline-none"
                   />
                 ) : (
-                  <p className="text-sm text-white/60 font-mono">{offer.siret || (lang === 'fr' ? 'Non défini' : 'Not defined')}</p>
+                  <p className="text-sm text-slate-500 dark:text-neutral-400 font-mono">{offer.siret || (lang === 'fr' ? 'Non défini' : 'Not defined')}</p>
                 )}
               </div>
 
               {/* Email / Tel */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">{lang === 'fr' ? 'Email Facturation' : 'Billing Email'}</label>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'Email Facturation' : 'Billing Email'}</label>
                   {isEditing ? (
                     <input
                       type="email"
                       value={editedOffer.billingEmail || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, billingEmail: e.target.value })}
-                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm text-white/60">{offer.billingEmail || '-'}</p>
+                    <p className="text-sm text-slate-500 dark:text-neutral-400">{offer.billingEmail || '-'}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-white/40 uppercase">{lang === 'fr' ? 'Téléphone' : 'Phone'}</label>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-400 dark:text-neutral-500 uppercase">{lang === 'fr' ? 'Téléphone' : 'Phone'}</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={editedOffer.billingPhone || ''}
                       onChange={(e) => setEditedOffer({ ...editedOffer, billingPhone: e.target.value })}
-                      className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                     />
                   ) : (
-                    <p className="text-sm text-white/60">{offer.billingPhone || '-'}</p>
+                    <p className="text-sm text-slate-500 dark:text-neutral-400">{offer.billingPhone || '-'}</p>
                   )}
                 </div>
               </div>
@@ -1631,19 +1631,19 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
 
           {/* --- CONFIGURATION CRM (SIMPLIFIÉE AVEC FORMULE PAR DÉFAUT) --- */}
-          <div className="mt-6 rounded-lg border border-white/[0.08] bg-[#111111] p-4">
-            <h3 className="mb-4 flex items-center flex-wrap gap-2 text-sm font-semibold uppercase tracking-wider text-white/40">
+          <div className="mt-6 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-4">
+            <h3 className="mb-4 flex items-center flex-wrap gap-2 text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
               <span className="flex items-center gap-2">
                 <Link className="h-4 w-4" /> {lang === 'fr' ? 'Synchronisation CRM' : 'CRM Synchronization'}
               </span>
-              <span className="ml-2 text-[10px] font-bold normal-case text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
+              <span className="ml-2 text-[10px] font-bold normal-case text-red-600 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
                 {lang === 'fr' ? "Note : Les leads précédents ne seront pas importés. Seuls les nouveaux à partir d'aujourd'hui seront synchronisés." : "Note: Previous leads will not be imported. Only new ones from today onward will be synced."}
               </span>
             </h3>
 
             {/* 1. CRM Settings */}
-            <div className="mb-10 rounded-[20px] border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md">
-              <label className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+            <div className="mb-10 rounded-[20px] border border-slate-200 dark:border-white/10 bg-slate-50/30 p-6 backdrop-blur-md">
+              <label className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-neutral-500">
                 <Database className="h-3 w-3" /> {lang === 'fr' ? 'Source de données (CRM)' : 'Data Source (CRM)'}
               </label>
               {isEditing ? (
@@ -1651,7 +1651,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <select
                     value={editedOffer.crmProvider || 'iclosed'}
                     onChange={(e) => setEditedOffer({ ...editedOffer, crmProvider: e.target.value as any })}
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
+                    className="w-full appearance-none rounded-xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-3 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none transition-all"
                   >
                     <option value="iclosed">iClosed</option>
                     <option value="hubspot">HubSpot</option>
@@ -1663,24 +1663,24 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <option value="make">Make</option>
                     <option value="n8n">n8n</option>
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-white/40">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 dark:text-neutral-500">
                     <ChevronDown className="h-4 w-4" />
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${offer.crmProvider === 'iclosed' ? 'bg-purple-500' :
+                  <div className={`h-2 w-2 rounded-full ${offer.crmProvider === 'iclosed' ? 'bg-sky-600' :
                     offer.crmProvider === 'hubspot' ? 'bg-orange-500' :
-                      offer.crmProvider === 'pipedrive' ? 'bg-green-500' :
-                        offer.crmProvider === 'gohighlevel' ? 'bg-teal-500' :
-                          offer.crmProvider === 'systemeio' ? 'bg-emerald-500' :
+                      offer.crmProvider === 'pipedrive' ? 'bg-sky-600' :
+                        offer.crmProvider === 'gohighlevel' ? 'bg-sky-600' :
+                          offer.crmProvider === 'systemeio' ? 'bg-sky-600' :
                             offer.crmProvider === 'airtable' ? 'bg-[#18BFFF]' :
                               offer.crmProvider === 'zapier' ? 'bg-[#FF4A00]' :
                                 offer.crmProvider === 'make' ? 'bg-[#6D00CC]' :
                                   offer.crmProvider === 'n8n' ? 'bg-[#EA4B71]' :
                                 'bg-white/40'
                     }`} />
-                  <p className="text-sm font-medium text-white capitalize">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white capitalize">
                     {offer.crmProvider === 'hubspot' ? 'HubSpot' :
                       offer.crmProvider === 'pipedrive' ? 'Pipedrive' :
                         offer.crmProvider === 'gohighlevel' ? 'GoHighLevel' :
@@ -1701,25 +1701,25 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 {!pipedriveConnected ? (
                   <button
                     onClick={handleConnectPipedrive}
-                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-green-600 py-2.5 text-sm font-bold text-white hover:bg-green-500 transition-all shadow-lg"
+                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-sky-600 py-2.5 text-sm font-bold text-white hover:bg-sky-600 transition-all shadow-lg"
                   >
                     <Link className="h-4 w-4" /> {lang === 'fr' ? 'Connecter Pipedrive' : 'Connect Pipedrive'}
                   </button>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg border border-green-500/20 bg-green-500/5 p-3">
+                    <div className="flex items-center justify-between rounded-lg border border-sky-500/20 bg-sky-500/5 p-3">
                       <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-400" />
-                        <span className="text-sm font-semibold text-green-400">{lang === 'fr' ? 'Pipedrive Connecté' : 'Pipedrive Connected'}</span>
+                        <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                        <span className="text-sm font-semibold text-sky-600 dark:text-sky-400">{lang === 'fr' ? 'Pipedrive Connecté' : 'Pipedrive Connected'}</span>
                       </div>
-                      <button onClick={handleDisconnectPipedrive} className="text-xs text-white/40 hover:text-white underline">{lang === 'fr' ? 'Déconnecter' : 'Disconnect'}</button>
+                      <button onClick={handleDisconnectPipedrive} className="text-xs text-slate-400 dark:text-neutral-500 hover:text-slate-900 underline">{lang === 'fr' ? 'Déconnecter' : 'Disconnect'}</button>
                     </div>
 
                     {/* Sync button */}
                     <button
                       onClick={handleSyncPipedrive}
                       disabled={isSyncingPipedrive}
-                      className="w-full flex items-center justify-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 py-2.5 text-sm font-semibold text-green-300 hover:bg-green-500/20 transition-all disabled:opacity-50"
+                      className="w-full flex items-center justify-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 py-2.5 text-sm font-semibold text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 transition-all disabled:opacity-50"
                     >
                       {isSyncingPipedrive ? (
                         <><Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Synchro en cours...' : 'Syncing...'}</>
@@ -1729,16 +1729,16 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     </button>
 
                     {/* Mapping UI */}
-                    <div className="rounded-lg border border-white/[0.08] bg-white/5 p-4">
-                      <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'Mapping des étapes Pipedrive' : 'Pipedrive Stage Mapping'}</h5>
+                    <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 p-4">
+                      <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Mapping des étapes Pipedrive' : 'Pipedrive Stage Mapping'}</h5>
                       <div className="space-y-4">
                         {allStages.map(stage => (
                           <div key={stage.id}>
-                            <label className="mb-1.5 block text-[10px] font-bold uppercase text-white/40">{stage.name}</label>
+                            <label className="mb-1.5 block text-[10px] font-bold uppercase text-slate-400 dark:text-neutral-500">{stage.name}</label>
                             <select
                               value={pipedriveMappings[stage.id] || ''}
                               onChange={(e) => handleUpdatePipedriveMapping(stage.id, Number(e.target.value))}
-                              className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-green-500 focus:outline-none"
+                              className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                             >
                               <option value="">{lang === 'fr' ? 'Sélectionner une étape Pipedrive' : 'Select a Pipedrive stage'}</option>
                               {pipedrivePipelines.map(pipe => (
@@ -1756,7 +1756,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                     {/* Sync result */}
                     {pipedriveSyncResult && (
-                      <div className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-300">
+                      <div className="rounded border border-sky-500/20 bg-sky-500/10 p-2 text-xs text-sky-700 dark:text-sky-400">
                         {lang === 'fr' ? `✅ ${pipedriveSyncResult.imported} deals importés, ${pipedriveSyncResult.updated} mis à jour` : `✅ ${pipedriveSyncResult.imported} deals imported, ${pipedriveSyncResult.updated} updated`}
                       </div>
                     )}
@@ -1771,25 +1771,25 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 {!ghlConnected ? (
                   <button
                     onClick={handleConnectGhl}
-                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-teal-600 py-2.5 text-sm font-bold text-white hover:bg-teal-500 transition-all shadow-lg"
+                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-sky-600 py-2.5 text-sm font-bold text-white hover:bg-sky-600 transition-all shadow-lg"
                   >
                     <Link className="h-4 w-4" /> {lang === 'fr' ? 'Connecter GoHighLevel' : 'Connect GoHighLevel'}
                   </button>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg border border-teal-500/20 bg-teal-500/5 p-3">
+                    <div className="flex items-center justify-between rounded-lg border border-sky-500/20 bg-sky-500/5 p-3">
                       <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-teal-400" />
-                        <span className="text-sm font-semibold text-teal-400">{lang === 'fr' ? 'GoHighLevel Connecté' : 'GoHighLevel Connected'}</span>
+                        <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                        <span className="text-sm font-semibold text-sky-600 dark:text-sky-400">{lang === 'fr' ? 'GoHighLevel Connecté' : 'GoHighLevel Connected'}</span>
                       </div>
-                      <button onClick={handleDisconnectGhl} className="text-xs text-white/40 hover:text-white underline">{lang === 'fr' ? 'Déconnecter' : 'Disconnect'}</button>
+                      <button onClick={handleDisconnectGhl} className="text-xs text-slate-400 dark:text-neutral-500 hover:text-slate-900 underline">{lang === 'fr' ? 'Déconnecter' : 'Disconnect'}</button>
                     </div>
 
                     {/* Sync button */}
                     <button
                       onClick={handleSyncGhl}
                       disabled={isSyncingGhl}
-                      className="w-full flex items-center justify-center gap-2 rounded-lg border border-teal-500/30 bg-teal-500/10 py-2.5 text-sm font-semibold text-teal-300 hover:bg-teal-500/20 transition-all disabled:opacity-50"
+                      className="w-full flex items-center justify-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 py-2.5 text-sm font-semibold text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 transition-all disabled:opacity-50"
                     >
                       {isSyncingGhl ? (
                         <><Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Synchro en cours...' : 'Syncing...'}</>
@@ -1800,19 +1800,19 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                     {/* Pipeline selection */}
                     {isEditing && (
-                      <div className="rounded-lg border border-white/[0.08] bg-white/5 p-4">
-                        <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'Pipeline GoHighLevel' : 'GoHighLevel Pipeline'}</h5>
+                      <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 p-4">
+                        <h5 className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Pipeline GoHighLevel' : 'GoHighLevel Pipeline'}</h5>
 
                         {/* Select Pipeline */}
                         <div className="mb-4">
-                          <label className="mb-1.5 block text-[10px] font-bold uppercase text-white/40">Pipeline</label>
+                          <label className="mb-1.5 block text-[10px] font-bold uppercase text-slate-400 dark:text-neutral-500">Pipeline</label>
                           <select
                             value={editedOffer.crmMapping?.ghlPipelineId || ''}
                             onChange={(e) => setEditedOffer({
                               ...editedOffer,
                               crmMapping: { ...editedOffer.crmMapping, ghlPipelineId: e.target.value }
                             })}
-                            className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-teal-500 focus:outline-none"
+                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                           >
                             <option value="">{lang === 'fr' ? 'Sélectionner un pipeline' : 'Select a pipeline'}</option>
                             {ghlPipelines.map(p => (
@@ -1824,14 +1824,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         {/* Stage Mapping */}
                         {editedOffer.crmMapping?.ghlPipelineId && (
                           <div className="space-y-4">
-                            <h5 className="text-xs font-bold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'Mapping des étapes' : 'Stage Mapping'}</h5>
+                            <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Mapping des étapes' : 'Stage Mapping'}</h5>
                             {allStages.map(stage => (
                               <div key={stage.id}>
-                                <label className="mb-1.5 block text-[10px] font-bold uppercase text-white/40">{stage.name}</label>
+                                <label className="mb-1.5 block text-[10px] font-bold uppercase text-slate-400 dark:text-neutral-500">{stage.name}</label>
                                 <select
                                   value={editedOffer.crmMapping?.[stage.id] || ''}
                                   onChange={(e) => handleUpdateGhlMapping(stage.id, e.target.value)}
-                                  className="w-full rounded-lg border border-white/[0.08] bg-white/5 px-3 py-2 text-sm text-white focus:border-teal-500 focus:outline-none"
+                                  className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                                 >
                                   <option value="">{lang === 'fr' ? 'Sélectionner une étape GHL' : 'Select a GHL stage'}</option>
                                   {ghlStages
@@ -1850,12 +1850,12 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                     {/* Sync result */}
                     {ghlSyncResult && (
-                      <div className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-300">
+                      <div className="rounded border border-sky-500/20 bg-sky-500/10 p-2 text-xs text-sky-700 dark:text-sky-400">
                         {lang === 'fr' ? `${ghlSyncResult.imported} contacts importés, ${ghlSyncResult.updated} mis à jour` : `${ghlSyncResult.imported} contacts imported, ${ghlSyncResult.updated} updated`}
                       </div>
                     )}
 
-                    <p className="text-[10px] text-teal-300/60">
+                    <p className="text-[10px] text-sky-600/60">
                       {lang === 'fr'
                         ? "La synchronisation importe tous les contacts et opportunités GoHighLevel dans le pipeline de cette offre. Les changements de statut sont synchronisés dans les deux sens."
                         : "Synchronization imports all GoHighLevel contacts and opportunities into this offer's pipeline. Status changes are synced both ways."}
@@ -1866,8 +1866,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             )}
 
             {/* 2. SÉLECTION DE LA FORMULE PAR DÉFAUT (NOUVEAU) */}
-            <div className="mb-10 rounded-[20px] border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md">
-              <label className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+            <div className="mb-10 rounded-[20px] border border-slate-200 dark:border-white/10 bg-slate-50/30 p-6 backdrop-blur-md">
+              <label className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-neutral-500">
                 <BoxSelect className="h-3 w-3" /> {lang === 'fr' ? 'Formule par défaut (Prospects Entrants)' : 'Default Formula (Incoming Prospects)'}
               </label>
               {isEditing ? (
@@ -1875,7 +1875,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <select
                     value={editedOffer.defaultFormulaId || ''}
                     onChange={(e) => setEditedOffer({ ...editedOffer, defaultFormulaId: e.target.value })}
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
+                    className="w-full appearance-none rounded-xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-3 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none transition-all"
                   >
                     <option value="">{lang === 'fr' ? '-- Aucune formule (ou 1ère par défaut) --' : '-- No formula (or 1st by default) --'}</option>
                     {(editedOffer.formulas || []).map((f) => (
@@ -1884,19 +1884,19 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       </option>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-white/40">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 dark:text-neutral-500">
                     <ChevronDown className="h-4 w-4" />
                   </div>
                 </div>
               ) : (
-                <div className="rounded-xl border border-white/5 bg-[#111111]/50 px-4 py-3 text-sm text-white/60 font-medium">
+                <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-3 text-sm text-slate-500 dark:text-neutral-400 font-medium">
                   {editedOffer.defaultFormulaId
                     ? (editedOffer.formulas?.find(f => f.id === editedOffer.defaultFormulaId)?.name || (lang === 'fr' ? 'Formule introuvable' : 'Formula not found'))
-                    : <span className="text-white/40 italic">{lang === 'fr' ? 'Aucune sélectionnée (par défaut)' : 'None selected (default)'}</span>
+                    : <span className="text-slate-400 dark:text-neutral-500 italic">{lang === 'fr' ? 'Aucune sélectionnée (par défaut)' : 'None selected (default)'}</span>
                   }
                 </div>
               )}
-              <p className="mt-3 text-[10px] text-white/40 font-medium leading-relaxed">
+              <p className="mt-3 text-[10px] text-slate-400 dark:text-neutral-500 font-medium leading-relaxed">
                 {lang === 'fr' ? 'Cette formule sera automatiquement assignée aux prospects arrivant via le Webhook ci-dessous.' : 'This formula will be automatically assigned to prospects arriving via the Webhook below.'}
               </p>
             </div>
@@ -1907,18 +1907,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
               /* --- HUBSPOT CONFIG --- */
               <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-3">
                 <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-orange-400 mt-0.5" />
+                  <Info className="h-5 w-5 text-orange-600 mt-0.5" />
                   <div className="flex-1">
                     <h4 className="text-sm font-semibold text-orange-100">{lang === 'fr' ? 'Configuration HubSpot' : 'HubSpot Configuration'}</h4>
 
                     {!hubspotConnected ? (
                       <div className="mt-3">
-                        <p className="text-xs text-orange-300/80 leading-relaxed mb-3">
+                        <p className="text-xs text-orange-600/80 leading-relaxed mb-3">
                           {lang === 'fr' ? 'Connectez votre compte HubSpot pour synchroniser automatiquement vos contacts et deals.' : 'Connect your HubSpot account to automatically sync your contacts and deals.'}
                         </p>
                         <button
                           onClick={handleConnectHubspot}
-                          className="w-full flex justify-center items-center gap-2 rounded-xl bg-orange-600 py-3 text-sm font-bold text-white hover:bg-orange-700 transition-all shadow-lg"
+                          className="w-full flex justify-center items-center gap-2 rounded-xl bg-orange-600 py-3 text-sm font-bold text-slate-900 dark:text-white hover:bg-orange-700 transition-all shadow-lg"
                         >
                           <ExternalLink className="h-4 w-4" />
                           {lang === 'fr' ? 'Connecter HubSpot' : 'Connect HubSpot'}
@@ -1927,19 +1927,19 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     ) : (
                       <div className="mt-3 space-y-3">
                         {/* Connected status */}
-                        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2">
+                        <div className="flex items-center justify-between rounded-lg border border-sky-500/20 bg-sky-500/10 p-2">
                           <div className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-emerald-400" />
-                            <span className="text-sm font-semibold text-emerald-400">{lang === 'fr' ? 'HubSpot Connecté' : 'HubSpot Connected'}</span>
+                            <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                            <span className="text-sm font-semibold text-sky-600 dark:text-sky-400">{lang === 'fr' ? 'HubSpot Connecté' : 'HubSpot Connected'}</span>
                           </div>
-                          <button onClick={handleDisconnectHubspot} className="text-xs text-white/40 hover:text-white underline">{lang === 'fr' ? 'Déconnecter' : 'Disconnect'}</button>
+                          <button onClick={handleDisconnectHubspot} className="text-xs text-slate-400 dark:text-neutral-500 hover:text-slate-900 underline">{lang === 'fr' ? 'Déconnecter' : 'Disconnect'}</button>
                         </div>
 
                         {/* Sync button */}
                         <button
                           onClick={handleSyncHubspot}
                           disabled={isSyncingHubspot}
-                          className="w-full flex items-center justify-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-300 hover:bg-orange-500/20 transition-all disabled:opacity-50"
+                          className="w-full flex items-center justify-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-600 hover:bg-orange-500/20 transition-all disabled:opacity-50"
                         >
                           {isSyncingHubspot ? (
                             <><Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Synchronisation en cours...' : 'Syncing...'}</>
@@ -1950,12 +1950,12 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                         {/* Sync result */}
                         {hubspotSyncResult && (
-                          <div className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-300">
+                          <div className="rounded border border-sky-500/20 bg-sky-500/10 p-2 text-xs text-sky-700 dark:text-sky-400">
                             {lang === 'fr' ? `✅ ${hubspotSyncResult.imported} contacts importés, ${hubspotSyncResult.updated} mis à jour` : `✅ ${hubspotSyncResult.imported} contacts imported, ${hubspotSyncResult.updated} updated`}
                           </div>
                         )}
 
-                        <p className="text-[10px] text-orange-300/60">
+                        <p className="text-[10px] text-orange-600/60">
                           {lang === 'fr'
                             ? "La synchronisation importe tous les contacts HubSpot dans le pipeline de cette offre. Les changements de statut sont synchronisés dans les deux sens."
                             : "Synchronization imports all HubSpot contacts into this offer's pipeline. Status changes are synced both ways."}
@@ -1966,10 +1966,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     {/* --- MAPPING PERSONNALISÉ HUBSPOT --- */}
                     {isEditing && (
                       <div className="mt-6 border-t border-orange-500/20 pt-4">
-                        <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-orange-400">
+                        <h5 className="mb-3 text-xs font-semibold uppercase tracking-wider text-orange-600">
                           {lang === 'fr' ? 'Mapping Personnalisé (Statuts HubSpot)' : 'Custom Mapping (HubSpot Statuses)'}
                         </h5>
-                        <p className="mb-4 text-[10px] text-orange-300/80 leading-relaxed">
+                        <p className="mb-4 text-[10px] text-orange-600/80 leading-relaxed">
                           {lang === 'fr'
                             ? <>Par défaut, CloseOS gère automatiquement les statuts classiques. Pour les étapes <strong>Gagné</strong> et <strong>No Show</strong>, indiquez la valeur exacte du <em>Statut du lead</em> (ou de l&apos;<em>Étape du cycle de vie</em>) configurée dans votre HubSpot.</>
                             : <>By default, CloseOS automatically handles standard statuses. For <strong>Won</strong> and <strong>No Show</strong> stages, enter the exact value of the <em>Lead Status</em> (or <em>Lifecycle Stage</em>) configured in your HubSpot.</>}
@@ -1977,7 +1977,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                         <div className="space-y-4">
                           <div>
-                            <label className="mb-1.5 block text-xs font-medium text-orange-300">
+                            <label className="mb-1.5 block text-xs font-medium text-orange-600">
                               {lang === 'fr' ? 'Statut pour "Gagné" (ex: Client, Gagné)' : 'Status for "Won" (e.g.: Client, Won)'}
                             </label>
                             <input
@@ -1993,7 +1993,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           </div>
 
                           <div>
-                            <label className="mb-1.5 block text-xs font-medium text-orange-300">
+                            <label className="mb-1.5 block text-xs font-medium text-orange-600">
                               {lang === 'fr' ? 'Statut pour "No Show" (ex: No Show, Autre)' : 'Status for "No Show" (e.g.: No Show, Other)'}
                             </label>
                             <input
@@ -2018,17 +2018,17 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
             {(editedOffer.crmProvider === 'iclosed' || !editedOffer.crmProvider) && (
               <div className="space-y-4">
                 {/* ─── 1. Inbound (iClosed → CloseOS) ─── */}
-                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
-                  <h4 className="text-sm font-semibold text-emerald-100 flex items-center gap-2">
+                <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-4">
+                  <h4 className="text-sm font-semibold text-sky-700 dark:text-sky-400 flex items-center gap-2">
                     <Database className="h-4 w-4" /> {lang === 'fr' ? 'Inbound (iClosed → CloseOS)' : 'Inbound (iClosed → CloseOS)'}
                   </h4>
-                  <p className="mt-1 text-xs text-emerald-300/80 leading-relaxed">
+                  <p className="mt-1 text-xs text-sky-700/80 leading-relaxed">
                     {lang === 'fr'
                       ? <>Dans <strong>iClosed &gt; Settings &gt; Developer &gt; Webhooks</strong>, cliquez sur <em>Add Webhook</em> et collez cette URL. iClosed enverra les nouveaux contacts et les changements de stage à CloseOS.</>
                       : <>In <strong>iClosed &gt; Settings &gt; Developer &gt; Webhooks</strong>, click <em>Add Webhook</em> and paste this URL. iClosed will send new contacts and stage changes to CloseOS.</>}
                   </p>
 
-                  <div className="mt-2 flex items-start gap-2 rounded border border-orange-500/20 bg-orange-500/10 p-2 text-[11px] text-orange-300">
+                  <div className="mt-2 flex items-start gap-2 rounded border border-orange-500/20 bg-orange-500/10 p-2 text-[11px] text-orange-600">
                     <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
                     <span>
                       {lang === 'fr'
@@ -2038,31 +2038,31 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   </div>
 
                   <div className="mt-3">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500 mb-1">
                       {lang === 'fr' ? 'URL du webhook' : 'Webhook URL'}
                     </label>
                     {iclosedInboundUrl ? (
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 rounded border border-emerald-500/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
+                        <div className="flex-1 rounded border border-sky-500/10 bg-white dark:bg-[#1a1a1a] p-2 font-mono text-xs text-slate-400 dark:text-neutral-500 overflow-x-auto whitespace-nowrap">
                           {iclosedInboundUrl}
                         </div>
                         <button
                           onClick={() => { navigator.clipboard.writeText(iclosedInboundUrl); setIclosedCopiedUrl(true); setTimeout(() => setIclosedCopiedUrl(false), 1500); }}
-                          className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
+                          className="rounded p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                           title={lang === 'fr' ? "Copier l'URL" : 'Copy URL'}
                         >
-                          {iclosedCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                          {iclosedCopiedUrl ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}
                         </button>
                       </div>
                     ) : (
-                      <p className="text-[11px] text-white/50">
+                      <p className="text-[11px] text-slate-500 dark:text-neutral-400">
                         {lang === 'fr' ? 'Générez une clé inbound pour activer le webhook.' : 'Generate an inbound key to activate the webhook.'}
                       </p>
                     )}
                     <button
                       onClick={handleRegenerateIclosedInboundKey}
                       disabled={iclosedRegenerating}
-                      className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-white/60 hover:text-white"
+                      className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-neutral-400 hover:text-slate-900"
                     >
                       {iclosedRegenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                       {editedOffer.crmApiKey
@@ -2073,18 +2073,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 </div>
 
                 {/* ─── 2. Outbound (CloseOS → iClosed) ─── */}
-                <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-4">
-                  <h4 className="text-sm font-semibold text-purple-100 flex items-center gap-2">
+                <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-4">
+                  <h4 className="text-sm font-semibold text-sky-700 dark:text-sky-400 flex items-center gap-2">
                     <Zap className="h-4 w-4" /> {lang === 'fr' ? 'Outbound (CloseOS → iClosed)' : 'Outbound (CloseOS → iClosed)'}
                   </h4>
-                  <p className="mt-1 text-xs text-purple-300/80 leading-relaxed">
+                  <p className="mt-1 text-xs text-sky-600/80 leading-relaxed">
                     {lang === 'fr'
                       ? <>Collez votre <strong>clé API iClosed personnelle</strong> (commence par <code>iclosed_</code>) pour pousser les changements de stage CloseOS vers iClosed.</>
                       : <>Paste your <strong>personal iClosed API key</strong> (starts with <code>iclosed_</code>) so CloseOS stage changes flow back to iClosed.</>}
                   </p>
 
                   <div className="mt-3">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500 mb-1">
                       {lang === 'fr' ? 'Clé API iClosed' : 'iClosed API key'}
                     </label>
                     <div className="flex items-center gap-2">
@@ -2095,12 +2095,12 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           onChange={(e) => setEditedOffer({ ...editedOffer, iclosedPushKey: e.target.value })}
                           placeholder="iclosed_..."
                           disabled={!isEditing}
-                          className="w-full rounded border border-white/[0.08] bg-[#111111] px-3 py-2 pr-9 font-mono text-xs text-white focus:border-purple-500 focus:outline-none disabled:opacity-60"
+                          className="w-full rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2 pr-9 font-mono text-xs text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none disabled:opacity-60"
                         />
                         <button
                           type="button"
                           onClick={() => setIclosedShowPushKey(!iclosedShowPushKey)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 hover:text-slate-900"
                         >
                           {iclosedShowPushKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                         </button>
@@ -2108,10 +2108,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       {editedOffer.iclosedPushKey && (
                         <button
                           onClick={() => { navigator.clipboard.writeText(editedOffer.iclosedPushKey || ''); setIclosedCopiedKey(true); setTimeout(() => setIclosedCopiedKey(false), 1500); }}
-                          className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white"
+                          className="rounded p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900"
                           title={lang === 'fr' ? 'Copier' : 'Copy'}
                         >
-                          {iclosedCopiedKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                          {iclosedCopiedKey ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}
                         </button>
                       )}
                     </div>
@@ -2120,13 +2120,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <button
                     onClick={handleTestIclosedPushKey}
                     disabled={iclosedTesting}
-                    className="mt-3 inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-xs font-bold text-purple-300 hover:bg-purple-500/20 disabled:opacity-50"
+                    className="mt-3 inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-2 text-xs font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 disabled:opacity-50"
                   >
                     {iclosedTesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
                     {lang === 'fr' ? 'Tester la connexion' : 'Test connection'}
                   </button>
 
-                  <p className="mt-3 text-[10px] text-white/40">
+                  <p className="mt-3 text-[10px] text-slate-400 dark:text-neutral-500">
                     {lang === 'fr'
                       ? <>Trouvez cette clé dans <strong>iClosed → Settings → Developer → API Keys → Create API Key</strong>. Plan Business ou Enterprise iClosed requis.</>
                       : <>Find this key in <strong>iClosed → Settings → Developer → API Keys → Create API Key</strong>. Requires an iClosed Business or Enterprise plan.</>}
@@ -2134,11 +2134,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 </div>
 
                 {/* ─── 3. Stage mapping ─── */}
-                <div className="rounded-lg border border-white/[0.08] bg-white/[0.03] p-4">
-                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+                  <h4 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                     <Tag className="h-4 w-4" /> {lang === 'fr' ? 'Mapping des stages personnalisés' : 'Custom stage mapping'}
                   </h4>
-                  <p className="mt-1 text-xs text-white/50">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
                     {lang === 'fr'
                       ? <>Les stages standards (Customer, No Show, Qualified...) sont reconnus automatiquement. Si vous avez des stages <strong>personnalisés</strong> dans iClosed, mappez-les ici.</>
                       : <>Standard iClosed stages (Customer, No Show, Qualified...) are auto-recognised. Map any <strong>custom</strong> iClosed stage to a CloseOS stage here.</>}
@@ -2146,7 +2146,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                   <div className="mt-3 space-y-2">
                     {iclosedMappingRows.length === 0 && (
-                      <p className="text-[11px] italic text-white/40">{lang === 'fr' ? 'Aucun mapping personnalisé.' : 'No custom mapping.'}</p>
+                      <p className="text-[11px] italic text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Aucun mapping personnalisé.' : 'No custom mapping.'}</p>
                     )}
                     {iclosedMappingRows.map((m, i) => (
                       <div key={i} className="flex items-center gap-2">
@@ -2156,14 +2156,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           onChange={(e) => handleUpdateIclosedMappingRow(i, 'name', e.target.value)}
                           placeholder={lang === 'fr' ? 'Nom du stage iClosed' : 'iClosed stage name'}
                           disabled={!isEditing}
-                          className="flex-1 rounded border border-white/[0.08] bg-[#111111] px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none disabled:opacity-60"
+                          className="flex-1 rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2 text-xs text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none disabled:opacity-60"
                         />
-                        <span className="text-white/40">→</span>
+                        <span className="text-slate-400 dark:text-neutral-500">→</span>
                         <select
                           value={m.stage}
                           onChange={(e) => handleUpdateIclosedMappingRow(i, 'stage', e.target.value)}
                           disabled={!isEditing}
-                          className="rounded border border-white/[0.08] bg-[#111111] px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none disabled:opacity-60"
+                          className="rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3 py-2 text-xs text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none disabled:opacity-60"
                         >
                           <option value="prospect">Prospect</option>
                           <option value="qualified">Qualified</option>
@@ -2175,7 +2175,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         {isEditing && (
                           <button
                             onClick={() => handleRemoveIclosedMappingRow(i)}
-                            className="rounded p-2 text-white/40 hover:text-red-400"
+                            className="rounded p-2 text-slate-400 dark:text-neutral-500 hover:text-red-600"
                             title={lang === 'fr' ? 'Supprimer' : 'Remove'}
                           >
                             <Trash2 className="h-3 w-3" />
@@ -2189,13 +2189,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     <div className="mt-3 flex gap-2">
                       <button
                         onClick={handleAddIclosedMappingRow}
-                        className="rounded-full border border-white/[0.12] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-white/5"
+                        className="rounded-full border border-slate-200 dark:border-white/10 px-3 py-1.5 text-[11px] font-bold text-slate-900 dark:text-white hover:bg-slate-100"
                       >
                         + {lang === 'fr' ? 'Ajouter un mapping' : 'Add mapping'}
                       </button>
                       <button
                         onClick={handleSaveIclosedMapping}
-                        className="rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-white/20"
+                        className="rounded-full bg-slate-100 dark:bg-white/10 px-3 py-1.5 text-[11px] font-bold text-slate-900 dark:text-white hover:bg-slate-100"
                       >
                         {lang === 'fr' ? 'Appliquer le mapping' : 'Apply mapping'}
                       </button>
@@ -2204,11 +2204,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 </div>
 
                 {/* ─── 4. Sync now ─── */}
-                <div className="rounded-lg border border-white/[0.08] bg-white/[0.03] p-4">
-                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+                  <h4 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                     <RefreshCw className="h-4 w-4" /> {lang === 'fr' ? 'Synchronisation initiale' : 'Initial sync'}
                   </h4>
-                  <p className="mt-1 text-xs text-white/50">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
                     {lang === 'fr'
                       ? 'Importer les contacts et RDV iClosed existants dans cette offre. Idempotent : les exécutions suivantes ne réimportent que les nouveautés.'
                       : 'Import existing iClosed contacts and event calls into this offer. Idempotent: subsequent runs only pull new items.'}
@@ -2216,13 +2216,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                   <button
                     onClick={handleSyncIclosedNow}
                     disabled={iclosedSyncing || !editedOffer.iclosedPushKey || !(editedOffer.iclosedPushKey || '').startsWith('iclosed_')}
-                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-xs font-bold text-white hover:bg-sky-600 disabled:opacity-50"
                   >
                     {iclosedSyncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                     {lang === 'fr' ? 'Synchroniser maintenant' : 'Sync now'}
                   </button>
                   {iclosedSyncResult && (
-                    <p className="mt-2 text-[11px] font-semibold text-emerald-400">
+                    <p className="mt-2 text-[11px] font-semibold text-sky-600 dark:text-sky-400">
                       ✓ {iclosedSyncResult.imported} {lang === 'fr' ? 'importés' : 'imported'}, {iclosedSyncResult.updated} {lang === 'fr' ? 'mis à jour' : 'updated'}
                     </p>
                   )}
@@ -2232,22 +2232,22 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
             {/* --- SYSTEME.IO CONFIG --- */}
             {editedOffer.crmProvider === 'systemeio' && (
-              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+              <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-3">
                 <div className="flex items-start gap-3">
-                  <ExternalLink className="h-5 w-5 text-emerald-400 mt-0.5" />
+                  <ExternalLink className="h-5 w-5 text-sky-600 dark:text-sky-400 mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-emerald-100">{lang === 'fr' ? 'Configuration Systeme.io' : 'Systeme.io Configuration'}</h4>
+                    <h4 className="text-sm font-semibold text-sky-700 dark:text-sky-400">{lang === 'fr' ? 'Configuration Systeme.io' : 'Systeme.io Configuration'}</h4>
 
                     {/* API Key */}
                     <div className="mt-3 space-y-3">
                       <div>
-                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
                           {lang === 'fr' ? 'Clé API Systeme.io' : 'Systeme.io API Key'}
                         </label>
-                        <p className="text-[11px] text-white/40 mb-2">
+                        <p className="text-[11px] text-slate-400 dark:text-neutral-500 mb-2">
                           {lang === 'fr'
-                            ? <>Trouvez votre clé dans <strong className="text-white/60">Systeme.io &rarr; Paramètres &rarr; Clés API publiques</strong></>
-                            : <>Find your key in <strong className="text-white/60">Systeme.io &rarr; Settings &rarr; Public API Keys</strong></>}
+                            ? <>Trouvez votre clé dans <strong className="text-slate-500 dark:text-neutral-400">Systeme.io &rarr; Paramètres &rarr; Clés API publiques</strong></>
+                            : <>Find your key in <strong className="text-slate-500 dark:text-neutral-400">Systeme.io &rarr; Settings &rarr; Public API Keys</strong></>}
                         </p>
                         <div className="flex items-center gap-2">
                           <div className="relative flex-1">
@@ -2256,11 +2256,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                               value={systemeioApiKey}
                               onChange={(e) => setSystemeioApiKey(e.target.value)}
                               placeholder={lang === 'fr' ? 'Collez votre clé API ici' : 'Paste your API key here'}
-                              className="w-full rounded border border-emerald-500/10 bg-[#111111] p-2 pr-8 font-mono text-xs text-white/40 placeholder:text-white/30"
+                              className="w-full rounded border border-sky-500/10 bg-white dark:bg-[#1a1a1a] p-2 pr-8 font-mono text-xs text-slate-400 dark:text-neutral-500 placeholder:text-slate-400 dark:placeholder:text-neutral-500"
                             />
                             <button
                               onClick={() => setSystemeioShowKey(!systemeioShowKey)}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 hover:text-slate-500"
                             >
                               {systemeioShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                             </button>
@@ -2268,7 +2268,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                           <button
                             onClick={handleSaveSystemeioKey}
                             disabled={systemeioSaving}
-                            className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-400 transition-all disabled:opacity-50"
+                            className="rounded-lg bg-sky-600 px-3 py-2 text-xs font-bold text-white hover:bg-sky-600 transition-all disabled:opacity-50"
                           >
                             {systemeioSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                           </button>
@@ -2277,14 +2277,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                       {/* Webhook URL */}
                       <div>
-                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'URL du Webhook' : 'Webhook URL'}</label>
-                        <p className="text-[11px] text-white/40 mb-2">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'URL du Webhook' : 'Webhook URL'}</label>
+                        <p className="text-[11px] text-slate-400 dark:text-neutral-500 mb-2">
                           {lang === 'fr'
-                            ? <>Collez cette URL dans <strong className="text-white/60">Systeme.io &rarr; Paramètres &rarr; Webhooks</strong></>
-                            : <>Paste this URL in <strong className="text-white/60">Systeme.io &rarr; Settings &rarr; Webhooks</strong></>}
+                            ? <>Collez cette URL dans <strong className="text-slate-500 dark:text-neutral-400">Systeme.io &rarr; Paramètres &rarr; Webhooks</strong></>
+                            : <>Paste this URL in <strong className="text-slate-500 dark:text-neutral-400">Systeme.io &rarr; Settings &rarr; Webhooks</strong></>}
                         </p>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 rounded border border-emerald-500/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
+                          <div className="flex-1 rounded border border-sky-500/10 bg-white dark:bg-[#1a1a1a] p-2 font-mono text-xs text-slate-400 dark:text-neutral-500 overflow-x-auto whitespace-nowrap">
                             {systemeioWebhookUrl}
                           </div>
                           <button
@@ -2293,45 +2293,45 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                               setSystemeioCopiedUrl(true)
                               setTimeout(() => setSystemeioCopiedUrl(false), 2000)
                             }}
-                            className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
+                            className="rounded p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                           >
-                            {systemeioCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                            {systemeioCopiedUrl ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}
                           </button>
                         </div>
                         {editedOffer.defaultFormulaId && (
-                          <p className="mt-1 text-[10px] text-emerald-400/80 flex items-center gap-1">
+                          <p className="mt-1 text-[10px] text-sky-600/80 flex items-center gap-1">
                             <Check className="h-3 w-3" /> {lang === 'fr' ? "L'ID de la formule a été ajouté à l'URL." : 'The formula ID has been added to the URL.'}
                           </p>
                         )}
                       </div>
 
                       {/* Instructions */}
-                      <div className="rounded-lg border border-white/5 bg-[#111111]/50 p-3">
-                        <h5 className="mb-2 text-xs font-bold text-white/60">{lang === 'fr' ? 'Comment configurer :' : 'How to configure:'}</h5>
-                        <ol className="text-[11px] text-white/40 space-y-1.5 list-decimal list-inside">
+                      <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-1000 p-3">
+                        <h5 className="mb-2 text-xs font-bold text-slate-500 dark:text-neutral-400">{lang === 'fr' ? 'Comment configurer :' : 'How to configure:'}</h5>
+                        <ol className="text-[11px] text-slate-400 dark:text-neutral-500 space-y-1.5 list-decimal list-inside">
                           {lang === 'fr' ? (
                             <>
-                              <li>Allez dans <strong className="text-white/40">Systeme.io &rarr; Paramètres &rarr; Clés API publiques</strong> et copiez votre clé</li>
+                              <li>Allez dans <strong className="text-slate-400 dark:text-neutral-500">Systeme.io &rarr; Paramètres &rarr; Clés API publiques</strong> et copiez votre clé</li>
                               <li>Collez la clé API ci-dessus et cliquez sur Sauvegarder</li>
-                              <li>Allez dans <strong className="text-white/40">Systeme.io &rarr; Paramètres &rarr; Webhooks</strong></li>
+                              <li>Allez dans <strong className="text-slate-400 dark:text-neutral-500">Systeme.io &rarr; Paramètres &rarr; Webhooks</strong></li>
                               <li>Ajoutez un webhook avec l&apos;URL ci-dessus</li>
-                              <li>Sélectionnez les événements : <strong className="text-white/40">Opt-in</strong> et/ou <strong className="text-white/40">Nouvelle vente</strong></li>
+                              <li>Sélectionnez les événements : <strong className="text-slate-400 dark:text-neutral-500">Opt-in</strong> et/ou <strong className="text-slate-400 dark:text-neutral-500">Nouvelle vente</strong></li>
                             </>
                           ) : (
                             <>
-                              <li>Go to <strong className="text-white/40">Systeme.io &rarr; Settings &rarr; Public API Keys</strong> and copy your key</li>
+                              <li>Go to <strong className="text-slate-400 dark:text-neutral-500">Systeme.io &rarr; Settings &rarr; Public API Keys</strong> and copy your key</li>
                               <li>Paste the API key above and click Save</li>
-                              <li>Go to <strong className="text-white/40">Systeme.io &rarr; Settings &rarr; Webhooks</strong></li>
+                              <li>Go to <strong className="text-slate-400 dark:text-neutral-500">Systeme.io &rarr; Settings &rarr; Webhooks</strong></li>
                               <li>Add a webhook with the URL above</li>
-                              <li>Select events: <strong className="text-white/40">Opt-in</strong> and/or <strong className="text-white/40">New sale</strong></li>
+                              <li>Select events: <strong className="text-slate-400 dark:text-neutral-500">Opt-in</strong> and/or <strong className="text-slate-400 dark:text-neutral-500">New sale</strong></li>
                             </>
                           )}
                         </ol>
                       </div>
 
                       {/* Sync info */}
-                      <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/5 p-2">
-                        <p className="text-[10px] text-emerald-400/80">
+                      <div className="rounded-lg border border-sky-500/10 bg-sky-500/5 p-2">
+                        <p className="text-[10px] text-sky-600/80">
                           {lang === 'fr' ? (
                             <><strong>Webhook :</strong> Chaque opt-in ou vente dans Systeme.io crée automatiquement un prospect.<br /><strong>Sync retour :</strong> Les changements de stage dans CloseOS mettent à jour les tags du contact dans Systeme.io (ex: CloseOS-Qualifié, CloseOS-Gagné...).</>
                           ) : (
@@ -2351,32 +2351,32 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <div className="flex items-start gap-3">
                   <Database className="h-5 w-5 text-[#18BFFF] mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-cyan-100">{lang === 'fr' ? 'Configuration Airtable' : 'Airtable Configuration'}</h4>
+                    <h4 className="text-sm font-semibold text-sky-700 dark:text-sky-400">{lang === 'fr' ? 'Configuration Airtable' : 'Airtable Configuration'}</h4>
 
                     <div className="mt-3 space-y-3">
                       {/* OAuth Connect Button */}
                       {!airtableConnected ? (
                         <button
                           onClick={handleConnectAirtable}
-                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#18BFFF] py-2.5 text-sm font-bold text-white hover:bg-[#10a8e6] transition-all shadow-lg"
+                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#18BFFF] py-2.5 text-sm font-bold text-slate-900 dark:text-white hover:bg-[#10a8e6] transition-all shadow-lg"
                         >
                           <ExternalLink className="h-4 w-4" /> {lang === 'fr' ? 'Connecter Airtable' : 'Connect Airtable'}
                         </button>
                       ) : (
-                        <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2">
-                          <Check className="h-4 w-4 text-emerald-400" />
-                          <span className="text-xs text-emerald-400 font-medium">{lang === 'fr' ? 'Airtable connecté' : 'Airtable connected'}</span>
+                        <div className="flex items-center gap-2 rounded-lg bg-sky-500/10 border border-sky-500/20 p-2">
+                          <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                          <span className="text-xs text-sky-600 dark:text-sky-400 font-medium">{lang === 'fr' ? 'Airtable connecté' : 'Airtable connected'}</span>
                         </div>
                       )}
 
                       {/* Base selector */}
                       {airtableConnected && (
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
                             {lang === 'fr' ? 'Base Airtable' : 'Airtable Base'}
                           </label>
                           {airtableLoadingBases ? (
-                            <div className="flex items-center gap-2 text-xs text-white/40"><Loader2 className="h-3 w-3 animate-spin" /> {lang === 'fr' ? 'Chargement des bases...' : 'Loading bases...'}</div>
+                            <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-neutral-500"><Loader2 className="h-3 w-3 animate-spin" /> {lang === 'fr' ? 'Chargement des bases...' : 'Loading bases...'}</div>
                           ) : (
                             <select
                               value={editedOffer.crmMapping?.airtableBaseId || ''}
@@ -2384,7 +2384,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 ...prev,
                                 crmMapping: { ...prev.crmMapping, airtableBaseId: e.target.value, airtableTableId: '', airtableFieldMapping: {} },
                               }))}
-                              className="w-full appearance-none rounded border border-[#18BFFF]/10 bg-[#111111] p-2 text-xs text-white focus:border-[#18BFFF]/50 focus:outline-none"
+                              className="w-full appearance-none rounded border border-[#18BFFF]/10 bg-white dark:bg-[#1a1a1a] p-2 text-xs text-slate-900 dark:text-white focus:border-[#18BFFF]/50 focus:outline-none"
                             >
                               <option value="">{lang === 'fr' ? 'Sélectionner une base...' : 'Select a base...'}</option>
                               {airtableBases.map((base: any) => (
@@ -2398,11 +2398,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       {/* Table selector */}
                       {editedOffer.crmMapping?.airtableBaseId && (
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
                             Table
                           </label>
                           {airtableLoadingTables ? (
-                            <div className="flex items-center gap-2 text-xs text-white/40"><Loader2 className="h-3 w-3 animate-spin" /> {lang === 'fr' ? 'Chargement des tables...' : 'Loading tables...'}</div>
+                            <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-neutral-500"><Loader2 className="h-3 w-3 animate-spin" /> {lang === 'fr' ? 'Chargement des tables...' : 'Loading tables...'}</div>
                           ) : (
                             <select
                               value={editedOffer.crmMapping?.airtableTableId || ''}
@@ -2410,7 +2410,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 ...prev,
                                 crmMapping: { ...prev.crmMapping, airtableTableId: e.target.value, airtableFieldMapping: {} },
                               }))}
-                              className="w-full appearance-none rounded border border-[#18BFFF]/10 bg-[#111111] p-2 text-xs text-white focus:border-[#18BFFF]/50 focus:outline-none"
+                              className="w-full appearance-none rounded border border-[#18BFFF]/10 bg-white dark:bg-[#1a1a1a] p-2 text-xs text-slate-900 dark:text-white focus:border-[#18BFFF]/50 focus:outline-none"
                             >
                               <option value="">{lang === 'fr' ? 'Sélectionner une table...' : 'Select a table...'}</option>
                               {airtableTables.map((table: any) => (
@@ -2424,10 +2424,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       {/* Field mapping */}
                       {editedOffer.crmMapping?.airtableTableId && airtableFields.length > 0 && (
                         <div>
-                          <label className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-white/40">
+                          <label className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
                             {lang === 'fr' ? 'Mapping des colonnes' : 'Column Mapping'}
                           </label>
-                          <p className="text-[11px] text-white/40 mb-2">
+                          <p className="text-[11px] text-slate-400 dark:text-neutral-500 mb-2">
                             {lang === 'fr' ? 'Associez vos colonnes Airtable aux champs CloseOS' : 'Map your Airtable columns to CloseOS fields'}
                           </p>
                           <div className="space-y-2">
@@ -2441,11 +2441,11 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                               { key: 'value', label: lang === 'fr' ? 'Valeur (€)' : 'Value (€)' },
                             ].map(({ key, label }) => (
                               <div key={key} className="flex items-center gap-2">
-                                <span className="w-24 text-[11px] text-white/40 shrink-0">{label}</span>
+                                <span className="w-24 text-[11px] text-slate-400 dark:text-neutral-500 shrink-0">{label}</span>
                                 <select
                                   value={(editedOffer.crmMapping?.airtableFieldMapping as any)?.[key] || ''}
                                   onChange={(e) => updateAirtableMapping(key, e.target.value)}
-                                  className="flex-1 appearance-none rounded border border-[#18BFFF]/10 bg-[#111111] p-1.5 text-xs text-white focus:border-[#18BFFF]/50 focus:outline-none"
+                                  className="flex-1 appearance-none rounded border border-[#18BFFF]/10 bg-white dark:bg-[#1a1a1a] p-1.5 text-xs text-slate-900 dark:text-white focus:border-[#18BFFF]/50 focus:outline-none"
                                 >
                                   <option value="">{lang === 'fr' ? '— Non mappé —' : '— Not mapped —'}</option>
                                   {airtableFields.map((field: any) => (
@@ -2459,16 +2459,16 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       )}
 
                       {airtableLoadingFields && (
-                        <div className="flex items-center gap-2 text-xs text-white/40"><Loader2 className="h-3 w-3 animate-spin" /> {lang === 'fr' ? 'Chargement des colonnes...' : 'Loading columns...'}</div>
+                        <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-neutral-500"><Loader2 className="h-3 w-3 animate-spin" /> {lang === 'fr' ? 'Chargement des colonnes...' : 'Loading columns...'}</div>
                       )}
 
                       {/* Sync button */}
                       {editedOffer.crmMapping?.airtableTableId && (
-                        <div className="pt-2 border-t border-white/5">
+                        <div className="pt-2 border-t border-slate-200 dark:border-white/10">
                           <button
                             onClick={handleSyncAirtable}
                             disabled={isSyncingAirtable}
-                            className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#18BFFF] py-2.5 text-sm font-bold text-white hover:bg-[#10a8e6] transition-all disabled:opacity-50"
+                            className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#18BFFF] py-2.5 text-sm font-bold text-slate-900 dark:text-white hover:bg-[#10a8e6] transition-all disabled:opacity-50"
                           >
                             {isSyncingAirtable ? (
                               <><Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Synchronisation...' : 'Syncing...'}</>
@@ -2477,8 +2477,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                             )}
                           </button>
                           {airtableSyncResult && (
-                            <div className="mt-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-center">
-                              <p className="text-xs text-emerald-400">
+                            <div className="mt-2 rounded-lg bg-sky-500/10 border border-sky-500/20 p-2 text-center">
+                              <p className="text-xs text-sky-600 dark:text-sky-400">
                                 {lang === 'fr'
                                   ? <><strong>{airtableSyncResult.imported}</strong> importé{airtableSyncResult.imported > 1 ? 's' : ''} · <strong>{airtableSyncResult.updated}</strong> mis à jour</>
                                   : <><strong>{airtableSyncResult.imported}</strong> imported · <strong>{airtableSyncResult.updated}</strong> updated</>}
@@ -2490,7 +2490,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                       {/* Sync info */}
                       <div className="rounded-lg border border-[#18BFFF]/10 bg-[#18BFFF]/5 p-2">
-                        <p className="text-[10px] text-cyan-400/80">
+                        <p className="text-[10px] text-sky-600/80">
                           {lang === 'fr' ? (
                             <><strong>Import :</strong> Cliquez sur Synchroniser pour importer les records de votre table Airtable en tant que prospects.<br /><strong>Sync retour :</strong> Quand un prospect change de statut dans CloseOS, la colonne Statut est automatiquement mise à jour dans Airtable.</>
                           ) : (
@@ -2514,13 +2514,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                     {!zapierApiKey ? (
                       <div className="mt-3">
-                        <p className="text-xs text-orange-300/80 leading-relaxed mb-3">
+                        <p className="text-xs text-orange-600/80 leading-relaxed mb-3">
                           {lang === 'fr' ? 'Générez une clé API pour connecter Zapier à cette offre. Les prospects seront importés directement dans votre pipeline.' : 'Generate an API key to connect Zapier to this offer. Prospects will be imported directly into your pipeline.'}
                         </p>
                         <button
                           onClick={handleGenerateZapierKey}
                           disabled={zapierLoading}
-                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#FF4A00] py-2.5 text-sm font-bold text-white hover:bg-[#e04300] transition-all disabled:opacity-50"
+                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#FF4A00] py-2.5 text-sm font-bold text-slate-900 dark:text-white hover:bg-[#e04300] transition-all disabled:opacity-50"
                         >
                           {zapierLoading ? (
                             <><Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Génération...' : 'Generating...'}</>
@@ -2532,15 +2532,15 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     ) : (
                       <div className="mt-3 space-y-3">
                         {/* Connected status */}
-                        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2">
+                        <div className="flex items-center justify-between rounded-lg border border-sky-500/20 bg-sky-500/5 p-2">
                           <div className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-emerald-400" />
-                            <span className="text-sm font-semibold text-emerald-400">{lang === 'fr' ? 'Clé API active' : 'API Key active'}</span>
+                            <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                            <span className="text-sm font-semibold text-sky-600 dark:text-sky-400">{lang === 'fr' ? 'Clé API active' : 'API Key active'}</span>
                           </div>
                           <button
                             onClick={handleDeleteZapierKey}
                             disabled={zapierLoading}
-                            className="text-xs text-white/40 hover:text-red-400 underline flex items-center gap-1"
+                            className="text-xs text-slate-400 dark:text-neutral-500 hover:text-red-600 underline flex items-center gap-1"
                           >
                             <Trash2 className="h-3 w-3" /> {lang === 'fr' ? 'Supprimer' : 'Delete'}
                           </button>
@@ -2548,9 +2548,9 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                         {/* Webhook URL */}
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'URL du Webhook' : 'Webhook URL'}</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'URL du Webhook' : 'Webhook URL'}</label>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 rounded border border-[#FF4A00]/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
+                            <div className="flex-1 rounded border border-[#FF4A00]/10 bg-white dark:bg-[#1a1a1a] p-2 font-mono text-xs text-slate-400 dark:text-neutral-500 overflow-x-auto whitespace-nowrap">
                               {zapierWebhookUrl}
                             </div>
                             <button
@@ -2559,13 +2559,13 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setZapierCopiedUrl(true)
                                 setTimeout(() => setZapierCopiedUrl(false), 2000)
                               }}
-                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
+                              className="rounded p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                             >
-                              {zapierCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                              {zapierCopiedUrl ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}
                             </button>
                           </div>
                           {editedOffer.defaultFormulaId && (
-                            <p className="mt-1 text-[10px] text-emerald-400/80 flex items-center gap-1">
+                            <p className="mt-1 text-[10px] text-sky-600/80 flex items-center gap-1">
                               <Check className="h-3 w-3" /> {lang === 'fr' ? "L'ID de la formule a été ajouté à l'URL." : 'The formula ID has been added to the URL.'}
                             </p>
                           )}
@@ -2573,18 +2573,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
 
                         {/* API Key */}
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'Clé API (Bearer Token)' : 'API Key (Bearer Token)'}</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Clé API (Bearer Token)' : 'API Key (Bearer Token)'}</label>
                           <div className="flex items-center gap-2">
                             <div className="relative flex-1">
                               <input
                                 type={zapierShowKey ? 'text' : 'password'}
                                 value={zapierApiKey}
                                 readOnly
-                                className="w-full rounded border border-[#FF4A00]/10 bg-[#111111] p-2 pr-8 font-mono text-xs text-white/40"
+                                className="w-full rounded border border-[#FF4A00]/10 bg-white dark:bg-[#1a1a1a] p-2 pr-8 font-mono text-xs text-slate-400 dark:text-neutral-500"
                               />
                               <button
                                 onClick={() => setZapierShowKey(!zapierShowKey)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 hover:text-slate-500"
                               >
                                 {zapierShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                               </button>
@@ -2595,22 +2595,22 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setZapierCopiedKey(true)
                                 setTimeout(() => setZapierCopiedKey(false), 2000)
                               }}
-                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
+                              className="rounded p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                             >
-                              {zapierCopiedKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                              {zapierCopiedKey ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}
                             </button>
                           </div>
                         </div>
 
                         {/* Instructions */}
-                        <div className="rounded-lg border border-white/5 bg-[#111111]/50 p-3">
-                          <h5 className="mb-2 text-xs font-bold text-white/60">{lang === 'fr' ? 'Configuration dans Zapier :' : 'Zapier Configuration:'}</h5>
-                          <ol className="text-[11px] text-white/40 space-y-1.5 list-decimal list-inside">
+                        <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-1000 p-3">
+                          <h5 className="mb-2 text-xs font-bold text-slate-500 dark:text-neutral-400">{lang === 'fr' ? 'Configuration dans Zapier :' : 'Zapier Configuration:'}</h5>
+                          <ol className="text-[11px] text-slate-400 dark:text-neutral-500 space-y-1.5 list-decimal list-inside">
                             <li>{lang === 'fr' ? 'Créez un Zap avec votre source (Facebook Ads, Typeform...)' : 'Create a Zap with your source (Facebook Ads, Typeform...)'}</li>
-                            <li>{lang === 'fr' ? <>Action : <strong className="text-white/40">Webhooks by Zapier</strong> &rarr; <strong className="text-white/40">POST</strong></> : <>Action: <strong className="text-white/40">Webhooks by Zapier</strong> &rarr; <strong className="text-white/40">POST</strong></>}</li>
+                            <li>{lang === 'fr' ? <>Action : <strong className="text-slate-400 dark:text-neutral-500">Webhooks by Zapier</strong> &rarr; <strong className="text-slate-400 dark:text-neutral-500">POST</strong></> : <>Action: <strong className="text-slate-400 dark:text-neutral-500">Webhooks by Zapier</strong> &rarr; <strong className="text-slate-400 dark:text-neutral-500">POST</strong></>}</li>
                             <li>{lang === 'fr' ? "URL : collez l'URL ci-dessus" : 'URL: paste the URL above'}</li>
-                            <li>Headers : <code className="bg-white/5 px-1 rounded text-[10px] text-white/40">Authorization: Bearer votre_clé</code></li>
-                            <li>Body (JSON) : <code className="bg-white/5 px-1 rounded text-[10px] text-white/40">firstName, lastName, email, phone, company, source</code></li>
+                            <li>Headers : <code className="bg-slate-100 dark:bg-white/10 px-1 rounded text-[10px] text-slate-400 dark:text-neutral-500">Authorization: Bearer votre_clé</code></li>
+                            <li>Body (JSON) : <code className="bg-slate-100 dark:bg-white/10 px-1 rounded text-[10px] text-slate-400 dark:text-neutral-500">firstName, lastName, email, phone, company, source</code></li>
                           </ol>
                         </div>
                       </div>
@@ -2626,17 +2626,17 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 <div className="flex items-start gap-3">
                   <Zap className="h-5 w-5 text-[#6D00CC] mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-purple-100">{lang === 'fr' ? 'Configuration Make' : 'Make Configuration'}</h4>
+                    <h4 className="text-sm font-semibold text-sky-700 dark:text-sky-400">{lang === 'fr' ? 'Configuration Make' : 'Make Configuration'}</h4>
 
                     {!makeApiKey ? (
                       <div className="mt-3">
-                        <p className="text-xs text-purple-300/80 leading-relaxed mb-3">
+                        <p className="text-xs text-sky-600/80 leading-relaxed mb-3">
                           {lang === 'fr' ? 'Générez une clé API pour connecter Make à cette offre. Les prospects seront importés directement dans votre pipeline.' : 'Generate an API key to connect Make to this offer. Prospects will be imported directly into your pipeline.'}
                         </p>
                         <button
                           onClick={handleGenerateMakeKey}
                           disabled={makeLoading}
-                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#6D00CC] py-2.5 text-sm font-bold text-white hover:bg-[#5a00aa] transition-all disabled:opacity-50"
+                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#6D00CC] py-2.5 text-sm font-bold text-slate-900 dark:text-white hover:bg-[#5a00aa] transition-all disabled:opacity-50"
                         >
                           {makeLoading ? (
                             <><Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Génération...' : 'Generating...'}</>
@@ -2647,24 +2647,24 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       </div>
                     ) : (
                       <div className="mt-3 space-y-3">
-                        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2">
+                        <div className="flex items-center justify-between rounded-lg border border-sky-500/20 bg-sky-500/5 p-2">
                           <div className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-emerald-400" />
-                            <span className="text-sm font-semibold text-emerald-400">{lang === 'fr' ? 'Clé API active' : 'API Key active'}</span>
+                            <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                            <span className="text-sm font-semibold text-sky-600 dark:text-sky-400">{lang === 'fr' ? 'Clé API active' : 'API Key active'}</span>
                           </div>
                           <button
                             onClick={handleDeleteMakeKey}
                             disabled={makeLoading}
-                            className="text-xs text-white/40 hover:text-red-400 underline flex items-center gap-1"
+                            className="text-xs text-slate-400 dark:text-neutral-500 hover:text-red-600 underline flex items-center gap-1"
                           >
                             <Trash2 className="h-3 w-3" /> {lang === 'fr' ? 'Supprimer' : 'Delete'}
                           </button>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'URL du Webhook' : 'Webhook URL'}</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'URL du Webhook' : 'Webhook URL'}</label>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 rounded border border-[#6D00CC]/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
+                            <div className="flex-1 rounded border border-[#6D00CC]/10 bg-white dark:bg-[#1a1a1a] p-2 font-mono text-xs text-slate-400 dark:text-neutral-500 overflow-x-auto whitespace-nowrap">
                               {makeWebhookUrl}
                             </div>
                             <button
@@ -2673,26 +2673,26 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setMakeCopiedUrl(true)
                                 setTimeout(() => setMakeCopiedUrl(false), 2000)
                               }}
-                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
+                              className="rounded p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                             >
-                              {makeCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                              {makeCopiedUrl ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}
                             </button>
                           </div>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'Clé API (Bearer Token)' : 'API Key (Bearer Token)'}</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Clé API (Bearer Token)' : 'API Key (Bearer Token)'}</label>
                           <div className="flex items-center gap-2">
                             <div className="relative flex-1">
                               <input
                                 type={makeShowKey ? 'text' : 'password'}
                                 value={makeApiKey}
                                 readOnly
-                                className="w-full rounded border border-[#6D00CC]/10 bg-[#111111] p-2 pr-8 font-mono text-xs text-white/40"
+                                className="w-full rounded border border-[#6D00CC]/10 bg-white dark:bg-[#1a1a1a] p-2 pr-8 font-mono text-xs text-slate-400 dark:text-neutral-500"
                               />
                               <button
                                 onClick={() => setMakeShowKey(!makeShowKey)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 hover:text-slate-500"
                               >
                                 {makeShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                               </button>
@@ -2703,21 +2703,21 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setMakeCopiedKey(true)
                                 setTimeout(() => setMakeCopiedKey(false), 2000)
                               }}
-                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
+                              className="rounded p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                             >
-                              {makeCopiedKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                              {makeCopiedKey ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}
                             </button>
                           </div>
                         </div>
 
-                        <div className="rounded-lg border border-white/5 bg-[#111111]/50 p-3">
-                          <h5 className="mb-2 text-xs font-bold text-white/60">{lang === 'fr' ? 'Configuration dans Make :' : 'Make Configuration:'}</h5>
-                          <ol className="text-[11px] text-white/40 space-y-1.5 list-decimal list-inside">
+                        <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-1000 p-3">
+                          <h5 className="mb-2 text-xs font-bold text-slate-500 dark:text-neutral-400">{lang === 'fr' ? 'Configuration dans Make :' : 'Make Configuration:'}</h5>
+                          <ol className="text-[11px] text-slate-400 dark:text-neutral-500 space-y-1.5 list-decimal list-inside">
                             <li>{lang === 'fr' ? 'Créez un scénario avec votre source (Facebook Ads, Typeform...)' : 'Create a scenario with your source (Facebook Ads, Typeform...)'}</li>
-                            <li>{lang === 'fr' ? <>Ajoutez un module <strong className="text-white/40">HTTP</strong> &rarr; <strong className="text-white/40">Make a request</strong></> : <>Add an <strong className="text-white/40">HTTP</strong> module &rarr; <strong className="text-white/40">Make a request</strong></>}</li>
-                            <li>{lang === 'fr' ? <>Méthode : <strong className="text-white/40">POST</strong>, URL : collez l&apos;URL ci-dessus</> : <>Method: <strong className="text-white/40">POST</strong>, URL: paste the URL above</>}</li>
-                            <li>Headers : <code className="bg-white/5 px-1 rounded text-[10px] text-white/40">Authorization: Bearer votre_clé</code></li>
-                            <li>Body (JSON) : <code className="bg-white/5 px-1 rounded text-[10px] text-white/40">firstName, lastName, email, phone, company, source</code></li>
+                            <li>{lang === 'fr' ? <>Ajoutez un module <strong className="text-slate-400 dark:text-neutral-500">HTTP</strong> &rarr; <strong className="text-slate-400 dark:text-neutral-500">Make a request</strong></> : <>Add an <strong className="text-slate-400 dark:text-neutral-500">HTTP</strong> module &rarr; <strong className="text-slate-400 dark:text-neutral-500">Make a request</strong></>}</li>
+                            <li>{lang === 'fr' ? <>Méthode : <strong className="text-slate-400 dark:text-neutral-500">POST</strong>, URL : collez l&apos;URL ci-dessus</> : <>Method: <strong className="text-slate-400 dark:text-neutral-500">POST</strong>, URL: paste the URL above</>}</li>
+                            <li>Headers : <code className="bg-slate-100 dark:bg-white/10 px-1 rounded text-[10px] text-slate-400 dark:text-neutral-500">Authorization: Bearer votre_clé</code></li>
+                            <li>Body (JSON) : <code className="bg-slate-100 dark:bg-white/10 px-1 rounded text-[10px] text-slate-400 dark:text-neutral-500">firstName, lastName, email, phone, company, source</code></li>
                           </ol>
                         </div>
                       </div>
@@ -2743,7 +2743,7 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                         <button
                           onClick={handleGenerateN8nKey}
                           disabled={n8nLoading}
-                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#EA4B71] py-2.5 text-sm font-bold text-white hover:bg-[#d4405f] transition-all disabled:opacity-50"
+                          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#EA4B71] py-2.5 text-sm font-bold text-slate-900 dark:text-white hover:bg-[#d4405f] transition-all disabled:opacity-50"
                         >
                           {n8nLoading ? (
                             <><Loader2 className="h-4 w-4 animate-spin" /> {lang === 'fr' ? 'Génération...' : 'Generating...'}</>
@@ -2754,24 +2754,24 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       </div>
                     ) : (
                       <div className="mt-3 space-y-3">
-                        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2">
+                        <div className="flex items-center justify-between rounded-lg border border-sky-500/20 bg-sky-500/5 p-2">
                           <div className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-emerald-400" />
-                            <span className="text-sm font-semibold text-emerald-400">{lang === 'fr' ? 'Clé API active' : 'API Key active'}</span>
+                            <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                            <span className="text-sm font-semibold text-sky-600 dark:text-sky-400">{lang === 'fr' ? 'Clé API active' : 'API Key active'}</span>
                           </div>
                           <button
                             onClick={handleDeleteN8nKey}
                             disabled={n8nLoading}
-                            className="text-xs text-white/40 hover:text-red-400 underline flex items-center gap-1"
+                            className="text-xs text-slate-400 dark:text-neutral-500 hover:text-red-600 underline flex items-center gap-1"
                           >
                             <Trash2 className="h-3 w-3" /> {lang === 'fr' ? 'Supprimer' : 'Delete'}
                           </button>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'URL du Webhook' : 'Webhook URL'}</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'URL du Webhook' : 'Webhook URL'}</label>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 rounded border border-[#EA4B71]/10 bg-[#111111] p-2 font-mono text-xs text-white/40 overflow-x-auto whitespace-nowrap">
+                            <div className="flex-1 rounded border border-[#EA4B71]/10 bg-white dark:bg-[#1a1a1a] p-2 font-mono text-xs text-slate-400 dark:text-neutral-500 overflow-x-auto whitespace-nowrap">
                               {n8nWebhookUrl}
                             </div>
                             <button
@@ -2780,26 +2780,26 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setN8nCopiedUrl(true)
                                 setTimeout(() => setN8nCopiedUrl(false), 2000)
                               }}
-                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
+                              className="rounded p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                             >
-                              {n8nCopiedUrl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                              {n8nCopiedUrl ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}
                             </button>
                           </div>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-white/40">{lang === 'fr' ? 'Clé API (Bearer Token)' : 'API Key (Bearer Token)'}</label>
+                          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Clé API (Bearer Token)' : 'API Key (Bearer Token)'}</label>
                           <div className="flex items-center gap-2">
                             <div className="relative flex-1">
                               <input
                                 type={n8nShowKey ? 'text' : 'password'}
                                 value={n8nApiKey}
                                 readOnly
-                                className="w-full rounded border border-[#EA4B71]/10 bg-[#111111] p-2 pr-8 font-mono text-xs text-white/40"
+                                className="w-full rounded border border-[#EA4B71]/10 bg-white dark:bg-[#1a1a1a] p-2 pr-8 font-mono text-xs text-slate-400 dark:text-neutral-500"
                               />
                               <button
                                 onClick={() => setN8nShowKey(!n8nShowKey)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 hover:text-slate-500"
                               >
                                 {n8nShowKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                               </button>
@@ -2810,20 +2810,20 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                                 setN8nCopiedKey(true)
                                 setTimeout(() => setN8nCopiedKey(false), 2000)
                               }}
-                              className="rounded p-2 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
+                              className="rounded p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                             >
-                              {n8nCopiedKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                              {n8nCopiedKey ? <Check className="h-4 w-4 text-sky-600 dark:text-sky-400" /> : <Copy className="h-4 w-4" />}
                             </button>
                           </div>
                         </div>
 
-                        <div className="rounded-lg border border-white/5 bg-[#111111]/50 p-3">
-                          <h5 className="mb-2 text-xs font-bold text-white/60">{lang === 'fr' ? 'Configuration dans n8n :' : 'n8n Configuration:'}</h5>
-                          <ol className="text-[11px] text-white/40 space-y-1.5 list-decimal list-inside">
-                            <li>{lang === 'fr' ? <>Créez un workflow avec un nœud <strong className="text-white/40">HTTP Request</strong></> : <>Create a workflow with an <strong className="text-white/40">HTTP Request</strong> node</>}</li>
-                            <li>{lang === 'fr' ? <>Méthode : <strong className="text-white/40">POST</strong>, URL : collez l&apos;URL ci-dessus</> : <>Method: <strong className="text-white/40">POST</strong>, URL: paste the URL above</>}</li>
-                            <li>Authentication : <strong className="text-white/40">Header Auth</strong> → Name: Authorization, Value: Bearer votre_clé</li>
-                            <li>Body (JSON) : <code className="bg-white/5 px-1 rounded text-[10px] text-white/40">firstName, lastName, email, phone, company, source</code></li>
+                        <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-1000 p-3">
+                          <h5 className="mb-2 text-xs font-bold text-slate-500 dark:text-neutral-400">{lang === 'fr' ? 'Configuration dans n8n :' : 'n8n Configuration:'}</h5>
+                          <ol className="text-[11px] text-slate-400 dark:text-neutral-500 space-y-1.5 list-decimal list-inside">
+                            <li>{lang === 'fr' ? <>Créez un workflow avec un nœud <strong className="text-slate-400 dark:text-neutral-500">HTTP Request</strong></> : <>Create a workflow with an <strong className="text-slate-400 dark:text-neutral-500">HTTP Request</strong> node</>}</li>
+                            <li>{lang === 'fr' ? <>Méthode : <strong className="text-slate-400 dark:text-neutral-500">POST</strong>, URL : collez l&apos;URL ci-dessus</> : <>Method: <strong className="text-slate-400 dark:text-neutral-500">POST</strong>, URL: paste the URL above</>}</li>
+                            <li>Authentication : <strong className="text-slate-400 dark:text-neutral-500">Header Auth</strong> → Name: Authorization, Value: Bearer votre_clé</li>
+                            <li>Body (JSON) : <code className="bg-slate-100 dark:bg-white/10 px-1 rounded text-[10px] text-slate-400 dark:text-neutral-500">firstName, lastName, email, phone, company, source</code></li>
                           </ol>
                         </div>
                       </div>
@@ -2835,8 +2835,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
 
           {/* Zone D - Resources */}
-          <div className="mt-8 rounded-3xl border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md relative z-10">
-            <h3 className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">
+          <div className="mt-8 rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50/30 p-6 backdrop-blur-md relative z-10">
+            <h3 className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-neutral-500 ml-1">
               <ExternalLink className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Ressources Commerciales' : 'Sales Resources'}
             </h3>
 
@@ -2847,14 +2847,14 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                     editedOffer.resources.map((resource) => (
                       <div
                         key={resource.id}
-                        className="flex items-center gap-4 rounded-2xl border border-white/5 bg-[#111111]/50 p-4 transition-all hover:bg-[#111111]"
+                        className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-1000 p-4 transition-all hover:bg-white"
                       >
-                        <div className="h-10 w-10 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                        <div className="h-10 w-10 shrink-0 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-600 dark:text-sky-400 border border-sky-500/20">
                           {getResourceIcon(resource.type)}
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-black text-white tracking-tight">{resource.name}</p>
-                          <p className="text-[10px] text-white/40 font-medium truncate max-w-[200px] mt-0.5">{resource.url}</p>
+                          <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight">{resource.name}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-neutral-500 font-medium truncate max-w-[200px] mt-0.5">{resource.url}</p>
                         </div>
                         <button
                           onClick={() => handleRemoveResource(resource.id)}
@@ -2865,15 +2865,15 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       </div>
                     ))
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-6 gap-2 text-white/30">
+                    <div className="flex flex-col items-center justify-center py-6 gap-2 text-slate-400 dark:text-neutral-500">
                       <ExternalLink className="h-8 w-8 opacity-20" />
                       <p className="text-[11px] font-bold uppercase tracking-widest italic">{lang === 'fr' ? 'Aucune ressource disponible' : 'No resources available'}</p>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-4 rounded-2xl border border-white/5 bg-white/5 p-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 text-center">
+                <div className="space-y-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-neutral-500 text-center">
                     {lang === 'fr' ? 'Ajouter une ressource' : 'Add a resource'}
                   </p>
                   <div className="space-y-3">
@@ -2882,18 +2882,18 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       placeholder={lang === 'fr' ? 'Nom (ex: Script de vente)' : 'Name (e.g.: Sales script)'}
                       value={tempResName}
                       onChange={(e) => setTempResName(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2.5 text-sm text-white placeholder-white/30 focus:border-emerald-500 focus:outline-none transition-all"
+                      className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:outline-none transition-all"
                     />
                     <input
                       type="url"
                       placeholder="URL (ex: https://...)"
                       value={tempResLink}
                       onChange={(e) => setTempResLink(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-[#111111]/50 px-4 py-2.5 text-sm text-white placeholder-white/30 focus:border-emerald-500 focus:outline-none transition-all"
+                      className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:outline-none transition-all"
                     />
                     <button
                       onClick={handleAddResource}
-                      className="flex w-full items-center justify-center gap-3 rounded-xl bg-emerald-500 px-4 py-3 text-xs font-black text-white transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 active:scale-95 uppercase tracking-widest"
+                      className="flex w-full items-center justify-center gap-3 rounded-xl bg-sky-600 px-4 py-3 text-xs font-black text-white transition-all hover:bg-sky-600 shadow-lg shadow-sky-500/20 active:scale-95 uppercase tracking-widest"
                     >
                       <Plus className="h-4 w-4" />
                       {lang === 'fr' ? 'Ajouter au catalogue' : 'Add to catalog'}
@@ -2910,23 +2910,23 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                       href={resource.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-[#111111]/50 p-4 transition-all hover:border-emerald-500/30 hover:bg-white/[0.03] hover:shadow-lg hover:shadow-emerald-500/5"
+                      className="group flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-1000 p-4 transition-all hover:border-sky-500/30 hover:bg-slate-50 hover:shadow-lg hover:shadow-sky-500/5"
                     >
-                      <div className="h-10 w-10 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20 group-hover:bg-emerald-400/20 transition-all">
+                      <div className="h-10 w-10 shrink-0 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-600 dark:text-sky-400 border border-sky-500/20 group-hover:bg-sky-500/20 transition-all">
                         {getResourceIcon(resource.type)}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-black text-white tracking-tight group-hover:text-emerald-400 transition-colors">
+                        <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight group-hover:text-sky-600 transition-colors">
                           {resource.name}
                         </p>
-                        <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5">
+                        <span className="text-[10px] text-slate-400 dark:text-neutral-500 font-bold uppercase tracking-widest flex items-center gap-1 mt-0.5">
                           {lang === 'fr' ? 'Ouvrir' : 'Open'} <ExternalLink className="h-2 w-2" />
                         </span>
                       </div>
                     </a>
                   ))
                 ) : (
-                  <div className="col-span-2 flex flex-col items-center justify-center py-6 gap-2 text-white/30">
+                  <div className="col-span-2 flex flex-col items-center justify-center py-6 gap-2 text-slate-400 dark:text-neutral-500">
                     <ExternalLink className="h-8 w-8 opacity-20" />
                     <p className="text-[11px] font-bold uppercase tracking-widest italic text-center">{lang === 'fr' ? 'Aucune ressource disponible' : 'No resources available'}</p>
                   </div>
@@ -2936,8 +2936,8 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
           </div>
 
           {/* Zone E - Notes */}
-          <div className="mt-8 rounded-3xl border border-white/5 bg-white/[0.03]/30 p-6 backdrop-blur-md relative z-10">
-            <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">
+          <div className="mt-8 rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50/30 p-6 backdrop-blur-md relative z-10">
+            <h3 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-neutral-500 ml-1">
               {lang === 'fr' ? 'Notes de Closing' : 'Closing Notes'}
             </h3>
             {isEditing ? (
@@ -2948,10 +2948,10 @@ export function OfferDetailModal({ offer, onClose, onUpdate, onDelete }: OfferDe
                 }
                 rows={4}
                 placeholder={lang === 'fr' ? 'Instructions spécifiques pour closer cette offre...' : 'Specific instructions for closing this offer...'}
-                className="w-full rounded-2xl border border-white/10 bg-[#111111]/50 px-4 py-3 text-sm text-white font-medium focus:border-emerald-500 focus:outline-none resize-none transition-all"
+                className="w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-1000 px-4 py-3 text-sm text-slate-900 dark:text-white font-medium focus:border-sky-500 focus:outline-none resize-none transition-all"
               />
             ) : (
-              <p className="text-sm leading-relaxed text-white/60 font-medium px-1">
+              <p className="text-sm leading-relaxed text-slate-500 dark:text-neutral-400 font-medium px-1">
                 {offer.notes || (lang === 'fr' ? 'Aucune note' : 'No notes')}
               </p>
             )}

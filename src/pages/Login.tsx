@@ -125,7 +125,7 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#020617] px-4 selection:bg-blue-500/30 font-sans">
+    <div className="flex min-h-screen items-center justify-center bg-[#f4f2f1] dark:bg-[#0d0d0d] px-4 selection:bg-sky-500/20 font-sans">
       <div className="w-full max-w-md">
 
         {/* LOGO EN-TÊTE */}
@@ -135,17 +135,17 @@ export default function Login() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-[#0B1121] p-8 shadow-2xl shadow-blue-900/10 animate-in fade-in zoom-in duration-500">
+        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-8 shadow-2xl shadow-sky-500/10 animate-in fade-in zoom-in duration-500">
           <div className="mb-8">
-            <h2 className="mb-2 text-2xl font-bold text-white flex items-center gap-2">
-              <LogIn className="h-6 w-6 text-blue-500" />
+            <h2 className="mb-2 text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <LogIn className="h-6 w-6 text-sky-600 dark:text-sky-400" />
               {t.title}
             </h2>
-            <p className="text-slate-400">{t.subtitle}</p>
+            <p className="text-slate-500 dark:text-neutral-400">{t.subtitle}</p>
           </div>
 
           {error && (
-            <div className="mb-6 rounded-lg bg-red-500/10 p-3 text-sm text-red-400 border border-red-500/20">
+            <div className="mb-6 rounded-lg bg-red-500/10 p-3 text-sm text-red-600 border border-red-500/20">
               {error}
             </div>
           )}
@@ -154,10 +154,10 @@ export default function Login() {
           <button
             onClick={handleGoogleLogin}
             disabled={googleLoading}
-            className="mb-6 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-700 bg-slate-800 py-3 font-medium text-white transition-all hover:bg-slate-700 hover:border-slate-600 disabled:opacity-50"
+            className="mb-6 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#1a1a1a] py-3 font-medium text-slate-900 dark:text-white transition-all hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50"
           >
             {googleLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+              <Loader2 className="h-5 w-5 animate-spin text-sky-600 dark:text-sky-400" />
             ) : (
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="Google" />
             )}
@@ -165,20 +165,20 @@ export default function Login() {
           </button>
 
           <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0B1121] px-2 text-slate-500 font-bold">{t.or_email}</span></div>
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-white/10"></div></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white dark:bg-[#1a1a1a] px-2 text-slate-400 dark:text-neutral-500 font-bold">{t.or_email}</span></div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-300 text-left">{t.email}</label>
+              <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-neutral-300 text-left">{t.email}</label>
               <div className="relative group">
-                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-neutral-500 group-focus-within:text-sky-600 transition-colors" />
                 <input
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-4 text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
+                  className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 py-3 pl-10 pr-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all"
                   placeholder={t.placeholder_email}
                   required
                 />
@@ -187,16 +187,16 @@ export default function Login() {
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-bold text-slate-300">{t.password}</label>
-                <button type="button" onClick={() => setIsResetModalOpen(true)} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">{t.forgot}</button>
+                <label className="block text-sm font-bold text-slate-700 dark:text-neutral-300">{t.password}</label>
+                <button type="button" onClick={() => setIsResetModalOpen(true)} className="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 transition-colors">{t.forgot}</button>
               </div>
               <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-neutral-500 group-focus-within:text-sky-600 transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-11 text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
+                  className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 py-3 pl-10 pr-11 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all"
                   placeholder="••••••••"
                   required
                 />
@@ -204,7 +204,7 @@ export default function Login() {
                   type="button"
                   onClick={() => setShowPassword(s => !s)}
                   aria-label={showPassword ? (lang === 'fr' ? 'Masquer le mot de passe' : 'Hide password') : (lang === 'fr' ? 'Afficher le mot de passe' : 'Show password')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-400 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 hover:text-sky-700 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -215,18 +215,18 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 font-bold text-white transition-all hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 py-3.5 font-bold text-white transition-all hover:bg-sky-500 hover:shadow-lg hover:shadow-sky-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t.submit}
               {!loading && <ArrowRight className="h-5 w-5" />}
             </button>
           </form>
 
-          <div className="mt-8 text-center border-t border-slate-800 pt-6">
-            <p className="text-slate-400 text-sm">
+          <div className="mt-8 text-center border-t border-slate-200 dark:border-white/10 pt-6">
+            <p className="text-slate-500 dark:text-neutral-400 text-sm">
               {t.no_account}{' '}
               {/* LIEN VERS LE PRICING */}
-              <a href="/#pricing" className="font-bold text-blue-500 hover:text-blue-400 hover:underline transition-all">
+              <a href="/#pricing" className="font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 hover:underline transition-all">
                 {t.signup}
               </a>
             </p>
@@ -237,23 +237,23 @@ export default function Login() {
       {/* MODAL MOT DE PASSE OUBLIÉ */}
       {isResetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-[#0B1121] p-8 shadow-2xl relative animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] p-8 shadow-2xl relative animate-in zoom-in-95 duration-200">
             <button
               onClick={() => { setIsResetModalOpen(false); setResetMessage(null); setResetEmail(''); }}
-              className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+              className="absolute top-4 right-4 text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
 
             <div className="mb-6">
-              <h3 className="text-xl font-bold text-white mb-2">{t.forgot_title}</h3>
-              <p className="text-slate-400 text-sm">{t.forgot_subtitle}</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{t.forgot_title}</h3>
+              <p className="text-slate-500 dark:text-neutral-400 text-sm">{t.forgot_subtitle}</p>
             </div>
 
             {resetMessage && (
               <div className={`mb-6 p-4 rounded-xl border flex items-start gap-3 ${resetMessage.type === 'success'
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                : 'bg-red-500/10 border-red-500/20 text-red-400'
+                ? 'bg-sky-500/10 border-sky-500/20 text-sky-700 dark:text-sky-400'
+                : 'bg-red-500/10 border-red-500/20 text-red-600'
                 }`}>
                 {resetMessage.type === 'success' ? (
                   <Check className="h-5 w-5 mt-0.5 shrink-0" />
@@ -266,14 +266,14 @@ export default function Login() {
 
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-bold text-slate-300">{t.email}</label>
+                <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-neutral-300">{t.email}</label>
                 <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                  <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-neutral-500 group-focus-within:text-sky-600 transition-colors" />
                   <input
                     type="email"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900/50 py-3 pl-10 pr-4 text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
+                    className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-white/5 py-3 pl-10 pr-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-neutral-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none transition-all"
                     placeholder="votre@email.com"
                     required
                   />
@@ -283,7 +283,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={resetLoading || !resetEmail}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-bold text-white transition-all hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 py-3 font-bold text-white transition-all hover:bg-sky-500 hover:shadow-lg hover:shadow-sky-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {resetLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : t.forgot_send}
               </button>

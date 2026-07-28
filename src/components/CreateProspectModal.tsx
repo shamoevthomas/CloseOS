@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X, Building2, Tag } from 'lucide-react'
 import { useOffers, type Offer } from '../contexts/OffersContext'
 import { useLanguage } from '../contexts/LanguageContext'
+import PhoneInput from './PhoneInput'
 
 // Helper to parse price
 const parsePrice = (priceString: string): number => {
@@ -156,13 +157,13 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg rounded-2xl bg-[#1a1a1a] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.2)] border border-white/[0.08]">
+      <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-[#1a1a1a] p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] border border-slate-200 dark:border-white/10">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-xl font-bold text-white">Nouveau Prospect</h2>
-            <p className="mt-1 text-sm text-white/40">Ajouter un nouveau prospect au pipeline</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Nouveau Prospect</h2>
+            <p className="mt-1 text-sm text-slate-400 dark:text-neutral-500">Ajouter un nouveau prospect au pipeline</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-white/40 hover:bg-white/5 hover:text-white">
+          <button onClick={onClose} className="rounded-lg p-2 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -172,71 +173,69 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
           {/* NOUVEAU : Prénom et Nom séparés */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/60">Prénom</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-neutral-400">Prénom</label>
               <input
                 type="text"
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 placeholder="Ex: Jean"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-white/60">Nom *</label>
+              <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-neutral-400">Nom *</label>
               <input
                 type="text"
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 placeholder="Ex: Dupont"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-white/60">Email</label>
+            <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-neutral-400">Email</label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="Ex: jean.dupont@entreprise.com"
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-white/60">Téléphone</label>
-            <input
-              type="tel"
+            <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-neutral-400">Téléphone</label>
+            <PhoneInput
+              variant="sales"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="Ex: +33 6 12 34 56 78"
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+              onChange={(v) => setFormData({ ...formData, phone: v })}
             />
           </div>
 
           <div>
-            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white/60">
-              <Building2 className="h-4 w-4 text-emerald-400" />
-              Entreprise <span className="text-white/40 font-normal">(facultatif)</span>
+            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-neutral-400">
+              <Building2 className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+              Entreprise <span className="text-slate-400 dark:text-neutral-500 font-normal">(facultatif)</span>
             </label>
             <input
               type="text"
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
               placeholder="Ex: Tech Corp"
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
             />
           </div>
 
           {/* SÉLECTEUR D'OFFRE */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-white/60">Offre</label>
+            <label className="mb-2 block text-sm font-medium text-slate-500 dark:text-neutral-400">Offre</label>
             <select
               value={formData.offerId}
               onChange={(e) => handleOfferChange(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
             >
               <option value="">-- Sélectionner une offre --</option>
               {activeOffers.map((offer) => (
@@ -250,14 +249,14 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
           {/* SÉLECTEUR DE FORMULE */}
           {hasFormulas && (
             <div className="animate-in fade-in slide-in-from-top-2">
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-400">
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-sky-600 dark:text-sky-400">
                 <Tag className="h-4 w-4" />
                 Choix de la formule *
               </label>
               <select
                 value={selectedFormulaId}
                 onChange={(e) => handleFormulaChange(e.target.value)}
-                className="w-full rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                className="w-full rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none"
                 required
               >
                 <option value="">-- Sélectionner la formule --</option>
@@ -273,7 +272,7 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
           {/* PRIX */}
           {selectedOfferPrice > 0 && (
             <div className="flex justify-end">
-              <p className="text-xs font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">
+              <p className="text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-2 py-1 rounded">
                 Valeur estimée : {selectedOfferPrice.toLocaleString('fr-FR')} €
               </p>
             </div>
@@ -284,14 +283,14 @@ export function CreateProspectModal({ isOpen, onClose, onSubmit }: CreateProspec
           <div className="mt-6 flex gap-3">
             <button
               type="submit"
-              className="flex-1 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition-all hover:bg-emerald-400"
+              className="flex-1 rounded-full bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-sky-600"
             >
               Créer le prospect
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10"
+              className="rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-neutral-300 transition-all hover:bg-slate-100"
             >
               Annuler
             </button>

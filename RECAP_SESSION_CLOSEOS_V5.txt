@@ -1,0 +1,1373 @@
+================================================================================
+  CLOSEOS V5 — RÉCAPITULATIF COMPLET DE LA SESSION
+  Généré le 2026-07-27
+================================================================================
+
+Portée générale : travail concentré sur CLOSEOS SALES (produit closer solo),
++ quelques ajouts/corrections transverses (Business). Règles respectées tout du
+long : ne rien déployer / pousser sans demande explicite ; ne pas afficher la clé
+VITE_BREVO_API_KEY ; ne pas casser Business/Sign/CRM.
+
+Stack : Vite 7 + React 19 + TypeScript + Tailwind v3.4 (darkMode 'class')
+        + Supabase (projet CloseOS : qwjvdwpixewsctircibl) + Brevo + crons Vercel.
+Palette Sales « Ciel/Azur » : fond #f4f2f1, cartes blanches, accent sky
+        (sky-600 CTA, sky-400/500), texte slate-*, bordures slate-200.
+
+
+================================================================================
+1. LANDING PAGE SALES — REFONTE DA (blanc dominant + bleu clair)
+================================================================================
+- Conversion dark → light + sky (palette « Ciel/Azur »).
+- Fond « blanc chaud » comme Business : #f4f2f1 (pas de blanc pur).
+- Navbar flottante (pilule) façon Business.
+- Logos d'intégration en vraies cartes (comme Business) au lieu de texte.
+- Marquee corrigé (boucle continue, plus de retour brusque à zéro).
+- Retrait de TOUTE mention « VoIP » (feature appels + Click-to-WhatsApp conservée,
+  simplement renommée sans le mot).
+Fichiers : src/pages/LandingPage.tsx, src/pages/landingPageI18n.ts
+
+
+================================================================================
+2. REFONTE DA DE TOUTE L'APP INTERNE SALES (light + dark mode)
+================================================================================
+- ~40 fichiers Sales convertis dark → light via scripts de recolorisation
+  déterministes, puis variantes dark: rajoutées (idempotent).
+- Structure calquée sur CloseOS Business (couleurs différentes), pop-ups comprises.
+- Layout : sidebar flottante repliable façon Business (rail w-20 → w-72 au survol),
+  cluster cloche fixe, blob décoratif, contenu max-w-[1600px].
+- Dark mode complet (comme Business) : ThemeContext ('closeos-dark', partagé),
+  toggle Soleil/Lune, la SIDEBAR change de structure en dark (pas juste couleurs).
+- Correctifs : sidebar dépliée qui décalait/coupait les boutons (« Nouveau »)
+  → passage en overlay (lg:fixed) + offset constant lg:ml-24.
+- Page login (LoadingScreen) incluse.
+Fichiers clés : src/layouts/Layout.tsx, src/components/Sidebar.tsx,
+  src/contexts/ThemeContext.tsx, src/components/LoadingScreen.tsx, + ~40 pages/modales.
+
+
+================================================================================
+3. CORRECTIFS DIVERS SALES
+================================================================================
+- Page RendezVous : cadre/fond blanc parasite → fond crème #f4f2f1 (racine
+  transparente), cartes bg-white, ombres adoucies.
+- Croix (X) de la fiche prospect qui ouvrait les notifications : la cloche fixe
+  volait le clic (contexte d'empilement). Corrigé (retrait z-10 du wrapper,
+  cloche en z-20).
+- Pipeline : menus déroulants passant SOUS les colonnes → header z-30.
+
+
+================================================================================
+4. FICHE PROSPECT & PIPELINE — NOUVELLES FONCTIONS
+================================================================================
+- RDV : reprogrammer / annuler (avec email automatique au prospect).
+- Édition du nom en inline (crayon dans l'en-tête).
+- Copier email / téléphone (icône Copy).
+- Recherche par email ET téléphone (barre de recherche).
+- Recherche tolérante sur téléphone : national 06… ↔ international +33…
+  (helper phoneMatches dans src/lib/utils.ts).
+- Même capacité de recherche ajoutée à la page Contacts.
+- Pipeline réorganisé (menu « Outils » regroupant Personnaliser / Réinitialiser /
+  Import-Export / Partage ; recherche déplacée ; bouton « Nouveau »).
+
+
+================================================================================
+5. ÉTAPE « CONTACTÉ » + SYSTÈME DE RELANCE (Setter / Setter-Closer)
+================================================================================
+- Ajout de l'étape « Contacté » avec tout le système de relance + tags (comme
+  Business) pour les rôles setter et setter-closer.
+- contacted_at posé au passage en « Contacté » ; badge de relance sur les cartes ;
+  « Relance faite » ; engrenage de config des délais sur la colonne.
+Fichiers : src/hooks/useCustomStages.ts (DEFAULT_STAGES_SETTER, 9 étapes),
+  src/hooks/useContactedReminders.ts, src/components/ContactedRemindersModal.tsx,
+  src/pages/Pipeline.tsx.
+
+
+================================================================================
+6. EMAILS DE RELANCE « CONTACTÉ » — PASSAGE EN DIGEST
+================================================================================
+- Avant : 1 email par prospect. Après : 1 email DIGEST listant toutes les relances
+  à faire, pour Sales ET Business.
+- Horaire initialement 14h → passé à 12h (à ta demande) :
+    contacted-reminders (Business)      : 0 12 * * *
+    sales-contacted-reminders (Sales)   : 2 12 * * *   (décalage 2 min)
+  NB : crons Vercel en UTC. 12h UTC = 14h Paris (été). (À confirmer si tu voulais
+  12h Paris → mettre 0 10 / 2 10.)
+Fichiers : api/cron/contacted-reminders.ts (réécrit en digest),
+  api/cron/sales-contacted-reminders.ts (nouveau), vercel.json.
+
+
+================================================================================
+7. AGENDA VISIBLE À LA RÉSERVATION D'UN RDV (anti-conflit)
+================================================================================
+Les 5 points où l'utilisateur crée un RDV lui-même utilisent le MÊME modal
+CreateEventModal → modif faite une seule fois, appliquée partout :
+  1. Pipeline   2. Contacts   3. Agenda   4. CallRoom   5. Rappels
+  (+ auto-RDV « Follow Up » de la fiche)
+- Nouveau composant SalesBookingAgendaPanel : vue semaine de ton agenda
+  (RDV CloseOS via useMeetings + événements Google via googleEvents) affichée
+  à droite du formulaire (desktop), avec APERÇU en direct du créneau saisi.
+- Bannière d'alerte de CONFLIT (⚠️ ambre) listant les RDV/événements qui
+  chevauchent le créneau — affichée sur toutes tailles d'écran (donc aussi mobile).
+  Non bloquante (« Vous pouvez tout de même programmer ce RDV »).
+- CallRoom + Rappels : le bouton RDV de la fiche était inerte → maintenant branché
+  (CreateEventModal monté + onCreateEvent).
+Fichiers : src/components/SalesBookingAgendaPanel.tsx (nouveau),
+  src/components/CreateEventModal.tsx, src/pages/CallRoom.tsx, src/pages/RemindersPage.tsx.
+
+
+================================================================================
+8. NOUVELLE FONCTION — TÂCHES / TO-DO PAR PROSPECT
+================================================================================
+- Onglet « Tâches » dans la fiche prospect (badge du nombre de tâches ouvertes) :
+  ajout titre + date d'échéance optionnelle, coche pour terminer, suppression,
+  badges « En retard » (rouge) / « Aujourd'hui » (ambre).
+- Widget « À faire » sur le Dashboard : liste toutes les tâches ouvertes triées par
+  échéance, coche rapide, clic → ouvre la fiche prospect.
+Fichiers : src/hooks/useProspectTasks.ts (nouveau : useProspectTasks + useAllOpenTasks),
+  src/components/ProspectView.tsx, src/pages/Dashboard.tsx.
+BDD : table prospect_tasks (RLS auth.uid()).
+
+
+================================================================================
+9. NOUVELLE FONCTION — RAPPORT DE PERF (in-app)
+================================================================================
+- Bouton « Rapport de la semaine » sur le Dashboard → modale WeeklyReportModal :
+  CA gagné, deals gagnés, RDV réalisés, taux de closing (chacun avec delta vs S-1
+  ▲/▼), + RDV programmés / nouveaux prospects / annulés.
+- Calculé en direct depuis meetings + prospects (pas d'IA — CloseOS n'a pas d'IA).
+Fichiers : src/components/WeeklyReportModal.tsx (nouveau), src/pages/Dashboard.tsx.
+
+
+================================================================================
+10. NOUVELLE FONCTION — DÉTECTION & FUSION DE DOUBLONS
+================================================================================
+- Message « X doublons détectés » (bannière ambre) sur la page Contacts quand des
+  fiches partagent le même email OU téléphone (union-find + matching tolérant).
+- Clic → liste des groupes de doublons. Chaque card a un bouton « Fusionner »
+  (fusion rapide dans la fiche maître).
+- Clic sur la card → comparaison CÔTE À CÔTE : une fiche à gauche, une à droite,
+  bouton « Fusionner » au milieu ; on clique la fiche à conserver (anneau bleu).
+- Fusion atomique et sécurisée (fonction Postgres merge_prospects) : complète les
+  champs vides, réassigne RDV / rappels / appels / tags / notes / tâches, supprime
+  le doublon.
+Fichiers : src/hooks/useDuplicates.ts, src/lib/mergeProspects.ts,
+  src/components/DuplicatesModal.tsx, src/components/MergeProspectsModal.tsx,
+  src/pages/Contacts.tsx, src/lib/utils.ts (phoneKey),
+  src/contexts/ProspectsContext.tsx (refreshProspects + champs avatar_url/updated_at).
+BDD : fonction merge_prospects(keep_id, dup_id).
+
+
+================================================================================
+11. CORRECTION BUILD BUSINESS (bloquante)
+================================================================================
+- src/business/pages/TeamMemberDashboard.tsx:362 : accolade en trop « })}} » →
+  corrigée en « })} ». Erreur de syntaxe pré-existante (non introduite par la
+  session). NB vérifié : vite build tolérait cette erreur (esbuild), donc ce n'était
+  PAS la cause des mails non envoyés. Correction conservée car code correct.
+- Constat : le projet a ~653 erreurs tsc PRÉ-EXISTANTES (surtout imports/variables
+  inutilisés dans business/, App.tsx, crm/, ProspectsContext…). Le build est
+  `vite build` (sans tsc), donc les erreurs de types ne bloquent pas. Mes fichiers
+  Sales sont clean.
+
+
+================================================================================
+12. RAPPORT DE PERF PAR EMAIL (prêt à déployer)
+================================================================================
+- Nouveau cron api/cron/sales-weekly-report.ts : email hebdo, LUNDI 8h
+  (0 8 * * 1), rapporte la SEMAINE ÉCOULÉE (lundi→dimanche).
+- Contenu = mêmes chiffres que la modale in-app + deltas vs S-1 + CTA KPI.
+- Scopé Sales uniquement (users ayant des lignes dans `prospects`). Skip auto des
+  users sans activité (pas de mail vide).
+- Réutilise l'infra existante (service-role, Brevo, secret cron) → aucune nouvelle
+  variable d'env.
+Fichiers : api/cron/sales-weekly-report.ts, vercel.json.
+
+
+================================================================================
+13. DIAGNOSTIC — POURQUOI LES MAILS DE RAPPELS NE PARTAIENT PAS
+================================================================================
+Vérifié en base (projet CloseOS) :
+- SALES : cron sales-contacted-reminders JAMAIS commité/déployé (absent de HEAD et
+  du vercel.json déployé) + 0 relance configurée + 0 prospect en « Contacté »
+  → rien à envoyer, c'est normal.
+- BUSINESS : le cron déployé (ancienne version « 1 mail par personne » avec table
+  de déduplication business_contacted_reminder_logs) FONCTIONNAIT : 48 envois entre
+  le 17/07 et le 25/07. Silence depuis car toutes les relances dues (délais 2/5/8/17)
+  avaient déjà été envoyées et loguées ; la prochaine n'arrive qu'au jour 17.
+  Ce n'est donc pas une panne. La version « digest » souhaitée est prête mais NON
+  déployée (modif locale non commitée).
+- La version déployée tourne à 09:00 UTC (logs à 09:01), pas à l'horaire voulu.
+CONCLUSION : il suffit de DÉPLOYER le travail de la session pour que le comportement
+digest 12h s'applique côté Business et que Sales existe.
+Test manuel possible après déploiement :
+  curl -s -H "Authorization: Bearer <CRON_SECRET>" https://closeos.fr/api/cron/contacted-reminders
+
+
+================================================================================
+14. NOUVELLE FONCTION — RAPPELS À « HEURE PRÉCISE » + EMAIL 5 MIN AVANT
+================================================================================
+- Case à cocher « Heure précise » (DÉCOCHÉE par défaut) dans le formulaire de
+  création de rappel, côté SALES (fiche prospect) ET BUSINESS (fiche prospect).
+    • Décochée : seul le champ Date est demandé → stocké à 09:00 en interne, PAS d'email.
+    • Cochée : le champ Heure apparaît + devient obligatoire → email 5 min avant.
+- Nouveau cron api/cron/reminder-time-emails.ts (toutes les 5 min) : envoie l'email
+  5 min avant l'heure (déclenchement en temps absolu, rattrapage 15 min), marque
+  email_sent=true (pas de doublon).
+- Destinataire : Sales → le propriétaire (profiles) ; Business → membre assigné
+  (assigned_to) sinon créateur sinon owner.
+- Heure affichée dans l'email : Europe/Paris.
+Fichiers : src/components/ProspectView.tsx (Sales),
+  src/business/components/BusinessProspectView.tsx (Business),
+  api/cron/reminder-time-emails.ts (nouveau), vercel.json.
+BDD : colonnes reminders.has_time + reminders.email_sent (+ index partiel).
+  Les rappels EXISTANTS restent has_time=false → aucun email rétroactif.
+  (Table reminders unique : prospect_id = Sales, business_prospect_id = Business.)
+
+
+================================================================================
+15. MIGRATIONS BASE DE DONNÉES APPLIQUÉES EN PROD (projet qwjvdwpixewsctircibl)
+================================================================================
+- sales_contacted_relance_system : prospects.contacted_at, prospects.relance_step
+  + table contacted_reminders (RLS auth.uid()).
+- sales_contacted_reminder_logs : table contacted_reminder_logs (désormais inutile
+  avec le digest).
+- sales_tasks_and_merge_prospects :
+    • table prospect_tasks (id, user_id, prospect_id, title, due_date, is_done,
+      done_at, created_at ; RLS auth.uid()) ;
+    • fonction merge_prospects(keep_id, dup_id) SECURITY DEFINER (vérifie que les
+      deux fiches appartiennent à auth.uid()).
+- reminders_precise_time_email : reminders.has_time + reminders.email_sent
+  + index partiel reminders_due_email_idx.
+
+
+================================================================================
+16. CRONS (vercel.json) — ÉTAT VISÉ APRÈS DÉPLOIEMENT
+================================================================================
+- /api/cron/contacted-reminders       0 12 * * *     (digest relances Business)
+- /api/cron/sales-contacted-reminders  2 12 * * *     (digest relances Sales)
+- /api/cron/sales-weekly-report        0 8 * * 1      (rapport hebdo Sales, lundi 8h)
+- /api/cron/reminder-time-emails       */5 * * * *    (email 5 min avant rappel h. précise)
+(Rappel : horaires en UTC.)
+
+
+================================================================================
+17. FICHIERS — CRÉÉS / MODIFIÉS
+================================================================================
+CRÉÉS :
+- src/components/SalesBookingAgendaPanel.tsx
+- src/components/WeeklyReportModal.tsx
+- src/components/DuplicatesModal.tsx
+- src/components/MergeProspectsModal.tsx
+- src/components/ContactedRemindersModal.tsx
+- src/contexts/ThemeContext.tsx
+- src/hooks/useProspectTasks.ts
+- src/hooks/useDuplicates.ts
+- src/hooks/useContactedReminders.ts
+- src/lib/mergeProspects.ts
+- api/cron/sales-contacted-reminders.ts
+- api/cron/sales-weekly-report.ts
+- api/cron/reminder-time-emails.ts
+
+MODIFIÉS (principaux) :
+- src/pages/LandingPage.tsx, src/pages/landingPageI18n.ts
+- src/layouts/Layout.tsx, src/components/Sidebar.tsx
+- src/components/CreateEventModal.tsx, src/components/ProspectView.tsx
+- src/pages/Dashboard.tsx, src/pages/Contacts.tsx, src/pages/Pipeline.tsx
+- src/pages/CallRoom.tsx, src/pages/RemindersPage.tsx, src/pages/RendezVous.tsx
+- src/hooks/useCustomStages.ts, src/lib/utils.ts
+- src/contexts/ProspectsContext.tsx
+- src/business/components/BusinessProspectView.tsx
+- src/business/pages/TeamMemberDashboard.tsx (fix accolade)
+- api/cron/contacted-reminders.ts (réécrit en digest)
+- vercel.json
+- (+ ~40 pages/modales Sales recolorisées light + dark)
+
+
+================================================================================
+18. ÉTAT DE DÉPLOIEMENT
+================================================================================
+- RIEN n'a été poussé ni déployé (git non commité pour l'essentiel de la session,
+  hors ce qui l'était déjà). Conforme à la consigne « on ne déploie rien ».
+- Les migrations BDD, elles, SONT appliquées en prod (nécessaires pour que l'app
+  fonctionne en local, qui pointe sur le Supabase de prod).
+- Au prochain déploiement (commit + push + deploy Vercel) : les 4 crons ci-dessus
+  s'activeront ; variables d'env requises déjà en place (BREVO_API_KEY,
+  SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET, VITE_SUPABASE_URL).
+
+POINTS OUVERTS À CONFIRMER :
+- Fuseau des digests : 12h UTC (=14h Paris) ou 12h Paris (=10h UTC) ?
+- Digest relances : garder le mail groupé (choix actuel) ou revenir à 1 mail/relance ?
+- Rappel sans heure précise rangé à 09:00 en interne : OK ?
+
+================================================================================
+19. NOUVELLE FONCTION — INDICATIF TÉLÉPHONIQUE + MISE EN FORME (comme Business)
+================================================================================
+- Champ Téléphone avec SÉLECTEUR D'INDICATIF international (drapeau + indicatif,
+  recherchable) et MISE EN FORME automatique du numéro national (espaces via
+  libphonenumber), comme dans Business. Émet la valeur combinée « +33 6 12 34 56 78 ».
+- Ajouté à 2 endroits côté Sales :
+    • Fiche prospect → carte « Fiche Client » en mode édition (ProspectView).
+    • Modal « Nouveau Prospect » (CreateProspectModal).
+- Implémentation : nouvelle variante `variant="sales"` ajoutée au composant existant
+  src/components/PhoneInput.tsx — auto-suffisante et THEME-AWARE (light + dark, accent
+  sky), dropdown assorti. Les variantes existantes `dark` / `plain` (utilisées par
+  Sign et FillableField) NE SONT PAS modifiées → aucun risque de régression.
+- EXEMPLE (placeholder) DYNAMIQUE selon le pays choisi (via libphonenumber
+  getExampleNumber + examples.mobile.json), formaté comme la vraie saisie :
+    FR +33 → 6 12 34 56 78   |   AR +54 → 9 11 2345 6789
+    US +1  → 201 555 0123    |   GB +44 → 7400 123456
+  (Amélioration appliquée à tout le composant : les autres usages profitent aussi
+  d'un exemple adapté au pays, sauf si un placeholder explicite est passé.)
+Fichiers : src/components/PhoneInput.tsx (variante 'sales' + placeholder dynamique),
+  src/components/ProspectView.tsx, src/components/CreateProspectModal.tsx.
+
+
+================================================================================
+SUITE DE SESSION (même journée) — BASCULE DE PORTÉE : CLOSEOS BUSINESS
+================================================================================
+À partir d'ici, portée BUSINESS (à la demande explicite, en cours de session).
+Nouveautés : correctif UI (en-tête collant), un nouveau module Formulaires
+(builder type Tally, avec bloc vidéo à visionnage obligatoire), une feature
+de relances email "No Show", un serveur MCP complet pour piloter Business
+depuis un assistant IA, et sa configuration dans les Paramètres. Règles
+inchangées : rien déployé/poussé sans demande explicite ; migrations
+appliquées en prod (nécessaire, le local pointe sur le Supabase de prod).
+
+
+================================================================================
+20. PIPELINE — EN-TÊTE "QUESTIONS" COLLANT (modale Campagne → Qualification)
+================================================================================
+- La barre "Questions (N) · + Ajouter une question" reste désormais visible
+  (sticky top-0) pendant le défilement de la liste de questions, au lieu de
+  disparaître en haut et d'obliger à remonter.
+- Fond opaque + z-20 (sinon les questions défileraient dessous en
+  transparence), -mx-8 px-8 pour couvrir le padding du conteneur scrollable
+  (p-8) jusqu'aux bords.
+Fichier : src/business/pages/BusinessCampaigns.tsx
+
+
+================================================================================
+21. NOUVEAU MODULE — FORMULAIRES BUSINESS (builder type Tally)
+================================================================================
+- Nouvelle capacité "Formulaires", DISTINCTE des campagnes (pas de booking,
+  pas d'assignation closer/setter) : formulaire multi-blocs, éditeur façon
+  Notion ("/" pour insérer un bloc), page publique dédiée.
+- Éditeur "/" : 20 types de blocs — texte court/long, email, tél, nombre,
+  lien, date, choix unique/multiple, liste déroulante, oui/non, note
+  (étoiles), échelle linéaire, champ caché (lu dans l'URL), vidéo (§22),
+  + blocs de mise en page (titre, sous-titre, texte, séparateur, image,
+  saut de page). Entrée = nouveau bloc, Retour arrière sur bloc vide =
+  suppression, drag & drop (@hello-pangea/dnd, déjà utilisé dans TeamKanban),
+  menu par bloc (obligatoire, dupliquer, logique conditionnelle, supprimer).
+- Logique conditionnelle par bloc ("afficher si...") : sources limitées aux
+  blocs ANTÉRIEURS (pas de cycle possible), cascade si la source elle-même
+  est masquée. Opérateurs : in / not_in / gte / lte / between / answered.
+- Page publique /f/:slug (src/pages/PublicForm.tsx) : multi-étapes via sauts
+  de page OU mode "une question à la fois", barre de progression, couleur
+  d'accent personnalisable, page de remerciement OU redirection, embed
+  iframe (?embed=true, mêmes headers CSP que /capture), FR/EN auto (langue
+  navigateur ou ?lang=).
+- Pont CRM OPTIONNEL par formulaire (toggle "Créer un prospect") : mapping
+  nom/email/téléphone, source, étape d'entrée, rattachement à une campagne.
+  Dédoublonnage sur l'email. Les réponses atterrissent dans lead_answers du
+  prospect → s'affichent DÉJÀ sur la fiche (BusinessProspectView, section
+  "Réponses du questionnaire externe") sans modification de ce composant.
+- Tableau des réponses + détail + export CSV (BOM UTF-8, séparateur ";"
+  pour Excel FR), notification email optionnelle à chaque réponse.
+- Validation systématiquement REVALIDÉE côté serveur (obligatoire, formats,
+  visibilité conditionnelle) : un client malveillant ne peut ni injecter de
+  réponses à des blocs masqués ni des clés inconnues.
+- Nouvel évènement webhook sortant : form.submitted.
+Fichiers créés :
+  src/lib/formBlocks.ts + api/_lib/formBlocks.ts (miroir, modèle de blocs
+    partagé — TOUJOURS synchroniser les deux copies),
+  api/business-forms.ts (forms-list/create/update/delete/duplicate/
+    responses, form-response-delete, form-public, form-submit),
+  src/business/components/FormBlockEditor.tsx (éditeur "/"),
+  src/business/components/FormResponsesModal.tsx (tableau + export CSV),
+  src/business/pages/BusinessForms.tsx (liste + éditeur plein écran +
+    onglets Contenu/Réglages/CRM/Partage),
+  src/business/i18n/formsI18n.ts (i18n dédié FR/EN, module séparé de
+    translations.ts pour ne pas l'alourdir),
+  src/pages/PublicForm.tsx (page publique /f/:slug).
+Fichiers modifiés : src/App.tsx (routes /business/formulaires + /f/:slug),
+  src/business/components/BusinessSidebar.tsx (entrée "Formulaires"),
+  src/business/i18n/translations.ts (clés sidebar_forms FR/EN),
+  vercel.json (règle headers embed pour /f/(.*)),
+  api/_lib/webhook-events.ts (évènement form.submitted).
+BDD : tables business_forms (blocks jsonb, settings jsonb, crm_enabled +
+  crm_mapping, slug, is_active) + business_form_responses (answers jsonb,
+  prospect_id nullable). Migration : 20260727_business_forms.sql.
+Accès : gaté comme les campagnes (AcquisitionRedirect + CampaignGuard) — les
+  plans sans acquisition n'y ont pas accès. À desserrer si besoin (2 lignes).
+
+
+================================================================================
+22. BLOC FORMULAIRE — VIDÉO AVEC VISIONNAGE OBLIGATOIRE (VSL)
+================================================================================
+- Nouveau type de bloc "Vidéo" dans l'éditeur "/" : colle un lien (YouTube,
+  Vimeo, Google Drive, Loom, ou fichier .mp4/.webm/.mov direct) → reconnu et
+  transformé automatiquement en lecteur intégré.
+- Option "Visionnage obligatoire" + durée minimale en secondes (raccourcis
+  15s/30s/1min/2min/5min) : le visiteur ne peut pas passer à l'étape
+  suivante tant que la durée n'est pas atteinte.
+- Le lecteur est masqué par un bouton "Lancer la vidéo" propre à CloseOS :
+  ce clic déclenche à la fois la lecture (autoplay) ET le compte à rebours
+  — impossible de détecter le "play" à l'intérieur d'un iframe YouTube/
+  Vimeo/Drive sans charger leurs SDK externes, c'est le contournement. Le
+  compteur se met en pause si l'onglet passe en arrière-plan (anti-triche
+  basique). Pour un fichier direct, les vrais évènements play/pause/ended
+  du <video> sont utilisés.
+- Les secondes visionnées sont stockées comme une réponse normale : visibles
+  dans le tableau de réponses / export CSV ("62 s visionnées"), et peuvent
+  servir de SOURCE à une logique conditionnelle ("afficher ce bloc si la
+  vidéo a été vue au moins 45 s") pour ne montrer un formulaire de contact
+  qu'aux visiteurs ayant réellement regardé une VSL.
+- Limite connue : le minimum est revalidé côté serveur, mais un client qui
+  manipule directement les requêtes HTTP peut falsifier la valeur envoyée.
+  Garde-fou d'expérience utilisateur, pas un contrôle inviolable.
+Fichiers : src/lib/formBlocks.ts + api/_lib/formBlocks.ts (parseVideoUrl,
+  videoSrcWithAutoplay, requiredWatchSeconds, code d'erreur watch_required),
+  src/business/components/FormBlockEditor.tsx (VideoEditor),
+  src/pages/PublicForm.tsx (VideoPlayerBlock).
+
+
+================================================================================
+23. OUTIL DE DEV — SERVEUR API LOCAL (contourne le blocage `vercel dev`)
+================================================================================
+- `vercel dev` bloqué : le CLI (compte tekatubois-7630, scope
+  tekatubois-7630s-projects) ne voit pas le projet `close-os` (autre org).
+  Solution : petit serveur Node local qui monte les fichiers api/*.ts
+  derrière un adaptateur req/res compatible Vercel (query, body,
+  status().json(), redirect, cookies). Aucune dépendance ajoutée (tsx déjà
+  présent via @vercel/node). Rechargement à chaud par date de modification
+  des fichiers (mtimeMs) — sinon un fichier api/ modifié restait invisible
+  jusqu'au redémarrage du serveur.
+- npm run dev:api   → API locale sur http://localhost:3001
+  npm run dev:local → Vite avec le proxy /api pointé sur le serveur local
+  npm run dev        → INCHANGÉ, proxy vers la prod par défaut (rien ne
+                        casse pour l'usage habituel)
+- ATTENTION PORT : si 5173 est déjà pris (un autre `npm run dev` déjà
+  lancé), Vite bascule sur 5174 — l'onglet resté sur 5173 continue de
+  proxifier vers la prod (où les nouvelles routes n'existent pas encore),
+  symptôme identique à une vraie panne. Toujours vérifier le port affiché
+  par `npm run dev:local`.
+Fichiers créés : scripts/dev-api.ts.
+Fichiers modifiés : package.json (scripts dev:api / dev:local),
+  vite.config.ts (proxy piloté par VITE_API_PROXY, prod par défaut).
+
+
+================================================================================
+24. NOUVELLE FONCTION — RELANCES EMAIL AUTOMATIQUES "NO SHOW"
+================================================================================
+- Colonne No Show du pipeline : nouveau bouton engrenage (comme "Contacté")
+  → modale de config des relances email envoyées AU PROSPECT (pas un digest
+  au closer, à la différence des relances "Contacté").
+- Jusqu'à 7 relances, chacune avec : délai (jours), objet, message (variable
+  {{lead_name}}), lien de booking optionnel (relié au CRM — avertissement
+  explicite affiché dans la modale).
+- RÈGLE D'ÉCHÉANCE (demandée) : la relance 1 part delay_days après le
+  PASSAGE EN NO SHOW ; les relances 2 à 7 partent delay_days après L'ENVOI
+  DE LA RELANCE 1 (elles ne s'enchaînent pas les unes après les autres —
+  toutes calées sur la première).
+- Sortir du stage No Show coupe la séquence ; y revenir en démarre une
+  nouvelle. Les prospects DÉJÀ en No Show au moment de la migration ne
+  reçoivent rien rétroactivement (pas de noshow_at renseigné pour
+  l'existant, pour éviter un envoi massif au premier cron).
+- Nouveau cron noshow-relances (quotidien, 12h30 UTC).
+- Sauvegarde de la config en UPSERT par position (pas delete+insert) : la
+  1ère version supprimait/recréait les lignes, ce qui aurait renvoyé aux
+  prospects en cours des relances DÉJÀ envoyées (le journal anti-doublon
+  est en cascade sur l'id de la relance). Corrigé avant tout risque réel.
+Fichiers créés : api/cron/noshow-relances.ts,
+  src/business/components/BusinessNoShowRelancesModal.tsx.
+Fichiers modifiés : api/business.ts (actions noshow-relances-list/save),
+  src/business/pages/BusinessPipeline.tsx (bouton + modale sur la colonne),
+  vercel.json (cron).
+BDD : prospects.noshow_at / noshow_first_relance_at / noshow_relance_step
+  (trigger set_noshow_at) + tables business_noshow_relances (config, RLS
+  owner/team) et business_noshow_relance_logs (anti-doublon).
+  Migration : 20260727_noshow_relances.sql.
+
+
+================================================================================
+25. BUG CORRIGÉ (préexistant) — QUESTIONNAIRE DE CAMPAGNE, INSERT SILENCIEUX
+================================================================================
+- api/business.ts, action questionnaire-save : un insert en LOT supabase-js
+  unifie les colonnes du tableau — un id absent (undefined) sur une ligne
+  devenait id:null pour tout le lot, violant le NOT NULL de
+  campaign_questions.id. L'erreur Postgres n'était PAS remontée (retour de
+  l'insert non vérifié), donc l'appelant croyait avoir enregistré ses
+  questions alors que rien n'était sauvegardé — silencieusement. Trouvé en
+  testant le MCP (§26).
+- Corrigé : id généré côté serveur (crypto.randomUUID()) si absent, ET
+  l'erreur d'insert est désormais renvoyée en 500 au lieu d'être avalée.
+Fichier : api/business.ts.
+
+
+================================================================================
+26. GROSSE FEATURE — SERVEUR MCP BUSINESS (piloter tout depuis un assistant IA)
+================================================================================
+- Nouveau serveur MCP (Model Context Protocol) : n'importe quel client MCP
+  (Claude, etc.) peut piloter TOUT CloseOS Business — CRM/prospects,
+  campagnes + questionnaire, liens de booking, rendez-vous (créer/annuler/
+  reprogrammer/réassigner), relances Contacté + No Show, rappels, équipe/
+  invitations, formules, objectifs, sources, formulaires (Tally), liens de
+  tracking (/t/), statistiques d'acquisition/pipeline. 30 outils au total.
+- Architecture : JSON-RPC "Streamable HTTP" stateless écrit à la main, SANS
+  dépendance npm (même pattern éprouvé que le MCP Sign existant — le
+  bundling du SDK MCP faisait crasher l'invocation Vercel). CRUD simple en
+  Supabase REST direct (scoping owner systématique) ; toute action à effet
+  de bord (emails, limites de sièges, tokens, round-robin) est PROXÉE en
+  HTTP interne vers /api/business et /api/business-forms — comportement
+  identique à l'app, zéro duplication de logique.
+- AUTH multi-compte : réutilise les clés API existantes (préfixe cos_,
+  modale CRM → "CloseOS CRM" → Générer une clé API, table
+  business_webhook_keys). La clé détermine le propriétaire ; tout est scopé
+  à son compte. URL : https://closeos.fr/api/business-mcp/<clé cos_...>
+- Garde-fous volontaires : rien sur Stripe/paiements, pas de suppression de
+  membre d'équipe, business_settings jamais exposé (clés tierces dedans),
+  toute suppression destructive exige confirm=true.
+- DÉCISION (discussion, pas de code) : PAS de version pour les membres
+  d'équipe (closer/setter) pour l'instant — la clé donne les pleins
+  pouvoirs sur le compte entier, il faudrait rejouer les règles de rôle de
+  l'app sur chacun des 30 outils (chantier distinct, à faire seulement si
+  le besoin se confirme après usage réel côté owner).
+- DÉCISION (discussion) : PAS de MCP pour CloseOS Sales — décidé par toi
+  (peu de choses à administrer côté Sales : pas de campagnes/équipe/
+  booking-links/formulaires à ce jour ; les 2-3 cas d'usage réels — log
+  d'appel en une phrase, import non structuré — ne justifient pas le
+  chantier tant que le MCP Business n'a pas fait ses preuves à l'usage).
+Fichier créé : api/business-mcp.js.
+Fichier modifié : vercel.json (rewrite /api/business-mcp/:key).
+Vérifié : 50 contrôles de bout en bout contre la vraie base (clé jetable,
+  données créées/nettoyées à chaque fois), aucun résidu en base après tests.
+
+
+================================================================================
+27. RÉGLAGES — SECTION "ASSISTANT IA" (configuration du MCP par l'utilisateur)
+================================================================================
+- Nouvel onglet dans les Paramètres Business (PROPRIÉTAIRE UNIQUEMENT — la
+  clé donne accès à tout le compte, un membre d'équipe n'a pas à la voir) :
+  générer sa clé MCP dédiée (préfixe cos_, distincte de la clé Zapier), URL
+  du connecteur masquée/révélable + copie en un clic, toggle actif/
+  désactivé (coupe l'accès sans invalider l'URL), liste des capacités
+  pilotables, régénération avec confirmation explicite (l'ancienne URL meurt
+  immédiatement).
+- Bug RLS corrigé au passage : business_webhook_keys n'avait pas de policy
+  UPDATE pour le propriétaire (SELECT/INSERT/DELETE seulement) → le toggle
+  actif/inactif aurait échoué en silence. Policy ajoutée.
+- Correction dans la modale CRM/intégrations : son chargeur de clé Zapier
+  prenait "n'importe quelle clé active" du compte sans filtrer par nom → la
+  nouvelle clé MCP aurait pu s'afficher par erreur comme clé Zapier. Ajout
+  d'un filtre .neq('name', 'MCP').
+Fichiers modifiés : src/business/components/BusinessSettingsModal.tsx
+  (nouvel onglet 'mcp'), src/business/components/BusinessCRMIntegrationModal.tsx
+  (filtre de nom).
+BDD : policy RLS "Owner can update own webhook keys" sur
+  business_webhook_keys. Migration : 20260727_webhook_keys_owner_update.sql.
+
+
+================================================================================
+28. MIGRATIONS BASE DE DONNÉES SUPPLÉMENTAIRES APPLIQUÉES EN PROD
+================================================================================
+(même projet Supabase : qwjvdwpixewsctircibl)
+- 20260727_business_forms.sql : tables business_forms, business_form_responses.
+- 20260727_noshow_relances.sql : colonnes prospects.noshow_*, tables
+  business_noshow_relances, business_noshow_relance_logs, trigger
+  set_noshow_at.
+- 20260727_webhook_keys_owner_update.sql : policy RLS UPDATE sur
+  business_webhook_keys.
+
+
+================================================================================
+29. ÉTAT DE DÉPLOIEMENT (fin de cette portion de session, portée Business)
+================================================================================
+- RIEN n'a été poussé ni déployé côté Business non plus (règle "jamais sans
+  demande explicite" toujours respectée).
+- Les 3 migrations listées au §28 SONT appliquées en prod (nécessaire : le
+  local pointe sur le Supabase de prod).
+- Le MCP (§26/27) et les relances No Show (§24) ne fonctionneront qu'APRÈS
+  déploiement : les routes api/business-mcp.js et les nouvelles actions de
+  api/business.ts n'existent pas encore sur closeos.fr. Testable dès
+  maintenant en local via npm run dev:api + npm run dev:local (§23).
+- Le module Formulaires (§21/22) est également testable en local
+  uniquement, même raison.
+
+
+================================================================================
+30. BUSINESS PIPELINE & CRM — FIX FILTRE MEMBRES/ÉQUIPES (leads qui disparaissaient)
+================================================================================
+- Symptôme : en filtrant par un membre, beaucoup de leads disparaissaient.
+- Cause : les filtres « Membres » et « Équipes » (+ le compteur) ne testaient que
+  `assigned_to` (closer) et IGNORAIENT `assigned_setter` (setter). Vérifié en base :
+  sur 567 leads, 299 ont un setter SANS closer + 41 setter≠closer → tous cachés.
+- Fix : Pipeline ET CRM matchent désormais setter OU closer (filtre + compteur).
+Fichiers : src/business/pages/BusinessPipeline.tsx, BusinessCRM.tsx.
+
+
+================================================================================
+31. BUSINESS RAPPELS — TEXTES MANQUANTS + BOUTON URGENCES + EN-TÊTES
+================================================================================
+- Racine : des clés de traduction référencées mais JAMAIS ajoutées au fichier
+  Business → en-têtes de colonnes vides, « 8/3 » sans label, filtre « Tous les
+  membres » vide, bouton « Réinitialiser » invisible, statut « Upcoming » (FR non
+  traduit). Clés ajoutées (reminders_col_*, reminders_reminders/total/overdue_count,
+  reminders_filter_team_all/reset), et upcoming FR → « À venir ».
+- Colonne PROSPECT vide : la page lisait `prospect_id` alors que les rappels créés
+  depuis la fiche sont liés via `business_prospect_id` → helper
+  `reminderProspectId = business_prospect_id ?? prospect_id` (affichage + fiche).
+  Création via la page Rappels basculée sur `business_prospect_id` (cohérence fiche).
+- Bouton « Voir les urgences » : n'avait aucun onClick → devient un TOGGLE
+  (filtre « en retard uniquement » + scroll ; « Voir tout » pour sortir). Le bouton
+  « Réinitialiser » (désormais visible) le désactive aussi.
+Fichiers : src/business/pages/BusinessReminders.tsx, src/business/i18n/translations.ts.
+
+
+================================================================================
+32. BUSINESS — DÉTECTION & FUSION DE DOUBLONS (Pipeline + CRM, Owner/HOS/Admin)
+================================================================================
+- Portage de la feature doublons de Sales vers Business, réservée aux rôles
+  Owner / Head of Sales / Admin (triple verrou : bouton masqué + modale non montée
+  + fonction Postgres qui vérifie l'autorisation).
+- Bouton « X doublons » (header Pipeline + CRM) → liste → fusion rapide OU
+  comparaison côte à côte (bouton « Fusionner » au milieu, choix de la fiche maître).
+- Fonction `merge_business_prospects(keep_id, dup_id)` : réassigne RDV, rappels,
+  paiements, tags, historique, commissions, réponses de formulaire (gestion des
+  conflits d'unicité), complète les champs vides, supprime le doublon.
+Fichiers : src/business/hooks/useBusinessDuplicates.ts,
+  src/business/lib/mergeBusinessProspects.ts, BusinessDuplicatesModal.tsx,
+  BusinessMergeProspectsModal.tsx, BusinessPipeline.tsx, BusinessCRM.tsx,
+  BusinessProspectsContext.tsx (refreshProspects). BDD : merge_business_prospects.
+
+
+================================================================================
+33. BOOKING PUBLIC — FIX FUSEAU HORAIRE (créneaux inter-fuseaux)
+================================================================================
+- Cas réel : une prospecte à La Réunion (UTC+4) ne pouvait pas booker « 21h »
+  (=19h Paris). Le calcul de créneaux CÔTÉ CLIENT (fallback actif en prod car l'API
+  renvoie encore freeMode) était aveugle aux fuseaux : il affichait les heures de
+  Paris sans conversion ET lisait `appt.time` comme si c'était l'heure du proprio
+  alors que chaque RDV est stocké dans SON fuseau → faux conflits / faux libres.
+- Fix : fallback recalculé 100% en instant UTC absolu — chaque créneau reçoit son
+  `datetime_utc` (calculé dans le fuseau du proprio → affichage converti chez le
+  prospect), conflits en UTC en respectant le fuseau de chaque RDV, filtre « passé »
+  en UTC. Vérifié par calcul réel (25/07 dispo, 30/07 vrai conflit).
+Fichier : src/pages/PublicBooking.tsx.
+
+
+================================================================================
+34. DISPONIBILITÉ — ABSENCES PASSÉES GRISÉES + TAG « PASSÉ »
+================================================================================
+- Une fois `end_date` dépassée, l'absence s'affiche en grisé (opacité + couleurs
+  neutres) avec un tag « Passé » / « Past ». Sur les 2 rendus (page Disponibilité
+  et fiche membre Team). Aucun filtre ne masquait les absences passées au chargement.
+Fichiers : src/business/pages/CloserDisponibilite.tsx, BusinessTeam.tsx.
+
+
+================================================================================
+35. GROSSE FEATURE — INTERFACE ÉQUIPE CLOSEOS SIGN (comptes réels)
+================================================================================
+Décisions : chaque équipier voit SEULEMENT ses contrats, génère UNIQUEMENT depuis
+les modèles assignés, on GARDE les liens-token existants (/sign/rep/:token).
+
+- BDD : `sign_team_members`, `sign_team_invites`, `sign_template_members`,
+  colonne `sign_contracts.team_member_id`. RPCs réutilisant la logique de signature
+  existante (`sign_clone_template_to_instance`) : `sign_member_generate_link`,
+  `sign_member_regenerate_instance`, `sign_member_bootstrap`, `sign_member_list_instances`,
+  `sign_invite_info` (anon), `sign_accept_team_invite`, `sign_sync_business_team`,
+  `sign_owns_template`.
+- Interface équipier `/sign/team` (SignMemberSpace) : génération depuis modèles
+  assignés + dashboard de SES instances + statuts. DA dark/lime.
+- Deux voies d'onboarding :
+    • Lien d'invitation → /sign/join/:token (SignJoin) : crée un compte / se connecte
+      → rejoint l'équipe.
+    • Pont Business : la sidebar Business auto-provisionne l'équipe (sign_sync_business_team)
+      et le bouton « Accéder à Sign » apparaît aussi pour les MEMBRES (avant : owner
+      seul) → atterrit sur /sign/team.
+- Gestion owner `/sign/app/equipe` (SignTeam) : sync Business, invitations, membres,
+  assignation de modèles, révocation. + section « Mon équipe » sur le tableau de bord
+  d'un modèle (SignTemplateDashboard) pour assigner depuis là aussi.
+- Auth : `hasSignAccess` étendu aux équipiers, SignProtected redirige un membre vers
+  /sign/team, nouveau SignMemberProtected.
+Fichiers : src/lib/signTeam.ts, signMemberAuth.ts ; src/components/SignMemberProtected.tsx ;
+  src/pages/SignMemberSpace.tsx, SignJoin.tsx, SignTeam.tsx ; SignProtected, SignLayout,
+  SignTemplateDashboard, BusinessSidebar, ProspectsContext Sign, App.tsx.
+
+
+================================================================================
+36. INCIDENT PROD + FIX — RÉCURSION RLS SUR sign_contracts (contrats disparus)
+================================================================================
+- Mes premières policies RLS pour les membres créaient une RÉCURSION INFINIE
+  (sign_contracts ↔ sign_template_members) → « infinite recursion detected » →
+  TOUTE lecture de contrats échouait, en local ET EN PROD (fix DB, app déployée
+  touchée sans redéploiement). Corrigé : policies membres retirées de sign_contracts,
+  lecture des instances membres via RPC SECURITY DEFINER (`sign_member_list_instances`).
+- 2e bug : l'assignation renvoyait 403. Cause : ambiguïté de colonne (`sign_contracts`
+  a aussi `template_id`) → policy `with check` toujours fausse. Fix : fonction
+  `sign_owns_template(p_template_id)` (paramètre = pas d'ambiguïté) dans la policy.
+- Les deux fixes sont DB → live immédiatement, aucun redéploiement.
+
+
+================================================================================
+37. MCP SIGN — TOOLS ÉQUIPE + RENDU PUBLIC (multi-comptes)
+================================================================================
+- 4 tools ajoutés (local `sign-mcp/index.mjs` ET remote `api/mcp.js`) :
+  `sign_list_templates`, `sign_list_team`, `sign_assign_template`,
+  `sign_unassign_template` (équipier identifié par email ou id ; vérif d'appartenance).
+- MCP RENDU PUBLIC / multi-comptes :
+    • BDD : `sign_users.mcp_key` (clé par proprio) + RPCs `sign_get_mcp_key` /
+      `sign_generate_mcp_key` / `sign_revoke_mcp_key`.
+    • `api/mcp.js` : la clé de l'URL résout le proprio depuis `mcp_key` ; isolation
+      PAR REQUÊTE via AsyncLocalStorage (fini le cache module `_ownerId` qui aurait
+      fait fuiter des données entre comptes) ; repli de compat sur l'ancien
+      SIGN_MCP_SECRET + SIGN_OWNER_EMAIL.
+    • UI : carte « Connecteur MCP (IA) » dans les Paramètres Sign (SignProfile) —
+      activer / copier l'URL / régénérer / désactiver.
+- ⚠️ Déploiement requis pour que l'endpoint accepte les clés par-compte (la DB, elle,
+  est live → l'UI génère déjà des clés).
+Fichiers : api/mcp.js, sign-mcp/index.mjs, sign-mcp/README.md, src/lib/signTeam.ts,
+  src/pages/SignProfile.tsx.
+
+
+================================================================================
+38. MIGRATIONS BDD APPLIQUÉES EN PROD (portion Business + Sign)
+================================================================================
+- merge_business_prospects (fonction de fusion doublons Business).
+- sign_team_members_foundation (tables équipe + RLS + RPCs).
+- sign_fix_rls_recursion (retrait policies récursives + RPC liste instances).
+- sign_fix_template_members_policy (fonction sign_owns_template, fix 403).
+- sign_mcp_per_owner_key (colonne mcp_key + RPCs get/generate/revoke).
+
+
+================================================================================
+39. ÉTAT DE DÉPLOIEMENT (portion Business + Sign de cette session)
+================================================================================
+- RIEN n'a été poussé/déployé côté code. Les MIGRATIONS BDD, elles, sont appliquées
+  en prod (nécessaires au fonctionnement, l'app locale pointant sur le Supabase prod).
+- Fixes purement DB déjà actifs en prod : filtre setter/closer (non — c'est du code),
+  récursion RLS, policy d'assignation, clé MCP (côté DB). L'endpoint MCP multi-comptes
+  et toutes les pages/UI nécessitent un déploiement pour être en ligne.
+- Aucune nouvelle variable d'env requise.
+
+
+================================================================================
+40. GROSSE FEATURE — POP-UP "QUOI DE NEUF V5" (3 onglets, une seule fois)
+================================================================================
+- À la prochaine connexion sur CHACUN des 3 produits (Sales, Business, Sign),
+  un pop-up présente les nouveautés V5, avec 3 onglets : l'onglet PRINCIPAL
+  = le produit dans lequel l'utilisateur se trouve (contenu détaillé), les 2
+  AUTRES onglets présentent les nouveautés des 2 autres produits (contenu
+  identique, juste pas en avant).
+- Une fois fermé, ne s'affiche PLUS JAMAIS (par compte, par produit) : chaque
+  produit a sa propre colonne booléenne (has_seen_v5_popup), même mécanisme
+  que onboarding_completed / has_onboarded déjà en place.
+- DEFAULT true sur la colonne + toutes les lignes EXISTANTES repassées à
+  false explicitement dans la migration → seuls les comptes qui existaient
+  AVANT le déploiement voient le pop-up une fois ; un compte créé après ne le
+  voit jamais (il découvre le produit tel quel, rien à lui annoncer).
+- N'apparaît qu'APRÈS l'onboarding (onboarding_completed / has_onboarded) —
+  ne se mélange pas avec le flux d'un tout nouvel utilisateur.
+- Contenu (traduit en langage utilisateur, pas en jargon dev) tiré de ce
+  récapitulatif : Sales = §1-19, Business = §20-34, Sign = §35-37. Les
+  correctifs purement internes (incident RLS, bug silencieux, etc.) sont
+  volontairement exclus du contenu affiché à l'utilisateur.
+- 3 composants distincts (pas un seul générique) car chaque produit a sa
+  propre DA : Sales (clair/sombre, palette sky), Business (clair/sombre,
+  palette stone/#006c49), Sign (sombre, palette lime #CEFF8F). Les 3 lisent
+  le MÊME fichier de contenu (une seule source à modifier pour changer les
+  textes).
+- Business et Sign : réservé au PROPRIÉTAIRE (pas les membres d'équipe) — ni
+  business_team_members ni les équipiers Sign (SignMemberSpace, layout à
+  part) n'ont de ligne dédiée pour porter ce indicateur "vu".
+Fichiers créés : src/lib/whatsNewV5.ts (contenu partagé des 3 onglets),
+  src/components/WhatsNewV5Modal.tsx (Sales),
+  src/business/components/BusinessWhatsNewModal.tsx (Business),
+  src/components/SignWhatsNewModal.tsx (Sign).
+Fichiers modifiés : src/App.tsx (montage Sales + Business, à côté des
+  OnboardingModal existants), src/pages/SignLayout.tsx (montage Sign).
+BDD : colonnes has_seen_v5_popup sur profiles / business_users / sign_users.
+  Migration : 20260727_v5_whatsnew_popup.sql (déjà appliquée en prod : 118
+  comptes Sales + 5 Business + 7 Sign verront le pop-up à leur prochaine
+  connexion post-déploiement).
+
+
+================================================================================
+41. TENTATIVE DE NETTOYAGE DES 12 EMAILS SALES — ANNULÉE (revert demandé)
+================================================================================
+⚠️ CETTE SECTION DÉCRIT UN TRAVAIL QUI A ÉTÉ FAIT PUIS ANNULÉ (git checkout des
+5 fichiers ci-dessous). AUCUNE de ces modifications n'est présente dans le
+repo actuellement — gardé ici uniquement comme trace de ce qui a été essayé.
+Raison de l'annulation : confusion sur « proposition de nouvelle DA » vs
+« email réellement envoyé aujourd'hui » — l'utilisateur a demandé de remettre
+les vraies versions actuellement en prod (celles du dernier commit), le temps
+de retraiter le sujet séparément.
+--------------------------------------------------------------------------------
+Description originale (annulée) :
+- Déclencheur : en ouvrant le catalogue des emails, l'email « Réinitialisation
+  de mot de passe » s'est affiché en style brut (texte noir, bouton bleu
+  générique #2563EB), sans logo ni charte CloseOS.
+- Vérifié : ce n'est PAS un bug d'affichage du catalogue — l'email réel dans le
+  code est bien resté en HTML brut (`font-family: sans-serif`) alors que ~17
+  autres fichiers utilisent déjà la charte actuelle (fond crème #f4f2f1, carte
+  blanche, logo `logo-sales.png`, Manrope/Inter, accent sky #0284c7).
+- 4 fichiers concernés, 12 emails au total — tous repris à la charte Sales :
+    api/email.ts (6)            : bienvenue (+ reprise depuis l'ancien thème
+      sombre #020617, lui aussi obsolète), notif mot de passe changé,
+      confirmation changement email, réinitialisation mot de passe, code
+      suppression de compte, formulaire de contact.
+    api/account.ts (3)          : compte supprimé, suppression programmée,
+      annulation de suppression.
+    api/stripe-webhook.ts (2)   : « Avant de partir... » (rétention),
+      compte supprimé (fin de période, nettoyage webhook).
+    api/cron/process-deletions.ts (1) : compte supprimé (CRON définitif).
+- Chaque fichier a désormais son propre `wrapEmailHtml()` local (même
+  convention que sales-weekly-report.ts / reminder-time-emails.ts — pas de
+  helper partagé inter-fichiers côté api/, chacun duplique le gabarit).
+- Catalogue (`closeos_emails_catalogue.html`) régénéré pour ces 12 entrées
+  (S1-S11, S13) via extraction texte pure du nouveau code source — même
+  convention que l'original : les `${variables}` restent des placeholders
+  littéraux, aucune évaluation JS. Vérifié : 80 entrées toujours présentes,
+  seule la ligne des données HTML a changé (git diff : 1 ligne).
+- HORS PÉRIMÈTRE (repéré mais volontairement non touché, à confirmer si tu
+  veux que je m'en occupe) : S12 (« Votre paiement a échoué ») et 2 autres
+  emails de stripe-webhook.ts utilisent un AUTRE gabarit obsolète
+  (`emailWrap`, thème sombre #020617, différent du style brut) — pas repérés
+  par la recherche initiale (`font-family: sans-serif`), donc pas inclus dans
+  le lot approuvé. Idem `businessEmailWrap` (emails Business, hors scope Sales
+  de cette tâche).
+Fichiers modifiés : api/email.ts, api/account.ts, api/stripe-webhook.ts,
+  api/cron/process-deletions.ts, closeos_emails_catalogue.html.
+
+
+================================================================================
+42. INSCRIPTION SALES — TÉLÉPHONE AU REGISTER + AJOUT AUTO BREVO
+================================================================================
+- Champ TÉLÉPHONE ajouté sur la page Register Sales (composant PhoneInput, indicatif
+  + mise en forme, obligatoire), sauvegardé dans profiles.phone. RETIRÉ de
+  l'onboarding (l'étape téléphone y a été supprimée pour ne plus écraser le numéro).
+- À l'inscription, ajout/màj AUTO du contact dans la liste Brevo « CloseOS
+  utilisateur » (id 5) avec NOM=nom, SMS=numéro, email. Robuste : si le SMS est
+  rejeté, réessai sans SMS pour garantir l'ajout. updateEnabled=true (pas de doublon).
+Fichiers : src/pages/Register.tsx, src/components/OnboardingModal.tsx, api/email.ts.
+
+
+================================================================================
+43. BREVO — RANGEMENT PAR PRODUIT (Sales / Business / Sign)
+================================================================================
+- 3 listes créées : CloseOS Sales (21), CloseOS Business (22), CloseOS Sign (23),
+  en plus de la générale « CloseOS utilisateur » (5).
+- Ajout automatique à l'inscription, par produit :
+    • Sales  → [5, 21]        (api/email.ts, NOM + SMS)
+    • Sign   → [5, 23]        (api/sign-checkout.ts register, NOM + SMS)
+    • Business → [5, 22, 23]  (nouvel endpoint api/business?action=brevo-signup,
+      appelé depuis BusinessAuthContext.register, NOM)
+- Règle respectée : un Business est AUSSI dans Sign (22 + 23) ; un Sign pur n'est
+  que dans Sign (23), pas Business.
+Fichiers : api/email.ts, api/sign-checkout.ts, api/business.ts,
+  src/business/contexts/BusinessAuthContext.tsx.
+
+
+================================================================================
+44. SUPPRESSION DE COMPTE — DYLAN BONNET
+================================================================================
+- Compte de Dylan Bonnet (bonnetdylan42@gmail.com, id c62164d1-…46f5e) supprimé en
+  prod : auth.users + business_users + profiles (0 ligne restante, cascade OK).
+  Compte vide (0 lead / RDV / prospect) → aucune donnée collatérale.
+- Mémoire obsolète « Dylan exclu du provisioning Sign » supprimée.
+- Action IRRÉVERSIBLE.
+
+
+================================================================================
+45. BUSINESS — EXTRAS RÉSERVABLES / PAYABLES DEPUIS LES PARAMÈTRES
+================================================================================
+- Les 3 extras Business (Setup 60€, Intégration 80€, Combo 120€) sont désormais
+  achetables par un owner déjà abonné, depuis ses paramètres (avant : seulement au
+  checkout d'inscription).
+- Backend : action purchase-extra (api/business-checkout.ts) → débite le moyen de
+  paiement enregistré via PaymentIntent off-session → envoie le MÊME email de notif
+  à shamoevthomas@gmail.com (Nom/Email/Téléphone/Plan/Extra).
+- Frontend : BusinessExtrasModal (sélection + paiement + confirmation) déclenché par
+  une carte « Extras & services » dans l'onglet Profil du BusinessSettingsModal
+  (owner uniquement, masqué pour les membres d'équipe).
+Fichiers : api/business-checkout.ts, src/business/components/BusinessExtrasModal.tsx,
+  src/business/components/BusinessSettingsModal.tsx.
+
+
+================================================================================
+46. IDs BREVO (référence rapide)
+================================================================================
+- CloseOS utilisateur (général) : 5
+- CloseOS Sales : 21   |   CloseOS Business : 22   |   CloseOS Sign : 23
+- Attributs utilisés : NOM (lastname), SMS (téléphone), email.
+
+
+================================================================================
+47. NOUVELLE DA SUR 6 EMAILS SALES + SUPPRESSION EMAIL MORT + CATALOGUE
+================================================================================
+Suite (et vraie exécution, cette fois confirmée) du sujet de la section 41 —
+déclenché par l'utilisateur qui a listé précisément les emails encore dans
+l'ancien thème/à corriger, avec captures d'écran à l'appui.
+- api/email.ts : handleWelcome() repris avec wrapEmailHtml() (charte Ciel/Azur).
+  Suppression COMPLÈTE de l'encart « L'outil est en V1 » (produit n'est plus en
+  V1). Garde les bullets « Ce qui vous attend » + contact support + CTA
+  Découvrir CloseOS.
+- api/stripe-webhook.ts : 3 emails repris en wrapEmailHtml() (contenu inchangé,
+  seulement le gabarit visuel : dark #020617 → charte claire) :
+    • sendRetentionEmail() — « Avant de partir... »
+    • Email de confirmation de paiement (checkout.session.completed) —
+      « Bienvenue dans l'aventure CloseOS » — récapitulatif Plan/Tarif/Accès
+      inchangé (déjà factuellement correct : prix 18/20/24€, features à jour).
+    • Email d'échec de paiement (invoice.payment_failed) — contenu identique
+      (accès suspendu / données en sécurité / réactivation).
+  L'ancien helper `emailWrap()` (thème sombre #020617) n'ayant plus aucun
+  appelant restant dans ce fichier, il a été supprimé (mort). `businessEmailWrap`
+  (Business) non touché.
+- api/cron/lifecycle-emails.ts : 3 emails repris en wrapEmailHtml() :
+    • trialEndEmail() et reviewEmail() — contenu inchangé (essai 10 jours et
+      pricing 18€/216€ déjà exacts).
+    • referralEmail() — entièrement reconstruit dans la charte claire (il avait
+      son propre design custom sombre #111111, pas basé sur wrap()). Contenu
+      100% inchangé : mêmes montants/règles de récompense (vérifiés exacts
+      contre _lib/referral-rewards.ts et process-referrals.ts : J+14, file
+      d'attente à une seule récompense active), même structure (hero, carte
+      parrain, carte filleul, encart code, CTA, canal WhatsApp, signature
+      Thomas avec photo).
+  CRON retimé : parrainage envoyé désormais à J+3 après abonnement (au lieu de
+  J+2) — `refStart.setDate(refStart.getDate() - 3)`.
+- src/components/Return.tsx : SUPPRESSION de la fonction sendWelcomeEmail() et
+  de son unique appel dans handleRegister(). Cet email (« Bienvenue sur CloseOS
+  Pro 💎 ») était un reliquat de l'ère pré-lancement/liste d'attente (mention
+  d'un lancement au « 1er Mars », `is_founder`, `/welcome-founder`) — un client
+  payant recevait donc DEUX emails de bienvenue (celui-ci + celui, correct, du
+  webhook Stripe). Décision : supprimer plutôt que corriger, le webhook étant
+  déjà exact et suffisant. Rien d'autre touché dans Return.tsx (formulaire,
+  onglet Google, statut de session Stripe conservés tels quels).
+- closeos_emails_catalogue.html régénéré : S1 (bienvenue), S11 (avant de
+  partir), S12 (paiement échoué), S19 (fin d'essai), S20 (avis), S21
+  (parrainage, libellé cron mis à jour « 3 jours ») — extraction texte pure
+  depuis le nouveau code source (mêmes conventions qu'en section 41 :
+  `${variables}` gardées littérales). S14 (Bienvenue sur CloseOS Pro) retiré du
+  catalogue (email supprimé). Compteur Sales : 23 → 22. Vérifié visuellement
+  via le serveur localhost:8799 (S1 et S21 conformes à la charte).
+- L'email « Bienvenue dans l'aventure CloseOS 🚀 » (confirmation webhook) n'a
+  jamais eu d'entrée dans le catalogue — pas ajouté ici (hors périmètre demandé,
+  à signaler si besoin de le cataloguer un jour).
+Fichiers modifiés : api/email.ts, api/stripe-webhook.ts,
+  api/cron/lifecycle-emails.ts, src/components/Return.tsx,
+  closeos_emails_catalogue.html.
+Rappel : AUCUN déploiement/push effectué — tout est en local, non commité.
+
+
+================================================================================
+48. ASSOCIER SON COMPTE GOOGLE (connexion rapide) — BUSINESS + SIGN
+================================================================================
+But : permettre aux comptes email/mot de passe d'associer aussi Google pour se
+  connecter plus vite en un clic (en PLUS de l'email/mdp). Réciproque du bloc
+  Sign existant « Définir un mot de passe » (qui sert aux comptes Google à se
+  créer un mdp). Repose sur supabase.auth.linkIdentity({ provider: 'google' }).
+- BUSINESS — src/business/components/BusinessSettingsModal.tsx :
+    • hasGoogleLinked = isGoogleUser || identities contient un provider 'google'.
+    • handler linkGoogle() → supabase.auth.linkIdentity({ provider: 'google',
+      options: { redirectTo: origin + '/dashboard' } }), alert en cas d'erreur.
+    • Carte « Associer Google » affichée UNIQUEMENT si !hasGoogleLinked, à DEUX
+      endroits de la section « Sécurité & Connexion » : l'onglet profil (section
+      sécurité inline) ET l'onglet Sécurité dédié. DA Business (bouton stone-900).
+- SIGN — src/pages/SignProfile.tsx :
+    • getAuthIdentity() (src/lib/signAuth.ts) renvoie déjà { hasPassword, google }.
+    • handler linkGoogleSign() → signSupabase.auth.linkIdentity({ provider:
+      'google', options: { redirectTo: origin + '/sign/app/profil' } }), erreur
+      affichée via setPwMsg.
+    • Carte « Se connecter avec Google » juste sous la carte mot de passe,
+      affichée si authId?.google === false. DA Sign (bouton blanc + logo Google
+      SVG officiel 4 couleurs, en-tête icône ShieldCheck).
+- CÔTÉ SUPABASE (prérequis, FAIT) : « Allow manual linking »
+  (security_manual_linking_enabled) activé dans le dashboard du projet
+  qwjvdwpixewsctircibl — sans lui, linkIdentity échoue. Activé par le user le
+  2026-07-27 (pas de personal access token dispo en local, donc bascule faite
+  manuellement côté dashboard ; MCP Supabase n'expose pas la config Auth).
+Build vite : OK. Rappel : AUCUN déploiement/push — tout en local, non commité.
+
+
+================================================================================
+49. POP-UP "QUOI DE NEUF V5" — CONTENU MIS À JOUR + RESET GÉNÉRAL
+================================================================================
+Mise à jour du pop-up « Quoi de neuf » (voir §40) pour refléter les
+modifications faites depuis sa construction initiale (§41-48) :
+- Sales : nouvel item « Emails harmonisés avec la nouvelle interface »
+  (bienvenue, rappels d'essai, parrainage… repris dans la charte Ciel/Azur,
+  cf §47).
+- Business : nouvel item « Extras achetables depuis les Paramètres » (Setup,
+  intégration, combo — cf §45) + nouvel item « Connexion Google en un clic »
+  (cf §48).
+- Sign : nouvel item « Connexion Google en un clic » (cf §48).
+- Les correctifs purement internes/infra (§42 Brevo auto-add, §43 rangement
+  listes Brevo, §44 suppression compte, §46 IDs Brevo) restent volontairement
+  exclus du contenu affiché à l'utilisateur, comme pour le contenu initial.
+- RESET GÉNÉRAL demandé par l'utilisateur : `has_seen_v5_popup` remis à false
+  pour TOUS les comptes des 3 produits (y compris ceux qui avaient déjà fermé
+  le pop-up une première fois) via SQL direct sur le projet Supabase prod
+  (qwjvdwpixewsctircibl) — 1 compte Sales, 2 Business revenus à false (Sign
+  était déjà à 0 partout). Total : 118 Sales + 5 Business + 7 Sign repasseront
+  par le pop-up à leur prochaine connexion, avec le contenu à jour.
+Fichier modifié : src/lib/whatsNewV5.ts (contenu partagé, aucun composant de
+  modale à toucher — les 3 lisent déjà tout leur set d'icônes).
+Rappel : le reset SQL a été exécuté directement en prod (demande explicite de
+  l'utilisateur) ; aucun déploiement de code effectué.
+
+
+================================================================================
+50. LANDING PAGE BUSINESS — AJOUT DE FEATURES RÉELLES ABSENTES DE LA LP
+================================================================================
+Demande : analyser tout le produit CloseOS Business (code réel, pas la LP) et
+ajouter à la landing page les fonctionnalités déjà construites et livrées mais
+jamais mises en avant côté marketing. Exploration exhaustive faite (pages,
+composants, hooks, services, api/business*.ts) → liste de 13 écarts identifiés,
+classés par valeur marketing ; 7 ont été intégrés dans un premier temps, puis
+l'utilisateur a demandé le retrait de 3 d'entre eux (détail plus bas) — 4
+features restent finalement ajoutées à la LP, sans toucher au reste de la page
+(aucune suppression de contenu déjà existant avant cette tâche).
+- Assistant IA / serveur MCP (le plus gros écart — jamais mentionné nulle
+  part) : nouvelle carte pleine largeur en tête de la section API (badge
+  « Nouveau · Assistant IA »), avec 4 arguments, un bloc de code de connexion
+  MCP (cos_live_...) et les 8 catégories des 28 outils exposés (prospects,
+  campagnes/formulaires, agenda, équipe, relances No Show, facturation,
+  tracking, objectifs). Dupliqué en version courte dans l'onglet Owner de
+  « Fonctionnalités par Rôle » (8ᵉ carte, icône Bot).
+- Module Formulaires (Notion-style) : nouvelle sous-section dédiée dans le
+  mega-bloc CRM (après Qualification), avec mockup éditeur « / », bloc vidéo à
+  visionnage minimum obligatoire (30s), logique conditionnelle, pont CRM —
+  jusqu'ici noyé/confondu avec les pages de capture de campagne.
+- Relances No Show : la carte existante (teaser vague « rappel dans 3 jours »)
+  a reçu une vraie description (jusqu'à 7 emails automatiques, lien de
+  réservation intégré qui recrée le RDV dans le CRM).
+- Liens de tracking : nouvelle tuile bento (section Management), avec un mini
+  graphique « clics par pays » — le globe 3D interactif réel n'a pas été
+  embarqué tel quel (trop lourd/risqué sur une page marketing avec données
+  fictives), mais est mentionné dans le texte.
+Retiré ensuite sur demande explicite de l'utilisateur (3 des 7 ajouts) :
+détection des doublons & fusion (carte CRM + bullet Owner), sécurité renforcée
+(tuile bento sombre), et le workflow d'approbation des commissions (bullet
+Owner Stripe) — code et clés i18n (FR+EN) intégralement retirés. La tuile
+« Liens de tracking » (qui partageait sa ligne avec la tuile Sécurité en
+lg:col-span-2) a été repassée en pleine largeur (lg:col-span-3, layout 2
+colonnes texte/stats) pour ne pas laisser de trou dans la grille bento.
+Écarts identifiés mais volontairement laissés de côté (déjà bien mentionnés,
+jugés moins prioritaires, ou retirés sur demande) : détection des doublons,
+sécurité renforcée, workflow d'approbation commissions, détail interne de la
+facturation Stripe Connect (QR code, pénalités de retard), multi-booking
+récurrent, agenda anti-conflit live, présence équipe temps réel, cockpit call
+room avec envoi de ressources — resteront en réserve si une prochaine passe
+est demandée.
+Tout ajouté en FR **et** EN (interface Translations étendue en conséquence).
+Vérifié visuellement en localhost (localhost:5173/business) dans les deux
+langues : tuiles Management, section Formulaires, carte MCP, onglet Owner, et
+re-vérifié après retrait des 3 features (plus aucune trace dans le DOM).
+Typecheck propre (0 nouvelle erreur ; 5 warnings pré-existants inchangés).
+Fichiers modifiés : src/pages/BusinessLanding.tsx, src/pages/businessLandingI18n.ts.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+51. LOGO MCP AJOUTÉ AU BANDEAU D'INTÉGRATIONS (LP BUSINESS)
+================================================================================
+- Utilisateur a fourni le logo officiel MCP (~/Downloads/mcp.png, logomark
+  blanc sur fond transparent — variante destinée aux fonds sombres).
+- Recomposé en public/mcp.webp (80x80, carré plein noir #111111 + logomark
+  blanc centré) pour matcher la convention visuelle des autres badges du
+  bandeau (ex. Stripe : carré plein coloré + icône blanche).
+- Entrée « MCP » ajoutée à la liste des 13 intégrations existantes (bandeau
+  défilant "Intégrations natives" en haut de la LP Business) — 14 au total,
+  répartition paire parfaite entre les deux rangées du marquee.
+Vérifié visuellement en localhost : le badge MCP s'affiche correctement dans
+le flux, identique en style aux autres (HubSpot, Stripe, n8n...).
+Fichiers modifiés : src/pages/BusinessLanding.tsx ; public/mcp.webp (nouveau).
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+52. CARTE MCP — ÉLARGIE À CLAUDE + CHATGPT (LOGOS + COPY)
+================================================================================
+- Question utilisateur : avec quoi d'autre que Claude peut-on utiliser MCP ?
+  → OpenAI a adopté MCP en 2025 (ChatGPT desktop, Agents SDK, Responses API) ;
+  le protocole est devenu cross-vendor (Claude, ChatGPT, Cursor, Windsurf...).
+- Utilisateur a fourni les logos officiels ChatGPT et Claude (Downloads/) →
+  recomposés en public/claude.webp et public/chatgpt.webp (chip carré blanc
+  80x80, logo centré, même traitement que public/mcp.webp du §51).
+- Carte MCP (section API, LP Business) mise à jour :
+    • Titre : « Connectez Claude à CloseOS » → « Connectez Claude ou ChatGPT
+      à CloseOS » (FR+EN).
+    • Description : « demandez à Claude de... » → « demandez à votre
+      assistant IA de... » (générique, reste vrai pour les deux).
+    • Bullet compatibilité : « Compatible Claude et tout client MCP standard »
+      → « Compatible avec Claude, ChatGPT et tout client MCP standard ».
+    • Nouvelle ligne « Compatible avec » sous les bullets : 3 chips logo
+      (Claude, ChatGPT, MCP) séparés par une bordure du reste de la carte.
+- Nouvelle clé i18n api_mcp_compatible_label (FR: « Compatible avec » /
+  EN: « Works with »).
+Vérifié visuellement en localhost dans les deux langues (titre + chips logo
+nets). Typecheck propre (mêmes 5 warnings pré-existants, aucun nouveau).
+Fichiers modifiés : src/pages/BusinessLanding.tsx, src/pages/businessLandingI18n.ts ;
+public/claude.webp, public/chatgpt.webp (nouveaux).
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+53. CLAUDE + CHATGPT AJOUTÉS AU BANDEAU D'INTÉGRATIONS (LP BUSINESS)
+================================================================================
+- Suite du §51/§52 : Claude et ChatGPT ajoutés aussi au bandeau défilant
+  "Intégrations natives" (même liste que MCP), réutilisant les chips déjà
+  créés (public/claude.webp, public/chatgpt.webp).
+- 16 intégrations au total dans le bandeau désormais.
+Vérifié visuellement en localhost : les 3 logos (Claude, MCP, ChatGPT)
+s'affichent nets, identiques en style aux autres badges du bandeau.
+Typecheck propre (mêmes 5 warnings pré-existants, aucun nouveau).
+Fichier modifié : src/pages/BusinessLanding.tsx.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+54. EN-TÊTE DE LA SECTION API — RECENTRÉ SUR MCP (LP BUSINESS)
+================================================================================
+- L'en-tête de section (badge + titre + sous-titre, au-dessus de la carte MCP)
+  parlait encore de « L'API CloseOS Business est arrivée » — recentré pour
+  mettre en avant en premier le MCP et le fait que CloseOS se pilote
+  désormais depuis d'autres outils IA (pas seulement Claude), l'API restant
+  mentionnée juste après dans le même sous-titre (et détaillée plus bas dans
+  la section via les cartes REST API / Webhooks déjà en place).
+    • Badge : « Disponible maintenant » → « Nouveau · Pilotable par IA »
+    • Titre : « L'API CloseOS Business est arrivée » → « CloseOS se pilote
+      depuis Claude, ChatGPT et vos outils IA »
+    • Sous-titre : reformulé pour expliquer le serveur MCP en premier
+      (exemples concrets : créer un prospect, planifier un RDV, générer une
+      facture), puis mentionne l'API REST + Webhooks pour les équipes tech.
+- Structure de section inchangée : carte MCP toujours juste en dessous de cet
+  en-tête, cartes REST API / Webhooks toujours plus bas.
+Vérifié visuellement en localhost (FR) : bon enchaînement en-tête → carte MCP.
+Typecheck propre (mêmes 5 warnings pré-existants, aucun nouveau).
+Fichier modifié : src/pages/businessLandingI18n.ts.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+55. BADGE HERO BUSINESS — TEXTE GÉNÉRALISÉ (PLUS DE MENTION "CLOSEOS SALES")
+================================================================================
+- Badge social proof du hero (LP Business) affichait par erreur « 🚀 Déjà
+  +270 closers qui valident CloseOS Sales » — copié-collé visiblement resté
+  du produit Sales, incohérent sur la page Business.
+- Remplacé par « 🚀 +300 personnes font confiance à CloseOS » (FR) /
+  « 🚀 300+ people trust CloseOS » (EN) — générique, plus de mention
+  "closers" ni "CloseOS Sales".
+Vérifié visuellement en localhost. Typecheck propre.
+Fichier modifié : src/pages/businessLandingI18n.ts.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+56. LANDING PAGE SIGN — NOUVELLE SECTION « ASSISTANT IA » (MCP)
+================================================================================
+- Relu le récap pour repérer ce qui est réel et absent de la LP Sign (même
+  logique que pour Business, §50) : le gros gap trouvé est le connecteur MCP
+  Sign (§37 du récap — 4 tools : sign_list_templates, sign_list_team,
+  sign_assign_template, sign_unassign_template ; clé par compte activable
+  depuis Paramètres → Assistant IA, SignProfile) — jamais mentionné sur la LP.
+  Le reste des nouveautés Sign (§35 interface équipe/templates, §36 fix RLS
+  interne) est soit déjà couvert par la section « Modèles » existante, soit
+  purement technique/interne (pas matière à marketing).
+- Nouvelle section #assistant-ia ajoutée entre « Modèles » et « Faisceau de
+  preuves » (+ lien nav correspondant) : badge « Nouveau · Assistant IA »,
+  titre « Pilotez votre équipe Sign depuis Claude ou ChatGPT », 3 cartes
+  (Clé personnelle par compte / Modèles & équipe en un message / Assignation
+  à la volée) — même gabarit visuel que la section Modèles (bento 3 cartes,
+  icône + titre + description), DA Sign inchangée (dark #191E1E, lime
+  #CEFF8F). Portée volontairement plus modeste que la carte MCP Business (4
+  outils réels vs 28), pas de sur-vente.
+- SignLanding.tsx n'a pas de fichier i18n séparé (contenu inline via
+  ternaires lang === 'fr' ? ... : ...) — pas de fichier i18n à toucher,
+  contrairement à Business.
+Vérifié visuellement en localhost (localhost:5173/sign) en FR et EN : section
++ lien nav fonctionnels. Typecheck propre.
+Fichier modifié : src/pages/SignLanding.tsx.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+57. COMPTEUR "12+ NATIVES" CORRIGÉ → "15+ NATIVES" (LP BUSINESS)
+================================================================================
+- L'ajout de MCP, Claude et ChatGPT au bandeau (§51/§53) a fait passer le
+  bandeau de 13 à 16 logos, rendant le sous-titre « 12+ natives » faux.
+- Recalculé : 16 logos - Zapier (compté à part dans « 7 000+ via Zapier ») =
+  15 natives. Corrigé « 12+ » → « 15+ » en FR et EN. « 7 000+ via Zapier »
+  laissé inchangé (stat propre à l'écosystème Zapier, indépendante du nombre
+  de logos affichés dans notre bandeau).
+Vérifié visuellement en localhost. Typecheck propre.
+Fichier modifié : src/pages/businessLandingI18n.ts.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+58. DOCUMENTATION API BUSINESS — NOUVELLE SECTION MCP (v1.1)
+================================================================================
+- Mise à jour de /business/docs/api (src/pages/BusinessDocsAPI.tsx) avec
+  l'arrivée du serveur MCP : nouveau groupe de nav "Assistant IA" (entre
+  "Démarrer" et "Référence API"), section #mcp complète :
+    • Explication (transport Streamable HTTP / JSON-RPC, sans état).
+    • Configuration en 4 étapes (Paramètres → Assistant IA, génération de
+      clé, copie de l'URL, config côté client MCP).
+    • Callout sécurité (clé = accès complet au compte, révocable).
+    • Garde-fous documentés (jamais Stripe/paiements, jamais suppression de
+      membre, jamais exposition de business_settings).
+    • Table complète des 28 outils réels (nom exact, catégorie, description)
+      — extraite directement d'api/business-mcp.js, pas inventée.
+  Changelog : nouvelle entrée v1.1 (2026-07-28) documentant l'arrivée du MCP,
+  au-dessus de l'entrée v1.0 existante.
+- 🐛 BUG CORRIGÉ AU PASSAGE (découvert en vérifiant la doc contre le code
+  réel) : l'exemple de connexion MCP affiché sur la LP Business (carte MCP,
+  §52) était FAUX — il montrait `https://api.closeos.fr/business-mcp` avec un
+  header `Authorization: Bearer`, alors que le serveur réel
+  (api/business-mcp.js) authentifie via la clé intégrée dans l'URL :
+  `https://closeos.fr/api/business-mcp/<clé cos_...>` (ou `?key=`), sans
+  header. Corrigé sur la LP également pour cohérence avec la doc.
+Vérifié visuellement en localhost (FR) : nav, contenu, callout, table des 28
+outils, changelog — tout s'affiche correctement. Typecheck propre sur
+BusinessDocsAPI.tsx (0 erreur) ; BusinessLanding.tsx conserve ses warnings
+pré-existants (imports inutilisés sans rapport avec ce changement).
+Fichiers modifiés : src/pages/BusinessDocsAPI.tsx, src/pages/BusinessLanding.tsx.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+59. NAV "API" → "API/MCP" + CTA "CONNECTER MON IA" (LP BUSINESS)
+================================================================================
+- Lien de nav "API" renommé "API/MCP" (FR+EN), pour refléter que la section
+  couvre désormais aussi le MCP (§50-52).
+- 3e CTA ajouté dans le groupe de boutons en bas de la section API, à côté de
+  « Obtenir une clé API » et « Voir la documentation » : « Connecter mon IA »
+  (icône Bot, accent emerald pour le distinguer visuellement tout en restant
+  dans le même groupe), lien vers /business/docs/api#mcp (nouvel onglet,
+  section MCP de la doc ajoutée au §58).
+Vérifié visuellement en localhost. Typecheck propre (mêmes warnings
+pré-existants, aucun nouveau).
+Fichiers modifiés : src/pages/BusinessLanding.tsx, src/pages/businessLandingI18n.ts.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+60. CTA "CONNECTER MON IA" — PASSÉ EN BLANC (LP BUSINESS)
+================================================================================
+- Style du 3e CTA (§59) changé : accent emerald outline → même style blanc
+  plein que "Obtenir une clé API" (bg-white, texte #0a0a0a, shadow-xl),
+  icône Bot conservée. Toujours dans le même groupe de boutons.
+Vérifié visuellement en localhost. Typecheck propre.
+Fichier modifié : src/pages/BusinessLanding.tsx.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+61. AUDIT DES PAGES MARKETING SECONDAIRES SALES (Tarifs, Fonctionnalités, CRM
+    Closer) — SIGN AJOUTÉ + PLUSIEURS BUGS RÉELS CORRIGÉS
+================================================================================
+Demande : "beaucoup de choses manquent" sur "les sous-pages qui servent au
+CEO", dont des infos sur Sign. Clarifié avec l'utilisateur : il s'agissait des
+pages marketing secondaires du site (pas de page "CEO" littérale dans le code).
+Périmètre confirmé : src/pages/Tarifs.tsx (/tarifs), src/pages/fonctionnalites/
+FonctionnalitesHub.tsx (/fonctionnalites), CrmCloser.tsx (/fonctionnalites/
+crm-closer) — 3 pages Sales, orphelines de la refonte DA Sales (§1-2, restées
+dans l'ancien thème sombre #020617/#00E676, non retouché ici : hors périmètre
+demandé, juste le contenu).
+Audit exhaustif → gaps réels trouvés et corrigés (pas seulement Sign) :
+- ZÉRO mention de CloseOS Sign sur les 3 pages (nav, contenu, liens) — corrigé
+  partout :
+    • Tarifs.tsx : nouvelle section pricing "CloseOS Sign" (carte 9€/12€/10€
+      selon cycle, 6 features réelles, mention "inclus si déjà client
+      Business", CTA → /sign/abonnement), nouvelle entrée FAQ + son pendant
+      JSON-LD, lien nav + liens de bas de page, offerCount schema 4→5.
+    • FonctionnalitesHub.tsx : nouvelle carte fonctionnalité "Signature
+      électronique + paiement", nouvelle section dédiée "CloseOS Sign" (texte
+      + 4 mini-cartes : Multi-signataire, Sign+Pay, Faisceau de preuves,
+      Modèles réutilisables) entre le tableau comparatif et le CTA final, lien
+      nav + liens de maillage interne + meta tags (title/description/OG/tw).
+    • CrmCloser.tsx : lien nav + lien de bas de page.
+- 🐛 BUG PRIX RÉEL (CrmCloser.tsx) : la carte "Infopreneurs avec une équipe"
+  affichait « CloseOS Sales a 39€/mois » — 39€ est en réalité le prix Business
+  Solo, pas Sales (vrai prix Sales : 18€/mois annuel, cf Tarifs.tsx). Et la
+  carte "Business" (équipe) affichait implicitement le prix Solo. Corrigé :
+  « CloseOS Sales dès 18€/mois » et « CloseOS Business dès 42€/mois » (le
+  tier Business avec équipe, pas Solo).
+- 🐛 RÈGLE VoIP VIOLÉE (FonctionnalitesHub.tsx + CrmCloser.tsx) : le retrait de
+  toute mention "VoIP" avait été fait sur la LP Sales (§1) mais PAS sur ces
+  pages — "Callroom VoIP" (titre + description + 3 meta tags) et "la callroom
+  VoIP est intégrée" trouvés et corrigés partout (FonctionnalitesHub.tsx,
+  CrmCloser.tsx).
+- 🐛 CONDITIONS D'ESSAI FAUSSES GÉNÉRALISÉES (Tarifs.tsx) : le hero et la 1re
+  FAQ affirmaient "essai gratuit de 20 jours, CB requise" comme règle
+  universelle "CloseOS" — or Sales est en réalité 10 jours SANS CB (confirmé
+  dans la carte Sales elle-même, juste en dessous, qui elle disait bien "10
+  jours gratuits, aucune CB requise" — contradiction interne sur la même
+  page). Corrigé : hero généralisé sans chiffre, FAQ + JSON-LD réécrits avec
+  les 3 vraies durées (Sales 10j sans CB, Business 20j avec CB, Sign 14j avec
+  CB).
+- 🧹 Dead code supprimé (Tarifs.tsx) : tableau `salesPlans` non utilisé nulle
+  part (la carte Sales réelle est codée en dur séparément) et lui-même faux
+  (mentionnait "Essai gratuit 20 jours" pour Sales, alors que c'est 10 jours).
+Vérifié visuellement en localhost sur les 3 pages (nouvelles sections Sign,
+prix corrigés, FAQ). Typecheck propre sur Tarifs.tsx (0 erreur, salesPlans
+mort retiré) ; FonctionnalitesHub.tsx et CrmCloser.tsx gardent les mêmes
+warnings pré-existants sans rapport (typage Framer Motion Variants,
+inchangé par ce travail).
+Fichiers modifiés : src/pages/Tarifs.tsx, src/pages/fonctionnalites/
+FonctionnalitesHub.tsx, src/pages/fonctionnalites/CrmCloser.tsx.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+62. SUITE DE L'AUDIT DES PAGES CEO — MCP, TALLY, YOUSIGN + COMPARATIF PRIX
+    HONNÊTE (Solo/Équipe/Bricolage gratuit)
+================================================================================
+Retour utilisateur sur le §61 : (1) le bloc "Essai gratuit 20 jours" de la
+section "Pourquoi choisir CloseOS ?" (Tarifs.tsx) généralisait encore un
+chiffre universel faux ; (2) les pages ne parlaient toujours pas de MCP ; ces
+pages servent à attirer un décideur avec TOUT ce qui compte : iClosed, Tally,
+MCP, CRM etc ; (3) demande explicite d'intégrer un comparatif prix honnête
+complet (fourni par l'utilisateur, déjà rédigé) ; (4) demande d'ajouter aussi
+Yousign.
+- Tarifs.tsx : carte "Essai gratuit 20 jours" (section "Pourquoi choisir
+  CloseOS ?") corrigée → "Essai gratuit sur chaque produit" avec les 3 vraies
+  durées (Sales 10j sans CB, Business 20j, Sign 14j).
+- FonctionnalitesHub.tsx : 2e mention de "Callroom VoIP" repérée et corrigée
+  (ligne du tableau comparatif Sales vs Business, ratée au §61) → "Callroom
+  intégrée". Carte "Intégrations" complétée avec iClosed (absente jusque-là).
+  2 nouvelles cartes fonctionnalités ajoutées : "Formulaires" (alternative à
+  Tally, éditeur façon Notion, inclus avec Business) et "Assistant IA (MCP)"
+  (Claude/ChatGPT/tout client MCP, lien vers /business#api). Carte Sign et
+  section dédiée Sign mises à jour pour nommer Yousign comme alternative
+  remplacée.
+- Tarifs.tsx : nouvelle section complète "Combien économisez-vous vraiment
+  avec CloseOS ?" (comparatif honnête fourni par l'utilisateur, repris texte
+  pour texte, chiffres inchangés) entre "Services complémentaires" et
+  "Pourquoi choisir CloseOS ?" :
+    • Tableau Solo (Pipedrive Growth, Calendly Standard, Fathom Premium,
+      Yousign Starter, Abby, Brevo Starter → ~100€/mois réel) + callout
+      100€ → 39€ CloseOS Solo, économie ~60€/mois (~2,6×).
+    • Tableau Équipe de 5 (sièges attribués par rôle, pas 5 licences pleines
+      par défaut → ~290€/mois réel) + callout 290€ → ~105€ CloseOS B+A,
+      économie ~185€/mois (~2,8×, ~2 200€/an), avec le rappel que B+A inclut
+      3 équipiers de base.
+    • Tableau "bricolage gratuit" (Google Sheet/Forms/Meet/Notion/Zapier free)
+      avec coût caché par ligne + paragraphe sur le temps perdu (~150h/mois
+      à 5) et les deals qui fuitent.
+    • Tableau de synthèse à 2 lignes (cible → bon argument → chiffre), pour
+      ne jamais mélanger le message "économie" (équipe déjà outillée) et le
+      message "fin du chaos" (solo / majorité qui bricole).
+Vérifié visuellement en localhost sur les 3 pages : nouvelles cartes MCP/
+Formulaires/Sign+Yousign sur Fonctionnalités, section comparatif complète
+(4 tableaux + 2 callouts) sur Tarifs, carte "Pourquoi choisir" corrigée.
+Typecheck propre sur les 3 fichiers (mêmes warnings Framer Motion Variants
+pré-existants, sans rapport, inchangés).
+Fichiers modifiés : src/pages/Tarifs.tsx, src/pages/fonctionnalites/
+FonctionnalitesHub.tsx.
+Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
+
+
+================================================================================
+FIN DU RÉCAPITULATIF
+================================================================================

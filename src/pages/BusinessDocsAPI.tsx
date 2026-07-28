@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Copy, Check, ArrowLeft, Globe, Sparkles, Zap, Key, Webhook, ShieldCheck, AlertCircle, BookOpen, Code2, Terminal, ChevronRight } from 'lucide-react'
+import { Copy, Check, ArrowLeft, Globe, Sparkles, Zap, Key, Webhook, ShieldCheck, AlertCircle, BookOpen, Code2, Terminal, ChevronRight, Bot } from 'lucide-react'
 
 type Lang = 'fr' | 'en'
 
@@ -13,13 +13,14 @@ const I18N: Record<Lang, Record<string, string>> = {
     backToLanding: 'Retour à la landing',
     productName: 'API CloseOS Business',
     badge: 'Documentation officielle',
-    tagline: 'Construisez sur CloseOS — REST + Webhooks signés HMAC.',
+    tagline: 'Construisez sur CloseOS — REST, Webhooks signés HMAC, et un serveur MCP pour piloter le CRM depuis une IA.',
     searchPlaceholder: 'Rechercher dans la doc',
 
     // sections
     nav_intro: 'Introduction',
     nav_auth: 'Authentification',
     nav_quickstart: 'Quick Start',
+    nav_mcp: 'Serveur MCP',
     nav_endpoint: 'Endpoint REST',
     nav_fields: 'Champs supportés',
     nav_idempotency: 'Idempotence',
@@ -54,6 +55,21 @@ const I18N: Record<Lang, Record<string, string>> = {
     qs_step1: 'Définissez votre clé API en variable d\'environnement.',
     qs_step2: 'Effectuez votre premier POST avec cURL ou votre langage préféré.',
     qs_step3: 'Vous recevez 201 Created avec l\'objet prospect en réponse.',
+
+    // MCP
+    mcp_badge: 'Nouveau',
+    mcp_h1: 'Serveur MCP — piloter CloseOS depuis une IA',
+    mcp_p1: "En plus de l'API REST, CloseOS Business expose un vrai serveur MCP (Model Context Protocol, transport Streamable HTTP / JSON-RPC, sans état). Connectez Claude, ChatGPT ou tout client MCP standard et pilotez votre CRM en langage naturel : créer un prospect, planifier un rendez-vous, lancer une relance No Show, gérer votre équipe ou vos formulaires — sans ouvrir l'interface.",
+    mcp_setup_h3: 'Configuration',
+    mcp_setup_step1: 'Paramètres → onglet "Assistant IA" (visible uniquement par le propriétaire du compte).',
+    mcp_setup_step2: 'Générez votre clé MCP (préfixe cos_, distincte de votre clé API Zapier).',
+    mcp_setup_step3: "Copiez l'URL du connecteur — la clé y est déjà intégrée.",
+    mcp_setup_step4: "Collez cette URL dans la configuration MCP de votre client (Claude Desktop, ChatGPT, ou tout client compatible).",
+    mcp_key_warning: '⚠️ Cette clé donne accès à tout le compte. Désactivez-la ou régénérez-la à tout moment depuis Paramètres → Assistant IA — l\'ancienne URL cesse de fonctionner immédiatement.',
+    mcp_guardrails_h3: 'Garde-fous',
+    mcp_guardrails_p1: "Le serveur MCP ne touche jamais à Stripe ni aux paiements, ne permet pas de supprimer un membre d'équipe, et n'expose jamais vos clés tierces (business_settings). Les actions à effet de bord (emails, tokens, limites de sièges) passent par les mêmes routes internes que l'application — aucune logique dupliquée ou parallèle.",
+    mcp_tools_h3: '28 outils disponibles',
+    mcp_tools_p1: 'Regroupés par domaine — CRM, campagnes, agenda, relances, équipe, offres, formulaires et tracking.',
 
     // endpoint
     ep_h1: 'Endpoint REST — Créer/MAJ un prospect',
@@ -109,6 +125,10 @@ const I18N: Record<Lang, Record<string, string>> = {
 
     // changelog
     cl_h1: 'Changelog',
+    cl_v11_date: '2026-07-28 — v1.1',
+    cl_v11_item1: "Arrivée du serveur MCP (Model Context Protocol) : pilotez CloseOS Business depuis Claude, ChatGPT ou tout client MCP standard.",
+    cl_v11_item2: '28 outils exposés : CRM, campagnes, agenda, relances, équipe, offres, objectifs, formulaires, tracking.',
+    cl_v11_item3: 'Clé de connexion dédiée (préfixe cos_), activable et révocable depuis Paramètres → Assistant IA.',
     cl_v1_date: '2026-04-26 — v1.0',
     cl_v1_item1: 'Lancement public de l\'API CloseOS Business.',
     cl_v1_item2: 'Endpoint POST /api/zapier-webhook?type=business avec idempotence par external_id.',
@@ -125,17 +145,20 @@ const I18N: Record<Lang, Record<string, string>> = {
     lbl_when: 'Déclenché quand',
     lbl_code: 'Code',
     lbl_meaning: 'Signification',
+    lbl_tool: 'Outil',
+    lbl_category: 'Catégorie',
   },
   en: {
     backToLanding: 'Back to landing',
     productName: 'CloseOS Business API',
     badge: 'Official documentation',
-    tagline: 'Build on CloseOS — REST + HMAC-signed webhooks.',
+    tagline: 'Build on CloseOS — REST, HMAC-signed webhooks, and an MCP server to run the CRM from an AI assistant.',
     searchPlaceholder: 'Search the docs',
 
     nav_intro: 'Introduction',
     nav_auth: 'Authentication',
     nav_quickstart: 'Quick Start',
+    nav_mcp: 'MCP Server',
     nav_endpoint: 'REST Endpoint',
     nav_fields: 'Supported fields',
     nav_idempotency: 'Idempotency',
@@ -167,6 +190,21 @@ const I18N: Record<Lang, Record<string, string>> = {
     qs_step1: 'Set your API key as an environment variable.',
     qs_step2: 'Make your first POST request with cURL or your favorite language.',
     qs_step3: 'You receive 201 Created with the prospect object in the response.',
+
+    // MCP
+    mcp_badge: 'New',
+    mcp_h1: 'MCP Server — run CloseOS from an AI assistant',
+    mcp_p1: "In addition to the REST API, CloseOS Business exposes a real MCP (Model Context Protocol) server — Streamable HTTP / JSON-RPC transport, stateless. Connect Claude, ChatGPT or any standard MCP client and run your CRM in plain language: create a prospect, schedule an appointment, trigger a No Show follow-up, manage your team or your forms — without opening the interface.",
+    mcp_setup_h3: 'Setup',
+    mcp_setup_step1: 'Settings → "AI Assistant" tab (visible to the account owner only).',
+    mcp_setup_step2: 'Generate your MCP key (cos_ prefix, distinct from your Zapier API key).',
+    mcp_setup_step3: 'Copy the connector URL — the key is already embedded in it.',
+    mcp_setup_step4: 'Paste that URL into the MCP configuration of your client (Claude Desktop, ChatGPT, or any compatible client).',
+    mcp_key_warning: '⚠️ This key grants access to the whole account. Disable or regenerate it anytime from Settings → AI Assistant — the old URL stops working immediately.',
+    mcp_guardrails_h3: 'Guardrails',
+    mcp_guardrails_p1: "The MCP server never touches Stripe or payments, cannot delete a team member, and never exposes your third-party keys (business_settings). Side-effect actions (emails, tokens, seat limits) go through the same internal routes as the app itself — no duplicated or parallel logic.",
+    mcp_tools_h3: '28 tools available',
+    mcp_tools_p1: 'Grouped by domain — CRM, campaigns, calendar, follow-ups, team, offers, forms and tracking.',
 
     ep_h1: 'REST Endpoint — Create/Update a prospect',
     ep_intro: 'A single endpoint is used to create or update a prospect. If you provide external_id, the call becomes idempotent: a second POST with the same external_id updates the existing row instead of duplicating it.',
@@ -213,6 +251,10 @@ const I18N: Record<Lang, Record<string, string>> = {
     rl_p1: 'No rate limit is enforced today on the CloseOS Business API — you can use it without a functional cap. For infrastructure robustness, the API may return a 503 during server load spikes; implement an exponential-backoff retry for those cases. If you need a dedicated SLA, contact us.',
 
     cl_h1: 'Changelog',
+    cl_v11_date: '2026-07-28 — v1.1',
+    cl_v11_item1: 'MCP (Model Context Protocol) server has landed: run CloseOS Business from Claude, ChatGPT or any standard MCP client.',
+    cl_v11_item2: '28 tools exposed: CRM, campaigns, calendar, follow-ups, team, offers, objectives, forms, tracking.',
+    cl_v11_item3: 'Dedicated connection key (cos_ prefix), activated and revoked from Settings → AI Assistant.',
     cl_v1_date: '2026-04-26 — v1.0',
     cl_v1_item1: 'Public launch of the CloseOS Business API.',
     cl_v1_item2: 'Endpoint POST /api/zapier-webhook?type=business with idempotency via external_id.',
@@ -228,6 +270,8 @@ const I18N: Record<Lang, Record<string, string>> = {
     lbl_when: 'Triggered when',
     lbl_code: 'Code',
     lbl_meaning: 'Meaning',
+    lbl_tool: 'Tool',
+    lbl_category: 'Category',
   },
 }
 
@@ -239,6 +283,7 @@ const SECTIONS = [
   { id: 'introduction',  group: 'getting_started', icon: BookOpen,    labelKey: 'nav_intro' },
   { id: 'authentication', group: 'getting_started', icon: Key,         labelKey: 'nav_auth' },
   { id: 'quickstart',    group: 'getting_started', icon: Zap,         labelKey: 'nav_quickstart' },
+  { id: 'mcp',           group: 'mcp',             icon: Bot,         labelKey: 'nav_mcp' },
   { id: 'endpoint',      group: 'reference',       icon: Terminal,    labelKey: 'nav_endpoint' },
   { id: 'fields',        group: 'reference',       icon: Code2,       labelKey: 'nav_fields' },
   { id: 'idempotency',   group: 'reference',       icon: Sparkles,    labelKey: 'nav_idempotency' },
@@ -252,12 +297,14 @@ const SECTIONS = [
 
 const GROUPS_FR: Record<string, string> = {
   getting_started: 'Démarrer',
+  mcp: 'Assistant IA',
   reference: 'Référence API',
   webhooks: 'Webhooks',
   misc: 'Annexes',
 }
 const GROUPS_EN: Record<string, string> = {
   getting_started: 'Getting started',
+  mcp: 'AI Assistant',
   reference: 'API Reference',
   webhooks: 'Webhooks',
   misc: 'Reference',
@@ -401,6 +448,14 @@ res = requests.post(
     },
 )
 print(res.json()["prospect"]["id"])`
+
+const MCP_CONNECTION_EXAMPLE = `{
+  "mcpServers": {
+    "closeos-business": {
+      "url": "https://closeos.fr/api/business-mcp/cos_live_xxxxxxxxxxxxxxxx"
+    }
+  }
+}`
 
 const FULL_PAYLOAD_EXAMPLE = `{
   "firstName": "Jean",
@@ -546,6 +601,39 @@ const FIELDS = [
   { name: 'answers',       type: 'array<{question,answer}>', required: 'optional', fr_desc: 'Réponses à un questionnaire externe (alias: lead_answers).',                              en_desc: 'External questionnaire answers (alias: lead_answers).' },
   { name: 'metadata',      type: 'object',                  required: 'optional', fr_desc: 'Champs custom arbitraires. Tout champ non listé ici est aussi conservé dans metadata.',   en_desc: 'Arbitrary custom fields. Any field not listed here is also preserved in metadata.' },
   { name: 'external_id',   type: 'string',                  required: 'optional', fr_desc: 'ID stable côté votre système. Active l\'idempotence sur les POST suivants.',              en_desc: 'Stable ID from your system. Enables idempotency on subsequent POSTs.' },
+]
+
+const MCP_TOOLS = [
+  { name: 'business_overview',       cat_fr: "Vue d'ensemble",     cat_en: 'Overview',        fr: "Vue d'ensemble du compte : équipe, teams, compteurs, stages du pipeline.", en: 'Account overview: team, teams, counters, pipeline stages.' },
+  { name: 'pipeline_stats',          cat_fr: "Vue d'ensemble",     cat_en: 'Overview',        fr: 'Statistiques du pipeline : prospects et valeur par stage, CA gagné.',      en: 'Pipeline stats: prospects and value per stage, total revenue won.' },
+  { name: 'prospects_list',          cat_fr: 'Prospects & CRM',    cat_en: 'Prospects & CRM', fr: 'Liste les prospects, filtrable par stage, recherche, campagne, membre.',   en: 'Lists prospects, filterable by stage, search, campaign, member.' },
+  { name: 'prospect_get',            cat_fr: 'Prospects & CRM',    cat_en: 'Prospects & CRM', fr: "Fiche complète d'un prospect : champs, réponses, tags, RDV, rappels.",     en: 'Full prospect record: fields, answers, tags, appointments, reminders.' },
+  { name: 'prospect_create',         cat_fr: 'Prospects & CRM',    cat_en: 'Prospects & CRM', fr: 'Crée un prospect (déclenche les automatismes de stage).',                 en: 'Creates a prospect (triggers stage automations).' },
+  { name: 'prospect_update',         cat_fr: 'Prospects & CRM',    cat_en: 'Prospects & CRM', fr: 'Met à jour un prospect (patch partiel).',                                 en: 'Updates a prospect (partial patch).' },
+  { name: 'prospect_delete',         cat_fr: 'Prospects & CRM',    cat_en: 'Prospects & CRM', fr: 'Supprime définitivement un prospect (confirm=true requis).',             en: 'Permanently deletes a prospect (confirm=true required).' },
+  { name: 'prospect_tags',           cat_fr: 'Prospects & CRM',    cat_en: 'Prospects & CRM', fr: 'Ajoute/retire des tags sur un prospect.',                                 en: 'Adds/removes tags on a prospect.' },
+  { name: 'campaigns_list',          cat_fr: 'Campagnes',          cat_en: 'Campaigns',       fr: 'Liste les campagnes de capture (URL publique, nb de leads).',             en: 'Lists capture campaigns (public URL, lead count).' },
+  { name: 'campaign_create',         cat_fr: 'Campagnes',          cat_en: 'Campaigns',       fr: 'Crée une campagne de capture (avec ou sans RDV).',                        en: 'Creates a capture campaign (with or without appointment).' },
+  { name: 'campaign_update',         cat_fr: 'Campagnes',          cat_en: 'Campaigns',       fr: 'Met à jour une campagne (patch partiel).',                                en: 'Updates a campaign (partial patch).' },
+  { name: 'campaign_delete',         cat_fr: 'Campagnes',          cat_en: 'Campaigns',       fr: 'Supprime définitivement une campagne (confirm=true requis).',            en: 'Permanently deletes a campaign (confirm=true required).' },
+  { name: 'campaign_questionnaire',  cat_fr: 'Campagnes',          cat_en: 'Campaigns',       fr: 'Lit ou configure le questionnaire de qualification.',                     en: 'Reads or configures the qualification questionnaire.' },
+  { name: 'booking_links_manage',    cat_fr: 'Agenda & RDV',       cat_en: 'Calendar',        fr: 'Gère les liens de booking publics reliés au CRM.',                       en: 'Manages public booking links tied to the CRM.' },
+  { name: 'appointments_list',       cat_fr: 'Agenda & RDV',       cat_en: 'Calendar',        fr: 'Liste les rendez-vous, filtrable par statut et période.',                 en: 'Lists appointments, filterable by status and date range.' },
+  { name: 'appointment_create',      cat_fr: 'Agenda & RDV',       cat_en: 'Calendar',        fr: 'Crée un rendez-vous, optionnellement lié à un prospect.',                 en: 'Creates an appointment, optionally linked to a prospect.' },
+  { name: 'appointment_cancel',      cat_fr: 'Agenda & RDV',       cat_en: 'Calendar',        fr: 'Annule un rendez-vous.',                                                  en: 'Cancels an appointment.' },
+  { name: 'appointment_reschedule',  cat_fr: 'Agenda & RDV',       cat_en: 'Calendar',        fr: 'Reprogramme un rendez-vous à une nouvelle date/heure.',                   en: 'Reschedules an appointment to a new date/time.' },
+  { name: 'appointment_reassign',    cat_fr: 'Agenda & RDV',       cat_en: 'Calendar',        fr: "Réassigne un rendez-vous à un autre membre de l'équipe.",                 en: 'Reassigns an appointment to another team member.' },
+  { name: 'relances_config_get',     cat_fr: 'Relances & Rappels', cat_en: 'Follow-ups',      fr: 'Lit la configuration des relances Contacté et No Show.',                 en: 'Reads the Contacted and No Show follow-up configuration.' },
+  { name: 'contacted_reminders_set', cat_fr: 'Relances & Rappels', cat_en: 'Follow-ups',      fr: 'Configure les délais de relance "Contacté".',                            en: 'Configures the "Contacted" follow-up delays.' },
+  { name: 'noshow_relances_set',     cat_fr: 'Relances & Rappels', cat_en: 'Follow-ups',      fr: "Configure la séquence d'emails \"No Show\" (jusqu'à 7).",                 en: 'Configures the "No Show" email sequence (up to 7).' },
+  { name: 'reminders_manage',        cat_fr: 'Relances & Rappels', cat_en: 'Follow-ups',      fr: 'Gère les rappels liés aux prospects (créer, terminer, supprimer).',       en: 'Manages prospect reminders (create, complete, delete).' },
+  { name: 'team_manage',             cat_fr: 'Équipe',             cat_en: 'Team',            fr: "Invite, met à jour un membre, ou crée une team.",                        en: 'Invites, updates a member, or creates a team.' },
+  { name: 'formulas_manage',         cat_fr: 'Offres & Objectifs', cat_en: 'Offers',          fr: 'Gère les formules / offres commerciales.',                                en: 'Manages formulas / commercial offers.' },
+  { name: 'objectives_manage',       cat_fr: 'Offres & Objectifs', cat_en: 'Offers',          fr: "Gère les objectifs d'équipe.",                                            en: 'Manages team objectives.' },
+  { name: 'sources_manage',          cat_fr: 'Offres & Objectifs', cat_en: 'Offers',          fr: "Gère les sources d'acquisition personnalisées.",                         en: 'Manages custom acquisition sources.' },
+  { name: 'forms_manage',            cat_fr: 'Formulaires & Tracking', cat_en: 'Forms & Tracking', fr: 'Gère les formulaires (Tally-like) : blocs, réponses, pont CRM.',   en: 'Manages forms (Tally-like): blocks, responses, CRM bridge.' },
+  { name: 'tracking_links_manage',   cat_fr: 'Formulaires & Tracking', cat_en: 'Forms & Tracking', fr: 'Gère les liens de tracking courts et leurs statistiques.',        en: 'Manages short tracking links and their stats.' },
+  { name: 'acquisition_stats',       cat_fr: 'Formulaires & Tracking', cat_en: 'Forms & Tracking', fr: "Statistiques d'acquisition par campagne.",                        en: 'Acquisition stats per campaign.' },
 ]
 
 const ERRORS = [
@@ -731,6 +819,53 @@ export default function BusinessDocsAPI() {
             ]} />
           </Section>
 
+          {/* MCP Server */}
+          <Section id="mcp" title={t.mcp_h1}>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-400/10 border border-emerald-400/20 mb-6">
+              <Bot className="size-3.5 text-emerald-400" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-400">{t.mcp_badge}</span>
+            </div>
+            <p className="text-stone-300 leading-relaxed">{t.mcp_p1}</p>
+
+            <h3 className="text-base font-bold mt-10 mb-3">{t.mcp_setup_h3}</h3>
+            <ol className="list-decimal list-inside space-y-2 text-stone-300 mt-2 ml-2">
+              <li>{t.mcp_setup_step1}</li>
+              <li>{t.mcp_setup_step2}</li>
+              <li>{t.mcp_setup_step3}</li>
+              <li>{t.mcp_setup_step4}</li>
+            </ol>
+            <Callout tone="warn" className="mt-6">{t.mcp_key_warning}</Callout>
+            <CodeBlock language="JSON">{MCP_CONNECTION_EXAMPLE}</CodeBlock>
+
+            <h3 className="text-base font-bold mt-10 mb-3">{t.mcp_guardrails_h3}</h3>
+            <p className="text-stone-300 leading-relaxed">{t.mcp_guardrails_p1}</p>
+
+            <h3 className="text-base font-bold mt-10 mb-3">{t.mcp_tools_h3}</h3>
+            <p className="text-stone-300 leading-relaxed">{t.mcp_tools_p1}</p>
+            <div className="overflow-x-auto rounded-2xl border border-white/10 mt-6">
+              <table className="w-full text-sm">
+                <thead className="bg-white/5">
+                  <tr className="text-left">
+                    <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_tool}</th>
+                    <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_category}</th>
+                    <th className="px-4 py-3 font-bold text-stone-300">{t.lbl_description}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {MCP_TOOLS.map(tool => (
+                    <tr key={tool.name} className="border-t border-white/5">
+                      <td className="px-4 py-3 align-top">
+                        <code className="text-[12px] font-mono text-emerald-300 bg-white/5 rounded px-1.5 py-0.5 whitespace-nowrap">{tool.name}</code>
+                      </td>
+                      <td className="px-4 py-3 align-top text-stone-400 text-[12px] whitespace-nowrap">{lang === 'fr' ? tool.cat_fr : tool.cat_en}</td>
+                      <td className="px-4 py-3 align-top text-stone-300">{lang === 'fr' ? tool.fr : tool.en}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+
           {/* Endpoint */}
           <Section id="endpoint" title={t.ep_h1}>
             <p className="text-stone-300 leading-relaxed">{t.ep_intro}</p>
@@ -880,6 +1015,14 @@ export default function BusinessDocsAPI() {
 
           {/* Changelog */}
           <Section id="changelog" title={t.cl_h1}>
+            <div className="rounded-2xl border border-white/10 p-6 bg-white/[0.02] mb-4">
+              <h3 className="font-bold text-base mb-3">{t.cl_v11_date}</h3>
+              <ul className="list-disc list-inside space-y-1.5 text-stone-300 ml-2 text-sm">
+                <li>{t.cl_v11_item1}</li>
+                <li>{t.cl_v11_item2}</li>
+                <li>{t.cl_v11_item3}</li>
+              </ul>
+            </div>
             <div className="rounded-2xl border border-white/10 p-6 bg-white/[0.02]">
               <h3 className="font-bold text-base mb-3">{t.cl_v1_date}</h3>
               <ul className="list-disc list-inside space-y-1.5 text-stone-300 ml-2 text-sm">

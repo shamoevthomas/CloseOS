@@ -394,8 +394,8 @@ const fr: Translations = {
 
   // Hero
   hero_title: 'Le CRM tout-en-un pour entrepreneurs.',
-  hero_pain: "Arrêtez de jongler entre 5 outils. Prospects, pipeline, campagnes, acquisition — tout dans un seul CRM.",
-  hero_subtitle: "CRM, Pipeline, Campagnes avec Stripe intégré, Acquisition analytics, API Zapier/Make/N8N — tout ce qu'il vous faut pour closer plus, sans jongler entre plusieurs outils.",
+  hero_pain: "Arrêtez de jongler entre 5 outils. Prospects, pipeline, campagnes, acquisition, tout dans un seul CRM.",
+  hero_subtitle: "CRM, Pipeline, Campagnes avec Stripe intégré, Acquisition analytics, API Zapier/Make/N8N, tout ce qu'il vous faut pour closer plus, sans jongler entre plusieurs outils.",
   hero_cta: "Commencer 14 jours gratuits",
   hero_social_proof: 'Rejoignez {count} entrepreneurs qui closent',
   hero_social_proof_count: '+1 000 entrepreneurs',
@@ -407,7 +407,7 @@ const fr: Translations = {
   // Dashboard / Management section
   management_badge: 'Votre tableau de bord personnel',
   management_title: 'Pilotez votre business solo comme un pro',
-  management_description: "Centralisez tout dans un CRM puissant. Du tableau de bord à la gestion de vos prospects, campagnes et pipeline — vous ne perdez plus de temps entre plusieurs outils, vous closez.",
+  management_description: "Centralisez tout dans un CRM puissant. Du tableau de bord à la gestion de vos prospects, campagnes et pipeline, vous ne perdez plus de temps entre plusieurs outils, vous closez.",
 
   // Macro Dashboard
   dashboard_title: 'Dashboard personnel',
@@ -432,7 +432,7 @@ const fr: Translations = {
   // Revenue & Stripe
   revenue_stripe_connect: 'Stripe Connect',
   revenue_title: "Chiffre d'affaires en temps réel",
-  revenue_description: "Connectez votre Stripe et suivez vos revenus réels — pas des estimations. Chaque paiement récurrent est automatiquement rattaché au bon prospect, au bon deal, au bon tag.",
+  revenue_description: "Connectez votre Stripe et suivez vos revenus réels, pas des estimations. Chaque paiement récurrent est automatiquement rattaché au bon prospect, au bon deal, au bon tag.",
   revenue_item_mrr: "MRR, abonnements actifs et churn en un coup d'œil",
   revenue_item_matching: 'Matching auto prospects ↔ clients Stripe',
   revenue_item_charges: 'Charges, commissions et marge nette calculés',
@@ -468,7 +468,7 @@ const fr: Translations = {
   // CRM Section
   crm_badge: "L'outil tout-en-un",
   crm_title: "Un CRM pensé pour l'entrepreneur qui close seul",
-  crm_subtitle: "Gérez vos prospects, créez vos campagnes et suivez votre acquisition — sans équipe, sans complication, sans dépendance à 5 outils différents.",
+  crm_subtitle: "Gérez vos prospects, créez vos campagnes et suivez votre acquisition, sans équipe, sans complication, sans dépendance à 5 outils différents.",
 
   // CRM Features
   crm_feature_pipeline_title: 'Pipeline Kanban visuel',
@@ -523,7 +523,7 @@ const fr: Translations = {
   capture_item_embed: "Embed iframe intégrable sur n'importe quel site",
   capture_item_popup: 'Popup déclenchable au clic ou en automatique',
   capture_item_video: 'Ajoutez une vidéo de présentation avec un lien de redirection',
-  capture_item_precapture: 'Précapture : dès qu\'un email ou numéro est saisi, le prospect est enregistré — même sans avoir terminé le formulaire',
+  capture_item_precapture: 'Précapture : dès qu\'un email ou numéro est saisi, le prospect est enregistré, même sans avoir terminé le formulaire',
   capture_item_payment: 'Rendez-vous payants via Stripe : idéal pour le consulting, audits, coaching…',
   capture_tab_page: 'Page',
   capture_tab_embed: 'Embed',
@@ -573,13 +573,13 @@ const fr: Translations = {
   // Features by Role
   roles_badge: 'Fonctionnalités par Rôle',
   roles_title: 'Chaque rôle a ses outils. Chaque outil a sa place.',
-  roles_subtitle: "Owner, Closer, Setter ou Setter-Closer — chacun accède exactement à ce dont il a besoin, rien de plus.",
+  roles_subtitle: "Owner, Closer, Setter ou Setter-Closer, chacun accède exactement à ce dont il a besoin, rien de plus.",
 
   // Role: Owner
   role_owner: {
     label: 'Owner / Admin',
     tagline: 'Contrôle total',
-    description: "Pilotez l'intégralité de votre écosystème de vente. CRM, équipes, KPIs, campagnes — tout depuis un seul tableau de bord.",
+    description: "Pilotez l'intégralité de votre écosystème de vente. CRM, équipes, KPIs, campagnes, tout depuis un seul tableau de bord.",
     features: [
       {
         title: 'CRM & Pipeline Global',
@@ -807,7 +807,7 @@ const fr: Translations = {
   faqs: [
     {
       question: 'A qui est destiné cet outil ?',
-      answer: "Il est destiné à toute personne qui vend en ligne : entrepreneurs, Head of Sales, mais aussi les solopreneurs et ceux qui lancent des Challenges. Quand on parle d'équipe, on ne parle pas forcément d'une grosse structure — même un closer seul ou un duo propriétaire peut tirer parti de l'outil.",
+      answer: "Il est destiné à toute personne qui vend en ligne : entrepreneurs, Head of Sales, mais aussi les solopreneurs et ceux qui lancent des Challenges. Quand on parle d'équipe, on ne parle pas forcément d'une grosse structure, même un closer seul ou un duo propriétaire peut tirer parti de l'outil.",
     },
     {
       question: 'CloseOS CRM est-il compatible avec mes outils CRM actuels ?',
@@ -815,7 +815,7 @@ const fr: Translations = {
     },
     {
       question: "Pourquoi utiliser le CRM CloseOS si j'ai déjà HubSpot ou Pipedrive ?",
-      answer: "CloseOS ne remplace pas forcément votre CRM actuel — il s'y connecte. Vous pouvez garder HubSpot, Pipedrive, GoHighLevel ou Airtable comme source de vérité marketing, et utiliser CloseOS comme cockpit de closing optimisé pour vos prospects. La synchronisation bidirectionnelle signifie que chaque prospect ajouté ou mis à jour d'un côté est reflété de l'autre. Vos closers travaillent dans CloseOS (pipeline, appels, KPIs), et vos données marketing restent à jour dans votre stack existante. Pour les équipes qui veulent tout centraliser, le CRM natif CloseOS offre les meilleures performances : assignation automatique propriétaire, capture de leads, tracking de campagnes et analytics intégrés sans aucune config externe.",
+      answer: "CloseOS ne remplace pas forcément votre CRM actuel, il s'y connecte. Vous pouvez garder HubSpot, Pipedrive, GoHighLevel ou Airtable comme source de vérité marketing, et utiliser CloseOS comme cockpit de closing optimisé pour vos prospects. La synchronisation bidirectionnelle signifie que chaque prospect ajouté ou mis à jour d'un côté est reflété de l'autre. Vos closers travaillent dans CloseOS (pipeline, appels, KPIs), et vos données marketing restent à jour dans votre stack existante. Pour les équipes qui veulent tout centraliser, le CRM natif CloseOS offre les meilleures performances : assignation automatique propriétaire, capture de leads, tracking de campagnes et analytics intégrés sans aucune config externe.",
     },
     {
       question: 'Mes données sont-elles sécurisées et conformes au RGPD ?',
@@ -831,23 +831,23 @@ const fr: Translations = {
     },
     {
       question: 'Est-ce difficile à prendre en main pour mes closers ?',
-      answer: "Non. L'onboarding est 100% autonome — vos closers sont guidés dès leur première connexion avec vos scripts, ressources et KPIs de progression. Vous n'avez rien à expliquer manuellement.",
+      answer: "Non. L'onboarding est 100% autonome, vos closers sont guidés dès leur première connexion avec vos scripts, ressources et KPIs de progression. Vous n'avez rien à expliquer manuellement.",
     },
     {
       question: 'Est-ce que CloseOS CRM sera parfaitement adapté à mon business ?',
-      answer: "C'est justement l'objectif. CloseOS CRM se construit avec les entrepreneurs inscrits sur la liste d'attente. Vos retours, vos besoins et vos cas d'usage concrets façonnent directement l'outil. Vous ne découvrez pas un produit fini — vous participez à créer le meilleur outil de closing du marché.",
+      answer: "C'est justement l'objectif. CloseOS CRM se construit avec les entrepreneurs inscrits sur la liste d'attente. Vos retours, vos besoins et vos cas d'usage concrets façonnent directement l'outil. Vous ne découvrez pas un produit fini, vous participez à créer le meilleur outil de closing du marché.",
     },
   ],
 
   // Final CTA
   final_cta_title: 'Prêt à scaler votre écosystème de closing ?',
   final_cta_subtitle: 'Inscrivez-vous maintenant et débloquez un tarif early adopter imbattable, dévoilé le 4 avril.',
-  final_cta_button: "Rejoindre la liste d'attente — Tarifs le 4 avril",
+  final_cta_button: "Rejoindre la liste d'attente, Tarifs le 4 avril",
 
   // Founder
   founder_section_title: 'Le fondateur',
   founder_role: 'Fondateur de CloseOS',
-  founder_bio: "Avant de créer l'écosystème CloseOS, Thomas était closer et setter. C'est en étant sur le terrain qu'il a vu et subi la réalité du métier au quotidien : travailler avec minimum 2 écrans, jongler entre des dizaines d'outils qui ne communiquent même pas entre eux, et perdre 1h à 1h30 chaque jour juste pour tout mettre à jour. Un CRM d'un côté, un outil de booking de l'autre, la facturation sur un troisième, les KPIs sur un tableur — le tout sans aucune synchronisation. CloseOS est né de cette frustration : un seul outil qui remplace tous les autres, conçu par un closer pour les prospects.",
+  founder_bio: "Avant de créer l'écosystème CloseOS, Thomas était closer et setter. C'est en étant sur le terrain qu'il a vu et subi la réalité du métier au quotidien : travailler avec minimum 2 écrans, jongler entre des dizaines d'outils qui ne communiquent même pas entre eux, et perdre 1h à 1h30 chaque jour juste pour tout mettre à jour. Un CRM d'un côté, un outil de booking de l'autre, la facturation sur un troisième, les KPIs sur un tableur, le tout sans aucune synchronisation. CloseOS est né de cette frustration : un seul outil qui remplace tous les autres, conçu par un closer pour les prospects.",
 
   // Footer
   footer_copyright: '\u00A9 2026 CloseOS',
@@ -893,7 +893,7 @@ const fr: Translations = {
   modal_google_form: 'Vos besoins (Google Form)',
   modal_linkedin: 'Suivre sur LinkedIn',
   modal_title: "Rejoindre la liste d'attente",
-  modal_description: "Inscrivez-vous et recevez le {date} un tarif early adopter concurrentiel et imbattable, réservé uniquement aux inscrits — {locked}.",
+  modal_description: "Inscrivez-vous et recevez le {date} un tarif early adopter concurrentiel et imbattable, réservé uniquement aux inscrits, {locked}.",
   modal_description_date: '4 avril',
   modal_description_locked: 'verrouillé à vie',
   modal_email_label: 'Votre Email Professionnel',
@@ -905,25 +905,25 @@ const fr: Translations = {
   modal_error_generic: 'Une erreur est survenue. Veuillez rééssayer.',
 
   // SEO
-  seo_title: 'CloseOS CRM — Pilotez vos prospects de vente',
+  seo_title: 'CloseOS CRM, Pilotez vos prospects de vente',
   seo_description: "Plateforme de management pour entrepreneurs : gérez vos closers, setters, KPIs et campagnes d'acquisition. Essai gratuit 20 jours.",
-  seo_og_title: 'CloseOS CRM — Plateforme de management pour entrepreneurs et Head of Sales',
+  seo_og_title: 'CloseOS CRM, Plateforme de management pour entrepreneurs et Head of Sales',
   seo_og_description: "Gérez votre business solo, pilotez vos campagnes d'acquisition et suivez les KPIs de vos prospects. Logiciel entrepreneur closing francophone.",
-  seo_default_title: 'CloseOS — Écosystème SaaS pour la vente digitale | CRM Closer & Management Infopreneur',
+  seo_default_title: 'CloseOS, Écosystème SaaS pour la vente digitale | CRM Closer & Management Infopreneur',
   seo_default_description: "CloseOS est l'écosystème SaaS francophone pour la vente digitale. Outil pour closer : CRM, pipeline, VoIP, KPIs, facturation automatique. Logiciel entrepreneur : gestion équipe de closers, campagnes d'acquisition, analytics. Alternative iClosed.",
-  seo_default_og_title: 'CloseOS — Écosystème SaaS pour la vente digitale francophone',
+  seo_default_og_title: 'CloseOS, Écosystème SaaS pour la vente digitale francophone',
   seo_default_og_description: "Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et entrepreneurs (management d'équipe, campagnes, analytics). Alternative iClosed.",
 
   // Structured data
   sd_description: "Plateforme de management pour entrepreneurs et Head of Sales. Gestion d'équipe de closers et setters, pilotage campagnes d'acquisition, CRM acquisition, tableau de bord entrepreneur. Alternative à iClosed, 100% en français.",
-  sd_offer_description: "Liste d'attente — tarifs early adopters",
+  sd_offer_description: "Liste d'attente, tarifs early adopters",
   sd_feature_list: "Gérer équipe de closers, Pilotage équipe closing, Logiciel entrepreneur closing, CRM acquisition entrepreneur, Outil gestion setter closer, Piloter campagne acquisition closing, Tableau de bord entrepreneur, KPIs d'équipe, Onboarding closers automatisé",
   sd_faq_who_q: 'A qui est destiné CloseOS CRM ?',
   sd_faq_who_a: "CloseOS CRM est destiné à toute personne qui vend en ligne : entrepreneurs, Head of Sales, solopreneurs et ceux qui lancent des Challenges. Même un closer seul ou un duo propriétaire peut tirer parti de l'outil de management.",
   sd_faq_compat_q: 'CloseOS CRM est-il compatible avec mes outils CRM actuels ?',
   sd_faq_compat_a: "Oui. CloseOS CRM se connecte nativement à 6 plateformes : HubSpot (bidirectionnel), Pipedrive (bidirectionnel), GoHighLevel GHL (bidirectionnel), Airtable (bidirectionnel), Systeme.io (webhook) et iClosed (unidirectionnel via webhook). Vous pouvez aussi importer/exporter vos prospects en CSV depuis n'importe quel outil. Le CRM intégré CloseOS CRM offre les meilleures performances pour l'écosystème.",
   sd_faq_why_crm_q: "Pourquoi utiliser le CRM CloseOS si j'ai déjà HubSpot ou Pipedrive ?",
-  sd_faq_why_crm_a: "CloseOS ne remplace pas forcément votre CRM — il s'y connecte. Gardez HubSpot, Pipedrive, GoHighLevel ou Airtable comme source marketing, et utilisez CloseOS comme cockpit de closing optimisé. La synchronisation bidirectionnelle assure que chaque prospect est à jour des deux côtés. Le CRM natif CloseOS offre l'assignation automatique propriétaire, capture de leads, tracking campagnes et analytics intégrés.",
+  sd_faq_why_crm_a: "CloseOS ne remplace pas forcément votre CRM, il s'y connecte. Gardez HubSpot, Pipedrive, GoHighLevel ou Airtable comme source marketing, et utilisez CloseOS comme cockpit de closing optimisé. La synchronisation bidirectionnelle assure que chaque prospect est à jour des deux côtés. Le CRM natif CloseOS offre l'assignation automatique propriétaire, capture de leads, tracking campagnes et analytics intégrés.",
   sd_faq_data_access_q: 'Mes closers ont-ils accès à toutes les données ?',
   sd_faq_data_access_a: "Non. Vous définissez les niveaux d'accès. Chaque closer voit uniquement ses prospects, ses KPIs et son pipeline. Les données sensibles (CA global, marges, contacts stratégiques) restent visibles par vous seul.",
   sd_faq_what_q: "Qu'est-ce que CloseOS CRM ?",
@@ -958,8 +958,8 @@ const en: Translations = {
   // Hero
   hero_title: 'Manage your sales team and drive your acquisition.',
   hero_pain: "70% of entrepreneurs lose revenue because they don't know what to improve.",
-  hero_subtitle: 'CRM, team, campaigns, KPIs \u2014 everything an entrepreneur needs to structure acquisition and scale.',
-  hero_cta: 'Join the waitlist \u2014 Early adopter pricing on April 4th',
+  hero_subtitle: 'CRM, team, campaigns, KPIs: everything an entrepreneur needs to structure acquisition and scale.',
+  hero_cta: 'Join the waitlist, Early adopter pricing on April 4th',
   hero_social_proof: 'Validated by {count}',
   hero_social_proof_count: '+12 French-speaking entrepreneurs',
 
@@ -970,7 +970,7 @@ const en: Translations = {
   // Dashboard / Management section
   management_badge: 'Manager Command Center',
   management_title: 'Drive and manage your sales ecosystem with absolute authority',
-  management_description: 'Centralize all your management in a powerful OS. From the macro strategic dashboard to managing each closer and automating their training, you no longer manage \u2014 you drive growth.',
+  management_description: 'Centralize all your management in a powerful OS. From the macro strategic dashboard to managing each closer and automating their training, you no longer manage, you drive growth.',
 
   // Macro Dashboard
   dashboard_title: 'Macro Dashboard',
@@ -995,7 +995,7 @@ const en: Translations = {
   // Revenue & Stripe
   revenue_stripe_connect: 'Stripe Connect',
   revenue_title: 'Real-time revenue',
-  revenue_description: 'Connect your Stripe and track real revenue \u2014 not estimates. Each recurring payment automatically increments the closer\'s revenue who closed the deal.',
+  revenue_description: 'Connect your Stripe and track real revenue, not estimates. Each recurring payment automatically increments the closer\'s revenue who closed the deal.',
   revenue_item_mrr: 'MRR, active subscriptions and churn at a glance',
   revenue_item_matching: 'Auto matching prospects \u2194 Stripe customers',
   revenue_item_charges: 'Charges, commissions and net margin calculated',
@@ -1031,7 +1031,7 @@ const en: Translations = {
   // CRM Section
   crm_badge: 'The all-in-one tool',
   crm_title: 'CloseOS becomes your Acquisition System',
-  crm_subtitle: 'A CRM built exclusively for high-performance closing \u2014 with native sync to your existing tools.',
+  crm_subtitle: 'A CRM built exclusively for high-performance closing, with native sync to your existing tools.',
 
   // CRM Features
   crm_feature_pipeline_title: 'Independent CRM Pipeline',
@@ -1086,7 +1086,7 @@ const en: Translations = {
   capture_item_embed: 'Embed iframe integrable on any site',
   capture_item_popup: 'Popup triggerable on click or automatically',
   capture_item_video: 'Add a presentation video with a redirect link',
-  capture_item_precapture: 'Pre-capture: as soon as an email or phone number is entered, the prospect is saved — even if they don\'t complete the form',
+  capture_item_precapture: 'Pre-capture: as soon as an email or phone number is entered, the prospect is saved, even if they don\'t complete the form',
   capture_item_payment: 'Paid appointments via Stripe: ideal for consultations, audits, coaching…',
   capture_tab_page: 'Page',
   capture_tab_embed: 'Embed',
@@ -1136,13 +1136,13 @@ const en: Translations = {
   // Features by Role
   roles_badge: 'Features by Role',
   roles_title: 'Each role has its tools. Each tool has its place.',
-  roles_subtitle: 'Owner, Closer, Setter or Setter-Closer \u2014 each accesses exactly what they need, nothing more.',
+  roles_subtitle: 'Owner, Closer, Setter or Setter-Closer, each accesses exactly what they need, nothing more.',
 
   // Role: Owner
   role_owner: {
     label: 'Owner / Admin',
     tagline: 'Full control',
-    description: 'Drive your entire sales ecosystem. CRM, teams, KPIs, campaigns \u2014 all from a single dashboard.',
+    description: 'Drive your entire sales ecosystem. CRM, teams, KPIs, campaigns, all from a single dashboard.',
     features: [
       {
         title: 'CRM & Global Pipeline',
@@ -1370,7 +1370,7 @@ const en: Translations = {
   faqs: [
     {
       question: 'Who is this tool for?',
-      answer: "It's designed for anyone selling online: entrepreneurs, Heads of Sales, as well as solopreneurs and those running Challenges. When we say 'team', we don't necessarily mean a large organization \u2014 even a solo closer or a propriétaire duo can benefit from the tool.",
+      answer: "It's designed for anyone selling online: entrepreneurs, Heads of Sales, as well as solopreneurs and those running Challenges. When we say 'team', we don't necessarily mean a large organization, even a solo closer or a propriétaire duo can benefit from the tool.",
     },
     {
       question: 'Is CloseOS CRM compatible with my current CRM tools?',
@@ -1378,7 +1378,7 @@ const en: Translations = {
     },
     {
       question: 'Why use the CloseOS CRM if I already have HubSpot or Pipedrive?',
-      answer: "CloseOS doesn't necessarily replace your current CRM \u2014 it connects to it. You can keep HubSpot, Pipedrive, GoHighLevel or Airtable as your marketing source of truth, and use CloseOS as an optimized closing cockpit for your team. Bidirectional sync means every prospect added or updated on one side is reflected on the other. Your closers work in CloseOS (pipeline, calls, KPIs), and your marketing data stays current in your existing stack. For teams who want to centralize everything, the native CloseOS CRM offers the best performance: automatic propriétaire assignment, lead capture, campaign tracking and built-in analytics with zero external config.",
+      answer: "CloseOS doesn't necessarily replace your current CRM, it connects to it. You can keep HubSpot, Pipedrive, GoHighLevel or Airtable as your marketing source of truth, and use CloseOS as an optimized closing cockpit for your team. Bidirectional sync means every prospect added or updated on one side is reflected on the other. Your closers work in CloseOS (pipeline, calls, KPIs), and your marketing data stays current in your existing stack. For teams who want to centralize everything, the native CloseOS CRM offers the best performance: automatic propriétaire assignment, lead capture, campaign tracking and built-in analytics with zero external config.",
     },
     {
       question: 'Is my data secure and GDPR-compliant?',
@@ -1394,23 +1394,23 @@ const en: Translations = {
     },
     {
       question: 'Is it difficult for my closers to get started?',
-      answer: "No. Onboarding is 100% autonomous \u2014 your closers are guided from their first login with your scripts, resources and progression KPIs. You don't have to explain anything manually.",
+      answer: "No. Onboarding is 100% autonomous, your closers are guided from their first login with your scripts, resources and progression KPIs. You don't have to explain anything manually.",
     },
     {
       question: 'Will CloseOS CRM be perfectly adapted to my business?',
-      answer: "That's precisely the goal. CloseOS CRM is being built with the entrepreneurs signed up on the waitlist. Your feedback, needs and real use cases directly shape the tool. You're not discovering a finished product \u2014 you're participating in creating the best closing tool on the market.",
+      answer: "That's precisely the goal. CloseOS CRM is being built with the entrepreneurs signed up on the waitlist. Your feedback, needs and real use cases directly shape the tool. You're not discovering a finished product, you're participating in creating the best closing tool on the market.",
     },
   ],
 
   // Final CTA
   final_cta_title: 'Ready to scale your closing ecosystem?',
   final_cta_subtitle: 'Sign up now and unlock an unbeatable early adopter price, revealed on April 4th.',
-  final_cta_button: 'Join the waitlist \u2014 Pricing on April 4th',
+  final_cta_button: 'Join the waitlist, Pricing on April 4th',
 
   // Founder
   founder_section_title: 'The founder',
   founder_role: 'Founder of CloseOS',
-  founder_bio: "Before creating the CloseOS ecosystem, Thomas was a closer and setter. It was from working in the field that he experienced the daily reality of the job firsthand: working with at least 2 screens, juggling dozens of tools that don't even talk to each other, and wasting 1 to 1.5 hours every day just to keep everything updated. A CRM on one side, a booking tool on another, invoicing on a third, KPIs in a spreadsheet \u2014 all with zero synchronization. CloseOS was born from that frustration: a single tool that replaces all the others, built by a closer for closers.",
+  founder_bio: "Before creating the CloseOS ecosystem, Thomas was a closer and setter. It was from working in the field that he experienced the daily reality of the job firsthand: working with at least 2 screens, juggling dozens of tools that don't even talk to each other, and wasting 1 to 1.5 hours every day just to keep everything updated. A CRM on one side, a booking tool on another, invoicing on a third, KPIs in a spreadsheet, all with zero synchronization. CloseOS was born from that frustration: a single tool that replaces all the others, built by a closer for closers.",
 
   // Footer
   footer_copyright: '\u00A9 2026 CloseOS',
@@ -1456,7 +1456,7 @@ const en: Translations = {
   modal_google_form: 'Your needs (Google Form)',
   modal_linkedin: 'Follow on LinkedIn',
   modal_title: 'Join the waitlist',
-  modal_description: 'Sign up and receive on {date} a competitive and unbeatable early adopter price, reserved exclusively for subscribers \u2014 {locked}.',
+  modal_description: 'Sign up and receive on {date} a competitive and unbeatable early adopter price, reserved exclusively for subscribers, {locked}.',
   modal_description_date: 'April 4th',
   modal_description_locked: 'locked for life',
   modal_email_label: 'Your Professional Email',
@@ -1468,25 +1468,25 @@ const en: Translations = {
   modal_error_generic: 'An error occurred. Please try again.',
 
   // SEO
-  seo_title: 'CloseOS CRM — Manage Your Sales Team',
+  seo_title: 'CloseOS CRM, Manage Your Sales Team',
   seo_description: 'Management platform for entrepreneurs: manage closers, setters, KPIs and acquisition campaigns. 20-day free trial.',
-  seo_og_title: 'CloseOS CRM \u2014 Management Platform for Entrepreneurs and Heads of Sales',
+  seo_og_title: 'CloseOS CRM, Management Platform for Entrepreneurs and Heads of Sales',
   seo_og_description: 'Manage your sales team, drive your acquisition campaigns and track your team KPIs. French-speaking closing software.',
-  seo_default_title: 'CloseOS \u2014 SaaS Ecosystem for Digital Sales | Closer CRM & Management',
+  seo_default_title: 'CloseOS, SaaS Ecosystem for Digital Sales | Closer CRM & Management',
   seo_default_description: 'CloseOS is the French-speaking SaaS ecosystem for digital sales. Closer tool: CRM, pipeline, VoIP, KPIs, automatic invoicing. Management: sales team, acquisition campaigns, analytics. iClosed alternative.',
-  seo_default_og_title: 'CloseOS \u2014 SaaS Ecosystem for French-speaking Digital Sales',
+  seo_default_og_title: 'CloseOS, SaaS Ecosystem for French-speaking Digital Sales',
   seo_default_og_description: 'All-in-one tool for closers (CRM, pipeline, VoIP, KPIs) and entrepreneurs (team management, campaigns, analytics). iClosed alternative.',
 
   // Structured data
   sd_description: 'Management platform for entrepreneurs and Heads of Sales. Sales team management, acquisition campaign management, CRM, dashboard. iClosed alternative, 100% in French.',
-  sd_offer_description: 'Waitlist \u2014 early adopter pricing',
+  sd_offer_description: 'Waitlist, early adopter pricing',
   sd_feature_list: 'Manage sales team, Team closing management, Closing software, Acquisition CRM, Setter closer management tool, Acquisition campaign management, Dashboard, Team KPIs, Automated closer onboarding',
   sd_faq_who_q: 'Who is CloseOS CRM for?',
   sd_faq_who_a: 'CloseOS CRM is designed for anyone selling online: entrepreneurs, Heads of Sales, solopreneurs and those running Challenges. Even a solo closer or a propriétaire duo can benefit from the management tool.',
   sd_faq_compat_q: 'Is CloseOS CRM compatible with my current CRM tools?',
   sd_faq_compat_a: 'Yes. CloseOS CRM natively connects to 6 platforms: HubSpot (bidirectional), Pipedrive (bidirectional), GoHighLevel GHL (bidirectional), Airtable (bidirectional), Systeme.io (webhook) and iClosed (unidirectional via webhook). You can also import/export your prospects as CSV from any tool. The built-in CloseOS CRM CRM offers the best performance for the ecosystem.',
   sd_faq_why_crm_q: 'Why use the CloseOS CRM if I already have HubSpot or Pipedrive?',
-  sd_faq_why_crm_a: "CloseOS doesn't necessarily replace your CRM \u2014 it connects to it. Keep HubSpot, Pipedrive, GoHighLevel or Airtable as your marketing source, and use CloseOS as an optimized closing cockpit. Bidirectional sync ensures every prospect is up to date on both sides. The native CloseOS CRM offers automatic propriétaire assignment, lead capture, campaign tracking and built-in analytics.",
+  sd_faq_why_crm_a: "CloseOS doesn't necessarily replace your CRM, it connects to it. Keep HubSpot, Pipedrive, GoHighLevel or Airtable as your marketing source, and use CloseOS as an optimized closing cockpit. Bidirectional sync ensures every prospect is up to date on both sides. The native CloseOS CRM offers automatic propriétaire assignment, lead capture, campaign tracking and built-in analytics.",
   sd_faq_data_access_q: 'Do my closers have access to all data?',
   sd_faq_data_access_a: 'No. You define the access levels. Each closer only sees their own prospects, their KPIs and their pipeline. Sensitive data (total revenue, margins, strategic contacts) remains visible only to you.',
   sd_faq_what_q: 'What is CloseOS CRM?',

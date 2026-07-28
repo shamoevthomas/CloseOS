@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "tsx scripts/dev-api.ts",
+    "dev:local": "VITE_API_PROXY=http://localhost:3001 vite",
     "build": "vite build && node scripts/prerender.mjs",
     "lint": "eslint .",
     "preview": "vite preview"

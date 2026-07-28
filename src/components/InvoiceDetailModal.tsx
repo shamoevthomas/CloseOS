@@ -133,54 +133,54 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-6xl h-[85vh] bg-[#1a1a1a] rounded-2xl border border-white/[0.08] shadow-2xl flex overflow-hidden">
+      <div className="relative w-full max-w-6xl h-[85vh] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl flex overflow-hidden">
 
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 bg-white/[0.03] border border-white/[0.08] hover:bg-white/10 text-white rounded-full transition-colors"
+          className="absolute top-4 right-4 z-10 p-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-100 text-slate-900 dark:text-white rounded-full transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* GAUCHE: PDF */}
-        <div className="w-1/2 h-full bg-[#111111] border-r border-white/[0.08] p-6 flex flex-col">
+        <div className="w-1/2 h-full bg-white dark:bg-[#1a1a1a] border-r border-slate-200 dark:border-white/10 p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <FileText className="w-5 h-5 text-indigo-400" />
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <FileText className="w-5 h-5 text-sky-600 dark:text-sky-400" />
               {lang === 'fr' ? 'Aperçu du document' : 'Document Preview'}
             </h3>
-            <a href={invoice.pdf_url} target="_blank" rel="noreferrer" className="text-xs flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition-colors">
+            <a href={invoice.pdf_url} target="_blank" rel="noreferrer" className="text-xs flex items-center gap-1 text-sky-600 dark:text-sky-400 hover:text-sky-600 transition-colors">
               <Download className="w-3 h-3" /> {lang === 'fr' ? 'Ouvrir / Télécharger' : 'Open / Download'}
             </a>
           </div>
-          <div className="flex-1 bg-white/[0.03] rounded-2xl border border-white/[0.08] overflow-hidden relative">
+          <div className="flex-1 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden relative">
             {invoice.pdf_url ? (
               <iframe src={`${invoice.pdf_url}#toolbar=0&navpanes=0&scrollbar=0`} className="w-full h-full object-contain" title="PDF Preview" />
             ) : (
-              <div className="flex items-center justify-center h-full text-white/40">{lang === 'fr' ? 'Aperçu non disponible' : 'Preview not available'}</div>
+              <div className="flex items-center justify-center h-full text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Aperçu non disponible' : 'Preview not available'}</div>
             )}
           </div>
         </div>
 
         {/* DROITE: DÉTAILS */}
-        <div className="w-1/2 h-full p-8 overflow-y-auto bg-[#1a1a1a]">
+        <div className="w-1/2 h-full p-8 overflow-y-auto bg-white dark:bg-[#1a1a1a]">
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-1">{invoice.invoice_number}</h2>
-            <p className="text-white/40 text-sm">{lang === 'fr' ? 'Générée le' : 'Generated on'} {new Date(invoice.created_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}</p>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{invoice.invoice_number}</h2>
+            <p className="text-slate-400 dark:text-neutral-500 text-sm">{lang === 'fr' ? 'Générée le' : 'Generated on'} {new Date(invoice.created_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}</p>
           </div>
 
           <div className="space-y-8">
-            <div className="bg-white/[0.03] backdrop-blur-2xl p-5 rounded-2xl border border-white/[0.08]">
+            <div className="bg-slate-50 dark:bg-white/5 backdrop-blur-2xl p-5 rounded-2xl border border-slate-200 dark:border-white/10">
               <div className="flex justify-between items-start mb-4">
-                <h4 className="text-xs uppercase tracking-widest font-bold text-white/40">{lang === 'fr' ? 'Informations Client' : 'Client Information'}</h4>
+                <h4 className="text-xs uppercase tracking-widest font-bold text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Informations Client' : 'Client Information'}</h4>
 
                 {/* 🚀 BOUTON EMAIL */}
                 <button
                   onClick={handleSendEmail}
                   disabled={!invoice.client_email || isSendingEmail}
                   className={`text-xs flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${!invoice.client_email
-                    ? 'border-white/[0.08] text-white/40 cursor-not-allowed bg-white/[0.03]'
-                    : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20'
+                    ? 'border-slate-200 dark:border-white/10 text-slate-400 dark:text-neutral-500 cursor-not-allowed bg-slate-50 dark:bg-white/5'
+                    : 'border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20'
                     }`}
                   title={!invoice.client_email ? (lang === 'fr' ? "Aucun email enregistré pour cette facture" : "No email registered for this invoice") : (lang === 'fr' ? "Envoyer la facture par mail" : "Send invoice by email")}
                 >
@@ -190,33 +190,33 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-indigo-500/10 rounded-lg"><User className="w-6 h-6 text-indigo-400" /></div>
+                <div className="p-3 bg-sky-500/10 rounded-lg"><User className="w-6 h-6 text-sky-600 dark:text-sky-400" /></div>
                 <div>
-                  <p className="text-lg font-semibold text-white">{invoice.client_name}</p>
-                  <p className="text-white/40 text-sm mt-1">{invoice.offer_name}</p>
-                  {invoice.client_email && <p className="text-white/40 text-xs mt-0.5">{invoice.client_email}</p>}
-                  <p className="text-xl font-bold text-white mt-2">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(invoice.amount_ttc)}</p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-white">{invoice.client_name}</p>
+                  <p className="text-slate-400 dark:text-neutral-500 text-sm mt-1">{invoice.offer_name}</p>
+                  {invoice.client_email && <p className="text-slate-400 dark:text-neutral-500 text-xs mt-0.5">{invoice.client_email}</p>}
+                  <p className="text-xl font-bold text-slate-900 dark:text-white mt-2">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(invoice.amount_ttc)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/[0.03] backdrop-blur-2xl p-5 rounded-2xl border border-white/[0.08]">
-              <h4 className="text-xs uppercase tracking-widest font-bold text-white/40 mb-4">{lang === 'fr' ? 'Statut du paiement' : 'Payment Status'}</h4>
+            <div className="bg-slate-50 dark:bg-white/5 backdrop-blur-2xl p-5 rounded-2xl border border-slate-200 dark:border-white/10">
+              <h4 className="text-xs uppercase tracking-widest font-bold text-slate-400 dark:text-neutral-500 mb-4">{lang === 'fr' ? 'Statut du paiement' : 'Payment Status'}</h4>
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <button onClick={() => setStatus('en_attente')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'en_attente' ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'bg-white/5 border-white/[0.08] text-white/40 hover:bg-white/10'}`}><Clock className="w-4 h-4" /> {lang === 'fr' ? 'En attente' : 'Pending'}</button>
-                <button onClick={() => setStatus('payé')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'payé' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-white/5 border-white/[0.08] text-white/40 hover:bg-white/10'}`}><CheckCircle className="w-4 h-4" /> {lang === 'fr' ? 'Payé' : 'Paid'}</button>
-                <button onClick={() => setStatus('retard')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'retard' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'bg-white/5 border-white/[0.08] text-white/40 hover:bg-white/10'}`}><AlertTriangle className="w-4 h-4" /> {lang === 'fr' ? 'Retard' : 'Late'}</button>
-                <button onClick={() => setStatus('autre')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'autre' ? 'bg-white/10 border-white/40 text-white' : 'bg-white/5 border-white/[0.08] text-white/40 hover:bg-white/10'}`}><HelpCircle className="w-4 h-4" /> {lang === 'fr' ? 'Autre' : 'Other'}</button>
+                <button onClick={() => setStatus('en_attente')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'en_attente' ? 'bg-amber-500/20 border-amber-500 text-amber-600' : 'bg-slate-100 dark:bg-white/10 border-slate-200 dark:border-white/10 text-slate-400 dark:text-neutral-500 hover:bg-slate-100'}`}><Clock className="w-4 h-4" /> {lang === 'fr' ? 'En attente' : 'Pending'}</button>
+                <button onClick={() => setStatus('payé')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'payé' ? 'bg-sky-500/20 border-sky-500 text-sky-600 dark:text-sky-400' : 'bg-slate-100 dark:bg-white/10 border-slate-200 dark:border-white/10 text-slate-400 dark:text-neutral-500 hover:bg-slate-100'}`}><CheckCircle className="w-4 h-4" /> {lang === 'fr' ? 'Payé' : 'Paid'}</button>
+                <button onClick={() => setStatus('retard')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'retard' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'bg-slate-100 dark:bg-white/10 border-slate-200 dark:border-white/10 text-slate-400 dark:text-neutral-500 hover:bg-slate-100'}`}><AlertTriangle className="w-4 h-4" /> {lang === 'fr' ? 'Retard' : 'Late'}</button>
+                <button onClick={() => setStatus('autre')} className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${status === 'autre' ? 'bg-slate-100 dark:bg-white/10 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white' : 'bg-slate-100 dark:bg-white/10 border-slate-200 dark:border-white/10 text-slate-400 dark:text-neutral-500 hover:bg-slate-100'}`}><HelpCircle className="w-4 h-4" /> {lang === 'fr' ? 'Autre' : 'Other'}</button>
               </div>
               {status === 'autre' && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
-                  <label className="block text-sm text-white/40 mb-2">{lang === 'fr' ? 'Précisez la situation :' : 'Specify the situation:'}</label>
-                  <textarea value={note} onChange={(e) => setNote(e.target.value)} className="w-full h-24 bg-white/5 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-emerald-500 focus:outline-none resize-none" placeholder={lang === 'fr' ? "Ex: Paiement échelonné accepté..." : "E.g.: Installment payment accepted..."} />
+                  <label className="block text-sm text-slate-400 dark:text-neutral-500 mb-2">{lang === 'fr' ? 'Précisez la situation :' : 'Specify the situation:'}</label>
+                  <textarea value={note} onChange={(e) => setNote(e.target.value)} className="w-full h-24 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-slate-900 dark:text-white text-sm focus:border-sky-500 focus:outline-none resize-none" placeholder={lang === 'fr' ? "Ex: Paiement échelonné accepté..." : "E.g.: Installment payment accepted..."} />
                 </div>
               )}
             </div>
 
-            <button onClick={handleSave} disabled={isSaving} className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-full flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={handleSave} disabled={isSaving} className="w-full py-4 bg-sky-600 hover:bg-sky-600 text-white font-bold rounded-full flex items-center justify-center gap-2 transition-all shadow-lg shadow-sky-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
               {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} {lang === 'fr' ? 'Enregistrer les modifications' : 'Save changes'}
             </button>
           </div>

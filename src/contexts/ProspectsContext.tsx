@@ -16,6 +16,8 @@ export interface Prospect {
   email: string
   phone: string
   value?: number
+  avatar_url?: string
+  updated_at?: string
   offer?: string
   offer_id?: number
   offerId?: number
@@ -23,6 +25,8 @@ export interface Prospect {
   name?: string
   status?: string
   stage: string
+  contacted_at?: string | null
+  relance_step?: number
   notes?: string
   created_at?: string
   dateAdded?: string
@@ -58,6 +62,7 @@ interface ProspectsContextType {
   addProspect: (prospect: Omit<Prospect, 'id' | 'user_id'>) => Promise<void>
   updateProspect: (id: number, updates: Partial<Prospect>) => Promise<void>
   deleteProspect: (id: number) => Promise<void>
+  refreshProspects: () => Promise<void>
   loading: boolean
   syncHubspot: (offer_id?: number) => Promise<void>
   syncPipedrive: (offer_id?: number) => Promise<void>
@@ -798,7 +803,9 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
   return (
     <ProspectsContext.Provider value={{
-      prospects, addProspect, updateProspect, deleteProspect, loading,
+      prospects, addProspect, updateProspect, deleteProspect,
+      refreshProspects: () => loadProspects(false),
+      loading,
       syncHubspot, syncPipedrive, syncGhl, syncAirtable,
       isSyncingHubspot, isSyncingPipedrive, isSyncingGhl, isSyncingAirtable,
       hubspotConnected, pipedriveConnected, ghlConnected, airtableConnected,

@@ -152,6 +152,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
       if (insErr) return res.status(500).json({ error: 'profile_link_failed', detail: insErr.message })
 
+      // Ajout à Brevo : liste générale (5) + Sign (23). Fire & forget.
+      try {
+        const bh = { accept: 'application/json', 'api-key': process.env.BREVO_API_KEY || '', 'content-type': 'application/json' }
+        const cleanPhone = user_phone ? String(user_phone).trim().replace(/\s+/g, '') : ''
+        const attrs: Record<string, string> = { NOM: user_name || emailLower.split('@')[0] }
+        if (cleanPhone) attrs.SMS = cleanPhone
+        const r = await fetch('https://api.brevo.com/v3/contacts', { method: 'POST', headers: bh, body: JSON.stringify({ email: emailLower, attributes: attrs, listIds: [5, 23], updateEnabled: true }) })
+        if (!r.ok && attrs.SMS) { delete attrs.SMS; await fetch('https://api.brevo.com/v3/contacts', { method: 'POST', headers: bh, body: JSON.stringify({ email: emailLower, attributes: attrs, listIds: [5, 23], updateEnabled: true }) }) }
+      } catch (e) { console.error('Brevo sign add error:', e) }
+
       return res.status(200).json({ ok: true })
     }
 

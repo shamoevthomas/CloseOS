@@ -40,10 +40,10 @@ export function WelcomeFounder() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-blue-500/30 flex flex-col">
+    <div className="min-h-screen bg-[#f4f2f1] dark:bg-[#0d0d0d] text-slate-100 font-sans selection:bg-sky-500/20 flex flex-col">
 
       {/* HEADER SIMPLE */}
-      <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 py-4">
+      <nav className="border-b border-white/5 bg-[#f4f2f1]/80 backdrop-blur-md px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
 
           {/* Logo seul (non cliquable) */}
@@ -54,7 +54,7 @@ export function WelcomeFounder() {
           {/* Vraie déconnexion */}
           <button
             onClick={handleLogout}
-            className="text-slate-500 hover:text-white transition-colors flex items-center gap-2 text-sm bg-transparent border-none cursor-pointer"
+            className="text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-colors flex items-center gap-2 text-sm bg-transparent border-none cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
             <span>{lang === 'fr' ? 'Déconnexion' : 'Log out'}</span>
@@ -68,16 +68,16 @@ export function WelcomeFounder() {
           {/* TITRE & CONFIRMATION DYNAMIQUE */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* BADGE QUI CHANGE DE COULEUR ET DE TEXTE */}
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-widest mb-6 bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-widest mb-6 bg-sky-500/10 border-sky-500/20 text-sky-700 dark:text-sky-400">
               <Target className="h-3 w-3" />
               {lang === 'fr' ? 'Pack Pro Activé' : 'Pro Pack Activated'}
             </span>
 
-            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-6">
               {lang === 'fr' ? 'Bienvenue sur CloseOS.' : 'Welcome to CloseOS.'}
             </h1>
 
-            <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
+            <p className="text-lg text-slate-500 dark:text-neutral-400 leading-relaxed max-w-2xl mx-auto">
               {lang === 'fr' ? 'Félicitations. Ton abonnement Pro est activé.' : 'Congratulations. Your Pro subscription is active.'}
               <br />
               {lang === 'fr' ? 'Regarde cette courte vidéo pour comprendre la suite.' : 'Watch this short video to understand what comes next.'}
@@ -85,7 +85,7 @@ export function WelcomeFounder() {
           </div>
 
           {/* LECTEUR YOUTUBE DYNAMIQUE */}
-          <div className="relative rounded-2xl overflow-hidden border border-slate-800 shadow-2xl shadow-blue-900/20 bg-slate-900 aspect-video animate-in fade-in zoom-in duration-700 delay-100 group">
+          <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl shadow-sky-500/15 bg-slate-100 dark:bg-white/10 aspect-video animate-in fade-in zoom-in duration-700 delay-100 group">
             <iframe
               src={YOUTUBE_URL}
               className="absolute top-0 left-0 w-full h-full"
@@ -97,19 +97,19 @@ export function WelcomeFounder() {
           </div>
 
           {/* INSTRUCTIONS & WHATSAPP */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 text-left space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+          <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-8 text-left space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
             <div>
-              <h3 className="text-xl font-bold text-white mb-4">{lang === 'fr' ? 'La suite des événements :' : 'What happens next:'}</h3>
-              <ul className="space-y-4 text-slate-400">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{lang === 'fr' ? 'La suite des événements :' : 'What happens next:'}</h3>
+              <ul className="space-y-4 text-slate-500 dark:text-neutral-400">
                 <li className="flex gap-4 items-start">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-600/30 mt-0.5">1</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-600/20 text-sky-600 dark:text-sky-400 text-xs font-bold border border-sky-600/30 mt-0.5">1</span>
                   <span>
-                    <strong>{lang === 'fr' ? 'Onboarding :' : 'Onboarding:'}</strong> {lang === 'fr' ? "L'accès au logiciel ouvrira officiellement le" : 'The software will officially open on'} <span className="text-white font-bold">{lang === 'fr' ? '1er Mars' : 'March 1st'}</span>.{" "}
-                    <span className="text-white font-medium">{lang === 'fr' ? "Vos jours d'essai ne commenceront qu'à partir du lancement de l'outil." : 'Your trial days will only start from the tool launch.'}</span>
+                    <strong>{lang === 'fr' ? 'Onboarding :' : 'Onboarding:'}</strong> {lang === 'fr' ? "L'accès au logiciel ouvrira officiellement le" : 'The software will officially open on'} <span className="text-slate-900 dark:text-white font-bold">{lang === 'fr' ? '1er Mars' : 'March 1st'}</span>.{" "}
+                    <span className="text-slate-900 dark:text-white font-medium">{lang === 'fr' ? "Vos jours d'essai ne commenceront qu'à partir du lancement de l'outil." : 'Your trial days will only start from the tool launch.'}</span>
                   </span>
                 </li>
                 <li className="flex gap-4 items-start">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400 text-xs font-bold border border-blue-600/30 mt-0.5">2</span>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-600/20 text-sky-600 dark:text-sky-400 text-xs font-bold border border-sky-600/30 mt-0.5">2</span>
                   <span><strong>Communication :</strong> Toutes les annonces importantes passent par le canal WhatsApp.</span>
                 </li>
               </ul>
@@ -124,7 +124,7 @@ export function WelcomeFounder() {
               <MessageCircle className="h-6 w-6 fill-current" />
               Rejoindre le canal WhatsApp
             </a>
-            <p className="text-xs text-center text-slate-500">
+            <p className="text-xs text-center text-slate-400 dark:text-neutral-500">
               Clique ci-dessus pour ne rien rater du lancement.
             </p>
           </div>
@@ -134,9 +134,9 @@ export function WelcomeFounder() {
 
       {/* OVERLAY DE DÉCONNEXION */}
       {isLoggingOut && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617] animate-in fade-in duration-300">
-          <Loader2 className="h-10 w-10 text-blue-500 animate-spin mb-4" />
-          <p className="text-white font-medium text-lg animate-pulse">Déconnexion sécurisée...</p>
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#f4f2f1] dark:bg-[#0d0d0d] animate-in fade-in duration-300">
+          <Loader2 className="h-10 w-10 text-sky-600 dark:text-sky-400 animate-spin mb-4" />
+          <p className="text-slate-900 dark:text-white font-medium text-lg animate-pulse">Déconnexion sécurisée...</p>
         </div>
       )}
     </div>

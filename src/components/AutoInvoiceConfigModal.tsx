@@ -171,11 +171,11 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
             <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.08] z-[101]">
+            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] ring-1 ring-slate-200 z-[101]">
                 {/* Close */}
                 <button
                     onClick={onClose}
-                    className="absolute right-4 top-4 z-10 rounded-full p-2 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+                    className="absolute right-4 top-4 z-10 rounded-full p-2 text-slate-400 dark:text-neutral-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
                 >
                     <X className="h-5 w-5" />
                 </button>
@@ -184,21 +184,21 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                     {/* HEADER */}
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-3 rounded-xl bg-amber-500/20 border border-amber-500/20">
-                            <Zap className="h-6 w-6 text-amber-400" />
+                            <Zap className="h-6 w-6 text-amber-600" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-white">{lang === 'fr' ? 'Facturation Automatique' : 'Automatic Invoicing'}</h2>
-                            <p className="text-sm text-white/40">{lang === 'fr' ? "Configurez la génération et l'envoi automatique par offre" : 'Configure automatic generation and sending per offer'}</p>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Facturation Automatique' : 'Automatic Invoicing'}</h2>
+                            <p className="text-sm text-slate-400 dark:text-neutral-500">{lang === 'fr' ? "Configurez la génération et l'envoi automatique par offre" : 'Configure automatic generation and sending per offer'}</p>
                         </div>
                     </div>
 
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
-                            <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
+                            <Loader2 className="h-8 w-8 animate-spin text-sky-600 dark:text-sky-400" />
                         </div>
                     ) : activeOffers.length === 0 ? (
                         <div className="text-center py-12">
-                            <p className="text-white/40">{lang === 'fr' ? "Aucune offre active. Créez d'abord une offre." : 'No active offers. Create an offer first.'}</p>
+                            <p className="text-slate-400 dark:text-neutral-500">{lang === 'fr' ? "Aucune offre active. Créez d'abord une offre." : 'No active offers. Create an offer first.'}</p>
                         </div>
                     ) : (
                         <>
@@ -209,8 +209,8 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                         key={offer.id}
                                         onClick={() => setSelectedOfferId(offer.id)}
                                         className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-bold transition-all ${selectedOfferId === offer.id
-                                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/20'
-                                            : 'border border-white/[0.08] bg-white/[0.03] text-white/40 hover:bg-white/10 hover:text-white'
+                                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 dark:text-white shadow-lg shadow-amber-500/20'
+                                            : 'border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900'
                                             }`}
                                     >
                                         {offer.name}
@@ -221,13 +221,13 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                             {currentConfig && selectedOffer && (
                                 <div className="space-y-6">
                                     {/* MASTER SWITCH */}
-                                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-5">
+                                    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 backdrop-blur-2xl p-5">
                                         <label className="flex cursor-pointer items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <Zap className="h-5 w-5 text-amber-400" />
+                                                <Zap className="h-5 w-5 text-amber-600" />
                                                 <div>
-                                                    <p className="text-sm font-bold text-white">{lang === 'fr' ? 'Activer la facturation automatique' : 'Enable automatic invoicing'}</p>
-                                                    <p className="text-xs text-white/40 mt-0.5">
+                                                    <p className="text-sm font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Activer la facturation automatique' : 'Enable automatic invoicing'}</p>
+                                                    <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
                                                         {lang === 'fr' ? 'Génère et envoie automatiquement une facture chaque mois' : 'Automatically generates and sends an invoice each month'}
                                                     </p>
                                                 </div>
@@ -239,8 +239,8 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                                     onChange={(e) => updateConfig(selectedOfferId!, { enabled: e.target.checked })}
                                                     className="peer sr-only"
                                                 />
-                                                <div className="h-6 w-11 rounded-full bg-white/10 peer-checked:bg-amber-500 transition-colors"></div>
-                                                <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
+                                                <div className="h-6 w-11 rounded-full bg-slate-100 dark:bg-white/10 peer-checked:bg-amber-500 transition-colors"></div>
+                                                <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white dark:bg-[#1a1a1a] transition-transform peer-checked:translate-x-5"></div>
                                             </div>
                                         </label>
                                     </div>
@@ -250,15 +250,15 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                         <div className="space-y-5 animate-in fade-in duration-200">
 
                                             {/* DAY OF MONTH */}
-                                            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-5">
+                                            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 backdrop-blur-2xl p-5">
                                                 <div className="flex items-center gap-2 mb-3">
-                                                    <Calendar className="h-4 w-4 text-purple-400" />
-                                                    <label className="text-sm font-bold text-white">{lang === 'fr' ? 'Jour de génération' : 'Generation day'}</label>
+                                                    <Calendar className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                                                    <label className="text-sm font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Jour de génération' : 'Generation day'}</label>
                                                 </div>
                                                 <select
                                                     value={currentConfig.day_of_month}
                                                     onChange={(e) => updateConfig(selectedOfferId!, { day_of_month: parseInt(e.target.value) })}
-                                                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                                                    className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                                                 >
                                                     {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
                                                         <option key={day} value={day}>
@@ -266,22 +266,22 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                                         </option>
                                                     ))}
                                                 </select>
-                                                <p className="text-xs text-white/40 mt-2">
+                                                <p className="text-xs text-slate-400 dark:text-neutral-500 mt-2">
                                                     {lang === 'fr' ? 'La facture couvrira la période du mois précédent' : 'The invoice will cover the previous month period'}
                                                 </p>
                                             </div>
 
                                             {/* ISSUER PROFILE */}
-                                            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-5">
+                                            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 backdrop-blur-2xl p-5">
                                                 <div className="flex items-center gap-2 mb-3">
-                                                    <Building2 className="h-4 w-4 text-blue-400" />
-                                                    <label className="text-sm font-bold text-white">{lang === 'fr' ? 'Profil Émetteur' : 'Issuer Profile'}</label>
+                                                    <Building2 className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                                                    <label className="text-sm font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Profil Émetteur' : 'Issuer Profile'}</label>
                                                 </div>
                                                 {issuerProfiles.length > 0 ? (
                                                     <select
                                                         value={currentConfig.issuer_profile_id || ''}
                                                         onChange={(e) => updateConfig(selectedOfferId!, { issuer_profile_id: e.target.value || null })}
-                                                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                                                        className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                                                     >
                                                         <option value="">{lang === 'fr' ? '— Sélectionner un profil —' : '— Select a profile —'}</option>
                                                         {issuerProfiles.map(p => (
@@ -289,23 +289,23 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <p className="text-xs text-amber-400">
+                                                    <p className="text-xs text-amber-600">
                                                         {lang === 'fr' ? '⚠️ Aucun profil émetteur enregistré. Créez-en un via le bouton "Infos Émetteur".' : '⚠️ No issuer profile saved. Create one via the "Issuer Info" button.'}
                                                     </p>
                                                 )}
                                             </div>
 
                                             {/* PAYMENT METHOD */}
-                                            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-5">
+                                            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 backdrop-blur-2xl p-5">
                                                 <div className="flex items-center gap-2 mb-3">
-                                                    <Wallet className="h-4 w-4 text-emerald-400" />
-                                                    <label className="text-sm font-bold text-white">{lang === 'fr' ? 'Moyen de Paiement' : 'Payment Method'}</label>
+                                                    <Wallet className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                                                    <label className="text-sm font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Moyen de Paiement' : 'Payment Method'}</label>
                                                 </div>
                                                 {paymentMethods.length > 0 ? (
                                                     <select
                                                         value={currentConfig.payment_method_id || ''}
                                                         onChange={(e) => updateConfig(selectedOfferId!, { payment_method_id: e.target.value || null })}
-                                                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                                                        className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                                                     >
                                                         <option value="">{lang === 'fr' ? '— Sélectionner un moyen —' : '— Select a method —'}</option>
                                                         {paymentMethods.map(m => (
@@ -313,18 +313,18 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <p className="text-xs text-amber-400">
+                                                    <p className="text-xs text-amber-600">
                                                         {lang === 'fr' ? '⚠️ Aucun moyen de paiement enregistré. Créez-en un via le bouton "Moyens de Paiement".' : '⚠️ No payment method saved. Create one via the "Payment Methods" button.'}
                                                     </p>
                                                 )}
                                             </div>
 
                                             {/* TVA TOGGLE */}
-                                            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-5">
+                                            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 backdrop-blur-2xl p-5">
                                                 <label className="flex cursor-pointer items-center justify-between">
                                                     <div>
-                                                        <p className="text-sm font-bold text-white">{lang === 'fr' ? 'TVA applicable (20%)' : 'VAT applicable (20%)'}</p>
-                                                        <p className="text-xs text-white/40 mt-0.5">{lang === 'fr' ? 'Appliquer la TVA sur les factures générées' : 'Apply VAT on generated invoices'}</p>
+                                                        <p className="text-sm font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'TVA applicable (20%)' : 'VAT applicable (20%)'}</p>
+                                                        <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">{lang === 'fr' ? 'Appliquer la TVA sur les factures générées' : 'Apply VAT on generated invoices'}</p>
                                                     </div>
                                                     <div className="relative">
                                                         <input
@@ -333,20 +333,20 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                                             onChange={(e) => updateConfig(selectedOfferId!, { tva_applicable: e.target.checked })}
                                                             className="peer sr-only"
                                                         />
-                                                        <div className="h-6 w-11 rounded-full bg-white/10 peer-checked:bg-purple-500 transition-colors"></div>
-                                                        <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
+                                                        <div className="h-6 w-11 rounded-full bg-slate-100 dark:bg-white/10 peer-checked:bg-sky-600 transition-colors"></div>
+                                                        <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white dark:bg-[#1a1a1a] transition-transform peer-checked:translate-x-5"></div>
                                                     </div>
                                                 </label>
                                             </div>
 
                                             {/* SEND COPY SWITCH */}
-                                            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl p-5">
+                                            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 backdrop-blur-2xl p-5">
                                                 <label className="flex cursor-pointer items-center justify-between">
                                                     <div className="flex items-center gap-3">
-                                                        <Mail className="h-5 w-5 text-cyan-400" />
+                                                        <Mail className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                                                         <div>
-                                                            <p className="text-sm font-bold text-white">{lang === 'fr' ? "M'envoyer une copie par mail" : 'Send me a copy by email'}</p>
-                                                            <p className="text-xs text-white/40 mt-0.5">
+                                                            <p className="text-sm font-bold text-slate-900 dark:text-white">{lang === 'fr' ? "M'envoyer une copie par mail" : 'Send me a copy by email'}</p>
+                                                            <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
                                                                 {lang === 'fr' ? "Recevez une copie de chaque facture à votre adresse email d'inscription" : 'Receive a copy of each invoice to your registration email'}
                                                             </p>
                                                         </div>
@@ -358,8 +358,8 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                                             onChange={(e) => updateConfig(selectedOfferId!, { send_copy_to_user: e.target.checked })}
                                                             className="peer sr-only"
                                                         />
-                                                        <div className="h-6 w-11 rounded-full bg-white/10 peer-checked:bg-cyan-500 transition-colors"></div>
-                                                        <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
+                                                        <div className="h-6 w-11 rounded-full bg-slate-100 dark:bg-white/10 peer-checked:bg-sky-600 transition-colors"></div>
+                                                        <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white dark:bg-[#1a1a1a] transition-transform peer-checked:translate-x-5"></div>
                                                     </div>
                                                 </label>
                                             </div>
@@ -381,7 +381,7 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
                                     <button
                                         onClick={() => saveConfig(selectedOfferId!)}
                                         disabled={saving === selectedOfferId}
-                                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:shadow-amber-500/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3.5 text-sm font-bold text-slate-900 dark:text-white shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:shadow-amber-500/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {saving === selectedOfferId ? (
                                             <>
@@ -398,8 +398,8 @@ export function AutoInvoiceConfigModal({ isOpen, onClose, offers }: AutoInvoiceC
 
                                     {/* STATUS SUMMARY */}
                                     {currentConfig.enabled && (
-                                        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-                                            <p className="text-sm text-emerald-300">
+                                        <div className="rounded-xl border border-sky-500/20 bg-sky-500/10 p-4">
+                                            <p className="text-sm text-sky-700 dark:text-sky-400">
                                                 {lang === 'fr'
                                                   ? <>✅ Une facture sera générée automatiquement le <strong>{currentConfig.day_of_month}{currentConfig.day_of_month === 1 ? 'er' : ''}</strong> de chaque mois{selectedOffer.billingEmail && <> et envoyée à <strong>{selectedOffer.billingEmail}</strong></>}{currentConfig.send_copy_to_user && <> + une copie pour vous</>}.</>
                                                   : <>✅ An invoice will be generated automatically on the <strong>{currentConfig.day_of_month}{currentConfig.day_of_month === 1 ? 'st' : currentConfig.day_of_month === 2 ? 'nd' : currentConfig.day_of_month === 3 ? 'rd' : 'th'}</strong> of each month{selectedOffer.billingEmail && <> and sent to <strong>{selectedOffer.billingEmail}</strong></>}{currentConfig.send_copy_to_user && <> + a copy for you</>}.</>}

@@ -226,17 +226,33 @@ export function PublicBooking() {
               ? supabase.from('business_absences').select('start_date, end_date').eq('business_owner_id', link.business_owner_id).is('team_member_id', null).gte('end_date', today)
               : supabase.from('business_absences').select('start_date, end_date').eq('team_member_id', link.team_member_id).gte('end_date', today)
 
+            // On récupère datetime_utc + timezone : chaque RDV est stocké dans SON propre fuseau,
+            // les conflits doivent donc être calculés en instant UTC absolu (pas en heures locales).
             const appointmentsQuery = isOwnerLink
-              ? supabase.from('business_appointments').select('date, time, duration').eq('user_id', link.business_owner_id).is('assigned_to', null).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
-              : supabase.from('business_appointments').select('date, time, duration').eq('assigned_to', link.team_member_id).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
+              ? supabase.from('business_appointments').select('date, time, duration, datetime_utc, timezone').eq('user_id', link.business_owner_id).is('assigned_to', null).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
+              : supabase.from('business_appointments').select('date, time, duration, datetime_utc, timezone').eq('assigned_to', link.team_member_id).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
 
-            const [slotsRes, absencesRes, appointmentsRes] = await Promise.all([slotsQuery, absencesQuery, appointmentsQuery])
+            // Fuseau du propriétaire des créneaux (les heures de dispo sont dans CE fuseau)
+            const ownerTzQuery = isOwnerLink
+              ? supabase.from('business_users').select('timezone').eq('id', link.business_owner_id).maybeSingle()
+              : supabase.from('business_team_members').select('timezone').eq('id', link.team_member_id).maybeSingle()
+
+            const [slotsRes, absencesRes, appointmentsRes, ownerTzRes] = await Promise.all([slotsQuery, absencesQuery, appointmentsQuery, ownerTzQuery])
 
             const weeklySlots = slotsRes.data || []
             const absences = absencesRes.data || []
             const existingAppts = appointmentsRes.data || []
+            const ownerTz = (ownerTzRes.data as any)?.timezone || 'Europe/Paris'
             const now = new Date()
             const computedSlots: SlotData[] = []
+
+            // Intervalles occupés en UTC absolu (chaque RDV dans son propre fuseau)
+            const busyIntervals = existingAppts.map((a: any) => {
+              const start = a.datetime_utc
+                ? new Date(a.datetime_utc).getTime()
+                : toUTC(a.date, (a.time || '00:00').slice(0, 5), a.timezone || ownerTz).getTime()
+              return { start, end: start + (a.duration || 30) * 60000 }
+            })
 
             for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
               const dateObj = new Date(now)
@@ -251,8 +267,6 @@ export function PublicBooking() {
               const daySlots = weeklySlots.filter((s: any) => s.day_of_week === dayOfWeek)
               if (daySlots.length === 0) continue
 
-              const dayAppts = existingAppts.filter((a: any) => a.date === dateStr)
-
               for (const slot of daySlots) {
                 const [startH, startM] = (slot as any).start_time.split(':').map(Number)
                 const [endH, endM] = (slot as any).end_time.split(':').map(Number)
@@ -264,21 +278,17 @@ export function PublicBooking() {
                   const m = mins % 60
                   const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 
-                  if (dayOffset === 0) {
-                    const slotTime = new Date(dateObj)
-                    slotTime.setHours(h, m, 0, 0)
-                    if (slotTime <= now) continue
-                  }
+                  // Instant UTC du créneau, calculé dans le fuseau du propriétaire
+                  const slotStart = toUTC(dateStr, timeStr, ownerTz).getTime()
+                  const slotEnd = slotStart + duration * 60000
 
-                  const hasConflict = dayAppts.some((appt: any) => {
-                    const [aH, aM] = appt.time.split(':').map(Number)
-                    const apptStart = aH * 60 + aM
-                    const apptEnd = apptStart + (appt.duration || 30)
-                    return mins < apptEnd && (mins + duration) > apptStart
-                  })
+                  if (slotStart <= now.getTime()) continue // passé (valable tous jours, pas seulement aujourd'hui)
+
+                  const hasConflict = busyIntervals.some(iv => slotStart < iv.end && slotEnd > iv.start)
                   if (hasConflict) continue
 
-                  computedSlots.push({ date: dateStr, time: timeStr })
+                  // datetime_utc attaché => l'affichage sera converti dans le fuseau du prospect
+                  computedSlots.push({ date: dateStr, time: timeStr, datetime_utc: new Date(slotStart).toISOString() })
                 }
               }
             }

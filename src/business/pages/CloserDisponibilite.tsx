@@ -533,16 +533,30 @@ export function CloserDisponibilite() {
               {absences.length === 0 ? (
                 <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-6">{t.availability_no_absences}</p>
               ) : (
-                absences.map(abs => (
-                  <div key={abs.id} className="flex items-center justify-between p-4 bg-[#efedec] dark:bg-white/5 rounded-2xl ring-1 ring-[#c4c7c7]/10 dark:ring-white/10">
+                absences.map(abs => {
+                  const isPast = new Date(abs.end_date + 'T23:59:59') < new Date()
+                  return (
+                  <div key={abs.id} className={cn(
+                    'flex items-center justify-between p-4 rounded-2xl ring-1 transition-colors',
+                    isPast
+                      ? 'bg-stone-100 dark:bg-white/5 ring-stone-200/50 dark:ring-white/5 opacity-60'
+                      : 'bg-[#efedec] dark:bg-white/5 ring-[#c4c7c7]/10 dark:ring-white/10'
+                  )}>
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-[#006c49]/10 rounded-xl">
-                        <Calendar className="h-4 w-4 text-[#006c49]" strokeWidth={1.5} />
+                      <div className={cn('p-2 rounded-xl', isPast ? 'bg-stone-200/60 dark:bg-white/10' : 'bg-[#006c49]/10')}>
+                        <Calendar className={cn('h-4 w-4', isPast ? 'text-stone-400 dark:text-neutral-500' : 'text-[#006c49]')} strokeWidth={1.5} />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-stone-900 dark:text-white">
-                          {new Date(abs.start_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} — {new Date(abs.end_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-stone-900 dark:text-white">
+                            {new Date(abs.start_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} — {new Date(abs.end_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
+                          </p>
+                          {isPast && (
+                            <span className="rounded-full bg-stone-200 dark:bg-white/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-stone-500 dark:text-neutral-400">
+                              {lang === 'en' ? 'Past' : 'Passé'}
+                            </span>
+                          )}
+                        </div>
                         {abs.reason && (
                           <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{abs.reason}</p>
                         )}
@@ -552,7 +566,8 @@ export function CloserDisponibilite() {
                       <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                     </button>
                   </div>
-                ))
+                  )
+                })
               )}
             </div>
 

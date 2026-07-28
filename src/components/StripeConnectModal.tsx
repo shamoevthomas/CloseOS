@@ -100,17 +100,17 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-[#1a1a1a] border border-white/[0.08] rounded-2xl w-full max-w-md shadow-[0_20px_40px_rgba(0,0,0,0.2)] relative overflow-hidden">
+      <div className="bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 rounded-2xl w-full max-w-md shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] relative overflow-hidden">
 
         {/* Header */}
-        <div className="p-6 border-b border-white/[0.08] bg-[#111111]/50 flex items-center justify-between">
+        <div className="p-6 border-b border-slate-200 dark:border-white/10 bg-slate-1000 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-[#635BFF]/20 rounded-lg">
               <CreditCard className="h-6 w-6 text-[#635BFF]" />
             </div>
-            <h2 className="text-lg font-bold text-white">{lang === 'fr' ? 'Connexion Stripe' : 'Stripe Connection'}</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Connexion Stripe' : 'Stripe Connection'}</h2>
           </div>
-          <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -119,35 +119,35 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
         <div className="p-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
-              <p className="text-sm text-white/40">{lang === 'fr' ? 'Vérification du statut...' : 'Checking status...'}</p>
+              <Loader2 className="h-8 w-8 animate-spin text-sky-600 dark:text-sky-400 mb-2" />
+              <p className="text-sm text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Vérification du statut...' : 'Checking status...'}</p>
             </div>
           ) : stripeConnected ? (
             // MODE CONNECTÉ
             <div className="text-center py-2 animate-in fade-in slide-in-from-bottom-2">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4">
-                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-sky-500/10 border border-sky-500/20 mb-4">
+                <CheckCircle2 className="h-8 w-8 text-sky-600 dark:text-sky-400" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">{lang === 'fr' ? 'Compte actif' : 'Active account'}</h3>
-              <p className="text-sm text-white/40 mb-6 px-4">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{lang === 'fr' ? 'Compte actif' : 'Active account'}</h3>
+              <p className="text-sm text-slate-400 dark:text-neutral-500 mb-6 px-4">
                 {lang === 'fr' ? 'Votre compte Stripe est correctement relié. Vous pouvez recevoir des paiements directement sur vos factures.' : 'Your Stripe account is properly connected. You can receive payments directly on your invoices.'}
               </p>
 
-              <div className="bg-[#111111] rounded-2xl p-3 border border-white/[0.08] mb-6 text-left flex items-center justify-between">
-                <span className="text-xs text-white/40 font-mono">ID: {stripeAccountId}</span>
-                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">{t.connected}</span>
+              <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl p-3 border border-slate-200 dark:border-white/10 mb-6 text-left flex items-center justify-between">
+                <span className="text-xs text-slate-400 dark:text-neutral-500 font-mono">ID: {stripeAccountId}</span>
+                <span className="text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">{t.connected}</span>
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={onClose}
-                  className="flex-1 py-2.5 rounded-full bg-white/[0.03] text-white font-medium hover:bg-white/10 transition-colors border border-white/[0.08]"
+                  className="flex-1 py-2.5 rounded-full bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white font-medium hover:bg-slate-100 transition-colors border border-slate-200 dark:border-white/10"
                 >
                   {lang === 'fr' ? 'Fermer' : 'Close'}
                 </button>
                 <button
                   onClick={handleDisconnect}
-                  className="px-4 py-2.5 rounded-full text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium"
+                  className="px-4 py-2.5 rounded-full text-slate-400 dark:text-neutral-500 hover:text-red-600 hover:bg-red-500/10 transition-colors text-sm font-medium"
                 >
                   Déconnecter
                 </button>
@@ -157,20 +157,20 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
             // MODE DÉCONNECTÉ
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
               <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-                  <p className="text-sm text-white/60">Recevez vos commissions par CB directement sur votre compte bancaire.</p>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-sky-500/5 border border-sky-500/10">
+                  <CheckCircle2 className="h-5 w-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-slate-500 dark:text-neutral-400">Recevez vos commissions par CB directement sur votre compte bancaire.</p>
                 </div>
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-                  <p className="text-sm text-white/60">Vos clients paient en 1 clic depuis le PDF de la facture.</p>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-sky-500/5 border border-sky-500/10">
+                  <CheckCircle2 className="h-5 w-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-slate-500 dark:text-neutral-400">Vos clients paient en 1 clic depuis le PDF de la facture.</p>
                 </div>
               </div>
 
               <button
                 onClick={handleConnectStripe}
                 disabled={connecting}
-                className="w-full py-3.5 bg-[#635BFF] hover:bg-[#5349E0] text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#635BFF]/20 group"
+                className="w-full py-3.5 bg-[#635BFF] hover:bg-[#5349E0] text-slate-900 dark:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#635BFF]/20 group"
               >
                 {connecting ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -182,7 +182,7 @@ export function StripeConnectModal({ isOpen, onClose }: StripeConnectModalProps)
                 )}
               </button>
 
-              <p className="text-[10px] text-center text-white/40 flex items-center justify-center gap-1.5">
+              <p className="text-[10px] text-center text-slate-400 dark:text-neutral-500 flex items-center justify-center gap-1.5">
                 <AlertCircle className="h-3 w-3" />
                 Redirection sécurisée vers Stripe Connect
               </p>

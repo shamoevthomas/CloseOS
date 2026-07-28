@@ -56,64 +56,6 @@ export function Return() {
     }
   }, [searchParams]);
 
-  // 👇 FONCTION D'ENVOI D'EMAIL (BREVO) AJOUTÉE ICI
-  const sendWelcomeEmail = async (email: string, userName: string) => {
-
-    const subject = "Bienvenue sur CloseOS Pro 💎";
-
-    const title = "Membre Pro Confirmé";
-
-    const subtext = "Votre accès Pro est activé. Préparez-vous à closer.";
-
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
-        <div style="background-color: #020617; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-           <h1 style="color: #ffffff; margin: 0; font-size: 24px;">CloseOS</h1>
-        </div>
-        <div style="padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px; background-color: #ffffff;">
-          <h2 style="color: #0f172a; margin-top: 0;">Bonjour ${userName},</h2>
-          <p style="font-size: 16px; line-height: 1.5; color: #475569;">
-            Félicitations ! Votre inscription est validée. <br/>
-            <strong>Statut : <span style="color: #2563eb;">${title}</span></strong>
-          </p>
-          <p style="font-size: 16px; line-height: 1.5; color: #475569;">${subtext}</p>
-          
-          <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
-            <h3 style="color: #0f172a; margin-top: 0; font-size: 14px; text-transform: uppercase;">🚀 Prochaines étapes :</h3>
-            <ul style="font-size: 15px; line-height: 1.6; padding-left: 20px; margin-bottom: 0; color: #334155;">
-              <li>Rejoignez le canal WhatsApp (lien sur votre espace).</li>
-              <li>Surveillez vos emails pour l'ouverture officielle le <strong>1er Mars</strong>.</li>
-              <li><strong>Rappel :</strong> L'accès au logiciel ouvrira le 1er Mars et votre essai gratuit ne débutera qu'à ce moment-là.</li>
-            </ul>
-          </div>
-
-          <div style="text-align: center; margin-top: 30px;">
-            <a href="https://closeos.fr/" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accéder à mon Espace</a>
-          </div>
-        </div>
-        <p style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 20px;">
-          © 2026 CloseOS. Vous recevez cet email car vous avez rejoint la liste d'attente.
-        </p>
-      </div>
-    `;
-
-    try {
-      await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sender: { name: "Thomas de CloseOS", email: "support@closeos.fr" },
-          to: [{ email: email, name: userName }],
-          subject: subject,
-          htmlContent: htmlContent
-        })
-      });
-      console.log("Email de bienvenue envoyé !");
-    } catch (err) {
-      console.error("Erreur envoi email", err);
-    }
-  };
-
   // Gestion de l'inscription par Email/Mot de passe
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,9 +95,6 @@ export function Return() {
             console.error("Erreur sync abo", syncErr);
           }
         }
-
-        // 👇 ENVOI DE L'EMAIL AJOUTÉ ICI
-        await sendWelcomeEmail(customerEmail, name);
 
         // 👇 FirstPromoter : suivi parrainage à l'inscription (attend que le script soit chargé)
         await trackFirstPromoterReferral(customerEmail);

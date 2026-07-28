@@ -486,6 +486,7 @@ export function BusinessProspectView({
   const [reminderDesc, setReminderDesc] = useState('')
   const [reminderDate, setReminderDate] = useState('')
   const [reminderTime, setReminderTime] = useState('')
+  const [reminderPreciseTime, setReminderPreciseTime] = useState(false)
   const [reminderSubmitting, setReminderSubmitting] = useState(false)
   const [prospectReminders, setProspectReminders] = useState<any[]>([])
   const [remindersLoading, setRemindersLoading] = useState(false)
@@ -942,18 +943,20 @@ export function BusinessProspectView({
 
   // -- Reminders --
   const handleCreateReminder = async () => {
-    if (!user || !reminderTitle.trim() || !reminderDate || !reminderTime) return
+    if (!user || !reminderTitle.trim() || !reminderDate) return
+    if (reminderPreciseTime && !reminderTime) return
     setReminderSubmitting(true)
     try {
-      const reminder_date = new Date(`${reminderDate}T${reminderTime}`).toISOString()
+      // Sans heure précise : 09:00 (aucun email). Avec : datetime exact + email 5 min avant.
+      const reminder_date = new Date(`${reminderDate}T${reminderPreciseTime ? reminderTime : '09:00'}`).toISOString()
       const { data, error } = await supabase
         .from('reminders')
-        .insert([{ user_id: user.id, title: reminderTitle.trim(), description: reminderDesc.trim() || null, reminder_date, business_prospect_id: prospect.id, is_done: false }])
+        .insert([{ user_id: user.id, title: reminderTitle.trim(), description: reminderDesc.trim() || null, reminder_date, business_prospect_id: prospect.id, is_done: false, has_time: reminderPreciseTime }])
         .select().single()
       if (error) throw error
       setProspectReminders(prev => [...prev, data])
       setShowReminderForm(false)
-      setReminderTitle(''); setReminderDesc(''); setReminderDate(''); setReminderTime('')
+      setReminderTitle(''); setReminderDesc(''); setReminderDate(''); setReminderTime(''); setReminderPreciseTime(false)
       toast.success(t.prospect_toast_reminder_created)
     } catch { toast.error(t.prospect_toast_reminder_error) }
     finally { setReminderSubmitting(false) }
@@ -2895,16 +2898,38 @@ export function BusinessProspectView({
                   <label className={cn(LABEL_STYLE, 'block mb-1.5')}>{t.prospect_reminder_description}</label>
                   <textarea value={reminderDesc} onChange={e => setReminderDesc(e.target.value)} placeholder={t.prospect_reminder_desc_placeholder} rows={2} className={cn(INPUT_CLS, 'resize-none')} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className={cn('grid gap-3', reminderPreciseTime ? 'grid-cols-2' : 'grid-cols-1')}>
                   <div>
                     <label className={cn(LABEL_STYLE, 'block mb-1.5')}>{t.prospect_reminder_date}</label>
                     <input type="date" value={reminderDate} onChange={e => setReminderDate(e.target.value)} className={INPUT_CLS} />
                   </div>
-                  <div>
-                    <label className={cn(LABEL_STYLE, 'block mb-1.5')}>{t.prospect_reminder_time}</label>
-                    <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)} className={INPUT_CLS} />
-                  </div>
+                  {reminderPreciseTime && (
+                    <div>
+                      <label className={cn(LABEL_STYLE, 'block mb-1.5')}>{t.prospect_reminder_time}</label>
+                      <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)} className={INPUT_CLS} />
+                    </div>
+                  )}
                 </div>
+
+                {/* Case Heure précise → email 5 min avant */}
+                <button
+                  type="button"
+                  onClick={() => setReminderPreciseTime(v => !v)}
+                  className="flex w-full items-start gap-2.5 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-3 text-left transition-colors hover:bg-[#efeceb]"
+                >
+                  <span className={cn(
+                    'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all',
+                    reminderPreciseTime ? 'border-stone-900 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-stone-900' : 'border-stone-300 dark:border-neutral-600'
+                  )}>
+                    {reminderPreciseTime && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-stone-900 dark:text-white">{lang === 'en' ? 'Precise time' : 'Heure précise'}</span>
+                    <span className="block text-[11px] text-stone-500 dark:text-neutral-400">
+                      {lang === 'en' ? 'Get an email 5 min before the set time' : 'Recevez un email 5 min avant l’heure indiquée'}
+                    </span>
+                  </span>
+                </button>
                 <div className="rounded-xl bg-[#ffddb8]/30 dark:bg-amber-700/20 px-4 py-3">
                   <p className="text-xs text-[#2a1700] dark:text-amber-200 font-medium">
                     <Bell className="h-3 w-3 inline mr-1" strokeWidth={1.5} />
@@ -2913,7 +2938,7 @@ export function BusinessProspectView({
                 </div>
                 <button
                   onClick={handleCreateReminder}
-                  disabled={!reminderTitle.trim() || !reminderDate || !reminderTime || reminderSubmitting}
+                  disabled={!reminderTitle.trim() || !reminderDate || (reminderPreciseTime && !reminderTime) || reminderSubmitting}
                   className="w-full rounded-full bg-stone-900 py-3 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
                 >
                   {reminderSubmitting ? <Loader2 className="h-4 w-4 animate-spin mx-auto" strokeWidth={1.5} /> : t.prospect_reminder_create_btn}

@@ -1426,7 +1426,9 @@ window.addEventListener('message',function(e){
 
                       {/* Questions builder */}
                       <div>
-                        <div className="flex items-center justify-between mb-3">
+                        {/* En-tête collant : reste accessible pendant le défilement de la liste
+                            (-mx-8/px-8 pour couvrir le padding du conteneur scrollable) */}
+                        <div className="sticky top-0 z-20 -mx-8 px-8 py-3 mb-3 bg-white dark:bg-neutral-900 border-b border-[#c4c7c7]/10 dark:border-neutral-800 flex items-center justify-between">
                           <label className="text-sm font-bold text-[#1b1c1b] dark:text-white flex items-center gap-2">
                             <ClipboardList className="h-4 w-4" /> Questions ({formQuestions.length})
                           </label>

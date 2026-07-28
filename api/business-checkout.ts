@@ -73,6 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (action === 'session-status') return handleSessionStatus(req, res);
   if (action === 'seat-info') return handleSeatInfo(req, res);
   if (action === 'purchase-seats') return handlePurchaseSeats(req, res);
+  if (action === 'purchase-extra') return handlePurchaseExtra(req, res);
   if (action === 'reactivate') return handleReactivate(req, res);
 
   return res.status(400).json({ error: 'Unknown action' });
@@ -669,6 +670,118 @@ async function handlePurchaseSeats(req: VercelRequest, res: VercelResponse) {
   } catch (err: any) {
     console.error('PURCHASE SEATS ERROR:', err.message);
     return res.status(err.statusCode || 500).json({ error: err.message });
+  }
+}
+
+// Email de notification (identique à celui de l'inscription) → shamoevthomas@gmail.com
+async function sendExtraNotificationEmail(p: { userName: string; userEmail: string; userPhone: string; planLabel: string; extrasLabels: string; context: string }) {
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  if (!brevoApiKey) return;
+  try {
+    await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { accept: 'application/json', 'api-key': brevoApiKey, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        sender: { email: 'support@closeos.fr', name: 'CloseOS' },
+        to: [{ email: 'shamoevthomas@gmail.com' }],
+        subject: `Nouveau extra Business — ${p.extrasLabels}`,
+        htmlContent: `
+<!DOCTYPE html>
+<html>
+<head>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:64px 20px;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;">
+<div style="max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
+  <div style="text-align:center;margin-bottom:40px;">
+    <span style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;letter-spacing:-0.04em;color:#111111;">Close</span><span style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:28px;letter-spacing:-0.04em;background:linear-gradient(135deg,#ff4b72 0%,#a03cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">OS</span>
+  </div>
+  <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:24px;color:#111111;letter-spacing:-0.04em;line-height:1.1;text-align:center;margin:0 0 32px;">Nouvelle commande d'extra</h1>
+  <div style="background-color:#f5f3f2;border-radius:48px;padding:40px 32px;">
+    <table style="width:100%;border-collapse:collapse;font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;line-height:1.6;">
+      <tr><td style="padding:8px 0;font-weight:500;">Nom</td><td style="padding:8px 0;text-align:right;">${p.userName || '—'}</td></tr>
+      <tr><td style="padding:8px 0;font-weight:500;">Email</td><td style="padding:8px 0;text-align:right;">${p.userEmail}</td></tr>
+      <tr><td style="padding:8px 0;font-weight:500;">Telephone</td><td style="padding:8px 0;text-align:right;">${p.userPhone || '—'}</td></tr>
+      <tr><td style="padding:8px 0;font-weight:500;">Plan</td><td style="padding:8px 0;text-align:right;">${p.planLabel}</td></tr>
+      <tr><td style="padding:8px 0;font-weight:500;">Extra(s)</td><td style="padding:8px 0;text-align:right;font-weight:500;color:#a03cf8;">${p.extrasLabels}</td></tr>
+    </table>
+  </div>
+  <p style="font-family:'Inter',Helvetica,sans-serif;color:#1b1c1b;line-height:1.6;margin-top:32px;text-align:center;font-size:14px;opacity:0.6;">${p.context}</p>
+</div>
+</body>
+</html>`,
+      }),
+    });
+  } catch (emailErr: any) {
+    console.error('EXTRAS NOTIFICATION EMAIL ERROR:', emailErr.message);
+  }
+}
+
+// ─── Action: purchase-extra (owner déjà abonné achète un extra depuis ses paramètres) ───
+async function handlePurchaseExtra(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  try {
+    const { user_id, extra } = req.body;
+    if (!user_id || !extra) return res.status(400).json({ error: 'user_id and extra required' });
+    const extraDef = EXTRAS_PRICES[extra];
+    if (!extraDef) return res.status(400).json({ error: 'Invalid extra' });
+
+    const { data: userData } = await supabase
+      .from('business_users')
+      .select('stripe_customer_id, email, full_name, phone')
+      .eq('id', user_id)
+      .single();
+    if (!userData?.stripe_customer_id) {
+      return res.status(400).json({ error: 'Aucun moyen de paiement enregistré. Un abonnement actif est requis.' });
+    }
+
+    const { data: settings } = await supabase
+      .from('business_settings').select('subscription_plan').eq('user_id', user_id).maybeSingle();
+    const planLabel = (settings?.subscription_plan && PLAN_LABELS[settings.subscription_plan]) || settings?.subscription_plan || '—';
+
+    // Débit ponctuel sur le moyen de paiement enregistré (celui de l'abonnement).
+    const customerId = String(userData.stripe_customer_id);
+    const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+    const defaultPm = (customer.invoice_settings?.default_payment_method || undefined) as string | undefined;
+    if (!defaultPm) {
+      return res.status(400).json({ error: 'Aucun moyen de paiement par défaut. Mets à jour ta carte puis réessaie.' });
+    }
+
+    let paymentOk = false;
+    try {
+      const pi = await stripe.paymentIntents.create({
+        amount: extraDef.amount,
+        currency: 'eur',
+        customer: customerId,
+        payment_method: defaultPm,
+        off_session: true,
+        confirm: true,
+        description: `Extra CloseOS Business — ${extraDef.name}`,
+        metadata: { extra, app: 'closeos_business' },
+      });
+      paymentOk = pi.status === 'succeeded';
+    } catch (payErr: any) {
+      return res.status(402).json({ error: payErr?.raw?.message || "Le paiement n'a pas abouti (authentification requise ?)." });
+    }
+    if (!paymentOk) {
+      return res.status(402).json({ error: 'Le paiement n\'a pas abouti. Vérifie ton moyen de paiement.' });
+    }
+
+    // Email de notification (comme à l'inscription) → shamoevthomas@gmail.com
+    await sendExtraNotificationEmail({
+      userName: userData.full_name || '—',
+      userEmail: userData.email || '',
+      userPhone: userData.phone || '—',
+      planLabel,
+      extrasLabels: extraDef.name,
+      context: 'Cet email a ete envoye automatiquement lors d\'un achat d\'extra depuis les parametres.',
+    });
+
+    return res.json({ success: true, extra: extraDef.name, amount: extraDef.amount });
+  } catch (err: any) {
+    console.error('PURCHASE EXTRA ERROR:', err.message);
+    const msg = err?.raw?.message || err.message || 'Erreur de paiement';
+    return res.status(err.statusCode || 500).json({ error: msg });
   }
 }
 

@@ -14,7 +14,13 @@
 // le placement x_pct/y_pct reste bon pour de l'A4 et est ajustable dans l'éditeur.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { AsyncLocalStorage } from 'node:async_hooks'
+
 export const config = { maxDuration: 30 }
+
+// Contexte propriétaire propre à chaque requête (multi-comptes, isolé même si l'instance
+// serverless est réutilisée pour plusieurs requêtes concurrentes).
+const als = new AsyncLocalStorage()
 
 const SB_URL = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '')
 const SB_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
@@ -66,28 +72,41 @@ async function sbDelete(table, query) {
   if (!r.ok) throw new Error(`Supabase delete (${r.status}) : ${await r.text()}`)
 }
 
-let _ownerId = null
+// Contexte propriétaire PAR REQUÊTE (multi-comptes, sûr en concurrence via AsyncLocalStorage).
 async function ownerId() {
-  if (_ownerId) return _ownerId
-  if (!OWNER_EMAIL) throw new Error('SIGN_OWNER_EMAIL non configuré côté serveur.')
-  const rows = await sbSelect(`sign_users?email=ilike.${encodeURIComponent(OWNER_EMAIL)}&select=id,email&limit=1`)
-  if (!rows || !rows[0]) throw new Error(`Aucun propriétaire Sign avec l'email ${OWNER_EMAIL} (table sign_users).`)
-  _ownerId = rows[0].id
-  return _ownerId
+  const s = als.getStore()
+  if (!s || !s.ownerId) throw new Error('Compte MCP non résolu (clé invalide).')
+  return s.ownerId
+}
+function ownerEmailCtx() { const s = als.getStore(); return (s && s.ownerEmail) || '' }
+
+// Résout le propriétaire à partir de la clé de l'URL :
+//  1) clé stockée par propriétaire (sign_users.mcp_key) — mode public/multi-comptes ;
+//  2) repli : ancienne clé globale SIGN_MCP_SECRET + SIGN_OWNER_EMAIL (compat existant).
+async function resolveOwnerByKey(key) {
+  if (!key) return null
+  const rows = await sbSelect(`sign_users?mcp_key=eq.${encodeURIComponent(key)}&select=id,email&limit=1`)
+  if (rows && rows[0]) return { ownerId: rows[0].id, ownerEmail: rows[0].email || '' }
+  const legacy = (process.env.SIGN_MCP_SECRET || '').trim()
+  if (legacy && key === legacy && OWNER_EMAIL) {
+    const r = await sbSelect(`sign_users?email=ilike.${encodeURIComponent(OWNER_EMAIL)}&select=id,email&limit=1`)
+    if (r && r[0]) return { ownerId: r[0].id, ownerEmail: r[0].email || OWNER_EMAIL }
+  }
+  return null
 }
 async function getOwnedContract(id, cols) {
   const uid = await ownerId()
   const rows = await sbSelect(`sign_contracts?id=eq.${encodeURIComponent(id)}&select=${cols}&limit=1`)
   if (!rows || !rows[0]) throw new Error(`Contrat ${id} introuvable.`)
   const c = rows[0]
-  if (c.user_id && c.user_id !== uid) throw new Error(`Le contrat ${id} n'appartient pas à ${OWNER_EMAIL}.`)
+  if (c.user_id && c.user_id !== uid) throw new Error(`Le contrat ${id} n'appartient pas à ton compte.`)
   return c
 }
 async function getOwnedFolder(id) {
   const uid = await ownerId()
   const rows = await sbSelect(`sign_contract_folders?id=eq.${encodeURIComponent(id)}&select=id,user_id,name,parent_id&limit=1`)
   if (!rows || !rows[0]) throw new Error(`Dossier ${id} introuvable.`)
-  if (rows[0].user_id !== uid) throw new Error(`Le dossier ${id} n'appartient pas à ${OWNER_EMAIL}.`)
+  if (rows[0].user_id !== uid) throw new Error(`Le dossier ${id} n'appartient pas à ton compte.`)
   return rows[0]
 }
 
@@ -157,12 +176,68 @@ function ownerFieldValue(type, signature, prof, today) {
 const VERIF_METHODS = new Set(['none', 'email', 'sms', 'email_sms', 'pay'])
 
 // ───────── Implémentation des outils ─────────
+async function assertOwnsTemplateMcp(uid, templateId) {
+  const rows = await sbSelect(`sign_contracts?id=eq.${encodeURIComponent(templateId)}&select=id,user_id,is_template,title&limit=1`)
+  if (!rows || !rows[0]) throw new Error(`Modèle ${templateId} introuvable.`)
+  if (!rows[0].is_template) throw new Error(`Le contrat ${templateId} n'est pas un modèle (template).`)
+  if (rows[0].user_id !== uid) throw new Error(`Ce modèle ne t'appartient pas.`)
+  return rows[0]
+}
+async function resolveTeamMemberMcp(uid, args) {
+  if (args.team_member_id) {
+    const rows = await sbSelect(`sign_team_members?id=eq.${encodeURIComponent(args.team_member_id)}&select=id,owner_id,email&limit=1`)
+    if (!rows || !rows[0]) throw new Error(`Équipier introuvable.`)
+    if (rows[0].owner_id !== uid) throw new Error(`Cet équipier n'appartient pas à ton équipe.`)
+    return rows[0]
+  }
+  if (args.member_email) {
+    const rows = await sbSelect(`sign_team_members?owner_id=eq.${uid}&email=ilike.${encodeURIComponent(String(args.member_email).trim())}&select=id,owner_id,email&limit=1`)
+    if (!rows || !rows[0]) throw new Error(`Aucun équipier avec l'email ${args.member_email} dans ton équipe.`)
+    return rows[0]
+  }
+  throw new Error('Fournir team_member_id ou member_email.')
+}
+
 const impl = {
+  async sign_list_templates(args) {
+    const uid = await ownerId()
+    const limit = Math.min(Math.max(Number(args.limit) || 100, 1), 200)
+    const rows = await sbSelect(`sign_contracts?user_id=eq.${uid}&is_template=eq.true&select=id,title,created_at&order=title.asc&limit=${limit}`)
+    return { count: (rows || []).length, templates: rows || [] }
+  },
+  async sign_list_team(args) {
+    const uid = await ownerId()
+    let q = `sign_team_members?owner_id=eq.${uid}&select=id,first_name,last_name,email,status,source,created_at&order=created_at.asc`
+    if (!args.include_revoked) q += `&status=neq.revoked`
+    const rows = await sbSelect(q)
+    const members = (rows || []).map((m) => ({ id: m.id, name: `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email, email: m.email, status: m.status, source: m.source }))
+    return { count: members.length, members }
+  },
+  async sign_assign_template(args) {
+    const uid = await ownerId()
+    const tpl = await assertOwnsTemplateMcp(uid, args.template_id)
+    const member = await resolveTeamMemberMcp(uid, args)
+    try {
+      await sbInsert('sign_template_members', [{ template_id: args.template_id, team_member_id: member.id }], false)
+    } catch (e) {
+      const m = String(e.message || '')
+      if (!m.includes('23505') && !m.toLowerCase().includes('duplicate')) throw e
+      return { assigned: true, already: true, template: { id: tpl.id, title: tpl.title }, member: { id: member.id, email: member.email } }
+    }
+    return { assigned: true, template: { id: tpl.id, title: tpl.title }, member: { id: member.id, email: member.email } }
+  },
+  async sign_unassign_template(args) {
+    const uid = await ownerId()
+    await assertOwnsTemplateMcp(uid, args.template_id)
+    const member = await resolveTeamMemberMcp(uid, args)
+    await sbDelete('sign_template_members', `template_id=eq.${args.template_id}&team_member_id=eq.${member.id}`)
+    return { unassigned: true, template_id: args.template_id, member: { id: member.id, email: member.email } }
+  },
   async sign_import_contract(args) {
     if (!args.title) throw new Error('title requis.')
     const uid = await ownerId()
     const isPdf = !!(args.pdf_base64 || args.pdf_url)
-    let row = { user_id: uid, owner_email: OWNER_EMAIL, title: args.title, status: 'draft', theme: 'blank' }
+    let row = { user_id: uid, owner_email: ownerEmailCtx(), title: args.title, status: 'draft', theme: 'blank' }
     let pageCount = 1
     if (isPdf) {
       const pdf = await loadPdf(args)
@@ -362,7 +437,7 @@ const impl = {
     const withOwner = new Set((ownerFields || []).map((f) => f.contract_id))
     const token = randHex(24)
     await sbInsert('sign_owner_sign_sessions', {
-      token, owner_id: uid, owner_email: OWNER_EMAIL, contract_ids: ownedIds, status: 'pending',
+      token, owner_id: uid, owner_email: ownerEmailCtx(), contract_ids: ownedIds, status: 'pending',
       expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     })
     return {
@@ -547,6 +622,10 @@ const FIELD_ITEM = {
   required: ['type'],
 }
 const TOOLS = [
+  { name: 'sign_list_templates', description: 'Liste les modèles (templates) du propriétaire (id, titre). Utile pour récupérer les template_id à assigner.', inputSchema: { type: 'object', properties: { limit: { type: 'integer', description: 'Défaut 100, max 200' } } } },
+  { name: 'sign_list_team', description: 'Liste les équipiers du propriétaire (id, nom, email, statut). Un équipier peut se voir assigner des modèles.', inputSchema: { type: 'object', properties: { include_revoked: { type: 'boolean', description: 'Inclure les membres révoqués' } } } },
+  { name: 'sign_assign_template', description: "Autorise un équipier (compte réel) à générer un modèle depuis son espace. Identifie l'équipier par team_member_id OU member_email.", inputSchema: { type: 'object', properties: { template_id: { type: 'string', description: 'UUID du modèle (voir sign_list_templates)' }, team_member_id: { type: 'string', description: "UUID de l'équipier (voir sign_list_team)" }, member_email: { type: 'string', description: "Email de l'équipier (alternative)" } }, required: ['template_id'] } },
+  { name: 'sign_unassign_template', description: "Retire l'accès d'un équipier à un modèle. Identifie l'équipier par team_member_id OU member_email.", inputSchema: { type: 'object', properties: { template_id: { type: 'string' }, team_member_id: { type: 'string' }, member_email: { type: 'string' } }, required: ['template_id'] } },
   {
     name: 'sign_import_contract',
     description: "Crée un contrat CloseOS Sign EN BROUILLON (status='draft'). Fournir SOIT un PDF (pdf_base64 ou pdf_url), SOIT du contenu texte/HTML (html). Jamais envoyé ni signé. Retourne l'id, les dimensions de page (A4 approx pour un PDF) et l'URL d'éditeur.",
@@ -723,10 +802,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   if (req.method === 'OPTIONS') return res.status(204).end()
 
-  // Gate par jeton secret (URL secrète).
-  const secret = (process.env.SIGN_MCP_SECRET || '').trim()
+  // Résolution du propriétaire à partir de la clé de l'URL (multi-comptes).
   const key = String((req.query && req.query.key) || '').trim()
-  if (!secret || key !== secret) return res.status(401).json({ error: 'unauthorized' })
+  let ctx = null
+  try { ctx = await resolveOwnerByKey(key) } catch { ctx = null }
+  if (!ctx) return res.status(401).json({ error: 'unauthorized' })
 
   if (req.method === 'GET') return res.status(405).json({ jsonrpc: '2.0', id: null, error: { code: -32000, message: 'SSE non supporté (stateless)' } })
   if (req.method !== 'POST') return res.status(405).end()
@@ -738,8 +818,11 @@ export default async function handler(req, res) {
   try {
     const batch = Array.isArray(body)
     const messages = batch ? body : [body]
-    const out = []
-    for (const m of messages) { const r = await handleMessage(m); if (r !== undefined) out.push(r) }
+    const out = await als.run(ctx, async () => {
+      const acc = []
+      for (const m of messages) { const r = await handleMessage(m); if (r !== undefined) acc.push(r) }
+      return acc
+    })
     if (out.length === 0) return res.status(202).end()
     res.setHeader('Content-Type', 'application/json')
     return res.status(200).json(batch ? out : out[0])

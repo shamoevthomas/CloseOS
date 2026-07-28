@@ -72,6 +72,7 @@ interface BusinessProspectsContextType {
   addProspect: (prospect: Omit<BusinessProspect, 'id' | 'user_id'>) => Promise<void>
   updateProspect: (id: number, updates: Partial<BusinessProspect>) => Promise<void>
   deleteProspect: (id: number) => Promise<void>
+  refreshProspects: () => Promise<void>
   loading: boolean
   // CRM
   syncHubspot: () => Promise<{ imported: number; updated: number } | null>
@@ -817,7 +818,9 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
 
   return (
     <BusinessProspectsContext.Provider value={{
-      prospects, addProspect, updateProspect, deleteProspect, loading,
+      prospects, addProspect, updateProspect, deleteProspect,
+      refreshProspects: () => loadProspects(false),
+      loading,
       syncHubspot, syncPipedrive, syncAirtable, syncGhl,
       isSyncingHubspot, isSyncingPipedrive, isSyncingAirtable, isSyncingGhl,
       hubspotConnected, pipedriveConnected, airtableConnected, ghlConnected,

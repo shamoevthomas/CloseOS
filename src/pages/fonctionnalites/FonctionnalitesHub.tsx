@@ -13,6 +13,11 @@ import {
   Puzzle,
   Check,
   X,
+  PenTool,
+  CreditCard,
+  ShieldCheck,
+  Bot,
+  FormInput,
 } from 'lucide-react';
 
 const features = [
@@ -25,9 +30,9 @@ const features = [
   },
   {
     icon: Phone,
-    title: 'Callroom VoIP',
+    title: 'Callroom intégrée',
     description:
-      "Passez vos appels directement depuis CloseOS. VoIP intégrée avec enregistrement d'appels et cockpit de session.",
+      "Passez vos appels directement depuis CloseOS, avec enregistrement d'appels et cockpit de session.",
     link: null,
   },
   {
@@ -69,14 +74,35 @@ const features = [
     icon: Puzzle,
     title: 'Intégrations',
     description:
-      'Connectez CloseOS à vos outils : HubSpot, Pipedrive, GoHighLevel, Airtable, Systeme.io, Zapier, Make, n8n et plus.',
+      'Connectez CloseOS à vos outils : HubSpot, Pipedrive, GoHighLevel, Airtable, Systeme.io, iClosed, Zapier, Make, n8n et plus.',
     link: null,
+  },
+  {
+    icon: PenTool,
+    title: 'Signature électronique + paiement',
+    description:
+      "CloseOS Sign : faites signer le contrat et encaissez le paiement dans le même geste, avec un faisceau de preuves opposable. Une alternative à Yousign, incluse avec CloseOS Business, disponible seule dès 9€/mois.",
+    link: '/sign',
+  },
+  {
+    icon: FormInput,
+    title: 'Formulaires',
+    description:
+      "Créez vos formulaires (candidature, sondage, brief client) avec un éditeur façon Notion — tapez « / » pour insérer un champ. Une alternative à Tally, incluse avec CloseOS Business.",
+    link: '/business#crm',
+  },
+  {
+    icon: Bot,
+    title: 'Assistant IA (MCP)',
+    description:
+      "Connectez Claude, ChatGPT ou tout client MCP standard à CloseOS Business et pilotez votre CRM en langage naturel : créer un prospect, planifier un rendez-vous, générer une facture.",
+    link: '/business#api',
   },
 ];
 
 const comparisonRows = [
   { label: 'CRM & Pipeline', sales: true, business: true, note: null },
-  { label: 'Callroom VoIP', sales: true, business: true, note: null },
+  { label: 'Callroom intégrée', sales: true, business: true, note: null },
   { label: 'Facturation', sales: true, business: true, note: null },
   { label: 'KPIs closing', sales: true, business: true, note: null },
   { label: 'Booking & Agenda', sales: true, business: true, note: null },
@@ -97,12 +123,12 @@ const sectionVariants = {
 
 export default function FonctionnalitesHub() {
   useEffect(() => {
-    document.title = 'Fonctionnalités CloseOS — CRM, VoIP, KPIs, Équipe';
+    document.title = 'Fonctionnalités CloseOS, CRM, Signature, KPIs, Équipe';
     document
       .querySelector('meta[name="description"]')
       ?.setAttribute(
         'content',
-        "Découvrez toutes les fonctionnalités de CloseOS : pipeline de vente, callroom VoIP, facturation Stripe, KPIs closing, gestion d'équipe et intégrations."
+        "Découvrez toutes les fonctionnalités de CloseOS : pipeline de vente, callroom intégrée, facturation Stripe, signature électronique, KPIs closing, gestion d'équipe et intégrations."
       );
     document
       .getElementById('canonical')
@@ -112,24 +138,24 @@ export default function FonctionnalitesHub() {
       ?.setAttribute('content', 'https://www.closeos.fr/fonctionnalites');
     document
       .getElementById('og-title')
-      ?.setAttribute('content', 'Fonctionnalités CloseOS — CRM, VoIP, KPIs, Équipe');
+      ?.setAttribute('content', 'Fonctionnalités CloseOS, CRM, Signature, KPIs, Équipe');
     document
       .getElementById('og-description')
       ?.setAttribute(
         'content',
-        "Découvrez toutes les fonctionnalités de CloseOS : pipeline de vente, callroom VoIP, facturation Stripe, KPIs closing, gestion d'équipe et intégrations."
+        "Découvrez toutes les fonctionnalités de CloseOS : pipeline de vente, callroom intégrée, facturation Stripe, signature électronique, KPIs closing, gestion d'équipe et intégrations."
       );
     document
       .getElementById('tw-url')
       ?.setAttribute('content', 'https://www.closeos.fr/fonctionnalites');
     document
       .getElementById('tw-title')
-      ?.setAttribute('content', 'Fonctionnalités CloseOS — CRM, VoIP, KPIs, Équipe');
+      ?.setAttribute('content', 'Fonctionnalités CloseOS, CRM, Signature, KPIs, Équipe');
     document
       .getElementById('tw-description')
       ?.setAttribute(
         'content',
-        "Pipeline, callroom VoIP, facturation, KPIs et gestion d'équipe dans un seul outil."
+        "Pipeline, callroom intégrée, facturation, signature électronique, KPIs et gestion d'équipe dans un seul écosystème."
       );
     document.documentElement.lang = 'fr';
 
@@ -181,6 +207,9 @@ export default function FonctionnalitesHub() {
             </Link>
             <Link to="/business" className="hover:text-white transition-colors">
               Business
+            </Link>
+            <Link to="/sign" className="hover:text-white transition-colors">
+              Sign
             </Link>
             <Link to="/fonctionnalites" className="text-white font-semibold">
               Fonctionnalités
@@ -373,6 +402,63 @@ export default function FonctionnalitesHub() {
         </div>
       </motion.section>
 
+      {/* CloseOS Sign */}
+      <motion.section
+        className="pb-20"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.1 }}
+        variants={sectionVariants}
+      >
+        <div className="mx-auto max-w-5xl px-6">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8 sm:p-12">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-10">
+              <div className="lg:flex-1">
+                <span className="inline-block rounded-full bg-[#00E676]/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#00E676]">
+                  CloseOS Sign
+                </span>
+                <h2 className="mt-4 text-2xl font-bold sm:text-3xl">
+                  Signez le contrat, encaissez le paiement. Dans le même geste.
+                </h2>
+                <p className="mt-4 text-slate-400 leading-relaxed">
+                  Une alternative à Yousign qui lie la signature électronique de
+                  votre contrat à son paiement (acompte, solde ou abonnement) sur
+                  un seul écran, avec un faisceau de preuves opposable (email, OTP
+                  SMS, horodatage, IP, hash SHA-256) et un certificat de preuve
+                  vérifiable.{' '}
+                  <strong className="text-slate-200">Inclus automatiquement</strong> si
+                  vous êtes déjà client CloseOS Business — disponible seul dès
+                  9€/mois.
+                </p>
+                <div className="mt-8 flex flex-wrap gap-4">
+                  <Link
+                    to="/sign"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#00E676] px-6 py-3 text-sm font-bold text-slate-950 hover:bg-[#00E676]/90 transition-colors"
+                  >
+                    Découvrir CloseOS Sign
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+              <div className="lg:flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { icon: PenTool, title: 'Multi-signataire', desc: 'Parallèle ou séquentiel, autant de signataires que nécessaire.' },
+                  { icon: CreditCard, title: 'Sign + Pay', desc: 'Paiement Stripe Connect intégré au moment de la signature.' },
+                  { icon: ShieldCheck, title: 'Faisceau de preuves', desc: 'Email, OTP SMS, horodatage, IP, hash SHA-256.' },
+                  { icon: FileText, title: 'Modèles réutilisables', desc: 'Un contrat-type, mille signatures, un espace par membre.' },
+                ].map((item) => (
+                  <div key={item.title} className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
+                    <item.icon className="h-5 w-5 text-[#00E676] mb-3" />
+                    <p className="font-semibold text-sm">{item.title}</p>
+                    <p className="mt-1 text-xs text-slate-400 leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
       {/* CTA */}
       <motion.section
         className="pb-20"
@@ -424,6 +510,13 @@ export default function FonctionnalitesHub() {
               className="hover:text-white transition-colors underline underline-offset-4"
             >
               CloseOS Business
+            </Link>
+            <span className="hidden sm:inline">-</span>
+            <Link
+              to="/sign"
+              className="hover:text-white transition-colors underline underline-offset-4"
+            >
+              CloseOS Sign
             </Link>
             <span className="hidden sm:inline">-</span>
             <Link

@@ -54,10 +54,10 @@ const outcomes_FR = [
     description: 'Deal gagné',
     icon: CheckCircle2,
     color: 'emerald',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/30',
-    textColor: 'text-emerald-400',
-    hoverBg: 'hover:bg-emerald-500/20'
+    bgColor: 'bg-sky-500/10',
+    borderColor: 'border-sky-500/30',
+    textColor: 'text-sky-600 dark:text-sky-400',
+    hoverBg: 'hover:bg-sky-500/20'
   },
   {
     id: 'followup' as const,
@@ -67,7 +67,7 @@ const outcomes_FR = [
     color: 'orange',
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/30',
-    textColor: 'text-orange-400',
+    textColor: 'text-orange-600',
     hoverBg: 'hover:bg-orange-500/20'
   },
   {
@@ -78,7 +78,7 @@ const outcomes_FR = [
     color: 'red',
     bgColor: 'bg-red-500/10',
     borderColor: 'border-red-500/30',
-    textColor: 'text-red-400',
+    textColor: 'text-red-600',
     hoverBg: 'hover:bg-red-500/20'
   },
   {
@@ -101,10 +101,10 @@ const outcomes_EN = [
     description: 'Deal won',
     icon: CheckCircle2,
     color: 'emerald',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/30',
-    textColor: 'text-emerald-400',
-    hoverBg: 'hover:bg-emerald-500/20'
+    bgColor: 'bg-sky-500/10',
+    borderColor: 'border-sky-500/30',
+    textColor: 'text-sky-600 dark:text-sky-400',
+    hoverBg: 'hover:bg-sky-500/20'
   },
   {
     id: 'followup' as const,
@@ -114,7 +114,7 @@ const outcomes_EN = [
     color: 'orange',
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/30',
-    textColor: 'text-orange-400',
+    textColor: 'text-orange-600',
     hoverBg: 'hover:bg-orange-500/20'
   },
   {
@@ -125,7 +125,7 @@ const outcomes_EN = [
     color: 'red',
     bgColor: 'bg-red-500/10',
     borderColor: 'border-red-500/30',
-    textColor: 'text-red-400',
+    textColor: 'text-red-600',
     hoverBg: 'hover:bg-red-500/20'
   },
   {
@@ -373,17 +373,17 @@ export function CallDetails() {
 
   if (!call) {
     return (
-      <div className="min-h-screen bg-[#111111] p-8">
+      <div className="min-h-screen p-8">
         <div className="mx-auto max-w-3xl">
           <button
             onClick={() => navigate('/')}
-            className="mb-6 flex items-center gap-2 text-white/40 hover:text-white transition-colors"
+            className="mb-6 flex items-center gap-2 text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
             {lang === 'fr' ? 'Retour' : 'Back'}
           </button>
-          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-12 text-center">
-            <p className="text-white/40">{lang === 'fr' ? 'Appel non trouvé' : 'Call not found'}</p>
+          <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] p-12 text-center">
+            <p className="text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Appel non trouvé' : 'Call not found'}</p>
           </div>
         </div>
       </div>
@@ -658,25 +658,25 @@ export function CallDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-[#111111] p-8">
+    <div className="min-h-screen p-8">
       <div className="mx-auto max-w-3xl">
         {/* Header */}
         <div className="mb-12">
           <button
             onClick={() => navigate('/')}
-            className="mb-6 flex items-center gap-2 text-white/40 hover:text-white transition-all duration-300"
+            className="mb-6 flex items-center gap-2 text-slate-400 dark:text-neutral-500 hover:text-slate-900 transition-all duration-300"
           >
             <ArrowLeft className="h-5 w-5" />
             {lang === 'fr' ? 'Retour' : 'Back'}
           </button>
           <div>
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-white">{lang === 'fr' ? 'Resume de Vente' : 'Sales Summary'}</h1>
-            <p className="mt-2 text-white/40">
-              {lang === 'fr' ? 'Qualifiez votre appel avec' : 'Qualify your call with'} <span className="font-semibold text-white">{createdProspect ? createdProspect.contact : call.contactName}</span>
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter text-slate-900 dark:text-white">{lang === 'fr' ? 'Resume de Vente' : 'Sales Summary'}</h1>
+            <p className="mt-2 text-slate-400 dark:text-neutral-500">
+              {lang === 'fr' ? 'Qualifiez votre appel avec' : 'Qualify your call with'} <span className="font-semibold text-slate-900 dark:text-white">{createdProspect ? createdProspect.contact : call.contactName}</span>
               {prospect && (() => {
                 const si = getStageInfo(prospect.stage)
                 return si ? (
-                  <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/[0.08] px-2.5 py-0.5 text-xs font-medium text-white/60">
+                  <span className="ml-2 inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:text-neutral-400">
                     <span
                       className={cn("h-1.5 w-1.5 rounded-full", si.isDefault ? si.color : '')}
                       style={!si.isDefault ? { backgroundColor: si.color } : undefined}
@@ -689,7 +689,7 @@ export function CallDetails() {
               {prospect && getProspectTagObjects(prospect.id).map(tag => (
                 <span
                   key={tag.id}
-                  className="ml-1 inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                  className="ml-1 inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full text-slate-900 dark:text-white"
                   style={{ backgroundColor: tag.color }}
                 >
                   {tag.name}
@@ -697,12 +697,12 @@ export function CallDetails() {
               ))}
             </p>
             {prospect && prospectOffer && (
-              <div className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 px-5 py-3">
+              <div className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-sky-500/10 border border-sky-500/30 px-5 py-3">
                 <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-emerald-400" />
+                  <Award className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                   <div>
-                    <p className="text-xs text-white/40">{lang === 'fr' ? 'Offre liee' : 'Linked offer'}</p>
-                    <p className="text-sm font-semibold text-emerald-400">
+                    <p className="text-xs text-slate-400 dark:text-neutral-500">{lang === 'fr' ? 'Offre liee' : 'Linked offer'}</p>
+                    <p className="text-sm font-semibold text-sky-600 dark:text-sky-400">
                       {prospectOffer.name} - {prospectOffer.price}
                     </p>
                   </div>
@@ -711,7 +711,7 @@ export function CallDetails() {
             )}
             {prospect && !prospectOffer && (
               <div className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 px-5 py-3">
-                <p className="text-sm text-yellow-400">
+                <p className="text-sm text-yellow-600">
                   {lang === 'fr' ? '⚠️ Aucune offre liée à ce prospect' : '⚠️ No offer linked to this prospect'}
                 </p>
               </div>
@@ -720,44 +720,44 @@ export function CallDetails() {
         </div>
 
         {/* DEBUG PANEL - Shows data linking status */}
-        <div className="rounded-2xl border border-purple-500/30 bg-purple-500/5 p-6 mb-12">
-          <h3 className="text-sm font-semibold text-purple-400 mb-3">Debug: Data Linking</h3>
+        <div className="rounded-2xl border border-sky-500/30 bg-sky-500/5 p-6 mb-12">
+          <h3 className="text-sm font-semibold text-sky-600 dark:text-sky-400 mb-3">Debug: Data Linking</h3>
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="rounded-xl bg-white/5 p-3">
-              <p className="text-white/40 mb-1">{lang === 'fr' ? 'Prospect trouvé' : 'Prospect found'}</p>
-              <p className={prospect ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
+            <div className="rounded-xl bg-slate-100 dark:bg-white/10 p-3">
+              <p className="text-slate-400 dark:text-neutral-500 mb-1">{lang === 'fr' ? 'Prospect trouvé' : 'Prospect found'}</p>
+              <p className={prospect ? 'text-sky-600 dark:text-sky-400 font-semibold' : 'text-red-600 font-semibold'}>
                 {prospect ? `✓ ${prospect.contact}` : (lang === 'fr' ? '✗ Non trouvé' : '✗ Not found')}
               </p>
               {prospect && (
-                <p className="text-white/40 mt-1">ID: {prospect.id} | offerId: {prospect.offerId || 'N/A'}</p>
+                <p className="text-slate-400 dark:text-neutral-500 mt-1">ID: {prospect.id} | offerId: {prospect.offerId || 'N/A'}</p>
               )}
             </div>
-            <div className="rounded-xl bg-white/5 p-3">
-              <p className="text-white/40 mb-1">{lang === 'fr' ? 'Offre liée' : 'Linked offer'}</p>
-              <p className={prospectOffer ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'}>
+            <div className="rounded-xl bg-slate-100 dark:bg-white/10 p-3">
+              <p className="text-slate-400 dark:text-neutral-500 mb-1">{lang === 'fr' ? 'Offre liée' : 'Linked offer'}</p>
+              <p className={prospectOffer ? 'text-sky-600 dark:text-sky-400 font-semibold' : 'text-yellow-600 font-semibold'}>
                 {prospectOffer ? `✓ ${prospectOffer.name}` : (lang === 'fr' ? '✗ Non trouvée' : '✗ Not found')}
               </p>
               {prospectOffer && (
-                <p className="text-white/40 mt-1">Prix: {prospectOffer.price} | Commission: {prospectOffer.commission}</p>
+                <p className="text-slate-400 dark:text-neutral-500 mt-1">Prix: {prospectOffer.price} | Commission: {prospectOffer.commission}</p>
               )}
             </div>
           </div>
           {!prospect && (
             <div className="mt-3 rounded-xl bg-red-500/10 border border-red-500/30 p-3">
-              <p className="text-sm text-red-400">
+              <p className="text-sm text-red-600">
                 {lang === 'fr' ? 'Prospect non trouve avec le nom:' : 'Prospect not found with name:'} <span className="font-semibold">{call.contactName}</span>
               </p>
-              <p className="text-xs text-white/40 mt-1">
+              <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1">
                 {lang === 'fr' ? 'Verifiez que le prospect existe dans ProspectsContext' : 'Verify the prospect exists in ProspectsContext'}
               </p>
             </div>
           )}
           {prospect && !prospectOffer && (
             <div className="mt-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 p-3">
-              <p className="text-sm text-yellow-400">
+              <p className="text-sm text-yellow-600">
                 {lang === 'fr' ? 'Prospect trouve mais aucune offre liee' : 'Prospect found but no linked offer'}
               </p>
-              <p className="text-xs text-white/40 mt-1">
+              <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1">
                 offerId: {prospect.offerId || 'null'} | offer: {prospect.offer || 'null'}
               </p>
             </div>
@@ -765,12 +765,12 @@ export function CallDetails() {
         </div>
 
         {/* --- TABS (Glass Pill) --- */}
-        <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/[0.08] rounded-full w-fit mb-8">
+        <div className="flex gap-1 p-1 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-full w-fit mb-8">
             <button
                 onClick={() => setActiveTab('qualification')}
                 className={cn(
                     "px-6 py-2 rounded-full text-sm flex items-center gap-2 transition-all duration-300",
-                    activeTab === 'qualification' ? "bg-emerald-500 text-black font-bold" : "text-white/40 hover:text-white font-medium"
+                    activeTab === 'qualification' ? "bg-sky-600 text-white font-bold" : "text-slate-400 dark:text-neutral-500 hover:text-slate-900 font-medium"
                 )}
             >
                 <LayoutList className="h-4 w-4" />
@@ -780,7 +780,7 @@ export function CallDetails() {
                 onClick={() => setActiveTab('notes')}
                 className={cn(
                     "px-6 py-2 rounded-full text-sm flex items-center gap-2 transition-all duration-300",
-                    activeTab === 'notes' ? "bg-emerald-500 text-black font-bold" : "text-white/40 hover:text-white font-medium"
+                    activeTab === 'notes' ? "bg-sky-600 text-white font-bold" : "text-slate-400 dark:text-neutral-500 hover:text-slate-900 font-medium"
                 )}
             >
                 <PenTool className="h-4 w-4" />
@@ -790,7 +790,7 @@ export function CallDetails() {
                 onClick={() => setActiveTab('reminder')}
                 className={cn(
                     "px-6 py-2 rounded-full text-sm flex items-center gap-2 transition-all duration-300",
-                    activeTab === 'reminder' ? "bg-emerald-500 text-black font-bold" : "text-white/40 hover:text-white font-medium"
+                    activeTab === 'reminder' ? "bg-sky-600 text-white font-bold" : "text-slate-400 dark:text-neutral-500 hover:text-slate-900 font-medium"
                 )}
             >
                 <Bell className="h-4 w-4" />
@@ -803,19 +803,19 @@ export function CallDetails() {
           
           {/* --- NOUVEAU BANDEAU DE CREATION --- */}
           {!prospect && (
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-8 flex items-center justify-between animate-in fade-in">
+            <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 p-8 flex items-center justify-between animate-in fade-in">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-emerald-500/20">
-                    <UserPlus className="h-6 w-6 text-emerald-400" />
+                <div className="p-3 rounded-full bg-sky-500/20">
+                    <UserPlus className="h-6 w-6 text-sky-600 dark:text-sky-400" />
                 </div>
                 <div>
-                    <h3 className="font-bold text-white">{lang === 'fr' ? 'Prospect inconnu' : 'Unknown prospect'}</h3>
-                    <p className="text-sm text-emerald-200">{lang === 'fr' ? "Pour qualifier l'appel, vous devez lier ou creer un prospect." : 'To qualify the call, you must link or create a prospect.'}</p>
+                    <h3 className="font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Prospect inconnu' : 'Unknown prospect'}</h3>
+                    <p className="text-sm text-sky-700 dark:text-sky-400">{lang === 'fr' ? "Pour qualifier l'appel, vous devez lier ou creer un prospect." : 'To qualify the call, you must link or create a prospect.'}</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-2 px-4 rounded-full shadow-lg transition-all"
+                className="bg-sky-600 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-full shadow-lg transition-all"
               >
                 {lang === 'fr' ? 'Créer un prospect ?' : 'Create a prospect?'}
               </button>
@@ -828,9 +828,9 @@ export function CallDetails() {
             {activeTab === 'qualification' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
             {/* Outcome Selection */}
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8">
-                <label className="mb-6 block text-xs font-bold uppercase tracking-widest text-white/40">
-                {lang === 'fr' ? "Resultat de l'appel" : 'Call outcome'} <span className="text-red-400">*</span>
+            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] p-8">
+                <label className="mb-6 block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
+                {lang === 'fr' ? "Resultat de l'appel" : 'Call outcome'} <span className="text-red-600">*</span>
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {outcomes.map((outcome) => {
@@ -845,30 +845,30 @@ export function CallDetails() {
                         'group relative flex flex-col items-center gap-3 rounded-2xl border-2 p-6 transition-all duration-300',
                         isSelected
                             ? `${outcome.bgColor} ${outcome.borderColor} shadow-lg`
-                            : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.12] hover:bg-white/[0.04]'
+                            : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:border-slate-200 hover:bg-slate-50'
                         )}
                     >
                         <div className={cn(
                         'flex h-12 w-12 items-center justify-center rounded-full transition-all',
                         isSelected
                             ? outcome.bgColor
-                            : 'bg-white/5 group-hover:bg-white/10'
+                            : 'bg-slate-100 dark:bg-white/10 group-hover:bg-slate-100'
                         )}>
                         <Icon className={cn(
                             'h-6 w-6 transition-colors',
                             isSelected
                             ? outcome.textColor
-                            : 'text-white/40 group-hover:text-white/60'
+                            : 'text-slate-400 dark:text-neutral-500 group-hover:text-slate-500'
                         )} />
                         </div>
                         <div className="text-center">
                         <p className={cn(
                             'text-sm font-semibold transition-colors',
-                            isSelected ? outcome.textColor : 'text-white/60 group-hover:text-white'
+                            isSelected ? outcome.textColor : 'text-slate-500 dark:text-neutral-400 group-hover:text-slate-900'
                         )}>
                             {outcome.label}
                         </p>
-                        <p className="mt-1 text-xs text-white/40">
+                        <p className="mt-1 text-xs text-slate-400 dark:text-neutral-500">
                             {outcome.description}
                         </p>
                         </div>
@@ -889,16 +889,16 @@ export function CallDetails() {
 
             {/* Won: Payment Terms & Commission */}
             {selectedOutcome === 'won' && (
-                <div className="space-y-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-8 animate-in slide-in-from-top-2">
-                <h3 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
+                <div className="space-y-6 rounded-2xl border border-sky-500/30 bg-sky-500/5 p-8 animate-in slide-in-from-top-2">
+                <h3 className="text-sm font-semibold text-sky-600 dark:text-sky-400 flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
                     {lang === 'fr' ? 'Details de la vente' : 'Sale details'}
                 </h3>
 
                 {/* Amount Input */}
                 <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    {lang === 'fr' ? 'Montant de la vente' : 'Sale amount'} <span className="text-red-400">*</span>
+                    <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                    {lang === 'fr' ? 'Montant de la vente' : 'Sale amount'} <span className="text-red-600">*</span>
                     </label>
                     <div className="relative">
                     <input
@@ -909,14 +909,14 @@ export function CallDetails() {
                         onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
                         placeholder="Ex: 5000"
                         readOnly={scheduleMode === 'custom'}
-                        className={cn("w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 pr-12 text-lg text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all", scheduleMode === 'custom' && 'opacity-60 cursor-not-allowed')}
+                        className={cn("w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-3 pr-12 text-lg text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none transition-all", scheduleMode === 'custom' && 'opacity-60 cursor-not-allowed')}
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 font-medium">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 font-medium">
                         €
                     </div>
                     </div>
                     {scheduleMode === 'custom' && (
-                      <p className="mt-2 text-xs text-white/50">
+                      <p className="mt-2 text-xs text-slate-500 dark:text-neutral-400">
                         {lang === 'fr' ? 'Montant calculé depuis l\'échéancier ci-dessous' : 'Amount calculated from the schedule below'}
                       </p>
                     )}
@@ -924,7 +924,7 @@ export function CallDetails() {
 
                 {/* Payment Type Toggle */}
                 <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
+                    <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
                     {lang === 'fr' ? 'Mode de paiement' : 'Payment method'}
                     </label>
                     <div className="flex gap-2">
@@ -933,8 +933,8 @@ export function CallDetails() {
                         className={cn(
                         'flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all duration-300',
                         paymentType === 'comptant'
-                            ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                            : 'border-white/[0.08] bg-white/[0.03] text-white/40 hover:border-white/[0.12] hover:bg-white/[0.04]'
+                            ? 'border-sky-500 bg-sky-500/20 text-sky-600 dark:text-sky-400'
+                            : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-neutral-500 hover:border-slate-200 hover:bg-slate-50'
                         )}
                     >
                         {lang === 'fr' ? 'Comptant' : 'Cash'}
@@ -944,8 +944,8 @@ export function CallDetails() {
                         className={cn(
                         'flex-1 rounded-full border-2 px-4 py-2.5 text-sm font-bold transition-all duration-300',
                         paymentType === 'installments'
-                            ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                            : 'border-white/[0.08] bg-white/[0.03] text-white/40 hover:border-white/[0.12] hover:bg-white/[0.04]'
+                            ? 'border-sky-500 bg-sky-500/20 text-sky-600 dark:text-sky-400'
+                            : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-neutral-500 hover:border-slate-200 hover:bg-slate-50'
                         )}
                     >
                         {lang === 'fr' ? 'Plusieurs fois' : 'Installments'}
@@ -956,7 +956,7 @@ export function CallDetails() {
                 {/* Installments Count */}
                 {paymentType === 'installments' && (
                     <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
+                    <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
                         {lang === 'fr' ? 'Nombre de mensualités' : 'Number of installments'}
                     </label>
                     <select
@@ -975,7 +975,7 @@ export function CallDetails() {
                             setInstallmentsCount(parseInt(v))
                           }
                         }}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all"
+                        className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none transition-all"
                     >
                         <option value="custom">{lang === 'fr' ? 'Autre (montants personnalisés)' : 'Other (custom amounts)'}</option>
                         {Array.from({ length: 23 }, (_, i) => i + 2).map(num => (
@@ -983,10 +983,10 @@ export function CallDetails() {
                         ))}
                     </select>
                     {scheduleMode === 'equal' ? (
-                      <p className="mt-2 text-sm text-white/40">
-                          {lang === 'fr' ? 'Montant par mois:' : 'Monthly amount:'} <span className="text-emerald-400 font-semibold">{monthlyAmount.toFixed(2)}€</span>
+                      <p className="mt-2 text-sm text-slate-400 dark:text-neutral-500">
+                          {lang === 'fr' ? 'Montant par mois:' : 'Monthly amount:'} <span className="text-sky-600 dark:text-sky-400 font-semibold">{monthlyAmount.toFixed(2)}€</span>
                           {depositKept && (
-                            <span className="ml-2 text-xs text-white/40">
+                            <span className="ml-2 text-xs text-slate-400 dark:text-neutral-500">
                               ({lang === 'fr' ? `acompte ${depositAmount}€ + ${realInstallmentsCount} × ${monthlyAmount.toFixed(2)}€` : `deposit ${depositAmount}€ + ${realInstallmentsCount} × ${monthlyAmount.toFixed(2)}€`})
                             </span>
                           )}
@@ -1011,13 +1011,13 @@ export function CallDetails() {
                 )}
 
                 {/* Acompte (optionnel) */}
-                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+                <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-5">
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Wallet className="h-4 w-4 text-emerald-400" />
-                      <h4 className="text-sm font-semibold text-white">
+                      <Wallet className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
                         {lang === 'fr' ? 'Acompte' : 'Deposit'}
-                        <span className="ml-2 text-xs font-normal text-white/40">
+                        <span className="ml-2 text-xs font-normal text-slate-400 dark:text-neutral-500">
                           {lang === 'fr' ? '(optionnel)' : '(optional)'}
                         </span>
                       </h4>
@@ -1026,7 +1026,7 @@ export function CallDetails() {
                       <button
                         type="button"
                         onClick={() => { setDepositAmount(0); setDepositToRefund(false); setDepositDate('') }}
-                        className="text-xs text-white/40 hover:text-white/70 underline underline-offset-2"
+                        className="text-xs text-slate-400 dark:text-neutral-500 hover:text-slate-600 underline underline-offset-2"
                       >
                         {lang === 'fr' ? 'Retirer' : 'Remove'}
                       </button>
@@ -1035,7 +1035,7 @@ export function CallDetails() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="mb-1.5 block text-xs font-medium text-white/60">
+                      <label className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-neutral-400">
                         {lang === 'fr' ? 'Montant' : 'Amount'}
                       </label>
                       <div className="relative">
@@ -1046,15 +1046,15 @@ export function CallDetails() {
                           value={depositAmount || ''}
                           onChange={(e) => setDepositAmount(parseFloat(e.target.value) || 0)}
                           placeholder="0"
-                          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-8 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none"
+                          className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 pr-8 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none"
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">€</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 text-sm">€</span>
                       </div>
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-medium text-white/60">
+                      <label className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-neutral-400">
                         {lang === 'fr' ? 'Date de versement' : 'Payment date'}
-                        {hasDeposit && <span className="text-red-400 ml-1">*</span>}
+                        {hasDeposit && <span className="text-red-600 ml-1">*</span>}
                       </label>
                       <input
                         type="date"
@@ -1062,7 +1062,7 @@ export function CallDetails() {
                         onChange={(e) => setDepositDate(e.target.value)}
                         disabled={!hasDeposit}
                         className={cn(
-                          "w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none",
+                          "w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none",
                           !hasDeposit && "opacity-40 cursor-not-allowed"
                         )}
                       />
@@ -1076,13 +1076,13 @@ export function CallDetails() {
                           type="checkbox"
                           checked={depositToRefund}
                           onChange={(e) => setDepositToRefund(e.target.checked)}
-                          className="h-4 w-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+                          className="h-4 w-4 rounded border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 text-sky-600 dark:text-sky-400 focus:ring-sky-500 focus:ring-offset-0"
                         />
-                        <span className="text-sm text-white">
+                        <span className="text-sm text-slate-900 dark:text-white">
                           {lang === 'fr' ? 'Acompte à rembourser' : 'Deposit to refund'}
                         </span>
                       </label>
-                      <p className="mt-2 text-xs text-white/40">
+                      <p className="mt-2 text-xs text-slate-400 dark:text-neutral-500">
                         {depositToRefund
                           ? (lang === 'fr'
                               ? `Cet acompte sera rendu au client. Plan de paiement : ${amount}€ (acompte en plus).`
@@ -1092,14 +1092,14 @@ export function CallDetails() {
                               : `Deposit kept. Payment plan: ${(amount - depositAmount).toFixed(2)}€ remaining${paymentType === 'installments' && installmentsCount >= 2 ? ` over ${realInstallmentsCount} installments` : ''}.`)}
                       </p>
                       {depositKept && paymentType === 'installments' && installmentsCount < 2 && (
-                        <p className="mt-2 text-xs text-red-400">
+                        <p className="mt-2 text-xs text-red-600">
                           {lang === 'fr'
                             ? 'Avec un acompte conservé, le nombre de mensualités doit être au moins 2.'
                             : 'With a kept deposit, the number of installments must be at least 2.'}
                         </p>
                       )}
                       {depositAmount > amount && (
-                        <p className="mt-2 text-xs text-red-400">
+                        <p className="mt-2 text-xs text-red-600">
                           {lang === 'fr'
                             ? "L'acompte ne peut pas dépasser le montant total de la vente."
                             : 'The deposit cannot exceed the total sale amount.'}
@@ -1111,11 +1111,11 @@ export function CallDetails() {
 
                 {/* Commission Display */}
                 {effectiveAmount > 0 && (
-                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6">
+                    <div className="rounded-2xl border border-sky-500/20 bg-sky-500/10 p-6">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Award className="h-4 w-4 text-emerald-400" />
-                        <h4 className="text-sm font-semibold text-emerald-400">{lang === 'fr' ? 'Ta Commission' : 'Your Commission'}</h4>
+                        <Award className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                        <h4 className="text-sm font-semibold text-sky-600 dark:text-sky-400">{lang === 'fr' ? 'Ta Commission' : 'Your Commission'}</h4>
                       </div>
                       <button
                         type="button"
@@ -1131,8 +1131,8 @@ export function CallDetails() {
                         className={cn(
                           'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all',
                           customCommissionEnabled
-                            ? 'border-amber-500/50 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
-                            : 'border-white/10 bg-white/5 text-white/60 hover:border-amber-500/40 hover:text-amber-300'
+                            ? 'border-amber-500/50 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20'
+                            : 'border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-neutral-400 hover:border-amber-500/40 hover:text-amber-600'
                         )}
                       >
                         <Settings2 className="h-3 w-3" />
@@ -1144,9 +1144,9 @@ export function CallDetails() {
 
                     {customCommissionEnabled && (
                       <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
-                        <label className="mb-1.5 block text-xs font-medium text-amber-300">
+                        <label className="mb-1.5 block text-xs font-medium text-amber-600">
                           {lang === 'fr' ? 'Taux personnalisé' : 'Custom rate'}
-                          <span className="ml-2 text-white/40">
+                          <span className="ml-2 text-slate-400 dark:text-neutral-500">
                             ({lang === 'fr' ? 'standard' : 'standard'}: {standardRate}%)
                           </span>
                         </label>
@@ -1158,25 +1158,25 @@ export function CallDetails() {
                             step="0.1"
                             value={customCommissionRate || ''}
                             onChange={(e) => setCustomCommissionRate(parseFloat(e.target.value) || 0)}
-                            className="w-full rounded-lg border border-amber-500/30 bg-white/5 px-3 py-2 pr-8 text-sm text-white focus:border-amber-500 focus:outline-none"
+                            className="w-full rounded-lg border border-amber-500/30 bg-slate-100 dark:bg-white/10 px-3 py-2 pr-8 text-sm text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                           />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-300 text-sm">%</span>
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-600 text-sm">%</span>
                         </div>
                       </div>
                     )}
 
-                    <p className="text-2xl font-bold text-emerald-400">
+                    <p className="text-2xl font-bold text-sky-600 dark:text-sky-400">
                         {totalCommission.toFixed(2)} €
                     </p>
                     {paymentType === 'installments' && scheduleMode === 'equal' && (
-                        <p className="mt-1 text-sm text-white/60">
-                        {lang === 'fr' ? 'Tu recevras:' : "You'll receive:"} <span className="font-semibold text-emerald-400">{monthlyCommission.toFixed(2)}€/{lang === 'fr' ? 'mois' : 'mo'}</span>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
+                        {lang === 'fr' ? 'Tu recevras:' : "You'll receive:"} <span className="font-semibold text-sky-600 dark:text-sky-400">{monthlyCommission.toFixed(2)}€/{lang === 'fr' ? 'mois' : 'mo'}</span>
                         </p>
                     )}
-                    <p className="mt-2 text-xs text-white/40">
+                    <p className="mt-2 text-xs text-slate-400 dark:text-neutral-500">
                         {lang === 'fr' ? 'Taux de commission:' : 'Commission rate:'} {commissionRate}%
                         {customCommissionEnabled && (
-                          <span className="ml-2 text-amber-300">
+                          <span className="ml-2 text-amber-600">
                             ({lang === 'fr' ? 'inhabituel' : 'unusual'})
                           </span>
                         )}
@@ -1189,29 +1189,29 @@ export function CallDetails() {
             {/* Follow up: Reschedule & Objection Tracking */}
             {selectedOutcome === 'followup' && (
                 <div className="space-y-6 rounded-2xl border border-orange-500/30 bg-orange-500/5 p-8 animate-in slide-in-from-top-2">
-                <h3 className="text-sm font-semibold text-orange-400 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-orange-600 flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     {lang === 'fr' ? 'Informations de suivi' : 'Follow-up information'}
                 </h3>
 
                 {/* Reschedule Date */}
                 <div>
-                    <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                    <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
                     <Calendar className="h-4 w-4" />
-                    {lang === 'fr' ? 'Date de reprogrammation' : 'Reschedule date'} <span className="text-red-400">*</span>
+                    {lang === 'fr' ? 'Date de reprogrammation' : 'Reschedule date'} <span className="text-red-600">*</span>
                     </label>
                     <input
                     type="datetime-local"
                     value={followupDate}
                     onChange={(e) => setFollowupDate(e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
+                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-orange-500 focus:outline-none transition-all"
                     />
                 </div>
 
                 {/* Reason Selector */}
                 <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    {lang === 'fr' ? 'Motif du report' : 'Postponement reason'} <span className="text-red-400">*</span>
+                    <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                    {lang === 'fr' ? 'Motif du report' : 'Postponement reason'} <span className="text-red-600">*</span>
                     </label>
                     <select
                     value={followupReason}
@@ -1222,7 +1222,7 @@ export function CallDetails() {
                         setFollowupReasonOther('')
                         }
                     }}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
+                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-orange-500 focus:outline-none transition-all"
                     >
                     <option value="">{lang === 'fr' ? 'Sélectionnez un motif' : 'Select a reason'}</option>
                     {objectionReasons.map((reason) => (
@@ -1235,15 +1235,15 @@ export function CallDetails() {
                     {/* Conditional "Autre" textarea */}
                     {followupReason === (lang === 'fr' ? 'Autre' : 'Other') && (
                     <div className="mt-3">
-                        <label className="mb-2 block text-sm font-medium text-white">
-                        {lang === 'fr' ? 'Précisez le motif' : 'Specify the reason'} <span className="text-red-400">*</span>
+                        <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                        {lang === 'fr' ? 'Précisez le motif' : 'Specify the reason'} <span className="text-red-600">*</span>
                         </label>
                         <input
                         type="text"
                         value={followupReasonOther}
                         onChange={(e) => setFollowupReasonOther(e.target.value)}
                         placeholder={lang === 'fr' ? "Ex: Indisponibilité exceptionnelle..." : "E.g.: Exceptional unavailability..."}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
+                        className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-orange-500 focus:outline-none transition-all"
                         />
                     </div>
                     )}
@@ -1254,15 +1254,15 @@ export function CallDetails() {
             {/* Lost: Objection Tracking */}
             {selectedOutcome === 'lost' && (
                 <div className="space-y-6 rounded-2xl border border-red-500/30 bg-red-500/5 p-8 animate-in slide-in-from-top-2">
-                <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-red-600 flex items-center gap-2">
                     <XCircle className="h-4 w-4" />
                     {lang === 'fr' ? 'Raison de la perte' : 'Reason for loss'}
                 </h3>
 
                 {/* Reason Selector */}
                 <div>
-                    <label className="mb-2 block text-sm font-medium text-white">
-                    {lang === 'fr' ? 'Motif' : 'Reason'} <span className="text-red-400">*</span>
+                    <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                    {lang === 'fr' ? 'Motif' : 'Reason'} <span className="text-red-600">*</span>
                     </label>
                     <select
                     value={lostReason}
@@ -1273,7 +1273,7 @@ export function CallDetails() {
                         setLostReasonOther('')
                         }
                     }}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-red-500 focus:outline-none transition-all"
+                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-red-500 focus:outline-none transition-all"
                     >
                     <option value="">{lang === 'fr' ? 'Sélectionnez un motif' : 'Select a reason'}</option>
                     {objectionReasons.map((reason) => (
@@ -1286,15 +1286,15 @@ export function CallDetails() {
                     {/* Conditional "Autre" textarea */}
                     {lostReason === (lang === 'fr' ? 'Autre' : 'Other') && (
                     <div className="mt-3">
-                        <label className="mb-2 block text-sm font-medium text-white">
-                        {lang === 'fr' ? 'Précisez le motif' : 'Specify the reason'} <span className="text-red-400">*</span>
+                        <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                        {lang === 'fr' ? 'Précisez le motif' : 'Specify the reason'} <span className="text-red-600">*</span>
                         </label>
                         <input
                         type="text"
                         value={lostReasonOther}
                         onChange={(e) => setLostReasonOther(e.target.value)}
                         placeholder={lang === 'fr' ? "Ex: Prix trop élevé..." : "E.g.: Price too high..."}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-red-500 focus:outline-none transition-all"
+                        className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-red-500 focus:outline-none transition-all"
                         />
                     </div>
                     )}
@@ -1306,8 +1306,8 @@ export function CallDetails() {
 
             {/* ONGLET 2: NOTES D'APPEL */}
             {activeTab === 'notes' && (
-                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8 h-[500px] flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
-                    <label className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/40">
+                <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] p-8 h-[500px] flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
+                    <label className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-neutral-500">
                         <FileText className="h-4 w-4" />
                         {lang === 'fr' ? "Historique et Notes de l'appel" : 'Call History and Notes'}
                     </label>
@@ -1315,9 +1315,9 @@ export function CallDetails() {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder={lang === 'fr' ? "Prenez vos notes ici. Elles seront enregistrees dans l'historique des appels..." : "Take your notes here. They will be saved in the call history..."}
-                        className="flex-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all resize-none leading-relaxed"
+                        className="flex-1 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-3 text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none transition-all resize-none leading-relaxed"
                     />
-                    <p className="mt-3 text-xs text-white/40 flex items-center gap-1">
+                    <p className="mt-3 text-xs text-slate-400 dark:text-neutral-500 flex items-center gap-1">
                         <CheckCircle2 className="h-3 w-3" />
                         {lang === 'fr' ? "Ces notes s'ajouteront à l'historique des appels du prospect." : "These notes will be added to the prospect's call history."}
                     </p>
@@ -1326,64 +1326,64 @@ export function CallDetails() {
 
             {/* ONGLET 3: PROGRAMMER UN RAPPEL */}
             {activeTab === 'reminder' && (
-                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] p-8 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div className="flex items-center gap-2 mb-2">
-                        <Bell className="h-5 w-5 text-orange-400" />
-                        <h3 className="text-sm font-semibold text-white">{lang === 'fr' ? 'Programmer un rappel' : 'Schedule a reminder'}</h3>
+                        <Bell className="h-5 w-5 text-orange-600" />
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{lang === 'fr' ? 'Programmer un rappel' : 'Schedule a reminder'}</h3>
                     </div>
 
                     {/* Titre */}
                     <div>
-                        <label className="mb-2 block text-sm font-medium text-white">
-                            {lang === 'fr' ? 'Titre' : 'Title'} <span className="text-red-400">*</span>
+                        <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                            {lang === 'fr' ? 'Titre' : 'Title'} <span className="text-red-600">*</span>
                         </label>
                         <input
                             type="text"
                             value={reminderTitle}
                             onChange={(e) => setReminderTitle(e.target.value)}
                             placeholder={lang === 'fr' ? "Ex: Rappeler Jean pour le contrat" : "E.g.: Call Jean about the contract"}
-                            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all"
+                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-orange-500 focus:outline-none transition-all"
                         />
                     </div>
 
                     {/* Description */}
                     <div>
-                        <label className="mb-2 block text-sm font-medium text-white">
-                            Description <span className="text-white/40">({lang === 'fr' ? 'optionnel' : 'optional'})</span>
+                        <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                            Description <span className="text-slate-400 dark:text-neutral-500">({lang === 'fr' ? 'optionnel' : 'optional'})</span>
                         </label>
                         <textarea
                             value={reminderDescription}
                             onChange={(e) => setReminderDescription(e.target.value)}
                             placeholder={lang === 'fr' ? "Détails supplémentaires..." : "Additional details..."}
                             rows={3}
-                            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-500 focus:outline-none transition-all resize-none"
+                            className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-orange-500 focus:outline-none transition-all resize-none"
                         />
                     </div>
 
                     {/* Date & Heure */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
                                 <Calendar className="h-4 w-4" />
-                                {lang === 'fr' ? 'Date' : 'Date'} <span className="text-red-400">*</span>
+                                {lang === 'fr' ? 'Date' : 'Date'} <span className="text-red-600">*</span>
                             </label>
                             <input
                                 type="date"
                                 value={reminderDate}
                                 onChange={(e) => setReminderDate(e.target.value)}
-                                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
+                                className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-orange-500 focus:outline-none transition-all"
                             />
                         </div>
                         <div>
-                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
                                 <Clock className="h-4 w-4" />
-                                {lang === 'fr' ? 'Heure' : 'Time'} <span className="text-red-400">*</span>
+                                {lang === 'fr' ? 'Heure' : 'Time'} <span className="text-red-600">*</span>
                             </label>
                             <input
                                 type="time"
                                 value={reminderTime}
                                 onChange={(e) => setReminderTime(e.target.value)}
-                                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none transition-all"
+                                className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-orange-500 focus:outline-none transition-all"
                             />
                         </div>
                     </div>
@@ -1391,7 +1391,7 @@ export function CallDetails() {
                     {/* Message d'erreur */}
                     {reminderError && (
                         <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
-                            <p className="text-sm text-red-400">{reminderError}</p>
+                            <p className="text-sm text-red-600">{reminderError}</p>
                         </div>
                     )}
 
@@ -1400,10 +1400,10 @@ export function CallDetails() {
                         onClick={handleSaveReminder}
                         disabled={!reminderTitle || !reminderDate || !reminderTime || isSavingReminder}
                         className={cn(
-                            'w-full rounded-full px-6 py-3 text-sm font-bold text-white transition-all duration-300 mt-2',
+                            'w-full rounded-full px-6 py-3 text-sm font-bold text-slate-900 dark:text-white transition-all duration-300 mt-2',
                             reminderTitle && reminderDate && reminderTime && !isSavingReminder
                                 ? 'bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/20'
-                                : 'bg-white/5 cursor-not-allowed opacity-50'
+                                : 'bg-slate-100 dark:bg-white/10 cursor-not-allowed opacity-50'
                         )}
                     >
                         {isSavingReminder ? (
@@ -1422,7 +1422,7 @@ export function CallDetails() {
             <div className="flex items-center justify-between gap-4 pt-6 mt-8">
                 <button
                 onClick={() => navigate('/')}
-                className="rounded-full border border-white/[0.08] bg-white/[0.03] px-8 py-3 text-sm font-semibold text-white/80 transition-all duration-300 hover:bg-white/[0.04]"
+                className="rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-8 py-3 text-sm font-semibold text-slate-600 dark:text-neutral-300 transition-all duration-300 hover:bg-slate-50"
                 >
                 {lang === 'fr' ? 'Annuler' : 'Cancel'}
                 </button>
@@ -1432,8 +1432,8 @@ export function CallDetails() {
                 className={cn(
                     'rounded-full px-10 py-3 text-sm font-bold transition-all duration-300',
                     isFormValid() && prospect && !isSaving
-                    ? 'bg-emerald-500 text-black hover:bg-emerald-400 shadow-lg shadow-emerald-500/20'
-                    : 'bg-white/5 text-white/40 cursor-not-allowed opacity-50'
+                    ? 'bg-sky-600 text-white hover:bg-sky-600 shadow-lg shadow-sky-500/20'
+                    : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-neutral-500 cursor-not-allowed opacity-50'
                 )}
                 >
                 {isSaving ? (lang === 'fr' ? 'Enregistrement...' : 'Saving...') : (lang === 'fr' ? 'Tout Enregistrer' : 'Save All')}
@@ -1447,32 +1447,32 @@ export function CallDetails() {
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-2xl bg-white/[0.03] backdrop-blur-[16px] border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] p-8 animate-in fade-in zoom-in-95">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] p-8 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-bold text-white">{lang === 'fr' ? 'Nouveau Prospect' : 'New Prospect'}</h2>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-white/40 hover:text-white"><X className="h-6 w-6" /></button>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Nouveau Prospect' : 'New Prospect'}</h2>
+              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 dark:text-neutral-500 hover:text-slate-900"><X className="h-6 w-6" /></button>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-white/40 mb-2">{lang === 'fr' ? 'Nom & Prenom' : 'Full Name'} *</label>
-                <input type="text" value={newProspectForm.name} onChange={e => setNewProspectForm({...newProspectForm, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder={lang === 'fr' ? "Ex: Jean Dupont" : "E.g.: John Doe"} />
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-neutral-500 mb-2">{lang === 'fr' ? 'Nom & Prenom' : 'Full Name'} *</label>
+                <input type="text" value={newProspectForm.name} onChange={e => setNewProspectForm({...newProspectForm, name: e.target.value})} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none" placeholder={lang === 'fr' ? "Ex: Jean Dupont" : "E.g.: John Doe"} />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-white/60 mb-1.5">{lang === 'fr' ? 'Email' : 'Email'}</label>
-                <input type="email" value={newProspectForm.email} onChange={e => setNewProspectForm({...newProspectForm, email: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder="jean@entreprise.com" />
+                <label className="block text-sm font-medium text-slate-500 dark:text-neutral-400 mb-1.5">{lang === 'fr' ? 'Email' : 'Email'}</label>
+                <input type="email" value={newProspectForm.email} onChange={e => setNewProspectForm({...newProspectForm, email: e.target.value})} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none" placeholder="jean@entreprise.com" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white/60 mb-1.5">{lang === 'fr' ? 'Téléphone' : 'Phone'}</label>
-                <input type="text" value={newProspectForm.phone} onChange={e => setNewProspectForm({...newProspectForm, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder="+33 6 ..." />
+                <label className="block text-sm font-medium text-slate-500 dark:text-neutral-400 mb-1.5">{lang === 'fr' ? 'Téléphone' : 'Phone'}</label>
+                <input type="text" value={newProspectForm.phone} onChange={e => setNewProspectForm({...newProspectForm, phone: e.target.value})} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none" placeholder="+33 6 ..." />
               </div>
 
               {/* Offre */}
               <div>
-                <label className="block text-sm font-medium text-white/60 mb-1.5">{lang === 'fr' ? 'Offre' : 'Offer'}</label>
-                <select value={newProspectForm.offerId} onChange={e => setNewProspectForm({...newProspectForm, offerId: e.target.value, formulaId: ''})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none">
+                <label className="block text-sm font-medium text-slate-500 dark:text-neutral-400 mb-1.5">{lang === 'fr' ? 'Offre' : 'Offer'}</label>
+                <select value={newProspectForm.offerId} onChange={e => setNewProspectForm({...newProspectForm, offerId: e.target.value, formulaId: ''})} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none">
                   <option value="">{lang === 'fr' ? 'Sélectionner une offre...' : 'Select an offer...'}</option>
                   {offers.filter(o => o.status === 'active').map(offer => (
                     <option key={offer.id} value={offer.id}>{offer.name}</option>
@@ -1483,8 +1483,8 @@ export function CallDetails() {
               {/* Formules */}
               {newProspectForm.offerId && (
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-emerald-400 mb-1.5"><Tag className="h-3 w-3"/> {lang === 'fr' ? 'Choix de la formule' : 'Choose formula'} *</label>
-                  <select value={newProspectForm.formulaId} onChange={e => setNewProspectForm({...newProspectForm, formulaId: e.target.value})} className="w-full bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none">
+                  <label className="flex items-center gap-2 text-sm font-medium text-sky-600 dark:text-sky-400 mb-1.5"><Tag className="h-3 w-3"/> {lang === 'fr' ? 'Choix de la formule' : 'Choose formula'} *</label>
+                  <select value={newProspectForm.formulaId} onChange={e => setNewProspectForm({...newProspectForm, formulaId: e.target.value})} className="w-full bg-sky-500/10 border border-sky-500/30 rounded-xl p-2.5 text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none">
                     <option value="">{lang === 'fr' ? '-- Sélectionner --' : '-- Select --'}</option>
                     {offers.find(o => String(o.id) === newProspectForm.offerId)?.formulas?.map(f => (
                       <option key={f.id} value={f.id}>{f.name} - {f.price}€</option>
@@ -1494,15 +1494,15 @@ export function CallDetails() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-white/60 mb-1.5">{lang === 'fr' ? 'Source' : 'Source'}</label>
-                <select value={newProspectForm.source} onChange={e => setNewProspectForm({...newProspectForm, source: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:border-emerald-500 focus:outline-none">
+                <label className="block text-sm font-medium text-slate-500 dark:text-neutral-400 mb-1.5">{lang === 'fr' ? 'Source' : 'Source'}</label>
+                <select value={newProspectForm.source} onChange={e => setNewProspectForm({...newProspectForm, source: e.target.value})} className="w-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none">
                   {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 bg-white/[0.03] border border-white/[0.08] hover:bg-white/10 text-white/80 font-medium py-2.5 rounded-full transition-colors">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
-                <button onClick={handleCreateProspect} disabled={!newProspectForm.name || isCreating} className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-2.5 rounded-full transition-colors disabled:opacity-50">
+                <button onClick={() => setIsCreateModalOpen(false)} className="flex-1 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-100 text-slate-600 dark:text-neutral-300 font-medium py-2.5 rounded-full transition-colors">{lang === 'fr' ? 'Annuler' : 'Cancel'}</button>
+                <button onClick={handleCreateProspect} disabled={!newProspectForm.name || isCreating} className="flex-1 bg-sky-600 hover:bg-sky-600 text-white font-semibold py-2.5 rounded-full transition-colors disabled:opacity-50">
                   {isCreating ? (lang === 'fr' ? 'Création...' : 'Creating...') : (lang === 'fr' ? 'Créer le prospect' : 'Create prospect')}
                 </button>
               </div>
@@ -1514,9 +1514,9 @@ export function CallDetails() {
       {/* TOAST RAPPEL */}
       {reminderToast && (
         <div className="fixed bottom-6 right-6 z-[200] animate-in slide-in-from-bottom-4 fade-in duration-300">
-          <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 shadow-2xl backdrop-blur-md">
-            <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-            <span className="text-sm font-semibold text-emerald-400">{lang === 'fr' ? 'Rappel programmé' : 'Reminder scheduled'}</span>
+          <div className="flex items-center gap-3 rounded-xl border border-sky-500/30 bg-sky-500/10 px-5 py-3 shadow-2xl backdrop-blur-md">
+            <CheckCircle2 className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+            <span className="text-sm font-semibold text-sky-600 dark:text-sky-400">{lang === 'fr' ? 'Rappel programmé' : 'Reminder scheduled'}</span>
           </div>
         </div>
       )}

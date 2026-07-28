@@ -179,30 +179,30 @@ export function SharePerformanceButton() {
         className="absolute inset-0 bg-black/70 backdrop-blur-md"
         onClick={() => setIsOpen(false)}
       />
-      <div className="relative w-full max-w-xl bg-[#1a1a1a] rounded-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="relative w-full max-w-xl bg-white dark:bg-[#1a1a1a] rounded-2xl border border-slate-200 dark:border-white/10 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_-16px_rgba(15,23,42,0.10)] overflow-hidden animate-in fade-in zoom-in duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/5 px-6 py-5">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-6 py-5">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
-              <Share2 className="w-5 h-5 text-emerald-400" />
+            <div className="p-2 bg-sky-500/10 rounded-lg border border-sky-500/30">
+              <Share2 className="w-5 h-5 text-sky-600 dark:text-sky-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">{lang === 'fr' ? 'Partager ma performance' : 'Share my performance'}</h2>
-              <p className="text-xs text-white/40 mt-0.5">{lang === 'fr' ? 'Partagez vos KPIs et votre pipeline en lecture seule' : 'Share your KPIs and pipeline as read-only'}</p>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Partager ma performance' : 'Share my performance'}</h2>
+              <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">{lang === 'fr' ? 'Partagez vos KPIs et votre pipeline en lecture seule' : 'Share your KPIs and pipeline as read-only'}</p>
             </div>
           </div>
-          <button onClick={() => setIsOpen(false)} className="p-2 rounded-lg text-white/40 hover:bg-white/5 hover:text-white transition-colors">
+          <button onClick={() => setIsOpen(false)} className="p-2 rounded-lg text-slate-400 dark:text-neutral-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-white/[0.08] bg-white/[0.03]">
+        <div className="flex border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
           <button
             onClick={() => setTab('link')}
             className={cn(
               'flex-1 flex items-center justify-center gap-2 px-4 py-4 text-sm font-bold transition-all',
-              tab === 'link' ? 'text-emerald-400 border-b-2 border-emerald-400 bg-emerald-400/5' : 'text-white/40 hover:text-white/60'
+              tab === 'link' ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-500 bg-sky-500/5' : 'text-slate-400 dark:text-neutral-500 hover:text-slate-500'
             )}
           >
             <Link2 className="h-4 w-4" />
@@ -212,7 +212,7 @@ export function SharePerformanceButton() {
             onClick={() => setTab('leads')}
             className={cn(
               'flex-1 flex items-center justify-center gap-2 px-4 py-4 text-sm font-bold transition-all',
-              tab === 'leads' ? 'text-emerald-400 border-b-2 border-emerald-400 bg-emerald-400/5' : 'text-white/40 hover:text-white/60'
+              tab === 'leads' ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-500 bg-sky-500/5' : 'text-slate-400 dark:text-neutral-500 hover:text-slate-500'
             )}
           >
             <Mail className="h-4 w-4" />
@@ -221,55 +221,55 @@ export function SharePerformanceButton() {
         </div>
 
         {/* Content */}
-        <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar bg-[#1a1a1a]">
+        <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar bg-white dark:bg-[#1a1a1a]">
           {tab === 'link' ? (
             <div className="space-y-6">
               {/* Active links */}
               {activeLinks.length > 0 && (
                 <div className="space-y-4">
-                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? `Liens actifs (${activeLinks.length}/2)` : `Active links (${activeLinks.length}/2)`}</h3>
+                  <h3 className="text-xs font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-widest">{lang === 'fr' ? `Liens actifs (${activeLinks.length}/2)` : `Active links (${activeLinks.length}/2)`}</h3>
                   {activeLinks.map(link => (
-                    <div key={link.id} className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5">
+                    <div key={link.id} className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-5">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-sm font-bold text-emerald-400">
+                        <div className="h-2.5 w-2.5 rounded-full bg-sky-600 animate-pulse" />
+                        <span className="text-sm font-bold text-sky-600 dark:text-sky-400">
                           {link.shared_offer || 'Global'}
                         </span>
-                        <span className="text-xs text-white/40 font-medium px-2 py-0.5 rounded-full bg-white/5 border border-white/[0.08]">
+                        <span className="text-xs text-slate-400 dark:text-neutral-500 font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10">
                           {getViewLabel(link.shared_view)}
                         </span>
                         {link.password_required ? (
-                          <span className="ml-auto text-amber-400" title="Protégé par mot de passe">
+                          <span className="ml-auto text-amber-600" title="Protégé par mot de passe">
                             <Shield className="h-4 w-4" />
                           </span>
                         ) : (
-                          <span className="ml-auto text-white/30" title="Accès libre">
+                          <span className="ml-auto text-slate-400 dark:text-neutral-500" title="Accès libre">
                             <ShieldOff className="h-4 w-4" />
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/5 px-4 py-2.5">
+                      <div className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-2.5">
                         <input
                           readOnly
                           value={getShareUrl(link.token)}
-                          className="flex-1 bg-transparent text-sm text-white/60 outline-none truncate"
+                          className="flex-1 bg-transparent text-sm text-slate-500 dark:text-neutral-400 outline-none truncate"
                         />
                         <button
                           onClick={() => copyLink(link.token)}
-                          className="flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-black hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 active:scale-95 shrink-0"
+                          className="flex items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-xs font-bold text-white hover:bg-sky-600 transition-all shadow-lg shadow-sky-500/20 active:scale-95 shrink-0"
                         >
                           {copied === link.token ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                           {copied === link.token ? (lang === 'fr' ? 'Copié' : 'Copied') : (lang === 'fr' ? 'Copier' : 'Copy')}
                         </button>
                       </div>
                       <div className="mt-3 flex items-center justify-between">
-                        <p className="text-xs text-white/40 font-medium">
+                        <p className="text-xs text-slate-400 dark:text-neutral-500 font-medium">
                           {lang === 'fr' ? 'Créé le' : 'Created on'} {new Date(link.created_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long' })}
                         </p>
                         <button
                           onClick={() => handleRevoke(link.id)}
                           disabled={loading}
-                          className="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-600 transition-colors disabled:opacity-50"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                           {lang === 'fr' ? 'Révoquer le lien' : 'Revoke link'}
@@ -284,25 +284,25 @@ export function SharePerformanceButton() {
               {canCreate ? (
                 <div className="space-y-5">
                   <div className="relative py-2">
-                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5"></span></div>
-                    <div className="relative flex justify-center"><span className="bg-[#1a1a1a] px-4 text-xs font-bold text-white/40 uppercase tracking-widest">{lang === 'fr' ? 'Nouveau lien' : 'New link'}</span></div>
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200 dark:border-white/10"></span></div>
+                    <div className="relative flex justify-center"><span className="bg-white dark:bg-[#1a1a1a] px-4 text-xs font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-widest">{lang === 'fr' ? 'Nouveau lien' : 'New link'}</span></div>
                   </div>
 
-                  <p className="text-sm text-white/40 leading-relaxed">
+                  <p className="text-sm text-slate-400 dark:text-neutral-500 leading-relaxed">
                     {lang === 'fr' ? "Générez un lien d'accès en lecture seule pour montrer vos résultats à vos partenaires." : 'Generate a read-only access link to show your results to your partners.'}
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {/* Offer selection */}
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-white/40 uppercase tracking-wider ml-1">
+                      <label className="text-xs font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider ml-1">
                         {lang === 'fr' ? 'Offre à partager' : 'Offer to share'}
                       </label>
                       <div className="relative group">
                         <select
                           value={sharedOffer || 'global'}
                           onChange={(e) => setSharedOffer(e.target.value === 'global' ? null : e.target.value)}
-                          className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none transition-all cursor-pointer"
+                          className="w-full appearance-none rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-3 text-sm text-slate-900 dark:text-white focus:border-sky-500 focus:outline-none transition-all cursor-pointer"
                         >
                           <option value="global">{lang === 'fr' ? '🌐 Toutes les offres (Global)' : '🌐 All offers (Global)'}</option>
                           {activeOffers.map(offer => (
@@ -311,13 +311,13 @@ export function SharePerformanceButton() {
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 pointer-events-none group-hover:text-white/60 transition-colors" />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-neutral-500 pointer-events-none group-hover:text-slate-500 transition-colors" />
                       </div>
                     </div>
 
                     {/* Password toggle */}
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-white/40 uppercase tracking-wider ml-1">
+                      <label className="text-xs font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider ml-1">
                         {lang === 'fr' ? 'Sécurité' : 'Security'}
                       </label>
                       <button
@@ -328,19 +328,19 @@ export function SharePerformanceButton() {
                         }}
                         className={cn(
                           "w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all",
-                          passwordRequired ? "border-emerald-500 bg-emerald-500/10" : "border-white/10 bg-white/5 hover:border-white/20"
+                          passwordRequired ? "border-sky-500 bg-sky-500/10" : "border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 hover:border-slate-200"
                         )}
                       >
                         <div className="flex items-center gap-2">
-                          <Shield className={cn("h-4 w-4", passwordRequired ? "text-emerald-400" : "text-white/40")} />
-                          <span className={cn("text-sm font-bold", passwordRequired ? "text-emerald-400" : "text-white/40")}>{lang === 'fr' ? 'Mot de passe' : 'Password'}</span>
+                          <Shield className={cn("h-4 w-4", passwordRequired ? "text-sky-600 dark:text-sky-400" : "text-slate-400 dark:text-neutral-500")} />
+                          <span className={cn("text-sm font-bold", passwordRequired ? "text-sky-600 dark:text-sky-400" : "text-slate-400 dark:text-neutral-500")}>{lang === 'fr' ? 'Mot de passe' : 'Password'}</span>
                         </div>
                         <div className={cn(
                           "h-5 w-9 rounded-full transition-colors relative",
-                          passwordRequired ? "bg-emerald-500" : "bg-white/10"
+                          passwordRequired ? "bg-sky-600" : "bg-slate-100 dark:bg-white/10"
                         )}>
                           <div className={cn(
-                            "absolute top-1 left-1 h-3 w-3 rounded-full bg-white transition-all",
+                            "absolute top-1 left-1 h-3 w-3 rounded-full bg-white dark:bg-[#1a1a1a] transition-all",
                             passwordRequired ? "translate-x-4" : "translate-x-0"
                           )} />
                         </div>
@@ -357,25 +357,25 @@ export function SharePerformanceButton() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder={lang === 'fr' ? 'Définir un mot de passe (min. 4)' : 'Set a password (min. 4)'}
-                          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-emerald-500 focus:outline-none transition-all"
+                          className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:border-sky-500 focus:outline-none transition-all"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-neutral-500 hover:text-slate-500"
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
                       {password.length > 0 && password.length < 4 && (
-                        <p className="mt-2 text-[10px] text-red-400 font-bold ml-1 uppercase">{lang === 'fr' ? 'Minimum 4 caractères requis' : 'Minimum 4 characters required'}</p>
+                        <p className="mt-2 text-[10px] text-red-600 font-bold ml-1 uppercase">{lang === 'fr' ? 'Minimum 4 caractères requis' : 'Minimum 4 characters required'}</p>
                       )}
                     </div>
                   )}
 
                   {/* View selection */}
                   <div className="space-y-3">
-                    <label className="text-xs font-bold text-white/40 uppercase tracking-wider ml-1 text-center block">
+                    <label className="text-xs font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider ml-1 text-center block">
                       {lang === 'fr' ? 'Sections visibles par le spectateur' : 'Sections visible to spectator'}
                     </label>
                     <div className="grid grid-cols-3 gap-3">
@@ -390,12 +390,12 @@ export function SharePerformanceButton() {
                             className={cn(
                               'flex flex-col items-center gap-2 rounded-2xl border p-4 transition-all text-center group',
                               isSelected
-                                ? 'border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/50'
-                                : 'border-white/[0.08] bg-white/[0.03] text-white/40 hover:border-white/20 hover:text-white/60'
+                                ? 'border-sky-500 bg-sky-500/10 ring-1 ring-sky-500/50'
+                                : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-neutral-500 hover:border-slate-200 hover:text-slate-500'
                             )}
                           >
-                            <Icon className={cn('h-6 w-6 mb-1', isSelected ? 'text-emerald-400' : 'text-white/30 group-hover:text-white/40')} />
-                            <span className={cn('text-xs font-bold', isSelected ? 'text-emerald-400' : 'text-white/40')}>{opt.label}</span>
+                            <Icon className={cn('h-6 w-6 mb-1', isSelected ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-neutral-500 group-hover:text-slate-400')} />
+                            <span className={cn('text-xs font-bold', isSelected ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-neutral-500')}>{opt.label}</span>
                           </button>
                         )
                       })}
@@ -403,7 +403,7 @@ export function SharePerformanceButton() {
                   </div>
 
                   {errorMsg && (
-                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold text-center">
+                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 text-xs font-bold text-center">
                       {errorMsg}
                     </div>
                   )}
@@ -411,7 +411,7 @@ export function SharePerformanceButton() {
                   <button
                     onClick={handleCreate}
                     disabled={loading || (passwordRequired && password.length < 4)}
-                    className="w-full flex items-center justify-center gap-3 rounded-full bg-emerald-500 py-4 text-base font-bold text-black hover:bg-emerald-400 transition-all shadow-xl shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
+                    className="w-full flex items-center justify-center gap-3 rounded-full bg-sky-600 py-4 text-base font-bold text-white hover:bg-sky-600 transition-all shadow-xl shadow-sky-500/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
                   >
                     <Share2 className="h-5 w-5 group-hover:rotate-12 transition-transform" />
                     {loading ? (lang === 'fr' ? 'Création en cours...' : 'Creating...') : (lang === 'fr' ? 'Créer mon lien de partage' : 'Create my share link')}
@@ -420,8 +420,8 @@ export function SharePerformanceButton() {
               ) : (
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6 text-center">
                   <Shield className="mx-auto h-10 w-10 text-amber-500/50 mb-4" />
-                  <h4 className="text-lg font-bold text-amber-400">{lang === 'fr' ? 'Limite atteinte' : 'Limit reached'}</h4>
-                  <p className="text-sm text-white/40 mt-2 leading-relaxed">
+                  <h4 className="text-lg font-bold text-amber-600">{lang === 'fr' ? 'Limite atteinte' : 'Limit reached'}</h4>
+                  <p className="text-sm text-slate-400 dark:text-neutral-500 mt-2 leading-relaxed">
                     {lang === 'fr' ? 'Vous avez déjà 2 liens de partage actifs. Révoquez un lien existant pour en générer un nouveau.' : 'You already have 2 active share links. Revoke an existing link to generate a new one.'}
                   </p>
                 </div>
@@ -432,32 +432,32 @@ export function SharePerformanceButton() {
             <div className="space-y-4">
               {leads.length === 0 ? (
                 <div className="py-12 text-center">
-                  <div className="mx-auto w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/[0.08]">
-                    <Mail className="h-8 w-8 text-white/30" />
+                  <div className="mx-auto w-16 h-16 bg-slate-100 dark:bg-white/10 rounded-full flex items-center justify-center mb-6 border border-slate-200 dark:border-white/10">
+                    <Mail className="h-8 w-8 text-slate-400 dark:text-neutral-500" />
                   </div>
-                  <h4 className="text-base font-bold text-white">{lang === 'fr' ? 'Aucun lead collecté' : 'No leads collected'}</h4>
-                  <p className="text-sm text-white/40 mt-2 max-w-xs mx-auto">
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white">{lang === 'fr' ? 'Aucun lead collecté' : 'No leads collected'}</h4>
+                  <p className="text-sm text-slate-400 dark:text-neutral-500 mt-2 max-w-xs mx-auto">
                     {lang === 'fr' ? "Activez la collecte d'emails sur votre page spectateur pour voir vos leads apparaître ici." : 'Enable email capture on your spectator page to see your leads appear here.'}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">{lang === 'fr' ? `Derniers leads (${leads.length})` : `Latest leads (${leads.length})`}</h3>
+                  <h3 className="text-xs font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-widest mb-4">{lang === 'fr' ? `Derniers leads (${leads.length})` : `Latest leads (${leads.length})`}</h3>
                   <div className="grid grid-cols-1 gap-2">
                     {leads.map(lead => (
-                      <div key={lead.id} className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 group hover:bg-white/5 transition-colors">
+                      <div key={lead.id} className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-5 py-4 group hover:bg-slate-100 transition-colors">
                         <div className="flex items-center gap-4">
-                          <div className="h-10 w-10 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20">
-                            <User className="h-5 w-5 text-emerald-400" />
+                          <div className="h-10 w-10 bg-sky-500/10 rounded-full flex items-center justify-center border border-sky-500/20">
+                            <User className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white">{lead.email}</p>
-                            <p className="text-[10px] text-white/40 font-medium">
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{lead.email}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-neutral-500 font-medium">
                               {lang === 'fr' ? 'Capté le' : 'Captured on'} {new Date(lead.created_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </p>
                           </div>
                         </div>
-                        <a href={`mailto:${lead.email}`} className="p-2 text-white/40 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-all">
+                        <a href={`mailto:${lead.email}`} className="p-2 text-slate-400 dark:text-neutral-500 hover:text-sky-600 hover:bg-sky-500/10 rounded-lg transition-all">
                           <Mail className="h-5 w-5" />
                         </a>
                       </div>
@@ -470,8 +470,8 @@ export function SharePerformanceButton() {
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-white/[0.03] border-t border-white/[0.08] text-center">
-          <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.2em]">{lang === 'fr' ? 'Sécurisé par CloseOS' : 'Secured by CloseOS'}</p>
+        <div className="p-4 bg-slate-50 dark:bg-white/5 border-t border-slate-200 dark:border-white/10 text-center">
+          <p className="text-[10px] text-slate-400 dark:text-neutral-500 font-bold uppercase tracking-[0.2em]">{lang === 'fr' ? 'Sécurisé par CloseOS' : 'Secured by CloseOS'}</p>
         </div>
       </div>
     </div>
@@ -481,7 +481,7 @@ export function SharePerformanceButton() {
     <>
       <button
         onClick={() => hasFullAccess ? setIsOpen(true) : showUpgrade()}
-        className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl px-5 py-2.5 text-sm font-bold text-white/80 transition-all hover:bg-white/10 hover:border-emerald-500/50 hover:text-white shadow-lg active:scale-95 group"
+        className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 backdrop-blur-2xl px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-neutral-300 transition-all hover:bg-slate-100 hover:border-sky-500/50 hover:text-slate-900 shadow-lg active:scale-95 group"
       >
         <Share2 className="h-4 w-4 group-hover:rotate-12 transition-transform" />
         <span>{lang === 'fr' ? 'Partager' : 'Share'}</span>

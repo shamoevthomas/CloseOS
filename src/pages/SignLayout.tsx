@@ -7,6 +7,7 @@ import { signSupabase } from '../lib/signSupabase';
 import { SignLogo } from '../components/SignLogo';
 import SignLangToggle from '../components/SignLangToggle';
 import { useSignLang } from '../contexts/SignLangContext';
+import { SignWhatsNewModal } from '../components/SignWhatsNewModal';
 
 /**
  * CloseOS Sign — layout de l'espace connecté (DA Sign).
@@ -23,6 +24,7 @@ export default function SignLayout() {
     { to: '/sign/app', label: lang === 'fr' ? 'Accueil' : 'Home', icon: Home, end: true },
     { to: '/sign/app/contrats', label: lang === 'fr' ? 'Tous les contrats' : 'All contracts', icon: FileText, end: false },
     { to: '/sign/app/contacts', label: lang === 'fr' ? 'Contacts' : 'Contacts', icon: Users, end: false },
+    { to: '/sign/app/equipe', label: lang === 'fr' ? 'Mon équipe' : 'My team', icon: Briefcase, end: false },
   ];
   const user = owner?.name ?? '…';
   const [open, setOpen] = useState(false);
@@ -184,6 +186,8 @@ export default function SignLayout() {
       <main className="min-h-screen pt-16 md:pt-0 md:pl-20">
         <Outlet />
       </main>
+
+      <SignWhatsNewModal />
     </div>
   );
 }

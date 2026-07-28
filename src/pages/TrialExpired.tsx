@@ -290,27 +290,27 @@ export function TrialExpiredModal() {
 
             {/* ==================== PAYMENT FAILED ==================== */}
             {isPaymentFailedShow && !isUpgradeModalOpen && (
-                <div className="relative w-full max-w-md rounded-2xl bg-[#0B1120] border border-red-500/30 shadow-2xl p-10 text-center" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#1a1a1a] border border-red-500/30 shadow-2xl p-10 text-center" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 border-2 border-red-500/30">
-                        <AlertCircle className="h-8 w-8 text-red-400" />
+                        <AlertCircle className="h-8 w-8 text-red-600" />
                     </div>
-                    <h2 className="text-2xl font-extrabold text-white mb-2">{lang === 'fr' ? 'Échec de paiement' : 'Payment Failed'}</h2>
-                    <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-2">{lang === 'fr' ? 'Échec de paiement' : 'Payment Failed'}</h2>
+                    <p className="text-slate-500 dark:text-neutral-400 text-sm leading-relaxed mb-6">
                         {lang === 'fr' ? 'Votre dernier paiement a échoué. Mettez à jour votre moyen de paiement pour continuer à utiliser CloseOS.' : 'Your last payment failed. Please update your payment method to continue using CloseOS.'}
                     </p>
                     <button
                         onClick={handleOpenPortal}
                         disabled={portalLoading}
-                        className="w-full rounded-xl bg-blue-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-[0.98] disabled:opacity-50 mb-3"
+                        className="w-full rounded-xl bg-sky-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-sky-600 shadow-lg shadow-sky-500/20 hover:shadow-sky-500/30 active:scale-[0.98] disabled:opacity-50 mb-3"
                     >
                         {portalLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : (lang === 'fr' ? 'Mettre à jour mon moyen de paiement' : 'Update my payment method')}
                     </button>
                     <div className="mt-4 space-y-3">
-                        <button onClick={() => setIsExportOpen(true)} className="flex items-center justify-center gap-2 text-slate-400 hover:text-blue-400 transition-colors text-sm font-medium w-full">
+                        <button onClick={() => setIsExportOpen(true)} className="flex items-center justify-center gap-2 text-slate-500 dark:text-neutral-400 hover:text-sky-600 transition-colors text-sm font-medium w-full">
                             <Download className="h-4 w-4" />
                             {lang === 'fr' ? 'Extraire mes données' : 'Export my data'}
                         </button>
-                        <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-slate-500 hover:text-slate-300 transition-colors text-sm w-full">
+                        <button onClick={handleLogout} className="flex items-center justify-center gap-2 text-slate-400 dark:text-neutral-500 hover:text-slate-700 transition-colors text-sm w-full">
                             <LogOut className="h-4 w-4" />
                             {lang === 'fr' ? 'Se déconnecter' : 'Log out'}
                         </button>
@@ -320,43 +320,43 @@ export function TrialExpiredModal() {
 
             {/* ==================== STEP 1: SELECT PLAN ==================== */}
             {step === 'select' && !isPaymentFailedShow && (
-                <div className="relative w-full max-w-[900px] rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl overflow-hidden" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                <div className="relative w-full max-w-[900px] rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
                     {isUpgradeModalOpen && !isTrialExpiredShow && (
-                        <button onClick={hideUpgrade} className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors">
+                        <button onClick={hideUpgrade} className="absolute top-4 right-4 z-10 p-2 text-slate-500 dark:text-neutral-400 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors">
                             <X className="h-5 w-5" />
                         </button>
                     )}
                     <div className="grid md:grid-cols-2">
 
                         {/* LEFT */}
-                        <div className="p-8 md:p-10 flex flex-col justify-between border-r border-slate-800/50">
+                        <div className="p-8 md:p-10 flex flex-col justify-between border-r border-slate-200/50">
                             <div>
                                 <div className="flex items-center gap-2.5 mb-8">
                                     <img src="/logo-sales.png" alt="CloseOS Logo" className="h-14 w-auto" />
                                 </div>
-                                <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-tight mb-4">
+                                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mb-4">
                                     {isTrialExpiredShow
                                         ? (lang === 'fr' ? <>Votre essai gratuit de<br />10 jours est terminé</> : <>Your 10-day free<br />trial has ended</>)
                                         : (lang === 'fr' ? <>Passez au niveau<br />supérieur</> : <>Upgrade to the<br />next level</>)}
                                 </h2>
-                                <p className="text-slate-400 text-sm leading-relaxed mb-8 transition-opacity duration-300" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                                <p className="text-slate-500 dark:text-neutral-400 text-sm leading-relaxed mb-8 transition-opacity duration-300" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
                                     {lang === 'fr' ? "L'outil tout-en-un pour les closers. Accès complet & illimité." : 'The all-in-one tool for closers. Full & unlimited access.'}
                                 </p>
                                 <div className="space-y-3" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
                                     {features.map((text, i) => (
                                         <div key={i} className="flex items-center gap-3" style={{ animation: `fadeSlideIn 0.3s ease-out ${i * 0.05}s both` }}>
-                                            <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                                            <span className="text-slate-300 text-sm font-medium">{text}</span>
+                                            <ShieldCheck className="h-5 w-5 text-sky-600 dark:text-sky-400 shrink-0" />
+                                            <span className="text-slate-700 dark:text-neutral-300 text-sm font-medium">{text}</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                             <div className="mt-8 space-y-3">
-                                <button onClick={() => setIsExportOpen(true)} className="flex items-center gap-2 text-slate-400 hover:text-blue-400 transition-colors text-sm font-medium">
+                                <button onClick={() => setIsExportOpen(true)} className="flex items-center gap-2 text-slate-500 dark:text-neutral-400 hover:text-sky-600 transition-colors text-sm font-medium">
                                     <Download className="h-4 w-4" />
                                     {lang === 'fr' ? 'Extraire mes données' : 'Export my data'}
                                 </button>
-                                <button onClick={handleLogout} className="flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors text-sm">
+                                <button onClick={handleLogout} className="flex items-center gap-2 text-slate-400 dark:text-neutral-500 hover:text-slate-700 transition-colors text-sm">
                                     <LogOut className="h-4 w-4" />
                                     {lang === 'fr' ? 'Se déconnecter' : 'Log out'}
                                 </button>
@@ -365,46 +365,46 @@ export function TrialExpiredModal() {
 
                         {/* RIGHT */}
                         <div className="p-8 md:p-10 flex flex-col">
-                            <h3 className="text-lg font-bold text-white text-center mb-6">{lang === 'fr' ? 'Pack Pro — Accès complet' : 'Pro Pack — Full Access'}</h3>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white text-center mb-6">{lang === 'fr' ? 'Pack Pro — Accès complet' : 'Pro Pack — Full Access'}</h3>
 
                             {/* Billing toggle */}
                             <div className="flex justify-center mb-5">
-                                <div className="bg-slate-900/50 p-1 rounded-xl border border-slate-800 flex items-center gap-1 flex-wrap">
+                                <div className="bg-slate-50 dark:bg-white/5 p-1 rounded-xl border border-slate-200 dark:border-white/10 flex items-center gap-1 flex-wrap">
                                     <button
                                         onClick={() => setBillingCycle('monthly')}
-                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white shadow-lg border border-slate-200 dark:border-white/10' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-800'}`}
                                     >
                                         {lang === 'fr' ? 'Mensuel' : 'Monthly'}
                                     </button>
                                     <button
                                         onClick={() => setBillingCycle('quarterly')}
-                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'quarterly' ? 'bg-slate-800 text-white shadow-lg border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'quarterly' ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white shadow-lg border border-slate-200 dark:border-white/10' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-800'}`}
                                     >
                                         {lang === 'fr' ? 'Trimestriel' : 'Quarterly'}
-                                        <span className="bg-white text-slate-800 text-[9px] px-1.5 py-0.5 rounded-full font-black">-17%</span>
+                                        <span className="bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-neutral-200 text-[9px] px-1.5 py-0.5 rounded-full font-black">-17%</span>
                                     </button>
                                     <button
                                         onClick={() => setBillingCycle('yearly')}
-                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white shadow-lg border border-blue-500' : 'text-slate-400 hover:text-slate-200'}`}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-sky-600 text-white shadow-lg border border-sky-500' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-800'}`}
                                     >
                                         {lang === 'fr' ? 'Annuel' : 'Yearly'}
-                                        <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-25%</span>
+                                        <span className="bg-white dark:bg-[#1a1a1a] text-sky-600 dark:text-sky-400 text-[9px] px-1.5 py-0.5 rounded-full font-black">-25%</span>
                                     </button>
                                 </div>
                             </div>
 
                             <div className="space-y-4 flex-1">
                                 <div className="relative">
-                                    <div className="w-full rounded-xl border border-blue-500 bg-blue-500/5 p-5 text-left">
+                                    <div className="w-full rounded-xl border border-sky-500 bg-sky-500/5 p-5 text-left">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="text-white font-bold text-base">{lang === 'fr' ? 'Offre Pro' : 'Pro Plan'}</p>
-                                                <p className="text-blue-400 text-xs mt-0.5">{lang === 'fr' ? 'Accès complet & illimité' : 'Full & unlimited access'}</p>
+                                                <p className="text-slate-900 dark:text-white font-bold text-base">{lang === 'fr' ? 'Offre Pro' : 'Pro Plan'}</p>
+                                                <p className="text-sky-600 dark:text-sky-400 text-xs mt-0.5">{lang === 'fr' ? 'Accès complet & illimité' : 'Full & unlimited access'}</p>
                                             </div>
                                             <div className="text-right flex items-center gap-2">
-                                                <span className="text-sm text-slate-500 line-through">{crossedPrice}€</span>
-                                                <span className="text-2xl font-black text-white">{basePrice}€</span>
-                                                <span className="text-slate-400 text-xs">{lang === 'fr' ? '/mois' : '/mo'}</span>
+                                                <span className="text-sm text-slate-400 dark:text-neutral-500 line-through">{crossedPrice}€</span>
+                                                <span className="text-2xl font-black text-slate-900 dark:text-white">{basePrice}€</span>
+                                                <span className="text-slate-500 dark:text-neutral-400 text-xs">{lang === 'fr' ? '/mois' : '/mo'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -414,11 +414,11 @@ export function TrialExpiredModal() {
                             {/* CTA */}
                             <button
                                 onClick={handleGoToCheckout}
-                                className="w-full mt-6 rounded-xl bg-blue-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 active:scale-[0.98]"
+                                className="w-full mt-6 rounded-xl bg-sky-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-sky-600 shadow-lg shadow-sky-500/20 hover:shadow-sky-500/30 active:scale-[0.98]"
                             >
                                 {lang === 'fr' ? "S'abonner maintenant" : 'Subscribe now'}
                             </button>
-                            <p className="text-center text-[11px] text-slate-500 mt-3 leading-relaxed">
+                            <p className="text-center text-[11px] text-slate-400 dark:text-neutral-500 mt-3 leading-relaxed">
                                 {lang === 'fr' ? 'Paiement sécurisé par Stripe. Annulation possible à tout moment.' : 'Secure payment by Stripe. Cancel anytime.'}
                             </p>
                         </div>
@@ -428,10 +428,10 @@ export function TrialExpiredModal() {
 
             {/* ==================== STEP 2: CHECKOUT ==================== */}
             {step === 'checkout' && !isPaymentFailedShow && (
-                <div className="w-full max-w-[1000px] max-h-[90vh] rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl overflow-y-auto" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+                <div className="w-full max-w-[1000px] max-h-[90vh] rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 shadow-2xl overflow-y-auto" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
                     {/* Header */}
-                    <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#0B1120]/95 backdrop-blur-sm">
-                        <button onClick={handleBackToSelect} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm">
+                    <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10 bg-white/95 backdrop-blur-sm">
+                        <button onClick={handleBackToSelect} className="flex items-center gap-2 text-slate-500 dark:text-neutral-400 hover:text-slate-900 transition-colors text-sm">
                             <ArrowLeft className="h-4 w-4" />
                             {lang === 'fr' ? 'Retour' : 'Back'}
                         </button>
@@ -441,28 +441,28 @@ export function TrialExpiredModal() {
 
                     <div className="grid md:grid-cols-2 gap-0">
                         {/* LEFT: Plan summary + promo + CGV */}
-                        <div className="p-6 md:p-8 space-y-6 border-r border-slate-800/50">
+                        <div className="p-6 md:p-8 space-y-6 border-r border-slate-200/50">
 
                             {/* Plan summary */}
-                            <div className="rounded-2xl p-6 border bg-blue-600/5 border-blue-500/20">
-                                <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">{lang === 'fr' ? '🔥 -51% Offre de lancement' : '🔥 -51% Launch offer'}</div>
-                                <h3 className="text-xl font-extrabold text-white mb-1">{planLabel} {billingCycle === 'yearly' ? (lang === 'fr' ? '(Annuel)' : '(Yearly)') : billingCycle === 'quarterly' ? (lang === 'fr' ? '(Trimestriel)' : '(Quarterly)') : ''}</h3>
-                                <p className="text-slate-400 text-sm mb-4">{lang === 'fr' ? 'Accès complet & illimité' : 'Full & unlimited access'}</p>
+                            <div className="rounded-2xl p-6 border bg-sky-500/5 border-sky-500/20">
+                                <div className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider mb-2">{lang === 'fr' ? '🔥 -51% Offre de lancement' : '🔥 -51% Launch offer'}</div>
+                                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-1">{planLabel} {billingCycle === 'yearly' ? (lang === 'fr' ? '(Annuel)' : '(Yearly)') : billingCycle === 'quarterly' ? (lang === 'fr' ? '(Trimestriel)' : '(Quarterly)') : ''}</h3>
+                                <p className="text-slate-500 dark:text-neutral-400 text-sm mb-4">{lang === 'fr' ? 'Accès complet & illimité' : 'Full & unlimited access'}</p>
 
                                 <div className="flex items-baseline gap-2 mb-4 flex-wrap">
-                                    <span className="text-4xl font-black text-white">{finalPrice}€</span>
+                                    <span className="text-4xl font-black text-slate-900 dark:text-white">{finalPrice}€</span>
                                     {crossedPrice > 0 && displayDiscount === 0 && (
-                                        <span className="text-lg text-slate-500 line-through">{crossedPrice}€</span>
+                                        <span className="text-lg text-slate-400 dark:text-neutral-500 line-through">{crossedPrice}€</span>
                                     )}
                                     {displayDiscount > 0 && (
                                         <>
-                                            <span className="text-lg text-slate-500 line-through">{basePrice}€</span>
-                                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
+                                            <span className="text-lg text-slate-400 dark:text-neutral-500 line-through">{basePrice}€</span>
+                                            <span className="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 text-xs font-bold border border-sky-500/30">
                                                 -{displayDiscount}%
                                             </span>
                                         </>
                                     )}
-                                    <span className="text-slate-400 text-sm">
+                                    <span className="text-slate-500 dark:text-neutral-400 text-sm">
                                         {billingCycle === 'yearly'
                                             ? (lang === 'fr' ? '/mois (facturé 216€/an)' : '/mo (billed €216/yr)')
                                             : billingCycle === 'quarterly'
@@ -472,16 +472,16 @@ export function TrialExpiredModal() {
                                 </div>
 
                                 {billingCycle === 'yearly' && (
-                                    <p className="text-xs text-emerald-400 font-medium">{lang === 'fr' ? '✨ -25% avec la facturation annuelle' : '✨ -25% with yearly billing'}</p>
+                                    <p className="text-xs text-sky-600 dark:text-sky-400 font-medium">{lang === 'fr' ? '✨ -25% avec la facturation annuelle' : '✨ -25% with yearly billing'}</p>
                                 )}
                                 {billingCycle === 'quarterly' && (
-                                    <p className="text-xs text-emerald-400 font-medium">{lang === 'fr' ? '✨ -17% avec la facturation trimestrielle' : '✨ -17% with quarterly billing'}</p>
+                                    <p className="text-xs text-sky-600 dark:text-sky-400 font-medium">{lang === 'fr' ? '✨ -17% avec la facturation trimestrielle' : '✨ -17% with quarterly billing'}</p>
                                 )}
 
                                 <div className="space-y-2.5 mt-4">
                                     {features.map((text, i) => (
-                                        <div key={i} className="flex items-center gap-2.5 text-slate-300 text-sm">
-                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                                        <div key={i} className="flex items-center gap-2.5 text-slate-700 dark:text-neutral-300 text-sm">
+                                            <CheckCircle2 className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
                                             <span>{text}</span>
                                         </div>
                                     ))}
@@ -490,34 +490,34 @@ export function TrialExpiredModal() {
 
                             {/* Billing toggle small */}
                             <div className="flex justify-center">
-                                <div className="bg-slate-900/50 p-1 rounded-xl border border-slate-800 flex items-center gap-1 flex-wrap">
+                                <div className="bg-slate-50 dark:bg-white/5 p-1 rounded-xl border border-slate-200 dark:border-white/10 flex items-center gap-1 flex-wrap">
                                     <button
                                         onClick={() => setBillingCycle('monthly')}
-                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-800'}`}
                                     >
                                         {lang === 'fr' ? 'Mensuel' : 'Monthly'}
                                     </button>
                                     <button
                                         onClick={() => setBillingCycle('quarterly')}
-                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'quarterly' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'quarterly' ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-800'}`}
                                     >
                                         {lang === 'fr' ? 'Trimestriel' : 'Quarterly'}
-                                        <span className="bg-white text-slate-800 text-[9px] px-1.5 py-0.5 rounded-full font-black">-17%</span>
+                                        <span className="bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-neutral-200 text-[9px] px-1.5 py-0.5 rounded-full font-black">-17%</span>
                                     </button>
                                     <button
                                         onClick={() => setBillingCycle('yearly')}
-                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === 'yearly' ? 'bg-sky-600 text-white' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-800'}`}
                                     >
                                         {lang === 'fr' ? 'Annuel' : 'Yearly'}
-                                        <span className="bg-white text-blue-600 text-[9px] px-1.5 py-0.5 rounded-full font-black">-25%</span>
+                                        <span className="bg-white dark:bg-[#1a1a1a] text-sky-600 dark:text-sky-400 text-[9px] px-1.5 py-0.5 rounded-full font-black">-25%</span>
                                     </button>
                                 </div>
                             </div>
 
                             {/* Promo code */}
-                            <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-                                <div className="flex items-center gap-2 text-sm text-slate-400 mb-3">
-                                    <TicketPercent className="h-4 w-4 text-blue-400" />
+                            <div className="bg-slate-50 dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/10">
+                                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-neutral-400 mb-3">
+                                    <TicketPercent className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                                     <span className="font-semibold">{lang === 'fr' ? 'Code de parrainage / Promo' : 'Referral / Promo code'}</span>
                                 </div>
                                 <div className="flex gap-2">
@@ -526,18 +526,18 @@ export function TrialExpiredModal() {
                                         placeholder="Ex: ADMIN15"
                                         value={referralCode}
                                         onChange={(e) => setReferralCode(e.target.value)}
-                                        className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors uppercase placeholder:normal-case"
+                                        className="flex-1 bg-[#f4f2f1] dark:bg-[#0d0d0d] border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors uppercase placeholder:normal-case"
                                     />
                                     <button
                                         onClick={handleApplyCode}
                                         disabled={isApplyingCode || !referralCode}
-                                        className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
+                                        className="bg-slate-100 dark:bg-white/10 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 dark:text-white px-4 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
                                     >
                                         {isApplyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : (lang === 'fr' ? 'Appliquer' : 'Apply')}
                                     </button>
                                 </div>
                                 {appliedCode && !isApplyingCode && (
-                                    <p className="text-xs text-emerald-400 mt-2 font-medium flex items-center gap-1.5">
+                                    <p className="text-xs text-sky-600 dark:text-sky-400 mt-2 font-medium flex items-center gap-1.5">
                                         <CheckCircle2 className="h-3.5 w-3.5" />
                                         {lang === 'fr' ? 'Code appliqué ! Vérifiez le montant total.' : 'Code applied! Check the total amount.'}
                                     </p>
@@ -545,28 +545,28 @@ export function TrialExpiredModal() {
                             </div>
 
                             {/* CGV checkbox */}
-                            <div id="terms-checkbox" className={`p-4 rounded-2xl border transition-colors ${showTermsError ? 'bg-red-950/10 border-red-500/50' : 'bg-slate-900/50 border-slate-800'}`}>
+                            <div id="terms-checkbox" className={`p-4 rounded-2xl border transition-colors ${showTermsError ? 'bg-red-50/10 border-red-500/50' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10'}`}>
                                 {showTermsError && (
-                                    <div className="flex items-center gap-2 text-red-400 text-sm font-bold mb-3 animate-pulse">
+                                    <div className="flex items-center gap-2 text-red-600 text-sm font-bold mb-3 animate-pulse">
                                         <AlertCircle className="h-4 w-4" />
                                         {lang === 'fr' ? 'Vous devez accepter les conditions pour continuer' : 'You must accept the terms to continue'}
                                     </div>
                                 )}
                                 <div className="flex items-start gap-3 cursor-pointer" onClick={toggleTerms}>
-                                    <div className={`mt-1 h-5 w-5 rounded border flex items-center justify-center transition-colors shrink-0 ${isTermsAccepted ? 'bg-blue-600 border-blue-600' : 'border-slate-500 hover:border-blue-400'}`}>
-                                        {isTermsAccepted ? <CheckSquare className="h-3.5 w-3.5 text-white" /> : <Square className="h-3.5 w-3.5 text-transparent" />}
+                                    <div className={`mt-1 h-5 w-5 rounded border flex items-center justify-center transition-colors shrink-0 ${isTermsAccepted ? 'bg-sky-600 border-sky-500' : 'border-slate-500 hover:border-sky-500'}`}>
+                                        {isTermsAccepted ? <CheckSquare className="h-3.5 w-3.5 text-slate-900 dark:text-white" /> : <Square className="h-3.5 w-3.5 text-transparent" />}
                                     </div>
-                                    <div className="text-xs text-slate-300 leading-relaxed select-none">
+                                    <div className="text-xs text-slate-700 dark:text-neutral-300 leading-relaxed select-none">
                                         {lang === 'fr'
-                                            ? <>Je reconnais avoir pris connaissance et j'accepte les <Link to="/cgu" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>CGV</Link> et la <Link to="/confidentialite" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Politique de Confidentialité</Link>. Je renonce expressément à mon droit de rétractation pour accéder au service immédiatement.</>
-                                            : <>I acknowledge and accept the <Link to="/cgu" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Terms of Service</Link> and the <Link to="/confidentialite" target="_blank" className="text-blue-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Privacy Policy</Link>. I expressly waive my right of withdrawal to access the service immediately.</>}
+                                            ? <>Je reconnais avoir pris connaissance et j'accepte les <Link to="/cgu" target="_blank" className="text-sky-600 dark:text-sky-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>CGV</Link> et la <Link to="/confidentialite" target="_blank" className="text-sky-600 dark:text-sky-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Politique de Confidentialité</Link>. Je renonce expressément à mon droit de rétractation pour accéder au service immédiatement.</>
+                                            : <>I acknowledge and accept the <Link to="/cgu" target="_blank" className="text-sky-600 dark:text-sky-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Terms of Service</Link> and the <Link to="/confidentialite" target="_blank" className="text-sky-600 dark:text-sky-400 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>Privacy Policy</Link>. I expressly waive my right of withdrawal to access the service immediately.</>}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/50 border border-slate-800">
-                                <ShieldCheck className="h-8 w-8 text-blue-500/50 shrink-0" />
-                                <p className="text-[10px] text-slate-500 leading-tight">
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                                <ShieldCheck className="h-8 w-8 text-sky-600/50 shrink-0" />
+                                <p className="text-[10px] text-slate-400 dark:text-neutral-500 leading-tight">
                                     {lang === 'fr' ? 'Paiement sécurisé par Stripe. Vos données sont cryptées. Annulation possible à tout moment.' : 'Secure payment by Stripe. Your data is encrypted. Cancel anytime.'}
                                 </p>
                             </div>
@@ -576,17 +576,17 @@ export function TrialExpiredModal() {
                         <div className="p-4 md:p-6 min-h-[500px] flex flex-col">
                             {error ? (
                                 <div className="flex-1 flex items-center justify-center">
-                                    <div className="bg-red-950/20 border border-red-900/50 p-6 rounded-2xl text-center">
-                                        <p className="text-red-400 mb-4 text-sm">{error}</p>
-                                        <button onClick={fetchClientSecret} className="text-white bg-slate-800 px-5 py-2 rounded-xl font-bold hover:bg-slate-700 transition-all text-sm">
+                                    <div className="bg-red-50/20 border border-red-900/50 p-6 rounded-2xl text-center">
+                                        <p className="text-red-600 mb-4 text-sm">{error}</p>
+                                        <button onClick={fetchClientSecret} className="text-slate-900 dark:text-white bg-slate-100 dark:bg-white/10 px-5 py-2 rounded-xl font-bold hover:bg-slate-200 transition-all text-sm">
                                             {lang === 'fr' ? 'Réessayer' : 'Retry'}
                                         </button>
                                     </div>
                                 </div>
                             ) : loading || !clientSecret ? (
                                 <div className="flex-1 flex flex-col items-center justify-center">
-                                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-4" />
-                                    <p className="text-slate-400 font-medium text-sm">{lang === 'fr' ? 'Chargement du module sécurisé...' : 'Loading secure module...'}</p>
+                                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-sky-500 mb-4" />
+                                    <p className="text-slate-500 dark:text-neutral-400 font-medium text-sm">{lang === 'fr' ? 'Chargement du module sécurisé...' : 'Loading secure module...'}</p>
                                 </div>
                             ) : (
                                 <div className="relative flex-1">
@@ -602,7 +602,7 @@ export function TrialExpiredModal() {
                                     {!isTermsAccepted && (
                                         <div
                                             onClick={handleOverlayClick}
-                                            className="absolute inset-0 z-50 bg-slate-950/10 backdrop-blur-[2px] flex items-center justify-center cursor-not-allowed transition-all duration-300"
+                                            className="absolute inset-0 z-50 bg-[#f4f2f1]/10 backdrop-blur-[2px] flex items-center justify-center cursor-not-allowed transition-all duration-300"
                                         />
                                     )}
                                 </div>
@@ -614,17 +614,17 @@ export function TrialExpiredModal() {
 
             {/* ==================== STEP 3: SUCCESS ==================== */}
             {step === 'success' && !isPaymentFailedShow && (
-                <div className="relative w-full max-w-md rounded-2xl bg-[#0B1120] border border-slate-800 shadow-2xl p-10 text-center" style={{ animation: 'fadeSlideIn 0.4s ease-out' }}>
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 border-2 border-emerald-500/30">
-                        <CheckCircle2 className="h-8 w-8 text-emerald-400" style={{ animation: 'successPop 0.5s ease-out' }} />
+                <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 shadow-2xl p-10 text-center" style={{ animation: 'fadeSlideIn 0.4s ease-out' }}>
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-500/10 border-2 border-sky-500/30">
+                        <CheckCircle2 className="h-8 w-8 text-sky-600 dark:text-sky-400" style={{ animation: 'successPop 0.5s ease-out' }} />
                     </div>
-                    <h2 className="text-2xl font-extrabold text-white mb-2">{lang === 'fr' ? 'Paiement validé !' : 'Payment confirmed!'}</h2>
-                    <p className="text-slate-400 text-sm leading-relaxed mb-5">
+                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-2">{lang === 'fr' ? 'Paiement validé !' : 'Payment confirmed!'}</h2>
+                    <p className="text-slate-500 dark:text-neutral-400 text-sm leading-relaxed mb-5">
                         {lang === 'fr'
-                            ? <>Vous avez maintenant accès au <span className="text-white font-semibold">{planLabel}</span>. Bienvenue !</>
-                            : <>You now have access to <span className="text-white font-semibold">{planLabel}</span>. Welcome!</>}
+                            ? <>Vous avez maintenant accès au <span className="text-slate-900 dark:text-white font-semibold">{planLabel}</span>. Bienvenue !</>
+                            : <>You now have access to <span className="text-slate-900 dark:text-white font-semibold">{planLabel}</span>. Welcome!</>}
                     </p>
-                    <div className="w-full rounded-xl overflow-hidden mb-6 border border-slate-700">
+                    <div className="w-full rounded-xl overflow-hidden mb-6 border border-slate-200 dark:border-white/10">
                         <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                             <iframe
                                 src="https://www.youtube.com/embed/as_MdM--MYQ?autoplay=1"
@@ -637,7 +637,7 @@ export function TrialExpiredModal() {
                     </div>
                     <button
                         onClick={handleSuccessClose}
-                        className="w-full rounded-xl bg-emerald-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-emerald-500 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 active:scale-[0.98]"
+                        className="w-full rounded-xl bg-sky-600 px-6 py-4 text-base font-bold text-white transition-all hover:bg-sky-600 shadow-lg shadow-sky-500/20 hover:shadow-sky-500/30 active:scale-[0.98]"
                     >
                         {lang === 'fr' ? 'Commencez réellement' : 'Get started'}
                     </button>

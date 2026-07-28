@@ -36,128 +36,94 @@ async function sendEmail(to: string, subject: string, htmlContent: string) {
     }
 }
 
-// ─── Email wrapper ─────────────────────────────────────────────────────────────
+// ─── Charte CloseOS Sales (fond crème, carte blanche, accent sky, logo-sales.png) ───
+// même gabarit que api/email.ts / api/stripe-webhook.ts / api/cron/sales-weekly-report.ts.
 
-function wrap(badge: string, badgeColor: string, borderColor: string, title: string, body: string, ctaText: string, ctaUrl: string) {
+function wrapEmailHtml(bodyContent: string): string {
     return `<!DOCTYPE html>
-<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-    <meta name="color-scheme" content="dark">
-    <meta name="supported-color-schemes" content="dark">
-    <title>${title}</title>
-    <style>
-        :root { color-scheme: dark; }
-        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-        img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
-        body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-    </style>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@800&display=swap" rel="stylesheet">
 </head>
-<body style="margin: 0; padding: 0; -webkit-font-smoothing: antialiased; background-color: #020617;">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #020617; background-image: linear-gradient(#020617, #020617);">
-        <tr>
-            <td align="center" style="padding-bottom: 60px;">
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                    <tr>
-                        <td align="center" style="padding: 40px 20px 20px 20px;">
-                            <img src="https://closeos.fr/logo.PNG" alt="CloseOS" width="140" style="display: block;">
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="center" style="padding: 0 20px; font-family: 'Segoe UI', Arial, sans-serif;">
-                            <span style="background-color: ${badgeColor}; background-image: linear-gradient(${badgeColor}, ${badgeColor}); border: 1px solid ${borderColor}; color: ${borderColor}; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: bold; text-transform: uppercase; display: inline-block;">${badge}</span>
-                            <h1 style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent); font-size: 28px; margin-top: 20px; margin-bottom: 16px;">${title}</h1>
-                            ${body}
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 25px;">
-                                <tr>
-                                    <td align="center">
-                                        <a href="${ctaUrl}" style="background-color: #3b82f6; background-image: linear-gradient(#3b82f6, #3b82f6); color: #fdfdfd; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: bold; display: block; font-family: 'Segoe UI', Arial, sans-serif; font-size: 18px;">${ctaText}</a>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="center" style="padding: 40px 20px 0 20px; font-family: 'Segoe UI', Arial, sans-serif;">
-                            <p style="color: #475569; background-image: linear-gradient(transparent, transparent); font-size: 12px; margin-bottom: 4px;">&copy; 2026 CloseOS.fr &mdash; Le Syst&egrave;me d'Exploitation des Closers</p>
-                            <p style="color: #475569; background-image: linear-gradient(transparent, transparent); font-size: 12px;">
-                                <a href="https://closeos.fr/cgu" style="color: #475569; text-decoration: none;">CGU</a> &middot;
-                                <a href="https://closeos.fr/cgv" style="color: #475569; text-decoration: none;">CGV</a> &middot;
-                                <a href="https://closeos.fr/confidentialite" style="color: #475569; text-decoration: none;">Confidentialit&eacute;</a>
-                            </p>
-                            <p style="color: #475569; background-image: linear-gradient(transparent, transparent); font-size: 11px; margin-top: 30px;">
-                                Vous recevez cet email car vous &ecirc;tes inscrit sur CloseOS.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
+<body style="margin:0;padding:0;background-color:#f4f2f1;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f2f1;padding:64px 20px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+      <tr><td style="padding-bottom:40px;text-align:left;padding-left:24px;">
+        <img src="https://closeos.fr/logo-sales.png" alt="CloseOS" width="150" style="display:block;">
+      </td></tr>
+      <tr><td style="background-color:#ffffff;border-radius:32px;padding:48px 40px;box-shadow:0 20px 40px rgba(15,23,42,0.05);border:1px solid rgba(2,132,199,0.08);">
+        ${bodyContent}
+      </td></tr>
+      <tr><td style="padding-top:40px;text-align:left;padding-left:24px;">
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:12px;color:#1b1c1b;opacity:0.5;">
+          Cet e-mail a été envoyé automatiquement par <a href="https://closeos.fr" style="color:#0284c7;text-decoration:none;font-weight:500;">CloseOS</a>, merci de ne pas y répondre.
+        </p>
+      </td></tr>
     </table>
-</body>
-</html>`;
+  </td></tr>
+</table>
+</body></html>`;
 }
 
 // ─── Email templates ────────────────────────────────────────────────────────────
 
 function trialEndEmail(name: string) {
-    return wrap(
-        'Essai termin\u00e9', '#1e1b4b', '#818cf8',
-        'Votre essai gratuit est termin\u00e9 \u23F3',
-        `<p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 16px; line-height: 1.6; text-align: left; margin-bottom: 20px;">
+    return wrapEmailHtml(`
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#0284c7;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">⏳ Essai terminé</p>
+        <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 16px;font-size:32px;color:#111111;line-height:1.15;letter-spacing:-0.04em;">Votre essai gratuit est terminé ⏳</h1>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:16px;color:#1b1c1b;line-height:1.6;">
             Bonjour ${name},<br><br>
-            Vos 10 jours d'essai gratuit sur CloseOS sont arriv\u00e9s \u00e0 leur fin. On esp\u00e8re que vous avez pu d\u00e9couvrir tout ce que l'outil peut faire pour vous.
+            Vos 10 jours d'essai gratuit sur CloseOS sont arrivés à leur fin. On espère que vous avez pu découvrir tout ce que l'outil peut faire pour vous.
         </p>
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; background-image: linear-gradient(#0f172a, #0f172a); border: 1px solid #1d4ed8; border-radius: 20px; margin-bottom: 20px;">
-            <tr>
-                <td style="padding: 25px; text-align: left; font-family: 'Segoe UI', Arial, sans-serif;">
-                    <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">
-                        \u2022 <strong style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent);">Fini les tableurs Excel</strong> pour suivre vos prospects.
-                    </p>
-                    <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">
-                        \u2022 <strong style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent);">Fini les t\u00e2ches chiantes</strong> que vous repoussez chaque jour.
-                    </p>
-                    <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0;">
-                        \u2022 <strong style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent);">Tout est centralis\u00e9</strong> : CRM, Pipeline, Agenda, Factures, KPI.
-                    </p>
-                </td>
-            </tr>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+            <tr><td style="padding:20px;background-color:#f5f9ff;border-radius:16px;">
+                <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:14px;color:#1b1c1b;line-height:1.6;">
+                    • <strong>Fini les tableurs Excel</strong> pour suivre vos prospects.
+                </p>
+                <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:14px;color:#1b1c1b;line-height:1.6;">
+                    • <strong>Fini les tâches chiantes</strong> que vous repoussez chaque jour.
+                </p>
+                <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:14px;color:#1b1c1b;line-height:1.6;">
+                    • <strong>Tout est centralisé</strong> : CRM, Pipeline, Agenda, Factures, KPI.
+                </p>
+            </td></tr>
         </table>
-        <p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; text-align: left; margin-bottom: 10px;">
-            Continuez l'aventure avec nous et retrouvez ce temps pr\u00e9cieux que vous perdiez dans les t\u00e2ches administratives. <strong style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent);">\u00c0 partir de 18\u20ac/mois en annuel (216\u20ac/an).</strong>
-        </p>`,
-        '\u{1F680} Passer \u00e0 l\'action',
-        'https://closeos.fr/login'
-    );
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:16px;color:#1b1c1b;line-height:1.6;">
+            Continuez l'aventure avec nous et retrouvez ce temps précieux que vous perdiez dans les tâches administratives. <strong style="color:#111111;">À partir de 18€/mois en annuel (216€/an).</strong>
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr><td align="center">
+                <a href="https://closeos.fr/login" style="display:inline-block;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;color:#ffffff;background-color:#111111;border-radius:9999px;padding:16px 32px;text-decoration:none;">🚀 Passer à l'action</a>
+            </td></tr>
+        </table>
+    `);
 }
 
 function reviewEmail(name: string) {
-    return wrap(
-        'Votre avis', '#1c1917', '#f59e0b',
-        'Comment se passe votre exp\u00e9rience ? \u2B50',
-        `<p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 16px; line-height: 1.6; text-align: left; margin-bottom: 20px;">
+    return wrapEmailHtml(`
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#0284c7;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">⭐ Votre avis</p>
+        <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 16px;font-size:32px;color:#111111;line-height:1.15;letter-spacing:-0.04em;">Comment se passe votre expérience ? ⭐</h1>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:16px;color:#1b1c1b;line-height:1.6;">
             Bonjour ${name},<br><br>
-            Cela fait maintenant quelques jours que vous utilisez CloseOS, et votre retour est <strong style="color: #fdfdfd; background-image: linear-gradient(transparent, transparent);">extr\u00eamement pr\u00e9cieux</strong> pour nous.
+            Cela fait maintenant quelques jours que vous utilisez CloseOS, et votre retour est <strong style="color:#111111;">extrêmement précieux</strong> pour nous.
         </p>
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a; background-image: linear-gradient(#0f172a, #0f172a); border: 1px solid #f59e0b; border-radius: 20px; margin-bottom: 20px;">
-            <tr>
-                <td style="padding: 25px; text-align: left; font-family: 'Segoe UI', Arial, sans-serif;">
-                    <h3 style="color: #fbbf24; background-image: linear-gradient(transparent, transparent); font-size: 20px; margin-top: 0; margin-bottom: 12px;">\u{1F4DD} 2 minutes pour nous aider</h3>
-                    <p style="color: #cbd5e2; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; margin: 0;">
-                        Dites-nous ce qui vous pla\u00eet, ce qui manque, ce qui pourrait \u00eatre am\u00e9lior\u00e9. Chaque r\u00e9ponse est lue personnellement par l'\u00e9quipe et influence directement les prochaines mises \u00e0 jour.
-                    </p>
-                </td>
-            </tr>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+            <tr><td style="padding:20px;background-color:#f5f9ff;border-radius:16px;">
+                <p style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 10px;font-size:15px;color:#0284c7;">📝 2 minutes pour nous aider</p>
+                <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:14px;color:#1b1c1b;line-height:1.6;">
+                    Dites-nous ce qui vous plaît, ce qui manque, ce qui pourrait être amélioré. Chaque réponse est lue personnellement par l'équipe et influence directement les prochaines mises à jour.
+                </p>
+            </td></tr>
         </table>
-        <p style="color: #94a3b9; background-image: linear-gradient(transparent, transparent); font-size: 15px; line-height: 1.6; text-align: left; margin-bottom: 10px;">
-            Merci d'avance pour votre temps. C'est gr\u00e2ce \u00e0 vous qu'on construit le meilleur outil pour les closers.
-        </p>`,
-        '\u{1F4AC} Donner mon avis',
-        'https://docs.google.com/forms/d/e/1FAIpQLSfG_km1jRFBreeHvhksMAvAxwokZEOdahTicsKikNwk71IUwg/viewform?usp=dialog'
-    );
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:16px;color:#1b1c1b;line-height:1.6;">
+            Merci d'avance pour votre temps. C'est grâce à vous qu'on construit le meilleur outil pour les closers.
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr><td align="center">
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSfG_km1jRFBreeHvhksMAvAxwokZEOdahTicsKikNwk71IUwg/viewform?usp=dialog" style="display:inline-block;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;color:#ffffff;background-color:#111111;border-radius:9999px;padding:16px 32px;text-decoration:none;">💬 Donner mon avis</a>
+            </td></tr>
+        </table>
+    `);
 }
 
 type ParrainCycle = 'monthly' | 'quarterly' | 'yearly';
@@ -167,253 +133,126 @@ function referrerRewardLinesV3(cycle: ParrainCycle): string {
         <tr>
             <td style="vertical-align:top; padding-right:10px; padding-bottom:12px;"><span style="font-size:18px;">${icon}</span></td>
             <td style="padding-bottom:12px;">
-                <p style="margin:0; font-size:14px; color:#a8a29e; line-height:1.6;">
-                    <strong style="color:#d6d3d1;">${label}</strong> ${reward}
+                <p style="margin:0; font-size:14px; color:#1b1c1b; line-height:1.6;">
+                    <strong style="color:#111111;">${label}</strong> ${reward}
                 </p>
             </td>
         </tr>`;
     if (cycle === 'monthly') {
-        return item('\ud83d\udcc6', 'Filleul mensuel :', `votre abonnement passe \u00e0 <strong style="color:#fafaf9;">20\u20ac/mois pendant 2 mois</strong>.`)
-            + item('\ud83d\uddd3\ufe0f', 'Filleul trimestriel :', `votre abonnement passe \u00e0 <strong style="color:#fafaf9;">15\u20ac/mois pendant 2 mois</strong>.`)
-            + item('\ud83d\udcc5', 'Filleul annuel :', `votre abonnement passe \u00e0 <strong style="color:#fafaf9;">10\u20ac/mois pendant 2 mois</strong>.`);
+        return item('📆', 'Filleul mensuel :', `votre abonnement passe à <strong style="color:#0284c7;">20€/mois pendant 2 mois</strong>.`)
+            + item('🗓️', 'Filleul trimestriel :', `votre abonnement passe à <strong style="color:#0284c7;">15€/mois pendant 2 mois</strong>.`)
+            + item('📅', 'Filleul annuel :', `votre abonnement passe à <strong style="color:#0284c7;">10€/mois pendant 2 mois</strong>.`);
     }
     if (cycle === 'quarterly') {
-        return item('\ud83d\udcc6', 'Filleul mensuel :', `prochain trimestre \u00e0 <strong style="color:#fafaf9;">53\u20ac au lieu de 60\u20ac</strong>.`)
-            + item('\ud83d\uddd3\ufe0f', 'Filleul trimestriel :', `prochain trimestre \u00e0 <strong style="color:#fafaf9;">45\u20ac au lieu de 60\u20ac</strong>.`)
-            + item('\ud83d\udcc5', 'Filleul annuel :', `prochain trimestre \u00e0 <strong style="color:#fafaf9;">34\u20ac au lieu de 60\u20ac</strong>.`);
+        return item('📆', 'Filleul mensuel :', `prochain trimestre à <strong style="color:#0284c7;">53€ au lieu de 60€</strong>.`)
+            + item('🗓️', 'Filleul trimestriel :', `prochain trimestre à <strong style="color:#0284c7;">45€ au lieu de 60€</strong>.`)
+            + item('📅', 'Filleul annuel :', `prochain trimestre à <strong style="color:#0284c7;">34€ au lieu de 60€</strong>.`);
     }
-    return item('\ud83d\udcc6', 'Filleul mensuel :', `prochaine ann\u00e9e \u00e0 <strong style="color:#fafaf9;">200\u20ac au lieu de 216\u20ac</strong>.`)
-        + item('\ud83d\uddd3\ufe0f', 'Filleul trimestriel :', `<strong style="color:#fafaf9;">virement de 20\u20ac</strong>.`)
-        + item('\ud83d\udcc5', 'Filleul annuel :', `<strong style="color:#fafaf9;">virement de 40\u20ac</strong>.`);
+    return item('📆', 'Filleul mensuel :', `prochaine année à <strong style="color:#0284c7;">200€ au lieu de 216€</strong>.`)
+        + item('🗓️', 'Filleul trimestriel :', `<strong style="color:#0284c7;">virement de 20€</strong>.`)
+        + item('📅', 'Filleul annuel :', `<strong style="color:#0284c7;">virement de 40€</strong>.`);
 }
 
 function referralEmail(name: string, code: string, cycle: ParrainCycle) {
     const cycleLabel = cycle === 'monthly' ? 'mensuel' : cycle === 'quarterly' ? 'trimestriel' : 'annuel';
-    return `<!DOCTYPE html>
-<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="supported-color-schemes" content="dark" />
-  <title>Programme de parrainage CloseOS</title>
-  <style>
-    :root { color-scheme: dark; supported-color-schemes: dark; }
-    body, table, td, p, a, li { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    body { margin: 0 !important; padding: 0 !important; width: 100% !important; -webkit-font-smoothing: antialiased; }
-    img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; height: auto; line-height: 100%; }
-    table { border-collapse: collapse !important; }
-    @media only screen and (max-width: 620px) {
-      .container { width: 100% !important; padding: 0 12px !important; }
-      .mobile-padding { padding: 24px 18px !important; }
-      .mobile-h1 { font-size: 26px !important; line-height: 1.1 !important; }
-      .feature-card { padding: 22px !important; }
-      .mobile-cta { padding: 15px 28px !important; font-size: 16px !important; }
-    }
-  </style>
-</head>
-<body style="margin:0; padding:0; background-color:#111111; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
-  <div style="display:none; font-size:1px; color:#111111; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden;">
-    Le programme de parrainage CloseOS est activ\u00e9. Votre code, vos avantages.
-    &nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
-  </div>
-  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color:#111111;">
-    <tr><td align="center" style="padding-bottom:60px;">
-      <table class="container" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;">
-
-        <!-- LOGO -->
-        <tr><td align="center" style="padding: 40px 20px 28px;">
-          <a href="https://closeos.fr" target="_blank" style="text-decoration:none;">
-            <img src="https://closeos.fr/logo.PNG" alt="CloseOS" width="140" style="display:block; height:auto;" />
-          </a>
-        </td></tr>
-
-        <!-- HERO CARD -->
-        <tr><td style="padding: 0 20px 32px;">
-          <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #1a1a1a; border-radius: 20px;">
-            <tr><td class="mobile-padding" style="padding: 44px 36px 40px; text-align:center;">
-              <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin-bottom:22px;">
-                <tr><td style="background-color: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25); border-radius: 100px; padding: 5px 14px; font-size: 11px; font-weight: 700; color: #34d399; letter-spacing: 0.08em; text-transform: uppercase;">
-                  \ud83e\udd1d PROGRAMME DE PARRAINAGE
-                </td></tr>
-              </table>
-              <h1 class="mobile-h1" style="margin:0 0 14px; font-size:30px; font-weight:800; color:#fafaf9; line-height:1.1; letter-spacing:-0.03em;">
-                Parrainez. Gagnez.
-              </h1>
-              <p style="margin:0; font-size:16px; color:#a8a29e; line-height:1.6;">
-                Votre code, vos avantages.
-              </p>
+    return wrapEmailHtml(`
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+            <tr><td align="center" style="padding:36px 24px;background-color:#f5f9ff;border-radius:24px;">
+                <span style="display:inline-block;margin-bottom:18px;background-color:#ffffff;border:1px solid rgba(2,132,199,0.2);border-radius:100px;padding:5px 14px;font-size:11px;font-weight:700;color:#0284c7;letter-spacing:0.08em;text-transform:uppercase;">🤝 Programme de parrainage</span>
+                <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 12px;font-size:30px;color:#111111;line-height:1.15;letter-spacing:-0.03em;">Parrainez. Gagnez.</h1>
+                <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:16px;color:#1b1c1b;line-height:1.6;">Votre code, vos avantages.</p>
             </td></tr>
-          </table>
-        </td></tr>
+        </table>
 
-        <!-- INTRO -->
-        <tr><td style="padding: 0 20px 28px;">
-          <p style="margin:0 0 14px; font-size:15px; color:#d6d3d1; line-height:1.75;">Salut ${name} !</p>
-          <p style="margin:0; font-size:15px; color:#d6d3d1; line-height:1.75;">
-            Le programme de parrainage CloseOS est activ\u00e9. Pour chaque confr\u00e8re que vous invitez, <strong style="color:#fafaf9;">tout le monde y gagne</strong>.
-          </p>
-        </td></tr>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 14px;font-size:15px;color:#1b1c1b;line-height:1.75;">Salut ${name} !</p>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 28px;font-size:15px;color:#1b1c1b;line-height:1.75;">
+            Le programme de parrainage CloseOS est activé. Pour chaque confrère que vous invitez, <strong style="color:#111111;">tout le monde y gagne</strong>.
+        </p>
 
-        <!-- LABEL : POUR VOUS -->
-        <tr><td style="padding: 0 20px 8px;">
-          <p style="margin:0; font-size:10px; font-weight:800; color:#60a5fa; letter-spacing:0.12em; text-transform:uppercase;">POUR VOUS \u00b7 PARRAIN ${cycleLabel.toUpperCase()}</p>
-        </td></tr>
-
-        <!-- CARD : POUR LE PARRAIN -->
-        <tr><td style="padding: 0 20px 16px;">
-          <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #1a1a1a; border-radius: 20px;">
-            <tr><td class="feature-card" style="padding: 28px;">
-              <h3 style="color: #60a5fa; font-size: 20px; margin: 0 0 14px; font-weight: 700;">
-                \ud83c\udf81 Vos r\u00e9compenses
-              </h3>
-              <p style="color: #a8a29e; font-size: 13px; line-height: 1.5; margin: 0 0 18px;">
-                Activ\u00e9e <strong style="color:#d6d3d1;">14 jours apr\u00e8s le paiement de votre filleul</strong>. Une seule r\u00e9compense active \u00e0 la fois \u2014 les filleuls suivants attendent en file.
-              </p>
-              <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                ${referrerRewardLinesV3(cycle)}
-              </table>
+        <p style="font-family:'Manrope',Arial,sans-serif;margin:0 0 8px;font-size:11px;font-weight:800;color:#0284c7;letter-spacing:0.1em;text-transform:uppercase;">Pour vous · Parrain ${cycleLabel}</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+            <tr><td style="padding:26px;background-color:#f5f9ff;border-radius:20px;">
+                <p style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 12px;font-size:18px;color:#0284c7;">🎁 Vos récompenses</p>
+                <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 16px;font-size:13px;color:#1b1c1b;line-height:1.5;">
+                    Activée <strong>14 jours après le paiement de votre filleul</strong>. Une seule récompense active à la fois — les filleuls suivants attendent en file.
+                </p>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    ${referrerRewardLinesV3(cycle)}
+                </table>
             </td></tr>
-          </table>
-        </td></tr>
+        </table>
 
-        <!-- LABEL : POUR LE FILLEUL -->
-        <tr><td style="padding: 12px 20px 8px;">
-          <p style="margin:0; font-size:10px; font-weight:800; color:#34d399; letter-spacing:0.12em; text-transform:uppercase;">POUR VOTRE FILLEUL</p>
-        </td></tr>
-
-        <!-- CARD : POUR LE FILLEUL -->
-        <tr><td style="padding: 0 20px 16px;">
-          <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #1a1a1a; border-radius: 20px;">
-            <tr><td class="feature-card" style="padding: 28px;">
-              <h3 style="color: #34d399; font-size: 20px; margin: 0 0 16px; font-weight: 700;">
-                \ud83e\udd1d R\u00e9ductions imm\u00e9diates
-              </h3>
-              <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td style="vertical-align:top; padding-right:10px; padding-bottom:12px;"><span style="font-size:18px;">\ud83d\udcc6</span></td>
-                  <td style="padding-bottom:12px;">
-                    <p style="margin:0; font-size:14px; color:#a8a29e; line-height:1.6;">
-                      <strong style="color:#d6d3d1;">Mensuel :</strong> <strong style="color:#fafaf9;">19\u20ac/mois pendant 2 mois</strong> (au lieu de 24\u20ac).
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="vertical-align:top; padding-right:10px; padding-bottom:12px;"><span style="font-size:18px;">\ud83d\uddd3\ufe0f</span></td>
-                  <td style="padding-bottom:12px;">
-                    <p style="margin:0; font-size:14px; color:#a8a29e; line-height:1.6;">
-                      <strong style="color:#d6d3d1;">Trimestriel :</strong> <strong style="color:#fafaf9;">50\u20ac le 1er trimestre</strong> (au lieu de 60\u20ac).
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="vertical-align:top; padding-right:10px;"><span style="font-size:18px;">\ud83d\udcc5</span></td>
-                  <td>
-                    <p style="margin:0; font-size:14px; color:#a8a29e; line-height:1.6;">
-                      <strong style="color:#d6d3d1;">Annuel :</strong> <strong style="color:#fafaf9;">190\u20ac la 1\u00e8re ann\u00e9e</strong> (au lieu de 216\u20ac).
-                    </p>
-                  </td>
-                </tr>
-              </table>
+        <p style="font-family:'Manrope',Arial,sans-serif;margin:0 0 8px;font-size:11px;font-weight:800;color:#16a34a;letter-spacing:0.1em;text-transform:uppercase;">Pour votre filleul</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+            <tr><td style="padding:26px;background-color:#f0fdf4;border-radius:20px;">
+                <p style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 14px;font-size:18px;color:#16a34a;">🤝 Réductions immédiates</p>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="vertical-align:top;padding-right:10px;padding-bottom:12px;"><span style="font-size:18px;">📆</span></td>
+                        <td style="padding-bottom:12px;">
+                            <p style="margin:0;font-size:14px;color:#1b1c1b;line-height:1.6;">
+                                <strong style="color:#111111;">Mensuel :</strong> <strong style="color:#16a34a;">19€/mois pendant 2 mois</strong> (au lieu de 24€).
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top;padding-right:10px;padding-bottom:12px;"><span style="font-size:18px;">🗓️</span></td>
+                        <td style="padding-bottom:12px;">
+                            <p style="margin:0;font-size:14px;color:#1b1c1b;line-height:1.6;">
+                                <strong style="color:#111111;">Trimestriel :</strong> <strong style="color:#16a34a;">50€ le 1er trimestre</strong> (au lieu de 60€).
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top;padding-right:10px;"><span style="font-size:18px;">📅</span></td>
+                        <td>
+                            <p style="margin:0;font-size:14px;color:#1b1c1b;line-height:1.6;">
+                                <strong style="color:#111111;">Annuel :</strong> <strong style="color:#16a34a;">190€ la 1ère année</strong> (au lieu de 216€).
+                            </p>
+                        </td>
+                    </tr>
+                </table>
             </td></tr>
-          </table>
-        </td></tr>
+        </table>
 
-        <!-- LABEL : VOTRE CODE -->
-        <tr><td style="padding: 12px 20px 8px;">
-          <p style="margin:0; font-size:10px; font-weight:800; color:#fbbf24; letter-spacing:0.12em; text-transform:uppercase;">VOTRE CODE</p>
-        </td></tr>
-
-        <!-- CARD : CODE -->
-        <tr><td style="padding: 0 20px 28px;">
-          <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #1a1a1a; border-radius: 20px;">
-            <tr><td class="feature-card" style="padding: 32px 28px; text-align:center;">
-              <p style="margin:0 0 12px; font-size:11px; font-weight:800; color:#a8a29e; letter-spacing:0.12em; text-transform:uppercase;">Code de parrainage</p>
-              <p style="margin:0 0 18px; font-size:38px; font-weight:800; color:#fafaf9; letter-spacing:6px; font-family:'SF Mono', Menlo, Consolas, monospace;">${code}</p>
-              <a href="https://closeos.fr?ref=${code}" target="_blank" style="display:inline-block; background-color:#251f14; color:#fbbf24; text-decoration:none; padding:10px 24px; border-radius:100px; font-weight:700; font-size:13px;">closeos.fr?ref=${code}</a>
+        <p style="font-family:'Manrope',Arial,sans-serif;margin:0 0 8px;font-size:11px;font-weight:800;color:#b45309;letter-spacing:0.1em;text-transform:uppercase;">Votre code</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+            <tr><td align="center" style="padding:32px 24px;background-color:#fffbeb;border-radius:20px;">
+                <p style="margin:0 0 12px;font-size:11px;font-weight:800;color:#b45309;letter-spacing:0.1em;text-transform:uppercase;">Code de parrainage</p>
+                <p style="margin:0 0 18px;font-size:36px;font-weight:800;color:#111111;letter-spacing:5px;font-family:'SF Mono',Menlo,Consolas,monospace;">${code}</p>
+                <a href="https://closeos.fr?ref=${code}" style="display:inline-block;background-color:#ffffff;color:#b45309;text-decoration:none;padding:10px 24px;border-radius:100px;font-weight:700;font-size:13px;border:1px solid rgba(180,83,9,0.2);">closeos.fr?ref=${code}</a>
             </td></tr>
-          </table>
-        </td></tr>
+        </table>
 
-        <!-- SEPARATOR -->
-        <tr><td style="padding: 12px 20px 28px;">
-          <div style="height:1px; background-color: rgba(255,255,255,0.06);"></div>
-        </td></tr>
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 28px;font-size:15px;color:#1b1c1b;line-height:1.75;">
+            Partagez votre code dans les conversations qui s'y prêtent. Le parrainage est <strong style="color:#111111;">la façon la plus naturelle de faire grandir une communauté de closers sérieux</strong>.
+        </p>
 
-        <!-- CLOSING -->
-        <tr><td style="padding: 0 20px 32px;">
-          <p style="margin:0; font-size:15px; color:#d6d3d1; line-height:1.75;">
-            Partagez votre code dans les conversations qui s'y pr\u00eatent. Le parrainage est <strong style="color:#fafaf9;">la fa\u00e7on la plus naturelle de faire grandir une communaut\u00e9 de closers s\u00e9rieux</strong>.
-          </p>
-        </td></tr>
-
-        <!-- CTA PRINCIPAL -->
-        <tr><td align="center" style="padding: 0 20px 20px;">
-          <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
             <tr><td align="center">
-              <a href="https://closeos.fr/dashboard" target="_blank" class="mobile-cta" style="background-color: #ffffff; color: #111111; text-decoration: none; padding: 17px 40px; border-radius: 100px; font-weight: 800; display: inline-block; font-size: 17px; letter-spacing: -0.01em;">
-                Ouvrir mon espace parrainage \u2192
-              </a>
+                <a href="https://closeos.fr/dashboard" style="display:inline-block;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:15px;color:#ffffff;background-color:#111111;border-radius:9999px;padding:16px 32px;text-decoration:none;">Ouvrir mon espace parrainage →</a>
             </td></tr>
-          </table>
-        </td></tr>
+        </table>
 
-        <!-- CTA WHATSAPP -->
-        <tr><td align="center" style="padding: 8px 20px 40px;">
-          <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #1a1a1a; border-radius: 16px;">
-            <tr><td align="center" style="padding: 24px 20px;">
-              <p style="margin:0 0 14px; font-size:14px; color:#a8a29e; line-height:1.5;">
-                \ud83d\udcf2 Mises \u00e0 jour en avant-premi\u00e8re :
-              </p>
-              <a href="https://whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s" target="_blank" style="background-color: #25D366; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 100px; font-weight: 700; display: inline-block; font-size: 14px;">
-                Rejoindre le canal WhatsApp
-              </a>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+            <tr><td align="center" style="padding:22px 20px;background-color:#f5f9ff;border-radius:16px;">
+                <p style="margin:0 0 14px;font-size:14px;color:#1b1c1b;line-height:1.5;">📲 Mises à jour en avant-première :</p>
+                <a href="https://whatsapp.com/channel/0029Vb7P4lqDDmFLVtD7Jn0s" style="display:inline-block;background-color:#25D366;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:100px;font-weight:700;font-size:14px;">Rejoindre le canal WhatsApp</a>
             </td></tr>
-          </table>
-        </td></tr>
+        </table>
 
-        <!-- DIVIDER -->
-        <tr><td style="padding: 0 20px;">
-          <div style="height:1px; background-color: rgba(255,255,255,0.06);"></div>
-        </td></tr>
-
-        <!-- SIGNATURE -->
-        <tr><td style="padding: 32px 20px 16px;">
-          <table border="0" cellpadding="0" cellspacing="0">
+        <table cellpadding="0" cellspacing="0">
             <tr>
-              <td style="vertical-align:top; padding-right:14px;">
-                <img src="https://qwjvdwpixewsctircibl.supabase.co/storage/v1/object/public/avatars/business-7d48e479-cede-480e-b405-39611a48d333-0.3286628360007747.jpg" alt="Thomas" width="46" height="46" style="border-radius:12px; display:block; object-fit:cover;" />
-              </td>
-              <td style="vertical-align:top;">
-                <p style="margin:0; font-size:15px; font-weight:800; color:#fafaf9;">Thomas</p>
-                <p style="margin:2px 0 0; font-size:13px; color:#34d399; font-weight:600;">Fondateur de CloseOS</p>
-              </td>
+                <td style="vertical-align:top;padding-right:14px;">
+                    <img src="https://qwjvdwpixewsctircibl.supabase.co/storage/v1/object/public/avatars/business-7d48e479-cede-480e-b405-39611a48d333-0.3286628360007747.jpg" alt="Thomas" width="46" height="46" style="border-radius:12px;display:block;object-fit:cover;">
+                </td>
+                <td style="vertical-align:top;">
+                    <p style="margin:0;font-size:15px;font-weight:800;color:#111111;">Thomas</p>
+                    <p style="margin:2px 0 0;font-size:13px;color:#0284c7;font-weight:600;">Fondateur de CloseOS</p>
+                </td>
             </tr>
-          </table>
-        </td></tr>
-
-        <!-- FOOTER -->
-        <tr><td align="center" style="padding: 20px 20px 48px;">
-          <table border="0" cellpadding="0" cellspacing="0" align="center">
-            <tr>
-              <td style="padding: 0 8px;"><a href="https://closeos.fr" target="_blank" style="font-size:11px; color:#57534e; text-decoration:none;">closeos.fr</a></td>
-              <td style="color:#44403c; font-size:11px;">\u00b7</td>
-              <td style="padding: 0 8px;"><a href="https://www.linkedin.com/in/thomas-shamoev-570885237/" target="_blank" style="font-size:11px; color:#57534e; text-decoration:none;">LinkedIn</a></td>
-              <td style="color:#44403c; font-size:11px;">\u00b7</td>
-              <td style="padding: 0 8px;"><a href="mailto:support@closeos.fr" style="font-size:11px; color:#57534e; text-decoration:none;">support@closeos.fr</a></td>
-            </tr>
-          </table>
-          <p style="margin:14px 0 0; font-size:10px; color:#44403c;">\u00a9 2026 CloseOS.fr</p>
-        </td></tr>
-
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
+        </table>
+    `);
 }
 
 // ─── Main handler ───────────────────────────────────────────────────────────────
@@ -493,9 +332,9 @@ export default async function handler(req: Request) {
             results.push(`review → ${u.email}: ${sent ? 'OK' : 'FAIL'}`);
         }
 
-        // ─── 3. Parrainage (2 jours après abonnement) ───
+        // ─── 3. Parrainage (3 jours après abonnement) ───
         const refStart = new Date(now);
-        refStart.setDate(refStart.getDate() - 2);
+        refStart.setDate(refStart.getDate() - 3);
         refStart.setUTCHours(0, 0, 0, 0);
         const refEnd = new Date(refStart);
         refEnd.setUTCHours(23, 59, 59, 999);

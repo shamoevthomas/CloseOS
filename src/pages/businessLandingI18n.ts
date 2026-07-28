@@ -135,6 +135,14 @@ export interface Translations {
   onboarding_box_exports_title: string
   onboarding_box_exports_desc: string
 
+  // Tracking Links tile
+  tracking_title: string
+  tracking_description: string
+  tracking_stat_label: string
+  tracking_stat_country_1: string
+  tracking_stat_country_2: string
+  tracking_stat_country_3: string
+
   // CRM Section
   crm_badge: string
   crm_title: string
@@ -145,6 +153,7 @@ export interface Translations {
   crm_feature_pipeline_desc: string
   crm_feature_relances_title: string
   crm_feature_relances_reminder: string
+  crm_feature_relances_desc: string
   crm_feature_tags_title: string
   crm_feature_tag_froid: string
   crm_feature_tag_rappel: string
@@ -172,6 +181,25 @@ export interface Translations {
   qualification_mock_q3_badge: string
   qualification_mock_score: string
   qualification_mock_eliminatory: string
+
+  // Forms Section
+  forms_badge: string
+  forms_title: string
+  forms_subtitle: string
+  forms_check_1: string
+  forms_check_2: string
+  forms_check_3: string
+  forms_check_4: string
+  forms_mock_url: string
+  forms_mock_block_heading: string
+  forms_mock_block_video: string
+  forms_mock_block_video_gate: string
+  forms_mock_block_choice: string
+  forms_mock_block_choice_option_1: string
+  forms_mock_block_choice_option_2: string
+  forms_mock_slash_hint: string
+  forms_mock_bridge_label: string
+  forms_mock_bridge_value: string
 
   // CRM KPIs
   crm_kpi_pipeline_title: string
@@ -208,6 +236,19 @@ export interface Translations {
   api_payload_label: string
   api_cta_get_key: string
   api_cta_docs: string
+  api_cta_connect_ai: string
+
+  // API Section, MCP / AI Assistant card
+  api_mcp_badge: string
+  api_mcp_title: string
+  api_mcp_desc: string
+  api_mcp_item_1: string
+  api_mcp_item_2: string
+  api_mcp_item_3: string
+  api_mcp_item_4: string
+  api_mcp_key_label: string
+  api_mcp_tools_label: string
+  api_mcp_compatible_label: string
 
   // Capture Section
   capture_badge: string
@@ -421,7 +462,7 @@ const fr: Translations = {
   nav_integrations: 'Intégrations',
   nav_management: 'Management',
   nav_crm: 'CRM',
-  nav_api: 'API',
+  nav_api: 'API/MCP',
   nav_roles: 'Rôles',
   nav_demo: 'Démo',
   nav_pricing: 'Tarifs',
@@ -431,21 +472,21 @@ const fr: Translations = {
 
   // Hero badges
   hero_badge_rgpd: 'RGPD',
-  hero_badge_closers: '+270 closers',
-  hero_badge_closers_text: 'Déjà {count} qui valident CloseOS Sales',
+  hero_badge_closers: '+300 personnes',
+  hero_badge_closers_text: '{count} font confiance à CloseOS',
   hero_badge_eco: 'Eco-responsable',
 
   // Hero
   hero_title: 'Gérez votre équipe de closers et pilotez votre acquisition.',
   hero_pain: "70% des infopreneurs perdent du CA parce qu'ils ne savent pas quoi améliorer.",
-  hero_subtitle: "CRM, équipe, campagnes, KPIs — tout ce dont un infopreneur a besoin pour structurer son acquisition et scaler.",
-  hero_cta: "Rejoindre la liste d'attente — Tarifs early adopters le 4 avril",
+  hero_subtitle: "CRM, équipe, campagnes, KPIs : tout ce dont un infopreneur a besoin pour structurer son acquisition et scaler.",
+  hero_cta: "Rejoindre la liste d'attente, Tarifs early adopters le 4 avril",
   hero_social_proof: 'Validé par {count} francophones',
-  hero_social_proof_count: '+17 infopreneurs',
+  hero_social_proof_count: '+24 infopreneurs',
 
   // Integrations strip
   integrations_header: 'Integrations natives',
-  integrations_subheader: 'Synchronisez vos outils · 12+ natives · 7 000+ via Zapier',
+  integrations_subheader: 'Synchronisez vos outils · 15+ natives · 7 000+ via Zapier',
 
   // Dashboard / Management section
   management_badge: 'Centre de Commandement Manager',
@@ -475,7 +516,7 @@ const fr: Translations = {
   // Revenue & Stripe
   revenue_stripe_connect: 'Stripe Connect',
   revenue_title: "Chiffre d'affaires en temps réel",
-  revenue_description: "Connectez votre Stripe et suivez vos revenus réels — pas des estimations. Chaque paiement récurrent incrémente automatiquement le CA du closer qui a closé le deal.",
+  revenue_description: "Connectez votre Stripe et suivez vos revenus réels, pas des estimations. Chaque paiement récurrent incrémente automatiquement le CA du closer qui a closé le deal.",
   revenue_item_mrr: "MRR, abonnements actifs et churn en un coup d'œil",
   revenue_item_matching: 'Matching auto prospects ↔ clients Stripe',
   revenue_item_charges: 'Charges, commissions et marge nette calculés',
@@ -508,10 +549,17 @@ const fr: Translations = {
   onboarding_box_exports_title: 'Exports Auto',
   onboarding_box_exports_desc: 'Data exportable en CSV/PDF.',
 
+  tracking_title: 'Liens de tracking',
+  tracking_description: "Générez des liens courts indépendants de vos campagnes, et suivez chaque clic : pays, appareil, visiteur unique ou récurrent, jusqu'à un globe interactif de votre audience.",
+  tracking_stat_label: 'Clics par pays',
+  tracking_stat_country_1: 'France',
+  tracking_stat_country_2: 'Belgique',
+  tracking_stat_country_3: 'Suisse',
+
   // CRM Section
   crm_badge: "L'outil tout-en-un",
   crm_title: "CloseOS devient votre Système d'acquisition",
-  crm_subtitle: "Un CRM conçu exclusivement pour le closing haute performance — avec synchronisation native vers vos outils existants.",
+  crm_subtitle: "Un CRM conçu exclusivement pour le closing haute performance, avec synchronisation native vers vos outils existants.",
 
   // CRM Features
   crm_feature_pipeline_title: 'Pipeline CRM indépendant',
@@ -524,6 +572,7 @@ const fr: Translations = {
   crm_feature_tag_urgent: 'Urgent',
   crm_feature_csv_title: 'Import / Export CSV',
   crm_feature_csv_desc: "Importez vos prospects depuis n'importe quel CRM via CSV, ou exportez votre base en un clic. Un prompt IA intégré reformate automatiquement vos fichiers.",
+  crm_feature_relances_desc: "Jusqu'à 7 emails automatiques après un No Show, avec un lien de réservation intégré : le prospect qui reprend RDV depuis l'email crée directement son nouveau rendez-vous dans votre CRM.",
 
   // Qualification Section
   qualification_badge: 'Auto-Qualification',
@@ -546,6 +595,24 @@ const fr: Translations = {
   qualification_mock_score: 'Score global',
   qualification_mock_eliminatory: 'R\u00e9ponses \u00e9liminatoires',
 
+  forms_badge: 'Module Formulaires',
+  forms_title: 'Un \u00e9diteur de formulaires fa\u00e7on Notion, connect\u00e9 \u00e0 votre CRM',
+  forms_subtitle: "Candidature, sondage, brief client, VSL \u00e0 visionnage obligatoire\u2026 tapez \u00ab / \u00bb pour ins\u00e9rer n'importe quel champ, sans quitter votre CRM.",
+  forms_check_1: "\u00c9diteur \u00ab / \u00bb : 20+ types de blocs (texte, choix, note, date, champ cach\u00e9 UTM\u2026)",
+  forms_check_2: 'Bloc vid\u00e9o \u00e0 visionnage minimum obligatoire avant de pouvoir valider',
+  forms_check_3: 'Logique conditionnelle : affichez un bloc selon une r\u00e9ponse pr\u00e9c\u00e9dente',
+  forms_check_4: 'Pont CRM : chaque r\u00e9ponse cr\u00e9e ou met \u00e0 jour un prospect, au bon stage',
+  forms_mock_url: 'closeos.fr/f/candidature-closer',
+  forms_mock_block_heading: 'Pourquoi voulez-vous nous rejoindre ?',
+  forms_mock_block_video: 'Regardez la vid\u00e9o de pr\u00e9sentation',
+  forms_mock_block_video_gate: '\u25b6 30s minimum avant de continuer',
+  forms_mock_block_choice: 'Combien de RDV closez-vous par semaine ?',
+  forms_mock_block_choice_option_1: '0-5',
+  forms_mock_block_choice_option_2: '5+',
+  forms_mock_slash_hint: 'Tapez \u00ab / \u00bb pour ins\u00e9rer un bloc',
+  forms_mock_bridge_label: 'Pont CRM',
+  forms_mock_bridge_value: 'Nouvelle r\u00e9ponse \u2192 Prospect cr\u00e9\u00e9, stage "\u00c0 qualifier"',
+
   // CRM KPIs
   crm_kpi_pipeline_title: 'KPI CRM \u2022 Pipeline',
   crm_kpi_pipeline_value: '452,000\u20AC',
@@ -559,28 +626,40 @@ const fr: Translations = {
   crm_book_demo: 'Réserver une démo',
 
   // API Section
-  api_badge: 'Disponible maintenant',
-  api_title: "L'API CloseOS Business est arrivée",
-  api_subtitle: "Branchez le CRM CloseOS à n'importe quelle stack — back-office, scoring IA, dashboards internes, tunnels d'acquisition. API REST entrante et Webhooks sortants signés HMAC-SHA256, prêts en moins de 5 minutes.",
+  api_badge: 'Nouveau · Pilotable par IA',
+  api_title: 'CloseOS se pilote depuis Claude, ChatGPT et vos outils IA',
+  api_subtitle: "Un vrai serveur MCP (Model Context Protocol) libère votre CRM de son interface : demandez à votre assistant IA de créer un prospect, planifier un rendez-vous ou générer une facture, il le fait directement dans CloseOS. Et pour les équipes techniques, une API REST et des Webhooks sortants permettent de tout connecter à votre stack existante.",
   api_card_rest_title: 'API REST entrante',
   api_card_rest_desc: "POSTez des prospects depuis n'importe quelle source authentifiée, en JSON.",
-  api_card_rest_item_1: 'Authentification par clé API dédiée — Authorization: Bearer.',
-  api_card_rest_item_2: 'Idempotence native via external_id — créer ou mettre à jour en un seul appel.',
-  api_card_rest_item_3: "Champs custom préservés dans metadata — vos données métier suivent toujours.",
+  api_card_rest_item_1: 'Authentification par clé API dédiée, Authorization: Bearer.',
+  api_card_rest_item_2: 'Idempotence native via external_id, créer ou mettre à jour en un seul appel.',
+  api_card_rest_item_3: "Champs custom préservés dans metadata, vos données métier suivent toujours.",
   api_card_rest_item_4: 'Multi-clés par organisation, révocables à tout moment.',
   api_card_webhook_title: 'Webhooks sortants',
   api_card_webhook_desc: 'CloseOS POST vers vos URLs à chaque évènement clé du cycle de vente.',
-  api_card_webhook_item_1: 'Signature HMAC-SHA256 — header X-CloseOS-Signature, secret par endpoint.',
+  api_card_webhook_item_1: 'Signature HMAC-SHA256, header X-CloseOS-Signature, secret par endpoint.',
   api_card_webhook_item_2: 'Sélection fine des évènements par webhook (subscribe à ce qui vous intéresse).',
   api_card_webhook_item_3: 'Test instantané + suivi du dernier statut HTTP, dernière erreur, dernier envoi.',
-  api_card_webhook_item_4: 'Multi-endpoints — autant de destinations que vous voulez.',
+  api_card_webhook_item_4: 'Multi-endpoints, autant de destinations que vous voulez.',
   api_events_label: 'Catalogue',
   api_events_title: '10 évènements supportés',
   api_events_subtitle: "Du capture de lead au deal gagné, chaque étape clé du pipeline déclenche un webhook prêt à brancher sur vos workflows.",
-  api_curl_label: 'API entrante — exemple cURL',
-  api_payload_label: 'Webhook sortant — payload',
+  api_curl_label: 'API entrante, exemple cURL',
+  api_payload_label: 'Webhook sortant, payload',
   api_cta_get_key: 'Obtenir une clé API',
   api_cta_docs: 'Voir la documentation',
+  api_cta_connect_ai: 'Connecter mon IA',
+
+  api_mcp_badge: 'Nouveau · Assistant IA',
+  api_mcp_title: 'Connectez Claude ou ChatGPT à CloseOS',
+  api_mcp_desc: "Un vrai serveur MCP (Model Context Protocol) pour piloter votre CRM à la voix ou en langage naturel : demandez à votre assistant IA de créer un prospect, planifier un rendez-vous, lancer une relance No Show ou générer une facture, il le fait, directement dans CloseOS.",
+  api_mcp_item_1: '28 outils exposés : prospects, campagnes, agenda, équipe, facturation, formulaires, tracking.',
+  api_mcp_item_2: "Clé d'accès dédiée par compte (cos_...), révocable à tout moment.",
+  api_mcp_item_3: 'Compatible avec Claude, ChatGPT et tout client MCP standard.',
+  api_mcp_item_4: 'Aucune installation : une clé, une connexion, et votre CRM devient pilotable en langage naturel.',
+  api_mcp_key_label: 'Connexion MCP',
+  api_mcp_tools_label: '28 outils disponibles',
+  api_mcp_compatible_label: 'Compatible avec',
 
   // Capture Section
   capture_badge: 'Capture de Leads',
@@ -590,7 +669,7 @@ const fr: Translations = {
   capture_item_embed: "Embed iframe intégrable sur n'importe quel site",
   capture_item_popup: 'Popup déclenchable au clic ou en automatique',
   capture_item_video: 'Ajoutez une vidéo de présentation avec un lien de redirection',
-  capture_item_precapture: 'Précapture : dès qu\'un email ou numéro est saisi, le prospect est enregistré — même sans avoir terminé le formulaire',
+  capture_item_precapture: 'Précapture : dès qu\'un email ou numéro est saisi, le prospect est enregistré, même sans avoir terminé le formulaire',
   capture_item_payment: 'Rendez-vous payants via Stripe : idéal pour le consulting, audits, coaching…',
   capture_tab_page: 'Page',
   capture_tab_embed: 'Embed',
@@ -640,13 +719,13 @@ const fr: Translations = {
   // Features by Role
   roles_badge: 'Fonctionnalités par Rôle',
   roles_title: 'Chaque rôle a ses outils. Chaque outil a sa place.',
-  roles_subtitle: "Owner, Closer, Setter ou Setter-Closer — chacun accède exactement à ce dont il a besoin, rien de plus.",
+  roles_subtitle: "Owner, Closer, Setter ou Setter-Closer, chacun accède exactement à ce dont il a besoin, rien de plus.",
 
   // Role: Owner
   role_owner: {
     label: 'Owner / Admin',
     tagline: 'Contrôle total',
-    description: "Pilotez l'intégralité de votre écosystème de vente. CRM, équipes, KPIs, campagnes — tout depuis un seul tableau de bord.",
+    description: "Pilotez l'intégralité de votre écosystème de vente. CRM, équipes, KPIs, campagnes, tout depuis un seul tableau de bord.",
     features: [
       {
         title: 'CRM & Pipeline Global',
@@ -713,6 +792,14 @@ const fr: Translations = {
           'Booking links partageables + Google Meet',
           'Agenda de chaque membre ou tous combinés',
           'Sync Google Calendar bidirectionnelle',
+        ],
+      },
+      {
+        title: 'Assistant IA (MCP)',
+        items: [
+          'Connectez Claude à votre compte CloseOS via une clé dédiée',
+          '28 outils : prospects, campagnes, agenda, équipe, facturation, formulaires',
+          'Pilotez votre CRM en langage naturel, sans quitter votre assistant',
         ],
       },
     ],
@@ -874,26 +961,26 @@ const fr: Translations = {
   faqs: [
     {
       question: 'A qui est destiné cet outil ?',
-      answer: "Il est destiné à toute personne qui vend en ligne : infopreneurs, Head of Sales, mais aussi les solopreneurs et ceux qui lancent des Challenges. Quand on parle d'équipe, on ne parle pas forcément d'une grosse structure — même un closer seul ou un duo setter/closer peut tirer parti de l'outil.",
+      answer: "Il est destiné à toute personne qui vend en ligne : infopreneurs, Head of Sales, mais aussi les solopreneurs et ceux qui lancent des Challenges. Quand on parle d'équipe, on ne parle pas forcément d'une grosse structure, même un closer seul ou un duo setter/closer peut tirer parti de l'outil.",
     },
     {
       question: 'CloseOS Business est-il compatible avec mes outils CRM actuels ?',
-      answer: "Oui. En plus de notre propre CRM intégré, CloseOS Business se connecte nativement à votre stack existante, organisée en 5 catégories :\n\n• CRM bidirectionnels complets : HubSpot, Pipedrive, GoHighLevel (GHL), Airtable et iClosed — chaque prospect ajouté ou mis à jour d'un côté est instantanément reflété de l'autre.\n• Webhooks entrants : Systeme.io — import automatique des contacts dès qu'ils sont créés.\n• Automatisation no-code : Zapier, Make et n8n — connectez CloseOS à plus de 5000 outils tiers via vos workflows existants.\n• Booking & Paiement : Google Calendar, Calendly et Stripe — synchronisation des rendez-vous, paiements clients et MRR sans config externe.\n• CSV universel : importez/exportez vos prospects depuis n'importe quel outil. Un prompt IA intégré reformate automatiquement n'importe quel fichier CSV pour le rendre compatible avec CloseOS.\n\nCela dit, nous recommandons d'utiliser le CRM intégré CloseOS Business : c'est lui qui offre les meilleures performances et la gestion la plus simple dans cet écosystème. Tout est conçu pour fonctionner ensemble, sans friction.",
+      answer: "Oui. En plus de notre propre CRM intégré, CloseOS Business se connecte nativement à votre stack existante, organisée en 5 catégories :\n\n• CRM bidirectionnels complets : HubSpot, Pipedrive, GoHighLevel (GHL), Airtable et iClosed, chaque prospect ajouté ou mis à jour d'un côté est instantanément reflété de l'autre.\n• Webhooks entrants : Systeme.io, import automatique des contacts dès qu'ils sont créés.\n• Automatisation no-code : Zapier, Make et n8n, connectez CloseOS à plus de 5000 outils tiers via vos workflows existants.\n• Booking & Paiement : Google Calendar, Calendly et Stripe, synchronisation des rendez-vous, paiements clients et MRR sans config externe.\n• CSV universel : importez/exportez vos prospects depuis n'importe quel outil. Un prompt IA intégré reformate automatiquement n'importe quel fichier CSV pour le rendre compatible avec CloseOS.\n\nCela dit, nous recommandons d'utiliser le CRM intégré CloseOS Business : c'est lui qui offre les meilleures performances et la gestion la plus simple dans cet écosystème. Tout est conçu pour fonctionner ensemble, sans friction.",
     },
     {
       question: "Pourquoi utiliser le CRM CloseOS si j'ai déjà iClosed ?",
       answer: "CloseOS est l'alternative française à iClosed, structurée en deux briques complémentaires (Capture + CRM / Pilotage d'équipe) que vous pouvez activer ensemble ou séparément. La synchronisation bidirectionnelle complète avec iClosed vous permet de garder votre setup actuel et d'utiliser CloseOS comme cockpit par-dessus.",
       modules: {
-        intro: "Là où iClosed reste un outil de booking/closing centré sur le closer individuel, CloseOS Business est structuré en deux briques complémentaires — activables ensemble ou séparément :",
+        intro: "Là où iClosed reste un outil de booking/closing centré sur le closer individuel, CloseOS Business est structuré en deux briques complémentaires, activables ensemble ou séparément :",
         blocks: [
           {
             tag: 'Brique 1',
             subtitle: 'Acquisition',
             title: 'Capture + CRM',
             items: [
-              'Pages de capture gratuites ET payantes — paiement Stripe intégré au formulaire. Parfait pour vendre un audit, un appel diagnostic ou un produit d\'entrée à 47/97/297€. Conversion 3 à 5× supérieure à un appel gratuit.',
-              'Auto-qualification des leads — formulaires conditionnels, scoring et routage intelligent vers le bon closer. Vos closers ne traitent que les leads chauds.',
-              'CRM natif complet — pipeline visuel, tags, relances automatiques, import/export CSV avec reformatage IA.',
+              'Pages de capture gratuites ET payantes, paiement Stripe intégré au formulaire. Parfait pour vendre un audit, un appel diagnostic ou un produit d\'entrée à 47/97/297€. Conversion 3 à 5× supérieure à un appel gratuit.',
+              'Auto-qualification des leads, formulaires conditionnels, scoring et routage intelligent vers le bon closer. Vos closers ne traitent que les leads chauds.',
+              'CRM natif complet, pipeline visuel, tags, relances automatiques, import/export CSV avec reformatage IA.',
               'Tracking campagnes & UTM natifs, sans outil tiers.',
               'API REST + Webhooks pour brancher CloseOS à votre back-office.',
             ],
@@ -904,10 +991,10 @@ const fr: Translations = {
             title: "Pilotage d'équipe",
             items: [
               'Assignation automatique setter/closer selon vos règles métier.',
-              'Vue Head of Sales — KPIs par closer, taux de closing, no-show, vélocité du pipeline.',
-              'Commissions automatiques + matching Stripe — chaque paiement rattaché au bon closer, reporting MRR.',
-              'Onboarding closers automatisé — scripts, vidéos, ressources, progression.',
-              'Niveaux d\'accès granulaires — chaque closer ne voit que ses prospects.',
+              'Vue Head of Sales, KPIs par closer, taux de closing, no-show, vélocité du pipeline.',
+              'Commissions automatiques + matching Stripe, chaque paiement rattaché au bon closer, reporting MRR.',
+              'Onboarding closers automatisé, scripts, vidéos, ressources, progression.',
+              'Niveaux d\'accès granulaires, chaque closer ne voit que ses prospects.',
             ],
           },
         ],
@@ -916,7 +1003,7 @@ const fr: Translations = {
     },
     {
       question: "Le CRM CloseOS dispose-t-il d'une API et de Webhooks pour des intégrations sur-mesure ?",
-      answer: "Oui. Le CRM natif CloseOS Business expose désormais une API REST complète et un système de Webhooks sortants — pensés pour les équipes tech et les setups avancés.\n\n• API REST : récupérez, créez ou mettez à jour vos prospects, deals, tags, RDV et campagnes depuis n'importe quelle application. Idéal pour brancher CloseOS à votre back-office, vos dashboards internes ou un scoring IA maison.\n• Webhooks sortants : déclenchez vos propres workflows à chaque événement clé — nouveau lead capturé, changement de stage, paiement Stripe encaissé, RDV pris ou no-show, commission validée. Vous recevez le payload en temps réel sur l'URL de votre choix.\n• Authentification sécurisée par clé API dédiée à votre organisation, avec scoping et révocation à tout moment.\n\nC'est la couche technique qui rend CloseOS extensible à l'infini — au-delà des intégrations natives et de Zapier/Make/n8n. Si votre équipe a un besoin custom, l'API et les Webhooks le couvrent.",
+      answer: "Oui. Le CRM natif CloseOS Business expose désormais une API REST complète et un système de Webhooks sortants, pensés pour les équipes tech et les setups avancés.\n\n• API REST : récupérez, créez ou mettez à jour vos prospects, deals, tags, RDV et campagnes depuis n'importe quelle application. Idéal pour brancher CloseOS à votre back-office, vos dashboards internes ou un scoring IA maison.\n• Webhooks sortants : déclenchez vos propres workflows à chaque événement clé, nouveau lead capturé, changement de stage, paiement Stripe encaissé, RDV pris ou no-show, commission validée. Vous recevez le payload en temps réel sur l'URL de votre choix.\n• Authentification sécurisée par clé API dédiée à votre organisation, avec scoping et révocation à tout moment.\n\nC'est la couche technique qui rend CloseOS extensible à l'infini, au-delà des intégrations natives et de Zapier/Make/n8n. Si votre équipe a un besoin custom, l'API et les Webhooks le couvrent.",
     },
     {
       question: 'Mes données sont-elles sécurisées et conformes au RGPD ?',
@@ -924,27 +1011,27 @@ const fr: Translations = {
     },
     {
       question: "Qui voit quoi dans l'équipe ? (Admin, Head of Sales, Closers, Setters)",
-      answer: "Non, l'accès aux données est strictement segmenté par rôle. CloseOS Business propose 4 niveaux d'accès distincts, entièrement paramétrables côté Admin :\n\n• Admin (Owner) — accès total : équipe complète, prospects, KPIs globaux, CA, marges, commissions, intégrations, facturation et contacts stratégiques.\n• Head of Sales — pilotage de l'équipe closing : voit tous les closers et setters de son périmètre, leurs KPIs, leur pipeline et leurs commissions. Vous choisissez si les données financières les plus sensibles (CA global, marges) lui sont accessibles ou non.\n• Closer — voit uniquement ses propres prospects, son pipeline, ses KPIs personnels et ses commissions. Pas d'accès aux deals des autres closers.\n• Setter — voit uniquement les leads qu'il a qualifiés et son taux de transformation. Aucun accès aux montants encaissés ni aux deals fermés.\n\nVous gardez le contrôle total : chaque permission est révocable et configurable à tout moment depuis l'interface Admin.",
+      answer: "Non, l'accès aux données est strictement segmenté par rôle. CloseOS Business propose 4 niveaux d'accès distincts, entièrement paramétrables côté Admin :\n\n• Admin (Owner), accès total : équipe complète, prospects, KPIs globaux, CA, marges, commissions, intégrations, facturation et contacts stratégiques.\n• Head of Sales, pilotage de l'équipe closing : voit tous les closers et setters de son périmètre, leurs KPIs, leur pipeline et leurs commissions. Vous choisissez si les données financières les plus sensibles (CA global, marges) lui sont accessibles ou non.\n• Closer, voit uniquement ses propres prospects, son pipeline, ses KPIs personnels et ses commissions. Pas d'accès aux deals des autres closers.\n• Setter, voit uniquement les leads qu'il a qualifiés et son taux de transformation. Aucun accès aux montants encaissés ni aux deals fermés.\n\nVous gardez le contrôle total : chaque permission est révocable et configurable à tout moment depuis l'interface Admin.",
     },
     {
       question: "Combien de membres puis-je ajouter dans mon équipe ?",
-      answer: "Autant que vous voulez. CloseOS Business n'impose aucune limite sur la taille de votre équipe, peu importe le rôle — closers, setters, setter-closers, Head of Sales, ou même plusieurs Admin / co-fondateurs. Le tarif s'adapte uniquement au nombre de sièges actifs selon votre formule.",
+      answer: "Autant que vous voulez. CloseOS Business n'impose aucune limite sur la taille de votre équipe, peu importe le rôle, closers, setters, setter-closers, Head of Sales, ou même plusieurs Admin / co-fondateurs. Le tarif s'adapte uniquement au nombre de sièges actifs selon votre formule.",
     },
     {
       question: "Est-ce difficile à prendre en main pour mon équipe ?",
-      answer: "Non, l'onboarding est 100 % autonome et adapté à chaque rôle :\n\n• Closers et setters — guidés dès leur première connexion avec vos scripts, vos ressources vidéo, leur tableau de bord et leurs KPIs de progression. Aucune formation manuelle requise.\n• Head of Sales — interface dédiée au pilotage d'équipe : KPIs par closer, taux de closing, no-show, vélocité du pipeline et reporting MRR. Lisible en un coup d'œil.\n• Admin — configuration en quelques clics : niveaux d'accès, règles d'assignation auto, intégrations CRM, paramètres Stripe et facturation depuis une interface unique.\n\nRésultat : vos nouveaux membres sont opérationnels en moins de 24h, sans que vous ayez à expliquer quoi que ce soit manuellement.",
+      answer: "Non, l'onboarding est 100 % autonome et adapté à chaque rôle :\n\n• Closers et setters, guidés dès leur première connexion avec vos scripts, vos ressources vidéo, leur tableau de bord et leurs KPIs de progression. Aucune formation manuelle requise.\n• Head of Sales, interface dédiée au pilotage d'équipe : KPIs par closer, taux de closing, no-show, vélocité du pipeline et reporting MRR. Lisible en un coup d'œil.\n• Admin, configuration en quelques clics : niveaux d'accès, règles d'assignation auto, intégrations CRM, paramètres Stripe et facturation depuis une interface unique.\n\nRésultat : vos nouveaux membres sont opérationnels en moins de 24h, sans que vous ayez à expliquer quoi que ce soit manuellement.",
     },
   ],
 
   // Final CTA
   final_cta_title: 'Prêt à scaler votre écosystème de closing ?',
   final_cta_subtitle: 'Inscrivez-vous maintenant et débloquez un tarif early adopter imbattable, dévoilé le 4 avril.',
-  final_cta_button: "Rejoindre la liste d'attente — Tarifs le 4 avril",
+  final_cta_button: "Rejoindre la liste d'attente, Tarifs le 4 avril",
 
   // Founder
   founder_section_title: 'Le fondateur',
   founder_role: 'Fondateur de CloseOS',
-  founder_bio: "Avant de créer l'écosystème CloseOS, Thomas était closer et setter. C'est en étant sur le terrain qu'il a vu et subi la réalité du métier au quotidien : travailler avec minimum 2 écrans, jongler entre des dizaines d'outils qui ne communiquent même pas entre eux, et perdre 1h à 1h30 chaque jour juste pour tout mettre à jour. Un CRM d'un côté, un outil de booking de l'autre, la facturation sur un troisième, les KPIs sur un tableur — le tout sans aucune synchronisation. CloseOS est né de cette frustration : un seul outil qui remplace tous les autres, conçu par un closer pour les closers.",
+  founder_bio: "Avant de créer l'écosystème CloseOS, Thomas était closer et setter. C'est en étant sur le terrain qu'il a vu et subi la réalité du métier au quotidien : travailler avec minimum 2 écrans, jongler entre des dizaines d'outils qui ne communiquent même pas entre eux, et perdre 1h à 1h30 chaque jour juste pour tout mettre à jour. Un CRM d'un côté, un outil de booking de l'autre, la facturation sur un troisième, les KPIs sur un tableur, le tout sans aucune synchronisation. CloseOS est né de cette frustration : un seul outil qui remplace tous les autres, conçu par un closer pour les closers.",
 
   // Footer
   footer_copyright: '\u00A9 2026 CloseOS',
@@ -990,7 +1077,7 @@ const fr: Translations = {
   modal_google_form: 'Vos besoins (Google Form)',
   modal_linkedin: 'Suivre sur LinkedIn',
   modal_title: "Rejoindre la liste d'attente",
-  modal_description: "Inscrivez-vous et recevez le {date} un tarif early adopter concurrentiel et imbattable, réservé uniquement aux inscrits — {locked}.",
+  modal_description: "Inscrivez-vous et recevez le {date} un tarif early adopter concurrentiel et imbattable, réservé uniquement aux inscrits, {locked}.",
   modal_description_date: '4 avril',
   modal_description_locked: 'verrouillé à vie',
   modal_email_label: 'Votre Email Professionnel',
@@ -1002,25 +1089,25 @@ const fr: Translations = {
   modal_error_generic: 'Une erreur est survenue. Veuillez rééssayer.',
 
   // SEO
-  seo_title: 'CloseOS Business — Pilotez votre équipe de vente',
+  seo_title: 'CloseOS Business, Pilotez votre équipe de vente',
   seo_description: "Plateforme de management pour infopreneurs : gérez vos closers, setters, KPIs et campagnes d'acquisition. Essai gratuit 20 jours.",
-  seo_og_title: 'CloseOS Business — Plateforme de management pour infopreneurs et Head of Sales',
+  seo_og_title: 'CloseOS Business, Plateforme de management pour infopreneurs et Head of Sales',
   seo_og_description: "Gérez votre équipe de closers, pilotez vos campagnes d'acquisition et suivez les KPIs de votre équipe. Logiciel infopreneur closing francophone.",
-  seo_default_title: 'CloseOS — Écosystème SaaS pour la vente digitale | CRM Closer & Management Infopreneur',
+  seo_default_title: 'CloseOS, Écosystème SaaS pour la vente digitale | CRM Closer & Management Infopreneur',
   seo_default_description: "CloseOS est l'écosystème SaaS francophone pour la vente digitale. Outil pour closer : CRM, pipeline, VoIP, KPIs, facturation automatique. Logiciel infopreneur : gestion équipe de closers, campagnes d'acquisition, analytics. Alternative iClosed.",
-  seo_default_og_title: 'CloseOS — Écosystème SaaS pour la vente digitale francophone',
+  seo_default_og_title: 'CloseOS, Écosystème SaaS pour la vente digitale francophone',
   seo_default_og_description: "Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed.",
 
   // Structured data
   sd_description: "Plateforme de management pour infopreneurs et Head of Sales. Gestion d'équipe de closers et setters, pilotage campagnes d'acquisition, CRM acquisition, tableau de bord infopreneur. Alternative à iClosed, 100% en français.",
-  sd_offer_description: "Liste d'attente — tarifs early adopters",
+  sd_offer_description: "Liste d'attente, tarifs early adopters",
   sd_feature_list: "Gérer équipe de closers, Pilotage équipe closing, Logiciel infopreneur closing, CRM acquisition infopreneur, Outil gestion setter closer, Piloter campagne acquisition closing, Tableau de bord infopreneur, KPIs d'équipe, Onboarding closers automatisé",
   sd_faq_who_q: 'A qui est destiné CloseOS Business ?',
   sd_faq_who_a: "CloseOS Business est destiné à toute personne qui vend en ligne : infopreneurs, Head of Sales, solopreneurs et ceux qui lancent des Challenges. Même un closer seul ou un duo setter/closer peut tirer parti de l'outil de management.",
   sd_faq_compat_q: 'CloseOS Business est-il compatible avec mes outils CRM actuels ?',
-  sd_faq_compat_a: "Oui. CloseOS Business se connecte nativement à votre stack en 5 catégories : CRM bidirectionnels complets (HubSpot, Pipedrive, GoHighLevel GHL, Airtable, iClosed), webhooks entrants (Systeme.io), automatisation no-code (Zapier, Make, n8n — accès à 5000+ outils), booking & paiement (Google Calendar, Calendly, Stripe) et CSV universel avec reformatage IA automatique. Le CRM intégré CloseOS Business offre les meilleures performances pour l'écosystème.",
+  sd_faq_compat_a: "Oui. CloseOS Business se connecte nativement à votre stack en 5 catégories : CRM bidirectionnels complets (HubSpot, Pipedrive, GoHighLevel GHL, Airtable, iClosed), webhooks entrants (Systeme.io), automatisation no-code (Zapier, Make, n8n, accès à 5000+ outils), booking & paiement (Google Calendar, Calendly, Stripe) et CSV universel avec reformatage IA automatique. Le CRM intégré CloseOS Business offre les meilleures performances pour l'écosystème.",
   sd_faq_why_crm_q: "Pourquoi utiliser le CRM CloseOS si j'ai déjà iClosed ?",
-  sd_faq_why_crm_a: "CloseOS Business est l'alternative française à iClosed, structurée en deux briques complémentaires. Brique Capture + CRM : pages de capture gratuites ET payantes avec Stripe intégré (parfaites pour vendre un audit ou un appel diagnostic payant — 3 à 5× plus de conversion qu'un appel gratuit), auto-qualification des leads (formulaires conditionnels, scoring, routage intelligent), CRM natif complet, tracking campagnes/UTM, API + Webhooks. Brique Pilotage d'équipe : assignation auto setter/closer, vue Head of Sales, KPIs par closer, commissions automatiques + matching Stripe, onboarding automatisé. Si vous avez déjà iClosed, la sync bidirectionnelle complète vous permet de le garder comme source et d'utiliser CloseOS comme cockpit. 100% en français, conforme RGPD, hébergé en UE.",
+  sd_faq_why_crm_a: "CloseOS Business est l'alternative française à iClosed, structurée en deux briques complémentaires. Brique Capture + CRM : pages de capture gratuites ET payantes avec Stripe intégré (parfaites pour vendre un audit ou un appel diagnostic payant, 3 à 5× plus de conversion qu'un appel gratuit), auto-qualification des leads (formulaires conditionnels, scoring, routage intelligent), CRM natif complet, tracking campagnes/UTM, API + Webhooks. Brique Pilotage d'équipe : assignation auto setter/closer, vue Head of Sales, KPIs par closer, commissions automatiques + matching Stripe, onboarding automatisé. Si vous avez déjà iClosed, la sync bidirectionnelle complète vous permet de le garder comme source et d'utiliser CloseOS comme cockpit. 100% en français, conforme RGPD, hébergé en UE.",
   sd_faq_api_q: "Le CRM CloseOS dispose-t-il d'une API et de Webhooks ?",
   sd_faq_api_a: "Oui. Le CRM natif CloseOS Business expose une API REST complète (lecture/écriture des prospects, deals, tags, RDV, campagnes) et un système de Webhooks sortants déclenchés sur chaque événement clé (nouveau lead, changement de stage, paiement Stripe, RDV, no-show, commission). Authentification sécurisée par clé API dédiée à votre organisation. CloseOS devient ainsi extensible à l'infini, au-delà des intégrations natives et de Zapier/Make/n8n.",
   sd_faq_data_access_q: "Qui voit quoi dans l'équipe CloseOS Business (Admin, Head of Sales, Closers, Setters) ?",
@@ -1041,7 +1128,7 @@ const en: Translations = {
   nav_integrations: 'Integrations',
   nav_management: 'Management',
   nav_crm: 'CRM',
-  nav_api: 'API',
+  nav_api: 'API/MCP',
   nav_roles: 'Roles',
   nav_demo: 'Demo',
   nav_pricing: 'Pricing',
@@ -1051,26 +1138,26 @@ const en: Translations = {
 
   // Hero badges
   hero_badge_rgpd: 'GDPR',
-  hero_badge_closers: '+270 closers',
-  hero_badge_closers_text: 'Already {count} validating CloseOS Sales',
+  hero_badge_closers: '300+ people',
+  hero_badge_closers_text: '{count} trust CloseOS',
   hero_badge_eco: 'Eco-friendly',
 
   // Hero
   hero_title: 'Manage your sales team and drive your acquisition.',
   hero_pain: "70% of entrepreneurs lose revenue because they don't know what to improve.",
-  hero_subtitle: 'CRM, team, campaigns, KPIs \u2014 everything an entrepreneur needs to structure acquisition and scale.',
-  hero_cta: 'Join the waitlist \u2014 Early adopter pricing on April 4th',
+  hero_subtitle: 'CRM, team, campaigns, KPIs: everything an entrepreneur needs to structure acquisition and scale.',
+  hero_cta: 'Join the waitlist, Early adopter pricing on April 4th',
   hero_social_proof: 'Validated by {count}',
-  hero_social_proof_count: '+17 French-speaking entrepreneurs',
+  hero_social_proof_count: '+24 French-speaking entrepreneurs',
 
   // Integrations strip
   integrations_header: 'Native integrations',
-  integrations_subheader: 'Sync your tools \u00B7 12+ native \u00B7 7,000+ via Zapier',
+  integrations_subheader: 'Sync your tools \u00B7 15+ native \u00B7 7,000+ via Zapier',
 
   // Dashboard / Management section
   management_badge: 'Manager Command Center',
   management_title: 'Drive and manage your sales ecosystem with absolute authority',
-  management_description: 'Centralize all your management in a powerful OS. From the macro strategic dashboard to managing each closer and automating their training, you no longer manage \u2014 you drive growth.',
+  management_description: 'Centralize all your management in a powerful OS. From the macro strategic dashboard to managing each closer and automating their training, you no longer manage, you drive growth.',
 
   // Macro Dashboard
   dashboard_title: 'Macro Dashboard',
@@ -1095,7 +1182,7 @@ const en: Translations = {
   // Revenue & Stripe
   revenue_stripe_connect: 'Stripe Connect',
   revenue_title: 'Real-time revenue',
-  revenue_description: 'Connect your Stripe and track real revenue \u2014 not estimates. Each recurring payment automatically increments the closer\'s revenue who closed the deal.',
+  revenue_description: 'Connect your Stripe and track real revenue, not estimates. Each recurring payment automatically increments the closer\'s revenue who closed the deal.',
   revenue_item_mrr: 'MRR, active subscriptions and churn at a glance',
   revenue_item_matching: 'Auto matching prospects \u2194 Stripe customers',
   revenue_item_charges: 'Charges, commissions and net margin calculated',
@@ -1128,10 +1215,17 @@ const en: Translations = {
   onboarding_box_exports_title: 'Auto Exports',
   onboarding_box_exports_desc: 'Data exportable as CSV/PDF.',
 
+  tracking_title: 'Tracking links',
+  tracking_description: "Generate short links independent of your campaigns, and track every click: country, device, unique vs. returning visitor, down to an interactive globe of your audience.",
+  tracking_stat_label: 'Clicks by country',
+  tracking_stat_country_1: 'France',
+  tracking_stat_country_2: 'Belgium',
+  tracking_stat_country_3: 'Switzerland',
+
   // CRM Section
   crm_badge: 'The all-in-one tool',
   crm_title: 'CloseOS becomes your Acquisition System',
-  crm_subtitle: 'A CRM built exclusively for high-performance closing \u2014 with native sync to your existing tools.',
+  crm_subtitle: 'A CRM built exclusively for high-performance closing, with native sync to your existing tools.',
 
   // CRM Features
   crm_feature_pipeline_title: 'Independent CRM Pipeline',
@@ -1144,6 +1238,7 @@ const en: Translations = {
   crm_feature_tag_urgent: 'Urgent',
   crm_feature_csv_title: 'Import / Export CSV',
   crm_feature_csv_desc: 'Import your prospects from any CRM via CSV, or export your database in one click. A built-in AI prompt automatically reformats your files.',
+  crm_feature_relances_desc: "Up to 7 automated emails after a No Show, each with a booking link built in, a prospect who rebooks from the email creates their new appointment straight in your CRM.",
 
   // Qualification Section
   qualification_badge: 'Smart Qualification',
@@ -1166,6 +1261,24 @@ const en: Translations = {
   qualification_mock_score: 'Overall score',
   qualification_mock_eliminatory: 'Eliminatory answers',
 
+  forms_badge: 'Forms module',
+  forms_title: 'A Notion-style form builder, connected to your CRM',
+  forms_subtitle: "Application form, survey, client brief, a VSL with mandatory watch time… type “/” to insert any field, without leaving your CRM.",
+  forms_check_1: '“/” editor: 20+ block types (text, choice, rating, date, hidden UTM field…)',
+  forms_check_2: 'Video block with a minimum required watch time before submitting',
+  forms_check_3: 'Conditional logic: show a block based on an earlier answer',
+  forms_check_4: 'CRM bridge: every response creates or updates a prospect, at the right stage',
+  forms_mock_url: 'closeos.fr/f/closer-application',
+  forms_mock_block_heading: 'Why do you want to join us?',
+  forms_mock_block_video: 'Watch the intro video',
+  forms_mock_block_video_gate: '▶ 30s minimum before continuing',
+  forms_mock_block_choice: 'How many calls do you close per week?',
+  forms_mock_block_choice_option_1: '0-5',
+  forms_mock_block_choice_option_2: '5+',
+  forms_mock_slash_hint: 'Type “/” to insert a block',
+  forms_mock_bridge_label: 'CRM bridge',
+  forms_mock_bridge_value: 'New response → Prospect created, stage "To qualify"',
+
   // CRM KPIs
   crm_kpi_pipeline_title: 'CRM KPI \u2022 Pipeline',
   crm_kpi_pipeline_value: '\u20AC452,000',
@@ -1179,28 +1292,40 @@ const en: Translations = {
   crm_book_demo: 'Book a demo',
 
   // API Section
-  api_badge: 'Available now',
-  api_title: 'The CloseOS Business API has landed',
-  api_subtitle: 'Connect the CloseOS CRM to any stack — back-office, AI scoring, internal dashboards, acquisition funnels. REST API for inbound and HMAC-SHA256 signed outbound Webhooks, ready in under 5 minutes.',
+  api_badge: 'New · AI-operable',
+  api_title: 'CloseOS runs from Claude, ChatGPT and your AI tools',
+  api_subtitle: "A real MCP (Model Context Protocol) server frees your CRM from its interface: ask your AI assistant to create a prospect, schedule an appointment, or generate an invoice, it happens directly inside CloseOS. And for technical teams, a REST API and outbound webhooks let you connect everything to your existing stack.",
   api_card_rest_title: 'Inbound REST API',
   api_card_rest_desc: 'POST prospects from any authenticated source, in JSON.',
-  api_card_rest_item_1: 'Authentication via dedicated API key — Authorization: Bearer.',
-  api_card_rest_item_2: 'Native idempotency via external_id — create or update in a single call.',
-  api_card_rest_item_3: 'Custom fields preserved in metadata — your business data always follows.',
+  api_card_rest_item_1: 'Authentication via dedicated API key, Authorization: Bearer.',
+  api_card_rest_item_2: 'Native idempotency via external_id, create or update in a single call.',
+  api_card_rest_item_3: 'Custom fields preserved in metadata, your business data always follows.',
   api_card_rest_item_4: 'Multi-key per organization, revocable at any time.',
   api_card_webhook_title: 'Outbound Webhooks',
   api_card_webhook_desc: 'CloseOS POSTs to your URLs on every key sales-cycle event.',
-  api_card_webhook_item_1: 'HMAC-SHA256 signature — X-CloseOS-Signature header, secret per endpoint.',
+  api_card_webhook_item_1: 'HMAC-SHA256 signature, X-CloseOS-Signature header, secret per endpoint.',
   api_card_webhook_item_2: 'Fine-grained event selection per webhook (subscribe to what you care about).',
   api_card_webhook_item_3: 'One-click test + last HTTP status, last error and last delivery tracking.',
-  api_card_webhook_item_4: 'Multi-endpoint — as many destinations as you want.',
+  api_card_webhook_item_4: 'Multi-endpoint, as many destinations as you want.',
   api_events_label: 'Event catalog',
   api_events_title: '10 supported events',
   api_events_subtitle: 'From lead capture to closed deal, every key pipeline step fires a webhook ready to plug into your workflows.',
-  api_curl_label: 'Inbound API — cURL example',
-  api_payload_label: 'Outbound webhook — payload',
+  api_curl_label: 'Inbound API, cURL example',
+  api_payload_label: 'Outbound webhook, payload',
   api_cta_get_key: 'Get an API key',
   api_cta_docs: 'View documentation',
+  api_cta_connect_ai: 'Connect your AI',
+
+  api_mcp_badge: 'New · AI Assistant',
+  api_mcp_title: 'Connect Claude or ChatGPT to CloseOS',
+  api_mcp_desc: "A real MCP (Model Context Protocol) server to run your CRM in plain language: ask your AI assistant to create a prospect, schedule an appointment, trigger a No Show follow-up, or generate an invoice, it does it, directly inside CloseOS.",
+  api_mcp_item_1: '28 tools exposed: prospects, campaigns, calendar, team, invoicing, forms, tracking.',
+  api_mcp_item_2: 'A dedicated access key per account (cos_...), revocable at any time.',
+  api_mcp_item_3: 'Works with Claude, ChatGPT and any standard MCP client.',
+  api_mcp_item_4: 'No install: one key, one connection, and your CRM becomes operable in plain language.',
+  api_mcp_key_label: 'MCP connection',
+  api_mcp_tools_label: '28 tools available',
+  api_mcp_compatible_label: 'Works with',
 
   // Capture Section
   capture_badge: 'Lead Capture',
@@ -1210,7 +1335,7 @@ const en: Translations = {
   capture_item_embed: 'Embed iframe integrable on any site',
   capture_item_popup: 'Popup triggerable on click or automatically',
   capture_item_video: 'Add a presentation video with a redirect link',
-  capture_item_precapture: 'Pre-capture: as soon as an email or phone number is entered, the prospect is saved — even if they don\'t complete the form',
+  capture_item_precapture: 'Pre-capture: as soon as an email or phone number is entered, the prospect is saved, even if they don\'t complete the form',
   capture_item_payment: 'Paid appointments via Stripe: ideal for consultations, audits, coaching…',
   capture_tab_page: 'Page',
   capture_tab_embed: 'Embed',
@@ -1260,13 +1385,13 @@ const en: Translations = {
   // Features by Role
   roles_badge: 'Features by Role',
   roles_title: 'Each role has its tools. Each tool has its place.',
-  roles_subtitle: 'Owner, Closer, Setter or Setter-Closer \u2014 each accesses exactly what they need, nothing more.',
+  roles_subtitle: 'Owner, Closer, Setter or Setter-Closer, each accesses exactly what they need, nothing more.',
 
   // Role: Owner
   role_owner: {
     label: 'Owner / Admin',
     tagline: 'Full control',
-    description: 'Drive your entire sales ecosystem. CRM, teams, KPIs, campaigns \u2014 all from a single dashboard.',
+    description: 'Drive your entire sales ecosystem. CRM, teams, KPIs, campaigns, all from a single dashboard.',
     features: [
       {
         title: 'CRM & Global Pipeline',
@@ -1333,6 +1458,14 @@ const en: Translations = {
           'Shareable booking links + Google Meet',
           'Each member\'s calendar or all combined',
           'Bidirectional Google Calendar sync',
+        ],
+      },
+      {
+        title: 'AI Assistant (MCP)',
+        items: [
+          'Connect Claude to your CloseOS account via a dedicated key',
+          '28 tools: prospects, campaigns, calendar, team, invoicing, forms',
+          'Run your CRM in plain language, without leaving your assistant',
         ],
       },
     ],
@@ -1494,26 +1627,26 @@ const en: Translations = {
   faqs: [
     {
       question: 'Who is this tool for?',
-      answer: "It's designed for anyone selling online: entrepreneurs, Heads of Sales, as well as solopreneurs and those running Challenges. When we say 'team', we don't necessarily mean a large organization \u2014 even a solo closer or a setter/closer duo can benefit from the tool.",
+      answer: "It's designed for anyone selling online: entrepreneurs, Heads of Sales, as well as solopreneurs and those running Challenges. When we say 'team', we don't necessarily mean a large organization, even a solo closer or a setter/closer duo can benefit from the tool.",
     },
     {
       question: 'Is CloseOS Business compatible with my current CRM tools?',
-      answer: "Yes. In addition to our own built-in CRM, CloseOS Business natively connects to your existing stack, organized in 5 categories:\n\n• Full bidirectional CRMs: HubSpot, Pipedrive, GoHighLevel (GHL), Airtable and iClosed — every prospect added or updated on one side is instantly reflected on the other.\n• Inbound webhooks: Systeme.io — automatic contact import as soon as they're created.\n• No-code automation: Zapier, Make and n8n — connect CloseOS to over 5,000 third-party tools through your existing workflows.\n• Booking & Payment: Google Calendar, Calendly and Stripe — sync appointments, customer payments and MRR with zero external config.\n• Universal CSV: import/export your prospects from any tool. A built-in AI prompt automatically reformats any CSV file to make it CloseOS-compatible.\n\nThat said, we recommend using the built-in CloseOS Business CRM: it offers the best performance and simplest management in this ecosystem. Everything is designed to work together, without friction.",
+      answer: "Yes. In addition to our own built-in CRM, CloseOS Business natively connects to your existing stack, organized in 5 categories:\n\n• Full bidirectional CRMs: HubSpot, Pipedrive, GoHighLevel (GHL), Airtable and iClosed, every prospect added or updated on one side is instantly reflected on the other.\n• Inbound webhooks: Systeme.io, automatic contact import as soon as they're created.\n• No-code automation: Zapier, Make and n8n, connect CloseOS to over 5,000 third-party tools through your existing workflows.\n• Booking & Payment: Google Calendar, Calendly and Stripe, sync appointments, customer payments and MRR with zero external config.\n• Universal CSV: import/export your prospects from any tool. A built-in AI prompt automatically reformats any CSV file to make it CloseOS-compatible.\n\nThat said, we recommend using the built-in CloseOS Business CRM: it offers the best performance and simplest management in this ecosystem. Everything is designed to work together, without friction.",
     },
     {
       question: 'Why use the CloseOS CRM if I already have iClosed?',
       answer: "CloseOS is the French alternative to iClosed, structured in two complementary modules (Capture + CRM / Team Management) you can activate together or separately. Full bidirectional sync with iClosed lets you keep your current setup and use CloseOS as a cockpit on top.",
       modules: {
-        intro: "Where iClosed remains a booking/closing tool centered on the individual closer, CloseOS Business is structured in two complementary modules \u2014 activable together or separately:",
+        intro: "Where iClosed remains a booking/closing tool centered on the individual closer, CloseOS Business is structured in two complementary modules, activable together or separately:",
         blocks: [
           {
             tag: 'Module 1',
             subtitle: 'Acquisition',
             title: 'Capture + CRM',
             items: [
-              'Free AND paid capture pages \u2014 Stripe payment built into the form. Perfect to sell an audit, a diagnostic call or a tripwire at $47/$97/$297. 3 to 5\u00d7 higher conversion than a free call.',
-              'Lead auto-qualification \u2014 conditional forms, scoring and smart routing to the right closer. Your closers only handle hot leads.',
-              'Full native CRM \u2014 visual pipeline, tags, automated follow-ups, CSV import/export with AI reformatting.',
+              'Free AND paid capture pages, Stripe payment built into the form. Perfect to sell an audit, a diagnostic call or a tripwire at $47/$97/$297. 3 to 5\u00d7 higher conversion than a free call.',
+              'Lead auto-qualification, conditional forms, scoring and smart routing to the right closer. Your closers only handle hot leads.',
+              'Full native CRM, visual pipeline, tags, automated follow-ups, CSV import/export with AI reformatting.',
               'Native campaign & UTM tracking, no third-party tool.',
               'REST API + Webhooks to connect CloseOS to your back-office.',
             ],
@@ -1524,10 +1657,10 @@ const en: Translations = {
             title: 'Team Management',
             items: [
               'Automatic setter/closer assignment based on your business rules.',
-              'Head of Sales view \u2014 per-closer KPIs, closing rate, no-show, pipeline velocity.',
-              'Automatic commissions + Stripe matching \u2014 every payment attached to the right closer, MRR reporting.',
-              'Automated closer onboarding \u2014 scripts, videos, resources, progress tracking.',
-              'Granular access levels \u2014 each closer only sees their prospects.',
+              'Head of Sales view, per-closer KPIs, closing rate, no-show, pipeline velocity.',
+              'Automatic commissions + Stripe matching, every payment attached to the right closer, MRR reporting.',
+              'Automated closer onboarding, scripts, videos, resources, progress tracking.',
+              'Granular access levels, each closer only sees their prospects.',
             ],
           },
         ],
@@ -1536,7 +1669,7 @@ const en: Translations = {
     },
     {
       question: 'Does the CloseOS CRM offer an API and Webhooks for custom integrations?',
-      answer: "Yes. The native CloseOS Business CRM now exposes a complete REST API and an outbound Webhook system \u2014 built for tech teams and advanced setups.\n\n\u2022 REST API: fetch, create or update your prospects, deals, tags, appointments and campaigns from any application. Perfect to connect CloseOS to your back-office, internal dashboards or your own AI scoring engine.\n\u2022 Outbound Webhooks: trigger your own workflows on every key event \u2014 new lead captured, stage change, Stripe payment received, appointment booked or no-show, commission validated. You receive the payload in real time on the URL of your choice.\n\u2022 Secure authentication via a dedicated API key per organization, with scoping and revocation at any time.\n\nThis is the technical layer that makes CloseOS infinitely extensible \u2014 beyond native integrations and Zapier/Make/n8n. If your team has a custom need, the API and Webhooks cover it.",
+      answer: "Yes. The native CloseOS Business CRM now exposes a complete REST API and an outbound Webhook system, built for tech teams and advanced setups.\n\n\u2022 REST API: fetch, create or update your prospects, deals, tags, appointments and campaigns from any application. Perfect to connect CloseOS to your back-office, internal dashboards or your own AI scoring engine.\n\u2022 Outbound Webhooks: trigger your own workflows on every key event, new lead captured, stage change, Stripe payment received, appointment booked or no-show, commission validated. You receive the payload in real time on the URL of your choice.\n\u2022 Secure authentication via a dedicated API key per organization, with scoping and revocation at any time.\n\nThis is the technical layer that makes CloseOS infinitely extensible, beyond native integrations and Zapier/Make/n8n. If your team has a custom need, the API and Webhooks cover it.",
     },
     {
       question: 'Is my data secure and GDPR-compliant?',
@@ -1544,27 +1677,27 @@ const en: Translations = {
     },
     {
       question: 'Who sees what in the team? (Admin, Head of Sales, Closers, Setters)',
-      answer: "No \u2014 data access is strictly segmented by role. CloseOS Business offers 4 distinct access levels, fully configurable from the Admin side:\n\n\u2022 Admin (Owner) \u2014 full access: full team, prospects, global KPIs, revenue, margins, commissions, integrations, billing and strategic contacts.\n\u2022 Head of Sales \u2014 closing team management: sees all closers and setters in their scope, their KPIs, their pipeline and their commissions. You choose whether the most sensitive financial data (global revenue, margins) is accessible to them or not.\n\u2022 Closer \u2014 only sees their own prospects, their pipeline, their personal KPIs and their commissions. No access to other closers' deals.\n\u2022 Setter \u2014 only sees the leads they qualified and their conversion rate. No access to amounts received or closed deals.\n\nYou stay in full control: every permission is revocable and configurable at any time from the Admin interface.",
+      answer: "No, data access is strictly segmented by role. CloseOS Business offers 4 distinct access levels, fully configurable from the Admin side:\n\n\u2022 Admin (Owner), full access: full team, prospects, global KPIs, revenue, margins, commissions, integrations, billing and strategic contacts.\n\u2022 Head of Sales, closing team management: sees all closers and setters in their scope, their KPIs, their pipeline and their commissions. You choose whether the most sensitive financial data (global revenue, margins) is accessible to them or not.\n\u2022 Closer, only sees their own prospects, their pipeline, their personal KPIs and their commissions. No access to other closers' deals.\n\u2022 Setter, only sees the leads they qualified and their conversion rate. No access to amounts received or closed deals.\n\nYou stay in full control: every permission is revocable and configurable at any time from the Admin interface.",
     },
     {
       question: 'How many team members can I add?',
-      answer: 'As many as you want. CloseOS Business imposes no limit on team size, regardless of role \u2014 closers, setters, setter-closers, Head of Sales, or even multiple Admin / co-founders. Pricing only scales with the number of active seats based on your plan.',
+      answer: 'As many as you want. CloseOS Business imposes no limit on team size, regardless of role, closers, setters, setter-closers, Head of Sales, or even multiple Admin / co-founders. Pricing only scales with the number of active seats based on your plan.',
     },
     {
       question: 'Is it difficult for my team to get started?',
-      answer: "No, onboarding is 100% autonomous and tailored to each role:\n\n\u2022 Closers and setters \u2014 guided from their first login with your scripts, video resources, their dashboard and progression KPIs. No manual training required.\n\u2022 Head of Sales \u2014 dedicated team management interface: per-closer KPIs, closing rate, no-show, pipeline velocity and MRR reporting. Readable at a glance.\n\u2022 Admin \u2014 configuration in a few clicks: access levels, auto-assignment rules, CRM integrations, Stripe and billing settings from a single interface.\n\nResult: your new members are operational in less than 24h, without you having to explain anything manually.",
+      answer: "No, onboarding is 100% autonomous and tailored to each role:\n\n\u2022 Closers and setters, guided from their first login with your scripts, video resources, their dashboard and progression KPIs. No manual training required.\n\u2022 Head of Sales, dedicated team management interface: per-closer KPIs, closing rate, no-show, pipeline velocity and MRR reporting. Readable at a glance.\n\u2022 Admin, configuration in a few clicks: access levels, auto-assignment rules, CRM integrations, Stripe and billing settings from a single interface.\n\nResult: your new members are operational in less than 24h, without you having to explain anything manually.",
     },
   ],
 
   // Final CTA
   final_cta_title: 'Ready to scale your closing ecosystem?',
   final_cta_subtitle: 'Sign up now and unlock an unbeatable early adopter price, revealed on April 4th.',
-  final_cta_button: 'Join the waitlist \u2014 Pricing on April 4th',
+  final_cta_button: 'Join the waitlist, Pricing on April 4th',
 
   // Founder
   founder_section_title: 'The founder',
   founder_role: 'Founder of CloseOS',
-  founder_bio: "Before creating the CloseOS ecosystem, Thomas was a closer and setter. It was from working in the field that he experienced the daily reality of the job firsthand: working with at least 2 screens, juggling dozens of tools that don't even talk to each other, and wasting 1 to 1.5 hours every day just to keep everything updated. A CRM on one side, a booking tool on another, invoicing on a third, KPIs in a spreadsheet \u2014 all with zero synchronization. CloseOS was born from that frustration: a single tool that replaces all the others, built by a closer for closers.",
+  founder_bio: "Before creating the CloseOS ecosystem, Thomas was a closer and setter. It was from working in the field that he experienced the daily reality of the job firsthand: working with at least 2 screens, juggling dozens of tools that don't even talk to each other, and wasting 1 to 1.5 hours every day just to keep everything updated. A CRM on one side, a booking tool on another, invoicing on a third, KPIs in a spreadsheet, all with zero synchronization. CloseOS was born from that frustration: a single tool that replaces all the others, built by a closer for closers.",
 
   // Footer
   footer_copyright: '\u00A9 2026 CloseOS',
@@ -1610,7 +1743,7 @@ const en: Translations = {
   modal_google_form: 'Your needs (Google Form)',
   modal_linkedin: 'Follow on LinkedIn',
   modal_title: 'Join the waitlist',
-  modal_description: 'Sign up and receive on {date} a competitive and unbeatable early adopter price, reserved exclusively for subscribers \u2014 {locked}.',
+  modal_description: 'Sign up and receive on {date} a competitive and unbeatable early adopter price, reserved exclusively for subscribers, {locked}.',
   modal_description_date: 'April 4th',
   modal_description_locked: 'locked for life',
   modal_email_label: 'Your Professional Email',
@@ -1622,25 +1755,25 @@ const en: Translations = {
   modal_error_generic: 'An error occurred. Please try again.',
 
   // SEO
-  seo_title: 'CloseOS Business — Manage Your Sales Team',
+  seo_title: 'CloseOS Business, Manage Your Sales Team',
   seo_description: 'Management platform for infopreneurs: manage closers, setters, KPIs and acquisition campaigns. 20-day free trial.',
-  seo_og_title: 'CloseOS Business \u2014 Management Platform for Entrepreneurs and Heads of Sales',
+  seo_og_title: 'CloseOS Business, Management Platform for Entrepreneurs and Heads of Sales',
   seo_og_description: 'Manage your sales team, drive your acquisition campaigns and track your team KPIs. French-speaking closing software.',
-  seo_default_title: 'CloseOS \u2014 SaaS Ecosystem for Digital Sales | Closer CRM & Management',
+  seo_default_title: 'CloseOS, SaaS Ecosystem for Digital Sales | Closer CRM & Management',
   seo_default_description: 'CloseOS is the French-speaking SaaS ecosystem for digital sales. Closer tool: CRM, pipeline, VoIP, KPIs, automatic invoicing. Management: sales team, acquisition campaigns, analytics. iClosed alternative.',
-  seo_default_og_title: 'CloseOS \u2014 SaaS Ecosystem for French-speaking Digital Sales',
+  seo_default_og_title: 'CloseOS, SaaS Ecosystem for French-speaking Digital Sales',
   seo_default_og_description: 'All-in-one tool for closers (CRM, pipeline, VoIP, KPIs) and entrepreneurs (team management, campaigns, analytics). iClosed alternative.',
 
   // Structured data
   sd_description: 'Management platform for entrepreneurs and Heads of Sales. Sales team management, acquisition campaign management, CRM, dashboard. iClosed alternative, 100% in French.',
-  sd_offer_description: 'Waitlist \u2014 early adopter pricing',
+  sd_offer_description: 'Waitlist, early adopter pricing',
   sd_feature_list: 'Manage sales team, Team closing management, Closing software, Acquisition CRM, Setter closer management tool, Acquisition campaign management, Dashboard, Team KPIs, Automated closer onboarding',
   sd_faq_who_q: 'Who is CloseOS Business for?',
   sd_faq_who_a: 'CloseOS Business is designed for anyone selling online: entrepreneurs, Heads of Sales, solopreneurs and those running Challenges. Even a solo closer or a setter/closer duo can benefit from the management tool.',
   sd_faq_compat_q: 'Is CloseOS Business compatible with my current CRM tools?',
-  sd_faq_compat_a: 'Yes. CloseOS Business natively connects to your stack in 5 categories: full bidirectional CRMs (HubSpot, Pipedrive, GoHighLevel GHL, Airtable, iClosed), inbound webhooks (Systeme.io), no-code automation (Zapier, Make, n8n — access to 5,000+ tools), booking & payment (Google Calendar, Calendly, Stripe), and universal CSV with automatic AI reformatting. The built-in CloseOS Business CRM offers the best performance for the ecosystem.',
+  sd_faq_compat_a: 'Yes. CloseOS Business natively connects to your stack in 5 categories: full bidirectional CRMs (HubSpot, Pipedrive, GoHighLevel GHL, Airtable, iClosed), inbound webhooks (Systeme.io), no-code automation (Zapier, Make, n8n, access to 5,000+ tools), booking & payment (Google Calendar, Calendly, Stripe), and universal CSV with automatic AI reformatting. The built-in CloseOS Business CRM offers the best performance for the ecosystem.',
   sd_faq_why_crm_q: 'Why use the CloseOS CRM if I already have iClosed?',
-  sd_faq_why_crm_a: "CloseOS Business is the French alternative to iClosed, structured in two complementary modules. Capture + CRM module: free AND paid capture pages with built-in Stripe (perfect to sell a paid audit or diagnostic call — 3 to 5× higher conversion than a free call), lead auto-qualification (conditional forms, scoring, smart routing), full native CRM, campaign/UTM tracking, API + Webhooks. Team Management module: automatic setter/closer assignment, Head of Sales view, per-closer KPIs, automatic commissions + Stripe matching, automated onboarding. If you already use iClosed, full bidirectional sync lets you keep it as your source and use CloseOS as your cockpit. 100% in French, GDPR-compliant, EU-hosted.",
+  sd_faq_why_crm_a: "CloseOS Business is the French alternative to iClosed, structured in two complementary modules. Capture + CRM module: free AND paid capture pages with built-in Stripe (perfect to sell a paid audit or diagnostic call, 3 to 5× higher conversion than a free call), lead auto-qualification (conditional forms, scoring, smart routing), full native CRM, campaign/UTM tracking, API + Webhooks. Team Management module: automatic setter/closer assignment, Head of Sales view, per-closer KPIs, automatic commissions + Stripe matching, automated onboarding. If you already use iClosed, full bidirectional sync lets you keep it as your source and use CloseOS as your cockpit. 100% in French, GDPR-compliant, EU-hosted.",
   sd_faq_api_q: 'Does the CloseOS CRM offer an API and Webhooks?',
   sd_faq_api_a: "Yes. The native CloseOS Business CRM exposes a complete REST API (read/write prospects, deals, tags, appointments, campaigns) and an outbound Webhook system triggered on every key event (new lead, stage change, Stripe payment, appointment, no-show, commission). Secure authentication via a dedicated API key per organization. CloseOS becomes infinitely extensible, beyond native integrations and Zapier/Make/n8n.",
   sd_faq_data_access_q: 'Who sees what in the CloseOS Business team (Admin, Head of Sales, Closers, Setters)?',

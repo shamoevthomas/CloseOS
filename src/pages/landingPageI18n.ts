@@ -84,6 +84,22 @@ export interface SalesTranslations {
   feat6_desc: string
   feat7_title: string
   feat7_desc: string
+  feat8_title: string
+  feat8_desc: string
+  feat8_a_title: string
+  feat8_a_desc: string
+  feat8_b_title: string
+  feat8_b_desc: string
+  feat8_c_title: string
+  feat8_c_desc: string
+  feat9_title: string
+  feat9_desc: string
+  feat10_title: string
+  feat10_desc: string
+  feat11_title: string
+  feat11_desc: string
+  feat12_title: string
+  feat12_desc: string
 
   // Roadmap
   roadmap_badge: string
@@ -196,8 +212,6 @@ export interface SalesTranslations {
   pricing_cta: string
   pricing_no_card: string
   pricing_climate: string
-  pricing_voip_option: string
-  pricing_voip_soon: string
   pricing_close_comparison: string
 
   // FAQ
@@ -277,13 +291,13 @@ export interface SalesTranslations {
 
 const fr: SalesTranslations = {
   // SEO
-  seo_title: "CloseOS Sales — CRM tout-en-un pour closers",
+  seo_title: "CloseOS Sales, CRM tout-en-un pour closers",
   seo_description: "CRM conçu pour les closers : pipeline visuel, callroom intégrée, facturation auto et KPIs en temps réel. Essai gratuit 20 jours.",
 
   // JSON-LD
-  ld_description: "Le CRM pour closer en France. Pipeline de vente, VoIP intégré, suivi calls closing, agenda, facturation automatique et KPIs de closing. Logiciel closer high ticket tout-en-un.",
+  ld_description: "Le CRM pour closer en France. Pipeline de vente, suivi calls closing, agenda, facturation automatique et KPIs de closing. Logiciel closer high ticket tout-en-un.",
   ld_offers: "Essai gratuit 10 jours sans carte bancaire",
-  ld_features: "CRM closer, Pipeline closer, VoIP intégré, Suivi calls closing, Agenda & booking, Facturation automatique closer, KPI closing, Gestion prospects closing, Visioconférence",
+  ld_features: "CRM closer, Pipeline closer, Suivi calls closing, Agenda & booking, Facturation automatique closer, KPI closing, Gestion prospects closing, Visioconférence",
   ld_faq1_q: "Est-ce que je peux connecter Calendly à CloseOS ?",
   ld_faq1_a: "Non, et c'est un choix assumé. Calendly impose un abonnement payant pour les intégrations. CloseOS intègre Cal.com (référence Open Source) : un système de booking ultra-performant, synchronisé à votre agenda, sans surcoût.",
   ld_faq2_q: "Comment CloseOS s'engage pour l'environnement ?",
@@ -293,7 +307,7 @@ const fr: SalesTranslations = {
   ld_faq4_q: "Est-ce que iClosed est intégré à CloseOS ?",
   ld_faq4_a: "Oui, en synchronisation bidirectionnelle complète. Tout prospect, deal ou changement de stage modifié d'un côté est reflété en temps réel de l'autre. Vos leads et ventes iClosed remontent dans CloseOS, et vos mises à jour CloseOS (stage, tag, note, RDV) sont repoussées vers iClosed automatiquement.",
   ld_faq5_q: "C'est quoi CloseOS Sales ?",
-  ld_faq5_a: "CloseOS Sales est le logiciel tout-en-un pour closers high ticket et freelance en France. Il regroupe CRM closer, pipeline de vente visuel, VoIP intégré, suivi calls closing, agenda & booking, facturation automatique et KPIs de closing. C'est l'outil qui remplace 10 logiciels différents pour les closers indépendants.",
+  ld_faq5_a: "CloseOS Sales est le logiciel tout-en-un pour closers high ticket et freelance en France. Il regroupe CRM closer, pipeline de vente visuel, suivi calls closing, agenda & booking, facturation automatique et KPIs de closing. C'est l'outil qui remplace 10 logiciels différents pour les closers indépendants.",
 
   // Banner
   banner: "\u{1F680} La V1 de CloseOS est officiellement lancée ! Testez gratuitement pendant 10 jours.",
@@ -315,7 +329,7 @@ const fr: SalesTranslations = {
   hero_title_line1: "Le CRM pour closer",
   hero_title_line2: "tout-en-un.",
   hero_title_line3: "Récupérez 10h par semaine.",
-  hero_subtitle: "Pipeline closer, VoIP intégré, agenda & booking, facturation automatique, KPIs de closing — le logiciel closer high ticket conçu pour les closers freelance en France. Gérez vos prospects closing, suivez vos calls et concentrez-vous sur ce qui rapporte.",
+  hero_subtitle: "Pipeline closer, agenda & booking, facturation automatique, KPIs de closing, le logiciel closer high ticket conçu pour les closers freelance en France. Gérez vos prospects closing, suivez vos calls et concentrez-vous sur ce qui rapporte.",
   hero_badge_focus: "\u{1F517} Un seul outil. Zéro saisie manuelle. 100% dédié au closing.",
   hero_cta: "Commencer gratuitement",
   hero_login: "Se connecter",
@@ -329,7 +343,7 @@ const fr: SalesTranslations = {
 
   // Features
   features_title: "Toutes vos fonctionnalités de closing.\nUn seul outil.",
-  features_subtitle: "CRM, pipeline, VoIP, agenda, facturation, KPIs — arrêtez de jongler entre les onglets. CloseOS centralise tout votre flux de travail pour que vous puissiez vous concentrer sur l'essentiel :",
+  features_subtitle: "CRM, pipeline, agenda, facturation, KPIs. Arrêtez de jongler entre les onglets. CloseOS centralise tout votre flux de travail pour que vous puissiez vous concentrer sur l'essentiel :",
   features_highlight: "vendre et closer.",
   feat1_title: "Cockpit & KPIs en Temps Réel",
   feat1_desc: "Votre centre de commandement. Visualisez instantanément vos commissions, votre taux de conversion, et votre pipeline. Si votre performance baisse, vous le voyez tout de suite.",
@@ -337,7 +351,7 @@ const fr: SalesTranslations = {
   feat1_item2: "Taux de closing",
   feat1_item3: "Commissions prévisionnelles",
   feat1_item4: "Deals en cours",
-  feat2_title: "Téléphonie VoIP & Click-to-WhatsApp",
+  feat2_title: "Appels & Click-to-WhatsApp",
   feat2_desc: "Appelez vos prospects en un clic via Twilio (appels enregistrés). Lancez vos conversations WhatsApp instantanément sans enregistrer le numéro.",
   feat2_badge: "\u{1F680} Zéro friction au quotidien",
   feat3_title: "Pipeline & Offres",
@@ -359,13 +373,29 @@ const fr: SalesTranslations = {
   feat6_desc: "Générez vos factures de commissions en un clic. Créez des liens de paiement CB sécurisés et envoyez automatiquement la facture à votre infopreneur.",
   feat7_title: "Sync CRM",
   feat7_desc: "Synchronisation native avec iClosed, HubSpot et Pipedrive. Oubliez la double saisie manuelle et automatisez 100% de votre suivi.",
+  feat8_title: "Call Room, votre cockpit d'appel",
+  feat8_desc: "Une salle d'appel dédiée qui garde tout sous les yeux pendant que vous closez, et enregistre l'appel pour le revoir.",
+  feat8_a_title: "\u{1F4DD} Script en direct",
+  feat8_a_desc: "Votre script de closing déroulé à côté de l'appel, pour ne jamais perdre le fil.",
+  feat8_b_title: "\u{1F381} Offre & ressources",
+  feat8_b_desc: "L'offre, ses formules et vos ressources accessibles en un clic pendant l'appel.",
+  feat8_c_title: "\u{1F3A5} Enregistrement",
+  feat8_c_desc: "Enregistrez l'écran et l'audio de l'appel, exportés en vidéo pour vous rejouer et progresser.",
+  feat9_title: "Relances Automatiques",
+  feat9_desc: "Ne perdez plus jamais un prospect. Badges de relance sur vos cartes, délais configurables, et un email digest quotidien qui liste vos relances à faire.",
+  feat10_title: "Rapport de Performance Hebdo",
+  feat10_desc: "Votre semaine en un coup d'œil : CA, deals gagnés, RDV réalisés, taux de closing, chacun comparé à la semaine précédente. En app et par email chaque lundi.",
+  feat11_title: "Détection de Doublons",
+  feat11_desc: "CloseOS repère les fiches en double (même email ou téléphone) et vous les fusionne proprement, en comparaison côte à côte. Votre base reste nette.",
+  feat12_title: "Tâches par Prospect",
+  feat12_desc: "Attachez des tâches à chaque prospect avec échéance, et retrouvez tout ce qui est à faire aujourd'hui sur votre dashboard. Rien ne passe à la trappe.",
 
   // Roadmap
   roadmap_badge: "Roadmap 2026",
   roadmap_title: "L'Évolution du Closing",
   roadmap_subtitle: "Notre vision pour faire de CloseOS le système d'exploitation incontournable des closers et infopreneurs.",
   roadmap_q1_title: "Lancement CloseOS Sales",
-  roadmap_q1_desc: "CRM, Pipeline, VoIP, KPIs...",
+  roadmap_q1_desc: "CRM, Pipeline, KPIs...",
   roadmap_q2_title: "CloseOS Business",
   roadmap_q2_desc: "L'outil pour les Infopreneurs, agences, head of sales... Inclut le CRM Complet.",
   roadmap_q2b_title: "Rapport de performance",
@@ -387,7 +417,7 @@ const fr: SalesTranslations = {
   comp_old1_badge: "Charge mentale",
   comp_old2: "Reporting KPI sur Google Sheet",
   comp_old2_badge: "Saisie Manuelle",
-  comp_old3: "Analyse d'appels / VoIP",
+  comp_old3: "Analyse d'appels",
   comp_old3_badge: "Données dispersées",
   comp_old4: "Facturation des commissions",
   comp_old4_badge: "Retards & Oublis",
@@ -440,10 +470,10 @@ const fr: SalesTranslations = {
   role_sc_b2: "2 pages KPI : KPI Closer + KPI Setter",
   role_sc_b3: "Dashboard avec sections empilées Setter et Closer",
   role_sc_b4: "Suivi clair de vos commissions setter ET closer",
-  roles_footer: "Modifiable à tout moment depuis vos paramètres — l'app s'adapte instantanément.",
+  roles_footer: "Modifiable à tout moment depuis vos paramètres, l'app s'adapte instantanément.",
 
   // Pricing
-  pricing_title: "Tarifs CloseOS — l'outil tout-en-un des closers",
+  pricing_title: "Tarifs CloseOS, l'outil tout-en-un des closers",
   pricing_subtitle: "Un seul plan. Tout inclus. Sans engagement.",
   pricing_trial: "Testez gratuitement 10 jours. Aucune carte bancaire requise.",
   pricing_monthly: "Mensuel",
@@ -471,8 +501,6 @@ const fr: SalesTranslations = {
   pricing_cta: "Commencer gratuitement",
   pricing_no_card: "Aucune CB requise. 10 jours gratuits.",
   pricing_climate: "1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.",
-  pricing_voip_option: "Option VoIP",
-  pricing_voip_soon: "Arrive prochainement",
   pricing_close_comparison: "Fermer le comparatif",
 
   // FAQ
@@ -489,7 +517,7 @@ const fr: SalesTranslations = {
   faq3_a1: "Parce que le \"bricolage\" vous coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio et ne synchronise pas vos appels.",
   faq3_a2: "CloseOS n'est pas un simple tableau de note, c'est un système actif qui élimine 80% de votre administratif. Le temps que vous ne passez plus à configurer vos outils est du temps réinvesti pour signer des contrats.",
   faq5_q: "Est-ce que iClosed est intégré ?",
-  faq5_a1: "Oui, et désormais en synchronisation bidirectionnelle complète. Chaque prospect, deal ou changement de stage ajouté ou modifié d'un côté est instantanément reflété de l'autre — plus de double saisie, plus de désynchronisation.",
+  faq5_a1: "Oui, et désormais en synchronisation bidirectionnelle complète. Chaque prospect, deal ou changement de stage ajouté ou modifié d'un côté est instantanément reflété de l'autre, plus de double saisie, plus de désynchronisation.",
   faq5_a2: "Concrètement : vos leads et ventes iClosed remontent automatiquement dans CloseOS, et toute mise à jour faite dans CloseOS (stage, tag, note, RDV) est repoussée vers iClosed en temps réel. Vous gardez votre setup iClosed existant et vous gagnez le cockpit CloseOS par-dessus, sans friction.",
 
   // CTA Final
@@ -526,7 +554,7 @@ const fr: SalesTranslations = {
   // Founder
   founder_section_title: "Le fondateur",
   founder_role: "Fondateur de CloseOS",
-  founder_bio: "Avant de créer l'écosystème CloseOS, Thomas était closer et setter. C'est en étant sur le terrain qu'il a vu et subi la réalité du métier au quotidien : travailler avec minimum 2 écrans, jongler entre des dizaines d'outils qui ne communiquent même pas entre eux, et perdre 1h à 1h30 chaque jour juste pour tout mettre à jour. Un CRM d'un côté, un outil de booking de l'autre, la facturation sur un troisième, les KPIs sur un tableur — le tout sans aucune synchronisation. CloseOS est né de cette frustration : un seul outil qui remplace tous les autres, conçu par un closer pour les closers.",
+  founder_bio: "Avant de créer l'écosystème CloseOS, Thomas était closer et setter. C'est en étant sur le terrain qu'il a vu et subi la réalité du métier au quotidien : travailler avec minimum 2 écrans, jongler entre des dizaines d'outils qui ne communiquent même pas entre eux, et perdre 1h à 1h30 chaque jour juste pour tout mettre à jour. Un CRM d'un côté, un outil de booking de l'autre, la facturation sur un troisième, les KPIs sur un tableur, le tout sans aucune synchronisation. CloseOS est né de cette frustration : un seul outil qui remplace tous les autres, conçu par un closer pour les closers.",
 
   // Footer
   footer_legal: "Mentions Légales",
@@ -562,13 +590,13 @@ const fr: SalesTranslations = {
 
 const en: SalesTranslations = {
   // SEO
-  seo_title: "CloseOS Sales — All-in-One CRM for Closers",
+  seo_title: "CloseOS Sales, All-in-One CRM for Closers",
   seo_description: "CRM built for closers: visual pipeline, built-in call room, automated invoicing & real-time KPIs. 20-day free trial.",
 
   // JSON-LD
-  ld_description: "The CRM for closers. Sales pipeline, built-in VoIP, call tracking, calendar, automated invoicing and closing KPIs. All-in-one high-ticket closer software.",
+  ld_description: "The CRM for closers. Sales pipeline, call tracking, calendar, automated invoicing and closing KPIs. All-in-one high-ticket closer software.",
   ld_offers: "10-day free trial, no credit card required",
-  ld_features: "Closer CRM, Sales pipeline, Built-in VoIP, Call tracking, Calendar & booking, Automated invoicing, Closing KPIs, Prospect management, Video conferencing",
+  ld_features: "Closer CRM, Sales pipeline, Call tracking, Calendar & booking, Automated invoicing, Closing KPIs, Prospect management, Video conferencing",
   ld_faq1_q: "Can I connect Calendly to CloseOS?",
   ld_faq1_a: "No, and that's by design. Calendly requires a paid subscription for integrations. CloseOS includes Cal.com (the Open Source standard): a high-performance booking system, synced to your calendar, at no extra cost.",
   ld_faq2_q: "How does CloseOS contribute to the environment?",
@@ -578,7 +606,7 @@ const en: SalesTranslations = {
   ld_faq4_q: "Is iClosed integrated with CloseOS?",
   ld_faq4_a: "Yes, with full bidirectional sync. Every prospect, deal or stage change updated on one side is reflected on the other in real time. Your iClosed leads and sales flow into CloseOS, and your CloseOS updates (stage, tag, note, appointment) are pushed back to iClosed automatically.",
   ld_faq5_q: "What is CloseOS Sales?",
-  ld_faq5_a: "CloseOS Sales is the all-in-one software for high-ticket and freelance closers. It combines closer CRM, visual sales pipeline, built-in VoIP, call tracking, calendar & booking, automated invoicing and closing KPIs. It's the tool that replaces 10 different pieces of software for independent closers.",
+  ld_faq5_a: "CloseOS Sales is the all-in-one software for high-ticket and freelance closers. It combines closer CRM, visual sales pipeline, call tracking, calendar & booking, automated invoicing and closing KPIs. It's the tool that replaces 10 different pieces of software for independent closers.",
 
   // Banner
   banner: "\u{1F680} CloseOS V1 is officially live! Try it free for 10 days.",
@@ -600,7 +628,7 @@ const en: SalesTranslations = {
   hero_title_line1: "The all-in-one",
   hero_title_line2: "closer CRM.",
   hero_title_line3: "Get 10 hours back every week.",
-  hero_subtitle: "Closer pipeline, built-in VoIP, calendar & booking, automated invoicing, closing KPIs — the high-ticket closer software built for freelance closers. Manage your prospects, track your calls and focus on what makes money.",
+  hero_subtitle: "Closer pipeline, calendar & booking, automated invoicing, closing KPIs, the high-ticket closer software built for freelance closers. Manage your prospects, track your calls and focus on what makes money.",
   hero_badge_focus: "\u{1F517} One tool. Zero manual entry. 100% dedicated to closing.",
   hero_cta: "Start for free",
   hero_login: "Sign in",
@@ -614,7 +642,7 @@ const en: SalesTranslations = {
 
   // Features
   features_title: "All your closing features.\nOne single tool.",
-  features_subtitle: "CRM, pipeline, VoIP, calendar, invoicing, KPIs — stop juggling between tabs. CloseOS centralizes your entire workflow so you can focus on what matters:",
+  features_subtitle: "CRM, pipeline, calendar, invoicing, KPIs. Stop juggling between tabs. CloseOS centralizes your entire workflow so you can focus on what matters:",
   features_highlight: "selling and closing.",
   feat1_title: "Cockpit & Real-Time KPIs",
   feat1_desc: "Your command center. Instantly see your commissions, conversion rate and pipeline. If your performance dips, you'll know right away.",
@@ -622,7 +650,7 @@ const en: SalesTranslations = {
   feat1_item2: "Closing rate",
   feat1_item3: "Projected commissions",
   feat1_item4: "Deals in progress",
-  feat2_title: "VoIP Calling & Click-to-WhatsApp",
+  feat2_title: "Calls & Click-to-WhatsApp",
   feat2_desc: "Call your prospects in one click via Twilio (calls recorded). Start WhatsApp conversations instantly without saving the number.",
   feat2_badge: "\u{1F680} Zero friction, every day",
   feat3_title: "Pipeline & Offers",
@@ -644,13 +672,29 @@ const en: SalesTranslations = {
   feat6_desc: "Generate commission invoices in one click. Create secure card payment links and automatically send the invoice to your client.",
   feat7_title: "CRM Sync",
   feat7_desc: "Native sync with iClosed, HubSpot and Pipedrive. Forget double data entry and automate 100% of your follow-up.",
+  feat8_title: "Call Room, your call cockpit",
+  feat8_desc: "A dedicated call room that keeps everything in front of you while you close, and records the call to review it.",
+  feat8_a_title: "\u{1F4DD} Live script",
+  feat8_a_desc: "Your closing script laid out next to the call, so you never lose the thread.",
+  feat8_b_title: "\u{1F381} Offer & resources",
+  feat8_b_desc: "The offer, its plans and your resources one click away during the call.",
+  feat8_c_title: "\u{1F3A5} Recording",
+  feat8_c_desc: "Record the screen and audio of the call, exported as video to replay and improve.",
+  feat9_title: "Automatic Follow-ups",
+  feat9_desc: "Never lose a prospect again. Follow-up badges on your cards, configurable delays, and a daily digest email listing the follow-ups to do.",
+  feat10_title: "Weekly Performance Report",
+  feat10_desc: "Your week at a glance: revenue, deals won, calls held, closing rate, each compared to the previous week. In-app and by email every Monday.",
+  feat11_title: "Duplicate Detection",
+  feat11_desc: "CloseOS spots duplicate records (same email or phone) and merges them cleanly, side by side. Your database stays spotless.",
+  feat12_title: "Per-Prospect Tasks",
+  feat12_desc: "Attach tasks to each prospect with a due date, and find everything due today on your dashboard. Nothing slips through.",
 
   // Roadmap
   roadmap_badge: "Roadmap 2026",
   roadmap_title: "The Evolution of Closing",
   roadmap_subtitle: "Our vision to make CloseOS the go-to operating system for closers, agencies and online business owners.",
   roadmap_q1_title: "CloseOS Sales Launch",
-  roadmap_q1_desc: "CRM, Pipeline, VoIP, KPIs...",
+  roadmap_q1_desc: "CRM, Pipeline, KPIs...",
   roadmap_q2_title: "CloseOS Business",
   roadmap_q2_desc: "The tool for online business owners, agencies, head of sales... Includes the full CRM.",
   roadmap_q2b_title: "Performance Reports",
@@ -672,7 +716,7 @@ const en: SalesTranslations = {
   comp_old1_badge: "Mental load",
   comp_old2: "KPI reporting on Google Sheets",
   comp_old2_badge: "Manual entry",
-  comp_old3: "Call analysis / VoIP",
+  comp_old3: "Call analysis",
   comp_old3_badge: "Scattered data",
   comp_old4: "Commission invoicing",
   comp_old4_badge: "Delays & Oversights",
@@ -725,10 +769,10 @@ const en: SalesTranslations = {
   role_sc_b2: "2 KPI pages: Closer KPI + Setter KPI",
   role_sc_b3: "Dashboard with stacked Setter and Closer sections",
   role_sc_b4: "Clear tracking of your setter AND closer commissions",
-  roles_footer: "Editable anytime from your settings — the app adapts instantly.",
+  roles_footer: "Editable anytime from your settings, the app adapts instantly.",
 
   // Pricing
-  pricing_title: "CloseOS Pricing — the all-in-one closer tool",
+  pricing_title: "CloseOS Pricing, the all-in-one closer tool",
   pricing_subtitle: "One plan. Everything included. No commitment.",
   pricing_trial: "Try free for 10 days. No credit card required.",
   pricing_monthly: "Monthly",
@@ -756,8 +800,6 @@ const en: SalesTranslations = {
   pricing_cta: "Start for free",
   pricing_no_card: "No credit card required. 10 free days.",
   pricing_climate: "1.5% of your subscription funds CO2 removal via Stripe Climate.",
-  pricing_voip_option: "VoIP Option",
-  pricing_voip_soon: "Coming soon",
   pricing_close_comparison: "Close comparison",
 
   // FAQ
@@ -774,7 +816,7 @@ const en: SalesTranslations = {
   faq3_a1: "Because the DIY approach costs you deals. Excel doesn't send automatic reminders, Notion doesn't generate meeting links or sync your calls.",
   faq3_a2: "CloseOS isn't just a note-taking tool, it's an active system that eliminates 80% of your admin work. The time you stop spending on configuring tools is time reinvested in closing deals.",
   faq5_q: "Is iClosed integrated?",
-  faq5_a1: "Yes — and now with full bidirectional sync. Every prospect, deal or stage change added or updated on one side is instantly reflected on the other. No more double entry, no more drift.",
+  faq5_a1: "Yes, and now with full bidirectional sync. Every prospect, deal or stage change added or updated on one side is instantly reflected on the other. No more double entry, no more drift.",
   faq5_a2: "In practice: your iClosed leads and sales flow automatically into CloseOS, and any update made in CloseOS (stage, tag, note, appointment) is pushed back to iClosed in real time. Keep your existing iClosed setup and gain the CloseOS cockpit on top, without friction.",
 
   // CTA Final
@@ -811,7 +853,7 @@ const en: SalesTranslations = {
   // Founder
   founder_section_title: "The founder",
   founder_role: "Founder of CloseOS",
-  founder_bio: "Before creating the CloseOS ecosystem, Thomas was a closer and setter. It was from working in the field that he experienced the daily reality of the job firsthand: working with at least 2 screens, juggling dozens of tools that don't even talk to each other, and wasting 1 to 1.5 hours every day just to keep everything updated. A CRM on one side, a booking tool on another, invoicing on a third, KPIs in a spreadsheet — all with zero synchronization. CloseOS was born from that frustration: a single tool that replaces all the others, built by a closer for closers.",
+  founder_bio: "Before creating the CloseOS ecosystem, Thomas was a closer and setter. It was from working in the field that he experienced the daily reality of the job firsthand: working with at least 2 screens, juggling dozens of tools that don't even talk to each other, and wasting 1 to 1.5 hours every day just to keep everything updated. A CRM on one side, a booking tool on another, invoicing on a third, KPIs in a spreadsheet, all with zero synchronization. CloseOS was born from that frustration: a single tool that replaces all the others, built by a closer for closers.",
 
   // Footer
   footer_legal: "Legal Notice",

@@ -3,25 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, Check, ChevronDown, Shield, Clock, Layers, Target, Star, ShieldCheck, X as XIcon } from 'lucide-react';
 
-const salesPlans = [
-  {
-    name: 'Solo',
-    badge: 'Closer indépendant',
-    monthlyPrice: 24,
-    annualPrice: 216,
-    annualMonthly: 18,
-    features: [
-      'CRM complet avec pipeline visuel',
-      'Callroom Google Meet',
-      'Facturation automatique Stripe',
-      'KPIs de closing en temps réel',
-      'Booking et agenda',
-      'Intégrations (iClosed, Pipedrive, Zapier…)',
-    ],
-    cta: { label: 'Essai gratuit 20 jours', to: '/register' },
-  },
-];
-
 const businessPlans = [
   {
     name: 'Solo',
@@ -111,6 +92,24 @@ const businessPlans = [
   },
 ];
 
+const signPlan = {
+  name: 'CloseOS Sign',
+  badge: 'Formule unique — toutes les features',
+  monthlyPrice: 12,
+  quarterlyMonthly: 10,
+  annualMonthly: 9,
+  features: [
+    'Signature électronique + paiement (Sign + Pay)',
+    'Faisceau de preuves opposable (email, OTP SMS, horodatage, IP, hash SHA-256)',
+    'Certificat de preuve vérifiable',
+    'Multi-signataire (parallèle ou séquentiel)',
+    'Modèles réutilisables + espace par membre d\'équipe',
+    'Assistant IA (MCP)',
+  ],
+  included: 'Inclus automatiquement si vous êtes déjà client CloseOS Business.',
+  cta: { label: 'Essai gratuit 14 jours', to: '/sign/abonnement' },
+};
+
 const seatPricing = [
   { role: 'Closer ou Setter', monthly: '5€/mois', quarterly: '4€/mois', annual: '3.5€/mois' },
   { role: 'Setter-Closer', monthly: '8€/mois', quarterly: '6.5€/mois', annual: '5.5€/mois' },
@@ -123,19 +122,49 @@ const services = [
   { name: 'Setup + Intégration', price: '120€', type: 'one-shot', detail: 'Les deux combinés' },
 ];
 
+const realStackSolo = [
+  { cat: 'CRM', tool: 'Pipedrive Growth', price: '36 €', payer: 'Souvent (beaucoup sont sur Notion gratuit)' },
+  { cat: 'Scheduling', tool: 'Calendly Standard', price: '9 €', payer: 'Souvent (le free = 1 seul type de RDV)' },
+  { cat: 'Call recording', tool: 'Fathom Premium', price: '15 €', payer: 'Si volume (le free plafonne à 5 résumés IA/mois)' },
+  { cat: 'Signature', tool: 'Yousign Starter', price: '9 €', payer: 'Oui' },
+  { cat: 'Facturation', tool: 'Abby', price: '9 €', payer: 'Oui' },
+  { cat: 'Email', tool: 'Brevo Starter', price: '23 €', payer: 'Si automation (le free suffit pour envoyer)' },
+];
+
+const realStackTeam = [
+  { cat: 'CRM', tool: 'Pipedrive Growth', qui: 'owner + 2 closers', calc: '36 € × 3', price: '108 €' },
+  { cat: 'Scheduling', tool: 'Calendly Teams', qui: '2 closers + 2 setters', calc: '15 € × 4', price: '60 €' },
+  { cat: 'Call recording', tool: 'Fathom Team', qui: '2 closers (min 2 sièges)', calc: '14 € × 2', price: '28 €' },
+  { cat: 'Email automation', tool: 'Brevo Business', qui: 'compte unique', calc: 'flat', price: '60 €' },
+  { cat: 'Signature', tool: 'Yousign Business', qui: 'compte unique', calc: 'flat', price: '25 €' },
+  { cat: 'Facturation', tool: 'Abby', qui: 'compte unique', calc: 'flat', price: '9 €' },
+];
+
+const freeHackRows = [
+  { need: 'CRM', tool: 'Google Sheet + Notion', cost: 'Leads oubliés, aucune relance automatique' },
+  { need: 'Prise de RDV', tool: 'Calendly free (1 type)', cost: 'No-shows, pas de rappel intégré' },
+  { need: 'Qualification', tool: 'Google Forms', cost: 'Réponses jamais reliées à la fiche prospect' },
+  { need: 'Calls', tool: 'Meet + notes à la main', cost: '10 min de saisie par call, résumés perdus' },
+  { need: "Suivi d'équipe", tool: 'Sheet partagé', cost: 'Personne ne sait qui close quoi en temps réel' },
+  { need: 'Commissions', tool: 'Tableur', cost: 'Erreurs, disputes, heures perdues' },
+  { need: 'KPI', tool: 'Sheet mis à jour à la main', cost: 'Chiffres faux ou vieux d\'une semaine' },
+  { need: 'Onboarding', tool: 'Notion jamais à jour', cost: 'Closers formés à moitié' },
+];
+
 const arguments_ = [
   { icon: Shield, title: 'Prix à vie', desc: 'Votre tarif ne changera jamais. Les prochaines augmentations ne vous concernent pas.' },
-  { icon: Clock, title: 'Essai gratuit 20 jours', desc: 'Testez toutes les fonctionnalités sans engagement. CB requise, aucun prélèvement pendant l\'essai.' },
+  { icon: Clock, title: 'Essai gratuit sur chaque produit', desc: 'Sales (10 jours, sans CB), Business (20 jours) et Sign (14 jours) — testez sans engagement, aucun prélèvement pendant l\'essai.' },
   { icon: Layers, title: 'Tout-en-un', desc: 'Plus besoin de jongler entre 5 outils. CRM, téléphonie, facturation et KPIs dans une seule plateforme.' },
   { icon: Target, title: 'Conçu pour les closers', desc: 'Pas un CRM généraliste adapté. Un outil pensé nativement pour le métier de closer et d\'infopreneur.' },
 ];
 
 const faqItems = [
-  { q: 'Est-ce que je peux tester CloseOS gratuitement ?', a: 'Oui. Toutes les formules incluent un essai gratuit de 20 jours. Votre carte bancaire est requise à l\'inscription mais aucun prélèvement n\'est effectué pendant la période d\'essai. Vous pouvez annuler à tout moment.' },
+  { q: 'Est-ce que je peux tester CloseOS gratuitement ?', a: 'Oui, sur les 3 produits, mais les modalités varient : CloseOS Sales offre 10 jours d\'essai sans carte bancaire. CloseOS Business (20 jours) et CloseOS Sign (14 jours) demandent une carte bancaire à l\'inscription, mais aucun prélèvement n\'est effectué pendant l\'essai. Vous pouvez annuler à tout moment.' },
   { q: 'Que signifie "prix à vie" ?', a: 'Le tarif que vous payez au moment de votre abonnement est bloqué pour toujours. Si les prix augmentent après votre inscription, vous gardez votre tarif initial tant que votre abonnement est actif.' },
   { q: 'Quelle est la différence entre les formules Solo et Business ?', a: 'La formule Solo est destinée aux closers indépendants ou aux infopreneurs qui closent seuls. La formule Business ajoute la gestion d\'équipe : rôles, attribution des leads, KPIs par membre et onboarding automatisé.' },
   { q: 'Puis-je changer de formule en cours de route ?', a: 'Oui. Vous pouvez upgrader votre formule à tout moment. Le changement est effectif immédiatement et la différence de prix est calculée au prorata.' },
   { q: 'Quelles intégrations sont disponibles ?', a: 'CloseOS s\'intègre avec HubSpot, Pipedrive, GoHighLevel, Airtable, Systeme.io, iClosed, Google Calendar, Stripe, Calendly, Zapier, Make et n8n.' },
+  { q: 'CloseOS Sign est-il inclus dans mon abonnement ?', a: 'Si vous êtes déjà client CloseOS Business, CloseOS Sign est inclus automatiquement, sans surcoût. Si vous n\'êtes pas client Business, vous pouvez souscrire à CloseOS Sign seul, dès 9€/mois en annuel (formule unique, toutes les fonctionnalités).' },
 ];
 
 export default function Tarifs() {
@@ -143,15 +172,15 @@ export default function Tarifs() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
-    document.title = 'Tarifs CloseOS — CRM closer dès 24€/mois';
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Solo dès 24€/mois, Business dès 59€/mois, Business + Acquisition dès 99€/mois. Essai gratuit 20 jours. Prix à vie.');
+    document.title = 'Tarifs CloseOS — CRM closer dès 18€/mois';
+    document.querySelector('meta[name="description"]')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Sales dès 18€/mois, Business dès 39€/mois, Sign dès 9€/mois (inclus avec Business). Essai gratuit. Prix à vie.');
     document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/tarifs');
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/tarifs');
-    document.getElementById('og-title')?.setAttribute('content', 'Tarifs CloseOS — CRM closer dès 24€/mois');
-    document.getElementById('og-description')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Solo dès 24€/mois, Business dès 59€/mois, Business + Acquisition dès 99€/mois. Essai gratuit 20 jours. Prix à vie.');
+    document.getElementById('og-title')?.setAttribute('content', 'Tarifs CloseOS — CRM closer dès 18€/mois');
+    document.getElementById('og-description')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Sales dès 18€/mois, Business dès 39€/mois, Sign dès 9€/mois (inclus avec Business). Essai gratuit. Prix à vie.');
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/tarifs');
-    document.getElementById('tw-title')?.setAttribute('content', 'Tarifs CloseOS — CRM closer dès 24€/mois');
-    document.getElementById('tw-description')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Solo dès 24€/mois, Business dès 59€/mois, Business + Acquisition dès 99€/mois. Essai gratuit 20 jours. Prix à vie.');
+    document.getElementById('tw-title')?.setAttribute('content', 'Tarifs CloseOS — CRM closer dès 18€/mois');
+    document.getElementById('tw-description')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Sales dès 18€/mois, Business dès 39€/mois, Sign dès 9€/mois (inclus avec Business). Essai gratuit. Prix à vie.');
     document.documentElement.lang = 'fr';
 
     document.querySelectorAll('script[data-tarifs-ld]').forEach(el => el.remove());
@@ -165,7 +194,7 @@ export default function Tarifs() {
       name: 'CloseOS',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
-      offers: { '@type': 'AggregateOffer', lowPrice: '0', highPrice: '99', priceCurrency: 'EUR', offerCount: '4', availability: 'https://schema.org/InStock' }
+      offers: { '@type': 'AggregateOffer', lowPrice: '0', highPrice: '99', priceCurrency: 'EUR', offerCount: '5', availability: 'https://schema.org/InStock' }
     });
     document.head.appendChild(appSchema);
 
@@ -189,11 +218,12 @@ export default function Tarifs() {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
       mainEntity: [
-        { '@type': 'Question', name: 'Est-ce que je peux tester CloseOS gratuitement ?', acceptedAnswer: { '@type': 'Answer', text: 'Oui. Toutes les formules incluent un essai gratuit de 20 jours. Votre carte bancaire est requise à l\'inscription mais aucun prélèvement n\'est effectué pendant la période d\'essai. Vous pouvez annuler à tout moment.' } },
+        { '@type': 'Question', name: 'Est-ce que je peux tester CloseOS gratuitement ?', acceptedAnswer: { '@type': 'Answer', text: 'Oui, sur les 3 produits, mais les modalités varient : CloseOS Sales offre 10 jours d\'essai sans carte bancaire. CloseOS Business (20 jours) et CloseOS Sign (14 jours) demandent une carte bancaire à l\'inscription, mais aucun prélèvement n\'est effectué pendant l\'essai. Vous pouvez annuler à tout moment.' } },
         { '@type': 'Question', name: 'Que signifie "prix à vie" ?', acceptedAnswer: { '@type': 'Answer', text: 'Le tarif que vous payez au moment de votre abonnement est bloqué pour toujours. Si les prix augmentent après votre inscription, vous gardez votre tarif initial tant que votre abonnement est actif.' } },
         { '@type': 'Question', name: 'Quelle est la différence entre les formules Solo et Business ?', acceptedAnswer: { '@type': 'Answer', text: 'La formule Solo est destinée aux closers indépendants ou aux infopreneurs qui closent seuls. La formule Business ajoute la gestion d\'équipe : rôles, attribution des leads, KPIs par membre et onboarding automatisé.' } },
         { '@type': 'Question', name: 'Puis-je changer de formule en cours de route ?', acceptedAnswer: { '@type': 'Answer', text: 'Oui. Vous pouvez upgrader votre formule à tout moment. Le changement est effectif immédiatement et la différence de prix est calculée au prorata.' } },
         { '@type': 'Question', name: 'Quelles intégrations sont disponibles ?', acceptedAnswer: { '@type': 'Answer', text: 'CloseOS s\'intègre avec HubSpot, Pipedrive, GoHighLevel, Airtable, Systeme.io, iClosed, Google Calendar, Stripe, Calendly, Zapier, Make et n8n.' } },
+        { '@type': 'Question', name: 'CloseOS Sign est-il inclus dans mon abonnement ?', acceptedAnswer: { '@type': 'Answer', text: 'Si vous êtes déjà client CloseOS Business, CloseOS Sign est inclus automatiquement, sans surcoût. Sinon, vous pouvez souscrire à CloseOS Sign seul, dès 9€/mois en annuel.' } },
       ]
     });
     document.head.appendChild(faqSchema);
@@ -214,6 +244,7 @@ export default function Tarifs() {
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <Link to="/landing" className="hover:text-white transition-colors">Sales</Link>
             <Link to="/business" className="hover:text-white transition-colors">Business</Link>
+            <Link to="/sign" className="hover:text-white transition-colors">Sign</Link>
             <Link to="/fonctionnalites" className="hover:text-white transition-colors">Fonctionnalites</Link>
             <Link to="/tarifs" className="text-white font-semibold">Tarifs</Link>
           </div>
@@ -239,7 +270,7 @@ export default function Tarifs() {
             Tarifs CloseOS — Choisissez la formule adaptée à votre activité
           </h1>
           <p className="mt-6 text-lg text-slate-400 max-w-3xl mx-auto leading-relaxed">
-            CloseOS propose des formules adaptées que vous soyez closer indépendant ou infopreneur avec une équipe de vente. Essai gratuit de 20 jours, sans engagement, CB requise. Votre tarif est bloqué à vie au moment de l'abonnement.
+            CloseOS propose des formules adaptées que vous soyez closer indépendant, infopreneur avec une équipe de vente, ou que vous ayez simplement besoin de signer et encaisser vos contrats. Essai gratuit sans engagement sur chaque produit. Votre tarif est bloqué à vie au moment de l'abonnement.
           </p>
         </div>
       </motion.section>
@@ -453,6 +484,62 @@ export default function Tarifs() {
         </div>
       </motion.section>
 
+      {/* CloseOS Sign */}
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.6 }}
+        className="pb-24 px-6"
+      >
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-2xl font-bold mb-6">CloseOS Sign</h2>
+          <div className="max-w-lg">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.6 }}
+              className="rounded-3xl border-2 border-[#00E676] bg-[#00E676]/5 p-8 shadow-2xl relative"
+            >
+              <span className="inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-slate-300">
+                {signPlan.badge}
+              </span>
+              <h3 className="mt-4 text-2xl font-bold text-white">{signPlan.name}</h3>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-5xl font-extrabold text-white">
+                  {billing === 'annual' ? signPlan.annualMonthly : billing === 'quarterly' ? signPlan.quarterlyMonthly : signPlan.monthlyPrice}€
+                </span>
+                <span className="text-slate-500">/mois</span>
+              </div>
+              {billing === 'quarterly' && (
+                <p className="text-xs text-slate-500 mt-1">Facturé trimestriellement</p>
+              )}
+              {billing === 'annual' && (
+                <p className="text-xs text-slate-500 mt-1">Facturé annuellement (le tarif le plus bas)</p>
+              )}
+              <ul className="mt-6 space-y-3">
+                {signPlan.features.map((f, fi) => (
+                  <li key={fi} className="flex items-start gap-2 text-sm text-slate-300">
+                    <Check className="h-4 w-4 mt-0.5 shrink-0 text-[#00E676]" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to={signPlan.cta.to}
+                className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-[#00E676] px-5 py-3 text-sm font-bold text-slate-950 hover:bg-[#00C864] transition-all"
+              >
+                {signPlan.cta.label} <ArrowRight className="h-4 w-4" />
+              </Link>
+              <p className="mt-4 text-xs text-center text-slate-500">
+                {signPlan.included}
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </motion.section>
+
       {/* Seats */}
       <motion.section
         initial={{ opacity: 0, y: 30 }}
@@ -524,6 +611,161 @@ export default function Tarifs() {
         </div>
       </motion.section>
 
+      {/* Comparatif prix honnête */}
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.6 }}
+        className="pb-24 px-6"
+      >
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center mb-4">
+            <span className="inline-block rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs font-medium text-slate-300">Comparatif honnête</span>
+          </div>
+          <h2 className="text-3xl font-bold text-center mb-4">Combien économisez-vous vraiment avec CloseOS ?</h2>
+          <p className="text-slate-400 text-center max-w-2xl mx-auto mb-14 leading-relaxed">
+            Pas de stack fantasme facturée en 5 licences pleines sur 14 outils. Juste ce que les closers et infopreneurs sortent vraiment la carte bancaire pour payer, comparé à CloseOS.
+          </p>
+
+          {/* Tableau A - Solo */}
+          <h3 className="text-xl font-bold mb-2">Solo — la stack payante réaliste</h3>
+          <p className="text-sm text-slate-500 mb-6">Seulement ce qu'un closer indépendant sort vraiment la CB pour.</p>
+          <div className="overflow-x-auto rounded-xl border border-white/10 mb-6">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-white/10 bg-white/5">
+                  <th className="px-6 py-4 font-semibold text-slate-300">Catégorie</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Outil</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Prix/mois</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Vraiment payé ?</th>
+                </tr>
+              </thead>
+              <tbody>
+                {realStackSolo.map((r) => (
+                  <tr key={r.cat} className="border-b border-white/5">
+                    <td className="px-6 py-4 text-slate-300">{r.cat}</td>
+                    <td className="px-6 py-4 text-white font-medium">{r.tool}</td>
+                    <td className="px-6 py-4 text-white font-medium whitespace-nowrap">{r.price}</td>
+                    <td className="px-6 py-4 text-slate-400">{r.payer}</td>
+                  </tr>
+                ))}
+                <tr className="bg-white/5">
+                  <td className="px-6 py-4 font-bold text-white" colSpan={2}>TOTAL payé</td>
+                  <td className="px-6 py-4 font-bold text-[#00E676]">~100 €</td>
+                  <td className="px-6 py-4"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm text-slate-500 mb-10 leading-relaxed">
+            Ce qu'un solo ne paie quasiment jamais (0 €) : visio (Google Meet), formulaires (Google Forms), tracking (UTM à la main), KPI (Google Sheets), onboarding (Notion), automatisation (Zapier free).
+          </p>
+
+          <div className="rounded-xl border-2 border-[#00E676] bg-[#00E676]/5 p-6 mb-16 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div><p className="text-xs text-slate-400 mb-1">Stack payée</p><p className="text-2xl font-extrabold">~100 €/mois</p></div>
+            <div><p className="text-xs text-slate-400 mb-1">CloseOS Solo</p><p className="text-2xl font-extrabold text-[#00E676]">39 €/mois</p></div>
+            <div><p className="text-xs text-slate-400 mb-1">Économie</p><p className="text-2xl font-extrabold">~60 €/mois <span className="text-sm font-medium text-slate-400">(~2,6×)</span></p></div>
+          </div>
+
+          {/* Tableau B - Equipe */}
+          <h3 className="text-xl font-bold mb-2">Équipe de 5 — stack payante, sièges honnêtes</h3>
+          <p className="text-sm text-slate-500 mb-6">Owner + 2 closers + 2 setters. Chaque outil attribué à qui l'utilise vraiment — pas 5 licences pleines par défaut.</p>
+          <div className="overflow-x-auto rounded-xl border border-white/10 mb-6">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-white/10 bg-white/5">
+                  <th className="px-6 py-4 font-semibold text-slate-300">Catégorie</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Outil</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Qui en a besoin</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Calcul</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Prix/mois</th>
+                </tr>
+              </thead>
+              <tbody>
+                {realStackTeam.map((r) => (
+                  <tr key={r.cat} className="border-b border-white/5">
+                    <td className="px-6 py-4 text-slate-300">{r.cat}</td>
+                    <td className="px-6 py-4 text-white font-medium">{r.tool}</td>
+                    <td className="px-6 py-4 text-slate-400">{r.qui}</td>
+                    <td className="px-6 py-4 text-slate-400 whitespace-nowrap">{r.calc}</td>
+                    <td className="px-6 py-4 text-white font-medium whitespace-nowrap">{r.price}</td>
+                  </tr>
+                ))}
+                <tr className="bg-white/5">
+                  <td className="px-6 py-4 font-bold text-white" colSpan={4}>TOTAL payé (6 outils)</td>
+                  <td className="px-6 py-4 font-bold text-[#00E676]">~290 €</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm text-slate-500 mb-10 leading-relaxed">
+            Ce qu'ils ne paient pas : routing/qualif à la main, commissions dans un tableur, KPI dans un Sheet, tracking UTM manuel, onboarding sur Notion, visio Meet, automatisation Zapier free — les postes les plus chers d'une vraie stack "commerciale" (type Chili Piper, QuotaPath, Trainual), et ceux que presque personne ne paie au départ.
+          </p>
+
+          <div className="rounded-xl border-2 border-[#00E676] bg-[#00E676]/5 p-6 mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div><p className="text-xs text-slate-400 mb-1">Stack payée</p><p className="text-2xl font-extrabold">~290 €/mois</p></div>
+            <div><p className="text-xs text-slate-400 mb-1">CloseOS Business + Acquisition</p><p className="text-2xl font-extrabold text-[#00E676]">~105 €/mois</p></div>
+            <div><p className="text-xs text-slate-400 mb-1">Économie</p><p className="text-2xl font-extrabold">~185 €/mois <span className="text-sm font-medium text-slate-400">(~2,8×)</span></p></div>
+          </div>
+          <p className="text-xs text-slate-500 mb-16">
+            Rappel grille : Business + Acquisition inclut 3 équipiers, pas 5. Une équipe de 5 = 99 € + sièges supplémentaires (voir tableau ci-dessus) — d'où ~105 € et non 99 €.
+          </p>
+
+          {/* Tableau C - Bricolage gratuit */}
+          <h3 className="text-xl font-bold mb-2">La réalité de la majorité : le bricolage gratuit</h3>
+          <p className="text-sm text-slate-500 mb-6">Le vrai "avant" de la plupart des closers et infopreneurs. Ici, le chiffre qui compte n'est pas l'euro, c'est le chaos.</p>
+          <div className="overflow-x-auto rounded-xl border border-white/10 mb-6">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-white/10 bg-white/5">
+                  <th className="px-6 py-4 font-semibold text-slate-300">Besoin</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Le bricolage gratuit</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Le coût caché</th>
+                </tr>
+              </thead>
+              <tbody>
+                {freeHackRows.map((r) => (
+                  <tr key={r.need} className="border-b border-white/5">
+                    <td className="px-6 py-4 text-white font-medium">{r.need}</td>
+                    <td className="px-6 py-4 text-slate-400">{r.tool}</td>
+                    <td className="px-6 py-4 text-slate-400">{r.cost}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm text-slate-500 mb-16 leading-relaxed">
+            Le coût réel : une heure à une heure et demie par jour et par personne, passée à copier-coller entre des onglets qui ne se parlent pas. Sur une équipe de 5, environ 150h/mois. Et surtout, les deals qui fuitent parce que l'info se perd entre les outils. Pour un deal à 5 000 €, un seul lead sauvé par mois paie l'abonnement dix fois.
+          </p>
+
+          {/* Synthèse */}
+          <div className="overflow-x-auto rounded-xl border border-white/10">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-white/10 bg-white/5">
+                  <th className="px-6 py-4 font-semibold text-slate-300">Cible</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Le bon argument</th>
+                  <th className="px-6 py-4 font-semibold text-slate-300">Le chiffre</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-white/5">
+                  <td className="px-6 py-4 text-white font-medium">Équipe déjà outillée</td>
+                  <td className="px-6 py-4 text-slate-400">Économie de prix</td>
+                  <td className="px-6 py-4 text-slate-400">~290 € → ~105 €, soit ~2,8×, ~2 200 €/an</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-white font-medium">Solo / majorité qui bricole</td>
+                  <td className="px-6 py-4 text-slate-400">Fin du chaos, pipeline qui arrête de fuir</td>
+                  <td className="px-6 py-4 text-slate-400">Pas l'euro : le temps et les deals perdus</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </motion.section>
+
       {/* Why CloseOS */}
       <motion.section
         initial={{ opacity: 0, y: 30 }}
@@ -553,6 +795,9 @@ export default function Tarifs() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm">
             <Link to="/landing" className="text-[#00E676] hover:underline font-medium flex items-center gap-1">
               Decouvrir CloseOS Sales <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link to="/sign" className="text-[#00E676] hover:underline font-medium flex items-center gap-1">
+              Decouvrir CloseOS Sign <ArrowRight className="h-4 w-4" />
             </Link>
             <Link to="/fonctionnalites" className="text-[#00E676] hover:underline font-medium flex items-center gap-1">
               Decouvrir les fonctionnalites <ArrowRight className="h-4 w-4" />
@@ -616,6 +861,7 @@ export default function Tarifs() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm">
             <Link to="/landing" className="text-slate-400 hover:text-white transition-colors">CloseOS Sales</Link>
             <Link to="/business" className="text-slate-400 hover:text-white transition-colors">CloseOS Business</Link>
+            <Link to="/sign" className="text-slate-400 hover:text-white transition-colors">CloseOS Sign</Link>
             <Link to="/fonctionnalites" className="text-slate-400 hover:text-white transition-colors">Fonctionnalites</Link>
           </div>
         </div>

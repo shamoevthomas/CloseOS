@@ -3,12 +3,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, Mail, Phone, MapPin, FileDigit, Hash, Percent, Landmark, Tag, Briefcase, Loader2, CheckCircle2,
   Settings, UserRound, LogOut, ShieldCheck, CreditCard, ExternalLink, Lock, Smartphone, Bell, Download,
-  AlertCircle, Power, Trash2, ArrowRight, Camera,
+  AlertCircle, Power, Trash2, ArrowRight, Camera, Plug, Copy, Check, RefreshCw,
 } from 'lucide-react';
 import {
   getOwnerProfile, updateOwnerProfile, getOwnerStripeStatus, getNotifPrefs, updateNotifPrefs,
   getAccountInfo, exportOwnerData, getOwnerAvatar, uploadSignAvatar, type OwnerProfile, type NotifPrefs,
 } from '../lib/signContracts';
+import { getMcpKey, generateMcpKey, revokeMcpKey, mcpConnectorUrl } from '../lib/signTeam';
 import { listTrustedDevices, revokeTrustedDevice, revokeAllTrustedDevices, type TrustedDevice } from '../lib/signDevice';
 import { getSignSubscription, isSubActive, openSignBillingPortal, type SignSubscription } from '../lib/signSubscription';
 import { signSupabase as supabase } from '../lib/signSupabase';
@@ -80,6 +81,11 @@ export default function SignProfile() {
   const [exporting, setExporting] = useState(false);
   const [outAllBusy, setOutAllBusy] = useState(false);
   const [sub, setSub] = useState<SignSubscription | null>(null);
+  // ── Connecteur MCP ──
+  const [mcpKey, setMcpKey] = useState<string | null>(null);
+  const [mcpLoaded, setMcpLoaded] = useState(false);
+  const [mcpBusy, setMcpBusy] = useState(false);
+  const [mcpCopied, setMcpCopied] = useState(false);
 
   useEffect(() => {
     document.title = lang === 'fr' ? 'Mon profil | CloseOS Sign' : 'My profile | CloseOS Sign';
@@ -108,7 +114,24 @@ export default function SignProfile() {
     getAuthIdentity().then(setAuthId).catch(() => {});
     getNotifPrefs().then(setNotif).catch(() => {});
     getSignSubscription().then(setSub).catch(() => {});
+    getMcpKey().then((k) => { setMcpKey(k); setMcpLoaded(true); }).catch(() => setMcpLoaded(true));
   }, [tab, owner]);
+
+  const genMcp = async () => {
+    setMcpBusy(true);
+    try { const k = await generateMcpKey(); setMcpKey(k); } catch (e) { console.error('[sign] génération clé MCP', e); }
+    finally { setMcpBusy(false); }
+  };
+  const revokeMcp = async () => {
+    if (!confirm(lang === 'fr' ? 'Désactiver le connecteur MCP ? Le lien actuel cessera de fonctionner.' : 'Disable the MCP connector? The current link will stop working.')) return;
+    setMcpBusy(true);
+    try { await revokeMcpKey(); setMcpKey(null); } catch (e) { console.error('[sign] révocation clé MCP', e); }
+    finally { setMcpBusy(false); }
+  };
+  const copyMcp = async () => {
+    if (!mcpKey) return;
+    try { await navigator.clipboard.writeText(mcpConnectorUrl(mcpKey)); setMcpCopied(true); setTimeout(() => setMcpCopied(false), 1800); } catch { /* noop */ }
+  };
 
   // Appareils de confiance (chargés une fois).
   useEffect(() => {
@@ -172,6 +195,18 @@ export default function SignProfile() {
       if (noPassword) setAuthId((a) => (a ? { ...a, hasPassword: true } : a));
     } else {
       setPwMsg({ type: 'err', text: r.error === 'wrong_current' ? (lang === 'fr' ? 'Mot de passe actuel incorrect.' : 'Current password is incorrect.') : (lang === 'fr' ? 'Échec de la mise à jour.' : 'Update failed.') });
+    }
+  };
+
+  const linkGoogleSign = async () => {
+    try {
+      const { error } = await supabase.auth.linkIdentity({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/sign/app/profil` },
+      });
+      if (error) throw error;
+    } catch (e: any) {
+      setPwMsg({ type: 'err', text: lang === 'fr' ? `Impossible d'associer Google : ${e?.message || 'erreur'}.` : `Could not link Google: ${e?.message || 'error'}.` });
     }
   };
 
@@ -438,6 +473,31 @@ export default function SignProfile() {
             </form>
           </SettingCard>
 
+          {/* Associer Google — connexion rapide en un clic */}
+          {authId?.google === false && (
+            <SettingCard
+              icon={ShieldCheck}
+              title={lang === 'fr' ? 'Se connecter avec Google' : 'Sign in with Google'}
+              desc={lang === 'fr'
+                ? 'Associez votre compte Google pour vous connecter plus vite, en un clic — en plus de votre email et mot de passe.'
+                : 'Link your Google account to sign in faster, in one click — in addition to your email and password.'}
+            >
+              <button
+                type="button"
+                onClick={linkGoogleSign}
+                className="inline-flex items-center gap-2.5 rounded-xl border border-[#3A4242] bg-white px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#F3F4F6]"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.98.66-2.24 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09a6.6 6.6 0 0 1 0-4.18V7.07H2.18a11 11 0 0 0 0 9.86l3.66-2.84z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
+                </svg>
+                {lang === 'fr' ? 'Associer mon compte Google' : 'Link my Google account'}
+              </button>
+            </SettingCard>
+          )}
+
           {/* Appareils de confiance */}
           <SettingCard
             icon={Smartphone}
@@ -486,6 +546,45 @@ export default function SignProfile() {
               </div>
               <Toggle checked={notif?.new_device ?? true} disabled={!notif} onChange={(v) => toggleNotif('new_device', v)} />
             </div>
+          </SettingCard>
+
+          {/* Connecteur MCP (IA) */}
+          <SettingCard
+            icon={Plug}
+            title={lang === 'fr' ? 'Connecteur MCP (IA)' : 'MCP connector (AI)'}
+            desc={lang === 'fr'
+              ? 'Pilote CloseOS Sign depuis un assistant IA (Claude, etc.) : créer des contrats, poser des champs, assigner des modèles à ton équipe, suivre les signatures. Le lien contient une clé secrète propre à ton compte.'
+              : 'Drive CloseOS Sign from an AI assistant (Claude, etc.): create contracts, place fields, assign templates to your team, track signatures. The link contains a secret key unique to your account.'}
+          >
+            {!mcpLoaded ? (
+              <div className="flex items-center gap-2 text-sm text-[#A1A9A9]"><Loader2 className="h-4 w-4 animate-spin" /> …</div>
+            ) : mcpKey ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 rounded-lg border border-[#3A4242] bg-[#191E1E] px-3 py-2.5">
+                  <code className="min-w-0 flex-1 truncate text-xs text-[#A0E7EC]">{mcpConnectorUrl(mcpKey)}</code>
+                  <button onClick={copyMcp} title={lang === 'fr' ? 'Copier' : 'Copy'} className="shrink-0 rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white">
+                    {mcpCopied ? <Check className="h-4 w-4 text-[#CEFF8F]" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-[#A1A9A9]">
+                  {lang === 'fr'
+                    ? 'Ajoute ce lien comme « connecteur personnalisé » dans ton assistant IA. Garde-le secret : quiconque le possède peut piloter ton compte Sign.'
+                    : 'Add this link as a “custom connector” in your AI assistant. Keep it secret: anyone who has it can drive your Sign account.'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={genMcp} disabled={mcpBusy} className="inline-flex items-center gap-2 rounded-lg border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:border-[#CEFF8F] disabled:opacity-50">
+                    {mcpBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} {lang === 'fr' ? 'Régénérer la clé' : 'Regenerate key'}
+                  </button>
+                  <button onClick={revokeMcp} disabled={mcpBusy} className="inline-flex items-center gap-2 rounded-lg border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-[#ef6b6b] transition-colors hover:border-[#ef6b6b] disabled:opacity-50">
+                    <Power className="h-4 w-4" /> {lang === 'fr' ? 'Désactiver' : 'Disable'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={genMcp} disabled={mcpBusy} className="inline-flex items-center gap-2 rounded-lg bg-[#CEFF8F] px-4 py-2.5 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50">
+                {mcpBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />} {lang === 'fr' ? 'Activer le connecteur' : 'Enable connector'}
+              </button>
+            )}
           </SettingCard>
 
           {/* Paiement Stripe */}

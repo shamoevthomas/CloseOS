@@ -9,6 +9,9 @@ import {
   ArrowUpRight,
   PhoneIncoming,
   CalendarCheck,
+  ClipboardList,
+  Check,
+  BarChart3,
 } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -17,6 +20,10 @@ import { MaskedText } from '../components/MaskedText'
 import { VideoCallOverlay } from '../components/VideoCallOverlay'
 import { CallSummaryModal, type CallSummaryData } from '../components/CallSummaryModal'
 import { NoAnswerModal } from '../components/NoAnswerModal'
+import { ProspectView } from '../components/ProspectView'
+import { CreateEventModal } from '../components/CreateEventModal'
+import { WeeklyReportModal } from '../components/WeeklyReportModal'
+import { useAllOpenTasks } from '../hooks/useProspectTasks'
 import { useProspects } from '../contexts/ProspectsContext'
 import { useOffers } from '../contexts/OffersContext'
 import { useMeetings } from '../contexts/MeetingsContext'
@@ -108,7 +115,11 @@ const getEventStatus = (dateStr: string, timeStr: string, labels: Record<string,
 
 export function Dashboard() {
   const navigate = useNavigate()
-  const { prospects } = useProspects()
+  const { prospects, updateProspect, deleteProspect } = useProspects()
+  const { tasks: openTasks, loading: openTasksLoading, toggleDone: toggleTaskDone } = useAllOpenTasks()
+  const [taskProspect, setTaskProspect] = useState<any | null>(null)
+  const [isTaskEventModalOpen, setIsTaskEventModalOpen] = useState(false)
+  const [isReportOpen, setIsReportOpen] = useState(false)
   const { offers } = useOffers()
   const { meetings } = useMeetings()
   const { googleEvents } = useGoogleCalendar()
@@ -243,10 +254,10 @@ export function Dashboard() {
   // Calculate pipeline stages distribution (Sales + Business)
   const pipelineStages = useMemo(() => {
     const stages = [
-      { name: t.stage_prospect, key: 'prospect', color: 'from-blue-600 to-blue-400' },
-      { name: t.stage_qualified, key: 'qualified', color: 'from-purple-600 to-purple-400' },
+      { name: t.stage_prospect, key: 'prospect', color: 'from-sky-600 to-sky-400' },
+      { name: t.stage_qualified, key: 'qualified', color: 'from-sky-600 to-sky-400' },
       { name: t.stage_followup, key: 'followup', color: 'from-orange-500 to-orange-400' },
-      { name: t.stage_won, key: 'won', color: 'from-emerald-600 to-emerald-400' },
+      { name: t.stage_won, key: 'won', color: 'from-sky-500 to-sky-600' },
     ]
 
     const allProspects = [...prospects, ...bizProspects]
@@ -347,19 +358,19 @@ export function Dashboard() {
       name: t.cash_generated,
       value: `${metrics.cashGenere.toLocaleString(locale)}€`,
       icon: DollarSign,
-      color: 'text-emerald-400',
+      color: 'text-sky-600 dark:text-sky-400',
     },
     {
       name: t.commissions,
       value: `${metrics.totalCommissions.toLocaleString(locale, { maximumFractionDigits: 0 })}€`,
       icon: TrendingUp,
-      color: 'text-amber-400',
+      color: 'text-sky-600 dark:text-sky-400',
     },
     {
       name: t.conversion_rate,
       value: `${metrics.tauxConversion.toFixed(1)}%`,
       icon: Target,
-      color: 'text-emerald-400',
+      color: 'text-sky-600 dark:text-sky-400',
     },
   ]
 
@@ -368,25 +379,25 @@ export function Dashboard() {
       name: lang === 'fr' ? 'Contactés' : 'Contacted',
       value: `${setterMetrics.contacted}`,
       icon: PhoneIncoming,
-      color: 'text-cyan-400',
+      color: 'text-sky-600 dark:text-sky-400',
     },
     {
       name: lang === 'fr' ? 'Taux de réponse' : 'Response Rate',
       value: `${setterMetrics.responseRate.toFixed(1)}%`,
       icon: Target,
-      color: 'text-purple-400',
+      color: 'text-sky-600 dark:text-sky-400',
     },
     {
       name: lang === 'fr' ? 'Bookings' : 'Bookings',
       value: `${setterMetrics.booked}`,
       icon: CalendarCheck,
-      color: 'text-emerald-400',
+      color: 'text-sky-600 dark:text-sky-400',
     },
     {
       name: lang === 'fr' ? 'Taux de booking' : 'Booking Rate',
       value: `${setterMetrics.bookingRate.toFixed(1)}%`,
       icon: TrendingUp,
-      color: 'text-amber-400',
+      color: 'text-sky-600 dark:text-sky-400',
     },
   ]
 
@@ -422,17 +433,17 @@ export function Dashboard() {
   }
 
   const barStyles = [
-    'bg-white/60',
-    'bg-gradient-to-r from-amber-400 to-amber-300 shadow-[0_0_15px_rgba(255,185,95,0.3)]',
-    'bg-emerald-500/40',
-    'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]',
+    'bg-sky-300',
+    'bg-gradient-to-r from-sky-400 to-sky-300',
+    'bg-sky-500/50',
+    'bg-sky-600',
   ]
 
   return (
-    <div className="relative min-h-screen bg-[#111111] p-6 md:px-12 md:pb-20 overflow-hidden text-white">
+    <div className="relative min-h-screen bg-transparent p-6 md:px-12 md:pb-20 overflow-hidden text-slate-900 dark:text-white">
       {/* Ambient Glows */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-sky-400/5 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="relative mx-auto max-w-7xl z-10">
 
@@ -441,17 +452,24 @@ export function Dashboard() {
           <div>
             <h1 className="text-3xl md:text-5xl font-extrabold tracking-tighter">{t.title}</h1>
             <div className="flex items-center gap-2 mt-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-white/40 text-sm font-medium tracking-wide">{t.system_ok}</p>
+              <span className="w-2 h-2 rounded-full bg-sky-600 animate-pulse" />
+              <p className="text-slate-500 dark:text-neutral-400 text-sm font-medium tracking-wide">{t.system_ok}</p>
             </div>
           </div>
+          <button
+            onClick={() => setIsReportOpen(true)}
+            className="hidden md:flex items-center gap-2 rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-5 py-2.5 text-sm font-bold text-slate-700 dark:text-neutral-200 hover:border-sky-500/40 hover:text-sky-600 shadow-sm transition-all"
+          >
+            <BarChart3 className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            {lang === 'fr' ? 'Rapport de la semaine' : 'Weekly report'}
+          </button>
         </header>
 
         {/* KPI Cards — role-based: Closer | Setter | Setter-Closer (both stacked) */}
         {showsSetterFeatures && (
           <section className="mb-12 md:mb-16">
             {isSetterCloserRole && (
-              <h2 className="text-xs font-bold uppercase tracking-widest text-cyan-400/80 mb-4">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-sky-700 dark:text-sky-400 mb-4">
                 {lang === 'fr' ? 'Vue Setter' : 'Setter View'}
               </h2>
             )}
@@ -459,15 +477,15 @@ export function Dashboard() {
               {setterKpis.map((kpi) => (
                 <div
                   key={kpi.name}
-                  className="group relative overflow-hidden rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-300 hover:bg-white/[0.05]"
+                  className="group relative overflow-hidden rounded-2xl p-8 bg-white dark:bg-[#1a1a1a] backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-sm transition-all duration-300 hover:bg-slate-50"
                 >
-                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-all" />
+                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-sky-500/5 rounded-full blur-2xl group-hover:bg-sky-500/10 transition-all" />
                   <div className="flex justify-between items-start mb-6 relative z-10">
-                    <span className="p-3 rounded-xl bg-white/5">
+                    <span className="p-3 rounded-xl bg-slate-100 dark:bg-white/10">
                       <kpi.icon className={cn("h-7 w-7", kpi.color)} />
                     </span>
                   </div>
-                  <p className="text-white/40 font-medium mb-2 relative z-10">{kpi.name}</p>
+                  <p className="text-slate-500 dark:text-neutral-400 font-medium mb-2 relative z-10">{kpi.name}</p>
                   <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight relative z-10">
                     <MaskedText value={kpi.value} type="number" />
                   </h3>
@@ -480,7 +498,7 @@ export function Dashboard() {
         {showsCloserFeatures && (
           <section className="mb-12 md:mb-16">
             {isSetterCloserRole && (
-              <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-400/80 mb-4">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-sky-700 dark:text-sky-400 mb-4">
                 {lang === 'fr' ? 'Vue Closer' : 'Closer View'}
               </h2>
             )}
@@ -488,15 +506,15 @@ export function Dashboard() {
               {closerKpis.map((kpi) => (
                 <div
                   key={kpi.name}
-                  className="group relative overflow-hidden rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)] transition-all duration-300 hover:bg-white/[0.05]"
+                  className="group relative overflow-hidden rounded-2xl p-8 bg-white dark:bg-[#1a1a1a] backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-sm transition-all duration-300 hover:bg-slate-50"
                 >
-                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all" />
+                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-sky-500/5 rounded-full blur-2xl group-hover:bg-sky-500/10 transition-all" />
                   <div className="flex justify-between items-start mb-6 relative z-10">
-                    <span className="p-3 rounded-xl bg-white/5">
+                    <span className="p-3 rounded-xl bg-slate-100 dark:bg-white/10">
                       <kpi.icon className={cn("h-7 w-7", kpi.color)} />
                     </span>
                   </div>
-                  <p className="text-white/40 font-medium mb-2 relative z-10">{kpi.name}</p>
+                  <p className="text-slate-500 dark:text-neutral-400 font-medium mb-2 relative z-10">{kpi.name}</p>
                   <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight relative z-10">
                     <MaskedText value={kpi.value} type="number" />
                   </h3>
@@ -510,7 +528,7 @@ export function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
           {/* Left: Pipeline Distribution */}
-          <div className="lg:col-span-7 rounded-2xl p-8 md:p-10 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+          <div className="lg:col-span-7 rounded-2xl p-8 md:p-10 bg-white dark:bg-[#1a1a1a] backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-sm">
             <div className="flex justify-between items-center mb-10">
               <h2 className="text-xl md:text-2xl font-bold">{t.pipeline_title}</h2>
             </div>
@@ -522,10 +540,10 @@ export function Dashboard() {
                 return (
                   <div key={stage.name} className="space-y-3">
                     <div className="flex justify-between text-sm font-semibold tracking-wide">
-                      <span className="text-white/60">{stage.name}</span>
+                      <span className="text-slate-600 dark:text-neutral-300">{stage.name}</span>
                       <span>{stage.count}</span>
                     </div>
-                    <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-3 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
                       <div
                         className={cn("h-full rounded-full transition-all duration-700", barStyles[i])}
                         style={{ width: `${Math.max(pct, 3)}%` }}
@@ -536,15 +554,15 @@ export function Dashboard() {
               })}
             </div>
 
-            <div className="mt-12 pt-8 border-t border-white/5 flex gap-x-10">
+            <div className="mt-12 pt-8 border-t border-slate-200 dark:border-white/10 flex gap-x-10">
               <div>
-                <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">{t.total_value}</p>
+                <p className="text-xs text-slate-500 dark:text-neutral-400 uppercase tracking-widest font-bold mb-1">{t.total_value}</p>
                 <p className="text-xl font-bold">
                   <MaskedText value={`${totalPipelineValue.toLocaleString(locale)}€`} type="number" />
                 </p>
               </div>
               <div>
-                <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-1">{t.total_leads}</p>
+                <p className="text-xs text-slate-500 dark:text-neutral-400 uppercase tracking-widest font-bold mb-1">{t.total_leads}</p>
                 <p className="text-xl font-bold">{totalPipelineCount}</p>
               </div>
             </div>
@@ -553,17 +571,76 @@ export function Dashboard() {
           {/* Right Column */}
           <div className="lg:col-span-5 space-y-8">
 
+            {/* À faire — tâches ouvertes */}
+            {(openTasksLoading || openTasks.length > 0) && (
+              <div className="rounded-2xl p-8 bg-white dark:bg-[#1a1a1a] backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h4 className="text-lg font-bold flex items-center gap-2">
+                    <ClipboardList className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+                    {lang === 'fr' ? 'À faire' : 'To-do'}
+                  </h4>
+                  {openTasks.length > 0 && (
+                    <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-sky-500/10 px-2 text-xs font-bold text-sky-600 dark:text-sky-400">
+                      {openTasks.length}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {openTasks.slice(0, 6).map((task) => {
+                    const today = new Date(); today.setHours(0, 0, 0, 0)
+                    const isOverdue = task.due_date && new Date(task.due_date + 'T00:00') < today
+                    const isTodayDue = task.due_date && new Date(task.due_date + 'T00:00').getTime() === today.getTime()
+                    const pName = task.prospect?.contact || `${task.prospect?.firstName || ''} ${task.prospect?.lastName || ''}`.trim() || (lang === 'fr' ? 'Prospect' : 'Prospect')
+                    return (
+                      <div
+                        key={task.id}
+                        className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-sky-500/30 hover:bg-slate-100 transition-all group"
+                      >
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleTaskDone(task.id) }}
+                          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-slate-300 dark:border-white/20 hover:border-sky-500 hover:bg-sky-500 hover:text-white transition-all"
+                          aria-label={lang === 'fr' ? 'Marquer terminée' : 'Mark done'}
+                        >
+                          <Check className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100" strokeWidth={3} />
+                        </button>
+                        <button
+                          onClick={() => { const p = prospects.find(pr => pr.id === task.prospect_id); if (p) setTaskProspect(p) }}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{task.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-slate-500 dark:text-neutral-400 truncate"><MaskedText value={pName} type="name" /></span>
+                            {task.due_date && (
+                              <span className={cn(
+                                "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold shrink-0",
+                                isOverdue ? "bg-red-500/10 text-red-600 dark:text-red-400" : isTodayDue ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-neutral-400"
+                              )}>
+                                {isOverdue && (lang === 'fr' ? 'En retard' : 'Overdue')}
+                                {isTodayDue && (lang === 'fr' ? "Auj." : 'Today')}
+                                {!isOverdue && !isTodayDue && new Date(task.due_date + 'T00:00').toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Events Section */}
-            <div className="rounded-2xl p-8 bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+            <div className="rounded-2xl p-8 bg-white dark:bg-[#1a1a1a] backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-sm">
               <h4 className="text-lg font-bold mb-6">{t.upcoming_events}</h4>
 
               {upcomingEvents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/5">
-                    <Sparkles className="h-7 w-7 text-white/20" />
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-white/10">
+                    <Sparkles className="h-7 w-7 text-slate-400 dark:text-neutral-500" />
                   </div>
-                  <p className="text-sm font-semibold text-white/60">{t.no_events}</p>
-                  <p className="mt-1 text-xs text-white/30">{t.no_events_sub}</p>
+                  <p className="text-sm font-semibold text-slate-600 dark:text-neutral-300">{t.no_events}</p>
+                  <p className="mt-1 text-xs text-slate-400 dark:text-neutral-500">{t.no_events_sub}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -571,18 +648,18 @@ export function Dashboard() {
                     const isBiz = !!(event as any).isBusinessEvent
                     const EventIcon = event.isGoogleEvent ? CalendarIcon : isBiz ? CalendarIcon : (event.type === 'video' ? Video : Phone)
                     const iconBg = event.isGoogleEvent
-                      ? 'bg-blue-500/10 text-blue-400'
+                      ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
                       : isBiz
-                        ? 'bg-amber-500/10 text-amber-400'
+                        ? 'bg-amber-500/10 text-amber-600'
                         : event.type === 'video'
-                          ? 'bg-purple-500/10 text-purple-400'
-                          : 'bg-emerald-500/10 text-emerald-400'
+                          ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                          : 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
 
                     return (
                       <div
                         key={event.id}
                         onClick={() => navigate('/agenda', { state: { eventId: event.id } })}
-                        className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 hover:bg-white/[0.04] transition-all group cursor-pointer"
+                        className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-sky-500/30 hover:bg-slate-100 transition-all group cursor-pointer"
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", iconBg)}>
@@ -592,10 +669,10 @@ export function Dashboard() {
                             <p className="text-sm font-bold truncate">
                               <MaskedText value={event.title} type="name" />
                             </p>
-                            <p className="text-xs text-white/40">{formatRelativeTime(event.date, event.time, locale, { in_min: lang === 'fr' ? 'Dans {n} min' : 'In {n} min', tomorrow: t.tomorrow })}</p>
+                            <p className="text-xs text-slate-500 dark:text-neutral-400">{formatRelativeTime(event.date, event.time, locale, { in_min: lang === 'fr' ? 'Dans {n} min' : 'In {n} min', tomorrow: t.tomorrow })}</p>
                           </div>
                         </div>
-                        <ArrowUpRight className="h-4 w-4 text-white/20 group-hover:text-emerald-400 transition-colors shrink-0 ml-3" />
+                        <ArrowUpRight className="h-4 w-4 text-slate-400 dark:text-neutral-500 group-hover:text-sky-600 transition-colors shrink-0 ml-3" />
                       </div>
                     )
                   })}
@@ -605,7 +682,7 @@ export function Dashboard() {
               {upcomingEvents.length > 4 && (
                 <button
                   onClick={() => navigate('/agenda')}
-                  className="w-full mt-6 py-2 text-xs font-bold tracking-widest uppercase text-white/40 hover:text-white transition-colors"
+                  className="w-full mt-6 py-2 text-xs font-bold tracking-widest uppercase text-slate-500 dark:text-neutral-400 hover:text-slate-900 transition-colors"
                 >
                   {t.see_all_agenda}
                 </button>
@@ -616,6 +693,24 @@ export function Dashboard() {
       </div>
 
       {/* Modals */}
+      {taskProspect && (
+        <ProspectView
+          prospect={taskProspect}
+          onClose={() => setTaskProspect(null)}
+          onUpdate={(id, updates) => updateProspect(id, updates)}
+          onDelete={(id) => { deleteProspect(id); setTaskProspect(null) }}
+          onCreateEvent={() => setIsTaskEventModalOpen(true)}
+        />
+      )}
+      <CreateEventModal
+        isOpen={isTaskEventModalOpen}
+        onClose={() => setIsTaskEventModalOpen(false)}
+        prospectId={taskProspect?.id}
+        prospectName={taskProspect?.contact || `${taskProspect?.firstName || ''} ${taskProspect?.lastName || ''}`.trim()}
+      />
+
+      <WeeklyReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} />
+
       <VideoCallOverlay
         isOpen={isCallOpen}
         onClose={() => setIsCallOpen(false)}
@@ -642,13 +737,13 @@ export function Dashboard() {
 
       {showAiToast && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[70]">
-          <div className="flex items-center gap-3 px-6 py-4 bg-[#1a1a1a]/90 border border-emerald-500/30 rounded-2xl shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-5 duration-300">
-            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-emerald-500/20">
-              <Sparkles className="h-5 w-5 text-emerald-400" />
+          <div className="flex items-center gap-3 px-6 py-4 bg-white/95 border border-sky-500/30 rounded-2xl shadow-[0_10px_28px_-8px_rgba(15,23,42,0.18)] backdrop-blur-xl animate-in slide-in-from-top-5 duration-300">
+            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-sky-500/10">
+              <Sparkles className="h-5 w-5 text-sky-600 dark:text-sky-400" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">{t.ai_analysis}</p>
-              <p className="text-xs text-white/40 mt-0.5">{t.ai_crm_update}</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">{t.ai_analysis}</p>
+              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">{t.ai_crm_update}</p>
             </div>
           </div>
         </div>

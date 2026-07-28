@@ -233,6 +233,8 @@ export function BusinessCRMIntegrationModal({ isOpen, onClose }: Props) {
         .select('id, api_key')
         .eq('user_id', ownerUserId)
         .eq('is_active', true)
+        // la clé MCP (paramètres → Assistant IA) ne doit pas s'afficher comme clé Zapier
+        .neq('name', 'MCP')
         .limit(1)
         .maybeSingle();
       if (data) {

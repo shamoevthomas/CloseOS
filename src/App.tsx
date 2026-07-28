@@ -45,6 +45,7 @@ const BusinessDocsAPI = lazy(() => import('./pages/BusinessDocsAPI'))
 import { EcosystemChoice } from './pages/EcosystemChoice'
 import { CaptureForm } from './pages/CaptureForm'
 const CRMCapture = lazy(() => import('./pages/CRMCapture'))
+const PublicForm = lazy(() => import('./pages/PublicForm'))
 import { PublicBooking } from './pages/PublicBooking'
 import { OGPreview } from './pages/OGPreview'
 import { AppointmentManage } from './pages/AppointmentManage'
@@ -114,6 +115,10 @@ const SignCGV = lazy(() => import('./pages/SignCGV'))
 const SignConfidentialite = lazy(() => import('./pages/SignConfidentialite'))
 const SignSecurite = lazy(() => import('./pages/SignSecurite'))
 const SignOwnerSign = lazy(() => import('./pages/SignOwnerSign'))
+const SignMemberSpace = lazy(() => import('./pages/SignMemberSpace'))
+const SignTeam = lazy(() => import('./pages/SignTeam'))
+const SignJoin = lazy(() => import('./pages/SignJoin'))
+const SignMemberProtected = lazy(() => import('./components/SignMemberProtected'))
 import { SignLangProvider } from './contexts/SignLangContext'
 
 // Business Module Imports
@@ -125,6 +130,8 @@ import BusinessLogin from './business/pages/BusinessLogin'
 import BusinessRegister from './business/pages/BusinessRegister'
 import { BusinessInvitation } from './business/pages/BusinessInvitation'
 import { BusinessOnboardingModal } from './business/components/BusinessOnboardingModal'
+import { BusinessWhatsNewModal } from './business/components/BusinessWhatsNewModal'
+import { WhatsNewV5Modal } from './components/WhatsNewV5Modal'
 import { BusinessLangWrapper } from './business/i18n/BusinessLangWrapper'
 
 // Business lazy imports
@@ -132,6 +139,7 @@ const BusinessDashboard = lazy(() => import('./business/pages/BusinessDashboard'
 const BusinessCRM = lazy(() => import('./business/pages/BusinessCRM').then(m => ({ default: m.BusinessCRM })))
 const BusinessTeam = lazy(() => import('./business/pages/BusinessTeam').then(m => ({ default: m.BusinessTeam })))
 const BusinessCampaigns = lazy(() => import('./business/pages/BusinessCampaigns').then(m => ({ default: m.BusinessCampaigns })))
+const BusinessForms = lazy(() => import('./business/pages/BusinessForms').then(m => ({ default: m.BusinessForms })))
 const BusinessFormules = lazy(() => import('./business/pages/BusinessFormules').then(m => ({ default: m.BusinessFormules })))
 const BusinessObjectives = lazy(() => import('./business/pages/BusinessObjectives').then(m => ({ default: m.BusinessObjectives })))
 const BusinessAppointments = lazy(() => import('./business/pages/BusinessAppointments').then(m => ({ default: m.BusinessAppointments })))
@@ -416,10 +424,13 @@ function AuthenticatedApp() {
   // Le spinner ne s'affiche que dans ProtectedRoute pour les pages nécessitant une connexion.
   const isCrmPath = location.pathname.startsWith('/crm') || location.pathname.startsWith('/c/')
   const isBusinessPath = location.pathname.startsWith('/business')
+  const isSignPath = location.pathname.startsWith('/sign')
   const suspenseFallback = isCrmPath
     ? <div className="flex items-center justify-center min-h-screen bg-white"><div className="w-10 h-10 border-4 border-blue-100 border-t-[#3B82F6] rounded-full animate-spin" /></div>
     : isBusinessPath
     ? <div className="flex items-center justify-center min-h-screen bg-[#f4f2f1] dark:bg-neutral-900"><div className="w-10 h-10 border-4 border-stone-300 border-t-stone-900 rounded-full animate-spin" /></div>
+    : isSignPath
+    ? <div className="flex items-center justify-center min-h-screen bg-[#0d0d0d]"><div className="w-10 h-10 border-4 border-white/10 border-t-lime-400 rounded-full animate-spin" /></div>
     : <LoadingScreen />
 
   // Sous-domaine dédié sign.closeos.fr : la racine et tout chemin hors /sign sont renvoyés
@@ -439,6 +450,8 @@ function AuthenticatedApp() {
         <Route path="/sign/login" element={<SignLogin />} />
         <Route path="/sign/s/:token" element={<SignPublic />} />
         <Route path="/sign/rep/:token" element={<SignRepSpace />} />
+        <Route path="/sign/join/:token" element={<SignJoin />} />
+        <Route path="/sign/team" element={<SignMemberProtected><SignMemberSpace /></SignMemberProtected>} />
         <Route path="/sign/verify/:certificateId" element={<SignVerify />} />
         <Route path="/sign/owner/:token" element={<SignOwnerSign />} />
         <Route path="/sign/abonnement" element={<SignCheckout />} />
@@ -454,6 +467,7 @@ function AuthenticatedApp() {
           <Route path="contacts" element={<SignContacts />} />
           <Route path="contacts/:id" element={<SignContactDetail />} />
           <Route path="profil" element={<SignProfile />} />
+          <Route path="equipe" element={<SignTeam />} />
           <Route path="template/:id" element={<SignTemplateDashboard />} />
         </Route>
         </Route>
@@ -496,6 +510,7 @@ function AuthenticatedApp() {
               <BusinessGoogleCalendarProvider>
                 <BusinessLayout />
                 <BusinessOnboardingModal />
+                <BusinessWhatsNewModal />
               </BusinessGoogleCalendarProvider>
             </BusinessProspectsProvider>
             </BusinessLangWrapper>
@@ -506,6 +521,7 @@ function AuthenticatedApp() {
           <Route path="pipeline-owner" element={<OwnerOnlyWrapper><BusinessPipeline /></OwnerOnlyWrapper>} />
           {/* KPI classique retiré — utiliser setter-kpi et closer-kpi */}
           <Route path="campagnes" element={<AcquisitionRedirect><CampaignGuard><BusinessCampaigns /></CampaignGuard></AcquisitionRedirect>} />
+          <Route path="formulaires" element={<AcquisitionRedirect><CampaignGuard><BusinessForms /></CampaignGuard></AcquisitionRedirect>} />
           <Route path="acquisition" element={<AcquisitionRedirect><OwnerOnlyWrapper><BusinessAcquisition /></OwnerOnlyWrapper></AcquisitionRedirect>} />
           <Route path="objectifs" element={<TeamOnboardingGuard><BusinessObjectives /></TeamOnboardingGuard>} />
           <Route path="formules" element={<TeamOnboardingGuard><BusinessFormules /></TeamOnboardingGuard>} />
@@ -561,6 +577,7 @@ function AuthenticatedApp() {
         <Route path="/book/:slug" element={<PublicBooking />} />
         <Route path="/capture/:slug" element={<CaptureForm />} />
         <Route path="/c/:slug" element={<CRMCapture />} />
+        <Route path="/f/:slug" element={<PublicForm />} />
         <Route path="/og-preview" element={<OGPreview />} />
         <Route path="/appointment/:token" element={<AppointmentManage />} />
         <Route path="/view/:token" element={<SpectatorPage />} />
@@ -663,6 +680,7 @@ function AuthenticatedApp() {
               setIsTutorialOpen(true);
             }
           }} />
+          <WhatsNewV5Modal />
           {isTutorialOpen && (
             <OnboardingTutorial
               onComplete={async () => {

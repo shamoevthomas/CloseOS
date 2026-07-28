@@ -49,7 +49,7 @@ const CRMLanding: React.FC = () => {
   const pageRef = useRef<HTMLDivElement>(null);
   const demoIframeRef = useRef<HTMLIFrameElement>(null);
   const [isExiting, setIsExiting] = useState(false);
-  // WaitingListModal removed — replaced with direct checkout links
+  // WaitingListModal removed, replaced with direct checkout links
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDemoPopup, setShowDemoPopup] = useState(false);
@@ -338,7 +338,7 @@ const CRMLanding: React.FC = () => {
     <LangContext.Provider value={{ lang, setLang, t }}>
     <div ref={pageRef} className={`bg-white font-sans text-[#0A0E27] min-h-screen selection:bg-[#60A5FA]/30 transition-all duration-500 ${isExiting ? 'translate-y-full opacity-0' : 'animate-[pageEnterFromTop_0.5s_ease-out]'}`}>
 
-      {/* Navigation — flat sticky bar */}
+      {/* Navigation, flat sticky bar */}
       <nav className="sticky top-0 z-50 border-b border-blue-100/70 bg-white/85 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-10">
@@ -436,9 +436,9 @@ const CRMLanding: React.FC = () => {
       </nav>
 
       <main className="flex flex-col flex-1">
-        {/* ───────── HERO — Asymmetric, mockup-driven ───────── */}
+        {/* ───────── HERO, Asymmetric, mockup-driven ───────── */}
         <section className="relative px-6 md:px-12 pt-16 md:pt-24 pb-20 md:pb-28 overflow-hidden">
-          {/* Background — soft blue mesh + grid */}
+          {/* Background, soft blue mesh + grid */}
           <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
             <div className="absolute -top-32 right-0 w-[700px] h-[700px] bg-[radial-gradient(circle,_rgba(96,165,250,0.22),transparent_60%)] blur-2xl" />
             <div className="absolute top-40 -left-32 w-[500px] h-[500px] bg-[radial-gradient(circle,_rgba(59,130,246,0.15),transparent_60%)] blur-2xl" />
@@ -451,7 +451,7 @@ const CRMLanding: React.FC = () => {
           </div>
 
           <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* LEFT — Title block */}
+            {/* LEFT, Title block */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -485,8 +485,8 @@ const CRMLanding: React.FC = () => {
 
               <p className="text-stone-600 text-lg md:text-xl leading-relaxed max-w-xl">
                 {lang === 'fr'
-                  ? 'CRM, Pipeline, Campagnes Stripe, Acquisition analytics, API Zapier/Make/N8N — sans jongler entre 6 outils.'
-                  : 'CRM, Pipeline, Stripe campaigns, Acquisition analytics, Zapier/Make/N8N API — without juggling 6 tools.'}
+                  ? 'CRM, Pipeline, Campagnes Stripe, Acquisition analytics, API Zapier/Make/N8N, sans jongler entre 6 outils.'
+                  : 'CRM, Pipeline, Stripe campaigns, Acquisition analytics, Zapier/Make/N8N API, without juggling 6 tools.'}
               </p>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -519,7 +519,7 @@ const CRMLanding: React.FC = () => {
               </div>
             </motion.div>
 
-            {/* RIGHT — Floating dashboard mockup */}
+            {/* RIGHT, Floating dashboard mockup */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -600,7 +600,7 @@ const CRMLanding: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Floating ribbon — Stripe payment */}
+                {/* Floating ribbon, Stripe payment */}
                 <div className="absolute -bottom-4 -left-6 hidden md:flex items-center gap-2 rounded-2xl bg-white border border-blue-100 shadow-xl shadow-blue-500/10 px-4 py-3">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3B82F6] to-[#60A5FA] flex items-center justify-center">
                     <DollarSign className="size-4 text-white" />
@@ -611,7 +611,7 @@ const CRMLanding: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Floating ribbon — Webhook */}
+                {/* Floating ribbon, Webhook */}
                 <div className="absolute -top-4 -right-4 hidden md:flex items-center gap-2 rounded-2xl bg-white border border-blue-100 shadow-xl shadow-blue-500/15 px-4 py-2.5">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#60A5FA] to-[#7DD3FC] flex items-center justify-center">
                     <Zap className="size-4 text-white" />
@@ -656,9 +656,9 @@ const CRMLanding: React.FC = () => {
               </h2>
             </div>
 
-            {/* Bento grid — asymmetric */}
+            {/* Bento grid, asymmetric */}
             <div className="grid grid-cols-1 md:grid-cols-6 gap-4 auto-rows-[200px]">
-              {/* Card 1 — CRM (large) */}
+              {/* Card 1, CRM (large) */}
               <div className="md:col-span-4 md:row-span-2 group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white to-blue-50/40 border border-blue-100 p-7 hover:border-blue-300 transition-all">
                 <div className="absolute -top-20 -right-20 w-72 h-72 bg-gradient-to-br from-blue-400/15 to-sky-400/15 rounded-full blur-3xl" />
                 <div className="relative h-full flex flex-col">
@@ -687,7 +687,7 @@ const CRMLanding: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card 2 — Pipeline */}
+              {/* Card 2, Pipeline */}
               <div className="md:col-span-2 group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50 to-sky-100/60 border border-blue-100 p-6 hover:scale-[1.02] transition-transform">
                 <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-blue-300/20 rounded-full blur-2xl" />
                 <div className="relative h-full flex flex-col justify-between">
@@ -703,7 +703,7 @@ const CRMLanding: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card 3 — Stripe */}
+              {/* Card 3, Stripe */}
               <div className="md:col-span-2 group relative overflow-hidden rounded-3xl bg-white border border-blue-100 p-6 hover:shadow-xl hover:shadow-blue-500/10 transition-all">
                 <div className="h-full flex flex-col justify-between">
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 border border-blue-100">
@@ -718,7 +718,7 @@ const CRMLanding: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card 4 — Acquisition */}
+              {/* Card 4, Acquisition */}
               <div className="md:col-span-3 group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#3B82F6] via-[#60A5FA] to-[#7DD3FC] text-white p-7 hover:scale-[1.01] transition-transform">
                 <div className="h-full flex flex-col justify-between">
                   <div className="flex items-center gap-3">
@@ -738,7 +738,7 @@ const CRMLanding: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card 5 — API */}
+              {/* Card 5, API */}
               <div className="md:col-span-3 group relative overflow-hidden rounded-3xl bg-white border border-blue-100 p-6 hover:shadow-xl hover:shadow-blue-500/10 transition-all">
                 <div className="h-full flex flex-col justify-between">
                   <div className="flex items-center gap-2.5">
@@ -766,7 +766,7 @@ const CRMLanding: React.FC = () => {
           </div>
         </section>
 
-        {/* ───────── SHOWCASE — Lead Profile (kept as-is) ───────── */}
+        {/* ───────── SHOWCASE, Lead Profile (kept as-is) ───────── */}
         <section id="showcase" className="px-6 md:px-12 py-24 md:py-32 bg-gradient-to-b from-white via-blue-50/40 to-white">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
@@ -780,8 +780,8 @@ const CRMLanding: React.FC = () => {
                 </h2>
                 <p className="text-stone-600 text-lg leading-relaxed">
                   {lang === 'fr'
-                    ? 'Score de qualification, dernières interactions, notes, RDV planifiés, paiements Stripe — tout est centralisé sur la fiche du prospect.'
-                    : 'Qualification score, latest interactions, notes, scheduled meetings, Stripe payments — everything is centralized on the prospect card.'}
+                    ? 'Score de qualification, dernières interactions, notes, RDV planifiés, paiements Stripe, tout est centralisé sur la fiche du prospect.'
+                    : 'Qualification score, latest interactions, notes, scheduled meetings, Stripe payments, everything is centralized on the prospect card.'}
                 </p>
                 <div className="flex flex-wrap gap-2 pt-2">
                   {(lang === 'fr' ? ['Score auto', 'Tags', 'Notes riches', 'Historique', 'Stripe'] : ['Auto score', 'Tags', 'Rich notes', 'History', 'Stripe']).map((t) => (
@@ -798,7 +798,7 @@ const CRMLanding: React.FC = () => {
           </div>
         </section>
 
-        {/* ───────── INTEGRATIONS — Code-card style ───────── */}
+        {/* ───────── INTEGRATIONS, Code-card style ───────── */}
         <section id="integrations" className="px-6 md:px-12 py-24 md:py-32">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -829,7 +829,7 @@ const CRMLanding: React.FC = () => {
                 </div>
               </div>
 
-              {/* Code card — light style */}
+              {/* Code card, light style */}
               <div className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-br from-[#60A5FA]/20 to-[#7DD3FC]/25 rounded-[2rem] blur-2xl" />
                 <div className="relative rounded-2xl bg-white border border-blue-100 shadow-2xl shadow-blue-500/15 overflow-hidden">
@@ -921,7 +921,7 @@ X-CloseOS-Signature: `}<span className="text-stone-400">hmac-sha256...</span>{`
         {/* FAQ Section */}
         <FAQSection />
 
-        {/* ───────── FINAL CTA — Full bleed gradient ───────── */}
+        {/* ───────── FINAL CTA, Full bleed gradient ───────── */}
         <motion.section
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -1031,7 +1031,7 @@ X-CloseOS-Signature: `}<span className="text-stone-400">hmac-sha256...</span>{`
         }
       `}</style>
 
-      {/* Demo popup — appears after 45s */}
+      {/* Demo popup, appears after 45s */}
       {showDemoPopup && (
         <div className="fixed inset-0 z-[200] flex items-start justify-center bg-[#0A0E27]/60 backdrop-blur-md overflow-y-auto py-6 md:py-10 animate-in fade-in duration-300" onClick={() => setShowDemoPopup(false)}>
           <div className="relative bg-white rounded-3xl p-6 md:p-8 max-w-3xl w-full mx-4 shadow-2xl shadow-blue-500/20 ring-1 ring-blue-100 my-auto animate-in slide-in-from-bottom-4 duration-500" onClick={(e) => e.stopPropagation()}>
@@ -1047,8 +1047,8 @@ X-CloseOS-Signature: `}<span className="text-stone-400">hmac-sha256...</span>{`
                 </h3>
                 <p className="text-sm text-stone-600 mt-1">
                   {lang === 'fr'
-                    ? 'Réservez un appel de 15 min — on vous montre comment CloseOS s\'adapte à votre business.'
-                    : 'Book a 15-min call — we\'ll show you how CloseOS fits your business.'}
+                    ? 'Réservez un appel de 15 min, on vous montre comment CloseOS s\'adapte à votre business.'
+                    : 'Book a 15-min call, we\'ll show you how CloseOS fits your business.'}
                 </p>
               </div>
               <button onClick={() => setShowDemoPopup(false)} className="text-stone-400 hover:text-blue-600 transition-colors p-1.5 rounded-lg hover:bg-blue-50">
@@ -1169,7 +1169,7 @@ const RevenueStripe = () => {
       <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#635BFF]/10 to-emerald-500/5 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 relative z-10">
-        {/* Left — Texte */}
+        {/* Left, Texte */}
         <div className="lg:col-span-2 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-12 h-12 rounded-xl bg-[#635BFF]/10 flex items-center justify-center">
@@ -1197,7 +1197,7 @@ const RevenueStripe = () => {
           </ul>
         </div>
 
-        {/* Right — Mini dashboard preview */}
+        {/* Right, Mini dashboard preview */}
         <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">{t.revenue_kpi_mrr}</p>
@@ -1394,7 +1394,7 @@ const CaptureSection = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
-      {/* Left — Text */}
+      {/* Left, Text */}
       <div className="lg:col-span-5 flex flex-col justify-center">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50/70 border border-blue-100 shadow-sm mb-6 w-fit">
           <Megaphone className="size-3.5 text-stone-600" />
@@ -1434,7 +1434,7 @@ const CaptureSection = () => {
         </div>
       </div>
 
-      {/* Right — Preview */}
+      {/* Right, Preview */}
       <div className="lg:col-span-7 flex items-center mt-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
@@ -1479,9 +1479,9 @@ const CaptureSection = () => {
                     closeos.fr/capture/mastermind-2026
                   </div>
                 </div>
-                {/* Capture page — two columns: form left, agenda right */}
+                {/* Capture page, two columns: form left, agenda right */}
                 <div className="bg-gradient-to-br from-[#111111] to-[#1a1a2e] rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Left — Registration form */}
+                  {/* Left, Registration form */}
                   <div className="space-y-3">
                     <h4 className="text-white text-lg font-bold leading-tight">{t.capture_page_title}</h4>
                     <p className="text-stone-400 text-xs font-medium">{t.capture_page_subtitle}</p>
@@ -1492,7 +1492,7 @@ const CaptureSection = () => {
                     </div>
                     <div className="bg-white text-[#111111] rounded-lg px-4 py-2.5 text-xs font-bold text-center">{t.capture_page_continue}</div>
                   </div>
-                  {/* Right — Blurred agenda */}
+                  {/* Right, Blurred agenda */}
                   <div className="relative rounded-xl overflow-hidden bg-white/5 border border-white/10 p-4">
                     <div className="absolute inset-0 backdrop-blur-md bg-white/5 z-10 flex items-center justify-center">
                       <div className="text-center px-4">
@@ -1529,7 +1529,7 @@ const CaptureSection = () => {
 
             {captureTab === 'embed' && (
               <div className="space-y-4">
-                {/* Browser bar — CloseOS Sales site */}
+                {/* Browser bar, CloseOS Sales site */}
                 <div className="bg-stone-100 rounded-xl p-3 flex items-center gap-3">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
@@ -1659,7 +1659,7 @@ const QualificationSection = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
-      {/* Left — Text */}
+      {/* Left, Text */}
       <div className="lg:col-span-5 flex flex-col justify-center">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50/70 border border-blue-100 shadow-sm mb-6 w-fit">
           <ShieldCheck className="size-3.5 text-stone-600" />
@@ -1679,7 +1679,7 @@ const QualificationSection = () => {
         </div>
       </div>
 
-      {/* Right — Mockup */}
+      {/* Right, Mockup */}
       <div className="lg:col-span-7">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
@@ -1688,7 +1688,7 @@ const QualificationSection = () => {
           transition={{ duration: 0.8 }}
           className="bg-white rounded-3xl overflow-hidden shadow-xl border border-stone-200 text-left"
         >
-          {/* Header — Prospect avatar + score ring */}
+          {/* Header, Prospect avatar + score ring */}
           <div className="p-6 border-b border-stone-100 bg-stone-50 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold text-xl shadow-inner">SM</div>
@@ -1758,7 +1758,7 @@ const QualificationSection = () => {
             })}
           </div>
 
-          {/* Footer — Summary */}
+          {/* Footer, Summary */}
           <div className="px-6 pb-6">
             <div className="rounded-2xl bg-stone-50 border border-stone-200 p-4 flex items-center justify-between">
               <div>
@@ -1931,7 +1931,7 @@ const getPricingExtras = (lang: string) => [
     type: 'one-shot',
     description: lang === 'fr'
       ? "Configuration complète du CRM : import de vos prospects, création de vos campagnes, paramétrage du pipeline, stages personnalisés, tags. Vous n'avez rien à toucher, tout est livré prêt à closer."
-      : "Full CRM setup: import your prospects, build your campaigns, configure your pipeline, custom stages, tags. You don't touch anything — everything is delivered ready to close.",
+      : "Full CRM setup: import your prospects, build your campaigns, configure your pipeline, custom stages, tags. You don't touch anything, everything is delivered ready to close.",
   },
   {
     name: lang === 'fr' ? 'Intégration' : 'Integration',
@@ -1946,8 +1946,8 @@ const getPricingExtras = (lang: string) => [
     price: '120€',
     type: 'one-shot',
     description: lang === 'fr'
-      ? "Les deux combinés — vous économisez 20€. CRM paramétré de A à Z, branchements techniques faits, prêt à recevoir vos premiers leads."
-      : 'Both bundled — save €20. CRM fully configured, all technical hookups done, ready to receive your first leads.',
+      ? "Les deux combinés, vous économisez 20€. CRM paramétré de A à Z, branchements techniques faits, prêt à recevoir vos premiers leads."
+      : 'Both bundled, save €20. CRM fully configured, all technical hookups done, ready to receive your first leads.',
   },
 ];
 
@@ -2127,7 +2127,7 @@ const PricingSection = () => {
             </motion.div>
           ))}
 
-          {/* Upsell Business — pour les équipes (côte à côte avec le plan CRM) */}
+          {/* Upsell Business, pour les équipes (côte à côte avec le plan CRM) */}
           <motion.div
             initial={{ opacity: 0, y: 24, filter: 'blur(4px)' }}
             whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -2239,7 +2239,7 @@ const PricingSection = () => {
                   >
                     <div className="flex items-baseline gap-2 mb-1">
                       <h4 className="text-white font-bold text-lg">{extra.name}</h4>
-                      <span className="text-stone-400 text-sm font-medium">— {extra.price} {extra.type}</span>
+                      <span className="text-stone-400 text-sm font-medium">{extra.price} {extra.type}</span>
                     </div>
                     <p className="text-stone-400 text-sm font-medium leading-relaxed mt-3">{extra.description}</p>
                   </motion.div>
@@ -2915,7 +2915,7 @@ const FeaturesByRole = () => {
         </p>
       </motion.div>
 
-      {/* Role Tabs — Desktop: single row with bubble / Mobile: 2x2 grid */}
+      {/* Role Tabs, Desktop: single row with bubble / Mobile: 2x2 grid */}
       {/* Desktop */}
       <div className="hidden sm:flex justify-center mb-12">
         <div

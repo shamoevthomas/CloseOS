@@ -21,11 +21,11 @@ const getEventStyle = (event: any) => {
   if (event.isBusinessEvent) {
     return {
       backgroundColor: 'rgba(245, 158, 11, 0.15)',
-      color: '#ffffff',
+      color: '#92400e',
       border: '1px solid #f59e0b',
       borderLeft: '4px solid #f59e0b',
       borderRadius: '4px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+      boxShadow: '0 2px 4px rgba(15,23,42,0.12)'
     }
   }
 
@@ -37,35 +37,40 @@ const getEventStyle = (event: any) => {
       border: '1px solid #e2e8f0', // Bordure grise subtile
       borderLeft: '4px solid #4285F4', // Barre latérale Bleu Google
       borderRadius: '4px',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+      boxShadow: '0 1px 2px rgba(15,23,42,0.10)'
     }
   }
 
   // 2. STYLE CLOSEROS (Cadres Colorés)
   let baseColor = '#64748b' // Gris par défaut
   let bgColor = 'rgba(100, 116, 139, 0.15)'
+  let textColor = '#334155' // Texte lisible sur fond clair
 
   if (event.type === 'video') {
-    baseColor = '#3b82f6' // Bleu
-    bgColor = 'rgba(59, 130, 246, 0.15)'
+    baseColor = '#0284c7' // Sky (marque)
+    bgColor = 'rgba(2, 132, 199, 0.12)'
+    textColor = '#075985'
   } else if (event.type === 'call') {
-    baseColor = '#10b981' // Vert
+    baseColor = '#10b981' // Vert (catégorie)
     bgColor = 'rgba(16, 185, 129, 0.15)'
+    textColor = '#065f46'
   } else if (event.type === 'meeting') {
-    baseColor = '#f97316' // Orange
+    baseColor = '#f97316' // Orange (catégorie)
     bgColor = 'rgba(249, 115, 22, 0.15)'
+    textColor = '#9a3412'
   } else if (event.type === 'other') {
     baseColor = '#a855f7' // Violet pour "Autre"
     bgColor = 'rgba(168, 85, 247, 0.15)'
+    textColor = '#6b21a8'
   }
 
   return {
     backgroundColor: bgColor,
-    color: '#ffffff',
+    color: textColor,
     border: `1px solid ${baseColor}`, // Cadre complet de la couleur
     borderLeft: `4px solid ${baseColor}`, // Barre latérale plus épaisse
     borderRadius: '4px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.2)' // Ombre pour faire ressortir
+    boxShadow: '0 2px 4px rgba(15,23,42,0.12)' // Ombre pour faire ressortir
   }
 }
 
@@ -117,7 +122,7 @@ const renderTextWithLinks = (text: string) => {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-emerald-400 hover:text-emerald-300 hover:underline transition-colors"
+          className="text-sky-600 dark:text-sky-400 hover:text-sky-700 hover:underline transition-colors"
           onClick={(e) => e.stopPropagation()}
         >
           {part}
@@ -558,22 +563,22 @@ export function Agenda() {
     const currentTimePos = getCurrentTimePosition()
 
     return (
-      <div className="flex flex-col flex-1 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+      <div className="flex flex-col flex-1 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] backdrop-blur-[16px] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_28px_-14px_rgba(15,23,42,0.12)] overflow-hidden" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         {allDayEvents.length > 0 && (
-          <div className="bg-white/[0.02] p-4">
-            <div className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3">{t.all_day}</div>
+          <div className="bg-slate-50 dark:bg-white/5 p-4">
+            <div className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-neutral-400 mb-3">{t.all_day}</div>
             <div className="space-y-1.5">
               {allDayEvents.map(event => (
                 <div
                   key={event.id}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all hover:bg-white/5"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all hover:bg-slate-50"
                   style={{
                     backgroundColor: 'rgba(59, 130, 246, 0.15)',
                     borderLeft: '3px solid #3b82f6'
                   }}
                 >
-                  <CalendarIcon className="h-4 w-4 text-blue-400 flex-shrink-0" />
-                  <span className="text-sm font-medium text-white truncate">{event.title}</span>
+                  <CalendarIcon className="h-4 w-4 text-sky-600 dark:text-sky-400 flex-shrink-0" />
+                  <span className="text-sm font-medium text-slate-900 dark:text-white truncate">{event.title}</span>
                 </div>
               ))}
             </div>
@@ -582,10 +587,10 @@ export function Agenda() {
 
         <div ref={dayViewScrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="relative min-h-[1920px]">
-            <div className="absolute left-0 top-0 w-16 border-r border-white/[0.08]">
+            <div className="absolute left-0 top-0 w-16 border-r border-slate-200 dark:border-white/10">
               {HOURS.map((hour) => (
-                <div key={hour} className="h-20 border-b border-white/[0.08] px-2 py-1">
-                  <span className="text-xs font-medium text-white/40">
+                <div key={hour} className="h-20 border-b border-slate-200 dark:border-white/10 px-2 py-1">
+                  <span className="text-xs font-medium text-slate-500 dark:text-neutral-400">
                     {hour.toString().padStart(2, '0')}:00
                   </span>
                 </div>
@@ -594,7 +599,7 @@ export function Agenda() {
 
             <div className="absolute inset-0 left-16">
               {HOURS.map((hour) => (
-                <div key={hour} className="h-20 border-b border-white/[0.08]" />
+                <div key={hour} className="h-20 border-b border-slate-200 dark:border-white/10" />
               ))}
 
               {showCurrentTimeLine && currentTimePos >= 0 && currentTimePos <= 100 && (
@@ -671,26 +676,26 @@ export function Agenda() {
     return (
       <div
         ref={weekViewScrollRef}
-        className="flex-1 overflow-x-auto overflow-y-auto rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] custom-scrollbar"
+        className="flex-1 overflow-x-auto overflow-y-auto rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] backdrop-blur-[16px] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_28px_-14px_rgba(15,23,42,0.12)] custom-scrollbar"
         style={{ maxHeight: 'calc(100vh - 280px)' }}
       >
         <div className="min-w-[1000px]">
-          <div className="sticky top-0 z-20 flex border-b border-white/[0.08] bg-[#111111]/90 backdrop-blur-[16px]">
-            <div className="w-16 border-r border-white/[0.08] flex-shrink-0" />
+          <div className="sticky top-0 z-20 flex border-b border-slate-200 dark:border-white/10 bg-white/90 backdrop-blur-[16px]">
+            <div className="w-16 border-r border-slate-200 dark:border-white/10 flex-shrink-0" />
             {weekDates.map((date, index) => (
               <div
                 key={index}
                 className={cn(
-                  'flex-1 border-r border-white/[0.08] p-3 text-center min-w-[120px]',
-                  isToday(date) && 'bg-emerald-500/[0.08] shadow-[inset_0_-2px_20px_rgba(16,185,129,0.1)]'
+                  'flex-1 border-r border-slate-200 dark:border-white/10 p-3 text-center min-w-[120px]',
+                  isToday(date) && 'bg-sky-500/[0.08] shadow-[inset_0_-2px_20px_rgba(2,132,199,0.1)]'
                 )}
               >
-                <div className="text-xs font-bold uppercase tracking-widest text-white/40">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-neutral-400">
                   {formatShortDayName(date, locale)}
                 </div>
                 <div className={cn(
                   'mt-1 text-lg font-bold',
-                  isToday(date) ? 'text-emerald-400' : 'text-white'
+                  isToday(date) ? 'text-sky-600 dark:text-sky-400' : 'text-slate-900 dark:text-white'
                 )}>
                   {date.getDate()}
                 </div>
@@ -698,22 +703,22 @@ export function Agenda() {
             ))}
           </div>
 
-          <div className="sticky top-[73px] z-10 flex border-b border-white/[0.08] bg-[#111111]/80 backdrop-blur-[16px]">
-            <div className="w-16 border-r border-white/[0.08] p-2 flex-shrink-0">
-              <span className="text-[10px] font-semibold text-white/40">{t.all_day}</span>
+          <div className="sticky top-[73px] z-10 flex border-b border-slate-200 dark:border-white/10 bg-white/90 backdrop-blur-[16px]">
+            <div className="w-16 border-r border-slate-200 dark:border-white/10 p-2 flex-shrink-0">
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-neutral-400">{t.all_day}</span>
             </div>
             {weekDates.map((date, dayIndex) => {
               const allDayEvents = getAllDayEventsForDate(date)
               return (
-                <div key={dayIndex} className="relative flex-1 border-r border-white/[0.08] p-1.5 min-h-[40px] min-w-[120px]">
+                <div key={dayIndex} className="relative flex-1 border-r border-slate-200 dark:border-white/10 p-1.5 min-h-[40px] min-w-[120px]">
                   {allDayEvents.map(event => (
                     <div
                       key={event.id}
-                      className="mb-1 px-2 py-1 rounded text-[10px] font-medium truncate cursor-pointer transition-all hover:bg-white/5"
+                      className="mb-1 px-2 py-1 rounded text-[10px] font-medium truncate cursor-pointer transition-all hover:bg-slate-50"
                       style={{
                         backgroundColor: 'rgba(59, 130, 246, 0.15)',
                         borderLeft: '3px solid #3b82f6',
-                        color: '#ffffff'
+                        color: '#1e40af'
                       }}
                     >
                       {event.title}
@@ -725,10 +730,10 @@ export function Agenda() {
           </div>
 
           <div className="relative min-h-[1920px]">
-            <div className="absolute left-0 top-0 w-16 border-r border-white/[0.08] flex-shrink-0 bg-white/[0.03] backdrop-blur-[16px] z-10">
+            <div className="absolute left-0 top-0 w-16 border-r border-slate-200 dark:border-white/10 flex-shrink-0 bg-white dark:bg-[#1a1a1a] backdrop-blur-[16px] z-10">
               {HOURS.map((hour) => (
-                <div key={hour} className="h-20 border-b border-white/[0.08] px-2 py-1">
-                  <span className="text-xs font-medium text-white/40">
+                <div key={hour} className="h-20 border-b border-slate-200 dark:border-white/10 px-2 py-1">
+                  <span className="text-xs font-medium text-slate-500 dark:text-neutral-400">
                     {hour.toString().padStart(2, '0')}:00
                   </span>
                 </div>
@@ -743,9 +748,9 @@ export function Agenda() {
                 const overnightContinuations = previousDayMeetings.filter(event => isOvernightEvent(event.time))
 
                 return (
-                  <div key={dayIndex} className="relative flex-1 border-r border-white/[0.08] min-w-[120px]">
+                  <div key={dayIndex} className="relative flex-1 border-r border-slate-200 dark:border-white/10 min-w-[120px]">
                     {HOURS.map((hour) => (
-                      <div key={hour} className="h-20 border-b border-white/[0.08]" />
+                      <div key={hour} className="h-20 border-b border-slate-200 dark:border-white/10" />
                     ))}
 
                     {dayIndex === todayIndex && currentTimePos >= 0 && currentTimePos <= 100 && (
@@ -862,10 +867,10 @@ export function Agenda() {
     const currentMonth = currentDate.getMonth()
 
     return (
-      <div className="flex-1 overflow-auto rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
-        <div className="grid grid-cols-7 bg-white/[0.02]">
+      <div className="flex-1 overflow-auto rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] backdrop-blur-[16px] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_28px_-14px_rgba(15,23,42,0.12)]">
+        <div className="grid grid-cols-7 bg-slate-50 dark:bg-white/5">
           {[t.mon, t.tue, t.wed, t.thu, t.fri, t.sat, t.sun].map((day) => (
-            <div key={day} className="border-r border-white/[0.08] py-3 text-center text-xs font-semibold uppercase tracking-wider text-white/40">
+            <div key={day} className="border-r border-slate-200 dark:border-white/10 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-neutral-400">
               {day}
             </div>
           ))}
@@ -883,17 +888,17 @@ export function Agenda() {
               <div
                 key={index}
                 className={cn(
-                  'min-h-[120px] border-b border-r border-white/[0.08] p-2 transition-colors',
-                  !isCurrentMonth && 'bg-white/[0.01]',
-                  today && 'bg-emerald-500/5',
-                  isCurrentMonth && !today && 'hover:bg-white/5'
+                  'min-h-[120px] border-b border-r border-slate-200 dark:border-white/10 p-2 transition-colors',
+                  !isCurrentMonth && 'bg-slate-50 dark:bg-white/5',
+                  today && 'bg-sky-500/5',
+                  isCurrentMonth && !today && 'hover:bg-slate-50'
                 )}
               >
                 <div className={cn(
                   'mb-2 flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold',
-                  today && 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/30',
-                  !today && isCurrentMonth && 'text-white',
-                  !today && !isCurrentMonth && 'text-white/20'
+                  today && 'bg-sky-600 text-white shadow-lg shadow-sky-500/30',
+                  !today && isCurrentMonth && 'text-slate-900 dark:text-white',
+                  !today && !isCurrentMonth && 'text-slate-400 dark:text-neutral-500'
                 )}>
                   {date.getDate()}
                 </div>
@@ -916,7 +921,7 @@ export function Agenda() {
                   })}
 
                   {hiddenCount > 0 && (
-                    <div className="px-1.5 text-[10px] font-medium text-white/40">
+                    <div className="px-1.5 text-[10px] font-medium text-slate-500 dark:text-neutral-400">
                       + {hiddenCount} {lang === 'fr' ? `autre${hiddenCount > 1 ? 's' : ''}` : 'more'}
                     </div>
                   )}
@@ -930,11 +935,11 @@ export function Agenda() {
   }
 
   return (
-    <div className="relative flex h-full gap-8 p-8 overflow-auto bg-[#111111] text-white font-sans">
+    <div className="relative flex h-full gap-8 p-8 overflow-auto bg-transparent text-slate-900 dark:text-white font-sans">
 
       {/* Background Blobs (Premium Design) */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/10 opacity-30 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 opacity-20 blur-[100px] rounded-full pointer-events-none mix-blend-screen" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-sky-500/10 opacity-30 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-sky-500/5 opacity-20 blur-[100px] rounded-full pointer-events-none" />
 
       <div className="relative z-10 flex flex-col h-full min-w-[1000px] w-full gap-8">
         <div className="flex flex-1 flex-col">
@@ -943,26 +948,26 @@ export function Agenda() {
             <div className="flex items-center gap-4">
               <button
                 onClick={goToToday}
-                className="rounded-full border border-white/[0.08] bg-white/[0.03] px-6 py-2.5 text-sm font-bold text-white/80 transition-all duration-300 hover:bg-white/[0.04] hover:text-white"
+                className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-6 py-2.5 text-sm font-bold text-slate-700 dark:text-neutral-300 transition-all duration-300 hover:bg-slate-50 hover:text-slate-900"
               >
                 {t.today}
               </button>
 
-              <div className="flex items-center gap-4 rounded-full border border-white/[0.08] bg-white/[0.03] px-5 py-2.5 backdrop-blur-[16px]">
+              <div className="flex items-center gap-4 rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-5 py-2.5 backdrop-blur-[16px]">
                 <button
                   onClick={view === 'week' ? handlePrevRange : goToPrev}
-                  className="rounded-full p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+                  className="rounded-full p-1 text-slate-500 dark:text-neutral-400 transition-colors hover:bg-slate-100 hover:text-slate-900"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
 
-                <h2 className="min-w-[200px] text-center text-lg font-bold capitalize text-white">
+                <h2 className="min-w-[200px] text-center text-lg font-bold capitalize text-slate-900 dark:text-white">
                   {getTitle()}
                 </h2>
 
                 <button
                   onClick={view === 'week' ? handleNextRange : goToNext}
-                  className="rounded-full p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+                  className="rounded-full p-1 text-slate-500 dark:text-neutral-400 transition-colors hover:bg-slate-100 hover:text-slate-900"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -971,7 +976,7 @@ export function Agenda() {
               <div className="relative">
                 <button
                   onClick={() => dateInputRef.current?.showPicker()}
-                  className="rounded-full p-2 text-white/40 transition-all hover:bg-white/10 hover:text-white border border-transparent hover:border-white/[0.08]"
+                  className="rounded-full p-2 text-slate-500 dark:text-neutral-400 transition-all hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200"
                   title={lang === 'fr' ? 'Choisir une date' : 'Pick a date'}
                 >
                   <CalendarIcon className="h-5 w-5" />
@@ -987,12 +992,12 @@ export function Agenda() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/[0.08] rounded-full w-fit backdrop-blur-[16px]">
+              <div className="flex gap-1 p-1 bg-white dark:bg-[#1a1a1a] border border-slate-200 dark:border-white/10 rounded-full w-fit backdrop-blur-[16px]">
                 <button
                   onClick={() => setView('day')}
                   className={cn(
                     'rounded-full px-6 py-2 text-sm font-bold transition-all duration-300',
-                    view === 'day' ? 'bg-emerald-500 text-black shadow-lg' : 'text-white/40 hover:text-white font-medium'
+                    view === 'day' ? 'bg-sky-600 text-white shadow-lg' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 font-medium'
                   )}
                 >
                   {lang === 'fr' ? 'Jour' : 'Day'}
@@ -1001,7 +1006,7 @@ export function Agenda() {
                   onClick={() => setView('week')}
                   className={cn(
                     'rounded-full px-6 py-2 text-sm font-bold transition-all duration-300',
-                    view === 'week' ? 'bg-emerald-500 text-black shadow-lg' : 'text-white/40 hover:text-white font-medium'
+                    view === 'week' ? 'bg-sky-600 text-white shadow-lg' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 font-medium'
                   )}
                 >
                   {t.week}
@@ -1010,7 +1015,7 @@ export function Agenda() {
                   onClick={() => setView('month')}
                   className={cn(
                     'rounded-full px-6 py-2 text-sm font-bold transition-all duration-300',
-                    view === 'month' ? 'bg-emerald-500 text-black shadow-lg' : 'text-white/40 hover:text-white font-medium'
+                    view === 'month' ? 'bg-sky-600 text-white shadow-lg' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 font-medium'
                   )}
                 >
                   {t.month}
@@ -1023,8 +1028,8 @@ export function Agenda() {
                 className={cn(
                   'flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-300',
                   isConnected
-                    ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                    : 'border border-white/[0.08] bg-white/[0.03] text-white/80 hover:bg-white/[0.04]'
+                    ? 'border border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400 hover:bg-sky-500/20'
+                    : 'border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-slate-700 dark:text-neutral-300 hover:bg-slate-50'
                 )}
               >
                 <CalendarIcon className="h-4 w-4" />
@@ -1033,7 +1038,7 @@ export function Agenda() {
 
               <button
                 onClick={handleCreateEvent}
-                className="flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-2.5 text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 active:scale-95"
+                className="flex items-center gap-2 rounded-full bg-sky-600 px-6 py-2.5 text-sm font-bold text-white transition-all duration-300 hover:bg-sky-500 shadow-lg shadow-sky-500/20 active:scale-95"
               >
                 <Plus className="h-4 w-4" />
                 {t.add_event}
@@ -1047,8 +1052,8 @@ export function Agenda() {
         </div>
 
         <div className="w-full mt-12">
-          <h3 className="mb-6 text-xl font-bold text-white flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <h3 className="mb-6 text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
             {t.today}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -1059,8 +1064,9 @@ export function Agenda() {
               // Ajustement spécifique pour la section "Aujourd'hui" (bordure complète et fond sombre)
               const cardStyle = {
                 ...style,
-                backgroundColor: isGoogleEvent ? '#ffffff' : 'rgba(30, 41, 59, 0.5)', // Fond sombre semi-transparent pour CloseOS
-                borderColor: isGoogleEvent ? '#e2e8f0' : 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: '#ffffff', // Carte blanche (thème clair)
+                color: undefined, // Le texte est géré par les classes ci-dessous
+                borderColor: isGoogleEvent ? '#e2e8f0' : 'rgba(15, 23, 42, 0.10)',
                 borderLeftColor: style.borderLeft.split(' ')[2] // Garde la couleur latérale
               }
 
@@ -1068,32 +1074,32 @@ export function Agenda() {
                 <div
                   key={event.id}
                   onClick={() => setSelectedEvent(event)}
-                  className="cursor-pointer rounded-2xl border p-5 transition-all duration-300 hover:bg-white/[0.04] hover:scale-[1.02] backdrop-blur-[16px]"
+                  className="cursor-pointer rounded-2xl border p-5 transition-all duration-300 hover:bg-slate-50 hover:scale-[1.02] backdrop-blur-[16px]"
                   style={cardStyle}
                 >
                   <div className="flex items-start gap-3">
                     <div
                       className={cn(
                         'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-inner',
-                        isGoogleEvent ? 'bg-blue-50' : 'bg-white/5'
+                        isGoogleEvent ? 'bg-sky-600' : 'bg-slate-100 dark:bg-white/10'
                       )}
                     >
-                      {isGoogleEvent && <CalendarIcon className="h-5 w-5 text-blue-500" />}
-                      {!isGoogleEvent && event.type === 'video' && <Video className="h-5 w-5 text-blue-400" />}
-                      {!isGoogleEvent && event.type === 'call' && <Phone className="h-5 w-5 text-emerald-400" />}
-                      {!isGoogleEvent && event.type === 'meeting' && <MapPin className="h-5 w-5 text-orange-400" />}
+                      {isGoogleEvent && <CalendarIcon className="h-5 w-5 text-sky-600 dark:text-sky-400" />}
+                      {!isGoogleEvent && event.type === 'video' && <Video className="h-5 w-5 text-sky-600 dark:text-sky-400" />}
+                      {!isGoogleEvent && event.type === 'call' && <Phone className="h-5 w-5 text-sky-600 dark:text-sky-400" />}
+                      {!isGoogleEvent && event.type === 'meeting' && <MapPin className="h-5 w-5 text-orange-500" />}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className={cn("font-bold truncate", isGoogleEvent ? "text-black/90" : "text-white")}>
+                      <p className={cn("font-bold truncate", isGoogleEvent ? "text-slate-900 dark:text-white" : "text-slate-900 dark:text-white")}>
                         {event.title?.split(' - ')[0] || (lang === 'fr' ? 'Sans titre' : 'Untitled')}
                       </p>
                       {event.contact && (
-                        <p className={cn("mt-0.5 text-xs font-medium truncate", isGoogleEvent ? "text-black/50" : "text-white/40")}>
+                        <p className={cn("mt-0.5 text-xs font-medium truncate", isGoogleEvent ? "text-slate-500 dark:text-neutral-400" : "text-slate-500 dark:text-neutral-400")}>
                           <MaskedText value={event.contact} type="name" />
                         </p>
                       )}
-                      <div className={cn("mt-2 flex items-center gap-1 text-xs font-mono", isGoogleEvent ? "text-black/40" : "text-white/40")}>
+                      <div className={cn("mt-2 flex items-center gap-1 text-xs font-mono", isGoogleEvent ? "text-slate-400 dark:text-neutral-500" : "text-slate-400 dark:text-neutral-500")}>
                         <Clock className="h-3 w-3" />
                         <span>{event.time}</span>
                       </div>
@@ -1105,7 +1111,7 @@ export function Agenda() {
                       e.stopPropagation()
                       setSelectedEvent(event)
                     }}
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-sm font-bold text-emerald-400 transition-all hover:bg-emerald-500 hover:text-black"
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500/10 border border-sky-500/20 px-3 py-2 text-sm font-bold text-sky-700 dark:text-sky-400 transition-all hover:bg-sky-600 hover:text-white"
                   >
                     <FileText className="h-4 w-4" />
                     {lang === 'fr' ? 'Détails' : 'Details'}
@@ -1130,16 +1136,16 @@ export function Agenda() {
                 onClick={() => setSelectedEvent(null)}
               />
 
-              <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl bg-white/[0.03] backdrop-blur-[16px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] border border-white/[0.08] animate-in fade-in zoom-in-95">
+              <div className="relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl bg-white dark:bg-[#1a1a1a] backdrop-blur-[16px] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_20px_50px_-12px_rgba(15,23,42,0.25)] border border-slate-200 dark:border-white/10 animate-in fade-in zoom-in-95">
                 <div className={cn(
                   "flex items-start justify-between p-6 flex-shrink-0 rounded-t-2xl",
-                  isGoogleEvent ? 'border-blue-500/20 bg-blue-500/5' : 'border-orange-500/20 bg-orange-500/5'
+                  isGoogleEvent ? 'border-sky-500/20 bg-sky-500/5' : 'border-orange-500/20 bg-orange-500/5'
                 )}>
                   <div className="flex-1">
                     <div className="mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider"
                       style={{
-                        backgroundColor: isGoogleEvent ? 'rgba(59, 130, 246, 0.15)' : 'rgba(249, 115, 22, 0.15)',
-                        color: isGoogleEvent ? '#60a5fa' : '#fb923c'
+                        backgroundColor: isGoogleEvent ? 'rgba(2, 132, 199, 0.12)' : 'rgba(249, 115, 22, 0.15)',
+                        color: isGoogleEvent ? '#0369a1' : '#c2410c'
                       }}
                     >
                       {isGoogleEvent ? '📅 Google Agenda' : '🚀 CloserOS'}
@@ -1148,57 +1154,57 @@ export function Agenda() {
                     <div className="flex items-start gap-4">
                       <div
                         className={cn(
-                          'flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg border border-white/5',
-                          isGoogleEvent && 'bg-blue-500/20',
-                          !isGoogleEvent && selectedEvent.type === 'video' && 'bg-blue-500/20',
-                          !isGoogleEvent && selectedEvent.type === 'call' && 'bg-emerald-500/20',
-                          !isGoogleEvent && selectedEvent.type === 'meeting' && 'bg-orange-500/20'
+                          'flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg border border-slate-200 dark:border-white/10',
+                          isGoogleEvent && 'bg-sky-500/15',
+                          !isGoogleEvent && selectedEvent.type === 'video' && 'bg-sky-500/15',
+                          !isGoogleEvent && selectedEvent.type === 'call' && 'bg-sky-500/15',
+                          !isGoogleEvent && selectedEvent.type === 'meeting' && 'bg-orange-500/15'
                         )}
                       >
-                        {isGoogleEvent && <CalendarIcon className="h-7 w-7 text-blue-400" />}
-                        {!isGoogleEvent && selectedEvent.type === 'video' && <Video className="h-7 w-7 text-blue-400" />}
-                        {!isGoogleEvent && selectedEvent.type === 'call' && <Phone className="h-7 w-7 text-emerald-400" />}
-                        {!isGoogleEvent && selectedEvent.type === 'meeting' && <MapPin className="h-7 w-7 text-orange-400" />}
+                        {isGoogleEvent && <CalendarIcon className="h-7 w-7 text-sky-600 dark:text-sky-400" />}
+                        {!isGoogleEvent && selectedEvent.type === 'video' && <Video className="h-7 w-7 text-sky-600 dark:text-sky-400" />}
+                        {!isGoogleEvent && selectedEvent.type === 'call' && <Phone className="h-7 w-7 text-sky-600 dark:text-sky-400" />}
+                        {!isGoogleEvent && selectedEvent.type === 'meeting' && <MapPin className="h-7 w-7 text-orange-500" />}
                       </div>
                       <div>
                         <button
                           onClick={() => !isGoogleEvent && handleNavigateToProspect(selectedEvent.prospectId)}
                           className={cn(
-                            "group flex items-center gap-2 text-2xl font-bold text-white transition-colors",
-                            !isGoogleEvent && "hover:text-blue-400"
+                            "group flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white transition-colors",
+                            !isGoogleEvent && "hover:text-sky-600"
                           )}
                           disabled={isGoogleEvent}
                         >
                           <MaskedText value={selectedEvent.contact || (lang === 'fr' ? 'Inconnu' : 'Unknown')} type="name" />
                           {!isGoogleEvent && <ExternalLink className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100" />}
                         </button>
-                        <p className="mt-1 text-sm font-medium text-white/40">{selectedEvent.title}</p>
+                        <p className="mt-1 text-sm font-medium text-slate-500 dark:text-neutral-400">{selectedEvent.title}</p>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => setSelectedEvent(null)}
-                    className="rounded-lg p-2 text-white/40 hover:bg-white/10 hover:text-white transition-colors"
+                    className="rounded-lg p-2 text-slate-500 dark:text-neutral-400 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                   >
                     <X className="h-6 w-6" />
                   </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 px-6 py-4">
-                  <div className="flex items-start gap-4 rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
-                    <Clock className="mt-0.5 h-5 w-5 text-blue-400" />
+                  <div className="flex items-start gap-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 backdrop-blur-sm">
+                    <Clock className="mt-0.5 h-5 w-5 text-sky-600 dark:text-sky-400" />
                     <div>
-                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">{lang === 'fr' ? 'Date & Heure' : 'Date & Time'}</p>
-                      <p className="mt-1 text-base font-bold text-white">
+                      <p className="text-xs font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">{lang === 'fr' ? 'Date & Heure' : 'Date & Time'}</p>
+                      <p className="mt-1 text-base font-bold text-slate-900 dark:text-white">
                         {formatDate(currentDate, locale)}
                       </p>
-                      <p className="mt-0.5 text-sm font-medium text-white/60 font-mono">{selectedEvent.time}</p>
+                      <p className="mt-0.5 text-sm font-medium text-slate-600 dark:text-neutral-300 font-mono">{selectedEvent.time}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
-                    <p className="text-xs font-bold text-white/40 uppercase tracking-wider">{lang === 'fr' ? 'Type de rendez-vous' : 'Appointment type'}</p>
-                    <p className="mt-1 text-base font-semibold capitalize text-white">
+                  <div className="rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 backdrop-blur-sm">
+                    <p className="text-xs font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">{lang === 'fr' ? 'Type de rendez-vous' : 'Appointment type'}</p>
+                    <p className="mt-1 text-base font-semibold capitalize text-slate-900 dark:text-white">
                       {selectedEvent.type === 'video' && (lang === 'fr' ? 'Visioconférence' : 'Video call')}
                       {selectedEvent.type === 'call' && (lang === 'fr' ? 'Appel téléphonique' : 'Phone call')}
                       {selectedEvent.type === 'meeting' && (lang === 'fr' ? 'Réunion en présentiel' : 'In-person meeting')}
@@ -1210,11 +1216,11 @@ export function Agenda() {
                     const meetingLink = (selectedEvent as any).hangoutLink || (selectedEvent as any).meetingUrl || (selectedEvent as any).link || (selectedEvent.location?.startsWith('http') ? selectedEvent.location : null)
                     if (meetingLink) {
                       return (
-                        <div className="flex items-start gap-4 rounded-xl bg-blue-500/5 border border-blue-500/20 p-4 backdrop-blur-sm">
-                          <Video className="mt-0.5 h-5 w-5 text-blue-400 flex-shrink-0" />
+                        <div className="flex items-start gap-4 rounded-xl bg-sky-500/5 border border-sky-500/20 p-4 backdrop-blur-sm">
+                          <Video className="mt-0.5 h-5 w-5 text-sky-600 dark:text-sky-400 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">{lang === 'fr' ? 'Lien de visio' : 'Video link'}</p>
-                            <p className="mt-1 text-sm font-medium text-white break-all font-mono">
+                            <p className="text-xs font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider">{lang === 'fr' ? 'Lien de visio' : 'Video link'}</p>
+                            <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white break-all font-mono">
                               {meetingLink}
                             </p>
                           </div>
@@ -1227,8 +1233,8 @@ export function Agenda() {
                             className={cn(
                               'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all flex-shrink-0',
                               copiedLink
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/[0.08]'
+                                ? 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/30'
+                                : 'bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 dark:border-white/10'
                             )}
                           >
                             {copiedLink ? <><Check className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Copié' : 'Copied'}</> : <><Copy className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Copier' : 'Copy'}</>}
@@ -1240,11 +1246,11 @@ export function Agenda() {
                   })()}
 
                   {selectedEvent.location && !selectedEvent.location.startsWith('http') && (
-                    <div className="flex items-start gap-4 rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
-                      <MapPin className="mt-0.5 h-5 w-5 text-emerald-400" />
+                    <div className="flex items-start gap-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 backdrop-blur-sm">
+                      <MapPin className="mt-0.5 h-5 w-5 text-sky-600 dark:text-sky-400" />
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-white/40 uppercase tracking-wider">{lang === 'fr' ? 'Lieu' : 'Location'}</p>
-                        <p className="mt-1 text-base font-medium text-white break-all">
+                        <p className="text-xs font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">{lang === 'fr' ? 'Lieu' : 'Location'}</p>
+                        <p className="mt-1 text-base font-medium text-slate-900 dark:text-white break-all">
                           {selectedEvent.location}
                         </p>
                       </div>
@@ -1252,11 +1258,11 @@ export function Agenda() {
                   )}
 
                   {(selectedEvent.description || (selectedEvent as any).description) && (
-                    <div className="flex items-start gap-4 rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
-                      <FileText className="mt-0.5 h-5 w-5 text-purple-400 flex-shrink-0" />
+                    <div className="flex items-start gap-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 backdrop-blur-sm">
+                      <FileText className="mt-0.5 h-5 w-5 text-sky-600 dark:text-sky-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2">Description</p>
-                        <p className="text-sm text-white/60 whitespace-pre-wrap break-words leading-relaxed">
+                        <p className="text-xs font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-2">Description</p>
+                        <p className="text-sm text-slate-600 dark:text-neutral-300 whitespace-pre-wrap break-words leading-relaxed">
                           {renderTextWithLinks(selectedEvent.description || (selectedEvent as any).description)}
                         </p>
                       </div>
@@ -1264,16 +1270,16 @@ export function Agenda() {
                   )}
 
                   {!isGoogleEvent && (
-                    <div className="rounded-xl bg-white/5 border border-white/[0.08] p-4 backdrop-blur-sm">
-                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">{lang === 'fr' ? 'Statut' : 'Status'}</p>
-                      <div className="mt-2 inline-flex rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-sm font-bold text-emerald-400">
+                    <div className="rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 backdrop-blur-sm">
+                      <p className="text-xs font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">{lang === 'fr' ? 'Statut' : 'Status'}</p>
+                      <div className="mt-2 inline-flex rounded-full bg-sky-500/10 border border-sky-500/20 px-3 py-1 text-sm font-bold text-sky-700 dark:text-sky-400">
                         {lang === 'fr' ? 'À venir' : 'Upcoming'}
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="flex-shrink-0 p-6 bg-white/[0.02] rounded-b-2xl">
+                <div className="flex-shrink-0 p-6 bg-slate-50 dark:bg-white/5 rounded-b-2xl">
                   {(() => {
                     const explicitLink = (selectedEvent as any).hangoutLink || (selectedEvent as any).meetingUrl || (selectedEvent as any).link;
                     let meetingUrl = explicitLink;
@@ -1292,7 +1298,7 @@ export function Agenda() {
                           const contactName = selectedEvent.contact || 'Appel'
                           navigate(`/live-call?name=${encodeURIComponent(contactName)}&from=/agenda`)
                         }}
-                        className="mb-3 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-3 font-semibold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20"
+                        className="mb-3 flex w-full items-center justify-center gap-2 rounded-full bg-sky-600 px-4 py-3 font-semibold text-white transition-all hover:bg-sky-500 shadow-lg shadow-sky-500/20"
                       >
                         <Video className="h-5 w-5" /> {lang === 'fr' ? 'Rejoindre la réunion' : 'Join meeting'}
                       </button>
@@ -1303,14 +1309,14 @@ export function Agenda() {
                     <div className="flex gap-3">
                       <button
                         onClick={handleEditEvent}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-neutral-300 transition-all hover:bg-slate-50 hover:text-slate-900"
                       >
                         <Pencil className="h-4 w-4" />
                         {lang === 'fr' ? 'Modifier' : 'Edit'}
                       </button>
                       <button
                         onClick={handleDeleteEvent}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-bold text-red-400 transition-all hover:bg-red-500/20"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-bold text-red-600 transition-all hover:bg-red-500/20"
                       >
                         <Trash2 className="h-4 w-4" />
                         {lang === 'fr' ? 'Supprimer' : 'Delete'}
@@ -1360,11 +1366,11 @@ export function Agenda() {
       {
         showAiToast && (
           <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[60]">
-            <div className="flex items-center gap-3 px-6 py-4 bg-purple-500/20 border border-purple-500/30 rounded-xl shadow-2xl backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
-              <Sparkles className="h-5 w-5 text-purple-400 animate-pulse" />
+            <div className="flex items-center gap-3 px-6 py-4 bg-white dark:bg-[#1a1a1a] border border-sky-500/30 rounded-xl shadow-[0_10px_30px_-10px_rgba(15,23,42,0.25)] backdrop-blur-sm animate-in slide-in-from-top-5 duration-300">
+              <Sparkles className="h-5 w-5 text-sky-600 dark:text-sky-400 animate-pulse" />
               <div>
-                <p className="text-sm font-semibold text-white">{lang === 'fr' ? "Appel analysé par l'IA" : 'Call analyzed by AI'}</p>
-                <p className="text-xs text-purple-300 mt-0.5">{lang === 'fr' ? 'Les données ont été sauvegardées automatiquement' : 'Data has been saved automatically'}</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">{lang === 'fr' ? "Appel analysé par l'IA" : 'Call analyzed by AI'}</p>
+                <p className="text-xs text-sky-700 dark:text-sky-400 mt-0.5">{lang === 'fr' ? 'Les données ont été sauvegardées automatiquement' : 'Data has been saved automatically'}</p>
               </div>
             </div>
           </div>
