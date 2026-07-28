@@ -19,6 +19,7 @@ import { DMRBadge } from './DMRBadge'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { createPortal } from 'react-dom'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
+import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import { BookingAgendaPanel } from './BookingAgendaPanel'
 import { ReassignAppointmentButton } from './ReassignAppointmentButton'
 import { useCustomStages } from '../hooks/useCustomStages'
@@ -109,6 +110,8 @@ export function BusinessProspectView({
   const navigate = useNavigate()
   const { user, isTeamMember, teamMember, ownerUserId, userTimezone } = useBusinessAuth()
   const { t, lang } = useBusinessLang()
+  const relanceDelays = useContactedReminders()
+  const [discussionOui, setDiscussionOui] = useState(false)
   const { customStages } = useCustomStages()
   const STAGE_NAME_MAP: Record<string, string> = {
     prospect: t.stage_prospect, contacted: t.stage_contacted, qualified: t.stage_qualified, unqualified: t.stage_unqualified,
@@ -1271,6 +1274,101 @@ export function BusinessProspectView({
             </button>
           </div>
         </section>
+
+        {/* Relance + Réponse (stage Contacté) */}
+        {local.stage === 'contacted' && (() => {
+          const fr = lang !== 'en'
+          const responded = !!local.responded_at
+          const nextTs = local.discussion_next_at ? new Date(local.discussion_next_at).getTime() : 0
+          const promptReady = responded && Date.now() >= nextTs
+          const badge = responded ? null : computeRelanceBadge(local.contacted_at, local.last_relance_at, relanceDelays, local.relance_step)
+          const relanceDateLabel = badge ? new Date(badge.dueAt).toLocaleDateString(fr ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' }) : ''
+          const plusOneDay = () => new Date(Date.now() + 86400000).toISOString()
+          const clearResponse = { responded_at: null, discussion_next_at: null, discussion_email_sent: false }
+          const hoursLeft = Math.max(0, Math.ceil((nextTs - Date.now()) / 3600000))
+          const btnBase = 'flex items-center gap-2 px-4 py-2 rounded-full font-business-display font-bold text-sm transition-all active:scale-95'
+          return (
+            <section className="px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="rounded-2xl border border-stone-200 dark:border-neutral-700 bg-stone-50/70 dark:bg-neutral-800/40 p-4">
+                {!responded && (
+                  <>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Bell className="h-4 w-4 text-stone-500 dark:text-neutral-400" strokeWidth={1.5} />
+                      <span className="text-sm font-business-display font-bold text-stone-900 dark:text-white">
+                        {badge
+                          ? relanceLabel(badge.number, fr) + (badge.due ? (fr ? ' · à faire' : ' · due') : (fr ? ` · le ${relanceDateLabel}` : ` · ${relanceDateLabel}`))
+                          : (fr ? 'Premier contact' : 'First contact')}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {relanceDelays.length > 0 && (
+                        <button
+                          onClick={() => handleUpdate({ relance_step: (local.relance_step || 0) + 1, last_relance_at: new Date().toISOString() })}
+                          className={`${btnBase} bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 hover:brightness-105`}
+                        >
+                          <Check className="h-4 w-4" strokeWidth={2} /> {fr ? 'Relance faite' : 'Follow-up done'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleUpdate({ responded_at: new Date().toISOString(), discussion_next_at: plusOneDay(), discussion_email_sent: false })}
+                        className={`${btnBase} bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 hover:brightness-105`}
+                      >
+                        <MessageCircle className="h-4 w-4" strokeWidth={1.5} /> {fr ? 'Répondu' : 'Replied'}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-stone-400 dark:text-neutral-500 mt-2.5">
+                      {fr ? '« Répondu » compte dans le taux de réponse et met les relances en pause.' : '"Replied" counts toward the response rate and pauses follow-ups.'}
+                    </p>
+                  </>
+                )}
+
+                {responded && !promptReady && (
+                  <div className="space-y-1.5">
+                    <p className="text-sm font-business-display font-bold text-emerald-700 dark:text-emerald-300">{fr ? 'En discussion — relances en pause' : 'In discussion — follow-ups paused'}</p>
+                    <p className="text-xs text-stone-500 dark:text-neutral-400">
+                      {fr ? `Point de statut dans ${hoursLeft} h.` : `Status check in ${hoursLeft} h.`}
+                    </p>
+                    <button onClick={() => { handleUpdate(clearResponse); setDiscussionOui(false) }} className="text-xs text-stone-400 dark:text-neutral-500 underline underline-offset-2 hover:text-stone-700">
+                      {fr ? 'Reprendre les relances maintenant' : 'Resume follow-ups now'}
+                    </button>
+                  </div>
+                )}
+
+                {promptReady && !discussionOui && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-business-display font-bold text-stone-900 dark:text-white">{fr ? 'Toujours en discussion avec ce prospect ?' : 'Still in discussion with this prospect?'}</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => { handleUpdate(clearResponse); setDiscussionOui(false) }} className={`${btnBase} bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-50`}>
+                        {fr ? 'Non, relancer' : 'No, follow up'}
+                      </button>
+                      <button onClick={() => setDiscussionOui(true)} className={`${btnBase} bg-stone-900 text-white dark:bg-white dark:text-stone-900 hover:brightness-110`}>
+                        {fr ? 'Oui' : 'Yes'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {promptReady && discussionOui && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-business-display font-bold text-stone-900 dark:text-white">{fr ? 'Résultat de la discussion' : 'Discussion outcome'}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => { handleUpdate({ stage: 'qualified', ...clearResponse }); setDiscussionOui(false) }} className={`${btnBase} bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 hover:brightness-105`}>
+                        <Check className="h-4 w-4" strokeWidth={2} /> {fr ? 'Qualifié' : 'Qualified'}
+                      </button>
+                      <button onClick={() => { handleUpdate({ stage: 'unqualified', ...clearResponse }); setDiscussionOui(false) }} className={`${btnBase} bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20`}>
+                        <X className="h-4 w-4" strokeWidth={2} /> {fr ? 'Disqualifié' : 'Disqualified'}
+                      </button>
+                      <button onClick={() => { handleUpdate({ discussion_next_at: plusOneDay(), discussion_email_sent: false }); setDiscussionOui(false) }} className={`${btnBase} bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-600 text-stone-600 dark:text-neutral-300 hover:bg-stone-50`}>
+                        {fr ? 'Encore inconnu' : 'Still unknown'}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-stone-400 dark:text-neutral-500">{fr ? '« Encore inconnu » relance un point de statut dans 1 jour.' : '"Still unknown" schedules another status check in 1 day.'}</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )
+        })()}
 
         {/* Tabs */}
         <nav className="px-4 md:px-6 pt-4 flex gap-4 md:gap-6 overflow-x-auto">

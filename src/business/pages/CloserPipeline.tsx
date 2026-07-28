@@ -328,7 +328,8 @@ export function CloserPipeline() {
                                           </p>
                                         </div>
                                         {stage.id === 'contacted' && (() => {
-                                          const badge = computeRelanceBadge(deal.contacted_at, relanceDelays, deal.relance_step)
+                                          const rb = (deal as any).responded_at ? null : computeRelanceBadge(deal.contacted_at, (deal as any).last_relance_at, relanceDelays, deal.relance_step)
+                                          const badge = rb && (rb.due || (deal.relance_step || 0) > 0) ? rb : null
                                           if (!badge) return null
                                           return (
                                             <div className="flex flex-wrap items-center gap-1.5 mt-3">
@@ -341,7 +342,7 @@ export function CloserPipeline() {
                                                     {lang === 'en' ? 'Follow up today' : 'Relance aujourd’hui'}
                                                   </span>
                                                   <button
-                                                    onClick={(e) => { e.stopPropagation(); updateProspect(deal.id, { relance_step: (deal.relance_step || 0) + 1 }) }}
+                                                    onClick={(e) => { e.stopPropagation(); updateProspect(deal.id, { relance_step: (deal.relance_step || 0) + 1, last_relance_at: new Date().toISOString() }) }}
                                                     className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#006c49] text-white hover:bg-[#005a3d] transition-colors"
                                                   >
                                                     {lang === 'en' ? 'Follow-up done' : 'Relance faite'}

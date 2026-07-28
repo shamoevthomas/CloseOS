@@ -6,7 +6,10 @@ import { AsYouType, getExampleNumber, type CountryCode } from 'libphonenumber-js
 import examples from 'libphonenumber-js/examples.mobile.json';
 
 /** Formate le numéro NATIONAL (sans indicatif) avec les espaces du pays, déduit du dial. */
-function formatNational(digits: string, dial: string): string {
+function formatNational(rawDigits: string, dial: string): string {
+  // Le 0 initial (préfixe national) saute une fois l'indicatif choisi : on le retire
+  // pour que le numéro complet rentre (ex. FR : 06 76 70 10 17 → 6 76 70 10 17).
+  const digits = rawDigits.replace(/^0+/, '');
   if (!digits) return '';
   try {
     const intl = new AsYouType().input(`${dial}${digits}`); // ex. "+33 6 12 34 56 78"

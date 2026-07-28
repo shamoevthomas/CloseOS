@@ -170,6 +170,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (UPDATABLE_FIELDS.has(key)) updates[key] = value
       }
       if (Array.isArray(updates.blocks)) updates.blocks = normalizeBlocks(updates.blocks)
+
+      // Auto-mapping CRM : si on active le pont CRM sans fournir de mapping, on le
+      // déduit des types de blocs (email → 1er bloc email, tél → 1er phone, nom →
+      // 1er short_text). Indispensable côté MCP : les ids de blocs sont générés au
+      // serveur, l'appelant ne peut donc pas mapper à la main.
+      const mappingEmpty = (m: any) => !m || (typeof m === 'object' && !m.email && !m.phone && !m.name)
+      if (updates.crm_enabled === true && mappingEmpty(updates.crm_mapping)) {
+        let finalBlocks: FormBlock[] | null = Array.isArray(updates.blocks) ? updates.blocks : null
+        if (!finalBlocks) {
+          const { data: cur } = await supabase.from('business_forms').select('blocks').eq('id', id).eq('user_id', user_id).maybeSingle()
+          finalBlocks = normalizeBlocks(cur?.blocks)
+        }
+        const m: { name: string | null; email: string | null; phone: string | null } = { name: null, email: null, phone: null }
+        for (const b of finalBlocks) {
+          if (!m.email && b.type === 'email') m.email = b.id
+          if (!m.phone && b.type === 'phone') m.phone = b.id
+          if (!m.name && b.type === 'short_text') m.name = b.id
+        }
+        updates.crm_mapping = m
+      }
+
       updates.updated_at = new Date().toISOString()
 
       const { data, error } = await supabase
@@ -277,6 +298,103 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           settings: normalizeSettings(form.settings),
         },
       })
+    }
+
+    // ─── Précapture passive : capture le lead dès qu'un email/tél valide est saisi,
+    //     même si le visiteur n'a pas terminé le formulaire. Crée/complète une fiche
+    //     prospect UNIQUEMENT si le formulaire est relié au CRM (crm_enabled). ───
+    if (action === 'form-precapture' && req.method === 'POST') {
+      const { slug, answers: rawAnswers, prospect_id: clientProspectId } = req.body
+      if (!slug) return res.status(400).json({ error: 'slug required' })
+
+      const { data: form } = await supabase
+        .from('business_forms').select('*').eq('slug', slug).maybeSingle()
+      if (!form || !form.is_active) return res.status(200).json({ skipped: true })
+      if (!form.crm_enabled) return res.status(200).json({ skipped: 'no_crm' })
+
+      const blocks: FormBlock[] = normalizeBlocks(form.blocks)
+      const submitted = (rawAnswers && typeof rawAnswers === 'object' ? rawAnswers : {}) as Record<string, unknown>
+      const answers: Record<string, unknown> = {}
+      for (const b of blocks) {
+        if (!isInputBlock(b.type)) continue
+        const v = submitted[b.id]
+        if (v !== undefined && v !== null && v !== '') answers[b.id] = v
+      }
+
+      const byId: Record<string, FormBlock> = {}
+      for (const b of blocks) byId[b.id] = b
+      const mapping = (form.crm_mapping || {}) as { name?: string | null; email?: string | null; phone?: string | null }
+      const readMapped = (blockId?: string | null): string => {
+        if (!blockId || !byId[blockId]) return ''
+        return answerToText(byId[blockId], answers[blockId]).trim()
+      }
+      const contact = readMapped(mapping.name)
+      const email = readMapped(mapping.email)
+      const phone = readMapped(mapping.phone)
+
+      const emailOk = !!email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      const phoneOk = !!phone && (phone.match(/\d/g) || []).length >= 6
+
+      // Toutes les réponses déjà remplies (pas seulement email/tél) → lead_answers
+      const leadAnswers = blocks
+        .filter(b => isInputBlock(b.type) && answers[b.id] !== undefined)
+        .map((b, i) => ({ question: blockLabel(b, i), answer: answerToText(b, answers[b.id]) }))
+      const nameParts = contact.split(' ').filter(Boolean)
+
+      // Cible : la fiche déjà créée pour ce visiteur (prospect_id renvoyé au 1er appel),
+      // sinon on déduplique sur l'email. Permet de METTRE À JOUR la fiche au fil de la
+      // saisie pour capturer toutes les réponses, même sans soumission finale.
+      let target: any = null
+      if (clientProspectId) {
+        const { data } = await supabase
+          .from('business_prospects')
+          .select('id, contact, email, phone')
+          .eq('id', clientProspectId)
+          .eq('user_id', form.user_id)
+          .maybeSingle()
+        target = data
+      }
+      if (!target && emailOk) {
+        const { data } = await supabase
+          .from('business_prospects')
+          .select('id, contact, email, phone')
+          .eq('user_id', form.user_id)
+          .eq('email', email)
+          .limit(1).maybeSingle()
+        target = data
+      }
+
+      if (target) {
+        // On complète les trous sans écraser une donnée existante, et on synchronise
+        // l'intégralité des réponses connues.
+        await supabase.from('business_prospects').update({
+          contact: target.contact || contact || email || phone || null,
+          email: target.email || (emailOk ? email : null),
+          phone: target.phone || (phoneOk ? phone : null),
+          lead_answers: leadAnswers,
+        }).eq('id', target.id)
+        return res.status(200).json({ ok: true, prospect_id: target.id, partial: true })
+      }
+
+      // Première création : il faut au moins un email OU un téléphone valide
+      if (!emailOk && !phoneOk) return res.status(200).json({ skipped: 'incomplete' })
+
+      const { data: inserted, error: prospErr } = await supabase.from('business_prospects').insert({
+        user_id: form.user_id,
+        contact: contact || email || phone,
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: emailOk ? email : null,
+        phone: phoneOk ? phone : '',
+        stage: form.crm_stage || 'prospect',
+        source: form.crm_source || form.name,
+        campaign_id: form.crm_campaign_id || null,
+        lead_answers: leadAnswers,
+        metadata: { form_name: form.name, form_slug: form.slug, partial: true },
+      }).select('id').single()
+
+      if (prospErr) return res.status(500).json({ error: prospErr.message })
+      return res.status(200).json({ ok: true, prospect_id: inserted.id, partial: true })
     }
 
     if (action === 'form-submit' && req.method === 'POST') {

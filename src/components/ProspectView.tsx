@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import {
   X,
   Phone,
@@ -107,6 +108,8 @@ export function ProspectView({
 }: ProspectViewProps) {
   const navigate = useNavigate()
   const { lang } = useLanguage()
+  const { delays: relanceDelays } = useContactedReminders()
+  const [discussionOui, setDiscussionOui] = useState(false)
   const { offers } = useOffers()
   const { allStages, getStageInfo } = useCustomStages()
   const LOSS_REASONS = lang === 'fr' ? LOSS_REASONS_FR : LOSS_REASONS_EN
@@ -1055,6 +1058,93 @@ export function ProspectView({
                   <PhoneCall className="h-4 w-4" /> Call
                 </button>
               </div>
+
+              {/* Relance + Réponse (stage Contacté) */}
+              {localProspect.stage === 'contacted' && (() => {
+                const fr = lang === 'fr'
+                const lp = localProspect as any
+                const responded = !!lp.responded_at
+                const nextTs = lp.discussion_next_at ? new Date(lp.discussion_next_at).getTime() : 0
+                const promptReady = responded && Date.now() >= nextTs
+                const badge = responded ? null : computeRelanceBadge(localProspect.contacted_at, lp.last_relance_at, relanceDelays, localProspect.relance_step)
+                const relanceDateLabel = badge ? new Date(badge.dueAt).toLocaleDateString(fr ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' }) : ''
+                const plusOneDay = () => new Date(Date.now() + 86400000).toISOString()
+                const clearResponse = { responded_at: null, discussion_next_at: null, discussion_email_sent: false } as any
+                const hoursLeft = Math.max(0, Math.ceil((nextTs - Date.now()) / 3600000))
+                const upd = (u: any) => handleOptimisticUpdate(u)
+                const btnBase = 'flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all active:scale-95'
+                return (
+                  <div className="mb-6 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+                    {!responded && (
+                      <>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Bell className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
+                          <span className="text-sm font-bold text-slate-900 dark:text-white">
+                            {badge
+                              ? relanceLabel(badge.number, fr) + (badge.due ? (fr ? ' · à faire' : ' · due') : (fr ? ` · le ${relanceDateLabel}` : ` · ${relanceDateLabel}`))
+                              : (fr ? 'Premier contact' : 'First contact')}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {relanceDelays.length > 0 && (
+                            <button onClick={() => upd({ relance_step: (localProspect.relance_step || 0) + 1, last_relance_at: new Date().toISOString() })} className={`${btnBase} bg-orange-500 text-white hover:bg-orange-600`}>
+                              <Check className="h-4 w-4" strokeWidth={2.5} /> {fr ? 'Relance faite' : 'Follow-up done'}
+                            </button>
+                          )}
+                          <button onClick={() => upd({ responded_at: new Date().toISOString(), discussion_next_at: plusOneDay(), discussion_email_sent: false })} className={`${btnBase} bg-sky-600 text-white hover:bg-sky-500`}>
+                            <MessageCircle className="h-4 w-4" /> {fr ? 'Répondu' : 'Replied'}
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-slate-400 dark:text-neutral-500 mt-2.5">
+                          {fr ? '« Répondu » compte dans le taux de réponse et met les relances en pause.' : '"Replied" counts toward the response rate and pauses follow-ups.'}
+                        </p>
+                      </>
+                    )}
+
+                    {responded && !promptReady && (
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-bold text-sky-600 dark:text-sky-400">{fr ? 'En discussion — relances en pause' : 'In discussion — follow-ups paused'}</p>
+                        <p className="text-xs text-slate-500 dark:text-neutral-400">{fr ? `Point de statut dans ${hoursLeft} h.` : `Status check in ${hoursLeft} h.`}</p>
+                        <button onClick={() => { upd(clearResponse); setDiscussionOui(false) }} className="text-xs text-slate-400 dark:text-neutral-500 underline underline-offset-2 hover:text-slate-700">
+                          {fr ? 'Reprendre les relances maintenant' : 'Resume follow-ups now'}
+                        </button>
+                      </div>
+                    )}
+
+                    {promptReady && !discussionOui && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{fr ? 'Toujours en discussion avec ce prospect ?' : 'Still in discussion with this prospect?'}</p>
+                        <div className="flex gap-2">
+                          <button onClick={() => { upd(clearResponse); setDiscussionOui(false) }} className={`${btnBase} bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-neutral-200 hover:bg-slate-100`}>
+                            {fr ? 'Non, relancer' : 'No, follow up'}
+                          </button>
+                          <button onClick={() => setDiscussionOui(true)} className={`${btnBase} bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90`}>
+                            {fr ? 'Oui' : 'Yes'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {promptReady && discussionOui && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{fr ? 'Résultat de la discussion' : 'Discussion outcome'}</p>
+                        <div className="flex flex-wrap gap-2">
+                          <button onClick={() => { upd({ stage: 'qualified', ...clearResponse }); setDiscussionOui(false) }} className={`${btnBase} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20`}>
+                            <Check className="h-4 w-4" strokeWidth={2} /> {fr ? 'Qualifié' : 'Qualified'}
+                          </button>
+                          <button onClick={() => { upd({ stage: 'unqualified', ...clearResponse }); setDiscussionOui(false) }} className={`${btnBase} bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20`}>
+                            <X className="h-4 w-4" strokeWidth={2} /> {fr ? 'Disqualifié' : 'Disqualified'}
+                          </button>
+                          <button onClick={() => { upd({ discussion_next_at: plusOneDay(), discussion_email_sent: false }); setDiscussionOui(false) }} className={`${btnBase} bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-neutral-300 hover:bg-slate-100`}>
+                            {fr ? 'Encore inconnu' : 'Still unknown'}
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-slate-400 dark:text-neutral-500">{fr ? '« Encore inconnu » relance un point de statut dans 1 jour.' : '"Still unknown" schedules another status check in 1 day.'}</p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
 
               {/* TABS */}
               <div className="flex border-b border-slate-200 dark:border-white/10">

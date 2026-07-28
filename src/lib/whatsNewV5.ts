@@ -38,6 +38,21 @@ export const WHATS_NEW_V5: Record<WhatsNewProduct, WhatsNewSection> = {
     subheading: 'Une nouvelle interface, plus claire, et plusieurs outils pour ne plus rien laisser filer.',
     items: [
       {
+        icon: 'video',
+        title: 'Bouton « Répondu » + suivi de discussion',
+        description: 'Marquez un prospect comme ayant répondu (ça compte dans votre taux de réponse) : les relances se mettent en pause. Un jour après, CloseOS vous demande où en est la discussion — qualifié, disqualifié, ou on relance.',
+      },
+      {
+        icon: 'clock',
+        title: 'Relances qui s\'enchaînent',
+        description: 'Chaque relance se planifie désormais X jours après la précédente (et non plus depuis l\'entrée en « Contacté »), avec la date de la prochaine relance affichée sur la fiche.',
+      },
+      {
+        icon: 'bell',
+        title: 'Liste « À relancer & à suivre »',
+        description: 'Un bouton sur le pipeline liste d\'un coup qui relancer et qui a répondu. Et un email récapitulatif de vos discussions en cours vous arrive chaque jour à 17h.',
+      },
+      {
         icon: 'sparkles',
         title: 'Nouvelle interface',
         description: "Un design entièrement repensé, plus lumineux, avec un mode sombre disponible partout dans l'app.",
@@ -90,6 +105,21 @@ export const WHATS_NEW_V5: Record<WhatsNewProduct, WhatsNewSection> = {
     heading: 'Du nouveau dans CloseOS Business',
     subheading: 'Un nouveau module, un assistant IA, et plusieurs correctifs qui comptent.',
     items: [
+      {
+        icon: 'video',
+        title: 'Bouton « Répondu » + suivi de discussion',
+        description: 'Marquez un prospect comme ayant répondu (ça compte dans le taux de réponse) : les relances se mettent en pause. Un jour après, CloseOS demande où en est la discussion — qualifié, disqualifié, ou on relance.',
+      },
+      {
+        icon: 'clock',
+        title: 'Relances qui s\'enchaînent',
+        description: 'Chaque relance se planifie désormais X jours après la précédente (et non plus depuis l\'entrée en « Contacté »), avec la date de la prochaine relance affichée sur la fiche.',
+      },
+      {
+        icon: 'bell',
+        title: 'Liste « À relancer & à suivre »',
+        description: 'Un bouton sur le pipeline liste qui relancer et qui a répondu ; les managers peuvent voir la liste de chaque setter. Un digest de suivi part chaque jour à 17h au commercial assigné.',
+      },
       {
         icon: 'file-text',
         title: 'Formulaires',

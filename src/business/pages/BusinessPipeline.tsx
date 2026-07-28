@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
-  User, Users, ChevronDown, Search, LayoutGrid, List,
+  User, Users, ChevronDown, Search, LayoutGrid, List, Bell,
   X, Filter, Calendar, Trash2, Plus, AlertTriangle, Tag, Settings, ToggleLeft, ToggleRight, RefreshCw,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -14,6 +14,7 @@ import { BusinessProspectView } from '../components/BusinessProspectView'
 import { BusinessDuplicatesModal } from '../components/BusinessDuplicatesModal'
 import { useBusinessDuplicates } from '../hooks/useBusinessDuplicates'
 import { BusinessContactedRemindersModal } from '../components/BusinessContactedRemindersModal'
+import { BusinessRelanceWorklistModal } from '../components/BusinessRelanceWorklistModal'
 import { BusinessNoShowRelancesModal } from '../components/BusinessNoShowRelancesModal'
 import { useCustomStages, type CustomStage } from '../hooks/useCustomStages'
 import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
@@ -113,6 +114,16 @@ export function BusinessPipeline() {
 
   const effectiveUserId = ownerUserId || user?.id
   const relanceDelays = useContactedReminders()
+  const worklistCount = useMemo(() => {
+    const now = Date.now()
+    const myActorId = isTeamMember ? teamMember?.id : user?.id
+    const ownerId = ownerUserId || user?.id
+    const mine = (p: BusinessProspect) => (p.assigned_setter || p.assigned_to || ownerId) === myActorId
+    const vis = prospects.filter(p => p.pipeline_visible !== false && mine(p))
+    const rel = vis.filter(p => p.stage === 'contacted' && !p.responded_at && computeRelanceBadge(p.contacted_at, p.last_relance_at, relanceDelays, p.relance_step, now)?.due).length
+    const fol = vis.filter(p => !!p.responded_at).length
+    return rel + fol
+  }, [prospects, relanceDelays, isTeamMember, teamMember, user, ownerUserId])
   const { customStages, addCustomStage, deleteCustomStage, canManage } = useCustomStages()
   const crmProvider = businessSettings?.crm_provider || 'closeos'
   const hasCrmIntegration = crmProvider !== 'closeos' && crmProvider !== 'zapier' && crmProvider !== 'make' && crmProvider !== 'n8n'
@@ -123,6 +134,7 @@ export function BusinessPipeline() {
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [showWorklist, setShowWorklist] = useState(false)
 
   // Multi-select filter states
   const [selectedPeriod, setSelectedPeriod] = useState(0)
@@ -539,8 +551,18 @@ export function BusinessPipeline() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t.pipeline_search}
-            className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+            className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-10 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label={lang === 'en' ? 'Clear search' : 'Effacer la recherche'}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-stone-400 hover:bg-stone-200 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Doublons — Owner / HOS / Admin uniquement */}
@@ -554,6 +576,19 @@ export function BusinessPipeline() {
             {duplicateGroupsCount} {lang === 'en' ? (duplicateGroupsCount > 1 ? 'duplicates' : 'duplicate') : (duplicateGroupsCount > 1 ? 'doublons' : 'doublon')}
           </button>
         )}
+
+        {/* À relancer & à suivre */}
+        <button
+          onClick={() => setShowWorklist(true)}
+          className="relative flex items-center gap-2 rounded-full border border-sky-200 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-500/10 px-4 py-2.5 text-sm font-bold text-sky-700 dark:text-sky-300 hover:border-sky-300 transition-all shrink-0"
+          title={lang === 'en' ? 'To follow up & track' : 'À relancer & à suivre'}
+        >
+          <Bell className="h-4 w-4" />
+          <span className="hidden sm:inline">{lang === 'en' ? 'Follow-ups' : 'Relances'}</span>
+          {worklistCount > 0 && (
+            <span className="ml-0.5 bg-sky-600 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">{worklistCount}</span>
+          )}
+        </button>
 
         {/* View toggle */}
         <div className="flex rounded-full bg-stone-100 dark:bg-neutral-800 p-1">
@@ -906,7 +941,8 @@ export function BusinessPipeline() {
                                         </div>
                                       )}
                                       {stage.id === 'contacted' && (() => {
-                                        const badge = computeRelanceBadge(deal.contacted_at, relanceDelays, deal.relance_step)
+                                        const rb = (deal as any).responded_at ? null : computeRelanceBadge(deal.contacted_at, (deal as any).last_relance_at, relanceDelays, deal.relance_step)
+                                        const badge = rb && (rb.due || (deal.relance_step || 0) > 0) ? rb : null
                                         if (!badge) return null
                                         return (
                                           <div className="flex flex-wrap items-center gap-1 mt-1.5">
@@ -919,7 +955,7 @@ export function BusinessPipeline() {
                                                   {lang === 'en' ? 'Follow up today' : 'Relance aujourd’hui'}
                                                 </span>
                                                 <button
-                                                  onClick={(e) => { e.stopPropagation(); updateProspect(deal.id, { relance_step: (deal.relance_step || 0) + 1 }) }}
+                                                  onClick={(e) => { e.stopPropagation(); updateProspect(deal.id, { relance_step: (deal.relance_step || 0) + 1, last_relance_at: new Date().toISOString() }) }}
                                                   className="inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#006c49] text-white hover:bg-[#005a3d] transition-colors"
                                                 >
                                                   {lang === 'en' ? 'Follow-up done' : 'Relance faite'}
@@ -1318,6 +1354,20 @@ export function BusinessPipeline() {
           })}
         />
       )}
+
+      <BusinessRelanceWorklistModal
+        isOpen={showWorklist}
+        onClose={() => setShowWorklist(false)}
+        prospects={prospects}
+        delays={relanceDelays}
+        lang={lang}
+        myId={isTeamMember ? teamMember?.id : user?.id}
+        ownerId={ownerUserId || user?.id}
+        canChooseMember={!isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'}
+        members={teamMembers.filter(m => String(m.role || '').toLowerCase().startsWith('setter'))}
+        onOpen={(p) => setSelectedProspect(p)}
+        onRelanceDone={(p) => updateProspect(p.id, { relance_step: (p.relance_step || 0) + 1, last_relance_at: new Date().toISOString() })}
+      />
 
       {contactedRemindersOpen && effectiveUserId && (
         <BusinessContactedRemindersModal

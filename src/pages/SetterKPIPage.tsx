@@ -87,7 +87,7 @@ export function SetterKPIPage() {
 
   // ─── Setter-specific computations ─────────────────────────────────────────
   const contacted = filteredProspects.filter((p: any) => p.stage && p.stage !== 'prospect')
-  const responded = contacted.filter((p: any) => p.stage !== 'noanswer')
+  const responded = contacted.filter((p: any) => p.responded_at || (p.stage !== 'noanswer' && p.stage !== 'contacted'))
   const responseRate = contacted.length > 0 ? (responded.length / contacted.length) * 100 : 0
 
   const booked = contacted.filter((p: any) => p.stage !== 'noanswer' && p.stage !== 'unqualified')

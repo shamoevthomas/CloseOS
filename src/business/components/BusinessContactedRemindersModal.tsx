@@ -113,8 +113,8 @@ export function BusinessContactedRemindersModal({ isOpen, onClose, ownerId }: Pr
         <div className="p-6 space-y-4 max-h-[55vh] overflow-y-auto">
           <p className="text-sm text-stone-600 dark:text-neutral-300 leading-relaxed">
             {fr
-              ? "Configurez au bout de combien de jours dans « Contacté » le setter assigné (ou le closer) reçoit un email de relance. Vous pouvez en ajouter plusieurs (max 60 jours)."
-              : 'Set after how many days in "Contacted" the assigned setter (or closer) gets a follow-up email. You can add several (max 60 days).'}
+              ? "Configurez les relances email envoyées au setter assigné (ou au closer). La 1ère part X jours après l'entrée en « Contacté » ; chaque suivante, X jours après la relance précédente (max 60 jours par intervalle)."
+              : 'Set the follow-up emails sent to the assigned setter (or closer). The 1st goes out X days after entering "Contacted"; each next one, X days after the previous follow-up (max 60 days per interval).'}
           </p>
 
           {loading ? (

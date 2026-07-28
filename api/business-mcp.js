@@ -229,12 +229,36 @@ const impl = {
   async prospect_get(ctx, a) {
     if (!a.id) throw new Error('id requis.')
     const p = await ownedProspect(ctx, a.id, `${PROSPECT_FIELDS},lead_answers,metadata,call_notes`)
-    const [tags, appts, rems] = await Promise.all([
+    const [tags, appts, rems, qAnswers, qMeta] = await Promise.all([
       sbSelect(`business_prospect_tags?prospect_id=eq.${enc(a.id)}&select=tag:business_tags(id,name,color)`),
       sbSelect(`business_appointments?prospect_id=eq.${enc(a.id)}&select=id,title,date,time,duration,status&order=date.desc&limit=10`),
       sbSelect(`reminders?business_prospect_id=eq.${enc(a.id)}&select=id,title,reminder_date,is_done,has_time&order=reminder_date.desc&limit=10`),
+      p.campaign_id
+        ? sbSelect(`prospect_answers?prospect_id=eq.${enc(a.id)}&select=answer_value,score,is_eliminatory,campaign_questions(question_text,question_type,expected_answer,sort_order)`)
+        : Promise.resolve([]),
+      p.campaign_id
+        ? sbSelect(`campaign_questionnaires?campaign_id=eq.${enc(p.campaign_id)}&select=max_eliminatory,qualifying&limit=1`)
+        : Promise.resolve([]),
     ])
-    return { prospect: p, tags: tags.map((t) => t.tag).filter(Boolean), appointments: appts, reminders: rems }
+    // Réponses au questionnaire de qualification de la campagne (scorées, éliminatoires) —
+    // table distincte de lead_answers (qui ne sert qu'aux leads soumis via l'API externe).
+    const qualification = qAnswers.length > 0
+      ? {
+          questionnaire: qMeta[0] || null,
+          answers: qAnswers
+            .map((x) => ({
+              question_text: x.campaign_questions?.question_text || '',
+              question_type: x.campaign_questions?.question_type || 'text',
+              answer_value: x.answer_value,
+              expected_answer: x.campaign_questions?.expected_answer,
+              score: x.score,
+              is_eliminatory: x.is_eliminatory,
+              sort_order: x.campaign_questions?.sort_order ?? 0,
+            }))
+            .sort((x, y) => x.sort_order - y.sort_order),
+        }
+      : null
+    return { prospect: p, tags: tags.map((t) => t.tag).filter(Boolean), appointments: appts, reminders: rems, qualification }
   },
 
   async prospect_create(ctx, a) {
@@ -311,6 +335,81 @@ const impl = {
       if (p.stage === 'won' && new Date(p.created_at) >= monthStart) monthWon += Number(p.value) || 0
     }
     return { total: rows.length, by_stage: byStage, ca_gagne_total: byStage.won?.value_total || 0, prospects_crees_ce_mois_gagnes: monthWon }
+  },
+
+  async kpi_report(ctx, a = {}) {
+    const all = await sbSelect(`business_prospects?user_id=eq.${ctx.owner}&select=stage,previous_stage,value,assigned_to,assigned_setter,stripe_subscription_id,subscription_amount,created_at`)
+
+    // Filtre temporel optionnel (sur la date de création), comme les pages KPI
+    let prospects = all
+    let periode = "tout l'historique"
+    if (a.period && a.period !== 'all') {
+      const months = { '1m': 1, '3m': 3, '6m': 6, '12m': 12 }[a.period] || 1
+      const d = new Date(); d.setMonth(d.getMonth() - months + 1); d.setDate(1); d.setHours(0, 0, 0, 0)
+      prospects = all.filter((p) => new Date(p.created_at) >= d)
+      periode = a.period
+    }
+
+    // CA d'un deal : montant d'abonnement Stripe s'il existe, sinon la valeur saisie
+    const ca = (p) => (p.stripe_subscription_id && p.subscription_amount) ? (Number(p.subscription_amount) || 0) : (Number(p.value) || 0)
+    const round1 = (x) => Math.round(x * 10) / 10
+
+    // Mêmes formules que BusinessKPI / SetterKPI
+    const kpisFor = (list) => {
+      const won = list.filter((p) => p.stage === 'won')
+      const lost = list.filter((p) => p.stage === 'lost')
+      const noshow = list.filter((p) => p.stage === 'noshow')
+      const noshowFromFollowup = noshow.filter((p) => p.previous_stage === 'followup')
+      const totalDecided = won.length + lost.length + noshowFromFollowup.length
+      const noshowEligible = list.filter((p) => !['prospect', 'contacted', 'unqualified', 'noanswer'].includes(p.stage))
+      const contacted = list.filter((p) => p.stage !== 'prospect')
+      return {
+        prospects: list.length,
+        contactes: contacted.length,
+        ventes: won.length,
+        deals_perdus: lost.length,
+        no_show: noshow.length,
+        ca_genere: Math.round(won.reduce((s, p) => s + ca(p), 0)),
+        taux_closing_pct: totalDecided > 0 ? round1((won.length / totalDecided) * 100) : 0,
+        taux_no_show_pct: noshowEligible.length > 0 ? round1((noshow.length / noshowEligible.length) * 100) : 0,
+      }
+    }
+
+    const byStage = {}
+    for (const s of STAGE_IDS) byStage[s] = 0
+    for (const p of prospects) byStage[p.stage] = (byStage[p.stage] || 0) + 1
+
+    // KPI par membre : closer (assigned_to = member.id) et setter (assigned_setter = member.id)
+    const members = await sbSelect(`business_team_members?business_owner_id=eq.${ctx.owner}&select=id,first_name,last_name,role`)
+    const per_member = members
+      .map((m) => {
+        const asCloser = prospects.filter((p) => p.assigned_to === m.id)
+        const asSetter = prospects.filter((p) => p.assigned_setter === m.id)
+        return {
+          id: m.id,
+          name: `${m.first_name || ''} ${m.last_name || ''}`.trim(),
+          role: m.role,
+          ...(asCloser.length ? { closer: kpisFor(asCloser) } : {}),
+          ...(asSetter.length ? { setter: kpisFor(asSetter) } : {}),
+        }
+      })
+      .filter((m) => m.closer || m.setter)
+
+    const result = {
+      periode,
+      global: { ...kpisFor(prospects), by_stage: byStage },
+      non_assignes: kpisFor(prospects.filter((p) => !p.assigned_to)),
+      per_member,
+    }
+
+    if (a.revenue) {
+      try {
+        result.revenue = await callApi(ctx, '/api/business', 'revenue-summary', 'GET', { query: { user_id: ctx.owner, period: a.period || '3m' } })
+      } catch (e) {
+        result.revenue = { error: String((e && e.message) || e) }
+      }
+    }
+    return result
   },
 
   // ═══ Campagnes ═══
@@ -629,13 +728,21 @@ const impl = {
     }
     if (action === 'create') {
       if (!a.name) throw new Error('name requis.')
-      const data = await callApi(ctx, '/api/business-forms', 'forms-create', 'POST', { body: { user_id: ctx.owner, name: a.name } })
-      return { form: data.form, url: `${ctx.base}/f/${data.form.slug}` }
+      const created = await callApi(ctx, '/api/business-forms', 'forms-create', 'POST', { body: { user_id: ctx.owner, name: a.name } })
+      let form = created.form
+      // Création en un coup : on applique blocs / CRM / settings fournis au même appel.
+      const patch = pick(a.patch || a, FORM_WRITABLE)
+      delete patch.name
+      if (Object.keys(patch).length > 0) {
+        const updated = await callApi(ctx, '/api/business-forms', 'forms-update', 'PUT', { body: { user_id: ctx.owner, id: form.id, ...patch } })
+        form = updated.form
+      }
+      return { form, url: `${ctx.base}/f/${form.slug}` }
     }
     if (action === 'update') {
       if (!a.id) throw new Error('id requis.')
-      const patch = pick(a.patch, FORM_WRITABLE)
-      if (Object.keys(patch).length === 0) throw new Error(`patch vide — champs autorisés : ${[...FORM_WRITABLE].join(', ')}`)
+      const patch = pick(a.patch || a, FORM_WRITABLE)
+      if (Object.keys(patch).length === 0) throw new Error(`Aucun champ à modifier. Champs autorisés : ${[...FORM_WRITABLE].join(', ')}`)
       const data = await callApi(ctx, '/api/business-forms', 'forms-update', 'PUT', { body: { user_id: ctx.owner, id: a.id, ...patch } })
       return { form: data.form }
     }
@@ -714,13 +821,21 @@ const TOOLS = [
     inputSchema: obj({}),
   },
   {
+    name: 'kpi_report',
+    description: "KPI détaillées, avec les MÊMES formules que les pages KPI de l'app — GLOBAL + PAR MEMBRE d'équipe (en tant que closer via assigned_to, et en tant que setter via assigned_setter). Chaque bucket renvoie : prospects, contactés (stage ≠ prospect), ventes (deals gagnés), deals_perdus, no_show, ca_genere (montant d'abonnement Stripe sinon valeur du deal), taux_closing_pct (gagnés / (gagnés + perdus + no-show issus de follow-up)), taux_no_show_pct (no-show / prospects décidés, hors prospect/contacted/unqualified/noanswer). Le global inclut la répartition par stage (by_stage). 'non_assignes' = prospects sans closer. Option period ('1m'|'3m'|'6m'|'12m'|'all', défaut = tout l'historique) pour filtrer sur la date de création. Option revenue=true pour ajouter le CA réel Stripe / MRR / historique mensuel (revenue-summary).",
+    inputSchema: obj({
+      period: str("Filtre temporel : '1m' | '3m' | '6m' | '12m' | 'all' (défaut : tout l'historique)"),
+      revenue: bool('Ajouter le résumé revenu (CA réel Stripe, MRR, historique mensuel)'),
+    }),
+  },
+  {
     name: 'prospects_list',
     description: 'Liste les prospects du CRM. Filtres : stage (prospect, contacted, qualified, unqualified, won, followup, noanswer, noshow, lost), recherche texte (nom/email/téléphone), campagne, membre assigné.',
     inputSchema: obj({ stage: str('Filtrer par stage'), search: str('Recherche nom / email / téléphone'), campaign_id: str('Filtrer par campagne'), assigned_to: str('Filtrer par membre assigné (user_id)'), limit: num('Max 200, défaut 50') }),
   },
   {
     name: 'prospect_get',
-    description: "Fiche complète d'un prospect : champs, réponses de questionnaire (lead_answers), tags, 10 derniers RDV et rappels.",
+    description: "Fiche complète d'un prospect : champs, réponses au questionnaire de qualification de la campagne (scorées, éliminatoires — dans `qualification`), tags, 10 derniers RDV et rappels.",
     inputSchema: obj({ id: num('Id du prospect') }, ['id']),
   },
   {
@@ -891,10 +1006,41 @@ const TOOLS = [
   },
   {
     name: 'forms_manage',
-    description: "Formulaires type Tally (pages publiques /f/<slug>). Actions : list, get (blocs complets), create (name), update (id + patch : blocks, settings, is_active, crm_enabled, crm_mapping…), delete (confirm=true), responses (réponses collectées). Blocs : short_text, long_text, email, phone, number, url, date, select, single_choice, multiple_choice, rating, linear_scale, yes_no, hidden, video, heading, subheading, paragraph, divider, image, page_break.",
+    description: "Formulaires type Tally (pages publiques /f/<slug>, une question par écran, transitions animées). Actions : list, get (blocs complets), create (name + optionnellement blocks/crm/settings dans le MÊME appel), update (id + champs à modifier), delete (confirm=true), responses. PRÉCAPTURE automatique : dès qu'un email ou téléphone valide est saisi, le lead est capturé — fiche prospect créée/complétée SI crm_enabled — avec toutes les réponses déjà remplies, même sans aller au bout. Blocs de SAISIE : short_text, long_text, email (validé), phone (validé, indicatifs internationaux), number, url, date, select, single_choice, multiple_choice, rating, linear_scale, yes_no, hidden (key=paramètre d'URL). Blocs de CONTENU : heading, subheading, paragraph, divider, image (url), video (YouTube/Vimeo/Drive/mp4 ; required + min_watch=secondes → visionnage OBLIGATOIRE avant de continuer, miniature affichée), page_break (nouvelle étape). Ids de blocs générés au serveur. CRM : passer crm_enabled=true suffit, le mapping email/téléphone/nom est déduit automatiquement des types de blocs.",
     inputSchema: obj({
       action: str("'list' (défaut) | 'get' | 'create' | 'update' | 'delete' | 'responses'"),
-      id: str('Id du formulaire'), name: str('Nom (create)'), patch: obj({}, undefined), confirm: bool('Requis pour delete'),
+      id: str('Id du formulaire (uuid) (get/update/delete/responses)'),
+      name: str('Nom du formulaire (create ; modifiable en update)'),
+      description: str('Description affichée en tête'),
+      blocks: {
+        type: 'array',
+        description: 'Liste ordonnée des blocs. Ids auto-générés.',
+        items: obj({
+          type: str('Type de bloc (voir description du tool)'),
+          text: str('Libellé de la question (saisie) ou contenu (heading/paragraph…)'),
+          required: bool('Champ obligatoire'),
+          description: str('Sous-texte optionnel'),
+          placeholder: str('Placeholder'),
+          options: { type: 'array', items: { type: 'string' }, description: 'select / single_choice / multiple_choice' },
+          min: num('Borne basse (linear_scale)'),
+          max: num("Borne haute (linear_scale) / nb d'icônes (rating)"),
+          min_label: str('Légende du bas (linear_scale)'),
+          max_label: str('Légende du haut (linear_scale)'),
+          url: str('URL (image / video)'),
+          min_watch: num('Secondes de visionnage obligatoires (video, avec required=true)'),
+          key: str("Paramètre d'URL lu (hidden)"),
+        }, ['type']),
+      },
+      settings: obj({}, undefined),
+      is_active: bool('Formulaire en ligne (accepte les réponses)'),
+      crm_enabled: bool('Relier au CRM : crée une fiche prospect (mapping email/tél/nom auto)'),
+      crm_stage: str("Étape des prospects créés (défaut 'prospect')"),
+      crm_source: str('Source des prospects créés'),
+      crm_campaign_id: str('Campagne à rattacher (uuid, optionnel)'),
+      notify_enabled: bool('Notifier par email à chaque réponse'),
+      notify_email: str('Email de notification'),
+      patch: obj({}, undefined),
+      confirm: bool('Requis pour delete'),
     }),
   },
   {

@@ -1369,5 +1369,240 @@ Rappel : AUCUN déploiement/push effectué — tout en local, non commité.
 
 
 ================================================================================
+63. LP SALES : 5 FEATURES RÉELLES AJOUTÉES (+ REVERT D'UN AUDIT ERRONÉ)
+================================================================================
+- Un premier audit avait attribué à Sales des features en réalité BUSINESS
+  (capture/qualification de leads, messagerie, booking intégré) : tout reverté.
+- Ajout de 5 vraies cartes Sales dans le bento « Fonctionnalités » :
+  Call Room (script + offre/ressources + notes + enregistrement écran/audio),
+  Relances Automatiques (étape Contacté, badges, email digest), Rapport de Perf
+  Hebdo (in-app + email du lundi), Détection & Fusion de Doublons, Tâches par
+  Prospect.
+- Fichiers : src/pages/landingPageI18n.ts (feat8..feat12, FR+EN), LandingPage.tsx.
+
+================================================================================
+64. SYSTÈME DE DOODLES (line-art façon Tally) SUR LES LP + PAGES PUBLIQUES
+================================================================================
+- Nouveau fichier src/components/doodles.tsx : 23 petits SVG faits main
+  (squiggle, cercle griffonné, bulle, visage, avion, étincelle, croix, tirets,
+  éclair, cible, fusée, pièce €, courbe qui monte, cœur, étoile, éclat, check,
+  ampoule, trophée, horloge, flèche, zigzag). currentColor, pointer-events-none,
+  aria-hidden, masqués sur mobile.
+- Posés dans les marges : LP Sales (toutes sections, accent sky), LP Business
+  (toutes sections + carte Onboarding sombre, accent emerald), checkout Business
+  (BusinessCheckout.tsx), page register Sales (Register.tsx, couleurs theme-aware).
+
+================================================================================
+65. NETTOYAGE DES EM-DASHES « — » DANS TOUTES LES LP (trop « IA »)
+================================================================================
+- ~318 em-dashes retirés du copy : 264 littéraux + 54 en échappement — (blocs
+  EN, invisibles au 1er passage). Remplacés par une virgule par défaut, un
+  deux-points ou un point sur les sous-titres « liste puis résumé ».
+- Titres comparatifs (Alternative à iClosed, CloseOS vs iClosed) et attributions
+  de citations ajustés ; libellés de prix des extras nettoyés.
+- Restent 5 « — » LÉGITIMES : placeholders de champ vide (${notes || '—'}) et
+  cellules « non disponible » des tableaux comparatifs.
+- Fichiers : landingPageI18n, businessLandingI18n, crmLandingI18n, LandingPage,
+  BusinessLanding, CRMLanding, SignLanding, FonctionnalitesHub, CrmCloser,
+  AlternativeIclosed, CloseosVsIclosed.
+
+================================================================================
+66. COMPARATEUR PRIX HONNÊTE (LP BUSINESS, SOUS TARIFS) + CURSEUR LIQUID GLASS
+================================================================================
+- Nouveau composant SavingsSection dans BusinessLanding.tsx : « Combien vous
+  économisez vraiment ». Contenu 100 % client (aucune stratégie interne).
+- Curseur LIQUID GLASS 0 à 20 membres : piste NOIRE dans une pilule, pouce en
+  bulle de verre translucide qui grossit au survol, déplacement FLUIDE
+  (input step="any", valeur continue `raw`, nombre de membres = Math.round).
+- Recalcule en direct : stack concurrente par siège (Pipedrive/Calendly/Fathom/
+  Brevo/Yousign/Abby) vs CloseOS (Solo 39, B+A 99 + 6 €/siège au-delà de 3),
+  barres, facteur « X× moins cher », économie annuelle, grille « bricolage
+  gratuit = chaos ». Note de bas : prix indicatifs à périmètre équivalent.
+- Prix concurrents à re-vérifier avant diffusion large (repris du doc interne).
+
+================================================================================
+67. DÉPLOIEMENT : COMMIT 62f99c3 POUSSÉ SUR MAIN (Vercel auto)
+================================================================================
+- À la demande explicite : `git add .` (147 fichiers = TOUT le working tree V5
+  accumulé, pas seulement le travail LP du jour) + commit 62f99c3 + push
+  origin main. Vercel déploie automatiquement en prod.
+- CONSÉQUENCE : tout le travail des sections précédentes (LP Sales/Business,
+  doodles, comparateur, nettoyage em-dashes, module Formulaires initial, MCP
+  Business initial, etc.) est désormais EN LIGNE.
+- Les sections 68 à 72 ci-dessous sont POSTÉRIEURES au déploiement et NON
+  déployées (local uniquement).
+
+================================================================================
+68. "BUG" NOTES INTERNES BUSINESS : FAUSSE ALERTE (bundle périmé)
+================================================================================
+- Signalé : notes internes d'une fiche prospect Business « vides à la
+  réouverture ». Audit complet (fiche → contexte → RLS → colonne → triggers) :
+  chemin d'écriture correct, des notes texte persistent bien en base.
+- Repro dans le navigateur (session connectée, prod) : le clic Enregistrer
+  déclenche bien l'UPDATE + le log d'historique. Ça fonctionnait : le souci
+  venait du bundle JS pas encore rafraîchi juste après le déploiement. AUCUN
+  code changé.
+
+================================================================================
+69. MODULE FORMULAIRES /f/:slug : REFONTE UX FAÇON TALLY (PublicForm.tsx)
+================================================================================
+- Transitions animées entre questions (framer-motion AnimatePresence), Entrée
+  pour avancer (Entrée = saut de ligne dans les zones de texte) + indice ⏎,
+  barre de progression fixe en haut + compteur d'étape, titres et champs plus
+  grands (rounded-2xl, focus avec ombre), cartes de choix qui se soulèvent au
+  survol, doodles à la couleur d'accent du formulaire (position fixed, dans les
+  marges), écran de remerciement animé (check en spring).
+- Bloc vidéo : MINIATURE YouTube en poster (maxresdefault, repli hqdefault) au
+  lieu du bloc noir, avec voile léger + bouton play.
+- Erreurs : un ENCART RÉCAPITULATIF au-dessus du bouton Envoyer (« Il manque
+  quelque chose pour continuer : … » avec libellé + raison) remplace les
+  messages rouges collés à chaque bloc (bordure rouge conservée sur les champs).
+- Mode embed (?embed) : doodles / fond / progress désactivés (sobre en iframe).
+
+================================================================================
+70. CHAMP TÉLÉPHONE : LE 0 INITIAL NE BLOQUE PLUS LA SAISIE
+================================================================================
+- Le préfixe national 0 (remplacé par l'indicatif en E.164) est retiré
+  automatiquement, sinon il « mangeait » un chiffre et empêchait de saisir le
+  numéro complet (FR : 06 76 70 10 17 devient 6 76 70 10 17).
+- Aligné sur les DEUX composants : business/components/PhoneInput (formulaires,
+  capture, checkout Business, register Business) et components/PhoneInput (Sales,
+  via libphonenumber AsYouType).
+
+================================================================================
+71. FORMULAIRES : PRÉCAPTURE PASSIVE DES LEADS (comme la page de capture)
+================================================================================
+- Nouvelle action API form-precapture (api/business-forms.ts) : dès qu'un email
+  OU un téléphone VALIDE et complet est saisi, le lead est capturé même sans
+  soumission. Crée/complète une FICHE PROSPECT uniquement si crm_enabled (sinon
+  skip:no_crm). Email + téléphone dans la fiche client, TOUTES les réponses déjà
+  remplies dans lead_answers, metadata.partial=true. Déduplication sur l'email.
+- CONTINU : déclencheur dans PublicForm (débounce 1,5 s) qui mémorise le
+  prospect_id et met à jour la fiche à CHAQUE nouvelle réponse, pour capturer
+  aussi les champs remplis après coup, sans jamais aller au bout.
+- Vérifié en base (fiches de test 783/784) : email + tél + réponses OK, dédup OK
+  (même email = même fiche), saisie incomplète ignorée. Fiches de test purgées.
+
+================================================================================
+72. MCP BUSINESS : FORMULAIRES PILOTABLES + KPI COMPLÈTES
+================================================================================
+- forms_manage enrichi (api/business-mcp.js) : `create` en un seul appel
+  (name + blocks + crm + settings), schéma qui documente tous les types de blocs
+  (email validé, phone avec indicatifs, video required + min_watch = visionnage
+  obligatoire, choix, page_break…). Ids de blocs générés au serveur
+  (normalizeBlocks). AUTO-MAPPING CRM côté API (forms-update) : passer
+  crm_enabled=true suffit, le mapping email/téléphone/nom est déduit des types
+  de blocs (indispensable, l'appelant ne connaît pas les ids générés).
+- DÉCOUVERTE IMPORTANTE : assigned_to ET assigned_setter contiennent le
+  member.id (JAMAIS le user_id ; certains membres n'ont pas de user_id). La
+  description du tool prospect_create (« user_id du membre ») est TROMPEUSE, à
+  corriger.
+- Nouveau tool kpi_report : KPI GLOBAL + PAR MEMBRE (closer via assigned_to,
+  setter via assigned_setter), avec les MÊMES formules que les pages KPI de
+  l'app : closing = gagnés / (gagnés + perdus + no-show issus de follow-up),
+  taux de no-show = no-show / prospects décidés (hors prospect/contacted/
+  unqualified/noanswer), ventes, deals perdus, CA généré (subscription_amount
+  Stripe sinon value), contactés (stage != prospect), répartition by_stage.
+  Options period (1m/3m/6m/12m/all) et revenue=true (proxy revenue-summary :
+  CA réel, MRR, historique). Formules VALIDÉES en SQL contre les vraies données
+  (global : 199 prospects, 7 ventes, 4358 €, closing 100 % ; Marianne setter :
+  156 prospects, 1 vente, 697 €).
+
+NB : formulaire de démo (slug 9144a987fa) modifié pour les tests (blocs
+  vidéo obligatoire 10 s + email + téléphone, CRM activé). À remettre à vide si
+  besoin.
+
+
+================================================================================
+73. GROSSE FEATURE — « RÉPONDU » + SUIVI DE DISCUSSION (Business & Sales)
+================================================================================
+Sur la fiche prospect au stage « Contacté » (BusinessProspectView + Sales
+ProspectView), nouveau bloc machine à états :
+- « Premier contact » ou « Nᵉ relance · le [date] » + bouton « Relance faite »
+  (incrémente relance_step ET pose last_relance_at).
+- Bouton « Répondu » → pose responded_at (compte dans le TAUX DE RÉPONSE), met les
+  relances EN PAUSE.
+- Après 1 jour : « Toujours en discussion ? » → Non (reprend les relances) · Oui →
+  Qualifié (stage=qualified) / Disqualifié (stage=unqualified) / Encore inconnu
+  (re-attente +1 jour, en boucle).
+Taux de réponse (BusinessSetterKPI + SetterKPIPage Sales) : compte responded_at OU
+  avancé au-delà de « Contacté » (« Contacté » seul et « Pas de réponse » ne
+  comptent pas). Aligne Sales et Business.
+Pipeline (Business + CloserPipeline + Sales) : badge de relance en pause si
+  responded_at.
+Décisions : boutons DANS la fiche (pas de liens dans l'email) ; « Non » reprend
+  les relances là où elles en étaient ; email de suivi → membre assigné (Business)
+  / propriétaire (Sales).
+Fichiers : BusinessProspectView.tsx, components/ProspectView.tsx, SetterKPI.tsx /
+  SetterKPIPage.tsx, BusinessPipeline.tsx, CloserPipeline.tsx, pages/Pipeline.tsx,
+  BusinessProspectsContext.tsx / ProspectsContext.tsx (types).
+
+
+================================================================================
+74. RELANCES PAR INTERVALLES (depuis la dernière relance, plus depuis le contact)
+================================================================================
+computeRelanceBadge (business/hooks + hooks/useContactedReminders) réécrit : les
+  délais sont des INTERVALLES. Relance n°1 = delays[0] j après l'entrée en
+  « Contacté » ; relance n°(k+1) = delays[k] j après la relance n°k
+  (last_relance_at). Renvoie dueAt → la DATE de la prochaine relance s'affiche sur
+  la fiche.
+« Relance faite » (fiche + cartes Pipeline) pose last_relance_at = now.
+Crons contacted-reminders (Business) + sales-contacted-reminders (Sales) : même
+  logique d'intervalles + skip des « Répondu » (.is('responded_at', null)) + select
+  last_relance_at.
+Textes des modales de config relances mis à jour (« X jours après la relance
+  précédente »).
+Limite connue : délais dédupliqués → pas deux intervalles identiques (ex. deux
+  fois 5 j). À faire évoluer avec une position par relance si besoin.
+
+
+================================================================================
+75. LISTE DE TRAVAIL « À RELANCER & À SUIVRE » (Pipeline Business + Sales)
+================================================================================
+Bouton « Relances » (+ compteur) dans la barre du Pipeline → panneau :
+- À relancer : « Contacté » non répondus, échéance atteinte (+ « Relance faite »
+  rapide).
+- Ont répondu — à suivre : « Répondu » (En discussion / À qualifier).
+Clic → ouvre la fiche. Scope = MES leads (destinataire de la relance :
+  assigned_setter → assigned_to → owner). BUSINESS : owner / HOS / Admin ont un
+  SÉLECTEUR DE POINT DE VUE pour voir la liste d'un setter / setter-closer précis.
+  SALES : mono-utilisateur, pas de sélecteur.
+Fichiers : BusinessRelanceWorklistModal.tsx (nouveau) + RelanceWorklistModal.tsx
+  (Sales, nouveau) + branchement BusinessPipeline.tsx / pages/Pipeline.tsx.
+
+
+================================================================================
+76. DIGEST « TOUJOURS EN DISCUSSION ? » 17h + MIGRATIONS BDD (PROD)
+================================================================================
+Nouveaux crons : api/cron/discussion-checks.ts (Business) +
+  api/cron/sales-discussion-checks.ts (Sales) → un email DIGEST par destinataire
+  (membre assigné Business / propriétaire Sales) listant tous les leads « Répondu »
+  dont l'échéance (1 j) est dépassée, marque discussion_email_sent=true.
+  vercel.json : "0 15 * * *" (Business) + "3 15 * * *" (Sales) = 17h Paris (été).
+  ⚠️ Horaire en UTC : 15h UTC = 17h Paris en été, 16h Paris en hiver.
+Migrations appliquées EN PROD (qwjvdwpixewsctircibl) :
+  - business_responded_discussion : business_prospects.responded_at /
+    discussion_next_at / discussion_email_sent (+ index partiel).
+  - business_last_relance_at : business_prospects.last_relance_at.
+  - sales_responded_discussion_lastrelance : prospects.responded_at /
+    discussion_next_at / discussion_email_sent / last_relance_at (+ index).
+
+
+================================================================================
+77. DIVERS UI + POP-UP « QUOI DE NEUF » MIS À JOUR
+================================================================================
+- Croix (×) pour vider la recherche à droite de la barre : Pipeline Business + CRM
+  Business (BusinessPipeline.tsx, BusinessCRM.tsx).
+- Page Rendez-vous Business : panneau « Liens de Booking » à SCROLL INDÉPENDANT
+  (sticky top-8 + max-h-[calc(100vh-4rem)] overflow-y-auto) → la droite reste fixe
+  quand on scrolle la gauche, et défile en interne quand on scrolle dessus
+  (BusinessAppointments.tsx).
+- Pop-up « Quoi de neuf » (src/lib/whatsNewV5.ts) : 3 items ajoutés EN TÊTE des
+  sections Sales ET Business (Répondu + suivi de discussion, relances qui
+  s'enchaînent, liste À relancer & à suivre). Ré-affichage prévu via reset du flag
+  has_seen_v5_popup (profiles + business_users) au moment du déploiement.
+
+
+================================================================================
 FIN DU RÉCAPITULATIF
 ================================================================================

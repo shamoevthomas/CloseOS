@@ -559,8 +559,18 @@ export function BusinessCRM() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t.crm_search_placeholder}
-            className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+            className="w-full rounded-full border-none bg-stone-100 dark:bg-neutral-800 py-2.5 pl-10 pr-10 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label={lang === 'en' ? 'Clear search' : 'Effacer la recherche'}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-stone-400 hover:bg-stone-200 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Doublons — Owner / HOS / Admin uniquement */}

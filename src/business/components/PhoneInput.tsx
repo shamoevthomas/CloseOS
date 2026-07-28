@@ -20,7 +20,10 @@ const PHONE_FORMATS: Record<string, { maxDigits: number; groups: number[] }> = {
 }
 
 function formatPhoneByCountry(raw: string, code: string): string {
-  const digits = raw.replace(/\D/g, '')
+  // On retire le 0 initial (préfixe national) : avec l'indicatif, le numéro
+  // significatif ne le porte jamais. Ça évite de « manger » un chiffre et de
+  // bloquer la saisie du numéro complet (ex. FR : 06 76 70 10 17 → 6 76 70 10 17).
+  const digits = raw.replace(/\D/g, '').replace(/^0+/, '')
   const fmt = PHONE_FORMATS[code]
   if (!fmt) return digits.slice(0, 15)
   const limited = digits.slice(0, fmt.maxDigits)

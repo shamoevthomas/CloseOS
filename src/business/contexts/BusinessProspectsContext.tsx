@@ -25,6 +25,10 @@ export interface BusinessProspect {
   last_contact?: string
   contacted_at?: string
   relance_step?: number
+  last_relance_at?: string | null
+  responded_at?: string | null
+  discussion_next_at?: string | null
+  discussion_email_sent?: boolean
   formula_id?: string
   payment_type?: 'once' | 'installments' | 'cash' | 'comptant'
   installments?: number

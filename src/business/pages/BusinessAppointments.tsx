@@ -2292,7 +2292,7 @@ export function BusinessAppointments() {
 
         {/* Right: Booking Links Section */}
         {showBookingSection && (
-          <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-8 rounded-2xl shadow-xl ring-1 ring-white/40 dark:ring-neutral-700 sticky top-8">
+          <div className="bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-8 rounded-2xl shadow-xl ring-1 ring-white/40 dark:ring-neutral-700 sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>Liens de Booking</h2>
               <button

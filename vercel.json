@@ -140,8 +140,16 @@
       "schedule": "0 12 * * *"
     },
     {
+      "path": "/api/cron/discussion-checks",
+      "schedule": "0 15 * * *"
+    },
+    {
       "path": "/api/cron/sales-contacted-reminders",
       "schedule": "2 12 * * *"
+    },
+    {
+      "path": "/api/cron/sales-discussion-checks",
+      "schedule": "3 15 * * *"
     },
     {
       "path": "/api/cron/noshow-relances",

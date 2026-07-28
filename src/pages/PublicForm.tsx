@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { Loader2, Check, ArrowLeft, ArrowRight, Star, AlertCircle, Play, Lock } from 'lucide-react'
+import { Loader2, Check, ArrowLeft, ArrowRight, Star, AlertCircle, Play, Lock, CornerDownLeft } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
 import { PhoneInput } from '../business/components/PhoneInput'
+import { DoodleSparkle, DoodleStar5, DoodleBubble, DoodleCross, DoodleZigzag, DoodleHeart } from '../components/doodles'
 import {
   computeVisibleBlockIds, validateAnswer, isInputBlock, splitIntoPages,
   parseVideoUrl, videoSrcWithAutoplay, requiredWatchSeconds,
@@ -47,6 +49,10 @@ const STRINGS = {
     send_failed: 'L\'envoi a échoué. Merci de réessayer.',
     network_failed: 'L\'envoi a échoué. Vérifiez votre connexion.',
     powered_by: 'Propulsé par',
+    press: 'Appuyez sur',
+    enter: 'Entrée',
+    missing_title: 'Il manque quelque chose pour continuer :',
+    this_field: 'Ce champ',
     play_video: 'Lancer la vidéo',
     watch_remaining: (s: number) => `Encore ${s} s de visionnage avant de pouvoir continuer`,
     watch_done: 'Visionnage validé',
@@ -77,6 +83,10 @@ const STRINGS = {
     send_failed: 'Submission failed. Please try again.',
     network_failed: 'Submission failed. Check your connection.',
     powered_by: 'Powered by',
+    press: 'Press',
+    enter: 'Enter',
+    missing_title: 'Something is missing to continue:',
+    this_field: 'This field',
     play_video: 'Play video',
     watch_remaining: (s: number) => `${s}s of viewing left before you can continue`,
     watch_done: 'Viewing complete',
@@ -300,11 +310,50 @@ export default function PublicForm() {
     }
   }
 
+  // Entrée pour avancer / envoyer (Entrée = saut de ligne dans les zones de texte)
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Enter' || submitting || done || loading || !form) return
+    const el = e.target as HTMLElement
+    if (el.tagName === 'TEXTAREA' && !(e.metaKey || e.ctrlKey)) return
+    e.preventDefault()
+    isLast ? submit() : goNext()
+  }
+
+  // Précapture passive : dès qu'un email OU un téléphone valide et complet est saisi,
+  // on capture le lead (fiche prospect si le formulaire est relié au CRM), même si le
+  // visiteur ne va pas jusqu'au bout. Déclenché une fois, avec un léger délai.
+  const partialProspectRef = useRef<number | null>(null)
+  const partialTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (done || !form) return
+    const hasValidContact = form.blocks.some(
+      b => (b.type === 'email' || b.type === 'phone') && answers[b.id] && validateAnswer(b, answers[b.id]) === null,
+    )
+    // Rien à envoyer tant qu'aucun contact valide n'existe et qu'aucune fiche n'a été créée.
+    // Une fois la fiche créée, on continue d'envoyer à chaque réponse pour tout capturer.
+    if (!hasValidContact && partialProspectRef.current === null) return
+    if (partialTimerRef.current) clearTimeout(partialTimerRef.current)
+    partialTimerRef.current = setTimeout(() => {
+      fetch(`${API_URL}?action=form-precapture`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: form.slug, answers, prospect_id: partialProspectRef.current }),
+      })
+        .then(r => (r.ok ? r.json() : null))
+        .then(d => { if (d?.prospect_id) partialProspectRef.current = d.prospect_id })
+        .catch(() => {})
+    }, 1500)
+    return () => { if (partialTimerRef.current) clearTimeout(partialTimerRef.current) }
+  }, [answers, form, done])
+
   // ─── États de page ───
 
   const shell = (children: ReactNode) => (
-    <div className={isEmbed ? 'min-h-screen bg-transparent' : 'min-h-screen bg-[#fbf9f8]'}>
-      <div className="max-w-2xl mx-auto px-6 py-12 sm:py-20">{children}</div>
+    <div
+      onKeyDown={handleKeyDown}
+      className={isEmbed ? 'min-h-screen bg-transparent' : 'relative min-h-screen overflow-hidden bg-gradient-to-b from-white via-[#fbf9f8] to-[#f5f3f2]'}
+    >
+      <div className="relative z-10 max-w-2xl mx-auto px-6 py-14 sm:py-24">{children}</div>
     </div>
   )
 
@@ -327,20 +376,36 @@ export default function PublicForm() {
 
   if (done) {
     return shell(
-      <div className="text-center py-20">
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-8"
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="relative text-center py-24"
+      >
+        {!isEmbed && (
+          <div className="pointer-events-none select-none fixed inset-0 z-0 hidden lg:block" aria-hidden="true" style={{ color: accent }}>
+            <DoodleStar5 className="absolute left-[7%] top-[16%] w-6 opacity-70" />
+            <DoodleSparkle className="absolute right-[8%] top-[13%] w-7 opacity-70" />
+            <DoodleHeart className="absolute right-[7%] top-[60%] w-6 opacity-60" />
+            <DoodleCross className="absolute left-[8%] top-[56%] w-4 opacity-60" />
+          </div>
+        )}
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1, type: 'spring', stiffness: 260, damping: 18 }}
+          className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8"
           style={{ backgroundColor: `${accent}1a` }}
         >
-          <Check className="h-8 w-8" style={{ color: accent }} />
-        </div>
-        <h1 className="text-4xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] mb-3">
+          <Check className="h-10 w-10" style={{ color: accent }} strokeWidth={2.5} />
+        </motion.div>
+        <h1 className="text-4xl sm:text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] mb-3">
           {form.settings.thankyou_title}
         </h1>
         <p className="text-lg text-[#444748] font-['Inter'] leading-relaxed whitespace-pre-wrap">
           {form.settings.thankyou_text}
         </p>
-      </div>,
+      </motion.div>,
     )
   }
 
@@ -348,49 +413,79 @@ export default function PublicForm() {
 
   return shell(
     <>
+      {/* Barre de progression fixe en haut + doodles dans les marges */}
+      {!isEmbed && (
+        <>
+          {showProgress && (
+            <div className="fixed inset-x-0 top-0 z-30 h-1.5 bg-[#eae8e7]">
+              <div
+                className="h-full rounded-r-full transition-all duration-500 ease-out"
+                style={{ width: `${((currentPos + 1) / activeSteps.length) * 100}%`, backgroundColor: accent }}
+              />
+            </div>
+          )}
+          <div className="pointer-events-none select-none fixed inset-0 z-0 hidden lg:block" aria-hidden="true">
+            <div style={{ color: accent }}>
+              <DoodleSparkle className="absolute left-[6%] top-[16%] w-6 opacity-70" />
+              <DoodleStar5 className="absolute right-[7%] top-[13%] w-5 opacity-70" />
+              <DoodleCross className="absolute right-[8%] top-[54%] w-4 opacity-60" />
+              <DoodleHeart className="absolute left-[8%] top-[70%] w-6 opacity-60" />
+            </div>
+            <DoodleZigzag className="absolute left-[5%] top-[40%] w-14 text-[#c4c7c7]" />
+            <DoodleBubble className="absolute right-[6%] top-[64%] w-14 text-[#c4c7c7] -rotate-6" />
+          </div>
+        </>
+      )}
+
       {/* En-tête */}
       {currentPos === 0 && (
-        <header className="mb-10">
+        <motion.header
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="mb-12"
+        >
           <h1 className="text-4xl sm:text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] leading-[1.05]">
             {form.name}
           </h1>
           {form.description && (
-            <p className="mt-4 text-lg text-[#444748] font-['Inter'] leading-relaxed whitespace-pre-wrap">
+            <p className="mt-5 text-lg text-[#444748] font-['Inter'] leading-relaxed whitespace-pre-wrap">
               {form.description}
             </p>
           )}
-        </header>
+        </motion.header>
       )}
 
-      {/* Progression */}
+      {/* Compteur d'étape */}
       {showProgress && (
-        <div className="mb-10">
-          <div className="h-1 rounded-full bg-[#eae8e7] overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${((currentPos + 1) / activeSteps.length) * 100}%`, backgroundColor: accent }}
-            />
-          </div>
-          <p className="mt-2 text-xs font-bold text-[#444748]/50 font-['Inter']">
-            {S.step(currentPos + 1, activeSteps.length)}
-          </p>
-        </div>
+        <p className="mb-6 text-[0.7rem] font-bold uppercase tracking-[0.18em] text-[#444748]/45 font-['Inter']">
+          {S.step(currentPos + 1, activeSteps.length)}
+        </p>
       )}
 
-      {/* Blocs de l'étape */}
-      <div className="space-y-8">
-        {current?.blocks.filter(isRenderable).map(block => (
-          <BlockRenderer
-            key={block.id}
-            block={block}
-            value={answers[block.id]}
-            error={errors[block.id]}
-            accent={accent}
-            S={S}
-            onChange={value => setAnswer(block.id, value)}
-          />
-        ))}
-      </div>
+      {/* Blocs de l'étape — transition animée entre questions */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentPos}
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          transition={{ duration: 0.32, ease: 'easeOut' }}
+          className="space-y-8"
+        >
+          {current?.blocks.filter(isRenderable).map(block => (
+            <BlockRenderer
+              key={block.id}
+              block={block}
+              value={answers[block.id]}
+              error={errors[block.id]}
+              accent={accent}
+              S={S}
+              onChange={value => setAnswer(block.id, value)}
+            />
+          ))}
+        </motion.div>
+      </AnimatePresence>
 
       {submitError && (
         <div className="mt-8 flex items-start gap-3 rounded-xl bg-[#ffdad6]/40 px-4 py-3">
@@ -399,13 +494,33 @@ export default function PublicForm() {
         </div>
       )}
 
+      {/* Récapitulatif de ce qui manque (au-dessus du bouton Envoyer) */}
+      {(() => {
+        const missing = (current?.blocks || []).filter(b => errors[b.id])
+        if (missing.length === 0) return null
+        return (
+          <div className="mt-10 rounded-2xl border border-[#ffb4ab] bg-[#ffdad6]/40 px-5 py-4">
+            <p className="flex items-center gap-2 text-sm font-['Manrope'] font-bold text-[#ba1a1a] mb-2">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" /> {S.missing_title}
+            </p>
+            <ul className="space-y-1 pl-5">
+              {missing.map(b => (
+                <li key={b.id} className="list-disc text-sm text-[#ba1a1a]/90 font-['Inter']">
+                  <span className="font-semibold text-[#ba1a1a]">{b.text || S.this_field}</span> : {S.errors[errors[b.id]!]}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      })()}
+
       {/* Navigation */}
-      <div className="mt-12 flex items-center gap-3">
+      <div className="mt-14 flex items-center gap-3">
         {!isFirst && (
           <button
             onClick={goBack}
             disabled={submitting}
-            className="flex items-center gap-2 px-6 py-3.5 rounded-full font-['Manrope'] font-bold text-sm text-[#444748] hover:bg-[#f5f3f2] transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-4 rounded-full font-['Manrope'] font-bold text-sm text-[#444748] hover:bg-black/[0.05] transition-colors disabled:opacity-50"
           >
             <ArrowLeft className="h-4 w-4" /> {S.back}
           </button>
@@ -413,8 +528,8 @@ export default function PublicForm() {
         <button
           onClick={isLast ? submit : goNext}
           disabled={submitting}
-          className="flex items-center gap-2 px-8 py-3.5 rounded-full text-white font-['Manrope'] font-bold text-sm transition-all active:scale-95 disabled:opacity-60"
-          style={{ backgroundColor: accent }}
+          className="flex items-center gap-2 px-9 py-4 rounded-full text-white font-['Manrope'] font-bold text-base transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
+          style={{ backgroundColor: accent, boxShadow: `0 12px 26px -10px ${accent}` }}
         >
           {submitting ? (
             <>
@@ -428,6 +543,14 @@ export default function PublicForm() {
             </>
           )}
         </button>
+        {!submitting && (
+          <span className="hidden sm:flex items-center gap-1.5 text-xs font-['Inter'] text-[#444748]/45">
+            {S.press}
+            <kbd className="inline-flex items-center gap-1 rounded-md border border-[#c4c7c7]/60 bg-white px-1.5 py-1 font-bold text-[#444748]/70 shadow-sm">
+              <CornerDownLeft className="h-3 w-3" /> {S.enter}
+            </kbd>
+          </span>
+        )}
       </div>
 
       {!isEmbed && (
@@ -477,19 +600,19 @@ function BlockRenderer({
 
   // Blocs de saisie
   const inputBase =
-    'w-full rounded-xl border bg-white px-4 py-3.5 text-base text-[#1b1c1b] font-[\'Inter\'] placeholder:text-[#444748]/30 outline-none transition-colors'
-  const borderClass = error ? 'border-[#ba1a1a]' : 'border-[#c4c7c7]/40 focus:border-[#1b1c1b]'
+    'w-full rounded-2xl border-2 bg-white px-5 py-4 text-lg text-[#1b1c1b] font-[\'Inter\'] placeholder:text-[#444748]/30 outline-none transition-all focus:shadow-[0_1px_2px_rgba(27,28,27,0.04),0_12px_28px_-14px_rgba(27,28,27,0.18)]'
+  const borderClass = error ? 'border-[#ba1a1a]' : 'border-[#e6e3e1] focus:border-[#1b1c1b]'
 
   return (
     <div>
-      <label className="block text-base font-['Manrope'] font-bold text-[#1b1c1b] mb-1">
+      <label className="block text-xl sm:text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] mb-1.5 leading-snug">
         {block.text}
-        {block.required && <span className="text-[#ba1a1a] ml-1">*</span>}
+        {block.required && <span className="ml-1" style={{ color: accent }}>*</span>}
       </label>
       {block.description && (
-        <p className="text-sm text-[#444748]/70 font-['Inter'] mb-3">{block.description}</p>
+        <p className="text-base text-[#444748]/70 font-['Inter'] mb-4">{block.description}</p>
       )}
-      {!block.description && <div className="mb-3" />}
+      {!block.description && <div className="mb-4" />}
 
       {(() => {
         switch (block.type) {
@@ -543,7 +666,7 @@ function BlockRenderer({
                       key={opt}
                       type="button"
                       onClick={() => onChange(opt)}
-                      className="w-full flex items-center gap-3 rounded-xl border bg-white px-4 py-3.5 text-left transition-all"
+                      className="w-full flex items-center gap-3 rounded-2xl border-2 bg-white px-5 py-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(27,28,27,0.25)]"
                       style={{
                         borderColor: active ? accent : 'rgba(196,199,199,0.4)',
                         backgroundColor: active ? `${accent}0d` : '#ffffff',
@@ -555,7 +678,7 @@ function BlockRenderer({
                       >
                         {active && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />}
                       </span>
-                      <span className="text-base text-[#1b1c1b] font-['Inter']">{label}</span>
+                      <span className="text-lg text-[#1b1c1b] font-['Inter']">{label}</span>
                     </button>
                   )
                 })}
@@ -576,7 +699,7 @@ function BlockRenderer({
                       onClick={() =>
                         onChange(active ? selected.filter(v => v !== opt) : [...selected, opt])
                       }
-                      className="w-full flex items-center gap-3 rounded-xl border bg-white px-4 py-3.5 text-left transition-all"
+                      className="w-full flex items-center gap-3 rounded-2xl border-2 bg-white px-5 py-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(27,28,27,0.25)]"
                       style={{
                         borderColor: active ? accent : 'rgba(196,199,199,0.4)',
                         backgroundColor: active ? `${accent}0d` : '#ffffff',
@@ -591,7 +714,7 @@ function BlockRenderer({
                       >
                         {active && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
                       </span>
-                      <span className="text-base text-[#1b1c1b] font-['Inter']">{opt}</span>
+                      <span className="text-lg text-[#1b1c1b] font-['Inter']">{opt}</span>
                     </button>
                   )
                 })}
@@ -721,9 +844,7 @@ function BlockRenderer({
         }
       })()}
 
-      {error && (
-        <p className="mt-2 text-sm text-[#ba1a1a] font-['Inter']">{S.errors[error]}</p>
-      )}
+      {/* Les erreurs sont regroupées dans l'encart au-dessus du bouton Envoyer. */}
     </div>
   )
 }
@@ -748,6 +869,11 @@ function VideoPlayerBlock({
 }) {
   const video = useMemo(() => parseVideoUrl(block.url), [block.url])
   const needed = requiredWatchSeconds(block)
+  // Miniature YouTube (poster avant lecture)
+  const ytId = useMemo(
+    () => (video?.provider === 'youtube' ? video.src.match(/embed\/([^?/]+)/)?.[1] ?? null : null),
+    [video],
+  )
 
   const [started, setStarted] = useState(false)
   const [playing, setPlaying] = useState(true)
@@ -819,15 +945,28 @@ function VideoPlayerBlock({
           <button
             type="button"
             onClick={() => { setStarted(true); setPlaying(true) }}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 hover:bg-black/70 transition-colors group"
+            className="absolute inset-0 group"
           >
+            {ytId && (
+              <img
+                src={`https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`}
+                onError={e => { (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` }}
+                alt=""
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
             <span
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-transform group-hover:scale-110"
-              style={{ backgroundColor: accent }}
+              className={`absolute inset-0 flex flex-col items-center justify-center gap-3 transition-colors ${ytId ? 'bg-black/25 group-hover:bg-black/10' : 'bg-black/80 group-hover:bg-black/70'}`}
             >
-              <Play className="h-7 w-7 text-white ml-1" fill="currentColor" />
+              <span
+                className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-110"
+                style={{ backgroundColor: accent }}
+              >
+                <Play className="h-7 w-7 text-white ml-1" fill="currentColor" />
+              </span>
+              <span className="text-sm font-['Manrope'] font-bold text-white drop-shadow">{S.play_video}</span>
             </span>
-            <span className="text-sm font-['Manrope'] font-bold text-white">{S.play_video}</span>
           </button>
         )}
       </div>
@@ -857,9 +996,7 @@ function VideoPlayerBlock({
         </div>
       )}
 
-      {error && (
-        <p className="mt-2 text-sm text-[#ba1a1a] font-['Inter']">{S.errors[error]}</p>
-      )}
+      {/* Les erreurs sont regroupées dans l'encart au-dessus du bouton Envoyer. */}
     </div>
   )
 }

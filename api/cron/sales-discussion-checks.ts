@@ -1,6 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Digest quotidien "Toujours en discussion ?" (CloseOS Sales).
+// Un email par propriétaire listant TOUS ses leads marqués "Répondu" dont l'échéance
+// de suivi (1 jour) est dépassée. Envoyé une fois/jour à 17h Paris.
+
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const brevoApiKey = process.env.BREVO_API_KEY!;
@@ -10,15 +14,13 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-interface DigestItem {
+interface DiscussionItem {
+  id: number;
   prospect_name: string;
-  relance_number: number;
-  days_in_contacted: number;
   phone: string;
   email: string;
 }
 
-// ─── Email design system (CloseOS Sales — light DA, sky accent) ───
 function wrapEmailHtml(bodyContent: string): string {
   return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -48,7 +50,7 @@ function wrapEmailHtml(bodyContent: string): string {
 </body></html>`;
 }
 
-function buildDigestEmail(repFirstName: string, items: DigestItem[]): string {
+function buildDiscussionDigest(repFirstName: string, items: DiscussionItem[]): string {
   const rows = items.map(it => {
     const contactLine = [it.phone, it.email].filter(Boolean).join(' · ');
     return `
@@ -59,8 +61,7 @@ function buildDigestEmail(repFirstName: string, items: DigestItem[]): string {
           ${contactLine ? `<p style="font-family:'Inter',Helvetica,sans-serif;margin:4px 0 0;font-size:13px;color:#64748b;">${contactLine}</p>` : ''}
         </td>
         <td align="right" style="white-space:nowrap;">
-          <span style="display:inline-block;font-family:'Inter',Helvetica,sans-serif;font-weight:600;font-size:11px;color:#0284c7;background-color:#e0f2fe;border-radius:9999px;padding:4px 10px;">Relance n°${it.relance_number}</span>
-          <p style="font-family:'Inter',Helvetica,sans-serif;margin:6px 0 0;font-size:11px;color:#94a3b8;">${it.days_in_contacted} j en Contacté</p>
+          <span style="display:inline-block;font-family:'Inter',Helvetica,sans-serif;font-weight:600;font-size:11px;color:#0284c7;background-color:#e0f2fe;border-radius:9999px;padding:4px 10px;">En discussion</span>
         </td>
       </tr></table>
     </td></tr>
@@ -70,13 +71,13 @@ function buildDigestEmail(repFirstName: string, items: DigestItem[]): string {
   const count = items.length;
   const body = `
     <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#0284c7;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">
-      Vos relances du jour
+      Suivi de discussion
     </p>
     <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 16px;font-size:36px;color:#111111;text-align:left;line-height:1.1;letter-spacing:-0.04em;">
-      ${count} relance${count > 1 ? 's' : ''} à faire
+      ${count} lead${count > 1 ? 's' : ''} à suivre
     </h1>
     <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 32px;font-size:16px;color:#1b1c1b;line-height:1.6;">
-      Bonjour <strong style="color:#111111;">${repFirstName}</strong>, voici les prospects en « Contacté » à relancer aujourd'hui.
+      Bonjour <strong style="color:#111111;">${repFirstName}</strong>, ces prospects ont répondu il y a au moins un jour. Toujours en discussion&nbsp;? Ouvrez chaque fiche pour <strong>qualifier</strong>, <strong>disqualifier</strong>, ou <strong>reprendre les relances</strong>.
     </p>
     <table width="100%" cellpadding="0" cellspacing="0">${rows}</table>
     <div style="margin-top:24px;">
@@ -96,80 +97,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let errorCount = 0;
 
   try {
-    // 1. Délais de relance actifs, groupés par utilisateur Sales
-    const { data: reminders, error: remError } = await supabaseAdmin
-      .from('contacted_reminders')
-      .select('user_id, days')
-      .eq('is_active', true);
+    // Prospects marqués "Répondu" dont l'échéance de suivi est dépassée, email pas encore envoyé.
+    const { data: prospects } = await supabaseAdmin
+      .from('prospects')
+      .select('id, contact, firstName, lastName, email, phone, user_id')
+      .not('responded_at', 'is', null)
+      .eq('discussion_email_sent', false)
+      .lte('discussion_next_at', now.toISOString());
 
-    if (remError || !reminders?.length) {
-      return res.status(200).json({ message: 'No active reminders', sentCount: 0 });
+    if (!prospects?.length) {
+      return res.status(200).json({ message: 'No discussion checks due', sentCount: 0 });
     }
 
-    const userDelays: Record<string, number[]> = {};
-    for (const r of reminders) {
-      (userDelays[r.user_id] ||= []).push(Number(r.days));
+    // Regrouper par propriétaire
+    const byOwner: Record<string, DiscussionItem[]> = {};
+    for (const p of prospects) {
+      const ownerId = (p as any).user_id;
+      if (!ownerId) continue;
+      const prospectName =
+        (p.firstName || p.lastName)
+          ? `${p.firstName || ''} ${p.lastName || ''}`.trim()
+          : (p.contact || 'Ce prospect');
+      (byOwner[ownerId] ||= []).push({ id: p.id, prospect_name: prospectName, phone: p.phone || '', email: p.email || '' });
     }
 
-    for (const [userId, delaysRaw] of Object.entries(userDelays)) {
-      const delays = [...new Set(delaysRaw)].sort((a, b) => a - b);
-      if (!delays.length) continue;
+    for (const [ownerId, items] of Object.entries(byOwner)) {
+      if (!items.length) continue;
 
-      // 2. Prospects actuellement en "Contacté"
-      const { data: prospects } = await supabaseAdmin
-        .from('prospects')
-        .select('id, contact, firstName, lastName, email, phone, contacted_at, relance_step, last_relance_at')
-        .eq('user_id', userId)
-        .eq('stage', 'contacted')
-        .not('contacted_at', 'is', null)
-        .is('responded_at', null);
-
-      if (!prospects?.length) continue;
-
-      // 3. Construire la liste des relances DUES (une par prospect)
-      const items: DigestItem[] = [];
-      for (const p of prospects) {
-        const t = new Date(p.contacted_at as string);
-        if (isNaN(t.getTime())) continue;
-        const daysElapsed = Math.floor((now.getTime() - t.getTime()) / 86400000);
-        if (daysElapsed < 0) continue;
-
-        const done = Math.max(0, Math.min(Number((p as any).relance_step) || 0, delays.length));
-        if (done >= delays.length) continue; // toutes les relances déjà faites
-        // Délais = intervalles : relance n°1 depuis contacted_at ; suivantes depuis la dernière relance.
-        const refStr = done > 0 ? ((p as any).last_relance_at || p.contacted_at) : p.contacted_at;
-        const ref = new Date(refStr as string).getTime();
-        if (isNaN(ref)) continue;
-        const dueAt = ref + delays[done] * 86400000;
-        if (now.getTime() < dueAt) continue; // pas encore l'échéance de la relance suivante
-
-        const prospectName =
-          (p.firstName || p.lastName)
-            ? `${p.firstName || ''} ${p.lastName || ''}`.trim()
-            : (p.contact || 'Ce prospect');
-
-        items.push({
-          prospect_name: prospectName,
-          relance_number: done + 1,
-          days_in_contacted: daysElapsed,
-          phone: p.phone || '',
-          email: p.email || '',
-        });
-      }
-
-      if (!items.length) continue; // rien à relancer → pas d'email
-
-      // 4. Destinataire = le propriétaire Sales (toi, en solo)
       const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('email, full_name')
-        .eq('id', userId)
+        .eq('id', ownerId)
         .maybeSingle();
       if (!profile?.email) continue;
-      const firstName = (profile.full_name || '').split(' ')[0] || '';
 
-      const htmlContent = buildDigestEmail(firstName, items);
-      const subject = `${items.length} relance${items.length > 1 ? 's' : ''} à faire aujourd'hui`;
+      const firstName = (profile.full_name || '').split(' ')[0] || '';
+      const htmlContent = buildDiscussionDigest(firstName, items);
+      const subject = `${items.length} lead${items.length > 1 ? 's' : ''} en discussion à suivre`;
 
       try {
         const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -184,20 +148,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
         if (emailRes.ok) {
           sentCount++;
+          await supabaseAdmin
+            .from('prospects')
+            .update({ discussion_email_sent: true })
+            .in('id', items.map(it => it.id));
         } else {
           const errData = await emailRes.json().catch(() => ({}));
-          console.error('Failed to send sales relance digest:', errData);
+          console.error('Failed to send sales discussion digest:', errData);
           errorCount++;
         }
       } catch (emailErr) {
-        console.error('Sales relance digest email error:', emailErr);
+        console.error('Sales discussion digest email error:', emailErr);
         errorCount++;
       }
     }
 
     return res.status(200).json({ message: 'Done', sentCount, errorCount });
   } catch (err) {
-    console.error('Sales contacted reminders digest cron error:', err);
+    console.error('Sales discussion checks cron error:', err);
     return res.status(500).json({ error: 'Internal error', sentCount, errorCount });
   }
 }
