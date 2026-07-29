@@ -474,9 +474,10 @@ export function BusinessProspectView({
     return () => clearInterval(id)
   }, [])
 
-  // Notes internes
-  const [editingNotes, setEditingNotes] = useState(false)
+  // Notes internes (sauvegardées avec le bouton Enregistrer principal du footer)
   const [tempNotes, setTempNotes] = useState(parseNotesField(prospect.notes).internal)
+  // Recharge le texte des notes quand on ouvre un AUTRE prospect (pas à chaque save).
+  useEffect(() => { setTempNotes(parseNotesField(prospect.notes).internal) }, [prospect.id])
 
   // Call notes
   const [isAddingNote, setIsAddingNote] = useState(false)
@@ -909,15 +910,13 @@ export function BusinessProspectView({
   }
 
   // -- Notes --
-  const handleSaveNotes = () => {
+  // Sérialise les notes internes en préservant un éventuel JSON de capture.
+  // Utilisé par le bouton Enregistrer principal (footer) : plus de save séparé.
+  const computeNotesToStore = () => {
     const { capture } = parseNotesField(local.notes)
-    // Lead issu d'un formulaire de capture : on conserve les réponses et on range
-    // les notes internes sous la clé réservée, au lieu d'écraser le JSON.
-    const nextNotes = capture
+    return capture
       ? JSON.stringify({ ...capture, ...(tempNotes ? { [INTERNAL_NOTES_KEY]: tempNotes } : {}) })
       : tempNotes
-    handleUpdate({ notes: nextNotes })
-    setEditingNotes(false)
   }
 
   // -- Call notes --
@@ -2384,29 +2383,15 @@ export function BusinessProspectView({
                 )}
               </section>
 
-              {/* Notes internes */}
+              {/* Notes internes — enregistrées avec le bouton « Enregistrer » du bas */}
               <div>
-                <div className="flex items-center justify-between mb-2 ml-1">
-                  <label className={LABEL_STYLE}>{t.prospect_internal_notes}</label>
-                  <button onClick={() => setEditingNotes(!editingNotes)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
-                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  </button>
-                </div>
-                {editingNotes ? (
-                  <div>
-                    <textarea value={tempNotes} onChange={e => setTempNotes(e.target.value)} className={cn(INPUT_CLS, 'resize-none h-32')} placeholder={t.prospect_notes_placeholder} />
-                    <div className="mt-3 flex gap-2">
-                      <button onClick={handleSaveNotes} className="rounded-full bg-stone-900 px-5 py-2 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">{t.prospect_save_btn}</button>
-                      <button onClick={() => setEditingNotes(false)} className="rounded-full border border-[#c4c7c7]/20 px-5 py-2 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">{t.prospect_cancel_btn}</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 p-5">
-                    <p className="whitespace-pre-wrap text-sm text-stone-600 dark:text-neutral-300">
-                      {internalNotes || t.prospect_no_notes}
-                    </p>
-                  </div>
-                )}
+                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_internal_notes}</label>
+                <textarea
+                  value={tempNotes}
+                  onChange={e => setTempNotes(e.target.value)}
+                  className={cn(INPUT_CLS, 'resize-none h-32')}
+                  placeholder={t.prospect_notes_placeholder}
+                />
               </div>
             </div>
           )}
@@ -3091,7 +3076,7 @@ export function BusinessProspectView({
             </button>
           </div>
           <button
-            onClick={() => handleUpdate(local)}
+            onClick={() => handleUpdate({ ...local, notes: computeNotesToStore() })}
             className="bg-stone-900 text-white px-8 py-3 rounded-full font-business-display font-bold text-sm transition-transform active:scale-95"
           >
             {t.prospect_footer_save}
