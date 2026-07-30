@@ -83,8 +83,22 @@ BLOC 0 — MAINTENANT (bloquant, avant tout le reste)
               La strategie de comparatifs est validee par les donnees.
            3. La marque s'ecrit de 4 facons (close os, closer os, closeros,
               closeo) : confirme le probleme de desambiguisation GEO.
+       [x] GA4 : evenement cle "essai_gratuit" cree (declencheur = page_view
+           dont l'URL contient /return, donc les retours de checkout Sales ET
+           Business). Valeur monetaire par defaut retiree : la laisser a 1 $
+           aurait pollue le rapport de revenus.
+       [x] GA4 : correction de code indispensable — /return et /welcome-founder
+           n'etaient PAS dans GA_PUBLIC, donc aucun page_view n'y etait envoye
+           et l'evenement n'aurait jamais pu se declencher cote Sales.
+           Le contenu editorial non plus : le blog ne produisait aucune donnee.
+       [x] GA4 <-> Search Console : association creee (GA4 la recommandait).
+           Les requetes et pages de destination GSC remontent desormais dans GA4.
+       [ ] segment "organique" : PAS NECESSAIRE. GA4 expose nativement
+           "Organic Search" via le groupe de canaux par defaut. Creer un
+           segment custom ferait doublon. A ne faire qu'en exploration.
        [ ] reste : valider les volumes des 20 mots-cles prioritaires
-       [ ] reste : GA4 evenement de conversion + segment organique
+       NOTE COMPTES : la Search Console est sous tekatubois@gmail.com,
+       GA4 sous shamoevthomas@gmail.com. Les deux voient closeos.fr.
 
 [ ] 5. AUDIT DE PERFORMANCE — jamais fait, les cibles actuelles sont des
        standards, pas un diagnostic.
@@ -486,10 +500,13 @@ Detail complet : seo/GEO-ANALYSIS.md
         [ ] au moins une video par landing produit (zero aujourd'hui)
         [ ] graphiques / donnees visualisees dans le HTML prerendu
 
-[ ] 68. BING WEBMASTER TOOLS + INDEXNOW
-        Bing Copilot s'appuie sur l'index Bing. Inscription non confirmee.
-        [ ] inscrire le site
-        [ ] activer IndexNow
+[~] 68. BING WEBMASTER TOOLS + INDEXNOW — INDEXNOW FAIT
+        [x] IndexNow actif, SANS aucun compte : cle auto-hebergee
+            /e357b4487c37f2da2a6ab294edccddd2.txt + scripts/indexnow.mjs
+        [x] 29 URLs notifiees le 30/07 (HTTP 202 sur les deux hotes)
+            -> relancer `node scripts/indexnow.mjs` apres chaque publication
+        [ ] inscription Bing Webmaster Tools : demande un compte Microsoft,
+            a faire par vous. IndexNow couvre deja l'essentiel du benefice.
 
 [ ] 69. LANCER LE PROTOCOLE DE MESURE DES CITATIONS IA
         C'est la seule donnee qui compte vraiment, et elle est a zero releve.
