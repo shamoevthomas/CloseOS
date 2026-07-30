@@ -90,7 +90,7 @@ C'est le marché **le plus sous-servi des trois** et celui où le panier moyen e
 
 | Concurrent | Autorité (est.) | Menace | Réalité |
 |---|---|---|---|
-| **Yousign** | Très forte (FR) | 🔴 Écrasante | Leader français, eIDAS, notoriété presse, contenu massif. **Impossible à battre en tête de requête.** |
+| **Youtrust** (ex-Yousign) | Très forte (FR) | 🔴 Écrasante | Leader français, eIDAS, notoriété presse. **A changé de nom en 2026.** Tarif web : 9 € HT/mois **par utilisateur** — facturation au siège, pas au compte. Impossible à battre en tête de requête. |
 | **Docusign** | Très forte (mondiale) | 🔴 Écrasante | Idem, échelle mondiale. |
 | **Universign / Oodrive** | Forte | 🔴 Élevée | Positionnement conformité et secteur public. |
 | **PandaDoc** | Forte | 🟠 Moyenne | **Le plus proche de CloseOS Sign** : documents + signature + paiement. Contenu français limité. |
@@ -106,7 +106,8 @@ Sur `signature électronique` (est. 8 000–15 000/mois), CloseOS n'a **aucune c
 | `signature électronique` | 8 000–15 000 | 🔴 Très élevée | **Ne pas viser** |
 | `signature électronique et paiement` | 50–200 | 🟢 Faible | ❌ **Manquant — cœur du différenciateur** |
 | `faire signer et encaisser un client` | 20–80 | 🟢 Très faible | ❌ Manquant |
-| `alternative yousign` | 100–300 | 🟠 Moyenne | ❌ Manquant |
+| `alternative yousign` | 100–300 | 🟠 Moyenne | ❌ Manquant — la requête survivra longtemps à la marque |
+| `yousign devient youtrust` | inconnu, en hausse | 🟢 Très faible | ❌ **Opportunité datée : à saisir vite** |
 | `alternative docusign français` | 100–300 | 🟠 Moyenne | ❌ Manquant |
 | `valeur juridique signature électronique` | 300–800 | 🟠 Moyenne | ❌ Manquant (E-E-A-T fort) |
 | `modèle contrat de prestation gratuit` | 1 000–3 000 | 🔴 Élevée | ❌ Manquant (volume réel, à tenter en Phase 3) |

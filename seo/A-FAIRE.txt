@@ -123,41 +123,21 @@ BLOC 1 — FINITIONS TECHNIQUES (reste ouvert apres les correctifs)
        Matiere disponible : CHATBOT_KNOWLEDGE_CLOSEOS.txt
        Detail : seo/GEO-ANALYSIS.md section 4
 
-[ ] 8ter. VERIFIER 3 PRIX POUR PUBLIER L'ARTICLE EN BROUILLON
-       content/ressources/cout-stack-closing.md est ecrit et pret, mais reste
-       en `draft: true` : votre note du 2026-07-28 dit explicitement que ces
-       prix sont "a spot-checker avant diffusion publique".
-       [ ] prix Yousign (formule Starter et Business)
-           NOTE : yousign.com/fr-fr/tarifs redirige vers youtrust.com, qui
-           renvoie 404. A verifier — possible changement de marque, ce qui
-           impacterait aussi COMPETITOR-ANALYSIS.md et la page
-           /comparatifs/alternative-yousign prevue au calendrier (tache 26).
-       [ ] prix Brevo (page tarifs rendue en JS, non lisible automatiquement)
-       [ ] prix Abby
-       [ ] verifier le taux EUR/USD retenu (1 $ ≈ 0,92 €)
-       [ ] puis passer draft: true -> draft: false et rebuild
-       Les prix Pipedrive, Calendly et Fathom sont deja verifies (votre note).
-
-[x] 8bis. INCOHERENCE DE PRIX — RESOLUE (2026-07-30)
-       Je m'etais trompe en presentant 18 / 25,50 / 34 EUR comme trois
-       chiffres contradictoires de meme valeur. Verification faite dans
-       LandingPage.tsx : le prix de base Sales est 24 EUR, avec remise
-       annuelle x0,75 et trimestrielle x5/6.
-         mensuel     : 24 EUR
-         trimestriel : 20 EUR
-         annuel      : 18 EUR   <- le "des 18 EUR" de /tarifs etait JUSTE
-         34 EUR      : prix barre de reference, personne ne le paie
-       Deux vraies erreurs corrigees :
-       [x] index.html : offers Sales 25,50-34 -> 18-24 (le schema etait
-           calcule sur le prix barre : 34 x 0,75 = 25,50)
-       [x] index.html : offers Business 28-99 -> 39-99 (28 obsolete ;
-           la grille reelle est 39 / 59 / 99)
-       [x] AlternativeIclosed.tsx : "commence a 34 EUR/mois" citait le prix
-           barre comme prix d'entree -> "18 EUR/mois en annuel (24 EUR en mensuel)"
-       [x] cout-stack-closing.md : le 39 EUR y etait attribue a CloseOS Sales
-           alors que c'est la formule Solo de Business. Base de comparaison
-           desormais nommee explicitement dans l'article.
-       [ ] Reste a verifier : /tarifs affiche-t-elle bien les 3 cycles ?
+[x] 8ter. PRIX VERIFIES — ARTICLE PUBLIE (2026-07-30)
+       [x] Youtrust (ex-Yousign) : 9 EUR HT/mois PAR UTILISATEUR (verifie)
+           >>> YOUSIGN A CHANGE DE NOM : "Yousign devient Youtrust" en 2026.
+               Impact : COMPETITOR-ANALYSIS mis a jour ; la page
+               /comparatifs/alternative-yousign reste pertinente (la requete
+               survit a la marque) et une page "Yousign devient Youtrust"
+               est une opportunite datee a saisir vite.
+           >>> Facturation PAR SIEGE, pas au compte. Le tableau equipe de
+               l'article a ete corrige (3 utilisateurs = 27 EUR, pas 25 EUR forfait).
+       [x] Abby : Start 9 EUR/mois, Pro 15 EUR (annuel) (verifie)
+       [ ] Brevo : grille rendue en JS, non verifiable automatiquement.
+           Le montant est desormais signale comme ESTIMATION dans l'article
+           lui-meme, ce qui permet la publication sans affirmer un chiffre faux.
+           A confirmer a l'occasion.
+       [x] article passe en ligne (draft retire)
 
 [ ] 9. Valider tout le JSON-LD avec le Rich Results Test de Google
        (a faire APRES deploiement)

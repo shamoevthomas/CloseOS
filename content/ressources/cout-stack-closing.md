@@ -2,7 +2,6 @@
 title: Combien coûte vraiment une stack de closing ?
 description: Le calcul honnête du coût des outils d'une activité de closing, pour un solo puis pour une équipe de 5, avec des sièges attribués par rôle plutôt que des licences pleines empilées.
 published: 2026-07-30
-draft: true
 ---
 
 Une activité de closing outillée sérieusement coûte entre **100 € par mois pour un indépendant** et **environ 290 € par mois pour une équipe de cinq personnes**. Ces montants ne correspondent pas aux comparatifs habituels, qui annoncent volontiers quatre à dix fois plus. La différence ne vient pas d'une négociation : elle vient de la méthode de calcul.
@@ -28,14 +27,14 @@ Voici ce qu'un closer solo sort effectivement de sa carte bancaire. Les tarifs s
 | CRM | Pipedrive Growth | 36 € | Souvent — beaucoup restent sur Notion gratuit |
 | Prise de rendez-vous | Calendly Standard | 9 € | Souvent — l'offre gratuite limite à un seul type de RDV |
 | Enregistrement des appels | Fathom Premium | 15 € | Si le volume le justifie |
-| Signature électronique | Formule d'entrée | ~9 € | Oui |
-| Facturation | Outil français d'entrée | ~9 € | Oui |
-| Emailing | Formule d'entrée | ~23 € | Si automatisation ; le gratuit suffit pour envoyer |
+| Signature électronique | Youtrust (ex-Yousign) | 9 € HT | Oui |
+| Facturation | Abby Start | 9 € | Oui |
+| Emailing | Brevo, formule d'entrée | ~23 € *(estimation)* | Si automatisation ; le gratuit suffit pour envoyer |
 | **Total** | | **~100 €/mois** | |
 
 Ce qu'il ne paie presque jamais : la visioconférence, les formulaires, le tracking, les tableaux de bord et l'onboarding. Ces cinq postes sont assurés par des outils gratuits, et les inclure dans un calcul d'économies serait malhonnête.
 
-Face à ces 100 € mensuels, la formule Solo de CloseOS Business se situe à **39 € par mois**, soit un rapport d'environ **2,6×** et à peu près **730 € économisés sur un an**. C'est cette formule qui sert de point de comparaison ici plutôt que CloseOS Sales — moins chère à 18 € par mois en annuel — parce qu'elle inclut la signature électronique, présente dans la liste ci-dessus. C'est moins spectaculaire qu'un facteur dix, mais c'est un chiffre qu'un prospect peut vérifier ligne par ligne sans le démonter.
+Face à ces ~100 € mensuels, la formule Solo de CloseOS Business se situe à **39 € par mois**, soit un rapport d'environ **2,6×** et à peu près **730 € économisés sur un an**. C'est cette formule qui sert de point de comparaison ici plutôt que CloseOS Sales — moins chère à 18 € par mois en annuel — parce qu'elle inclut la signature électronique, présente dans la liste ci-dessus. C'est moins spectaculaire qu'un facteur dix, mais c'est un chiffre qu'un prospect peut vérifier ligne par ligne sans le démonter.
 
 ## Et pour une équipe de cinq personnes ?
 
@@ -46,10 +45,10 @@ Prenons une configuration courante : un propriétaire, deux closers et deux sett
 | CRM | Propriétaire + 2 closers | 36 € × 3 | 108 € |
 | Prise de rendez-vous | 2 closers + 2 setters | 15 € × 4 | 60 € |
 | Enregistrement des appels | 2 closers, minimum 2 sièges | 14 € × 2 | 28 € |
-| Emailing | Compte unique | forfait | ~60 € |
-| Signature électronique | Compte unique | forfait | ~25 € |
-| Facturation | Compte unique | forfait | ~9 € |
-| **Total** | | | **~290 €/mois** |
+| Emailing | Compte unique | forfait | ~60 € *(estimation)* |
+| Signature électronique | 3 utilisateurs | 9 € HT × 3 | 27 € |
+| Facturation | Compte unique | forfait | 9 € |
+| **Total** | | | **~292 €/mois** |
 
 Restent hors facture : l'attribution des leads faite à la main, les commissions calculées dans un tableur, les KPIs mis à jour manuellement, le tracking construit à la main et l'onboarding rédigé dans Notion. Ce sont précisément les postes les plus chers des comparatifs gonflés — et ceux que presque personne ne paie au démarrage.
 
@@ -57,7 +56,7 @@ En face, CloseOS Business revient à environ **105 € par mois** pour cette con
 
 ## Le vrai coût pour ceux qui ne paient rien
 
-La majorité des indépendants et des petites équipes ne dépensent ni 290 € ni 100 €. Ils bricolent : un tableur en guise de CRM, des formulaires gratuits pour qualifier, des notes prises à la main pendant les appels, un document partagé pour suivre l'équipe.
+La majorité des indépendants et des petites équipes ne dépensent ni 292 € ni 100 €. Ils bricolent : un tableur en guise de CRM, des formulaires gratuits pour qualifier, des notes prises à la main pendant les appels, un document partagé pour suivre l'équipe.
 
 Pour eux, l'argument du prix ne fonctionne pas — et il ne faut pas l'employer. Le coût réel est ailleurs :
 
@@ -77,7 +76,7 @@ Comptez une heure à une heure et demie par jour et par personne passée à reco
 
 | Votre situation | L'argument qui compte | Le chiffre |
 |---|---|---|
-| Vous payez déjà une vraie stack | L'économie directe | ~290 € → ~105 €, soit ~2 200 €/an |
+| Vous payez déjà une vraie stack | L'économie directe | ~292 € → ~105 €, soit ~2 200 €/an |
 | Vous bricolez en gratuit | La fin de la dispersion | Pas l'euro : le temps et les affaires perdues |
 
 Les deux ne se mélangent pas. Un comparatif de prix adressé à quelqu'un qui ne paie rien ne le concerne pas, et l'argument du chaos adressé à une équipe bien outillée sonne creux.
@@ -91,4 +90,6 @@ Quelques règles que nous nous imposons, et que vous pouvez appliquer à n'impor
 - **Ne pas compter le gratuit comme une économie.** Si personne ne paie pour cette fonction aujourd'hui, la remplacer ne fait économiser rien.
 - **Parler de besoins, pas de fonctionnalités.** CloseOS couvre ce dont une activité de closing a besoin. Il ne reproduit pas toute la profondeur d'un CRM d'entreprise, et le prétendre serait invérifiable.
 
-Les tarifs Pipedrive, Calendly et Fathom cités ici ont été relevés en juillet 2026 en facturation annuelle. Les montants de signature, d'emailing et de facturation sont donnés en ordre de grandeur. Un tarif concurrent change vite : si vous lisez cet article longtemps après sa publication, vérifiez les prix affichés chez les éditeurs concernés.
+Les tarifs Pipedrive, Calendly, Fathom, Youtrust et Abby cités ici ont été relevés en juillet 2026. Le montant Brevo est signalé comme une estimation, sa grille n'ayant pas pu être vérifiée directement. Un tarif concurrent change vite : si vous lisez cet article longtemps après sa publication, vérifiez les prix affichés chez les éditeurs concernés.
+
+Une précision utile sur la signature électronique : **Yousign est devenu Youtrust en 2026**, et sa formule web est facturée **par utilisateur** (9 € HT/mois), non au compte. C'est pourquoi le tableau d'équipe compte trois utilisateurs et non un forfait unique — une erreur fréquente dans les comparatifs, qui sous-estime le coût réel d'une équipe.
