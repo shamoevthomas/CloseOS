@@ -22,6 +22,8 @@ DEJA FAIT (dans le depot, NON DEPLOYE) :
   - blog /ressources, /glossaire et /guides construits (markdown -> pages)
   - 4 termes de glossaire ecrits (closer, setter, high ticket, taux de closing)
   - hubs /integrations, /cas-usage, /clients (markdown) + /comparatifs (edito)
+  - les 2 pages comparatifs passees en DA Business (elles etaient sombres
+    alors que leur hub etait clair) + tarifs iClosed retires (invérifiables)
   - maillage entrant : les 8 pages publiques lient glossaire/ressources/comparatifs
   - prix harmonises sur les 5 sources (schema, LP, tarifs, llms, comparatif)
   - 5 articles /ressources ecrits (4 en ligne, 1 en brouillon)
@@ -114,6 +116,9 @@ BLOC 0 — MAINTENANT (bloquant, avant tout le reste)
            "Organic Search" via le groupe de canaux par defaut. Creer un
            segment custom ferait doublon. A ne faire qu'en exploration.
        [ ] reste : valider les volumes des 20 mots-cles prioritaires
+       [ ] RESTENT EN DA SOMBRE (a basculer si vous voulez l'uniformite) :
+           /fonctionnalites, /fonctionnalites/crm-closer, /tarifs
+           Les 3 LP produit gardent volontairement leur DA propre.
        NOTE COMPTES : la Search Console est sous tekatubois@gmail.com,
        GA4 sous shamoevthomas@gmail.com. Les deux voient closeos.fr.
 

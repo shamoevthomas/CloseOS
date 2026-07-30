@@ -1,429 +1,307 @@
+/**
+ * /comparatifs/closeos-vs-iclosed — DA Business (fond #f4f2f1, Manrope, doodles).
+ *
+ * Même gabarit ContentShell que le hub /comparatifs et sa page sœur
+ * /comparatifs/alternative-iclosed.
+ *
+ * ⚠️ Le tableau tarifaire ne publie plus de prix iClosed : ils évoluent, nous ne les
+ * vérifions pas en continu, et une donnée périmée sur une page de comparaison détruit
+ * sa crédibilité. Les prix CloseOS viennent de la grille réelle (voir Tarifs.tsx) et
+ * distinguent mensuel et annuel, ce que l'ancienne version ne faisait pas.
+ */
+
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { ArrowRight, ChevronDown, Check, X, AlertTriangle } from 'lucide-react';
+import { ChevronDown, AlertTriangle } from 'lucide-react';
+import {
+  ContentShell, useContentSeo, DoodleTitle, CARD, BTN_PRIMARY, BTN_GHOST,
+} from '../contenu/ContentShell';
+import { DoodleCheck, DoodleCross, DoodleTarget } from '../../components/doodles';
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 32 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
-};
+const SITE = 'https://www.closeos.fr';
+const URL = `${SITE}/comparatifs/closeos-vs-iclosed`;
+const TITLE = 'CloseOS vs iClosed, Comparatif détaillé 2026';
+const DESC =
+  "Comparatif CloseOS vs iClosed : booking, CRM, appels, facturation, KPIs et gestion d'équipe. Ce que chaque outil couvre, et dans quels cas ils se complètent.";
+const VERIFIE_LE = '31 juillet 2026';
 
-const stagger = {
-  visible: { transition: { staggerChildren: 0.08 } },
+const LABELS: Record<string, string> = {
+  yes: 'Oui',
+  'yes-core': 'Cœur de métier',
+  'yes-advanced': 'Avancé',
+  'yes-dnd': 'Drag-and-drop',
+  'yes-hist': 'Historique complet',
+  'yes-voip': 'Appels illimités',
+  'yes-stripe': 'Stripe Connect',
+  'yes-biz': 'Formule Business',
+  'yes-acq': 'Business + Acquisition',
+  'yes-bi': 'Bidirectionnelle',
+  'yes-wh': 'Bidirectionnelle',
 };
 
 const featureRows: { cat: string; feature: string; iclosed: string; closeos: string }[] = [
   { cat: 'Booking', feature: 'Prise de rendez-vous en ligne', iclosed: 'yes-core', closeos: 'yes' },
-  { cat: 'Booking', feature: 'Formulaire de qualification pre-call', iclosed: 'yes-advanced', closeos: 'warn' },
+  { cat: 'Booking', feature: 'Formulaire de qualification avant l\'appel', iclosed: 'yes-advanced', closeos: 'warn' },
   { cat: 'Booking', feature: 'Scoring de leads', iclosed: 'yes', closeos: 'no' },
   { cat: 'Booking', feature: 'Assignation automatique aux closers', iclosed: 'yes', closeos: 'yes' },
   { cat: 'CRM', feature: 'Pipeline de vente visuel', iclosed: 'no', closeos: 'yes-dnd' },
   { cat: 'CRM', feature: 'Fiches prospects détaillées', iclosed: 'no', closeos: 'yes-hist' },
-  { cat: 'CRM', feature: 'Gestion des contacts', iclosed: 'no', closeos: 'yes' },
   { cat: 'CRM', feature: 'Import/export CSV', iclosed: 'no', closeos: 'yes' },
-  { cat: 'Appels', feature: 'Callroom VoIP intégrée', iclosed: 'no', closeos: 'yes-voip' },
+  { cat: 'Appels', feature: 'Call Room intégrée', iclosed: 'no', closeos: 'yes-voip' },
   { cat: 'Appels', feature: "Enregistrement d'appels", iclosed: 'no', closeos: 'yes' },
-  { cat: 'Appels', feature: 'Cockpit de session', iclosed: 'no', closeos: 'yes' },
   { cat: 'Finance', feature: 'Facturation automatique', iclosed: 'no', closeos: 'yes-stripe' },
-  { cat: 'Finance', feature: "Suivi du chiffre d'affaires", iclosed: 'no', closeos: 'yes' },
+  { cat: 'Finance', feature: 'Signature électronique + paiement', iclosed: 'no', closeos: 'yes' },
   { cat: 'KPIs', feature: 'Taux de closing', iclosed: 'no', closeos: 'yes' },
-  { cat: 'KPIs', feature: 'CA par appel', iclosed: 'no', closeos: 'yes' },
-  { cat: 'KPIs', feature: 'Objectifs personnalisés', iclosed: 'no', closeos: 'yes' },
+  { cat: 'KPIs', feature: 'Cash collecté', iclosed: 'no', closeos: 'yes' },
+  { cat: 'KPIs', feature: 'Objectifs par membre', iclosed: 'no', closeos: 'yes' },
   { cat: 'Équipe', feature: 'Gestion multi-rôles', iclosed: 'no', closeos: 'yes-biz' },
   { cat: 'Équipe', feature: 'KPIs par membre', iclosed: 'no', closeos: 'yes-biz' },
   { cat: 'Équipe', feature: 'Onboarding automatisé', iclosed: 'no', closeos: 'yes-biz' },
   { cat: 'Acquisition', feature: 'Campagnes avec tracking UTM', iclosed: 'no', closeos: 'yes-acq' },
-  { cat: 'Intégrations', feature: 'HubSpot', iclosed: 'no', closeos: 'yes-bi' },
-  { cat: 'Intégrations', feature: 'Pipedrive', iclosed: 'no', closeos: 'yes-bi' },
+  { cat: 'Intégrations', feature: 'HubSpot / Pipedrive', iclosed: 'no', closeos: 'yes-bi' },
   { cat: 'Intégrations', feature: 'Zapier / Make / n8n', iclosed: 'no', closeos: 'yes' },
-  { cat: 'Intégrations', feature: 'CloseOS ↔ iClosed', iclosed: 'dash', closeos: 'yes-wh' },
+  { cat: 'Intégrations', feature: 'CloseOS ↔ iClosed', iclosed: 'yes', closeos: 'yes-wh' },
   { cat: 'Langue', feature: 'Interface en français', iclosed: 'yes', closeos: 'yes' },
 ];
 
-function CellBadge({ value }: { value: string }) {
-  if (value === 'no') return <span className="inline-flex items-center gap-1.5 text-red-400 font-medium"><X className="h-4 w-4" /> Non</span>;
-  if (value === 'dash') return <span className="text-slate-500">—</span>;
-  if (value === 'warn') return <span className="inline-flex items-center gap-1.5 text-amber-400 font-medium"><AlertTriangle className="h-3.5 w-3.5" /> Basique</span>;
-  const labels: Record<string, string> = {
-    yes: 'Oui',
-    'yes-core': 'Cœur de métier',
-    'yes-advanced': 'Avancé',
-    'yes-dnd': 'Drag-and-drop',
-    'yes-hist': 'Historique complet',
-    'yes-voip': 'Appels illimités',
-    'yes-stripe': 'Stripe Connect',
-    'yes-biz': 'Business',
-    'yes-acq': 'Business + Acquisition',
-    'yes-bi': 'Bidirectionnelle',
-    'yes-wh': 'Webhook natif',
-  };
-  return <span className="inline-flex items-center gap-1.5 text-[#00E676] font-medium"><Check className="h-4 w-4" /> {labels[value] ?? 'Oui'}</span>;
-}
-
+/** Grille CloseOS réelle. Mensuel / annuel — voir src/pages/Tarifs.tsx. */
 const pricingRows = [
-  { label: 'Prix mensuel', iclosed: '~29€/mois', solo: '39€/mois', biz: '59€/mois', acq: '99€/mois' },
-  { label: 'Essai gratuit', iclosed: '14 jours', solo: '20 jours', biz: '20 jours', acq: '20 jours' },
-  { label: 'Booking', iclosed: 'yes', solo: 'yes', biz: 'yes', acq: 'yes' },
-  { label: 'CRM complet', iclosed: 'no', solo: 'yes', biz: 'yes', acq: 'yes' },
-  { label: 'Callroom VoIP', iclosed: 'no', solo: 'yes', biz: 'yes', acq: 'yes' },
-  { label: 'Facturation', iclosed: 'no', solo: 'yes', biz: 'yes', acq: 'yes' },
-  { label: "Gestion d'équipe", iclosed: 'no', solo: 'no', biz: 'yes', acq: 'yes' },
-  { label: 'Acquisition', iclosed: 'no', solo: 'no', biz: 'no', acq: 'yes' },
+  { label: 'Prix mensuel', solo: '39 €', biz: '59 €', acq: '99 €' },
+  { label: 'Prix en annuel', solo: '28 €', biz: '42 €', acq: '71 €' },
+  { label: 'Équipiers inclus', solo: '1', biz: '3', acq: '5' },
+  { label: 'Booking intégré', solo: 'yes', biz: 'yes', acq: 'yes' },
+  { label: 'CRM complet', solo: 'yes', biz: 'yes', acq: 'yes' },
+  { label: 'Call Room', solo: 'yes', biz: 'yes', acq: 'yes' },
+  { label: 'Facturation', solo: 'yes', biz: 'yes', acq: 'yes' },
+  { label: "Gestion d'équipe", solo: 'no', biz: 'yes', acq: 'yes' },
+  { label: "Système d'acquisition", solo: 'yes', biz: 'no', acq: 'yes' },
 ];
-
-function PricingCell({ value }: { value: string }) {
-  if (value === 'yes') return <Check className="h-4 w-4 text-[#00E676] mx-auto" />;
-  if (value === 'no') return <X className="h-4 w-4 text-red-400 mx-auto" />;
-  return <span>{value}</span>;
-}
 
 const faqItems = [
   {
-    q: 'Est-ce que CloseOS et iClosed sont des concurrents ?',
-    a: "Non. iClosed est un outil de booking et de qualification de leads (comparable à Calendly). CloseOS est un CRM complet pour closers (comparable à HubSpot spécialisé). Ils couvrent des étapes différentes du processus de vente et fonctionnent très bien ensemble.",
+    q: 'Est-ce que CloseOS et iClosed sont des concurrents ?',
+    a: "Non, et c'est le malentendu le plus courant sur ces deux outils. iClosed est une solution de prise de rendez-vous et de qualification de leads : sa fonction principale est de remplir l'agenda du closer avec des prospects déjà filtrés, comparable en cela à un Calendly enrichi d'un questionnaire. CloseOS est un CRM complet pour closers : il prend le relais une fois le rendez-vous pris, avec le pipeline de vente, la Call Room, les relances automatiques, la facturation, les KPIs de closing et, sur la formule Business, le pilotage d'une équipe de closers et de setters. Les deux couvrent donc deux moments différents du même cycle de vente. C'est pourquoi ils s'utilisent très bien ensemble : une synchronisation bidirectionnelle relie les deux outils, de sorte que les rendez-vous pris dans iClosed alimentent automatiquement le pipeline CloseOS.",
   },
   {
-    q: 'Puis-je utiliser les deux en même temps ?',
-    a: "Oui, c'est même recommandé pour les infopreneurs avec une équipe. iClosed gère la prise de rendez-vous qualifiés, CloseOS gère tout le reste (pipeline, appels, facturation, KPIs, équipe). Les deux se connectent via webhook natif.",
+    q: 'Puis-je utiliser les deux en même temps ?',
+    a: "Oui, et c'est même la configuration que nous recommandons aux infopreneurs qui disposent déjà d'une équipe et d'un setup iClosed rodé. La répartition des rôles est nette : iClosed continue de gérer la prise de rendez-vous et la qualification en amont, tandis que CloseOS gère tout ce qui suit — le pipeline de vente, les appels et leur enregistrement, les relances, la facturation, les KPIs individuels et collectifs, l'attribution des leads entre setters et closers et le calcul des commissions. La connexion se fait par une synchronisation bidirectionnelle native : chaque prospect, deal ou changement d'étape modifié d'un côté est reflété de l'autre en temps réel, sans double saisie ni réconciliation manuelle. Cette approche est aussi le chemin de migration le plus sûr, puisque rien n'est coupé pendant la transition.",
   },
   {
-    q: 'Quel est le meilleur CRM pour un closer en 2026 ?',
-    a: "Pour un closer francophone high-ticket, CloseOS est le seul CRM conçu spécifiquement pour ce métier. Les CRM généralistes (HubSpot, Pipedrive) fonctionnent mais nécessitent beaucoup de configuration et ne disposent pas de la callroom VoIP ni des KPIs de closing natifs.",
+    q: 'Quel est le meilleur CRM pour un closer en 2026 ?',
+    a: "Cela dépend de ce que vous faites. Pour un commercial en cycle long dans une PME, un CRM généraliste comme HubSpot ou Pipedrive reste pertinent : ils sont matures, bien documentés et couvrent large. Pour un closer francophone en high ticket, le besoin est différent : peu de prospects, un cycle court, beaucoup d'appels, des relances serrées et une rémunération à la commission. CloseOS Sales est conçu pour ce métier précis, avec une Call Room intégrée pour passer et enregistrer les appels, des KPIs de closing natifs — taux de closing, cash collecté, no-show — et une facturation reliée à Stripe. Un CRM généraliste peut être configuré pour s'en approcher, mais au prix d'un paramétrage long et de champs personnalisés à maintenir. La vraie question n'est donc pas quel CRM est le meilleur, mais lequel part de votre métier.",
   },
 ];
+
+function Cell({ value }: { value: string }) {
+  if (value === 'no') {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-stone-400">
+        <DoodleCross className="w-3.5 shrink-0" /> Non
+      </span>
+    );
+  }
+  if (value === 'warn') {
+    return (
+      <span className="inline-flex items-center gap-1.5 font-medium text-amber-700">
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> Basique
+      </span>
+    );
+  }
+  if (value === 'dash') return <span className="text-stone-400">—</span>;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-stone-600">
+      <DoodleCheck className="w-4 shrink-0 text-emerald-500" /> {LABELS[value] ?? 'Oui'}
+    </span>
+  );
+}
+
+function PricingCell({ value }: { value: string }) {
+  if (value === 'yes') return <DoodleCheck className="mx-auto w-4 text-emerald-500" />;
+  if (value === 'no') return <DoodleCross className="mx-auto w-3.5 text-stone-400" />;
+  return <span className="text-stone-600">{value}</span>;
+}
 
 export default function CloseosVsIclosed() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  useContentSeo({
+    title: TITLE,
+    description: DESC,
+    path: '/comparatifs/closeos-vs-iclosed',
+    indexable: true,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'CloseOS', item: SITE },
+          { '@type': 'ListItem', position: 2, name: 'Comparatifs', item: `${SITE}/comparatifs` },
+          { '@type': 'ListItem', position: 3, name: 'CloseOS vs iClosed', item: URL },
+        ],
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqItems.map((f) => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      },
+    ],
+  });
+
   useEffect(() => {
-    document.title = 'CloseOS vs iClosed, Comparatif détaillé 2026';
-    document.querySelector('meta[name="description"]')?.setAttribute('content', "CloseOS vs iClosed : quel outil choisir pour votre activité de closing ? Comparatif complet des fonctionnalités, tarifs et cas d'usage.");
-    document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed');
-    document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed');
-    document.getElementById('og-title')?.setAttribute('content', 'CloseOS vs iClosed, Comparatif détaillé 2026');
-    // Visuel dédié généré à la volée (api/og type=page) : une URL d'image traverse le prerender.
-    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/api/og?type=page&slug=comparatif&lang=fr');
-    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/api/og?type=page&slug=comparatif&lang=fr');
+    const img = `${SITE}/api/og?type=page&slug=comparatif&lang=fr`;
+    document.getElementById('og-image')?.setAttribute('content', img);
+    document.getElementById('tw-image')?.setAttribute('content', img);
     document.getElementById('og-image-alt')?.setAttribute('content', 'CloseOS vs iClosed');
-    document.getElementById('og-description')?.setAttribute('content', "CloseOS vs iClosed : quel outil choisir ? Comparatif complet des fonctionnalités, tarifs et cas d'usage.");
-    document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed');
-    document.getElementById('tw-title')?.setAttribute('content', 'CloseOS vs iClosed, Comparatif détaillé 2026');
-    document.getElementById('tw-description')?.setAttribute('content', 'Comparatif complet CloseOS vs iClosed : fonctionnalités, tarifs, cas d\'usage.');
-    document.documentElement.lang = 'fr';
-
-    document.querySelectorAll('script[data-vs-iclosed-ld]').forEach(el => el.remove());
-    const bc = document.createElement('script');
-    bc.type = 'application/ld+json';
-    bc.setAttribute('data-vs-iclosed-ld', 'true');
-    bc.textContent = JSON.stringify({
-      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Accueil', item: 'https://www.closeos.fr' },
-        { '@type': 'ListItem', position: 2, name: 'Comparatifs', item: 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed' },
-        { '@type': 'ListItem', position: 3, name: 'CloseOS vs iClosed', item: 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed' },
-      ]
-    });
-    document.head.appendChild(bc);
-
-    const faq = document.createElement('script');
-    faq.type = 'application/ld+json';
-    faq.setAttribute('data-vs-iclosed-ld', 'true');
-    faq.textContent = JSON.stringify({
-      '@context': 'https://schema.org', '@type': 'FAQPage',
-      mainEntity: [
-        { '@type': 'Question', name: 'Est-ce que CloseOS et iClosed sont des concurrents ?', acceptedAnswer: { '@type': 'Answer', text: "Non, et c'est le malentendu le plus courant sur ces deux outils. iClosed est une solution de prise de rendez-vous et de qualification de leads : sa fonction principale est de remplir l'agenda du closer avec des prospects déjà filtrés, comparable en cela à un Calendly enrichi d'un questionnaire. CloseOS est un CRM complet pour closers : il prend le relais une fois le rendez-vous pris, avec le pipeline de vente, la Call Room, les relances automatiques, la facturation, les KPIs de closing et, sur la formule Business, le pilotage d'une équipe de closers et de setters. Les deux couvrent donc deux moments différents du même cycle de vente. C'est pourquoi ils s'utilisent très bien ensemble : une synchronisation bidirectionnelle relie les deux outils, de sorte que les rendez-vous pris dans iClosed alimentent automatiquement le pipeline CloseOS." } },
-        { '@type': 'Question', name: 'Puis-je utiliser les deux en même temps ?', acceptedAnswer: { '@type': 'Answer', text: "Oui, et c'est même la configuration que nous recommandons aux infopreneurs qui disposent déjà d'une équipe et d'un setup iClosed rodé. La répartition des rôles est nette : iClosed continue de gérer la prise de rendez-vous et la qualification en amont, tandis que CloseOS gère tout ce qui suit — le pipeline de vente, les appels et leur enregistrement, les relances, la facturation, les KPIs individuels et collectifs, l'attribution des leads entre setters et closers et le calcul des commissions. La connexion se fait par une synchronisation bidirectionnelle native : chaque prospect, deal ou changement d'étape modifié d'un côté est reflété de l'autre en temps réel, sans double saisie ni réconciliation manuelle. Cette approche est aussi le chemin de migration le plus sûr, puisque rien n'est coupé pendant la transition et que vous conservez vos habitudes d'équipe." } },
-        { '@type': 'Question', name: 'Quel est le meilleur CRM pour un closer en 2026 ?', acceptedAnswer: { '@type': 'Answer', text: "Cela dépend de ce que vous faites. Pour un commercial en cycle long dans une PME, un CRM généraliste comme HubSpot ou Pipedrive reste pertinent : ils sont matures, bien documentés et couvrent large. Pour un closer francophone en high ticket, le besoin est différent : peu de prospects, un cycle court, beaucoup d'appels, des relances serrées et une rémunération à la commission. CloseOS Sales est conçu pour ce métier précis, avec une Call Room intégrée pour passer et enregistrer les appels, des KPIs de closing natifs — taux de closing, cash collecté, no-show — et une facturation reliée à Stripe. Un CRM généraliste peut être configuré pour s'en approcher, mais au prix d'un paramétrage long et de champs personnalisés à maintenir. La vraie question n'est donc pas quel CRM est le meilleur, mais lequel part de votre métier." } },
-      ]
-    });
-    document.head.appendChild(faq);
-
-    return () => { document.querySelectorAll('script[data-vs-iclosed-ld]').forEach(el => el.remove()); };
   }, []);
 
+  let lastCat = '';
+
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100">
-      {/* Nav */}
-      <nav className="fixed top-0 z-50 w-full border-b border-white/5 bg-[#020617]/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <Link to="/"><img src="/logo-sales.png" alt="CloseOS" className="h-10 w-auto" width={100} height={40} /></Link>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
-            <Link to="/landing" className="hover:text-white transition-colors">Sales</Link>
-            <Link to="/business" className="hover:text-white transition-colors">Business</Link>
-            <Link to="/fonctionnalites" className="hover:text-white transition-colors">Fonctionnalités</Link>
-            <Link to="/tarifs" className="hover:text-white transition-colors">Tarifs</Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link to="/login" className="hidden sm:flex items-center rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white hover:bg-white/10">Connexion</Link>
-            <Link to="/register" className="group flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-950 hover:bg-blue-50 transition-all">Essai gratuit <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /></Link>
-          </div>
-        </div>
-      </nav>
+    <ContentShell breadcrumb={{ label: 'Comparatifs', to: '/comparatifs' }}>
+      <DoodleTitle squiggle="iClosed">CloseOS vs</DoodleTitle>
 
-      {/* <main> : delimite le contenu principal pour les extracteurs (crawlers IA, lecteurs d'ecran). Sans lui, rien ne distingue le texte de navigation du contenu. */}
-      <main>
+      <p className="mt-7 max-w-2xl text-lg leading-relaxed text-stone-600">
+        iClosed est un outil de prise de rendez-vous et de qualification de leads. CloseOS est un CRM
+        complet pour closers, avec pipeline, appels, facturation, KPIs et pilotage d'équipe. Ils
+        interviennent à deux moments différents du cycle de vente — voici lesquels, fonctionnalité par
+        fonctionnalité.
+      </p>
 
-      {/* Hero */}
-      <motion.section
-        className="pt-24 pb-16 px-6"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={stagger}
-      >
-        <div className="mx-auto max-w-4xl text-center">
-          <motion.p variants={fadeUp} className="mb-4 text-sm font-semibold uppercase tracking-wider text-[#00E676]">
-            Comparatif 2026
-          </motion.p>
-          <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
-            CloseOS vs iClosed <span className="text-slate-400">:</span><br />
-            <span className="text-slate-400">Quel outil pour votre activité de closing ?</span>
-          </motion.h1>
-          <motion.p variants={fadeUp} className="mx-auto mt-6 max-w-2xl text-lg text-slate-400 leading-relaxed">
-            CloseOS et iClosed sont deux outils présents dans l'écosystème francophone du closing, mais ils ne font pas la même chose. iClosed est un outil de booking et de qualification de leads. CloseOS est un CRM complet pour closers avec pipeline, callroom VoIP, facturation et gestion d'équipe. Ce comparatif vous aide à comprendre quel outil correspond à votre besoin, ou si vous devriez utiliser les deux.
-          </motion.p>
-        </div>
-      </motion.section>
-
-      {/* Summary cards */}
-      <motion.section
-        className="px-6 pb-20"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={stagger}
-      >
-        <div className="mx-auto max-w-5xl">
-          <motion.h2 variants={fadeUp} className="text-3xl font-bold text-center mb-10">Résumé rapide</motion.h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* iClosed card */}
-            <motion.div variants={fadeUp} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <h3 className="text-xl font-bold mb-4">iClosed</h3>
-              <ul className="space-y-3 text-sm text-slate-300">
-                <li><span className="font-semibold text-slate-100">Catégorie :</span> Outil de booking et qualification de leads</li>
-                <li><span className="font-semibold text-slate-100">Comparable à :</span> Calendly enrichi de fonctionnalités de vente</li>
-                <li><span className="font-semibold text-[#00E676]">Point fort :</span> Prise de rendez-vous qualifiés, formulaires de scoring</li>
-                <li><span className="font-semibold text-red-400">Point faible :</span> Pas de CRM, pas de pipeline, pas de facturation, pas de gestion d'équipe</li>
-              </ul>
-            </motion.div>
-            {/* CloseOS card */}
-            <motion.div variants={fadeUp} className="rounded-2xl border border-[#00E676]/30 bg-white/5 p-6">
-              <h3 className="text-xl font-bold mb-4">CloseOS</h3>
-              <ul className="space-y-3 text-sm text-slate-300">
-                <li><span className="font-semibold text-slate-100">Catégorie :</span> CRM tout-en-un pour closers</li>
-                <li><span className="font-semibold text-slate-100">Comparable à :</span> HubSpot/Pipedrive spécialisé pour le closing high-ticket</li>
-                <li><span className="font-semibold text-[#00E676]">Point fort :</span> Pipeline complet, callroom VoIP, facturation, KPIs, gestion d'équipe</li>
-                <li><span className="font-semibold text-red-400">Point faible :</span> Booking moins poussé que iClosed (pas de scoring de leads intégré)</li>
-              </ul>
-            </motion.div>
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Feature comparison table */}
-      <motion.section
-        className="px-6 pb-20"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
-        variants={stagger}
-      >
-        <div className="mx-auto max-w-5xl">
-          <motion.h2 variants={fadeUp} className="text-3xl font-bold text-center mb-10">Comparaison fonctionnalité par fonctionnalité</motion.h2>
-          <motion.div variants={fadeUp} className="overflow-x-auto rounded-2xl border border-white/10">
-            <table className="min-w-[700px] w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10 bg-white/5">
-                  <th className="px-4 py-3 text-left font-semibold text-slate-400">Catégorie</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-400">Fonctionnalité</th>
-                  <th className="px-4 py-3 text-center font-semibold text-slate-400">iClosed</th>
-                  <th className="px-4 py-3 text-center font-semibold text-slate-400">CloseOS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {featureRows.map((row, i) => (
-                  <tr key={i} className={`border-b border-white/5 ${i % 2 === 0 ? 'bg-white/[0.02]' : ''}`}>
-                    <td className="px-4 py-3 font-medium text-slate-300">{row.cat}</td>
-                    <td className="px-4 py-3 text-slate-300">{row.feature}</td>
-                    <td className="px-4 py-3 text-center"><CellBadge value={row.iclosed} /></td>
-                    <td className="px-4 py-3 text-center"><CellBadge value={row.closeos} /></td>
+      <div className="relative mt-16">
+        <DoodleTarget className="pointer-events-none absolute -right-10 -top-6 hidden w-16 text-[#8a43e1]/30 lg:block" />
+        <h2 className="text-2xl font-extrabold tracking-[-0.02em] text-[#111111]">
+          Comparaison fonctionnalité par fonctionnalité
+        </h2>
+        <p className="mt-3 text-sm text-stone-500">Périmètre fonctionnel vérifié le {VERIFIE_LE}.</p>
+        <div className="mt-6 overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+          <table className="w-full min-w-[640px] border-collapse text-sm">
+            <thead>
+              <tr className="bg-stone-50">
+                <th className="border-b border-stone-200 p-4 text-left font-bold text-[#111111]">Fonctionnalité</th>
+                <th className="border-b border-stone-200 p-4 text-left font-bold text-[#111111]">iClosed</th>
+                <th className="border-b border-stone-200 p-4 text-left font-bold text-[#111111]">CloseOS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {featureRows.map((row) => {
+                const showCat = row.cat !== lastCat;
+                lastCat = row.cat;
+                return (
+                  <tr key={row.feature}>
+                    <td className="border-b border-stone-100 p-4 font-medium text-[#111111]">
+                      {showCat && (
+                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-stone-400">
+                          {row.cat}
+                        </span>
+                      )}
+                      {row.feature}
+                    </td>
+                    <td className="border-b border-stone-100 p-4"><Cell value={row.iclosed} /></td>
+                    <td className="border-b border-stone-100 p-4"><Cell value={row.closeos} /></td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </motion.div>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </motion.section>
+      </div>
 
-      {/* Scenarios */}
-      <motion.section
-        className="px-6 pb-20"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={stagger}
-      >
-        <div className="mx-auto max-w-4xl">
-          <motion.h2 variants={fadeUp} className="text-3xl font-bold text-center mb-10">Quel outil choisir selon votre situation</motion.h2>
-          <div className="grid sm:grid-cols-2 gap-6">
-            <motion.div variants={fadeUp} className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <h3 className="text-lg font-bold mb-3">Vous êtes setter ou appointment setter</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">iClosed est probablement suffisant. Votre job est de qualifier les leads et les passer aux closers.</p>
-            </motion.div>
-            <motion.div variants={fadeUp} className="rounded-2xl border border-[#00E676]/30 bg-white/5 p-6">
-              <h3 className="text-lg font-bold mb-3">Vous êtes closer indépendant</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">CloseOS Sales est fait pour vous. Pipeline, appels et facturation. Si vous recevez vos leads via iClosed, connectez les deux.</p>
-            </motion.div>
-            <motion.div variants={fadeUp} className="rounded-2xl border border-[#00E676]/30 bg-white/5 p-6">
-              <h3 className="text-lg font-bold mb-3">Vous êtes infopreneur avec une équipe de vente</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">CloseOS Business + iClosed est la combinaison idéale. iClosed pour les rendez-vous, CloseOS pour piloter l'équipe.</p>
-            </motion.div>
-            <motion.div variants={fadeUp} className="rounded-2xl border border-[#00E676]/30 bg-white/5 p-6">
-              <h3 className="text-lg font-bold mb-3">Vous voulez tout simplifier</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">CloseOS seul peut couvrir booking + CRM + facturation + KPIs. Un outil de moins.</p>
-            </motion.div>
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Pricing comparison */}
-      <motion.section
-        className="px-6 pb-20"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
-        variants={stagger}
-      >
-        <div className="mx-auto max-w-5xl">
-          <motion.h2 variants={fadeUp} className="text-3xl font-bold text-center mb-10">Comparaison des tarifs</motion.h2>
-          <motion.div variants={fadeUp} className="overflow-x-auto rounded-2xl border border-white/10">
-            <table className="min-w-[700px] w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10 bg-white/5">
-                  <th className="px-4 py-3 text-left font-semibold text-slate-400" />
-                  <th className="px-4 py-3 text-center font-semibold text-slate-400">iClosed</th>
-                  <th className="px-4 py-3 text-center font-semibold text-slate-400">CloseOS Solo</th>
-                  <th className="px-4 py-3 text-center font-semibold text-slate-400">CloseOS Business</th>
-                  <th className="px-4 py-3 text-center font-semibold text-[#00E676]">Business + Acquisition</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pricingRows.map((row, i) => (
-                  <tr key={i} className={`border-b border-white/5 ${i % 2 === 0 ? 'bg-white/[0.02]' : ''}`}>
-                    <td className="px-4 py-3 font-medium text-slate-300">{row.label}</td>
-                    <td className="px-4 py-3 text-center text-slate-300"><PricingCell value={row.iclosed} /></td>
-                    <td className="px-4 py-3 text-center text-slate-300"><PricingCell value={row.solo} /></td>
-                    <td className="px-4 py-3 text-center text-slate-300"><PricingCell value={row.biz} /></td>
-                    <td className="px-4 py-3 text-center text-slate-300"><PricingCell value={row.acq} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </motion.div>
-        </div>
-      </motion.section>
-
-      {/* FAQ */}
-      <motion.section
-        className="px-6 pb-20"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={stagger}
-      >
-        <div className="mx-auto max-w-3xl">
-          <motion.h2 variants={fadeUp} className="text-3xl font-bold text-center mb-10">Questions fréquentes</motion.h2>
-          <div className="space-y-3">
-            {faqItems.map((item, i) => (
-              <motion.div key={i} variants={fadeUp} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="flex w-full items-center justify-between px-6 py-4 text-left font-semibold text-slate-100 hover:bg-white/5 transition-colors"
-                >
-                  <span>{item.q}</span>
-                  <ChevronDown className={`h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200 ${openFaq === i ? 'rotate-180' : ''}`} />
-                </button>
-                <div
-                  className={`overflow-hidden transition-all duration-300 ${openFaq === i ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}
-                >
-                  <p className="px-6 pb-5 text-sm text-slate-400 leading-relaxed">{item.a}</p>
-                </div>
-              </motion.div>
+      <h2 className="mt-16 text-2xl font-extrabold tracking-[-0.02em] text-[#111111]">Les formules CloseOS</h2>
+      <p className="mt-3 max-w-2xl leading-relaxed text-stone-600">
+        Nous ne publions pas les tarifs d'iClosed : ils évoluent et nous ne les vérifions pas en continu.
+        Voici en revanche la grille CloseOS, en mensuel et en annuel.
+      </p>
+      <div className="mt-6 overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+        <table className="w-full min-w-[560px] border-collapse text-center text-sm">
+          <thead>
+            <tr className="bg-stone-50">
+              <th className="border-b border-stone-200 p-4 text-left font-bold text-[#111111]"> </th>
+              <th className="border-b border-stone-200 p-4 font-bold text-[#111111]">Solo</th>
+              <th className="border-b border-stone-200 p-4 font-bold text-[#111111]">Business</th>
+              <th className="border-b border-stone-200 p-4 font-bold text-[#111111]">Business + Acquisition</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pricingRows.map((row) => (
+              <tr key={row.label}>
+                <td className="border-b border-stone-100 p-4 text-left font-medium text-[#111111]">{row.label}</td>
+                <td className="border-b border-stone-100 p-4"><PricingCell value={row.solo} /></td>
+                <td className="border-b border-stone-100 p-4"><PricingCell value={row.biz} /></td>
+                <td className="border-b border-stone-100 p-4"><PricingCell value={row.acq} /></td>
+              </tr>
             ))}
-          </div>
-        </div>
-      </motion.section>
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs text-stone-400">
+        Grille complète, sièges supplémentaires et CloseOS Sign sur la{' '}
+        <Link to="/tarifs" className="font-semibold text-[#111111] underline decoration-amber-400 decoration-2 underline-offset-4">
+          page Tarifs
+        </Link>.
+      </p>
 
-      {/* CTA */}
-      <motion.section
-        className="px-6 pb-24"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={stagger}
-      >
-        <div className="mx-auto max-w-3xl text-center">
-          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-extrabold mb-4">
-            Faites le test vous-même.
-          </motion.h2>
-          <motion.p variants={fadeUp} className="text-lg text-slate-400 mb-8">
-            Essayez CloseOS gratuitement pendant 20 jours et comparez.
-          </motion.p>
-          <motion.div variants={fadeUp}>
-            <Link
-              to="/register"
-              className="group inline-flex items-center gap-2 rounded-full bg-[#00E676] px-8 py-3.5 text-base font-bold text-slate-950 hover:brightness-110 transition-all"
+      <h2 className="mt-16 text-2xl font-extrabold tracking-[-0.02em] text-[#111111]">Quel outil selon votre situation</h2>
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className={CARD}>
+          <h3 className="font-bold text-[#111111]">Votre agenda est vide</h3>
+          <p className="mt-2 text-sm leading-relaxed text-stone-600">
+            Le problème est en amont. Un outil de qualification comme iClosed est pertinent — ou le booking
+            intégré de CloseOS si vous voulez éviter un abonnement de plus.
+          </p>
+        </div>
+        <div className={CARD}>
+          <h3 className="font-bold text-[#111111]">Vous perdez des prospects après l'appel</h3>
+          <p className="mt-2 text-sm leading-relaxed text-stone-600">
+            Il vous manque un pipeline et des relances, pas un meilleur outil de booking. C'est le périmètre
+            de CloseOS Sales.
+          </p>
+        </div>
+        <div className={CARD}>
+          <h3 className="font-bold text-[#111111]">Quelqu'un vend pour vous</h3>
+          <p className="mt-2 text-sm leading-relaxed text-stone-600">
+            Attribution des leads, KPIs par membre, commissions : aucun outil de prise de rendez-vous ne
+            traite ça. C'est CloseOS Business.
+          </p>
+        </div>
+      </div>
+
+      <h2 className="mt-16 text-2xl font-extrabold tracking-[-0.02em] text-[#111111]">Questions fréquentes</h2>
+      <div className="mt-6 space-y-3">
+        {faqItems.map((item, i) => (
+          <div key={item.q} className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
+            <button
+              onClick={() => setOpenFaq(openFaq === i ? null : i)}
+              className="flex w-full items-center justify-between gap-4 p-5 text-left"
+              aria-expanded={openFaq === i}
             >
-              Démarrer l'essai gratuit
-              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
-        </div>
-      </motion.section>
-
-      {/* Internal links */}
-      <motion.section
-        className="px-6 pb-16"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={stagger}
-      >
-        <div className="mx-auto max-w-3xl">
-          <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-3 text-sm">
-            <Link to="/tarifs" className="rounded-full border border-white/10 px-4 py-2 text-slate-400 hover:text-white hover:border-white/30 transition-colors">Tarifs</Link>
-            <Link to="/fonctionnalites/crm-closer" className="rounded-full border border-white/10 px-4 py-2 text-slate-400 hover:text-white hover:border-white/30 transition-colors">CRM Closer</Link>
-            <Link to="/landing" className="rounded-full border border-white/10 px-4 py-2 text-slate-400 hover:text-white hover:border-white/30 transition-colors">CloseOS Sales</Link>
-            <Link to="/business" className="rounded-full border border-white/10 px-4 py-2 text-slate-400 hover:text-white hover:border-white/30 transition-colors">CloseOS Business</Link>
-            <Link to="/comparatifs/alternative-iclosed" className="rounded-full border border-white/10 px-4 py-2 text-slate-400 hover:text-white hover:border-white/30 transition-colors">Alternatives à iClosed</Link>
-          </motion.div>
-        </div>
-      </motion.section>
-
-      {/* Footer */}
-      </main>
-      <footer className="border-t border-white/5 bg-[#020617] py-6 pb-16">
-        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <img src="/logo-sales.png" alt="CloseOS" className="h-6 w-auto" loading="lazy" width={72} height={24} />
-          <div className="flex flex-wrap justify-center gap-4 text-xs text-slate-500">
-            <span>&copy; 2026 CloseOS.fr</span><span className="hidden sm:inline">&bull;</span>
-            <a href="/glossaire" className="hover:text-white transition-colors">Glossaire</a>
-            <span className="hidden sm:inline">&bull;</span>
-            <a href="/ressources" className="hover:text-white transition-colors">Ressources</a>
-            <span className="hidden sm:inline">&bull;</span>
-            <a href="/comparatifs" className="hover:text-white transition-colors">Comparatifs</a>
-            <span className="hidden sm:inline">&bull;</span>
-            <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</a><span className="hidden sm:inline">&bull;</span>
-            <a href="/cgu" className="hover:text-white transition-colors">CGU</a><span className="hidden sm:inline">&bull;</span>
-            <a href="/cgv" className="hover:text-white transition-colors">CGV</a><span className="hidden sm:inline">&bull;</span>
-            <a href="/confidentialite" className="hover:text-white transition-colors">Confidentialité</a>
+              <span className="font-bold text-[#111111]">{item.q}</span>
+              <ChevronDown
+                className={`h-5 w-5 shrink-0 text-stone-400 transition-transform duration-200 ${openFaq === i ? 'rotate-180' : ''}`}
+              />
+            </button>
+            <div className={`overflow-hidden px-5 transition-all duration-300 ${openFaq === i ? 'max-h-[40rem] pb-5' : 'max-h-0'}`}>
+              <p className="leading-relaxed text-stone-600">{item.a}</p>
+            </div>
           </div>
-          <div className="flex gap-6 text-xs">
-            <a href="https://www.linkedin.com/in/thomas-shamoev-570885237/" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-white transition-colors">LinkedIn</a>
-            <a href="mailto:support@closeos.fr" className="text-slate-500 hover:text-white transition-colors">support@closeos.fr</a>
-          </div>
+        ))}
+      </div>
+
+      <div className="mt-16 rounded-2xl border border-stone-200 bg-white p-8">
+        <h2 className="text-2xl font-extrabold tracking-[-0.02em] text-[#111111]">Faites le test vous-même</h2>
+        <p className="mt-3 max-w-xl leading-relaxed text-stone-600">
+          Un comparatif ne remplace pas un essai. CloseOS s'essaie gratuitement, sans engagement, et se
+          connecte à iClosed si vous voulez garder les deux.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link to="/tarifs" className={BTN_PRIMARY}>Voir les tarifs</Link>
+          <Link to="/comparatifs/alternative-iclosed" className={BTN_GHOST}>Alternative à iClosed</Link>
+          <Link to="/ressources/iclosed-avis" className={BTN_GHOST}>Comprendre iClosed</Link>
         </div>
-      </footer>
-    </div>
+      </div>
+    </ContentShell>
   );
 }
