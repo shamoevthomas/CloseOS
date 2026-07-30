@@ -100,6 +100,41 @@ BLOC 0 — MAINTENANT (bloquant, avant tout le reste)
        NOTE COMPTES : la Search Console est sous tekatubois@gmail.com,
        GA4 sous shamoevthomas@gmail.com. Les deux voient closeos.fr.
 
+[ ] 4bis. INDEXATION — 4 PAGES MAJEURES BLOQUEES  <<< PRIORITE
+       Constat GSC du 30/07 : 10 pages indexees, 16 non indexees.
+       Sur les 16, 11 sont NORMALES et voulues :
+         5  bloquees par robots.txt      -> pages applicatives, voulu
+         3  pages avec redirection       -> /landing, www/sign, sign racine
+         3  balise canonique correcte    -> doublons d'hote, voulu
+       Les 5 restantes sont le vrai probleme :
+         4  "Exploree, actuellement non indexee"
+         1  "Detectee, actuellement non indexee"
+
+       LES 4 PAGES EXPLOREES MAIS NON INDEXEES :
+         /fonctionnalites                  explore le 6 juin 2026
+         /sales                            explore le 4 avril 2026
+         /comparatifs/closeos-vs-iclosed   explore le 30 mars 2026
+         /tarifs                           explore le 28 mars 2026
+
+       >>> EXPLICATION : Google les a explorees AVANT les correctifs.
+           /sales avait encore canonical -> / (elle s'auto-annulait), les
+           autres datent de mars-juin, avant les FAQ etoffees et <main>.
+           Le contenu qu'il a vu n'est plus celui qui est en ligne.
+
+       [x] reindexation demandee pour /sales   (30/07)
+       [x] reindexation demandee pour /tarifs  (30/07)
+       [ ] A FAIRE MANUELLEMENT — ~30 s chacune :
+           GSC > Inspection de l'URL > coller l'URL > DEMANDER UNE INDEXATION
+             https://www.closeos.fr/fonctionnalites
+             https://www.closeos.fr/comparatifs/closeos-vs-iclosed
+           (le champ de recherche GSC refusait mes saisies successives)
+       [ ] Les pages NOUVELLES (glossaire, ressources, comparatifs...) n'ont
+           pas besoin de demande manuelle : elles sont dans le sitemap et ont
+           ete notifiees a IndexNow. Google les decouvrira seul.
+
+       RAPPEL : demander une indexation est une INCITATION, pas une garantie.
+       Google reste libre de ne pas indexer. Compter en jours ou semaines.
+
 [ ] 5. AUDIT DE PERFORMANCE — jamais fait, les cibles actuelles sont des
        standards, pas un diagnostic.
        [ ] lancer /seo-technical ou /seo-page sur /, /business, /tarifs
