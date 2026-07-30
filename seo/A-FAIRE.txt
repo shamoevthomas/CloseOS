@@ -76,13 +76,30 @@ BLOC 0 — MAINTENANT (bloquant, avant tout le reste)
        [x] tableau KPI de SEO-STRATEGY.md rempli, multiplicateurs convertis
            en valeurs absolues
        [x] analyse ajoutee : 64 % des clics sont des requetes de MARQUE
-       >>> TROIS CONSTATS A EXPLOITER :
-           1. "sales os" = 231 impressions et 0 clic. Premiere source
-              d'impressions du site, conversion nulle. A inspecter.
-           2. "iclosed alternative" = seule requete non-marque qui clique.
-              La strategie de comparatifs est validee par les donnees.
-           3. La marque s'ecrit de 4 facons (close os, closer os, closeros,
-              closeo) : confirme le probleme de desambiguisation GEO.
+       >>> LECTURE CORRIGEE LE 30/07, APRES RELEVE DES POSITIONS :
+           requete              clics  impr.   CTR     position
+           closeos                48     82   58,5 %      1,0
+           close os               39     79   49,4 %      1,5
+           closer os              15     74   20,3 %      3,9
+           iclosed alternative     3     15   20 %        4,2
+           closeros                1     31    3,2 %      6,2
+           closeo                  1      5   20 %       17,4
+           iclosed                 0     46    0 %       18,8
+           sales os                0    231    0 %       53,7
+
+           1. "sales os" : je l'avais presente comme la premiere chose a
+              exploiter. C'ETAIT FAUX — position 53,7, soit page 5-6. Un CTR
+              de 0 % y est normal. Ce sont des impressions de bruit, pas une
+              opportunite. J'avais conclu sans regarder la position.
+           2. "iclosed" SEUL : position 18,8, page 2, 46 impressions, 0 clic.
+              >>> LA VRAIE OPPORTUNITE. "iclosed alternative" est en position
+              4,2 avec 20 % de CTR : la page comparative marche tres bien.
+              Mais rien ne ciblait "iclosed" tout court, 3x plus recherche.
+              [x] page /ressources/iclosed-avis ecrite le 31/07
+           3. Fautes d'orthographe de la marque : "closeros" position 6,2 et
+              "closeo" 17,4. Vous devriez etre 1er sur vos propres variantes.
+              Quelqu'un vous devance sur votre marque mal ecrite.
+              -> renforce la priorite de la tache 61 (desambiguisation).
        [x] GA4 : evenement cle "essai_gratuit" cree (declencheur = page_view
            dont l'URL contient /return, donc les retours de checkout Sales ET
            Business). Valeur monetaire par defaut retiree : la laisser a 1 $

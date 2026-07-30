@@ -160,7 +160,26 @@ Relevé Search Console sur 3 mois (29/04/2026 → 28/07/2026), propriété de do
 
 **Une seule requête non-marque produit des clics** : `iclosed alternative`, 3 clics pour 15 impressions. C'est peu, mais c'est le signal le plus encourageant du relevé : **la seule page de comparaison existante fonctionne.** Elle valide toute la stratégie de comparatifs du calendrier.
 
-**`sales os` : 231 impressions, 0 clic.** C'est de loin la première source d'impressions du site, et elle ne convertit pas du tout. Deux hypothèses : soit CloseOS apparaît trop bas, soit le résultat affiché ne correspond pas à l'intention de recherche. À inspecter en priorité — 231 impressions gratuites qui ne rapportent rien.
+~~**`sales os` : 231 impressions, 0 clic.**~~ ⚠️ **Correction du 30/07 après relevé des positions.** La position moyenne sur cette requête est de **53,7** — page 5 ou 6. Un CTR de 0 % y est parfaitement normal, ce n'est pas une opportunité gâchée mais du bruit d'impressions. Je l'avais présenté comme le premier constat à exploiter : c'était faux, faute d'avoir regardé la position avant de conclure.
+
+**Les positions changent complètement la lecture.** Voici le relevé complet :
+
+| Requête | Clics | Impr. | CTR | Position |
+|---|---|---|---|---|
+| `closeos` | 48 | 82 | 58,5 % | **1,0** |
+| `close os` | 39 | 79 | 49,4 % | **1,5** |
+| `closer os` | 15 | 74 | 20,3 % | **3,9** |
+| `iclosed alternative` | 3 | 15 | 20 % | **4,2** |
+| `closeros` | 1 | 31 | 3,2 % | 6,2 |
+| `closeo` | 1 | 5 | 20 % | 17,4 |
+| `iclosed` | 0 | 46 | 0 % | **18,8** |
+| `sales os` | 0 | 231 | 0 % | 53,7 |
+
+**Les deux vraies opportunités, elles, sautent aux yeux :**
+
+**1. `iclosed` seul — position 18,8, page 2, 46 impressions.** La requête de marque du concurrent. `iclosed alternative` est en position 4,2 avec 20 % de CTR : la page comparative fonctionne remarquablement. Mais rien ne cible `iclosed` tout court, qui est pourtant trois fois plus recherché. Passer de la page 2 à la page 1 sur cette requête est le gain le plus accessible du site.
+
+**2. Les fautes d'orthographe de la marque coûtent des clics maintenant.** `closeros` est en position 6,2 et `closeo` en 17,4 — sur des variantes de votre propre nom. Vous devriez y être premier. Quelqu'un d'autre vous devance sur votre propre marque mal écrite.
 
 **La marque s'écrit de quatre façons différentes.** `close os`, `closer os`, `closeros`, `closeo` : les utilisateurs ne savent pas l'orthographier. C'est la confirmation directe du problème de désambiguïsation identifié en GEO (`GEO-ANALYSIS.md` §5) — et ça se règle par la répétition d'une graphie unique, pas par du contenu.
 
