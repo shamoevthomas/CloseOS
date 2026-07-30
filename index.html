@@ -27,15 +27,28 @@
   <script>
     gtag('js', new Date());
     // Pages publiques autorisees pour le tracking GA
-    var GA_PUBLIC = ['/', '/landing', '/sales', '/business', '/tarifs', '/fonctionnalites',
-      '/login', '/register', '/checkout', '/mentions-legales', '/cgu', '/cgv',
+    // ⚠️ Une page absente de cette liste n'envoie AUCUN page_view. Deux consequences
+    // qui ont ete corrigees le 30/07/2026 :
+    //  - /return et /welcome-founder n'y etaient pas : aucune conversion Sales
+    //    n'etait mesurable. L'evenement cle GA4 "essai_gratuit" se declenche sur
+    //    un page_view dont l'URL contient /return — il lui faut donc ces pages.
+    //  - le contenu editorial (glossaire, ressources, guides…) n'y etait pas non
+    //    plus : le blog ne produisait aucune donnee d'audience.
+    var GA_PUBLIC = ['/', '/landing', '/sales', '/business', '/sign', '/tarifs',
+      '/fonctionnalites', '/comparatifs', '/glossaire', '/ressources', '/guides',
+      '/integrations', '/cas-usage', '/clients',
+      '/login', '/register', '/checkout', '/return', '/welcome-founder',
+      '/mentions-legales', '/cgu', '/cgv',
       '/confidentialite', '/business/login', '/business/checkout', '/business/return',
       '/business/politique-utilisation', '/business/register'];
+    var GA_PUBLIC_PREFIXES = ['/fonctionnalites/', '/comparatifs/', '/glossaire/',
+      '/ressources/', '/guides/', '/integrations/', '/cas-usage/', '/clients/',
+      '/capture/', '/book/'];
     function isPublicPage(p) {
       if (GA_PUBLIC.indexOf(p) !== -1) return true;
-      if (p.indexOf('/fonctionnalites/') === 0) return true;
-      if (p.indexOf('/capture/') === 0) return true;
-      if (p.indexOf('/book/') === 0) return true;
+      for (var i = 0; i < GA_PUBLIC_PREFIXES.length; i++) {
+        if (p.indexOf(GA_PUBLIC_PREFIXES[i]) === 0) return true;
+      }
       return false;
     }
     if (isPublicPage(window.location.pathname)) {
