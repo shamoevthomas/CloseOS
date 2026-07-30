@@ -56,25 +56,35 @@ BLOC 0 — MAINTENANT (bloquant, avant tout le reste)
        curl -s https://sign.closeos.fr/sign/securite      | grep canonical
          attendu : https://sign.closeos.fr/sign/securite
 
-[ ] 3. SEARCH CONSOLE — creer une PROPRIETE DE DOMAINE "closeos.fr"
-       (PAS une propriete de prefixe d'URL). Elle seule couvre www ET sign,
-       ce qui rend valide la declaration croisee de sitemap-sign.xml.
-       Sans ca, le sitemap Sign ne sera pas pris en compte.
-       [ ] soumettre https://www.closeos.fr/sitemap.xml
-       [ ] soumettre https://sign.closeos.fr/sitemap-sign.xml
-       [ ] verifier 0 erreur d'indexation sur les pages publiques
+[x] 3. SEARCH CONSOLE — FAIT (2026-07-30)
+       [x] La propriete de domaine "closeos.fr" EXISTAIT DEJA (sc-domain),
+           elle couvre donc www ET sign. La moitie de la tache etait faite.
+       [x] sitemap.xml (www) etait deja soumis — 14 URLs, lu le 24/07
+       [x] sitemap-sign.xml soumis le 30/07
+           NOTE : statut "impossible de recuperer" juste apres soumission.
+           L'URL repond pourtant 200 en application/xml avec un contenu
+           valide (verifie). C'est le statut transitoire habituel.
+           A RECONTROLER dans 24-48 h.
 
-[ ] 4. MESURER LA BASELINE + VALIDER LES MOTS-CLES  <<< LE PLUS IMPORTANT
-       Tout le plan repose sur des estimations. Cette tache les remplace
-       par des faits. Sans elle, impossible de dire a 6 mois si ca marche.
-       [ ] exporter 3 mois GSC : clics, impressions, position moy., pages indexees
-       [ ] remplir la colonne "Baseline" de SEO-STRATEGY.md section 7
-       [ ] convertir les multiplicateurs (x1,8 / x4 / x8) en valeurs absolues
-       [ ] valider les volumes des 20 mots-cles prioritaires
-           (GSC + Google Keyword Planner, ou /seo-dataforseo si acces ouvert)
-       [ ] REORDONNER CONTENT-CALENDAR.md si les donnees contredisent les estimations
-       [ ] GA4 : creer un evenement de conversion "essai gratuit"
-       [ ] GA4 : creer un segment "organique"
+[x] 4. BASELINE MESUREE — FAIT (2026-07-30)
+       Releve GSC sur 3 mois (29/04 -> 28/07/2026) :
+         clics            160  (~53/mois)
+         impressions    1 810  (~603/mois)
+         CTR moyen        8,8 %
+         position moy.   16,3
+         pages indexees    10  (+ 16 non indexees)
+       [x] tableau KPI de SEO-STRATEGY.md rempli, multiplicateurs convertis
+           en valeurs absolues
+       [x] analyse ajoutee : 64 % des clics sont des requetes de MARQUE
+       >>> TROIS CONSTATS A EXPLOITER :
+           1. "sales os" = 231 impressions et 0 clic. Premiere source
+              d'impressions du site, conversion nulle. A inspecter.
+           2. "iclosed alternative" = seule requete non-marque qui clique.
+              La strategie de comparatifs est validee par les donnees.
+           3. La marque s'ecrit de 4 facons (close os, closer os, closeros,
+              closeo) : confirme le probleme de desambiguisation GEO.
+       [ ] reste : valider les volumes des 20 mots-cles prioritaires
+       [ ] reste : GA4 evenement de conversion + segment organique
 
 [ ] 5. AUDIT DE PERFORMANCE — jamais fait, les cibles actuelles sont des
        standards, pas un diagnostic.

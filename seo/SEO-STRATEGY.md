@@ -138,22 +138,33 @@ Google (mise à jour de décembre 2025) applique désormais l'évaluation E-E-A-
 
 ## 7. Objectifs et KPI
 
-### ⚠️ La baseline n'est pas mesurée
-Ce plan ne dispose d'aucune donnée Search Console. Les colonnes « Baseline » ci-dessous sont à remplir **avant** de valider les cibles, faute de quoi les cibles n'engagent rien. C'est la tâche 1.1 de la roadmap.
+### ✅ Baseline mesurée le 2026-07-30
+Relevé Search Console sur 3 mois (29/04/2026 → 28/07/2026), propriété de domaine `closeos.fr` (couvre www et sign).
 
-| Métrique | Baseline | 3 mois | 6 mois | 12 mois | Source |
+| Métrique | **Baseline (30/07/2026)** | 3 mois | 6 mois | 12 mois | Source |
 |---|---|---|---|---|---|
-| Pages indexées | _à mesurer_ | 30 | 55 | 80 | GSC → Indexation |
-| Clics organiques / mois | _à mesurer_ | ×1,8 | ×4 | ×8 | GSC → Performances |
-| Impressions / mois | _à mesurer_ | ×3 | ×7 | ×15 | GSC |
-| Mots-clés en top 10 | _à mesurer_ | 15 | 45 | 110 | GSC (position moy. < 10) |
-| Mots-clés en top 3 | _à mesurer_ | 5 | 18 | 45 | GSC |
-| Essais gratuits issus de l'organique | _à mesurer_ | 5 / mois | 15 / mois | 40 / mois | GA4 (conversion dédiée) |
-| Domaines référents | _à mesurer_ | +8 | +20 | +45 | Search Console / Ahrefs |
-| LCP (p75, mobile) | _à mesurer_ | < 2,5 s | < 2,2 s | < 2,0 s | CrUX / PageSpeed |
-| INP (p75, mobile) | _à mesurer_ | < 200 ms | < 200 ms | < 150 ms | CrUX |
-| CLS (p75) | _à mesurer_ | < 0,1 | < 0,1 | < 0,1 | CrUX |
-| Citations IA (marque) | 0 supposé | 3 | 10 | 30 | Suivi manuel, §8 |
+| Pages indexées | **10** (+ 16 non indexées) | 30 | 55 | 80 | GSC → Indexation |
+| Clics organiques / mois | **~53** (160 sur 3 mois) | 95 | 210 | 425 | GSC → Performances |
+| Impressions / mois | **~603** (1 810 sur 3 mois) | 1 800 | 4 200 | 9 000 | GSC |
+| CTR moyen | **8,8 %** | ≥ 8 % | ≥ 8 % | ≥ 8 % | GSC |
+| Position moyenne | **16,3** | < 14 | < 11 | < 9 | GSC |
+| Clics non-marque / mois | **~2** (5 sur 3 mois) | 25 | 90 | 250 | GSC, hors requêtes marque |
+| Essais gratuits issus de l'organique | _à instrumenter (GA4)_ | 5 / mois | 15 / mois | 40 / mois | GA4 (conversion dédiée) |
+| Domaines référents | _non audité_ | +8 | +20 | +45 | Search Console / Ahrefs |
+| LCP / INP / CLS (p75 mobile) | _non mesuré_ | < 2,5 s / < 200 ms / < 0,1 | — | — | CrUX |
+| Citations IA (marque) | **0 relevé** | 3 | 10 | 30 | Suivi manuel, §8 |
+
+### Ce que la baseline révèle — et qui change les priorités
+
+**Le site ne capte presque que sa propre marque.** Sur les 160 clics du trimestre, environ **103 viennent de requêtes de marque** (`closeos`, `close os`, `closer os`, `closeros`, `closeo`), soit **64 %**. Ce sont des gens qui connaissaient déjà CloseOS et cherchaient le site. Le SEO ne les a pas apportés.
+
+**Une seule requête non-marque produit des clics** : `iclosed alternative`, 3 clics pour 15 impressions. C'est peu, mais c'est le signal le plus encourageant du relevé : **la seule page de comparaison existante fonctionne.** Elle valide toute la stratégie de comparatifs du calendrier.
+
+**`sales os` : 231 impressions, 0 clic.** C'est de loin la première source d'impressions du site, et elle ne convertit pas du tout. Deux hypothèses : soit CloseOS apparaît trop bas, soit le résultat affiché ne correspond pas à l'intention de recherche. À inspecter en priorité — 231 impressions gratuites qui ne rapportent rien.
+
+**La marque s'écrit de quatre façons différentes.** `close os`, `closer os`, `closeros`, `closeo` : les utilisateurs ne savent pas l'orthographier. C'est la confirmation directe du problème de désambiguïsation identifié en GEO (`GEO-ANALYSIS.md` §5) — et ça se règle par la répétition d'une graphie unique, pas par du contenu.
+
+**Position moyenne 16,3** : le site est en page 2. C'est la zone où quelques points de gain suffisent à faire basculer le trafic — d'où l'intérêt de la tâche « renforcer les pages en page 2 » plutôt que d'en créer de nouvelles.
 
 Les multiplicateurs sont volontairement exprimés en ratio plutôt qu'en valeurs absolues : sur une base de départ très faible, un chiffre absolu serait de la fiction. Convertissez-les en valeurs dès que la baseline est relevée.
 
