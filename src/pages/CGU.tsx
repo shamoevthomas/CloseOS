@@ -1,7 +1,21 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 export const CGU = () => {
+  // Page prérendue : ces métas sont figées dans le HTML servi aux moteurs.
+  useEffect(() => {
+    document.title = "Conditions générales d'utilisation — CloseOS";
+    document.querySelector('meta[name="description"]')?.setAttribute('content', "Les conditions générales d'utilisation de CloseOS : accès au service, comptes, obligations et responsabilités.");
+    document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/cgu');
+    document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/cgu');
+    document.getElementById('og-title')?.setAttribute('content', "Conditions générales d'utilisation — CloseOS");
+    document.getElementById('og-description')?.setAttribute('content', "Les conditions générales d'utilisation de CloseOS : accès au service, comptes, obligations et responsabilités.");
+    document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/cgu');
+    document.getElementById('tw-title')?.setAttribute('content', "Conditions générales d'utilisation — CloseOS");
+    document.getElementById('tw-description')?.setAttribute('content', "Les conditions générales d'utilisation de CloseOS : accès au service, comptes, obligations et responsabilités.");
+    document.documentElement.lang = 'fr';
+  }, []);
   return (
     <div className="min-h-screen bg-[#020617] text-slate-300 font-sans selection:bg-blue-500/30">
       <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50">
@@ -16,7 +30,7 @@ export const CGU = () => {
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <h1 className="text-3xl font-bold text-white mb-2">Conditions Generales d'Utilisation</h1>
-        <p className="text-slate-500 mb-8">Derniere mise a jour : 25 mars 2026</p>
+        <p className="text-slate-500 mb-8">Derniere mise a jour : 29 juillet 2026</p>
 
         <div className="space-y-8 text-sm leading-relaxed text-justify">
 
@@ -136,6 +150,16 @@ export const CGU = () => {
               <li>Ne pas utiliser les formulaires de capture ou les Services pour envoyer du spam ou des communications non sollicitees.</li>
             </ul>
 
+            <h3 className="text-base font-semibold text-white mt-4 mb-2">Contenu cree par l'Utilisateur (formulaires & pages publiques)</h3>
+            <p>
+              Les Services permettent a l'Utilisateur de creer et publier des formulaires et pages de capture accessibles publiquement (notamment via des adresses de type closeos.fr/f/…), pouvant inclure des questionnaires, des videos a visionnage obligatoire et une precapture des reponses. L'Utilisateur est <strong>seul responsable</strong> du contenu qu'il publie, de sa liceite, du respect des droits des tiers, et de l'information et du recueil du consentement des personnes dont il collecte les donnees (y compris lorsque des coordonnees sont enregistrees avant la soumission complete du formulaire). Le Prestataire agit comme simple hebergeur technique et pourra retirer tout contenu manifestement illicite qui lui serait signale.
+            </p>
+
+            <h3 className="text-base font-semibold text-white mt-4 mb-2">Emails automatiques aux prospects</h3>
+            <p>
+              Les Services peuvent envoyer, pour le compte de l'Utilisateur, des emails automatiques a ses prospects (rappels de rendez-vous, relances de no-show, suivi de discussion). L'Utilisateur est responsable de disposer d'une base legale valable pour ces envois et de fournir un mecanisme de <strong>desabonnement (opt-out)</strong> conforme a la reglementation applicable (LCEN, ePrivacy). Il distingue sous sa responsabilite les messages transactionnels des messages a caractere prospectif.
+            </p>
+
             <h3 className="text-base font-semibold text-white mt-4 mb-2">Obligations specifiques — CloseOS Business</h3>
             <ul className="list-disc pl-5 space-y-2 mt-2">
               <li>L'Utilisateur Business (Owner) est <strong>responsable de traitement</strong> au sens du RGPD pour les donnees de ses prospects et membres d'equipe. Il doit obtenir le consentement de ses prospects avant collecte et informer les personnes concernees de leurs droits.</li>
@@ -144,9 +168,9 @@ export const CGU = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">7. Enregistrement des Appels</h2>
+            <h2 className="text-xl font-bold text-white mb-4">7. Enregistrement des Appels (Call Room)</h2>
             <p>
-              CloseOS Sales propose une fonctionnalite d'enregistrement des appels video et audio. Si l'Utilisateur active cette fonctionnalite, il lui incombe legalement d'informer son interlocuteur que l'appel est susceptible d'etre enregistre, conformement aux lois en vigueur (notamment l'article 226-1 du Code penal francais). CloseOS decline toute responsabilite en cas de non-respect de cette obligation par l'Utilisateur.
+              CloseOS Sales propose une fonctionnalite d'enregistrement des appels via la Call Room, incluant l'enregistrement de l'<strong>ecran et de l'audio</strong> de l'appel, exporte en video. Si l'Utilisateur active cette fonctionnalite, il lui incombe legalement d'informer son interlocuteur que l'appel est susceptible d'etre enregistre et, le cas echeant, de recueillir son consentement, conformement aux lois en vigueur (notamment l'article 226-1 du Code penal francais). CloseOS decline toute responsabilite en cas de non-respect de cette obligation par l'Utilisateur.
             </p>
           </section>
 
@@ -164,6 +188,17 @@ export const CGU = () => {
             <p className="mt-2">
               L'Utilisateur est seul responsable de la configuration et de la conformite de ces integrations. Le Prestataire ne saurait etre tenu responsable des dysfonctionnements ou pertes de donnees lies a un service tiers.
             </p>
+
+            <h3 className="text-base font-semibold text-white mt-4 mb-2">Acces programmatique — API, Webhooks & serveur MCP (Business)</h3>
+            <p>
+              CloseOS Business met a disposition une API REST, des Webhooks sortants et un serveur MCP (Model Context Protocol) permettant de piloter le CRM depuis des outils tiers, y compris des <strong>assistants IA</strong> (ex. Claude, ChatGPT). L'Utilisateur s'engage a :
+            </p>
+            <ul className="list-disc pl-5 space-y-2 mt-2">
+              <li>Conserver ses cles API confidentielles et les revoquer en cas de compromission.</li>
+              <li>Ne pas contourner les limites d'usage (rate-limiting) ni les mecanismes de securite.</li>
+              <li>Reconnaitre que <strong>toute action declenchee via l'API, un Webhook ou le serveur MCP — y compris par un assistant IA tiers — est reputee effectuee par l'Utilisateur et engage sa seule responsabilite</strong>, au meme titre qu'une action realisee depuis son compte.</li>
+              <li>S'assurer que le recours a un assistant IA tiers respecte le RGPD, la connexion de cet assistant emportant transmission de donnees a son editeur (voir la <Link to="/confidentialite" className="text-blue-400 hover:underline">Politique de Confidentialite</Link>).</li>
+            </ul>
           </section>
 
           <section>

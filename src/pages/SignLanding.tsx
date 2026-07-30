@@ -38,6 +38,75 @@ import { useSignLang } from '../contexts/SignLangContext';
  * Le module est complet ; Sign est INCLUS avec CloseOS Business (pas d'inscription publique).
  */
 
+type SignFaq = { q_fr: string; q_en: string; a_fr: string; a_en: string };
+
+/**
+ * Réponses calibrées pour la citation par les moteurs génératifs : 134 à 167 mots par
+ * réponse, autonomes (compréhensibles hors contexte de page), et ouvrant sur une phrase
+ * définitionnelle. Les versions courtes précédentes (~42 mots de médiane) étaient trop
+ * maigres pour être extraites : un modèle allait citer une source plus développée.
+ * Voir seo/GEO-ANALYSIS.md §4. Ne pas raccourcir sans mesurer.
+ */
+const SIGN_FAQ: SignFaq[] = [
+  {
+    q_fr: "Qu'est-ce que CloseOS Sign ?",
+    q_en: 'What is CloseOS Sign?',
+    a_fr: "CloseOS Sign est une solution de signature électronique française qui intègre l'encaissement du paiement. Là où un outil de signature classique s'arrête à la signature, CloseOS Sign réunit les deux actes : le signataire signe le contrat et règle au même endroit, dans le même flux, sans changer d'outil ni de page. Vous préparez vos contrats à l'avance sous forme de modèles réutilisables, vous y placez les champs à remplir, puis vous envoyez le document en un simple lien. Chaque signature s'accompagne d'un faisceau de preuves : journal d'événements horodaté, empreinte du document calculée côté serveur, vérification du signataire et certificat de preuve vérifiable en ligne. Sign fait partie de l'écosystème CloseOS, aux côtés de CloseOS Sales (le CRM du closer indépendant) et de CloseOS Business (le pilotage d'équipe de closing). Il s'utilise seul ou connecté aux deux autres produits.",
+    a_en: "CloseOS Sign is a French e-signature solution with built-in payment collection. Where a classic e-signature tool stops at the signature, CloseOS Sign brings both actions together: the signer signs the contract and pays in the same place, in the same flow, without switching tools or pages. You prepare contracts ahead of time as reusable templates, place the fields to be filled in, then send the document as a single link. Every signature comes with an evidence bundle: a timestamped event log, a server-side document hash, signer verification and a proof certificate that can be checked online. Sign is part of the CloseOS ecosystem, alongside CloseOS Sales (the independent closer's CRM) and CloseOS Business (closing team management). It works on its own or connected to the other two products.",
+  },
+  {
+    q_fr: 'Mes contrats signés ont-ils une valeur de preuve ?',
+    q_en: 'Do my signed contracts have evidentiary value?',
+    a_fr: "Oui. Chaque signature réalisée dans CloseOS Sign est accompagnée d'un faisceau de preuves conçu pour être opposable en cas de contestation. Ce faisceau réunit quatre éléments. D'abord un journal d'événements horodaté et inaltérable, qui enregistre chaque étape : ouverture du document, vérification du signataire, signature, paiement. Ensuite l'empreinte SHA-256 du document, calculée côté serveur sur les octets réellement reçus, ce qui permet de démontrer qu'il n'a pas été modifié après coup. Puis la méthode de vérification employée pour le signataire, avec son adresse IP et son horodatage. Enfin un certificat de preuve, généré une seule fois et figé définitivement, consultable et vérifiable en ligne par toute personne disposant de son identifiant. L'ensemble est conservé avec le contrat. CloseOS Sign est édité en France et hébergé dans l'Union européenne, en conformité avec le RGPD.",
+    a_en: "Yes. Every signature made in CloseOS Sign comes with an evidence bundle designed to hold up if the contract is challenged. That bundle brings together four elements. First, a timestamped, tamper-proof event log recording each step: document opening, signer verification, signature, payment. Second, the document's SHA-256 hash, computed server-side on the bytes actually received, which proves it was not altered afterwards. Third, the verification method used for the signer, together with their IP address and timestamp. Finally, a proof certificate, generated once and permanently frozen, which anyone holding its identifier can view and verify online. Everything is stored with the contract. CloseOS Sign is published in France and hosted in the European Union, in compliance with GDPR.",
+  },
+  {
+    q_fr: 'Puis-je faire signer ET encaisser en même temps ?',
+    q_en: 'Can I get the contract signed AND collect payment at once?',
+    a_fr: "Oui, et c'est précisément ce qui distingue CloseOS Sign des autres outils de signature électronique. Le paiement est intégré au parcours de signature via Stripe : au moment où votre client signe, il règle. Vous choisissez ce qui est encaissé — la totalité, un acompte, le solde d'un contrat déjà entamé, ou un abonnement récurrent. Vous décidez aussi du lien entre les deux actes : le paiement peut être exigé pour que le contrat soit finalisé, ou rester découplé de la signature si votre processus commercial le demande. Sur un contrat à plusieurs signataires, chacun peut avoir son propre montant à régler. L'intérêt est concret pour une activité de closing : le moment de la signature est le pic d'engagement du client, et faire basculer ce moment vers un autre outil de paiement, un autre onglet ou un virement à faire plus tard fait perdre des ventes.",
+    a_en: "Yes, and this is exactly what sets CloseOS Sign apart from other e-signature tools. Payment is built into the signing flow through Stripe: the moment your client signs, they pay. You choose what is collected — the full amount, a deposit, the balance of a contract already under way, or a recurring subscription. You also decide how tightly the two are coupled: payment can be required for the contract to be finalized, or kept decoupled from the signature if your sales process calls for it. On a multi-signer contract, each signer can have their own amount to pay. The benefit is concrete for a closing business: signing is the client's peak of commitment, and pushing that moment into another payment tool, another tab or a bank transfer to be made later loses sales.",
+  },
+  {
+    q_fr: 'Puis-je avoir plusieurs signataires sur un même contrat ?',
+    q_en: 'Can I have multiple signers on one contract?',
+    a_fr: "Oui. Un contrat CloseOS Sign accepte autant de signataires que nécessaire, et vous choisissez l'ordre dans lequel ils interviennent. En mode parallèle, tous reçoivent leur lien en même temps et peuvent signer sans s'attendre. En mode séquentiel, chacun n'est sollicité qu'une fois le précédent signataire passé, ce qui reproduit un circuit de validation classique. Chaque signataire dispose de son propre lien sécurisé, distinct des autres, avec sa propre méthode de vérification et, si vous le souhaitez, son propre montant à régler. Un signataire ne voit que ce qui le concerne : les informations réservées aux autres restent masquées. L'avancement est visible en temps réel depuis votre espace, contrat par contrat, avec le détail de qui a ouvert, vérifié son identité, signé ou payé. Les relances peuvent être envoyées à ceux qui n'ont pas encore signé, sans relancer les autres.",
+    a_en: "Yes. A CloseOS Sign contract accepts as many signers as you need, and you choose the order in which they act. In parallel mode, everyone receives their link at the same time and can sign without waiting for the others. In sequential mode, each signer is only prompted once the previous one is done, reproducing a classic approval chain. Every signer gets their own secure link, separate from the others, with their own verification method and, if you wish, their own amount to pay. A signer only sees what concerns them: information reserved for others stays hidden. Progress is visible in real time from your workspace, contract by contract, showing who has opened, verified their identity, signed or paid. Reminders can be sent only to those who have not signed yet.",
+  },
+  {
+    q_fr: "Comment l'identité du signataire est-elle vérifiée ?",
+    q_en: "How is the signer's identity verified?",
+    a_fr: "Avant de pouvoir signer, le signataire confirme son identité au moyen d'un code à usage unique. Vous choisissez la méthode contrat par contrat : code envoyé par email, code envoyé par SMS, ou les deux cumulés lorsque l'enjeu le justifie. Le code n'est valable que pour ce signataire et pour ce contrat. Le système bloque les tentatives répétées : après plusieurs codes erronés, l'accès est verrouillé, ce qui empêche une attaque par force brute sur un lien intercepté. Vous pouvez également restreindre l'accès à une liste d'adresses email autorisées, de sorte qu'un lien transféré à un tiers ne permette pas de signer. La méthode de vérification utilisée, l'horodatage et l'adresse IP du signataire sont enregistrés dans le journal d'événements et repris dans le certificat de preuve, où ils restent consultables après la signature.",
+    a_en: "Before they can sign, the signer confirms their identity with a one-time code. You choose the method contract by contract: a code sent by email, a code sent by SMS, or both combined when the stakes justify it. The code is valid only for that signer and that contract. The system blocks repeated attempts: after several wrong codes, access is locked, which prevents a brute-force attack on an intercepted link. You can also restrict access to a list of authorized email addresses, so that a link forwarded to someone else does not allow signing. The verification method used, the timestamp and the signer's IP address are recorded in the event log and carried into the proof certificate, where they remain available after signing.",
+  },
+  {
+    q_fr: 'Combien coûte CloseOS Sign, et est-il inclus avec CloseOS Business ?',
+    q_en: 'How much does CloseOS Sign cost, and is it included with CloseOS Business?',
+    a_fr: "CloseOS Sign démarre à 9 € par mois en annuel, après 14 jours d'essai gratuit sans engagement. Une carte bancaire est demandée à l'inscription, mais aucun prélèvement n'a lieu pendant l'essai et vous pouvez annuler à tout moment. Il n'y a qu'une seule formule : elle donne accès à l'ensemble des fonctionnalités, sans palier ni option à débloquer. Le multi-signataire, la vérification par email et SMS, le paiement intégré, les modèles de contrat réutilisables, les espaces dédiés aux membres de votre équipe et le certificat de preuve sont compris dès le premier euro. L'abonnement est porté par le propriétaire du compte, pas facturé par utilisateur. Si vous êtes déjà client de CloseOS Business, l'accès à Sign est inclus dans votre abonnement, sans supplément et avec la même connexion : vos contrats et votre CRM vivent dans le même compte. À l'inverse, CloseOS Sign s'utilise parfaitement seul, sans avoir à adopter le reste de l'écosystème.",
+    a_en: "CloseOS Sign starts at €9 per month billed annually, after a 14-day free trial with no commitment. A credit card is requested at sign-up, but nothing is charged during the trial and you can cancel at any time. There is a single plan: it unlocks every feature, with no tiers and no add-ons to buy. Multi-signer contracts, email and SMS verification, built-in payment, reusable contract templates, dedicated workspaces for your team members and the proof certificate are all included from the first euro. The subscription is held by the account owner rather than billed per user. If you are already a CloseOS Business customer, Sign access is included in your subscription at no extra cost and with the same login: your contracts and your CRM live in the same account. Conversely, CloseOS Sign works perfectly on its own, without adopting the rest of the ecosystem.",
+  },
+];
+
+function SignFaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded border border-[#3A4242] bg-[#222828] overflow-hidden transition-colors hover:border-[#4A5252]">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+      >
+        <span className="text-base font-medium text-white">{q}</span>
+        <ChevronDown className={`h-5 w-5 shrink-0 text-[#CEFF8F] transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="px-6 pb-6">
+          <p className="whitespace-pre-line text-sm leading-relaxed text-[#A1A9A9]">{a}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SignLanding() {
   const { lang } = useSignLang();
   const [showContact, setShowContact] = useState(false);
@@ -51,14 +120,87 @@ export default function SignLanding() {
         ? "CloseOS Sign : la signature électronique qui encaisse. Faites signer le contrat ET encaissez le paiement (acompte, solde ou abonnement) dans le même geste, avec un faisceau de preuves opposable (email, OTP SMS, horodatage, IP, hash SHA-256) et un certificat de preuve vérifiable."
         : "CloseOS Sign: the e-signature that collects payment. Get the contract signed AND collect the payment (deposit, balance or subscription) in a single motion, with an enforceable evidence bundle (email, SMS OTP, timestamp, IP, SHA-256 hash) and a verifiable proof certificate.",
     );
-    document.getElementById('canonical')?.setAttribute('href', 'https://sign.closeos.fr/');
-    document.getElementById('og-url')?.setAttribute('content', 'https://sign.closeos.fr/');
+    // La racine du sous-domaine redirige (301) vers /sign : le canonical doit viser l'URL finale.
+    document.getElementById('canonical')?.setAttribute('href', 'https://sign.closeos.fr/sign');
+    document.getElementById('og-url')?.setAttribute('content', 'https://sign.closeos.fr/sign');
     document.getElementById('og-title')?.setAttribute('content', lang === 'fr'
       ? 'CloseOS Sign, Signez le contrat, encaissez le paiement'
       : 'CloseOS Sign, Sign the contract, collect the payment');
     document.getElementById('og-description')?.setAttribute('content', lang === 'fr'
       ? "Sign + Pay : faites signer le contrat et encaissez le paiement dans le même geste, avec un certificat de preuve vérifiable."
       : "Sign + Pay: get the contract signed and collect the payment in a single motion, with a verifiable proof certificate.");
+    // Visuel de partage propre à Sign (DA sombre + lime) — sans ça, Sign hérite de l'image de l'écosystème
+    document.getElementById('og-image')?.setAttribute('content', 'https://sign.closeos.fr/og-sign.jpg');
+    document.getElementById('tw-image')?.setAttribute('content', 'https://sign.closeos.fr/og-sign.jpg');
+
+    // Données structurées : la page affiche déjà le produit et 6 questions-réponses (SIGN_FAQ),
+    // mais rien n'était balisé — c'est ce que citent les moteurs génératifs.
+    document.querySelectorAll('script[data-sign-ld]').forEach((el) => el.remove());
+    const addLd = (data: unknown) => {
+      const el = document.createElement('script');
+      el.type = 'application/ld+json';
+      el.setAttribute('data-sign-ld', 'true');
+      el.textContent = JSON.stringify(data);
+      document.head.appendChild(el);
+    };
+    addLd({
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'CloseOS Sign',
+      url: 'https://sign.closeos.fr/sign',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      inLanguage: ['fr', 'en'],
+      description: lang === 'fr'
+        ? "Signature électronique avec paiement intégré : le client signe le contrat et règle dans le même flux, avec vérification d'identité, faisceau de preuves horodaté et certificat de preuve vérifiable."
+        : 'E-signature with built-in payment: the client signs the contract and pays in the same flow, with identity verification, a timestamped evidence bundle and a verifiable proof certificate.',
+      offers: {
+        '@type': 'Offer',
+        price: '9',
+        priceCurrency: 'EUR',
+        availability: 'https://schema.org/InStock',
+        description: lang === 'fr' ? 'À partir de 9 €/mois, inclus avec CloseOS Business.' : 'From €9/month, included with CloseOS Business.',
+      },
+      publisher: { '@type': 'Organization', name: 'CloseOS', url: 'https://www.closeos.fr' },
+    });
+    addLd({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: SIGN_FAQ.map((f) => ({
+        '@type': 'Question',
+        name: lang === 'fr' ? f.q_fr : f.q_en,
+        acceptedAnswer: { '@type': 'Answer', text: lang === 'fr' ? f.a_fr : f.a_en },
+      })),
+    });
+    addLd({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'CloseOS', item: 'https://www.closeos.fr' },
+        { '@type': 'ListItem', position: 2, name: 'CloseOS Sign', item: 'https://sign.closeos.fr/sign' },
+      ],
+    });
+  }, [lang]);
+
+  // Bulle chatbot CloseOS Assistant (chargement différé 5s), comme sur les LP Sales et Business
+  useEffect(() => {
+    let chatbotScript: HTMLScriptElement | null = null;
+    const chatbotTimer = setTimeout(() => {
+      chatbotScript = document.createElement('script');
+      chatbotScript.src = '/chatbot-widget.js';
+      chatbotScript.setAttribute('data-chatbot-id', 'acb35233-a6de-4738-9ba0-7e25c82c2a61');
+      chatbotScript.setAttribute('data-supabase-url', 'https://mkxcircbzcsjamslijde.supabase.co');
+      chatbotScript.setAttribute('data-supabase-key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1reGNpcmNiemNzamFtc2xpamRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjM0MDAsImV4cCI6MjA4NzQ5OTQwMH0.9-abq1tEFsmjfRkLJjrkXlG3z-9o2HKYjyp5eBIl178');
+      chatbotScript.setAttribute('data-lang', lang);
+      document.body.appendChild(chatbotScript);
+    }, 5000);
+    return () => {
+      clearTimeout(chatbotTimer);
+      if (chatbotScript && document.body.contains(chatbotScript)) {
+        document.body.removeChild(chatbotScript);
+      }
+      document.getElementById('chatbot-widget-container')?.remove();
+    };
   }, [lang]);
 
   return (
@@ -116,6 +258,7 @@ export default function SignLanding() {
             <a href="#assistant-ia" className="transition-colors hover:text-[#F3F4F6]">{lang === 'fr' ? 'Assistant IA' : 'AI Assistant'}</a>
             <a href="#preuve" className="transition-colors hover:text-[#F3F4F6]">{lang === 'fr' ? 'Faisceau de preuves' : 'Evidence bundle'}</a>
             <a href="#securite" className="transition-colors hover:text-[#F3F4F6]">{lang === 'fr' ? 'Sécurité' : 'Security'}</a>
+            <a href="#faq" className="transition-colors hover:text-[#F3F4F6]">FAQ</a>
           </nav>
         </div>
         <div className="flex items-center gap-3 sm:gap-4">
@@ -126,6 +269,9 @@ export default function SignLanding() {
           </a>
         </div>
       </header>
+
+      {/* <main> : delimite le contenu principal pour les extracteurs (crawlers IA, lecteurs d'ecran). Sans lui, rien ne distingue le texte de navigation du contenu. */}
+      <main>
 
       {/* Hero */}
       <section className="bg-noise relative overflow-hidden border-b border-[#3A4242] px-4 pb-20 pt-16 sm:px-6 sm:pb-32 sm:pt-24 md:px-12">
@@ -682,6 +828,25 @@ export default function SignLanding() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section id="faq" className="border-b border-[#3A4242] px-4 py-16 sm:px-6 sm:py-24 md:px-12">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-12 text-center sm:mb-16">
+            <div className="mb-4 inline-block rounded border border-[#3A4242] bg-[#222828] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#CEFF8F]">
+              FAQ
+            </div>
+            <h2 className="text-[28px] font-semibold tracking-tight text-white sm:text-[36px] lg:text-[44px]">
+              {lang === 'fr' ? 'Questions fréquentes' : 'Frequently asked questions'}
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {SIGN_FAQ.map((f, i) => (
+              <SignFaqItem key={i} q={lang === 'fr' ? f.q_fr : f.q_en} a={lang === 'fr' ? f.a_fr : f.a_en} />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA final */}
       <section className="bg-noise relative px-4 py-20 sm:px-6 sm:py-32 md:px-12">
         <div className="relative z-10 mx-auto max-w-3xl text-center">
@@ -718,6 +883,7 @@ export default function SignLanding() {
       </section>
 
       {/* Footer */}
+      </main>
       <footer className="border-t border-[#3A4242] bg-[#191E1E] px-4 pb-8 pt-16 sm:px-6 md:px-12">
         <div className="mx-auto mb-16 grid max-w-7xl grid-cols-2 gap-12 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">

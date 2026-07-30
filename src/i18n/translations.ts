@@ -393,7 +393,7 @@ export const settingsTranslations: Record<Lang, Record<string, string>> = {
     support_email_label: 'Email Support',
     support_response: 'Réponse sous 24h ouvrées',
     support_faq: "Centre d'aide & FAQ",
-    support_faq_desc: 'Guides et tutoriels (Bientôt disponible)',
+    support_faq_desc: 'Guides, « par où commencer » et recherche',
     // Reactivation modal
     reactivate_title: 'Vous restez parmi nous alors ?!',
     reactivate_desc: 'Votre abonnement sera réactivé et continuera normalement.',
@@ -558,7 +558,7 @@ export const settingsTranslations: Record<Lang, Record<string, string>> = {
     support_email_label: 'Email Support',
     support_response: 'Response within 24 business hours',
     support_faq: 'Help Center & FAQ',
-    support_faq_desc: 'Guides and tutorials (Coming soon)',
+    support_faq_desc: 'Guides, getting started and search',
     // Reactivation modal
     reactivate_title: 'You\'re staying with us then?!',
     reactivate_desc: 'Your subscription will be reactivated and will continue normally.',

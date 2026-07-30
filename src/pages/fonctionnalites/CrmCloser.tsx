@@ -43,7 +43,7 @@ const faqItems = [
   },
   {
     q: 'Combien de prospects puis-je gérer\u00a0?',
-    a: "Il n'y a pas de limite sur le nombre de prospects, quelle que soit votre formule.",
+    a: "Il n'y a aucune limite sur le nombre de prospects, quelle que soit votre formule, y compris la plus abordable. CloseOS ne facture pas au contact et n'applique pas de palier qui vous obligerait à monter en gamme parce que votre base grossit — un modèle courant chez les CRM généralistes, où le coût augmente à mesure que vous réussissez. Vous pouvez importer l'intégralité de votre historique sans arbitrer entre ce que vous gardez et ce que vous supprimez. Ce qui varie d'une formule à l'autre, ce sont les fonctionnalités et le nombre de sièges actifs, c'est-à-dire de personnes qui utilisent l'outil, pas le volume de données. Les performances de recherche et d'affichage du pipeline restent stables sur les grandes bases, chaque organisation étant isolée dans la base de données.",
   },
   {
     q: 'Est-ce que je peux importer mes prospects depuis un autre CRM\u00a0?',
@@ -60,6 +60,10 @@ export default function CrmCloser() {
     document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/fonctionnalites/crm-closer');
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/fonctionnalites/crm-closer');
     document.getElementById('og-title')?.setAttribute('content', 'CRM Closer, Pipeline de vente pour closers | CloseOS');
+    // Visuel dédié généré à la volée (api/og type=page) : une URL d'image traverse le prerender.
+    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/api/og?type=page&slug=crm-closer&lang=fr');
+    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/api/og?type=page&slug=crm-closer&lang=fr');
+    document.getElementById('og-image-alt')?.setAttribute('content', 'CloseOS — CRM Closer');
     document.getElementById('og-description')?.setAttribute('content', "Le CRM conçu pour les closers : pipeline visuel, suivi des prospects, historique d'appels, et KPIs de closing.");
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/fonctionnalites/crm-closer');
     document.getElementById('tw-title')?.setAttribute('content', 'CRM Closer, Pipeline de vente pour closers | CloseOS');
@@ -88,9 +92,9 @@ export default function CrmCloser() {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
       mainEntity: [
-        { '@type': 'Question', name: 'Est-ce que CloseOS peut remplacer mon CRM actuel (HubSpot, Pipedrive) ?', acceptedAnswer: { '@type': 'Answer', text: "Pour le closing, oui. CloseOS est conçu pour le processus de vente high ticket. Si vous utilisez HubSpot pour du marketing automation, gardez-le et synchronisez avec CloseOS." } },
+        { '@type': 'Question', name: 'Est-ce que CloseOS peut remplacer mon CRM actuel (HubSpot, Pipedrive) ?', acceptedAnswer: { '@type': 'Answer', text: "Pour la partie closing, oui. CloseOS est construit autour du processus de vente high ticket : peu de prospects, un cycle court, beaucoup d'appels et des relances serrées. Il apporte nativement ce qu'un CRM généraliste demande de reconstruire à coups de champs personnalisés et d'automatisations : pipeline de closing, Call Room intégrée, suivi des appels, taux de closing, cash collecté et facturation. En revanche, si vous utilisez HubSpot pour du marketing automation — séquences email à grande échelle, scoring marketing, landing pages, nurturing long —, gardez-le : ce n'est pas le terrain de CloseOS. La synchronisation bidirectionnelle permet alors de faire cohabiter les deux, chaque prospect et chaque changement d'étape étant reflété d'un outil à l'autre en temps réel. Beaucoup d'équipes fonctionnent ainsi : le marketing dans HubSpot, le closing dans CloseOS." } },
         { '@type': 'Question', name: 'Combien de prospects puis-je gérer ?', acceptedAnswer: { '@type': 'Answer', text: "Il n'y a pas de limite sur le nombre de prospects, quelle que soit votre formule." } },
-        { '@type': 'Question', name: 'Est-ce que je peux importer mes prospects depuis un autre CRM ?', acceptedAnswer: { '@type': 'Answer', text: 'Oui. Import CSV ou via intégrations natives (HubSpot, Pipedrive). Contactez le support pour un accompagnement.' } },
+        { '@type': 'Question', name: 'Est-ce que je peux importer mes prospects depuis un autre CRM ?', acceptedAnswer: { '@type': 'Answer', text: "Oui, par deux chemins selon votre situation. L'import CSV convient dans tous les cas : vous exportez depuis votre CRM actuel, quel qu'il soit, et vous déposez le fichier dans CloseOS. Un assistant IA intégré reformate automatiquement les colonnes pour les rendre compatibles, ce qui vous évite de retravailler le fichier à la main — c'est en général l'étape qui décourage les migrations. Les intégrations natives conviennent mieux si vous restez sur un outil existant : HubSpot, Pipedrive, GoHighLevel, Airtable et iClosed se connectent en synchronisation bidirectionnelle, de sorte que les deux outils restent alignés en permanence plutôt que de faire un import ponctuel. Cette seconde option permet de migrer progressivement, sans coupure. Le support accompagne la reprise si votre historique est volumineux ou si votre structure de données sort de l'ordinaire." } },
       ],
     });
     document.head.appendChild(faq);
@@ -119,6 +123,9 @@ export default function CrmCloser() {
           </div>
         </div>
       </nav>
+
+      {/* <main> : delimite le contenu principal pour les extracteurs (crawlers IA, lecteurs d'ecran). Sans lui, rien ne distingue le texte de navigation du contenu. */}
+      <main>
 
       {/* Hero */}
       <section className="pt-24">
@@ -386,11 +393,18 @@ export default function CrmCloser() {
       </section>
 
       {/* Footer */}
+      </main>
       <footer className="border-t border-white/5 bg-[#020617] py-6 pb-16">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <img src="/logo-sales.png" alt="CloseOS" className="h-6 w-auto" loading="lazy" width={72} height={24} />
           <div className="flex flex-wrap justify-center gap-4 text-xs text-slate-500">
             <span>&copy; 2026 CloseOS.fr</span><span className="hidden sm:inline">&bull;</span>
+            <a href="/glossaire" className="hover:text-white transition-colors">Glossaire</a>
+            <span className="hidden sm:inline">&bull;</span>
+            <a href="/ressources" className="hover:text-white transition-colors">Ressources</a>
+            <span className="hidden sm:inline">&bull;</span>
+            <a href="/comparatifs" className="hover:text-white transition-colors">Comparatifs</a>
+            <span className="hidden sm:inline">&bull;</span>
             <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</a><span className="hidden sm:inline">&bull;</span>
             <a href="/cgu" className="hover:text-white transition-colors">CGU</a><span className="hidden sm:inline">&bull;</span>
             <a href="/cgv" className="hover:text-white transition-colors">CGV</a><span className="hidden sm:inline">&bull;</span>

@@ -1,7 +1,21 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 export const CGV = () => {
+  // Page prérendue : ces métas sont figées dans le HTML servi aux moteurs.
+  useEffect(() => {
+    document.title = 'Conditions générales de vente — CloseOS';
+    document.querySelector('meta[name="description"]')?.setAttribute('content', "Les conditions générales de vente de CloseOS : abonnements, facturation, résiliation et droit de rétractation.");
+    document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/cgv');
+    document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/cgv');
+    document.getElementById('og-title')?.setAttribute('content', 'Conditions générales de vente — CloseOS');
+    document.getElementById('og-description')?.setAttribute('content', "Les conditions générales de vente de CloseOS : abonnements, facturation, résiliation et droit de rétractation.");
+    document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/cgv');
+    document.getElementById('tw-title')?.setAttribute('content', 'Conditions générales de vente — CloseOS');
+    document.getElementById('tw-description')?.setAttribute('content', "Les conditions générales de vente de CloseOS : abonnements, facturation, résiliation et droit de rétractation.");
+    document.documentElement.lang = 'fr';
+  }, []);
   return (
     <div className="min-h-screen bg-[#020617] text-slate-300 font-sans selection:bg-blue-500/30">
       <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50">
@@ -16,7 +30,7 @@ export const CGV = () => {
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <h1 className="text-3xl font-bold text-white mb-2">Conditions Generales de Vente</h1>
-        <p className="text-slate-500 mb-8">Derniere mise a jour : 25 mars 2026</p>
+        <p className="text-slate-500 mb-8">Derniere mise a jour : 29 juillet 2026</p>
 
         <div className="space-y-8 text-sm leading-relaxed text-justify">
 
@@ -26,11 +40,12 @@ export const CGV = () => {
               Les presentes Conditions Generales de Vente (ci-apres "CGV") regissent exclusivement la relation commerciale entre <strong>Thomas Shamoev</strong>, Entrepreneur Individuel, immatricule au RNE sous le numero SIREN <strong>993 427 509</strong>, dont le siege social est situe au <strong>4 Rue des Coquelicots, 68120 Pfastatt, France</strong> (ci-apres le "Prestataire"), et toute personne souscrivant a un abonnement payant sur l'un des services CloseOS (ci-apres le "Client").
             </p>
             <p className="mt-2">
-              Les CGV s'appliquent aux deux services de l'ecosysteme CloseOS :
+              Les CGV s'appliquent aux services de l'ecosysteme CloseOS :
             </p>
             <ul className="list-disc pl-5 space-y-1 mt-2 text-slate-400">
               <li><strong className="text-slate-300">CloseOS Sales</strong> — Outil pour closers et setters professionnels</li>
               <li><strong className="text-slate-300">CloseOS Business</strong> — Plateforme de management pour infopreneurs et Head of Sales</li>
+              <li><strong className="text-slate-300">CloseOS Sign</strong> — Signature electronique et encaissement (conditions specifiques detaillees sur les pages dediees de CloseOS Sign)</li>
             </ul>
             <p className="mt-2">
               Les CGV sont distinctes des Conditions Generales d'Utilisation (CGU) acceptees lors de la creation du compte. Le Service est destine exclusivement a des professionnels (Closers, Setters, Infopreneurs, Head of Sales, Agences, Independants). En souscrivant, le Client reconnait agir a des fins professionnelles.
@@ -76,12 +91,23 @@ export const CGV = () => {
 
             <h3 className="text-base font-semibold text-white mt-6 mb-2">3.2 CloseOS Business</h3>
             <p>
-              Les tarifs de CloseOS Business sont communiques sur la page dediee au moment du lancement commercial. Ils peuvent inclure une tarification par equipe ou par nombre de membres.
+              CloseOS Business est propose selon plusieurs formules d'abonnement — notamment <strong>Solo</strong>, <strong>Business</strong>, <strong>Business + Acquisition</strong> et une offre <strong>Enterprise</strong> sur devis — dont les tarifs en vigueur (mensuel, trimestriel ou annuel) et le nombre de membres inclus sont indiques sur la page tarifs dediee au moment de la souscription. Ces tarifs peuvent inclure une tarification par equipe ou par nombre de membres.
             </p>
 
             <h3 className="text-base font-semibold text-white mt-6 mb-2">3.3 CloseOS Sign</h3>
             <p>
               CloseOS Sign (signature electronique et encaissement) est propose via une formule unique a 9 € / mois TTC, incluant l'ensemble des fonctionnalites, apres une periode d'essai de 14 jours necessitant l'enregistrement d'un moyen de paiement. L'abonnement est sans engagement et resiliable a tout moment. En cas d'echec de paiement au renouvellement, l'acces est suspendu apres un delai de grace. La fonction « Paye + signe » permet d'encaisser un paiement lors de la signature via Stripe ; CloseOS percoit une commission de service sur les transactions encaissees, l'Utilisateur restant le beneficiaire des fonds via son compte Stripe connecte. Les titulaires d'un abonnement CloseOS Business actif beneficient de l'acces a CloseOS Sign inclus. Les conditions specifiques et la valeur probante sont detaillees sur les pages dediees de CloseOS Sign.
+            </p>
+
+            <h3 className="text-base font-semibold text-white mt-6 mb-2">3.4 Services complementaires (extras)</h3>
+            <p>Des prestations ponctuelles peuvent etre souscrites en supplement de l'abonnement, facturees une seule fois (TTC) :</p>
+            <ul className="list-disc pl-5 space-y-1 mt-2 text-slate-400">
+              <li><strong className="text-slate-300">Setup :</strong> 60 € — configuration initiale du compte.</li>
+              <li><strong className="text-slate-300">Integration :</strong> 80 € — mise en place d'une integration tierce.</li>
+              <li><strong className="text-slate-300">Setup + Integration :</strong> 120 € — les deux prestations combinees.</li>
+            </ul>
+            <p className="mt-2 text-slate-500 text-xs">
+              Ces prestations ponctuelles, une fois realisees, ne sont pas remboursables. Les montants indiques sont susceptibles d'evoluer ; le tarif applicable est celui affiche au moment de la commande.
             </p>
 
             <p className="mt-4">
@@ -107,6 +133,17 @@ export const CGV = () => {
             <p className="mt-2">
               En cas de defaut de paiement, le Prestataire se reserve le droit de suspendre l'acces au Service immediatement. Tout retard de paiement entraine l'application de penalites egales a trois fois le taux d'interet legal en vigueur, ainsi qu'une indemnite forfaitaire de 40 € pour frais de recouvrement, conformement a l'article L.441-10 du Code de commerce.
             </p>
+
+            <h3 className="text-base font-semibold text-white mt-6 mb-2">Paiements encaisses aupres de tiers (rendez-vous payants, acomptes, commissions)</h3>
+            <p>
+              Certaines fonctionnalites permettent au Client d'encaisser des paiements aupres de ses propres prospects ou clients finaux (rendez-vous payants, acomptes lors d'une campagne de capture) ou entre membres (factures de commissions closer / infopreneur), via <strong>Stripe</strong> et, le cas echeant, Stripe Connect.
+            </p>
+            <ul className="list-disc pl-5 space-y-2 mt-2 text-slate-400">
+              <li>Dans ces flux, le Prestataire agit uniquement comme <strong>facilitateur technique</strong> : il n'est pas partie au contrat conclu entre le Client et son client final, et n'est pas detenteur des fonds, qui transitent par Stripe vers le compte du Client.</li>
+              <li>Le Client est seul responsable de la fourniture de la prestation payee, de sa facturation, de la <strong>politique de remboursement</strong> (y compris les remboursements par palier ou le sort des acomptes qu'il configure) et de la gestion des litiges et impayes (chargebacks) avec son client final.</li>
+              <li>Lorsque le Client final agit en qualite de consommateur, il appartient au Client de respecter a son egard le droit de la consommation applicable, notamment en matiere d'information et de retractation.</li>
+              <li>Le Prestataire peut percevoir une commission de service sur les transactions encaissees, indiquee au moment de l'activation de la fonctionnalite.</li>
+            </ul>
           </section>
 
           <section>

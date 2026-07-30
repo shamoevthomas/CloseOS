@@ -1,0 +1,175 @@
+BASE DE CONNAISSANCE CHATBOT — CLOSEOS
+Mise a jour : 29 juillet 2026 (ajout de CloseOS Sign + nouvelles fonctionnalites)
+A copier-coller bloc par bloc dans ChatBot Studio.
+
+
+================================================================================
+=== 1. A qui s'adresse CloseOS ? ===
+================================================================================
+CloseOS Sales s'adresse aux :
+- Closers freelances qui travaillent pour un ou plusieurs infopreneurs et veulent centraliser leur activite (CRM, appels, KPIs, facturation)
+- Setters qui qualifient les leads et fixent des rendez-vous
+- Apporteurs d'affaires qui gerent leur propre pipeline et suivi
+- Tout commercial independant dans la vente digitale, y compris ceux qui gerent plusieurs offres en parallele
+
+CloseOS Business s'adresse aux :
+- Infopreneurs qui closent seuls et veulent un CRM + systeme d'acquisition (plan Solo)
+- Infopreneurs, coaches, consultants et prestataires de services qui ont une equipe de vente (setters, closers, head of sales) et veulent piloter leur performance
+- Tout professionnel qui fait de l'acquisition et de la vente digitale, avec ou sans equipe
+
+CloseOS Business n'est PAS reserve aux entrepreneurs avec des equipes. Un infopreneur solo qui veut gerer son acquisition et son CRM est un cas d'usage parfaitement adapte (plan Solo a 39EUR/mois).
+
+CloseOS Sign s'adresse a :
+- Tout professionnel qui doit faire signer des contrats (closers, infopreneurs, coaches, agences, prestataires) et souhaite, en un seul geste, faire signer ET encaisser le paiement
+- Les abonnes CloseOS Business, qui y ont acces inclus dans leur abonnement
+- Les independants qui veulent un outil de signature electronique simple, avec preuve opposable
+
+Integrations avec les outils existants : CloseOS s'integre nativement avec HubSpot, iClosed, Pipedrive, GoHighLevel, Airtable, Systeme.io, n8n, Make, Zapier, Calendly, Google Calendar, Stripe et l'import CSV.
+
+
+================================================================================
+=== 2. L'ecosysteme CloseOS ===
+================================================================================
+CloseOS est un ecosysteme SaaS dedie a la vente digitale. Il est cree par Thomas Shamoev, fondateur et unique developpeur du projet. L'outil est disponible en francais et en anglais.
+
+L'ecosysteme se compose de trois produits distincts et independants :
+
+- CloseOS Sales — CRM tout-en-un pour les closers, setters et apporteurs d'affaires independants. Il centralise le pipeline, les appels, l'agenda, la facturation et les KPIs en un seul endroit. Particulierement adapte aux commerciaux qui travaillent sur plusieurs offres simultanement. Disponible depuis 2025.
+- CloseOS Business — Plateforme de pilotage commercial et d'acquisition pour les infopreneurs, coaches, consultants et prestataires de services. Lance le 10 avril 2026.
+- CloseOS Sign — Signature electronique avec encaissement (" Paye + signe "). Permet de composer un contrat, le faire signer electroniquement (mono ou multi-signataires) et encaisser un paiement au moment de la signature via Stripe. Chaque signature genere un document scelle avec certificat de preuve verifiable. Accessible sur sign.closeos.fr, et inclus pour les abonnes CloseOS Business.
+
+Chaque produit fonctionne de maniere independante : CloseOS Sales n'a pas besoin de CloseOS Business, et inversement. CloseOS Sign peut s'utiliser seul (abonnement dedie) ou est inclus avec un abonnement Business.
+
+Site : https://closeos.fr
+
+
+================================================================================
+=== 3. Le probleme resolu et la valeur ajoutee ===
+================================================================================
+Le probleme des closers : Ils jonglent entre 6 a 10 outils differents pour gerer un seul call : CRM, Google Meet ou Zoom, calendrier, Google Sheets pour les KPI, facturation, WhatsApp, enregistrement d'appels... Resultat : environ 15 minutes perdues en admin apres chaque appel. Sur un mois, jusqu'a 35 heures non rentables, avec 15 onglets ouverts en permanence et aucune vision claire du pipeline en temps reel.
+
+Le probleme des infopreneurs : Ils n'ont aucun outil pense pour piloter leur activite commerciale de A a Z. Ils bricolent entre iClosed, HubSpot, des Google Sheets, Slack/Discord et des tableurs manuels pour suivre leur equipe, leur pipeline et leur acquisition.
+
+Le probleme de la signature de contrats : Faire signer un contrat ET encaisser le paiement impose souvent deux outils separes (un Yousign/DocuSign d'un cote, un lien Stripe de l'autre), sans lien entre la signature et le paiement.
+
+La solution CloseOS : Tout est centralise. Apres chaque appel, tout se met a jour automatiquement. Plus besoin de switcher entre les onglets. Et avec CloseOS Sign, la signature et l'encaissement se font en un seul geste.
+
+La valeur concrete :
+- Gain de jusqu'a 1h30 de closing par jour pour les closers
+- Economie de 120EUR+/mois par rapport aux outils separes
+- Meilleure performance commerciale grace aux KPIs en temps reel
+- Zero double saisie, zero friction
+- Signer + encaisser en un seul flux (CloseOS Sign)
+
+CloseOS remplace entierement iClosed (booking qualifie + questionnaires) — ce n'est pas un complement, c'est un remplacement complet.
+
+
+================================================================================
+=== 4. Fonctionnalites CloseOS Sales ===
+================================================================================
+CloseOS Sales est le CRM tout-en-un pour les closers, setters et apporteurs d'affaires independants :
+- Cockpit & KPIs en temps reel : cash genere, commissions totales, taux de conversion, vue d'ensemble du pipeline.
+- CRM & Pipeline : vue Kanban drag-and-drop, configuration des offres (prix, commissions, formules), gestion des prospects. Ideal pour gerer plusieurs offres en parallele.
+- Call Room : espace d'appel integre avec script, notes, offre et ressources lies a chaque prospect ; lancement Google Meet et enregistrement ecran + audio de l'appel, exporte en video.
+- Booking & Agenda : prise de rendez-vous, liens de booking personnalises, synchronisation Google Calendar bidirectionnelle.
+- Relances & suivi de discussion : relances automatiques sur les cartes, delais configurables par intervalles. Quand un prospect repond, un bouton " Repondu " met les relances en pause et le fait compter dans le taux de reponse. Digest quotidien a 17h des discussions en attente.
+- Rappels a l'heure precise : programmez un rappel a la minute pres sur n'importe quel prospect ; l'echeance remonte dans votre liste du jour.
+- Rapport de performance hebdomadaire : CA, deals gagnes, RDV, taux de closing compares a la semaine precedente, en app et par email chaque lundi.
+- Detection de doublons : repere les fiches en double (email/telephone) et les fusionne cote a cote.
+- Taches par prospect : taches avec echeance attachees a chaque prospect, recap " a faire aujourd'hui " sur le dashboard.
+- Facturation automatique : factures de commissions (comptant et echelonne), lien de paiement CB via Stripe Connect, envoi auto a l'infopreneur.
+- WhatsApp integre : contact WhatsApp direct depuis chaque prospect.
+- Profil Closer partageable : lien unique configurable (KPIs et/ou pipeline), protegeable par mot de passe, pour prouver ses performances en temps reel.
+- Automatisation post-call : apres chaque appel, CRM, KPI, factures et suivi se mettent a jour automatiquement.
+- Integrations : HubSpot (bidirectionnelle), Pipedrive (bidirectionnelle), iClosed, GoHighLevel, Airtable, Systeme.io, Google Calendar, Stripe, Calendly, Zapier, Make, n8n, import CSV.
+
+
+================================================================================
+=== 5. Fonctionnalites CloseOS Business ===
+================================================================================
+CloseOS Business est la plateforme de pilotage commercial et d'acquisition. Les fonctionnalites dependent du role de l'utilisateur.
+
+Pour l'Owner (proprietaire de l'organisation) :
+- Dashboard macro : KPIs strategiques de toute l'organisation en temps reel.
+- Gestion d'equipe : pilotage des setters, closers, heads of sales. Roles granulaires (Owner, Admin, Head of Sales, Setter, Closer, Setter-Closer), invitation par lien, onboarding auto.
+- CRM & Pipeline partage : Kanban drag-drop, filtres par closer/setter/offre/periode.
+- Relances & suivi de discussion : relances automatiques (jusqu'a 7 emails apres un no-show), par intervalles. Bouton " Repondu " qui met les relances en pause et alimente le taux de reponse. Digest quotidien a 17h " toujours en discussion ? ". Liste de travail " a relancer & a suivre ".
+- Campagnes d'acquisition : pages de capture personnalisables (titre, video, champs custom), booking integre, rendez-vous payants via Stripe, precapture des leads (le prospect est enregistre des qu'il saisit son email/telephone, meme sans finir le formulaire), assignation auto (membre precis, tournante ou hasard), embed iframe/popup, tracking UTM + KPIs par campagne.
+- Module Formulaires : editeur facon Notion (" / "), 20+ types de blocs, bloc video a visionnage obligatoire, logique conditionnelle, formulaires publics (closeos.fr/f/...) connectes au CRM.
+- Liens de tracking : liens courts (/t/) avec suivi des clics par pays, appareil, visiteur unique/recurrent, et globe interactif.
+- Multi-booking : reserver plusieurs creneaux en une fois, avec un seul email recapitulatif.
+- Chiffre d'affaires & Stripe Connect : MRR, CA mensuel, marge nette, abonnements actifs, commissions versees, churn. Matching auto des paiements Stripe avec les deals gagnes.
+- Formules & Offres, Objectifs, Rapport automatique (Monday Morning Reporting + export PDF), Factures, KPIs avances (Personnel/Organisation/Par Offre).
+- API, Webhooks & serveur MCP : pilotage du CRM depuis Claude, ChatGPT ou tout client IA via un serveur MCP (31 outils), plus une API REST et des Webhooks signes HMAC.
+- Integrations CRM : HubSpot (sync auto 2min + push), Pipedrive, iClosed (webhook), GoHighLevel, Airtable, Systeme.io, Zapier, Make, n8n, Calendly, import CSV.
+- Agenda de toute l'equipe (sync Google Calendar), rappels, reassignation de RDV.
+- CloseOS Sign inclus dans l'abonnement.
+
+Head of Sales : memes droits que l'Owner sauf acces aux campagnes seulement si active, et pas d'acces aux parametres.
+Admin : exactement les memes droits que l'Owner.
+Closer : CRM/pipeline personnel, Call Room plein ecran, issues post-appel (Gagne, Follow Up, Perdu, No Show), agenda/rappels, KPIs, facturation (visible chez l'Owner), objectifs, disponibilites, formules en lecture.
+Setter : identique au Closer sauf issues specifiques (Qualifie, Book Later, Non-qualifie, Pas de reponse) ; a la qualification, assigne un closer et un creneau.
+Setter-Closer : combine Setter + Closer (8 issues, double KPI, auto-assignation ou vers d'autres closers).
+
+Securite : 100% conforme RGPD, donnees isolees par compte.
+
+
+================================================================================
+=== 6. Fonctionnalites CloseOS Sign ===
+================================================================================
+CloseOS Sign est l'outil de signature electronique avec encaissement de l'ecosysteme (sign.closeos.fr) :
+- Composition de contrats : a partir d'un modele, d'une feuille blanche ou d'un PDF importe, avec pose de champs (signature, texte, date...).
+- Paye + signe : encaissez un paiement au moment de la signature, via Stripe Connect. Le proprietaire reste beneficiaire des fonds ; CloseOS percoit une commission de service.
+- Verification du signataire : par code email et/ou SMS, avec protection anti-brute-force et blocage.
+- Multi-signataire : plusieurs signataires en ordre parallele ou sequentiel, avec paiement par signataire possible.
+- Certificat de preuve : journal d'evenements inalterable (append-only), empreinte SHA-256 du document, capture de l'IP et horodatage serveur, page publique de verification (/sign/verify).
+- Modeles reutilisables & espace closer : des membres d'equipe peuvent envoyer des contrats pour le compte du proprietaire.
+- Valeur juridique : signature electronique au sens du reglement eIDAS (UE 910/2014) et des articles 1366/1367 du Code civil.
+- 2FA d'appareil a la connexion, bilingue FR/EN.
+
+Modele de compte : CloseOS Sign s'utilise seul (abonnement dedie) OU est inclus pour les abonnes CloseOS Business (meme login).
+
+
+================================================================================
+=== 7. Tarifs CloseOS Sales ===
+================================================================================
+Essai gratuit : 10 jours, sans carte bancaire requise. Aucun prelevement pendant l'essai.
+Offre unique " Pack Pro " tout inclus : 34 EUR/mois (ou 25,50 EUR/mois en facturation annuelle, soit -25%).
+Sans engagement, resiliable a tout moment. Le Pack Pro inclut tout : CRM & pipeline illimite, Call Room + enregistrement video/audio, relances & suivi de discussion, agenda/booking/rappels, facturation auto & paiement CB, KPIs avances & rapport hebdo, sync CRM (iClosed, HubSpot, Pipedrive) et API REST + Webhooks.
+
+
+================================================================================
+=== 8. Tarifs CloseOS Business ===
+================================================================================
+CloseOS Business propose plusieurs formules avec 3 cycles de facturation : mensuel, trimestriel (-18%) et annuel (-28%). Tarifs mensuels indicatifs :
+- Solo — 39 EUR/mois : pour l'infopreneur qui close seul. CRM + systeme d'acquisition complet, cockpit, agenda + Google Calendar, RDV + booking links, rappels, KPIs, facturation, objectifs, rapports, API REST & Webhooks. CloseOS Sign inclus.
+- Business — 59 EUR/mois : jusqu'a 3 equipiers, gestion des roles, vue macro Owner, kanban partage, Monday Morning Reporting (hors acquisition et API).
+- Business + Acquisition — 99 EUR/mois (le plus populaire) : jusqu'a 5 equipiers, tout Business + acquisition complete.
+- Enterprise / Challenge — sur devis : membres illimites, setup + integration, support prioritaire.
+
+Services complementaires (extras, one-shot) : Setup 60 EUR, Integration 80 EUR, Setup + Integration 120 EUR.
+
+Note : CloseOS Sign est inclus pour tout abonne CloseOS Business actif, sans souscription separee.
+
+
+================================================================================
+=== 9. Tarifs CloseOS Sign ===
+================================================================================
+CloseOS Sign : formule unique a 9 EUR/mois TTC, incluant toutes les fonctionnalites, apres une periode d'essai de 14 jours (moyen de paiement requis). Sans engagement, resiliable a tout moment.
+La fonction " Paye + signe " ajoute une commission de service sur les transactions encaissees (l'utilisateur reste beneficiaire des fonds via son compte Stripe connecte).
+Les abonnes CloseOS Business actifs beneficient de CloseOS Sign inclus, sans souscription separee.
+
+
+================================================================================
+=== 10. Integrations et fonctionnement technique ===
+================================================================================
+CloseOS s'integre nativement avec les principaux outils du marche :
+- CRM : HubSpot (synchronisation bidirectionnelle), Pipedrive (bidirectionnelle + mapping), GoHighLevel, Airtable, iClosed (webhook), Systeme.io (tags).
+- Booking & Calendrier : Google Calendar (sync bidirectionnelle), Calendly.
+- Paiement : Stripe et Stripe Connect (abonnements, campagnes payantes, encaissement Sign).
+- Emails : Brevo (transactionnels, relances, rappels, factures).
+- Automatisation no-code : Zapier, Make, n8n (webhooks), plus l'import/export CSV universel avec reformatage IA.
+
+Pilotage par IA (CloseOS Business) : un serveur MCP (Model Context Protocol) expose 31 outils permettant de piloter le CRM directement depuis Claude, ChatGPT ou tout client MCP (prospects, campagnes, formulaires, agenda, equipe, facturation, tracking, KPIs). En complement, une API REST entrante (authentification par cle Bearer, idempotence via external_id) et des Webhooks sortants signes HMAC-SHA256 permettent de tout connecter a une stack existante.
+
+Securite : 100% conforme RGPD, donnees isolees par compte, hebergement principal dans l'Union europeenne (Supabase). Certains sous-traitants (Vercel, Stripe, assistants IA) peuvent traiter des donnees hors UE, encadres par des Clauses Contractuelles Types.

@@ -39,6 +39,7 @@ import {
   Layers,
   Check,
   CheckCircle,
+  AlarmClock,
 } from 'lucide-react'
 import { salesTranslations, detectSalesLang } from './landingPageI18n'
 import type { SalesLang } from './landingPageI18n'
@@ -854,22 +855,25 @@ export function LandingPage() {
   useEffect(() => {
     document.title = t.seo_title;
     document.querySelector('meta[name="description"]')?.setAttribute('content', t.seo_description);
-    document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/landing');
-    document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/landing');
+    // URL canonique de la landing Sales : /sales (cohérent avec /business et /sign).
+    // /landing redirige en 301 vers /sales — voir vercel.json et scripts/seo-routes.mjs.
+    document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/sales');
+    document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/sales');
     document.getElementById('og-title')?.setAttribute('content', t.seo_title);
     document.getElementById('og-description')?.setAttribute('content', t.seo_description);
-    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-sales.png');
-    document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/landing');
+    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-sales.jpg');
+    document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/sales');
     document.getElementById('tw-title')?.setAttribute('content', t.seo_title);
     document.getElementById('tw-description')?.setAttribute('content', t.seo_description);
-    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-sales.png');
+    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-sales.jpg');
     document.documentElement.lang = lang;
 
+    // Pas d'alternate 'en' : ?lang=en sert le même HTML prérendu français, la balise mentirait.
+    // À rétablir le jour où les pages anglaises auront leur propre chemin (/en/…).
     document.querySelectorAll('link[data-hreflang]').forEach(el => el.remove());
     [
-      { lang: 'fr', href: 'https://www.closeos.fr/landing' },
-      { lang: 'en', href: 'https://www.closeos.fr/landing?lang=en' },
-      { lang: 'x-default', href: 'https://www.closeos.fr/landing' },
+      { lang: 'fr', href: 'https://www.closeos.fr/sales' },
+      { lang: 'x-default', href: 'https://www.closeos.fr/sales' },
     ].forEach(({ lang: hl, href }) => {
       const link = document.createElement('link');
       link.rel = 'alternate'; link.hreflang = hl; link.href = href;
@@ -886,7 +890,7 @@ export function LandingPage() {
     script.setAttribute('data-closeos-sales-ld', 'true');
     script.textContent = JSON.stringify({
       '@context': 'https://schema.org', '@type': 'WebApplication', name: 'CloseOS Sales',
-      url: 'https://www.closeos.fr/landing', applicationCategory: 'BusinessApplication',
+      url: 'https://www.closeos.fr/sales', applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web', description: t.ld_description,
       offers: { '@type': 'AggregateOffer', lowPrice: '0', highPrice: '99', priceCurrency: 'EUR', availability: 'https://schema.org/InStock', offerCount: '3' },
       featureList: t.ld_features, inLanguage: lang,
@@ -904,6 +908,8 @@ export function LandingPage() {
         { '@type': 'Question', name: t.ld_faq3_q, acceptedAnswer: { '@type': 'Answer', text: t.ld_faq3_a } },
         { '@type': 'Question', name: t.ld_faq4_q, acceptedAnswer: { '@type': 'Answer', text: t.ld_faq4_a } },
         { '@type': 'Question', name: t.ld_faq5_q, acceptedAnswer: { '@type': 'Answer', text: t.ld_faq5_a } },
+        { '@type': 'Question', name: t.ld_faq6_q, acceptedAnswer: { '@type': 'Answer', text: t.ld_faq6_a } },
+        { '@type': 'Question', name: t.ld_faq7_q, acceptedAnswer: { '@type': 'Answer', text: t.ld_faq7_a } },
       ],
     });
     document.head.appendChild(faqScript);
@@ -915,7 +921,7 @@ export function LandingPage() {
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'CloseOS', item: 'https://www.closeos.fr' },
-        { '@type': 'ListItem', position: 2, name: 'CloseOS Sales', item: 'https://www.closeos.fr/landing' },
+        { '@type': 'ListItem', position: 2, name: 'CloseOS Sales', item: 'https://www.closeos.fr/sales' },
       ],
     });
     document.head.appendChild(breadcrumbScript);
@@ -1036,6 +1042,9 @@ export function LandingPage() {
           </div>
         )}
       </nav>
+
+      {/* <main> : delimite le contenu principal pour les extracteurs (crawlers IA, lecteurs d'ecran). Sans lui, rien ne distingue le texte de navigation du contenu. */}
+      <main>
 
       {/* ═══ HERO ═══ */}
       <section className="relative pt-28 pb-32 overflow-hidden">
@@ -1385,6 +1394,62 @@ export function LandingPage() {
               </div>
               <h3 className="text-xl font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat12_title}</h3>
               <p className="text-slate-500 text-sm leading-[1.7]">{t.feat12_desc}</p>
+            </motion.div>
+
+            {/* CARD 13, Suivi de discussion & taux de réponse */}
+            <motion.div variants={itemVariants} className="md:col-span-2 glass-card rounded-2xl p-10 sm:p-12 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700">
+                <MessageSquare className="w-72 h-72 text-sky-600" strokeWidth={0.8} />
+              </div>
+              <div className="relative z-10">
+                <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-8">
+                  <MessageSquare className="h-7 w-7" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-[1.6rem] font-extrabold text-slate-900 mb-4" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat13_title}</h3>
+                <p className="text-slate-500 mb-8 max-w-lg leading-[1.7]">{t.feat13_desc}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { title: t.feat13_a_title, desc: t.feat13_a_desc },
+                    { title: t.feat13_b_title, desc: t.feat13_b_desc },
+                    { title: t.feat13_c_title, desc: t.feat13_c_desc },
+                  ].map((sub, idx) => (
+                    <div key={idx} className="rounded-xl bg-slate-50 border border-slate-200 p-5">
+                      <p className="text-[0.65rem] font-extrabold text-sky-600 uppercase tracking-[0.18em] mb-3" style={{ fontFamily: "'Manrope', sans-serif" }}>{sub.title}</p>
+                      <p className="text-[0.85rem] text-slate-500 leading-[1.65]">{sub.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* COLONNE : Digest (14) + Rappels (15) empilés, à droite de la carte 13 */}
+            <motion.div variants={itemVariants} className="flex flex-col gap-5">
+              {/* Digest "Toujours en discussion ?" 17h */}
+              <div className="glass-card rounded-2xl p-8 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative flex-1 flex flex-col">
+                <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:opacity-[0.1] transition-opacity duration-700">
+                  <Send className="w-32 h-32 text-sky-600" strokeWidth={0.8} />
+                </div>
+                <div className="relative z-10">
+                  <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-6">
+                    <Send className="h-6 w-6" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-lg font-extrabold text-slate-900 mb-3" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat14_title}</h3>
+                  <p className="text-slate-500 text-sm leading-[1.65]">{t.feat14_desc}</p>
+                </div>
+              </div>
+              {/* Rappels à heure précise */}
+              <div className="glass-card rounded-2xl p-8 hover:bg-slate-50 transition-all duration-500 group overflow-hidden relative flex-1 flex flex-col">
+                <div className="absolute -right-6 -bottom-6 opacity-[0.04] group-hover:opacity-[0.1] transition-opacity duration-700">
+                  <AlarmClock className="w-32 h-32 text-sky-600" strokeWidth={0.8} />
+                </div>
+                <div className="relative z-10">
+                  <div className="p-3 rounded-xl bg-slate-100 text-sky-600 w-fit mb-6">
+                    <AlarmClock className="h-6 w-6" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-lg font-extrabold text-slate-900 mb-3" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.03em' }}>{t.feat15_title}</h3>
+                  <p className="text-slate-500 text-sm leading-[1.65]">{t.feat15_desc}</p>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         </div>
@@ -1809,11 +1874,26 @@ export function LandingPage() {
             <h2 className="text-[2.5rem] sm:text-[3rem] font-extrabold text-slate-900 leading-[0.95]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.04em' }}>{t.faq_title}</h2>
             <p className="text-slate-500 mt-5">{t.faq_subtitle}</p>
           </div>
+          {/*
+            La FAQ affichée est rendue depuis les mêmes clés ld_faq* que le JSON-LD FAQPage.
+            Auparavant, l'affichage (faq*_a1/a2) et le balisage (ld_faq*_a) étaient deux textes
+            distincts qui couvraient les mêmes questions : Google demande que le balisage
+            FAQPage corresponde au contenu visible, et les deux pouvaient diverger à chaque
+            retouche. Une seule source supprime le risque et donne au lecteur les réponses
+            complètes. Voir seo/GEO-ANALYSIS.md §4.
+          */}
           <div className="space-y-3">
-            <FAQItem question={t.faq1_q}><p>{t.faq1_a1}</p><p className="mt-3">{t.faq1_a2}</p></FAQItem>
-            <FAQItem question={t.faq2_q}><p>{t.faq2_intro}</p><ul className="list-disc pl-5 mt-3 space-y-1.5"><li>{t.faq2_item1}</li><li>{t.faq2_item2}</li></ul></FAQItem>
-            <FAQItem question={t.faq3_q}><p>{t.faq3_a1}</p><p className="mt-3">{t.faq3_a2}</p></FAQItem>
-            <FAQItem question={t.faq5_q}><p>{t.faq5_a1}</p><p className="mt-3">{t.faq5_a2}</p></FAQItem>
+            {([
+              [t.ld_faq5_q, t.ld_faq5_a],
+              [t.ld_faq6_q, t.ld_faq6_a],
+              [t.ld_faq1_q, t.ld_faq1_a],
+              [t.ld_faq3_q, t.ld_faq3_a],
+              [t.ld_faq4_q, t.ld_faq4_a],
+              [t.ld_faq7_q, t.ld_faq7_a],
+              [t.ld_faq2_q, t.ld_faq2_a],
+            ] as const).map(([q, a]) => (
+              <FAQItem key={q} question={q}><p>{a}</p></FAQItem>
+            ))}
           </div>
         </div>
       </motion.section>
@@ -1846,12 +1926,16 @@ export function LandingPage() {
       </motion.section>
 
       {/* ═══ FOOTER ═══ */}
+      </main>
       <footer className="border-t border-slate-200 py-8 pb-20">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-5">
           <img src="/logo-sales.png" alt="CloseOS Logo" className="h-6 w-auto" loading="lazy" width={72} height={24} />
           <div className="flex flex-wrap justify-center gap-4 text-[0.72rem] text-slate-400">
             <span>© 2026 CloseOS.fr</span>
             <span className="hidden sm:inline text-slate-300">·</span>
+            <a href="/glossaire" className="hover:text-slate-800 transition-colors">Glossaire</a>
+            <a href="/ressources" className="hover:text-slate-800 transition-colors">Ressources</a>
+            <a href="/comparatifs" className="hover:text-slate-800 transition-colors">Comparatifs</a>
             <a href="/mentions-legales" className="hover:text-slate-800 transition-colors">{t.footer_legal}</a>
             <span className="hidden sm:inline text-slate-300">·</span>
             <a href="/cgu" className="hover:text-slate-800 transition-colors">{t.footer_cgu}</a>

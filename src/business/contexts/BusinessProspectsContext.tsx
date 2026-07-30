@@ -685,6 +685,22 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
       return
     }
 
+    // Un changement de stage déclenche des automatismes serveur (trigger set_contacted_at) :
+    // retour en "Contacté" → contacted_at/relance_step/responded_at/discussion réinitialisés.
+    // On resynchronise l'état local avec la ligne serveur pour refléter la remise à zéro sans refresh.
+    if (updates.stage && data?.[0]) {
+      const srv: any = data[0]
+      setProspects(prev => prev.map(p => (p.id === id ? {
+        ...p,
+        contacted_at: srv.contacted_at,
+        relance_step: srv.relance_step,
+        last_relance_at: srv.last_relance_at,
+        responded_at: srv.responded_at,
+        discussion_next_at: srv.discussion_next_at,
+        discussion_email_sent: srv.discussion_email_sent,
+      } : p)))
+    }
+
     // Emit outbound webhook — differentiate stage_changed vs generic update
     if (data?.[0]) {
       const wasStageChange = current?.stage && updates.stage && current.stage !== updates.stage

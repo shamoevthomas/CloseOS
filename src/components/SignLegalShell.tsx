@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { SignLogo } from './SignLogo';
 import SignLangToggle from './SignLangToggle';
@@ -7,6 +7,20 @@ import { useSignLang } from '../contexts/SignLangContext';
 /** Gabarit commun des pages légales CloseOS Sign (DA dark + lime). */
 export function SignLegalShell({ title, updated, children }: { title: string; updated?: string; children: ReactNode }) {
   const { lang } = useSignLang();
+
+  // Sans ça, ces pages héritaient de la canonique d'index.html (https://www.closeos.fr/) :
+  // /sign/securite, /sign/cgv et /sign/confidentialite se déclaraient donc toutes comme
+  // étant la home de l'écosystème, et aucune ne pouvait être indexée pour elle-même.
+  // Sign vit sur son propre hôte : la canonique doit y pointer.
+  useEffect(() => {
+    const url = `https://sign.closeos.fr${window.location.pathname.replace(/\/+$/, '')}`;
+    document.getElementById('canonical')?.setAttribute('href', url);
+    document.getElementById('og-url')?.setAttribute('content', url);
+    document.getElementById('tw-url')?.setAttribute('content', url);
+    document.getElementById('og-title')?.setAttribute('content', title);
+    document.getElementById('tw-title')?.setAttribute('content', title);
+  }, [title]);
+
   return (
     <div className="min-h-screen bg-[#191E1E] text-[#F3F4F6]">
       <style>{`
@@ -47,7 +61,7 @@ export function SignLegalShell({ title, updated, children }: { title: string; up
             <a href="/sign/securite" className="transition-colors hover:text-[#CEFF8F]">{lang === 'fr' ? 'Sécurité technique' : 'Technical Security'}</a>
           </div>
           <p>
-            <strong className="text-[#A1A9A9]">{lang === 'fr' ? 'Éditeur :' : 'Publisher:'}</strong> CloseOS Technologies — SIREN 993 427 509 — SIRET 99342750900019.
+            <strong className="text-[#A1A9A9]">{lang === 'fr' ? 'Éditeur :' : 'Publisher:'}</strong> {lang === 'fr' ? 'Thomas Shamoev, entreprise individuelle exerçant sous le nom commercial CloseOS Technologies' : 'Thomas Shamoev, sole proprietorship trading as CloseOS Technologies'} — SIREN 993 427 509 — SIRET 99342750900019.
             {lang === 'fr' ? ' Directeur de la publication : ' : ' Publication director: '}Thomas Shamoev.{lang === 'fr' ? ' Contact : ' : ' Contact: '}<a href="mailto:support@closeos.fr" className="text-[#CEFF8F] hover:underline">support@closeos.fr</a>.
             {lang === 'fr' ? ' Hébergement : Supabase (Union européenne) & Vercel.' : ' Hosting: Supabase (European Union) & Vercel.'}
           </p>

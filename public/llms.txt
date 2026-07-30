@@ -1,19 +1,79 @@
 # CloseOS
 
-> Ecosysteme SaaS francophone pour la vente digitale.
+> Écosystème SaaS français pour la vente digitale : un CRM pour les closers indépendants, une plateforme de management pour les équipes de vente, et une signature électronique qui encaisse le paiement.
 
-CloseOS est compose de deux produits independants :
+CloseOS est édité en France, hébergé dans l'Union européenne et conforme au RGPD. L'interface est en français et en anglais. Trois produits, utilisables séparément ou ensemble avec un compte unique.
 
 ## CloseOS Sales
-CRM pour closers high ticket francophones. Pipeline de vente visuel, VoIP integre, agenda & booking, facturation automatique, KPIs de closing. Destine aux closers independants et freelances.
-URL : https://www.closeos.fr/landing
+Le CRM du closer indépendant. Pipeline de vente visuel, Call Room intégrée (VoIP), agenda et liens de réservation, relances automatiques, facturation, KPIs de closing en temps réel, partage de performances en lecture seule.
+Pour : closers freelances et indépendants francophones, en high ticket.
+URL : https://www.closeos.fr/sales
 
 ## CloseOS Business
-Plateforme de management pour infopreneurs et Head of Sales. Gestion d'equipe de closers et setters, pilotage de campagnes d'acquisition, CRM acquisition, tableau de bord infopreneur, KPIs d'equipe, onboarding automatise des closers.
+La plateforme de management pour infopreneurs et Head of Sales. Gestion d'équipe (closers et setters), rôles et attributions, campagnes d'acquisition, formulaires publics, liens de réservation, objectifs, commissions, KPIs d'équipe, onboarding automatisé.
+Pour : infopreneurs, agences et équipes de vente qui pilotent plusieurs closers.
+CloseOS Sign est inclus avec Business.
 URL : https://www.closeos.fr/business
 
-## Integrations natives
-HubSpot (bidirectionnel), Pipedrive (bidirectionnel), GoHighLevel (bidirectionnel), Airtable (bidirectionnel), Systeme.io (webhook), iClosed (webhook), Google Calendar, Stripe, Calendly, Zapier, Make, n8n.
+## CloseOS Sign
+Signature électronique avec paiement intégré — « Sign + Pay ». Le client signe le contrat et règle au même endroit, dans le même flux. Multi-signataires en ordre parallèle ou séquentiel, vérification d'identité par code email ou SMS, contrats réutilisables en modèles, espace dédié pour chaque closer.
+Valeur juridique : chaque signature est accompagnée d'un faisceau de preuves — journal d'événements horodaté et inaltérable, empreinte SHA-256 du document calculée côté serveur, méthode de vérification du signataire — et d'un certificat de preuve figé et vérifiable en ligne.
+URL : https://sign.closeos.fr/sign
+
+## Tarifs
+Prix en facturation annuelle : Sales 18 €/mois, Business 28 €/mois (formule Solo), Sign 9 €/mois et inclus avec Business. En mensuel : Sales 24 €, Business de 39 à 99 € selon la formule, Sign 12 €. Essai gratuit sur les trois produits, sans engagement.
+URL : https://www.closeos.fr/tarifs
+
+## Ce qui distingue CloseOS
+- Alternative française à iClosed, avec synchronisation bidirectionnelle possible entre les deux.
+- Conçu pour le closing high ticket francophone, pas adapté d'un CRM généraliste.
+- Hébergement en Union européenne et conformité RGPD.
+- Signature et encaissement réunis : le contrat signé déclenche le paiement.
+- Comparatif détaillé : https://www.closeos.fr/comparatifs/closeos-vs-iclosed
+
+## Intégrations natives
+HubSpot (bidirectionnel), Pipedrive (bidirectionnel), GoHighLevel (bidirectionnel), Airtable (bidirectionnel), Systeme.io (webhook), iClosed (webhook), Google Calendar, Stripe, Calendly, Zapier, Make, n8n. Plus de 7 000 applications accessibles via Zapier.
+
+## Version longue
+Une version détaillée de ce fichier, avec les fonctionnalités produit, la sécurité et une FAQ
+étendue : https://www.closeos.fr/llms-full.txt
+
+## Pages de référence
+- Fonctionnalités : https://www.closeos.fr/fonctionnalites
+- CRM pour closer : https://www.closeos.fr/fonctionnalites/crm-closer
+- Alternative à iClosed : https://www.closeos.fr/comparatifs/alternative-iclosed
+- Sécurité technique de CloseOS Sign : https://sign.closeos.fr/sign/securite
+- Mentions légales : https://www.closeos.fr/mentions-legales
+- Politique de confidentialité : https://www.closeos.fr/confidentialite
+
+## Questions fréquentes
+
+CloseOS et Close CRM, est-ce la même chose ?
+Non, ce sont deux produits distincts et sans lien. Close (ou Close CRM, anciennement Close.io) est un CRM américain destiné aux équipes commerciales de startups. CloseOS est un écosystème français dédié au closing high ticket francophone, édité en France et hébergé dans l'Union européenne. Le nom CloseOS s'écrit en un seul mot.
+
+Qu'est-ce que CloseOS ?
+Un écosystème SaaS français composé de trois produits : CloseOS Sales (CRM pour closer indépendant), CloseOS Business (management d'équipe de closing) et CloseOS Sign (signature électronique avec paiement intégré). Ils s'utilisent séparément ou ensemble avec un compte unique.
+
+Combien coûte CloseOS ?
+En facturation annuelle : CloseOS Sales 18 €/mois, CloseOS Business 28 €/mois pour la formule Solo, CloseOS Sign 9 €/mois. En facturation mensuelle : Sales 24 €, Business 39 € (Solo), 59 € (Business) ou 99 € (Business + Acquisition), Sign 12 €. Sign est inclus sans surcoût avec Business.
+
+Quelle est la différence entre CloseOS Sales et CloseOS Business ?
+CloseOS Sales est pour celui qui vend seul : CRM, pipeline, Call Room, relances, facturation, KPIs. CloseOS Business est pour celui qui fait vendre d'autres personnes : rôles, attribution des leads, KPIs par membre, commissions, onboarding. La règle : si vous passez vous-même tous les appels, Sales suffit ; dès qu'une deuxième personne vend pour vous, il faut Business.
+
+Y a-t-il une limite au nombre de prospects ou de membres d'équipe ?
+Non. CloseOS ne facture pas au contact et n'impose aucune limite de taille d'équipe. Le tarif suit le nombre de sièges actifs, facturés au prorata.
+
+Qu'est-ce qui différencie CloseOS Sign des autres outils de signature électronique ?
+La signature et l'encaissement se font dans le même geste : le signataire signe le contrat et règle le paiement (acompte, solde ou abonnement) au même endroit, dans le même flux. Les outils de signature classiques s'arrêtent à la signature.
+
+CloseOS est-il conforme au RGPD ?
+Oui. CloseOS est édité en France et hébergé dans l'Union européenne.
+
+CloseOS est-il une alternative à iClosed ?
+Oui, c'est l'alternative française à iClosed, avec en plus une synchronisation bidirectionnelle possible entre les deux outils.
+
+En quelles langues CloseOS est-il disponible ?
+L'interface est disponible en français et en anglais.
 
 ## Contact
 Email : support@closeos.fr

@@ -101,6 +101,10 @@ export default function CloseosVsIclosed() {
     document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed');
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed');
     document.getElementById('og-title')?.setAttribute('content', 'CloseOS vs iClosed, Comparatif détaillé 2026');
+    // Visuel dédié généré à la volée (api/og type=page) : une URL d'image traverse le prerender.
+    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/api/og?type=page&slug=comparatif&lang=fr');
+    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/api/og?type=page&slug=comparatif&lang=fr');
+    document.getElementById('og-image-alt')?.setAttribute('content', 'CloseOS vs iClosed');
     document.getElementById('og-description')?.setAttribute('content', "CloseOS vs iClosed : quel outil choisir ? Comparatif complet des fonctionnalités, tarifs et cas d'usage.");
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed');
     document.getElementById('tw-title')?.setAttribute('content', 'CloseOS vs iClosed, Comparatif détaillé 2026');
@@ -127,9 +131,9 @@ export default function CloseosVsIclosed() {
     faq.textContent = JSON.stringify({
       '@context': 'https://schema.org', '@type': 'FAQPage',
       mainEntity: [
-        { '@type': 'Question', name: 'Est-ce que CloseOS et iClosed sont des concurrents ?', acceptedAnswer: { '@type': 'Answer', text: 'Non. iClosed est un outil de booking (comparable à Calendly). CloseOS est un CRM complet pour closers (comparable à HubSpot spécialisé). Ils fonctionnent très bien ensemble.' } },
-        { '@type': 'Question', name: 'Puis-je utiliser les deux en même temps ?', acceptedAnswer: { '@type': 'Answer', text: "Oui, c'est recommandé pour les infopreneurs avec une équipe. iClosed gère les rendez-vous, CloseOS gère pipeline, appels, facturation, KPIs et équipe. Connexion via webhook natif." } },
-        { '@type': 'Question', name: 'Quel est le meilleur CRM pour un closer en 2026 ?', acceptedAnswer: { '@type': 'Answer', text: 'Pour un closer francophone high-ticket, CloseOS est le seul CRM conçu spécifiquement pour ce métier avec callroom VoIP et KPIs de closing natifs.' } },
+        { '@type': 'Question', name: 'Est-ce que CloseOS et iClosed sont des concurrents ?', acceptedAnswer: { '@type': 'Answer', text: "Non, et c'est le malentendu le plus courant sur ces deux outils. iClosed est une solution de prise de rendez-vous et de qualification de leads : sa fonction principale est de remplir l'agenda du closer avec des prospects déjà filtrés, comparable en cela à un Calendly enrichi d'un questionnaire. CloseOS est un CRM complet pour closers : il prend le relais une fois le rendez-vous pris, avec le pipeline de vente, la Call Room, les relances automatiques, la facturation, les KPIs de closing et, sur la formule Business, le pilotage d'une équipe de closers et de setters. Les deux couvrent donc deux moments différents du même cycle de vente. C'est pourquoi ils s'utilisent très bien ensemble : une synchronisation bidirectionnelle relie les deux outils, de sorte que les rendez-vous pris dans iClosed alimentent automatiquement le pipeline CloseOS." } },
+        { '@type': 'Question', name: 'Puis-je utiliser les deux en même temps ?', acceptedAnswer: { '@type': 'Answer', text: "Oui, et c'est même la configuration que nous recommandons aux infopreneurs qui disposent déjà d'une équipe et d'un setup iClosed rodé. La répartition des rôles est nette : iClosed continue de gérer la prise de rendez-vous et la qualification en amont, tandis que CloseOS gère tout ce qui suit — le pipeline de vente, les appels et leur enregistrement, les relances, la facturation, les KPIs individuels et collectifs, l'attribution des leads entre setters et closers et le calcul des commissions. La connexion se fait par une synchronisation bidirectionnelle native : chaque prospect, deal ou changement d'étape modifié d'un côté est reflété de l'autre en temps réel, sans double saisie ni réconciliation manuelle. Cette approche est aussi le chemin de migration le plus sûr, puisque rien n'est coupé pendant la transition et que vous conservez vos habitudes d'équipe." } },
+        { '@type': 'Question', name: 'Quel est le meilleur CRM pour un closer en 2026 ?', acceptedAnswer: { '@type': 'Answer', text: "Cela dépend de ce que vous faites. Pour un commercial en cycle long dans une PME, un CRM généraliste comme HubSpot ou Pipedrive reste pertinent : ils sont matures, bien documentés et couvrent large. Pour un closer francophone en high ticket, le besoin est différent : peu de prospects, un cycle court, beaucoup d'appels, des relances serrées et une rémunération à la commission. CloseOS Sales est conçu pour ce métier précis, avec une Call Room intégrée pour passer et enregistrer les appels, des KPIs de closing natifs — taux de closing, cash collecté, no-show — et une facturation reliée à Stripe. Un CRM généraliste peut être configuré pour s'en approcher, mais au prix d'un paramétrage long et de champs personnalisés à maintenir. La vraie question n'est donc pas quel CRM est le meilleur, mais lequel part de votre métier." } },
       ]
     });
     document.head.appendChild(faq);
@@ -155,6 +159,9 @@ export default function CloseosVsIclosed() {
           </div>
         </div>
       </nav>
+
+      {/* <main> : delimite le contenu principal pour les extracteurs (crawlers IA, lecteurs d'ecran). Sans lui, rien ne distingue le texte de navigation du contenu. */}
+      <main>
 
       {/* Hero */}
       <motion.section
@@ -394,11 +401,18 @@ export default function CloseosVsIclosed() {
       </motion.section>
 
       {/* Footer */}
+      </main>
       <footer className="border-t border-white/5 bg-[#020617] py-6 pb-16">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <img src="/logo-sales.png" alt="CloseOS" className="h-6 w-auto" loading="lazy" width={72} height={24} />
           <div className="flex flex-wrap justify-center gap-4 text-xs text-slate-500">
             <span>&copy; 2026 CloseOS.fr</span><span className="hidden sm:inline">&bull;</span>
+            <a href="/glossaire" className="hover:text-white transition-colors">Glossaire</a>
+            <span className="hidden sm:inline">&bull;</span>
+            <a href="/ressources" className="hover:text-white transition-colors">Ressources</a>
+            <span className="hidden sm:inline">&bull;</span>
+            <a href="/comparatifs" className="hover:text-white transition-colors">Comparatifs</a>
+            <span className="hidden sm:inline">&bull;</span>
             <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</a><span className="hidden sm:inline">&bull;</span>
             <a href="/cgu" className="hover:text-white transition-colors">CGU</a><span className="hidden sm:inline">&bull;</span>
             <a href="/cgv" className="hover:text-white transition-colors">CGV</a><span className="hidden sm:inline">&bull;</span>

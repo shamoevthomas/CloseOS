@@ -1,7 +1,21 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 export const PrivacyPolicy = () => {
+  // Page prérendue : ces métas sont figées dans le HTML servi aux moteurs.
+  useEffect(() => {
+    document.title = 'Politique de confidentialité — CloseOS';
+    document.querySelector('meta[name="description"]')?.setAttribute('content', "Comment CloseOS collecte, utilise et protège vos données personnelles. Hébergement en Union européenne, conformité RGPD.");
+    document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/confidentialite');
+    document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/confidentialite');
+    document.getElementById('og-title')?.setAttribute('content', 'Politique de confidentialité — CloseOS');
+    document.getElementById('og-description')?.setAttribute('content', "Comment CloseOS collecte, utilise et protège vos données personnelles. Hébergement en Union européenne, conformité RGPD.");
+    document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/confidentialite');
+    document.getElementById('tw-title')?.setAttribute('content', 'Politique de confidentialité — CloseOS');
+    document.getElementById('tw-description')?.setAttribute('content', "Comment CloseOS collecte, utilise et protège vos données personnelles. Hébergement en Union européenne, conformité RGPD.");
+    document.documentElement.lang = 'fr';
+  }, []);
   return (
     <div className="min-h-screen bg-[#020617] text-slate-300 font-sans selection:bg-blue-500/30">
       <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50">
@@ -16,7 +30,7 @@ export const PrivacyPolicy = () => {
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <h1 className="text-3xl font-bold text-white mb-2">Politique de Confidentialite</h1>
-        <p className="text-slate-500 mb-8">Derniere mise a jour : 25 mars 2026</p>
+        <p className="text-slate-500 mb-8">Derniere mise a jour : 29 juillet 2026</p>
 
         <div className="space-y-8 text-sm leading-relaxed text-justify">
 
@@ -68,6 +82,9 @@ export const PrivacyPolicy = () => {
                 <strong>Donnees d'Appels :</strong> Historique des appels (duree, contact, date, statut), scripts d'appel.
               </li>
               <li>
+                <strong>Enregistrements Call Room :</strong> Enregistrement de l'ecran et de l'audio de l'appel (cockpit d'appel), exporte en video pour relecture. Ces enregistrements peuvent contenir la voix et les informations partagees par le prospect ; l'Utilisateur est responsable d'informer et de recueillir le consentement des participants avant tout enregistrement.
+              </li>
+              <li>
                 <strong>Donnees de Booking (Cal.com) :</strong> Types d'evenements, disponibilites, reservations synchronisees.
               </li>
               <li>
@@ -96,7 +113,16 @@ export const PrivacyPolicy = () => {
                 <strong>Donnees de Capture (Prospects) :</strong> Email, telephone (multi-pays), champs personnalises, creneau de rendez-vous selectionne, fuseau horaire du prospect.
               </li>
               <li>
-                <strong>Empreintes d'Appareil :</strong> Identifiant unique + user-agent pour la verification de securite.
+                <strong>Precapture de leads :</strong> Des qu'un prospect saisit son email ou son telephone dans un formulaire ou une page de capture, ces coordonnees et les reponses deja renseignees sont enregistrees, <strong>meme si le formulaire n'est pas soumis jusqu'au bout</strong>, afin de creer ou completer sa fiche prospect.
+              </li>
+              <li>
+                <strong>Donnees de Formulaires :</strong> Reponses aux formulaires publics (candidature, sondage, brief) heberges sur closeos.fr/f/. Pour les blocs video a visionnage obligatoire, la <strong>duree de visionnage</strong> est mesuree afin de conditionner la validation du formulaire.
+              </li>
+              <li>
+                <strong>Liens de tracking (/t/) :</strong> Lorsqu'un lien de tracking est cree par l'Utilisateur, chaque clic collecte l'<strong>adresse IP</strong>, le type d'appareil, le pays approximatif, le caractere de visiteur unique ou recurrent et le nombre de clics, a des fins de mesure d'audience.
+              </li>
+              <li>
+                <strong>Empreintes d'Appareil :</strong> Identifiant unique + user-agent pour la verification de securite et la fonction « appareil de confiance » (2FA memorisee jusqu'a 7 jours).
               </li>
               <li>
                 <strong>Donnees d'Onboarding :</strong> Contenus de formation (textes, videos, liens, PDFs) crees par le proprietaire.
@@ -122,9 +148,12 @@ export const PrivacyPolicy = () => {
                   <tr><td className="px-4 py-2">Gestion du CRM et pipeline</td><td className="px-4 py-2">Execution du contrat</td><td className="px-4 py-2">Sales & Business</td></tr>
                   <tr><td className="px-4 py-2">Planification et rappels de rendez-vous</td><td className="px-4 py-2">Execution du contrat</td><td className="px-4 py-2">Sales & Business</td></tr>
                   <tr><td className="px-4 py-2">Generation automatique de factures</td><td className="px-4 py-2">Obligation legale / contrat</td><td className="px-4 py-2">Sales & Business</td></tr>
-                  <tr><td className="px-4 py-2">Telephonie VoIP et enregistrement d'appels</td><td className="px-4 py-2">Execution du contrat</td><td className="px-4 py-2">Sales</td></tr>
+                  <tr><td className="px-4 py-2">Appels et Call Room (enregistrement ecran + audio)</td><td className="px-4 py-2">Execution du contrat / consentement des participants</td><td className="px-4 py-2">Sales</td></tr>
                   <tr><td className="px-4 py-2">Gestion d'equipe et remuneration</td><td className="px-4 py-2">Execution du contrat</td><td className="px-4 py-2">Business</td></tr>
-                  <tr><td className="px-4 py-2">Campagnes d'acquisition et capture</td><td className="px-4 py-2">Interet legitime</td><td className="px-4 py-2">Business</td></tr>
+                  <tr><td className="px-4 py-2">Campagnes, formulaires et capture de leads (incl. precapture)</td><td className="px-4 py-2">Interet legitime</td><td className="px-4 py-2">Business</td></tr>
+                  <tr><td className="px-4 py-2">Liens de tracking et mesure d'audience</td><td className="px-4 py-2">Interet legitime</td><td className="px-4 py-2">Business</td></tr>
+                  <tr><td className="px-4 py-2">Relances automatiques et suivi de discussion (emails aux prospects)</td><td className="px-4 py-2">Interet legitime</td><td className="px-4 py-2">Sales & Business</td></tr>
+                  <tr><td className="px-4 py-2">Pilotage par API / serveur MCP (assistants IA)</td><td className="px-4 py-2">Execution du contrat (a l'initiative de l'Utilisateur)</td><td className="px-4 py-2">Business</td></tr>
                   <tr><td className="px-4 py-2">Rapports de performance et KPIs</td><td className="px-4 py-2">Interet legitime</td><td className="px-4 py-2">Sales & Business</td></tr>
                   <tr><td className="px-4 py-2">Synchronisation CRM tiers</td><td className="px-4 py-2">Consentement</td><td className="px-4 py-2">Sales & Business</td></tr>
                   <tr><td className="px-4 py-2">Verification de securite des appareils</td><td className="px-4 py-2">Interet legitime (securite)</td><td className="px-4 py-2">Business</td></tr>
@@ -145,8 +174,20 @@ export const PrivacyPolicy = () => {
               <li><strong>Paiement :</strong> Stripe (Gestion des abonnements et paiements).</li>
               <li><strong>Emails Transactionnels :</strong> Brevo (Rappels de rendez-vous, verification, factures, rapports). Expediteur : support@closeos.fr.</li>
               <li><strong>Telephonie (VoIP) :</strong> Twilio (Acheminement des appels et SMS — CloseOS Sales).</li>
-              <li><strong>Calendrier :</strong> Google Calendar API (Synchronisation d'evenements — Sales & Business), Cal.com (Booking — Sales).</li>
+              <li><strong>Calendrier :</strong> Google Calendar API (Synchronisation <strong>bidirectionnelle</strong> d'evenements, en lecture et en ecriture, apres liaison de votre compte Google — Sales & Business), Cal.com (Booking — Sales).</li>
             </ul>
+
+            <h3 className="text-base font-semibold text-white mt-4 mb-2">Assistants IA & serveur MCP (a l'initiative de l'Utilisateur)</h3>
+            <p>
+              CloseOS Business expose une <strong>API REST</strong> et un <strong>serveur MCP (Model Context Protocol)</strong> qui permettent, si l'Utilisateur active une cle API, a des assistants IA tiers de lire et d'ecrire dans ses donnees (prospects, rendez-vous, campagnes, formulaires, facturation). Lorsque l'Utilisateur choisit d'utiliser ces assistants, les donnees concernees sont transmises a l'editeur de l'assistant, agissant comme destinataire / sous-traitant :
+            </p>
+            <ul className="list-disc pl-5 space-y-2 mt-2">
+              <li><strong>Anthropic (Claude) :</strong> traitement des requetes de l'assistant IA. Donnees potentiellement hebergees hors Union europeenne (Etats-Unis), encadrees par des Clauses Contractuelles Types.</li>
+              <li><strong>OpenAI (ChatGPT) :</strong> traitement des requetes de l'assistant IA. Donnees potentiellement hebergees hors Union europeenne (Etats-Unis), encadrees par des Clauses Contractuelles Types.</li>
+            </ul>
+            <p className="mt-2">
+              Ce partage n'a lieu <strong>que si l'Utilisateur genere une cle API et connecte un assistant IA</strong>. Les cles sont revocables a tout moment. L'Utilisateur est responsable du choix de l'assistant et de la conformite de cet usage.
+            </p>
 
             <h3 className="text-base font-semibold text-white mt-4 mb-2">Integrations tierces (a l'initiative de l'Utilisateur)</h3>
             <p>
@@ -171,6 +212,9 @@ export const PrivacyPolicy = () => {
             <p>Les services executent les traitements automatises suivants :</p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
               <li><strong>Rappels de rendez-vous</strong> (Business) — Emails automatiques aux prospects a des intervalles configurables (24h, 10h, 5h, 3h, 1h, 30min, 15min avant le rendez-vous).</li>
+              <li><strong>Relances automatiques</strong> (Sales & Business) — Jusqu'a 7 emails de relance automatiques envoyes aux prospects apres un no-show ou l'entree en stade « Contacte », a des intervalles configures par l'Utilisateur. Les relances se mettent en pause des que le prospect a repondu.</li>
+              <li><strong>Digest « suivi de discussion »</strong> (Sales & Business) — Chaque jour a 17h, un email recapitulatif est envoye a l'Utilisateur (et non au prospect) listant les prospects ayant repondu mais dont la discussion est en attente.</li>
+              <li><strong>Rappels programmes</strong> (Sales & Business) — Rappels a l'heure precise poses par l'Utilisateur sur une fiche prospect.</li>
               <li><strong>Generation de factures</strong> (Sales & Business) — Creation automatique mensuelle selon la configuration de l'Utilisateur.</li>
               <li><strong>Rapports hebdomadaires</strong> (Business) — Agregation des metriques et envoi par email.</li>
               <li><strong>Attribution de rendez-vous</strong> (Business) — Algorithme round-robin ou aleatoire pour assigner les prospects aux membres d'equipe.</li>
@@ -211,8 +255,9 @@ export const PrivacyPolicy = () => {
                   <tr><td className="px-4 py-2">Donnees CRM (apres resiliation)</td><td className="px-4 py-2">3 mois (recuperation possible), puis suppression definitive</td></tr>
                   <tr><td className="px-4 py-2">Donnees d'equipe (Business)</td><td className="px-4 py-2">Jusqu'a suppression par le proprietaire ou du compte</td></tr>
                   <tr><td className="px-4 py-2">Historique de rendez-vous</td><td className="px-4 py-2">Jusqu'a suppression par l'Utilisateur</td></tr>
-                  <tr><td className="px-4 py-2">Historique d'appels (Sales)</td><td className="px-4 py-2">Jusqu'a suppression par l'Utilisateur</td></tr>
-                  <tr><td className="px-4 py-2">Jetons d'appareil (Business)</td><td className="px-4 py-2">Duree de la session</td></tr>
+                  <tr><td className="px-4 py-2">Historique d'appels & enregistrements Call Room (Sales)</td><td className="px-4 py-2">Jusqu'a suppression par l'Utilisateur</td></tr>
+                  <tr><td className="px-4 py-2">Donnees des liens de tracking (Business)</td><td className="px-4 py-2">Jusqu'a suppression du lien par l'Utilisateur</td></tr>
+                  <tr><td className="px-4 py-2">Appareil de confiance / 2FA (Business)</td><td className="px-4 py-2">7 jours, puis nouvelle verification requise</td></tr>
                   <tr><td className="px-4 py-2">Jetons OAuth (Google, CRM tiers)</td><td className="px-4 py-2">Jusqu'a revocation ou suppression du compte</td></tr>
                   <tr><td className="px-4 py-2">Factures et pieces comptables</td><td className="px-4 py-2">10 ans (obligation legale francaise)</td></tr>
                   <tr><td className="px-4 py-2">Logs de connexion</td><td className="px-4 py-2">Selon politique de retention interne</td></tr>
@@ -253,9 +298,23 @@ export const PrivacyPolicy = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-white mb-4">10. Cookies</h2>
+            <h2 className="text-xl font-bold text-white mb-4">10. Cookies & Traceurs</h2>
             <p>
-              Nous utilisons des cookies strictement necessaires au fonctionnement du site (session d'authentification, preferences). Aucun cookie publicitaire n'est utilise. Vous pouvez gerer vos preferences via les parametres de votre navigateur.
+              Nous utilisons des cookies strictement necessaires au fonctionnement du site (session d'authentification, preferences, cookie « appareil de confiance » memorisant votre 2FA pendant 7 jours). <strong>Aucun cookie publicitaire</strong> n'est utilise a des fins de profilage marketing.
+            </p>
+            <p className="mt-2">
+              Les <strong>liens de tracking (/t/)</strong> crees par l'Utilisateur ne deposent pas de cookie publicitaire : la mesure d'audience repose sur les donnees techniques du clic (IP, appareil, pays approximatif). L'Utilisateur qui diffuse de tels liens est responsable d'informer les personnes concernees.
+            </p>
+            <p className="mt-2">Vous pouvez gerer vos preferences via les parametres de votre navigateur.</p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-white mb-4">11. Transferts hors Union europeenne</h2>
+            <p>
+              Nos donnees sont principalement hebergees dans l'Union europeenne (Supabase). Certains sous-traitants peuvent toutefois traiter des donnees en dehors de l'UE, notamment aux Etats-Unis : <strong>Vercel</strong> (hebergement), <strong>Stripe</strong> (paiement), <strong>Twilio</strong> (VoIP/SMS), ainsi que <strong>Anthropic</strong> et <strong>OpenAI</strong> si l'Utilisateur active un assistant IA via l'API / le serveur MCP.
+            </p>
+            <p className="mt-2">
+              Ces transferts sont encadres par les <strong>Clauses Contractuelles Types</strong> de la Commission europeenne (et, le cas echeant, le cadre Data Privacy Framework), garantissant un niveau de protection adequat.
             </p>
           </section>
 

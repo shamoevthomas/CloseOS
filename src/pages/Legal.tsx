@@ -1,7 +1,21 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Info } from 'lucide-react';
 
 export function Legal() {
+  // Page prérendue : ces métas sont figées dans le HTML servi aux moteurs.
+  useEffect(() => {
+    document.title = 'Mentions légales — CloseOS';
+    document.querySelector('meta[name="description"]')?.setAttribute('content', "Mentions légales de CloseOS : éditeur, hébergeur, propriété intellectuelle et coordonnées de contact.");
+    document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/mentions-legales');
+    document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/mentions-legales');
+    document.getElementById('og-title')?.setAttribute('content', 'Mentions légales — CloseOS');
+    document.getElementById('og-description')?.setAttribute('content', "Mentions légales de CloseOS : éditeur, hébergeur, propriété intellectuelle et coordonnées de contact.");
+    document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/mentions-legales');
+    document.getElementById('tw-title')?.setAttribute('content', 'Mentions légales — CloseOS');
+    document.getElementById('tw-description')?.setAttribute('content', "Mentions légales de CloseOS : éditeur, hébergeur, propriété intellectuelle et coordonnées de contact.");
+    document.documentElement.lang = 'fr';
+  }, []);
   return (
     <div className="min-h-screen bg-[#020617] text-slate-300 font-sans py-20 px-6">
       <div className="max-w-3xl mx-auto">
@@ -21,7 +35,7 @@ export function Legal() {
           <section>
             <h2 className="text-lg font-bold text-white mb-2 uppercase tracking-wider text-blue-400">1. Editeur du site</h2>
             <p>
-              Le site <strong>CloseOS.fr</strong> et l'ensemble de ses services — <strong>CloseOS Sales</strong> et <strong>CloseOS Business</strong> — sont edites par l'entreprise individuelle <strong>Shamoev Thomas</strong>.<br/>
+              Le site <strong>CloseOS.fr</strong> et l'ensemble de ses services — <strong>CloseOS Sales</strong>, <strong>CloseOS Business</strong> et <strong>CloseOS Sign</strong> — sont edites par l'entreprise individuelle <strong>Thomas Shamoev</strong>, exercant sous le nom commercial <strong>CloseOS</strong> (aussi designe « CloseOS Technologies »).<br/>
               Immatriculee au Registre National des Entreprises (RNE).
             </p>
             <ul className="mt-2 space-y-1 list-disc list-inside text-slate-400">
@@ -37,10 +51,11 @@ export function Legal() {
           {/* SERVICES */}
           <section>
             <h2 className="text-lg font-bold text-white mb-2 uppercase tracking-wider text-blue-400">2. Services proposes</h2>
-            <p>CloseOS est un ecosysteme SaaS francais pour la vente digitale, compose de deux produits complementaires :</p>
+            <p>CloseOS est un ecosysteme SaaS francais pour la vente digitale, compose de trois produits complementaires :</p>
             <ul className="mt-2 space-y-2 list-disc list-inside text-slate-400">
-              <li><strong>CloseOS Sales</strong> — Outil tout-en-un pour closers et setters freelance : CRM, pipeline de vente, agenda, booking, VoIP, facturation automatique, KPIs de closing et synchronisation CRM tiers.</li>
-              <li><strong>CloseOS Business</strong> — Plateforme de management pour infopreneurs et Head of Sales : gestion d'equipe de closers/setters, campagnes d'acquisition, CRM acquisition, rendez-vous, facturation equipe et tableau de bord analytics.</li>
+              <li><strong>CloseOS Sales</strong> — Outil tout-en-un pour closers et setters freelance : CRM, pipeline de vente, agenda, booking, Call Room (cockpit d'appel avec enregistrement), facturation automatique, KPIs de closing et synchronisation CRM tiers.</li>
+              <li><strong>CloseOS Business</strong> — Plateforme de management pour infopreneurs et Head of Sales : gestion d'equipe de closers/setters, campagnes d'acquisition, formulaires et pages de capture, CRM acquisition, rendez-vous, facturation equipe, tableau de bord analytics et pilotage par API / serveur MCP.</li>
+              <li><strong>CloseOS Sign</strong> — Signature electronique avec encaissement (« Paye + signe ») : composition de contrats, verification du signataire, multi-signataires, certificat de preuve et espaces par membre d'equipe. Documents specifiques : <a href="/sign/cgv" className="text-white hover:underline">CGV & CGU Sign</a>, <a href="/sign/confidentialite" className="text-white hover:underline">Confidentialite Sign</a> et <a href="/sign/securite" className="text-white hover:underline">Securite technique</a>.</li>
             </ul>
           </section>
 

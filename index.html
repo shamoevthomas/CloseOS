@@ -81,20 +81,21 @@
   <meta property="og:title" content="CloseOS — Écosystème SaaS pour la vente digitale francophone" id="og-title">
   <meta property="og:description"
     content="Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed." id="og-description">
-  <meta property="og:image" content="https://www.closeos.fr/og-eco.png" id="og-image">
+  <meta property="og:image" content="https://www.closeos.fr/og-eco.jpg" id="og-image">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:type" content="image/png">
-  <meta property="og:locale" content="fr_FR">
+  <meta property="og:image:type" content="image/jpeg" id="og-image-type">
+  <meta property="og:image:alt" content="CloseOS — l'écosystème complet de la vente digitale : Sales, Business et Sign" id="og-image-alt">
+  <meta property="og:locale" content="fr_FR" id="og-locale">
   <meta property="og:site_name" content="CloseOS">
 
-  <!-- TWITTER -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://www.closeos.fr/" id="tw-url">
-  <meta property="twitter:title" content="CloseOS — Écosystème SaaS pour la vente digitale francophone" id="tw-title">
-  <meta property="twitter:description"
+  <!-- TWITTER (name= : conforme à la spec, lu par Slack/Notion et agrégateurs stricts) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://www.closeos.fr/" id="tw-url">
+  <meta name="twitter:title" content="CloseOS — Écosystème SaaS pour la vente digitale francophone" id="tw-title">
+  <meta name="twitter:description"
     content="Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed." id="tw-description">
-  <meta property="twitter:image" content="https://www.closeos.fr/og-eco.png" id="tw-image">
+  <meta name="twitter:image" content="https://www.closeos.fr/og-eco.jpg" id="tw-image">
 
   <!-- STRUCTURED DATA — static graph (crawlers see this even if JS/prerender fails) -->
   <script type="application/ld+json">
@@ -132,12 +133,17 @@
           {
             "@type": "Brand",
             "name": "CloseOS Sales",
-            "url": "https://www.closeos.fr/landing"
+            "url": "https://www.closeos.fr/sales"
           },
           {
             "@type": "Brand",
             "name": "CloseOS Business",
             "url": "https://www.closeos.fr/business"
+          },
+          {
+            "@type": "Brand",
+            "name": "CloseOS Sign",
+            "url": "https://sign.closeos.fr/sign"
           }
         ]
       },
@@ -153,7 +159,7 @@
         "@type": "WebSite",
         "@id": "https://www.closeos.fr/#website",
         "name": "CloseOS",
-        "alternateName": ["CloseOS Sales", "CloseOS Business"],
+        "alternateName": ["CloseOS Sales", "CloseOS Business", "CloseOS Sign"],
         "url": "https://www.closeos.fr",
         "inLanguage": ["fr", "en"],
         "publisher": { "@id": "https://www.closeos.fr/#organization" },
@@ -180,22 +186,22 @@
         "@type": "WebApplication",
         "@id": "https://www.closeos.fr/#closeos-sales",
         "name": "CloseOS Sales",
-        "url": "https://www.closeos.fr/landing",
+        "url": "https://www.closeos.fr/sales",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web",
         "description": "CRM pour closers high ticket francophones. Pipeline de vente visuel, VoIP intégré, agenda & booking, facturation automatique, KPIs de closing.",
         "inLanguage": ["fr", "en"],
         "offers": {
           "@type": "AggregateOffer",
-          "lowPrice": "25.50",
-          "highPrice": "34",
+          "lowPrice": "18",
+          "highPrice": "24",
           "priceCurrency": "EUR",
           "offerCount": "1",
           "availability": "https://schema.org/InStock"
         },
         "featureList": "Pipeline de vente visuel, Callroom VoIP, Facturation automatique Stripe, KPIs de closing, Agenda et booking, Intégrations CRM (HubSpot, Pipedrive, iClosed)",
         "creator": { "@id": "https://www.closeos.fr/#organization" },
-        "screenshot": "https://www.closeos.fr/og-sales.png"
+        "screenshot": "https://www.closeos.fr/og-sales.jpg"
       },
       {
         "@type": "WebApplication",
@@ -216,7 +222,27 @@
         },
         "featureList": "Gestion d'équipe (6 rôles), Vue macro Owner, Kanban partagé, KPIs par membre, Campagnes d'acquisition, Page de capture, Tracking UTM, Onboarding automatisé",
         "creator": { "@id": "https://www.closeos.fr/#organization" },
-        "screenshot": "https://www.closeos.fr/og-business.png"
+        "screenshot": "https://www.closeos.fr/og-business.jpg"
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://sign.closeos.fr/#closeos-sign",
+        "name": "CloseOS Sign",
+        "url": "https://sign.closeos.fr/sign",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "description": "Signature électronique avec paiement intégré : faire signer le contrat et encaisser le paiement (acompte, solde ou abonnement) dans le même geste, avec certificat de preuve vérifiable.",
+        "inLanguage": ["fr", "en"],
+        "offers": {
+          "@type": "AggregateOffer",
+          "lowPrice": "9",
+          "priceCurrency": "EUR",
+          "offerCount": "1",
+          "availability": "https://schema.org/InStock"
+        },
+        "featureList": "Signature électronique, Paiement intégré Stripe, Multi-signataire (parallèle ou séquentiel), Vérification du signataire par email et SMS, Certificat de preuve vérifiable, Contrats réutilisables, Espace closer",
+        "creator": { "@id": "https://www.closeos.fr/#organization" },
+        "screenshot": "https://sign.closeos.fr/og-sign.jpg"
       },
       {
         "@type": "BreadcrumbList",

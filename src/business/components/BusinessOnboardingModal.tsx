@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, X, Check, ZoomIn, ZoomOut, Search, Calendar } from 'lucide-react';
+import { ArrowRight, Loader2, Building2, Briefcase, ChevronRight, Camera, User, X, Check, ZoomIn, ZoomOut, Search, Calendar, LifeBuoy } from 'lucide-react';
 import { useBusinessAuth } from '../contexts/BusinessAuthContext';
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { countries } from '../../lib/countries';
@@ -730,6 +730,12 @@ export function BusinessOnboardingModal() {
                     </>
                   )}
                 </button>
+              </div>
+
+              {/* Aide : tout est dans Paramètres → Centre d'aide */}
+              <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-emerald-600/15 bg-emerald-50/50 dark:bg-emerald-900/10 px-3.5 py-3">
+                <LifeBuoy className="h-4 w-4 shrink-0 mt-0.5 text-emerald-700 dark:text-emerald-400" strokeWidth={1.75} />
+                <p className="text-xs leading-relaxed text-stone-600 dark:text-neutral-300">{t.onboarding_owner_help_hint}</p>
               </div>
             </div>
           </>

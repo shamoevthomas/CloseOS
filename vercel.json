@@ -562,12 +562,102 @@
       "destination": "/api/social-meta?type=capture&slug=:slug"
     },
     {
+      "source": "/sign/s/:token",
+      "destination": "/api/social-meta?type=sign-doc&slug=:token"
+    },
+    {
+      "source": "/sign/join/:token",
+      "destination": "/api/social-meta?type=sign-invite&slug=:token"
+    },
+    {
+      "source": "/view/:token",
+      "destination": "/api/social-meta?type=share-perf&slug=:token"
+    },
+    {
+      "source": "/f/:slug",
+      "missing": [
+        {
+          "type": "query",
+          "key": "embed",
+          "value": "true"
+        }
+      ],
+      "destination": "/api/social-meta?type=form&slug=:slug"
+    },
+    {
       "source": "/t/:slug",
       "destination": "/api/track?action=redirect&slug=:slug"
     },
     {
-      "source": "/(.*)",
+      "source": "/c/:slug",
+      "destination": "/api/social-meta?type=capture-crm&slug=:slug"
+    },
+    {
+      "source": "/sign/verify/:token",
+      "destination": "/api/social-meta?type=sign-verify&slug=:token"
+    },
+    {
+      "source": "/appointment/:token",
+      "has": [
+        {
+          "type": "query",
+          "key": "action",
+          "value": "reschedule"
+        }
+      ],
+      "destination": "/api/social-meta?type=appointment-reschedule&slug=:token"
+    },
+    {
+      "source": "/appointment/:token",
+      "has": [
+        {
+          "type": "query",
+          "key": "action",
+          "value": "cancel"
+        }
+      ],
+      "destination": "/api/social-meta?type=appointment-cancel&slug=:token"
+    },
+    {
+      "source": "/appointment/:token",
+      "destination": "/api/social-meta?type=appointment&slug=:token"
+    },
+    {
+      "source": "/:path((?!.*\\.(?:txt|xml|json|js|mjs|css|map|png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|eot|pdf|mp3|mp4|webm|wasm|zip|csv|geojson|php|env|yml|yaml)$).*)",
       "destination": "/index.html"
+    },
+    {
+      "source": "/",
+      "destination": "/index.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "sign.closeos.fr"
+        }
+      ],
+      "destination": "/sign",
+      "permanent": true
+    },
+    {
+      "source": "/landing",
+      "destination": "/sales",
+      "permanent": true
+    },
+    {
+      "source": "/sign",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.closeos.fr"
+        }
+      ],
+      "destination": "https://sign.closeos.fr/sign",
+      "permanent": true
     }
   ]
 }

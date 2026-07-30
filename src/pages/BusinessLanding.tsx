@@ -132,20 +132,21 @@ export const BusinessLanding: React.FC = () => {
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/business');
     document.getElementById('og-title')?.setAttribute('content', t.seo_og_title);
     document.getElementById('og-description')?.setAttribute('content', t.seo_og_description);
-    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-business.png');
+    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-business.jpg');
 
     // Twitter Card
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/business');
     document.getElementById('tw-title')?.setAttribute('content', t.seo_og_title);
     document.getElementById('tw-description')?.setAttribute('content', t.seo_og_description);
-    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-business.png');
+    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-business.jpg');
     document.documentElement.lang = lang;
 
     // hreflang tags
+    // Pas d'alternate 'en' : ?lang=en sert le même HTML prérendu français, la balise mentirait.
+    // À rétablir le jour où les pages anglaises auront leur propre chemin (/en/…).
     document.querySelectorAll('link[data-hreflang]').forEach(el => el.remove());
     const hreflangs = [
       { lang: 'fr', href: 'https://www.closeos.fr/business' },
-      { lang: 'en', href: 'https://www.closeos.fr/business?lang=en' },
       { lang: 'x-default', href: 'https://www.closeos.fr/business' },
     ];
     hreflangs.forEach(({ lang: hl, href }) => {
@@ -258,6 +259,30 @@ export const BusinessLanding: React.FC = () => {
             text: t.sd_faq_gdpr_a,
           },
         },
+        {
+          '@type': 'Question',
+          name: t.sd_faq_sign_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_sign_a,
+          },
+        },
+        {
+          '@type': 'Question',
+          name: t.sd_faq_relance_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_relance_a,
+          },
+        },
+        {
+          '@type': 'Question',
+          name: t.sd_faq_ai_q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: t.sd_faq_ai_a,
+          },
+        },
       ],
     });
     document.head.appendChild(faqScript);
@@ -300,11 +325,11 @@ export const BusinessLanding: React.FC = () => {
       document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/');
       document.getElementById('og-title')?.setAttribute('content', t.seo_default_og_title);
       document.getElementById('og-description')?.setAttribute('content', t.seo_default_og_description);
-      document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.png');
+      document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.jpg');
       document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/');
       document.getElementById('tw-title')?.setAttribute('content', t.seo_default_og_title);
       document.getElementById('tw-description')?.setAttribute('content', t.seo_default_og_description);
-      document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.png');
+      document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.jpg');
       document.querySelector('script[data-closeos-biz-ld]')?.remove();
       document.querySelector('script[data-closeos-biz-faq-ld]')?.remove();
       document.querySelector('script[data-closeos-biz-breadcrumb-ld]')?.remove();
@@ -682,14 +707,14 @@ export const BusinessLanding: React.FC = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-20 lg:items-center">
               <div className="lg:col-span-7">
                 <LeadProfile />
               </div>
-              <div className="lg:col-span-5 flex flex-col justify-center gap-4">
+              <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3 self-center">
                 <CRMFeatureCard icon={<Layers className="size-5" />} titleKey="crm_feature_pipeline_title" descKey="crm_feature_pipeline_desc" />
                 <CRMFeatureRelances />
-                <CRMFeatureTags />
+                <CRMFeatureCard icon={<MessageSquare className="size-5" />} titleKey="crm_feature_discussion_title" descKey="crm_feature_discussion_desc" />
                 <CRMFeatureCard icon={<FileText className="size-5" />} titleKey="crm_feature_csv_title" descKey="crm_feature_csv_desc" />
               </div>
             </div>
@@ -1215,13 +1240,13 @@ const BoxItem = ({ icon, title, description, dark, index }: any) => (
   </motion.div>
 );
 
-const CRMFeature = ({ icon, title, description, extra, index }: any) => (
+const CRMFeature = ({ icon, title, description, extra, index, className = '' }: any) => (
   <motion.div
     initial={{ opacity: 0, x: 20 }}
     whileInView={{ opacity: 1, x: 0 }}
     viewport={{ once: true }}
     transition={{ duration: 0.5, delay: (index || 0) * 0.1 }}
-    className="bg-stone-50 hover:bg-stone-100 border border-stone-200 p-5 rounded-2xl transition-all group text-left"
+    className={`bg-stone-50 hover:bg-stone-100 border border-stone-200 p-5 rounded-2xl transition-all group text-left flex flex-col justify-center ${className}`}
   >
     <div className="flex gap-4">
       <div className="size-10 rounded-xl bg-white border border-stone-200 shadow-sm flex items-center justify-center text-stone-800 flex-shrink-0">{icon}</div>
@@ -1234,10 +1259,10 @@ const CRMFeature = ({ icon, title, description, extra, index }: any) => (
   </motion.div>
 );
 
-const CRMFeatureCard = ({ icon, titleKey, descKey }: { icon: React.ReactNode; titleKey: keyof typeof translations.fr; descKey: keyof typeof translations.fr }) => {
+const CRMFeatureCard = ({ icon, titleKey, descKey, className = '' }: { icon: React.ReactNode; titleKey: keyof typeof translations.fr; descKey: keyof typeof translations.fr; className?: string }) => {
   const { t } = useLang();
   return (
-    <CRMFeature icon={icon} title={t[titleKey]} description={t[descKey]} />
+    <CRMFeature icon={icon} title={t[titleKey]} description={t[descKey]} className={className} />
   );
 };
 
@@ -1251,23 +1276,6 @@ const CRMFeatureRelances = () => {
       extra={
         <div className="mt-3 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 w-fit">
           <ArrowUp className="size-3.5" /> {t.crm_feature_relances_reminder}
-        </div>
-      }
-    />
-  );
-};
-
-const CRMFeatureTags = () => {
-  const { t } = useLang();
-  return (
-    <CRMFeature
-      icon={<Tag className="size-5" />}
-      title={t.crm_feature_tags_title}
-      extra={
-        <div className="flex gap-2 mt-3 text-left">
-          <span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">{t.crm_feature_tag_froid}</span>
-          <span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">{t.crm_feature_tag_rappel}</span>
-          <span className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-600 text-xs font-semibold border border-stone-200">{t.crm_feature_tag_urgent}</span>
         </div>
       }
     />
@@ -3432,6 +3440,12 @@ const FooterSection = () => {
         <div className="flex flex-wrap justify-center items-center gap-4 text-xs text-stone-500 font-medium">
           <span>{t.footer_copyright}</span>
           <span className="hidden sm:inline">&middot;</span>
+          <Link to="/glossaire" className="hover:text-stone-700 transition-colors">Glossaire</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/ressources" className="hover:text-stone-700 transition-colors">Ressources</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/comparatifs" className="hover:text-stone-700 transition-colors">Comparatifs</Link>
+          <span className="hidden sm:inline">&middot;</span>
           <Link to="/mentions-legales" className="hover:text-stone-700 transition-colors">{t.footer_mentions}</Link>
           <span className="hidden sm:inline">&middot;</span>
           <Link to="/cgu" className="hover:text-stone-700 transition-colors">{t.footer_cgu}</Link>
@@ -3441,6 +3455,8 @@ const FooterSection = () => {
           <Link to="/confidentialite" className="hover:text-stone-700 transition-colors">{t.footer_confidentialite}</Link>
           <span className="hidden sm:inline">&middot;</span>
           <Link to="/business/politique-utilisation" className="hover:text-stone-700 transition-colors">{t.footer_politique}</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/business/aide" className="hover:text-stone-700 transition-colors">{t.footer_aide}</Link>
           <span className="hidden sm:inline">&middot;</span>
           <a href="https://www.linkedin.com/in/thomas-shamoev-570885237/" target="_blank" rel="noopener noreferrer" className="hover:text-stone-700 transition-colors">LinkedIn</a>
           <span className="hidden sm:inline">&middot;</span>

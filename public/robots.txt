@@ -1,11 +1,20 @@
 User-agent: *
 Allow: /
 Allow: /business
-Allow: /landing
 Allow: /sales
 Allow: /tarifs
 Allow: /fonctionnalites
 Allow: /comparatifs
+Allow: /sign
+Allow: /sign/securite
+Allow: /aide
+Allow: /business/aide
+Allow: /integrations
+Allow: /cas-usage
+Allow: /clients
+Allow: /ressources
+Allow: /guides
+Allow: /glossaire
 Allow: /mentions-legales
 Allow: /cgu
 Allow: /cgv
@@ -67,6 +76,7 @@ Disallow: /business/test
 Disallow: /api/
 Disallow: /book/
 Disallow: /capture/
+Disallow: /f/
 Disallow: /appointment/
 Disallow: /view/
 
@@ -74,7 +84,6 @@ Disallow: /view/
 User-agent: GPTBot
 Allow: /
 Allow: /business
-Allow: /landing
 Allow: /sales
 Allow: /tarifs
 Allow: /fonctionnalites
@@ -89,7 +98,6 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 Allow: /business
-Allow: /landing
 Allow: /sales
 Allow: /tarifs
 Allow: /fonctionnalites
@@ -101,7 +109,6 @@ Disallow: /api/
 User-agent: ClaudeBot
 Allow: /
 Allow: /business
-Allow: /landing
 Allow: /sales
 Allow: /tarifs
 Allow: /fonctionnalites
@@ -117,4 +124,8 @@ Disallow: /
 User-agent: Google-Extended
 Disallow: /
 
+# Google-Extended est bloque volontairement : cela empeche l'entrainement Gemini
+# sans bloquer Googlebot ni les AI Overviews. Ne pas "corriger".
+
 Sitemap: https://www.closeos.fr/sitemap.xml
+Sitemap: https://sign.closeos.fr/sitemap-sign.xml

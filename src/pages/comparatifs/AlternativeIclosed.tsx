@@ -12,6 +12,10 @@ export default function AlternativeIclosed() {
     document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/comparatifs/alternative-iclosed');
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/comparatifs/alternative-iclosed');
     document.getElementById('og-title')?.setAttribute('content', 'Alternative à iClosed, Découvrez CloseOS');
+    // Visuel dédié généré à la volée (api/og type=page) : une URL d'image traverse le prerender.
+    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/api/og?type=page&slug=comparatif&lang=fr');
+    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/api/og?type=page&slug=comparatif&lang=fr');
+    document.getElementById('og-image-alt')?.setAttribute('content', 'CloseOS vs iClosed');
     document.getElementById('og-description')?.setAttribute('content', 'Vous cherchez une alternative à iClosed ? CloseOS est le CRM tout-en-un pour closers : pipeline, callroom VoIP, facturation et gestion d\'équipe. Essai gratuit.');
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/comparatifs/alternative-iclosed');
     document.getElementById('tw-title')?.setAttribute('content', 'Alternative à iClosed, Découvrez CloseOS');
@@ -38,9 +42,9 @@ export default function AlternativeIclosed() {
     faq.textContent = JSON.stringify({
       '@context': 'https://schema.org', '@type': 'FAQPage',
       mainEntity: [
-        { '@type': 'Question', name: 'Est-ce que CloseOS remplace iClosed ?', acceptedAnswer: { '@type': 'Answer', text: 'Oui. CloseOS intègre nativement un système de booking avec questionnaire de qualification, en plus du CRM, de la callroom Google Meet, du pipeline, de la facturation et de la gestion d\'équipe. Vous n\'avez plus besoin d\'un outil séparé pour la prise de rendez-vous. Si vous utilisez déjà iClosed, CloseOS peut s\'y connecter via webhook pendant votre transition.' } },
-        { '@type': 'Question', name: 'Est-ce que je peux migrer mes données d\'iClosed vers CloseOS ?', acceptedAnswer: { '@type': 'Answer', text: 'L\'intégration webhook permet de synchroniser les nouveaux rendez-vous automatiquement. Pour les données historiques, contactez le support.' } },
-        { '@type': 'Question', name: 'Combien coûte CloseOS par rapport à iClosed ?', acceptedAnswer: { '@type': 'Answer', text: 'CloseOS Sales commence à 34€/mois. CloseOS Business commence à 39€/mois (Solo) et 59€/mois (Business). Essai gratuit de 20 jours.' } },
+        { '@type': 'Question', name: 'Est-ce que CloseOS remplace iClosed ?', acceptedAnswer: { '@type': 'Answer', text: "Oui. CloseOS intègre nativement un système de prise de rendez-vous avec questionnaire de qualification, ce qui couvre la fonction principale d\'iClosed. Vous obtenez des liens de réservation synchronisés à votre Google Calendar, la gestion des disponibilités et des fuseaux horaires, les rappels automatiques envoyés au prospect, ainsi que le multi-booking qui permet de proposer plusieurs créneaux en un seul envoi. Mais CloseOS va au-delà du booking : s\'y ajoutent le CRM et le pipeline de vente, la Call Room Google Meet, les relances automatiques, la facturation connectée à Stripe, les KPIs de closing et, en formule Business, la gestion d\'une équipe de closers et de setters. Vous n\'avez donc plus besoin d\'un outil séparé pour la prise de rendez-vous. Et si vous utilisez déjà iClosed, CloseOS s\'y connecte pendant votre transition, ce qui évite toute coupure." } },
+        { '@type': 'Question', name: 'Est-ce que je peux migrer mes données d\'iClosed vers CloseOS ?', acceptedAnswer: { '@type': 'Answer', text: "Oui, et la migration se fait en deux temps pour éviter toute rupture. Le flux courant d\'abord : la synchronisation bidirectionnelle avec iClosed reprend automatiquement les nouveaux rendez-vous, prospects et changements d\'étape, dans les deux sens. Vous pouvez donc faire tourner les deux outils en parallèle le temps que votre équipe prenne ses marques, sans rien ressaisir et sans risquer de perdre un lead entre les deux. L\'historique ensuite : vos données passées s\'importent par fichier CSV, avec un assistant IA intégré qui reformate automatiquement le fichier pour le rendre compatible, quel que soit son format d\'origine. Le support accompagne cette reprise si votre historique est volumineux ou si votre structure de données est inhabituelle. Vos données restent exportables à tout moment : adopter CloseOS ne vous enferme pas davantage que ne le faisait iClosed." } },
+        { '@type': 'Question', name: 'Combien coûte CloseOS par rapport à iClosed ?', acceptedAnswer: { '@type': 'Answer', text: "CloseOS se décline en trois produits facturés séparément, ce qui permet de ne payer que ce que vous utilisez. CloseOS Sales s\'adresse au closer indépendant qui vend seul. CloseOS Business s\'adresse à ceux qui font vendre d\'autres personnes, avec une formule Solo pour démarrer et une formule Business complète dès que vous pilotez une équipe ; le tarif suit alors le nombre de sièges actifs. CloseOS Sign, le module de signature avec encaissement intégré, est inclus sans surcoût dans l\'abonnement Business et peut aussi être souscrit seul. Chaque produit s\'essaie gratuitement avant tout engagement, et le tarif auquel vous entrez reste bloqué tant que votre abonnement est actif, même si les prix augmentent ensuite. Les montants à jour, formule par formule, sont détaillés sur la page Tarifs de CloseOS." } },
       ]
     });
     document.head.appendChild(faq);
@@ -74,7 +78,7 @@ export default function AlternativeIclosed() {
     },
     {
       question: 'Combien coûte CloseOS par rapport à iClosed ?',
-      answer: 'CloseOS Sales commence à 34€/mois. CloseOS Business commence à 39€/mois pour la formule Solo et 59€/mois pour Business. Essai gratuit de 20 jours.',
+      answer: 'CloseOS Sales commence à 18€/mois en annuel (24€ en mensuel). CloseOS Business commence à 39€/mois pour la formule Solo et 59€/mois pour Business. Essai gratuit de 20 jours.',
     },
   ];
 
@@ -115,6 +119,9 @@ export default function AlternativeIclosed() {
           </div>
         </div>
       </nav>
+
+      {/* <main> : delimite le contenu principal pour les extracteurs (crawlers IA, lecteurs d'ecran). Sans lui, rien ne distingue le texte de navigation du contenu. */}
+      <main>
 
       {/* Hero */}
       <motion.section
@@ -318,11 +325,18 @@ export default function AlternativeIclosed() {
       </motion.section>
 
       {/* Footer */}
+      </main>
       <footer className="border-t border-white/5 bg-[#020617] py-6 pb-16">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <img src="/logo-sales.png" alt="CloseOS" className="h-6 w-auto" loading="lazy" width={72} height={24} />
           <div className="flex flex-wrap justify-center gap-4 text-xs text-slate-500">
             <span>&copy; 2026 CloseOS.fr</span><span className="hidden sm:inline">&bull;</span>
+            <a href="/glossaire" className="hover:text-white transition-colors">Glossaire</a>
+            <span className="hidden sm:inline">&bull;</span>
+            <a href="/ressources" className="hover:text-white transition-colors">Ressources</a>
+            <span className="hidden sm:inline">&bull;</span>
+            <a href="/comparatifs" className="hover:text-white transition-colors">Comparatifs</a>
+            <span className="hidden sm:inline">&bull;</span>
             <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</a><span className="hidden sm:inline">&bull;</span>
             <a href="/cgu" className="hover:text-white transition-colors">CGU</a><span className="hidden sm:inline">&bull;</span>
             <a href="/cgv" className="hover:text-white transition-colors">CGV</a><span className="hidden sm:inline">&bull;</span>

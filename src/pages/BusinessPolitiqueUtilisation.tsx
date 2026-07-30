@@ -1,7 +1,21 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 export const BusinessPolitiqueUtilisation = () => {
+  // Page prérendue : ces métas sont figées dans le HTML servi aux moteurs.
+  useEffect(() => {
+    document.title = "Politique d'utilisation — CloseOS Business";
+    document.querySelector('meta[name="description"]')?.setAttribute('content', "La politique d'utilisation de CloseOS Business : usages autorisés, limites et règles de bon usage de la plateforme.");
+    document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/business/politique-utilisation');
+    document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/business/politique-utilisation');
+    document.getElementById('og-title')?.setAttribute('content', "Politique d'utilisation — CloseOS Business");
+    document.getElementById('og-description')?.setAttribute('content', "La politique d'utilisation de CloseOS Business : usages autorisés, limites et règles de bon usage de la plateforme.");
+    document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/business/politique-utilisation');
+    document.getElementById('tw-title')?.setAttribute('content', "Politique d'utilisation — CloseOS Business");
+    document.getElementById('tw-description')?.setAttribute('content', "La politique d'utilisation de CloseOS Business : usages autorisés, limites et règles de bon usage de la plateforme.");
+    document.documentElement.lang = 'fr';
+  }, []);
   return (
     <div className="min-h-screen bg-[#020617] text-slate-300 font-sans selection:bg-blue-500/30">
       <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50">
@@ -16,7 +30,7 @@ export const BusinessPolitiqueUtilisation = () => {
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <h1 className="text-3xl font-bold text-white mb-2">Politique d'Utilisation — CloseOS Business</h1>
-        <p className="text-slate-500 mb-8">Derniere mise a jour : 25 mars 2026</p>
+        <p className="text-slate-500 mb-8">Derniere mise a jour : 29 juillet 2026</p>
 
         <div className="space-y-8 text-sm leading-relaxed text-justify">
 
@@ -148,14 +162,24 @@ export const BusinessPolitiqueUtilisation = () => {
               <li>Page de capture personnalisee (titre, description, video)</li>
             </ul>
 
-            <h3 className="text-base font-semibold text-white mt-4 mb-2">4.6 Donnees collectees via les formulaires de capture</h3>
-            <p>Lorsqu'un prospect remplit un formulaire de capture cree par l'Utilisateur :</p>
+            <h3 className="text-base font-semibold text-white mt-4 mb-2">4.6 Donnees collectees via les formulaires et pages de capture</h3>
+            <p>Lorsqu'un prospect remplit un formulaire ou une page de capture cree par l'Utilisateur :</p>
             <ul className="list-disc list-inside mt-2 space-y-1 text-slate-400">
               <li>Email (requis ou optionnel selon la campagne)</li>
               <li>Telephone (avec formatage multi-pays : FR, BE, CH, US, UK, DE, ES, IT, etc.)</li>
-              <li>Champs personnalises definis par l'Utilisateur</li>
+              <li>Champs personnalises et reponses aux formulaires (candidature, sondage, brief)</li>
               <li>Creneau de rendez-vous selectionne (si applicable)</li>
               <li>Fuseau horaire du prospect</li>
+              <li><strong className="text-slate-300">Precapture :</strong> des qu'un email ou un telephone est saisi, ces coordonnees et les reponses deja renseignees sont enregistrees <strong>meme si le formulaire n'est pas soumis jusqu'au bout</strong>.</li>
+              <li><strong className="text-slate-300">Visionnage video :</strong> pour les blocs video a visionnage obligatoire, la duree de visionnage est mesuree pour conditionner la validation.</li>
+            </ul>
+
+            <h3 className="text-base font-semibold text-white mt-4 mb-2">4.7 Donnees des liens de tracking (/t/)</h3>
+            <p>Lorsque l'Utilisateur cree un lien de tracking, chaque clic collecte :</p>
+            <ul className="list-disc list-inside mt-2 space-y-1 text-slate-400">
+              <li>Adresse IP et type d'appareil</li>
+              <li>Pays approximatif</li>
+              <li>Caractere de visiteur unique ou recurrent, nombre de clics</li>
             </ul>
           </section>
 
@@ -176,6 +200,10 @@ export const BusinessPolitiqueUtilisation = () => {
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Planification et rappel de rendez-vous</td><td className="py-2">Execution du contrat</td></tr>
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Generation automatique de factures</td><td className="py-2">Obligation legale / contrat</td></tr>
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Envoi de rappels par email</td><td className="py-2">Interet legitime</td></tr>
+                  <tr className="border-b border-white/5"><td className="py-2 pr-4">Relances automatiques et suivi de discussion (emails aux prospects)</td><td className="py-2">Interet legitime</td></tr>
+                  <tr className="border-b border-white/5"><td className="py-2 pr-4">Formulaires, capture et precapture de leads</td><td className="py-2">Interet legitime</td></tr>
+                  <tr className="border-b border-white/5"><td className="py-2 pr-4">Liens de tracking et mesure d'audience</td><td className="py-2">Interet legitime</td></tr>
+                  <tr className="border-b border-white/5"><td className="py-2 pr-4">Pilotage par API / serveur MCP (assistants IA)</td><td className="py-2">Execution du contrat (a l'initiative de l'Utilisateur)</td></tr>
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Synchronisation avec CRM tiers</td><td className="py-2">Consentement de l'Utilisateur</td></tr>
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Rapports hebdomadaires de performance</td><td className="py-2">Interet legitime</td></tr>
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Verification de securite des appareils</td><td className="py-2">Interet legitime (securite)</td></tr>
@@ -214,6 +242,23 @@ export const BusinessPolitiqueUtilisation = () => {
             <h3 className="text-base font-semibold text-white mt-4 mb-2">6.5 Automatisations</h3>
             <p><strong className="text-slate-300">Zapier</strong> — webhooks pour automatisations personnalisees.</p>
 
+            <h3 className="text-base font-semibold text-white mt-4 mb-2">6.6 API, Webhooks & serveur MCP (assistants IA)</h3>
+            <p>
+              CloseOS Business expose une API REST, des Webhooks sortants et un serveur MCP (Model Context Protocol). Si l'Utilisateur genere une cle API et connecte un <strong>assistant IA tiers</strong>, les donnees concernees (prospects, rendez-vous, campagnes, formulaires, facturation) peuvent etre transmises a l'editeur de cet assistant, agissant comme destinataire / sous-traitant :
+            </p>
+            <ul className="list-disc list-inside space-y-1 mt-2 text-slate-400">
+              <li><strong className="text-slate-300">Anthropic (Claude)</strong> — traitement des requetes IA ; hebergement possible hors UE (Etats-Unis), encadre par des Clauses Contractuelles Types.</li>
+              <li><strong className="text-slate-300">OpenAI (ChatGPT)</strong> — traitement des requetes IA ; hebergement possible hors UE (Etats-Unis), encadre par des Clauses Contractuelles Types.</li>
+            </ul>
+            <p className="mt-2 text-slate-400">
+              Ce partage n'a lieu que si l'Utilisateur active une cle API et connecte un assistant. Les cles sont revocables a tout moment ; toute action declenchee via l'API, un Webhook ou le MCP est reputee effectuee par l'Utilisateur.
+            </p>
+
+            <h3 className="text-base font-semibold text-white mt-4 mb-2">6.7 Transferts hors Union europeenne</h3>
+            <p className="text-slate-400">
+              Les donnees sont principalement hebergees dans l'UE (Supabase). Certains sous-traitants peuvent traiter des donnees hors UE, notamment aux Etats-Unis : Vercel (hebergement), Stripe (paiement), ainsi que Anthropic et OpenAI si un assistant IA est active. Ces transferts sont encadres par les Clauses Contractuelles Types de la Commission europeenne.
+            </p>
+
             <p className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10 text-slate-400">
               <strong className="text-slate-300">Important :</strong> L'Utilisateur est seul responsable de la conformite de ses integrations tierces avec les reglementations applicables (RGPD, etc.) et les conditions d'utilisation de ces services.
             </p>
@@ -236,6 +281,16 @@ export const BusinessPolitiqueUtilisation = () => {
                     <td className="py-2 pr-4 text-slate-300">Rappels de rendez-vous</td>
                     <td className="py-2 pr-4">Selon configuration</td>
                     <td className="py-2">Emails envoyes aux prospects a des intervalles configurables (24h, 10h, 5h, 3h, 1h, 30min, 15min avant)</td>
+                  </tr>
+                  <tr className="border-b border-white/5">
+                    <td className="py-2 pr-4 text-slate-300">Relances automatiques</td>
+                    <td className="py-2 pr-4">Selon configuration</td>
+                    <td className="py-2">Jusqu'a 7 emails de relance aux prospects apres un no-show ou en stade « Contacte », en pause des que le prospect a repondu</td>
+                  </tr>
+                  <tr className="border-b border-white/5">
+                    <td className="py-2 pr-4 text-slate-300">Digest « suivi de discussion »</td>
+                    <td className="py-2 pr-4">Quotidien (17h)</td>
+                    <td className="py-2">Email recapitulatif envoye a l'Utilisateur (non au prospect) listant les discussions en attente de suivi</td>
                   </tr>
                   <tr className="border-b border-white/5">
                     <td className="py-2 pr-4 text-slate-300">Generation de factures</td>
@@ -276,7 +331,9 @@ export const BusinessPolitiqueUtilisation = () => {
               <li><strong className="text-slate-300">Proteger ses identifiants</strong> et ne pas les partager avec des tiers non autorises</li>
               <li><strong className="text-slate-300">Respecter la reglementation applicable</strong> (RGPD, Code de commerce, etc.) dans la collecte et le traitement des donnees de ses prospects</li>
               <li><strong className="text-slate-300">Obtenir le consentement</strong> de ses prospects avant de collecter leurs donnees via les formulaires de capture</li>
-              <li><strong className="text-slate-300">Informer ses prospects</strong> de l'existence du traitement de leurs donnees et de leurs droits (acces, rectification, suppression)</li>
+              <li><strong className="text-slate-300">Informer ses prospects</strong> de l'existence du traitement de leurs donnees et de leurs droits (acces, rectification, suppression), y compris lorsque des coordonnees sont enregistrees avant la soumission complete d'un formulaire (precapture)</li>
+              <li><strong className="text-slate-300">Disposer d'une base legale valable</strong> pour les emails automatiques envoyes a ses prospects (rappels, relances de no-show, suivi de discussion) et fournir un mecanisme de <strong className="text-slate-300">desabonnement (opt-out)</strong> conforme (LCEN, ePrivacy)</li>
+              <li><strong className="text-slate-300">Assumer la responsabilite editoriale</strong> du contenu des formulaires et pages publiques qu'il cree (liceite, information des personnes, videos)</li>
               <li><strong className="text-slate-300">Respecter les droits de ses membres d'equipe</strong> concernant les donnees personnelles collectees (remuneration, disponibilites, presence en ligne)</li>
             </ol>
 
@@ -336,7 +393,8 @@ export const BusinessPolitiqueUtilisation = () => {
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Donnees prospects (CRM)</td><td className="py-2">Jusqu'a suppression par l'Utilisateur</td></tr>
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Historique de rendez-vous</td><td className="py-2">Jusqu'a suppression par l'Utilisateur</td></tr>
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Notes d'appel</td><td className="py-2">Jusqu'a suppression par l'Utilisateur</td></tr>
-                  <tr className="border-b border-white/5"><td className="py-2 pr-4">Jetons d'appareil</td><td className="py-2">Duree de la session</td></tr>
+                  <tr className="border-b border-white/5"><td className="py-2 pr-4">Donnees des liens de tracking</td><td className="py-2">Jusqu'a suppression du lien par l'Utilisateur</td></tr>
+                  <tr className="border-b border-white/5"><td className="py-2 pr-4">Appareil de confiance / 2FA</td><td className="py-2">7 jours, puis nouvelle verification requise</td></tr>
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Jetons Google OAuth</td><td className="py-2">Jusqu'a revocation ou suppression du compte</td></tr>
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Logs de connexion</td><td className="py-2">Selon politique de retention interne</td></tr>
                   <tr className="border-b border-white/5"><td className="py-2 pr-4">Factures generees</td><td className="py-2">Conformement aux obligations legales (10 ans)</td></tr>

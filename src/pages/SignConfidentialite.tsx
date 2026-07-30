@@ -8,7 +8,7 @@ export default function SignConfidentialite() {
   return (
     <SignLegalShell
       title={lang === 'fr' ? 'Politique de confidentialité' : 'Privacy Policy'}
-      updated={lang === 'fr' ? '11 juin 2026' : 'June 11, 2026'}
+      updated={lang === 'fr' ? '29 juillet 2026' : 'July 29, 2026'}
     >
       <p>
         {lang === 'fr' ? (
@@ -23,10 +23,12 @@ export default function SignConfidentialite() {
       <h2>{lang === 'fr' ? '1. Responsable du traitement' : '1. Data controller'}</h2>
       <p>
         {lang === 'fr' ? (
-          <>CloseOS Technologies (SIREN 993 427 509), éditeur de CloseOS Sign. Contact :
+          <>Thomas Shamoev, entreprise individuelle exerçant sous le nom commercial CloseOS Technologies (SIREN 993 427 509),
+          éditeur de CloseOS Sign. Contact :
           <a href="mailto:support@closeos.fr"> support@closeos.fr</a>.</>
         ) : (
-          <>CloseOS Technologies (SIREN 993 427 509), publisher of CloseOS Sign. Contact:
+          <>Thomas Shamoev, a sole proprietorship trading as CloseOS Technologies (SIREN 993 427 509), publisher of CloseOS Sign.
+          Contact:
           <a href="mailto:support@closeos.fr"> support@closeos.fr</a>.</>
         )}
       </p>
@@ -37,14 +39,16 @@ export default function SignConfidentialite() {
         {lang === 'fr' ? (
           <>
             <li>Identité et coordonnées : nom, email, téléphone, société, informations d'entreprise (SIRET, TVA…).</li>
-            <li>Données de compte et de connexion : identifiants, journaux de connexion, appareils de confiance.</li>
+            <li>Données de compte et de connexion : identifiants, journaux de connexion, appareils de confiance (empreinte d'appareil mémorisée jusqu'à 7 jours pour la 2FA à la connexion).</li>
             <li>Données de facturation gérées par Stripe (le Prestataire ne stocke pas le numéro de carte).</li>
+            <li>Le cas échéant, données issues du dossier « CRM CloseOS » synchronisé depuis un compte CloseOS Business (clients et équipe) pour préremplir les contrats, sous le contrôle de l'Utilisateur.</li>
           </>
         ) : (
           <>
             <li>Identity and contact details: name, email, phone, company, business information (SIRET, VAT, etc.).</li>
-            <li>Account and login data: credentials, login logs, trusted devices.</li>
+            <li>Account and login data: credentials, login logs, trusted devices (device fingerprint stored for up to 7 days for login 2FA).</li>
             <li>Billing data managed by Stripe (the Provider does not store card numbers).</li>
+            <li>Where applicable, data from the "CloseOS CRM" folder synchronized from a CloseOS Business account (clients and team) to pre-fill contracts, under the User's control.</li>
           </>
         )}
       </ul>
@@ -98,9 +102,10 @@ export default function SignConfidentialite() {
           <tr><td>Stripe</td><td>{lang === 'fr' ? 'Paiement et encaissement' : 'Payment and payment collection'}</td><td>{lang === 'fr' ? 'UE / international (CCT)' : 'EU / international (SCC)'}</td></tr>
           <tr><td>Brevo</td><td>{lang === 'fr' ? 'Envoi des emails (codes, notifications)' : 'Email delivery (codes, notifications)'}</td><td>{lang === 'fr' ? 'Union européenne' : 'European Union'}</td></tr>
           <tr><td>ClickSend</td><td>{lang === 'fr' ? 'Envoi des SMS de vérification' : 'Verification SMS delivery'}</td><td>{lang === 'fr' ? 'International (CCT)' : 'International (SCC)'}</td></tr>
+          <tr><td>Anthropic / OpenAI</td><td>{lang === 'fr' ? 'Assistant IA via serveur MCP — uniquement si l\'Utilisateur l\'active' : 'AI assistant via MCP server — only if enabled by the User'}</td><td>{lang === 'fr' ? 'International (CCT)' : 'International (SCC)'}</td></tr>
         </tbody>
       </table>
-      <p>{lang === 'fr' ? 'Aucune donnée n\'est vendue ni cédée à des fins publicitaires.' : 'No data is sold or transferred for advertising purposes.'}</p>
+      <p>{lang === 'fr' ? 'Le recours à un assistant IA (via le serveur MCP CloseOS Sign) n\'a lieu que si l\'Utilisateur le connecte ; les données transmises se limitent alors à ce qui est nécessaire à sa requête. Aucune donnée n\'est vendue ni cédée à des fins publicitaires.' : 'The use of an AI assistant (via the CloseOS Sign MCP server) only occurs if the User connects it; the data transmitted is then limited to what is necessary for their request. No data is sold or transferred for advertising purposes.'}</p>
 
       <h2>{lang === 'fr' ? '5. Durée de conservation' : '5. Retention period'}</h2>
       <ul>

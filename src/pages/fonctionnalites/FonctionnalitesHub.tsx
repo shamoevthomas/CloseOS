@@ -157,7 +157,35 @@ export default function FonctionnalitesHub() {
         'content',
         "Pipeline, callroom intégrée, facturation, signature électronique, KPIs et gestion d'équipe dans un seul écosystème."
       );
+    // Visuel dédié généré à la volée (api/og type=page) : une URL d'image traverse le prerender.
+    const featuresCard = 'https://www.closeos.fr/api/og?type=page&slug=fonctionnalites&lang=fr';
+    document.getElementById('og-image')?.setAttribute('content', featuresCard);
+    document.getElementById('tw-image')?.setAttribute('content', featuresCard);
+    document.getElementById('og-image-alt')?.setAttribute('content', 'CloseOS — Fonctionnalités');
     document.documentElement.lang = 'fr';
+
+    // Pas de FAQPage ici : la page n'affiche aucune question-réponse, la baliser serait du
+    // balisage sans contenu visible. On décrit ce qu'elle est vraiment — une liste de
+    // fonctionnalités — construite depuis le tableau `features` rendu juste en dessous.
+    document.querySelectorAll('script[data-features-list-ld]').forEach((el) => el.remove());
+    const listLd = document.createElement('script');
+    listLd.type = 'application/ld+json';
+    listLd.setAttribute('data-features-list-ld', 'true');
+    listLd.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'Fonctionnalités CloseOS',
+      itemListOrder: 'https://schema.org/ItemListUnordered',
+      numberOfItems: features.length,
+      itemListElement: features.map((f, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: f.title,
+        description: f.description,
+        ...(f.link ? { url: `https://www.closeos.fr${f.link}` } : {}),
+      })),
+    });
+    document.head.appendChild(listLd);
 
     document.querySelectorAll('script[data-features-ld]').forEach((el) => el.remove());
     const bc = document.createElement('script');
@@ -235,6 +263,9 @@ export default function FonctionnalitesHub() {
           </div>
         </div>
       </nav>
+
+      {/* <main> : delimite le contenu principal pour les extracteurs (crawlers IA, lecteurs d'ecran). Sans lui, rien ne distingue le texte de navigation du contenu. */}
+      <main>
 
       {/* Hero */}
       <motion.section
@@ -530,6 +561,7 @@ export default function FonctionnalitesHub() {
       </motion.section>
 
       {/* Footer */}
+      </main>
       <footer className="border-t border-white/5 bg-[#020617] py-6 pb-16">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <img
@@ -542,6 +574,12 @@ export default function FonctionnalitesHub() {
           />
           <div className="flex flex-wrap justify-center gap-4 text-xs text-slate-500">
             <span>&copy; 2026 CloseOS.fr</span>
+            <span className="hidden sm:inline">&bull;</span>
+            <a href="/glossaire" className="hover:text-white transition-colors">Glossaire</a>
+            <span className="hidden sm:inline">&bull;</span>
+            <a href="/ressources" className="hover:text-white transition-colors">Ressources</a>
+            <span className="hidden sm:inline">&bull;</span>
+            <a href="/comparatifs" className="hover:text-white transition-colors">Comparatifs</a>
             <span className="hidden sm:inline">&bull;</span>
             <a
               href="/mentions-legales"

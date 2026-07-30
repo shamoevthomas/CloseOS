@@ -158,13 +158,39 @@ const arguments_ = [
   { icon: Target, title: 'Conçu pour les closers', desc: 'Pas un CRM généraliste adapté. Un outil pensé nativement pour le métier de closer et d\'infopreneur.' },
 ];
 
+/**
+ * Source unique de la FAQ tarifs : alimente à la fois l'affichage et le JSON-LD FAQPage.
+ * Avant, les deux étaient écrits séparément et pouvaient diverger — or Google exige que le
+ * balisage FAQPage corresponde au contenu visible de la page.
+ *
+ * Réponses calibrées pour la citation par les moteurs génératifs (134-167 mots, autonomes).
+ * Voir seo/GEO-ANALYSIS.md §4. Ne pas raccourcir sans mesurer.
+ */
 const faqItems = [
-  { q: 'Est-ce que je peux tester CloseOS gratuitement ?', a: 'Oui, sur les 3 produits, mais les modalités varient : CloseOS Sales offre 10 jours d\'essai sans carte bancaire. CloseOS Business (20 jours) et CloseOS Sign (14 jours) demandent une carte bancaire à l\'inscription, mais aucun prélèvement n\'est effectué pendant l\'essai. Vous pouvez annuler à tout moment.' },
-  { q: 'Que signifie "prix à vie" ?', a: 'Le tarif que vous payez au moment de votre abonnement est bloqué pour toujours. Si les prix augmentent après votre inscription, vous gardez votre tarif initial tant que votre abonnement est actif.' },
-  { q: 'Quelle est la différence entre les formules Solo et Business ?', a: 'La formule Solo est destinée aux closers indépendants ou aux infopreneurs qui closent seuls. La formule Business ajoute la gestion d\'équipe : rôles, attribution des leads, KPIs par membre et onboarding automatisé.' },
-  { q: 'Puis-je changer de formule en cours de route ?', a: 'Oui. Vous pouvez upgrader votre formule à tout moment. Le changement est effectif immédiatement et la différence de prix est calculée au prorata.' },
-  { q: 'Quelles intégrations sont disponibles ?', a: 'CloseOS s\'intègre avec HubSpot, Pipedrive, GoHighLevel, Airtable, Systeme.io, iClosed, Google Calendar, Stripe, Calendly, Zapier, Make et n8n.' },
-  { q: 'CloseOS Sign est-il inclus dans mon abonnement ?', a: 'Si vous êtes déjà client CloseOS Business, CloseOS Sign est inclus automatiquement, sans surcoût. Si vous n\'êtes pas client Business, vous pouvez souscrire à CloseOS Sign seul, dès 9€/mois en annuel (formule unique, toutes les fonctionnalités).' },
+  {
+    q: 'Est-ce que je peux tester CloseOS gratuitement ?',
+    a: 'Oui, les trois produits proposent un essai gratuit, mais les modalités diffèrent. CloseOS Sales offre 10 jours d\'essai sans carte bancaire : vous créez votre compte et vous utilisez le CRM immédiatement. CloseOS Business (20 jours d\'essai) et CloseOS Sign (14 jours) demandent une carte bancaire à l\'inscription, mais aucun prélèvement n\'est effectué pendant la période d\'essai et vous pouvez annuler à tout moment depuis votre espace, sans avoir à écrire à personne. Pendant l\'essai, vous disposez de la totalité des fonctionnalités de la formule choisie : rien n\'est bridé ni réservé à la version payante. À la fin de la période, l\'abonnement démarre automatiquement au tarif affiché, sauf si vous avez annulé avant. Aucun engagement de durée n\'est demandé : les abonnements CloseOS se résilient au mois ou à l\'année selon la formule retenue.',
+  },
+  {
+    q: 'Que signifie le "prix à vie" chez CloseOS ?',
+    a: 'Le prix à vie signifie que le tarif payé au moment de votre inscription reste le vôtre aussi longtemps que votre abonnement demeure actif. Si CloseOS augmente ses prix par la suite — ce qui arrive à mesure que de nouvelles fonctionnalités sortent — les nouveaux clients paient le nouveau tarif, mais pas vous : vous conservez celui auquel vous êtes entré. Cet engagement porte sur la formule que vous avez souscrite. Il continue de s\'appliquer si vous changez de formule, sur la base du tarif en vigueur pour la nouvelle formule au moment du changement. Il cesse en revanche si vous résiliez puis revenez plus tard : une nouvelle souscription se fait au tarif du moment. Concrètement, s\'abonner tôt fixe durablement votre coût, ce qui compte pour une activité de closing où les charges fixes se comparent au chiffre d\'affaires mensuel.',
+  },
+  {
+    q: 'Quelle est la différence entre les formules Solo et Business ?',
+    a: 'La formule Solo s\'adresse à ceux qui vendent seuls : un closer indépendant, un freelance, ou un infopreneur qui close lui-même ses appels. Elle donne accès au CRM, au pipeline de vente, à l\'agenda et aux liens de réservation, à la facturation et aux KPIs de closing, pour un seul utilisateur. La formule Business s\'adresse à ceux qui font vendre d\'autres personnes. Elle ajoute tout ce qui relève du pilotage d\'équipe : les rôles (closer, setter, Head of Sales, propriétaire), l\'attribution des leads et des rendez-vous entre les membres, les KPIs individuels et collectifs, les objectifs, le calcul des commissions, et l\'onboarding automatisé des nouveaux closers. La règle simple : si vous êtes le seul à passer les appels, Solo suffit. Dès qu\'une deuxième personne vend pour vous, il vous faut Business.',
+  },
+  {
+    q: 'Puis-je changer de formule en cours de route ?',
+    a: 'Oui, à tout moment et sans avoir à contacter le support. Une montée en formule est effective immédiatement : les fonctionnalités supplémentaires s\'ouvrent dès la validation, et la différence de prix est calculée au prorata du temps restant sur votre période en cours, de sorte que vous ne payez jamais deux fois la même période. Une descente en formule prend effet à la fin de la période déjà réglée : vous conservez l\'accès à ce que vous avez payé jusqu\'à son terme, puis le compte bascule sur la formule inférieure. Vos données ne sont jamais supprimées lors d\'un changement de formule ; seules les fonctionnalités qui ne font pas partie de la nouvelle formule deviennent inaccessibles. Si vous ajoutez des membres d\'équipe, la facturation des sièges supplémentaires suit la même logique de prorata.',
+  },
+  {
+    q: 'Quelles intégrations sont disponibles avec CloseOS ?',
+    a: 'CloseOS se connecte nativement à douze outils, sans passer par un intermédiaire. Quatre d\'entre eux fonctionnent en synchronisation bidirectionnelle, c\'est-à-dire que les données circulent dans les deux sens : HubSpot, Pipedrive, GoHighLevel et Airtable. Deux fonctionnent par webhook entrant, pour recevoir les leads et les rendez-vous : Systeme.io et iClosed. S\'y ajoutent Google Calendar pour la synchronisation des agendas et des rendez-vous, Stripe pour l\'encaissement et la facturation, et Calendly pour la prise de rendez-vous. Enfin, Zapier, Make et n8n servent de passerelles vers plus de sept mille autres applications, ce qui couvre la quasi-totalité des besoins d\'automatisation. CloseOS expose également une API et un serveur MCP, qui permettent de piloter le CRM directement depuis Claude, ChatGPT ou vos propres outils.',
+  },
+  {
+    q: 'CloseOS Sign est-il inclus dans mon abonnement ?',
+    a: 'Cela dépend de votre formule. Si vous êtes client CloseOS Business, CloseOS Sign est inclus automatiquement dans votre abonnement, sans surcoût et sans inscription séparée : vous y accédez avec la même connexion, et vos clients gagnés dans le CRM sont directement disponibles comme signataires. Si vous n\'êtes pas client Business, vous pouvez souscrire à CloseOS Sign seul, à partir de 9 € par mois en facturation annuelle. Il n\'existe qu\'une seule formule Sign, qui donne accès à toutes les fonctionnalités : signature multi-signataires en ordre parallèle ou séquentiel, encaissement du paiement au moment de la signature via Stripe, vérification du signataire par code email ou SMS, modèles de contrat réutilisables, espaces dédiés aux membres de l\'équipe, et certificat de preuve vérifiable en ligne. Aucun palier, aucune option à débloquer.',
+  },
 ];
 
 export default function Tarifs() {
@@ -177,6 +203,10 @@ export default function Tarifs() {
     document.getElementById('canonical')?.setAttribute('href', 'https://www.closeos.fr/tarifs');
     document.getElementById('og-url')?.setAttribute('content', 'https://www.closeos.fr/tarifs');
     document.getElementById('og-title')?.setAttribute('content', 'Tarifs CloseOS — CRM closer dès 18€/mois');
+    // Visuel dédié généré à la volée (api/og type=page) : une URL d'image traverse le prerender.
+    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/api/og?type=page&slug=tarifs&lang=fr');
+    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/api/og?type=page&slug=tarifs&lang=fr');
+    document.getElementById('og-image-alt')?.setAttribute('content', 'CloseOS — Tarifs');
     document.getElementById('og-description')?.setAttribute('content', 'Découvrez les tarifs CloseOS : Sales dès 18€/mois, Business dès 39€/mois, Sign dès 9€/mois (inclus avec Business). Essai gratuit. Prix à vie.');
     document.getElementById('tw-url')?.setAttribute('content', 'https://www.closeos.fr/tarifs');
     document.getElementById('tw-title')?.setAttribute('content', 'Tarifs CloseOS — CRM closer dès 18€/mois');
@@ -217,14 +247,12 @@ export default function Tarifs() {
     faqSchema.textContent = JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      mainEntity: [
-        { '@type': 'Question', name: 'Est-ce que je peux tester CloseOS gratuitement ?', acceptedAnswer: { '@type': 'Answer', text: 'Oui, sur les 3 produits, mais les modalités varient : CloseOS Sales offre 10 jours d\'essai sans carte bancaire. CloseOS Business (20 jours) et CloseOS Sign (14 jours) demandent une carte bancaire à l\'inscription, mais aucun prélèvement n\'est effectué pendant l\'essai. Vous pouvez annuler à tout moment.' } },
-        { '@type': 'Question', name: 'Que signifie "prix à vie" ?', acceptedAnswer: { '@type': 'Answer', text: 'Le tarif que vous payez au moment de votre abonnement est bloqué pour toujours. Si les prix augmentent après votre inscription, vous gardez votre tarif initial tant que votre abonnement est actif.' } },
-        { '@type': 'Question', name: 'Quelle est la différence entre les formules Solo et Business ?', acceptedAnswer: { '@type': 'Answer', text: 'La formule Solo est destinée aux closers indépendants ou aux infopreneurs qui closent seuls. La formule Business ajoute la gestion d\'équipe : rôles, attribution des leads, KPIs par membre et onboarding automatisé.' } },
-        { '@type': 'Question', name: 'Puis-je changer de formule en cours de route ?', acceptedAnswer: { '@type': 'Answer', text: 'Oui. Vous pouvez upgrader votre formule à tout moment. Le changement est effectif immédiatement et la différence de prix est calculée au prorata.' } },
-        { '@type': 'Question', name: 'Quelles intégrations sont disponibles ?', acceptedAnswer: { '@type': 'Answer', text: 'CloseOS s\'intègre avec HubSpot, Pipedrive, GoHighLevel, Airtable, Systeme.io, iClosed, Google Calendar, Stripe, Calendly, Zapier, Make et n8n.' } },
-        { '@type': 'Question', name: 'CloseOS Sign est-il inclus dans mon abonnement ?', acceptedAnswer: { '@type': 'Answer', text: 'Si vous êtes déjà client CloseOS Business, CloseOS Sign est inclus automatiquement, sans surcoût. Sinon, vous pouvez souscrire à CloseOS Sign seul, dès 9€/mois en annuel.' } },
-      ]
+      // Généré depuis faqItems : le balisage ne peut plus diverger du contenu affiché.
+      mainEntity: faqItems.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
     });
     document.head.appendChild(faqSchema);
 
@@ -256,6 +284,9 @@ export default function Tarifs() {
           </div>
         </div>
       </nav>
+
+      {/* <main> : delimite le contenu principal pour les extracteurs (crawlers IA, lecteurs d'ecran). Sans lui, rien ne distingue le texte de navigation du contenu. */}
+      <main>
 
       {/* Hero */}
       <motion.section
@@ -868,12 +899,16 @@ export default function Tarifs() {
       </motion.section>
 
       {/* Footer */}
+      </main>
       <footer className="border-t border-white/5 bg-[#020617] py-6 pb-16">
         <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <img src="/logo-sales.png" alt="CloseOS" className="h-6 w-auto" loading="lazy" width={72} height={24} />
           <div className="flex flex-wrap justify-center gap-4 text-xs text-slate-500">
             <span>&copy; 2026 CloseOS.fr</span>
             <span className="hidden sm:inline">&bull;</span>
+            <a href="/glossaire" className="hover:text-white transition-colors">Glossaire</a>
+            <a href="/ressources" className="hover:text-white transition-colors">Ressources</a>
+            <a href="/comparatifs" className="hover:text-white transition-colors">Comparatifs</a>
             <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions legales</a>
             <span className="hidden sm:inline">&bull;</span>
             <a href="/cgu" className="hover:text-white transition-colors">CGU</a>

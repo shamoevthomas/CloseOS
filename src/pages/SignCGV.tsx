@@ -8,18 +8,20 @@ export default function SignCGV() {
   return (
     <SignLegalShell
       title={lang === 'fr' ? "Conditions Générales de Vente et d'Utilisation" : 'General Terms of Sale and Use'}
-      updated={lang === 'fr' ? '11 juin 2026' : 'June 11, 2026'}
+      updated={lang === 'fr' ? '29 juillet 2026' : 'July 29, 2026'}
     >
       <h2>{lang === 'fr' ? '1. Objet' : '1. Purpose'}</h2>
       <p>
         {lang === 'fr' ? (
           <>Les présentes conditions régissent la souscription et l'utilisation de <strong>CloseOS Sign</strong>, service de
-          signature électronique et d'encaissement édité par CloseOS Technologies (le « Prestataire »). Elles s'appliquent à
+          signature électronique et d'encaissement édité par <strong>Thomas Shamoev</strong>, entreprise individuelle exerçant
+          sous le nom commercial <strong>CloseOS Technologies</strong> (SIREN 993 427 509) (le « Prestataire »). Elles s'appliquent à
           tout utilisateur professionnel disposant d'un compte (l'« Utilisateur »). La souscription emporte acceptation pleine
           et entière des présentes.</>
         ) : (
           <>These terms govern the subscription to and use of <strong>CloseOS Sign</strong>, an electronic signature and payment
-          collection service published by CloseOS Technologies (the "Provider"). They apply to any professional user holding an
+          collection service published by <strong>Thomas Shamoev</strong>, a sole proprietorship trading as <strong>CloseOS Technologies</strong>
+          (SIREN 993 427 509) (the "Provider"). They apply to any professional user holding an
           account (the "User"). Subscribing constitutes full and unreserved acceptance of these terms.</>
         )}
       </p>
@@ -30,13 +32,18 @@ export default function SignCGV() {
           <>CloseOS Sign permet de composer un contrat (à partir d'un modèle, d'une feuille blanche ou d'un PDF importé), de le
           faire signer électroniquement par un ou plusieurs signataires, et le cas échéant d'encaisser un paiement au moment de
           la signature (fonction « Payé + signé »). Chaque signature génère un document scellé accompagné d'un faisceau de
-          preuves et d'un certificat vérifiable. Les modèles réutilisables et les espaces par membre d'équipe font partie du
-          service.</>
+          preuves et d'un certificat vérifiable. La signature peut être demandée à <strong>plusieurs signataires selon un ordre
+          parallèle ou séquentiel</strong>, avec le cas échéant un paiement dû par chaque signataire. Les modèles réutilisables et
+          les espaces par membre d'équipe font partie du service : un membre d'équipe (« closer ») peut préparer et envoyer des
+          contrats <strong>pour le compte de l'Utilisateur</strong>, qui en demeure responsable.</>
         ) : (
           <>CloseOS Sign lets you compose a contract (from a template, a blank page, or an imported PDF), have it signed
           electronically by one or more signers, and, where applicable, collect a payment at the time of signing (the "Sign +
           Pay" feature). Each signature generates a sealed document accompanied by an evidence bundle and a verifiable
-          certificate. Reusable templates and per-team-member workspaces are part of the service.</>
+          certificate. Signature can be requested from <strong>several signers in parallel or sequential order</strong>, with a
+          payment due per signer where applicable. Reusable templates and per-team-member workspaces are part of the service: a
+          team member ("closer") may prepare and send contracts <strong>on behalf of the User</strong>, who remains responsible
+          for them.</>
         )}
       </p>
 
@@ -86,12 +93,20 @@ export default function SignCGV() {
           <>Lorsque cette fonction est activée, le signataire règle un montant défini par l'Utilisateur au moment de la signature,
           via Stripe Connect. <strong>L'Utilisateur reste le bénéficiaire des fonds</strong> (encaissés sur son compte Stripe
           connecté) et le responsable de la prestation vendue. CloseOS perçoit une commission de service sur les transactions
-          encaissées, prélevée automatiquement. CloseOS n'est pas partie au contrat conclu entre l'Utilisateur et son client.</>
+          encaissées, prélevée automatiquement. CloseOS n'est pas partie au contrat conclu entre l'Utilisateur et son client et
+          intervient uniquement comme <strong>facilitateur technique</strong> de l'encaissement, sans détenir les fonds.
+          L'Utilisateur définit et assure seul la <strong>politique de remboursement</strong> de la prestation vendue et gère les
+          litiges, impayés et rétrofacturations (chargebacks) avec son client. Lorsque le client final est un consommateur, il
+          appartient à l'Utilisateur de respecter à son égard le droit de la consommation applicable.</>
         ) : (
           <>When this feature is enabled, the signer pays an amount set by the User at the time of signing, via Stripe Connect.
           <strong> The User remains the beneficiary of the funds</strong> (collected into their connected Stripe account) and is
           responsible for the service sold. CloseOS charges a service commission on collected transactions, deducted
-          automatically. CloseOS is not a party to the contract entered into between the User and their client.</>
+          automatically. CloseOS is not a party to the contract entered into between the User and their client and acts solely as
+          a <strong>technical facilitator</strong> of the collection, without holding the funds. The User alone defines and
+          ensures the <strong>refund policy</strong> for the service sold and handles disputes, unpaid amounts, and chargebacks
+          with their client. Where the end client is a consumer, it is the User's responsibility to comply with applicable
+          consumer law toward them.</>
         )}
       </p>
 
@@ -99,13 +114,17 @@ export default function SignCGV() {
       <p>
         {lang === 'fr' ? (
           <>Les signatures réalisées via CloseOS Sign constituent des signatures électroniques au sens du règlement (UE)
-          n° 910/2014 (« eIDAS »). Le service réunit un <strong>faisceau de preuves</strong> (horodatage serveur, adresse IP,
-          empreinte du document, vérification d'identité, consentement explicite, journal d'événements inaltérable) destiné à
-          établir l'intégrité du document et l'imputabilité de la signature. La force probante relève de l'appréciation
+          n° 910/2014 (« eIDAS ») et des <strong>articles 1366 et 1367 du Code civil</strong>. Le service fournit une
+          <strong> signature électronique simple</strong>, renforcée par la vérification du signataire (par code email et/ou SMS)
+          lorsque celle-ci est activée par l'Utilisateur. Il réunit un <strong>faisceau de preuves</strong> (horodatage serveur,
+          adresse IP, empreinte du document, vérification d'identité, consentement explicite, journal d'événements inaltérable)
+          destiné à établir l'intégrité du document et l'imputabilité de la signature. La force probante relève de l'appréciation
           souveraine des tribunaux ; l'Utilisateur demeure responsable de l'adéquation du niveau de signature à ses besoins.</>
         ) : (
           <>Signatures made through CloseOS Sign constitute electronic signatures within the meaning of Regulation (EU)
-          No 910/2014 ("eIDAS"). The service gathers an <strong>evidence bundle</strong> (server timestamp, IP address,
+          No 910/2014 ("eIDAS") and of <strong>articles 1366 and 1367 of the French Civil Code</strong>. The service provides a
+          <strong> simple electronic signature</strong>, reinforced by signer verification (via email and/or SMS code) when
+          enabled by the User. It gathers an <strong>evidence bundle</strong> (server timestamp, IP address,
           document hash, identity verification, explicit consent, tamper-proof event log) intended to establish the integrity of
           the document and the attributability of the signature. Evidentiary weight is a matter for the sole assessment of the
           courts; the User remains responsible for ensuring the signature level is appropriate to their needs.</>
@@ -179,10 +198,14 @@ export default function SignCGV() {
         {lang === 'fr' ? (
           <>Le traitement des données personnelles est décrit dans notre <a href="/sign/confidentialite">Politique de
           confidentialité</a>. Les mesures de sécurité et la valeur probante sont détaillées dans la page <a href="/sign/securite">Sécurité
-          technique</a>.</>
+          technique</a>. Pour les Utilisateurs disposant d'un compte <strong>CloseOS Business</strong>, un dossier « CRM CloseOS »
+          (clients et équipe) peut être synchronisé vers CloseOS Sign afin de préremplir les contrats ; ce flux repose sur le
+          compte commun de l'Utilisateur, qui en reste responsable de traitement.</>
         ) : (
           <>The processing of personal data is described in our <a href="/sign/confidentialite">Privacy Policy</a>. Security
-          measures and evidentiary value are detailed on the <a href="/sign/securite">Technical Security</a> page.</>
+          measures and evidentiary value are detailed on the <a href="/sign/securite">Technical Security</a> page. For Users with a
+          <strong> CloseOS Business</strong> account, a "CloseOS CRM" folder (clients and team) may be synchronized to CloseOS Sign
+          to pre-fill contracts; this flow relies on the User's shared account, who remains the data controller.</>
         )}
       </p>
 

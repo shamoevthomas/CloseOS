@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { PhoneInput } from './PhoneInput'
 import {
   X,
@@ -105,6 +106,7 @@ interface BusinessSettingsModalProps {
 }
 
 export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' }: BusinessSettingsModalProps) {
+  const navigate = useNavigate()
   const { user, businessProfile, updateBusinessProfile, businessSettings, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile, isSolo, hasAcquisition } = useBusinessAuth()
   const { dark, toggle: toggleDark } = useTheme()
   const { lang, setLang, t } = useBusinessLang()
@@ -538,7 +540,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
     try {
       const { error } = await supabase.auth.linkIdentity({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/dashboard` },
+        options: { redirectTo: `${window.location.origin}/business/dashboard` },
       })
       if (error) throw error
     } catch (e: any) {
@@ -2269,7 +2271,7 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                   </div>
                 </a>
 
-                <a href="#" className="group block p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:shadow-md transition-all hover:scale-[1.01]">
+                <button onClick={() => { onClose(); navigate('/business/aide'); }} className="group block w-full text-left p-6 rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:shadow-md transition-all hover:scale-[1.01]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-xl bg-[#ffddb8]/30 text-[#2a1700] group-hover:bg-[#ffddb8]/50 transition-colors">
@@ -2277,12 +2279,12 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                       </div>
                       <div>
                         <h4 className="font-bold text-stone-900 dark:text-white text-lg">Centre d'aide & FAQ</h4>
-                        <p className="text-sm text-stone-500 dark:text-neutral-400">Guides et tutoriels (Bientot disponible)</p>
+                        <p className="text-sm text-stone-500 dark:text-neutral-400">Guides, « par où commencer » et recherche</p>
                       </div>
                     </div>
                     <ExternalLink className="h-5 w-5 text-stone-300 group-hover:text-stone-900 transition-colors" strokeWidth={1.5} />
                   </div>
-                </a>
+                </button>
               </div>
             )}
           </div>

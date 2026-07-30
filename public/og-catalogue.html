@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CloseOS — Catalogue OG & Social Preview</title>
+<style>
+  :root{
+    --bg:#0c0e0d; --panel:#141715; --panel2:#191c1a; --line:#262a27;
+    --txt:#e9ede9; --muted:#8b938c; --dim:#5f665f;
+    --accent:#3ddc84; --accent-dim:#1f6b45;
+    --eco:#e0b341; --sales:#4aa3ff; --business:#c084fc; --crm:#f472b6; --sign:#a3e635; --dyn:#22d3ee;
+    --warn:#f0a132; --bad:#f26d6d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5}
+  .wrap{max-width:1320px;margin:0 auto;padding:0 20px}
+  header{position:sticky;top:0;z-index:20;background:rgba(12,14,13,.93);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .head-inner{padding:18px 20px 14px}
+  h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.3px}
+  h1 .g{color:var(--accent)}
+  .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:13px}
+  .search{flex:1;min-width:200px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 13px;color:var(--txt);font-size:14px;outline:none}
+  .search:focus{border-color:var(--accent-dim)}
+  .filters{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{cursor:pointer;user-select:none;border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:7px 12px;border-radius:999px;font-size:12.5px;font-weight:600;transition:.15s}
+  .chip:hover{color:var(--txt)}
+  .chip.active{background:var(--txt);color:#0c0e0d;border-color:var(--txt)}
+  .chip.eco.active{background:var(--eco);border-color:var(--eco)}
+  .chip.sales.active{background:var(--sales);border-color:var(--sales)}
+  .chip.business.active{background:var(--business);border-color:var(--business)}
+  .chip.crm.active{background:var(--crm);border-color:var(--crm)}
+  .chip.sign.active{background:var(--sign);border-color:var(--sign)}
+  .chip.dyn.active{background:var(--dyn);border-color:var(--dyn)}
+  .chip.warn.active{background:var(--warn);border-color:var(--warn)}
+  .chip.shadow.active{background:var(--bad);border-color:var(--bad)}
+  .chip .n{opacity:.55;font-weight:700;margin-left:5px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
+  .seg button{background:none;border:0;color:var(--muted);font:inherit;font-size:12.5px;font-weight:700;padding:7px 12px;cursor:pointer}
+  .seg button.on{background:var(--txt);color:#0c0e0d}
+  main{padding:22px 0 90px}
+  .stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:120px}
+  .stat b{display:block;font-size:19px;letter-spacing:-.4px}
+  .stat span{color:var(--dim);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  h2.sec{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);margin:32px 0 12px;display:flex;align-items:center;gap:9px}
+  h2.sec:before{content:"";width:9px;height:9px;border-radius:50%;background:var(--accent)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px 18px;margin-bottom:14px}
+  .card.flag{border-color:#4a3a1c}
+  .c-head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .route{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14.5px;font-weight:700;letter-spacing:-.2px}
+  .route .host{color:var(--dim);font-weight:600}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .b{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);letter-spacing:.3px}
+  .b.ok{color:var(--accent);border-color:var(--accent-dim)}
+  .b.warn{color:var(--warn);border-color:#4a3a1c}
+  .b.bad{color:var(--bad);border-color:#4a2626}
+  .b.eco{color:var(--eco)} .b.sales{color:var(--sales)} .b.business{color:var(--business)}
+  .b.crm{color:var(--crm)} .b.sign{color:var(--sign)} .b.dyn{color:var(--dyn)}
+  .src{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--dim);margin-top:3px}
+  .note{color:#c8b48a;font-size:12.5px;margin-top:9px;background:#1c1a13;border:1px solid #3a3320;border-radius:8px;padding:8px 11px}
+  .note.bad{color:#f0b1b1;background:#1e1414;border-color:#3d2222}
+  .previews{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:14px}
+  .pv{min-width:0}
+  .pv-t{font-size:10.5px;font-weight:800;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
+  .hide{display:none!important}
+
+  /* LinkedIn */
+  .li{background:#fff;border:1px solid #d9d9d9;border-radius:4px;overflow:hidden}
+  .li img{display:block;width:100%;aspect-ratio:1.91/1;object-fit:cover;background:#eee}
+  .li-b{padding:8px 12px 10px;background:#f3f2ef}
+  .li-title{color:#000;font-size:13.5px;font-weight:600;line-height:1.35;letter-spacing:-.1px}
+  .li-dom{color:#666;font-size:11.5px;margin-top:3px}
+
+  /* Facebook */
+  .fb{background:#fff;border:1px solid #dadde1;border-radius:8px;overflow:hidden}
+  .fb img{display:block;width:100%;aspect-ratio:1.91/1;object-fit:cover;background:#eee}
+  .fb-b{padding:10px 12px;background:#f2f3f5;border-top:1px solid #dadde1}
+  .fb-dom{color:#65676b;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+  .fb-title{color:#050505;font-size:15px;font-weight:600;line-height:1.3;margin-top:2px}
+  .fb-desc{color:#65676b;font-size:12.5px;line-height:1.35;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  /* X / Twitter */
+  .tw{position:relative;border-radius:16px;overflow:hidden;border:1px solid #2f3336;background:#000}
+  .tw img{display:block;width:100%;aspect-ratio:1.91/1;object-fit:cover;background:#16181c}
+  .tw-ov{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,.77);color:#fff;font-size:12.5px;padding:3px 7px;border-radius:4px;max-width:calc(100% - 24px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tw-dom{color:#71767b;font-size:12.5px;margin-top:5px;padding-left:2px}
+
+  /* WhatsApp */
+  .wa{background:#0b141a;padding:10px;border-radius:10px}
+  .wa-b{background:#005c4b;border-radius:8px;padding:4px;max-width:330px;margin-left:auto}
+  .wa-c{background:#025144;border-radius:6px;overflow:hidden}
+  .wa img{display:block;width:100%;aspect-ratio:1.91/1;object-fit:cover;background:#0b141a}
+  .wa-t{padding:7px 9px}
+  .wa-title{color:#e9edef;font-size:12.5px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .wa-desc{color:#8696a0;font-size:11.5px;line-height:1.3;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .wa-url{color:#53bdeb;font-size:11.5px;margin-top:4px;word-break:break-all}
+  .wa-time{color:#8696a0;font-size:10px;text-align:right;padding:2px 6px 0}
+
+  /* Slack */
+  .sl{background:#1a1d21;border-radius:8px;padding:11px 12px}
+  .sl-in{border-left:4px solid #3ddc84;padding-left:11px}
+  .sl-site{color:#d1d2d3;font-size:12px;font-weight:700}
+  .sl-title{color:#1d9bd1;font-size:13.5px;font-weight:700;line-height:1.3;margin-top:2px}
+  .sl-desc{color:#abadb0;font-size:12.5px;line-height:1.4;margin-top:3px}
+  .sl img{display:block;width:100%;max-width:360px;border-radius:8px;margin-top:8px;aspect-ratio:1.91/1;object-fit:cover;background:#0b0d0e}
+
+  /* iMessage */
+  .im{background:#000;padding:12px;border-radius:12px;display:flex;justify-content:flex-end}
+  .im-c{background:#1c1c1e;border-radius:16px;overflow:hidden;max-width:300px;width:100%}
+  .im img{display:block;width:100%;aspect-ratio:1.91/1;object-fit:cover;background:#2c2c2e}
+  .im-t{padding:8px 11px 10px;background:#2c2c2e}
+  .im-title{color:#fff;font-size:12.5px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .im-dom{color:#8e8e93;font-size:11px;margin-top:3px;text-transform:lowercase}
+
+  /* Discord */
+  .dc{background:#313338;border-radius:6px;padding:2px}
+  .dc-in{background:#2b2d31;border-left:4px solid #5865f2;border-radius:4px;padding:11px 13px}
+  .dc-site{color:#b5bac1;font-size:11.5px}
+  .dc-title{color:#00a8fc;font-size:13.5px;font-weight:600;line-height:1.3;margin-top:2px}
+  .dc-desc{color:#dbdee1;font-size:12.5px;line-height:1.4;margin-top:4px}
+  .dc img{display:block;width:100%;border-radius:4px;margin-top:9px;aspect-ratio:1.91/1;object-fit:cover;background:#232428}
+
+  /* Meta code */
+  .meta-box{margin-top:14px;background:#0a0c0b;border:1px solid var(--line);border-radius:10px}
+  .meta-h{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)}
+  .meta-h span{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.7px}
+  .meta-h button{margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font:inherit;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer}
+  .meta-h button:hover{color:var(--txt);border-color:var(--accent-dim)}
+  pre{margin:0;padding:12px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.6;color:#9fb3a4;white-space:pre}
+  pre .p{color:#6f7a72} pre .v{color:#cfe0d4}
+  .lens{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--dim)}
+  .lens b{color:var(--muted);font-weight:700}
+  .lens .ko{color:var(--warn)}
+
+  /* Assets */
+  .assets{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .asset{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .asset img{display:block;width:100%;aspect-ratio:1.91/1;object-fit:cover;background:#0a0c0b}
+  .asset-b{padding:11px 13px}
+  .asset-n{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;font-weight:700}
+  .asset-m{color:var(--dim);font-size:11.5px;margin-top:3px}
+  .asset-u{color:var(--muted);font-size:11.5px;margin-top:6px}
+
+  /* Dynamique */
+  .dyn-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .dyn-form input{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 11px;color:var(--txt);font-size:13px;outline:none;min-width:180px}
+  .dyn-form input:focus{border-color:var(--accent-dim)}
+  .dyn-form button{background:var(--accent);border:0;color:#0c0e0d;font:inherit;font-size:12.5px;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer}
+  .dyn-out{margin-top:12px}
+  .dyn-out img{max-width:520px;width:100%;border:1px solid var(--line);border-radius:10px;display:block}
+
+  /* Audit */
+  .audit{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 0}
+  .arow{display:flex;gap:12px;align-items:flex-start;padding:13px 18px;border-bottom:1px solid var(--line)}
+  .arow:last-child{border-bottom:0}
+  .alev{flex:0 0 84px;font-size:10.5px;font-weight:800;letter-spacing:.4px;padding:3px 8px;border-radius:6px;text-align:center;border:1px solid var(--line)}
+  .alev.hi{color:var(--bad);border-color:#4a2626;background:#1e1414}
+  .alev.mid{color:var(--warn);border-color:#4a3a1c;background:#1c1a13}
+  .alev.low{color:var(--muted);background:var(--panel2)}
+  .alev.ok{color:var(--accent);border-color:var(--accent-dim);background:#0e1a14}
+  .atxt{flex:1;font-size:13px}
+  .atxt b{font-weight:700}
+  .atxt p{margin:3px 0 0;color:var(--muted);font-size:12.5px}
+  .atxt code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11.5px;color:#c9d1c9;font-family:ui-monospace,Menlo,monospace}
+  footer{color:var(--dim);font-size:12px;border-top:1px solid var(--line);padding:22px 0;text-align:center;margin-top:40px}
+  .empty{color:var(--muted);text-align:center;padding:60px 0;font-size:14px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap head-inner">
+    <h1>CloseOS — Catalogue <span class="g">OG &amp; Social Preview</span></h1>
+    <div class="sub">Toutes les cartes de partage du produit : Open Graph, Twitter/X Cards, previews WhatsApp / Slack / iMessage / Discord.</div>
+    <div class="seg" id="tabs" style="margin-top:13px;display:inline-flex">
+      <button data-tab="catalogue" class="on">Catalogue</button>
+      <button data-tab="suggestions">Suggestions <span style="opacity:.55;font-weight:800">18</span></button>
+    </div>
+    <div class="controls" id="controls">
+      <input class="search" id="q" placeholder="Rechercher une route, un titre, une image…">
+      <div class="filters" id="filters"></div>
+      <div class="seg" id="lang">
+        <button data-lang="fr" class="on">FR</button>
+        <button data-lang="en">EN</button>
+      </div>
+      <div class="seg" id="view">
+        <button data-view="all" class="on">Toutes</button>
+        <button data-view="li">LinkedIn</button>
+        <button data-view="fb">Facebook</button>
+        <button data-view="tw">X</button>
+        <button data-view="wa">WhatsApp</button>
+        <button data-view="sl">Slack</button>
+        <button data-view="im">iMessage</button>
+        <button data-view="dc">Discord</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+<div id="page-catalogue">
+  <div class="stats" id="stats"></div>
+
+  <h2 class="sec">Pages &amp; routes</h2>
+  <div id="list"></div>
+
+  <h2 class="sec">Images OG disponibles</h2>
+  <div class="assets" id="assets"></div>
+
+  <h2 class="sec">OG dynamiques (générés à la volée)</h2>
+  <div class="card">
+    <div class="c-head">
+      <div>
+        <div class="route">/book/:slug<span class="host"> &amp; </span>/capture/:slug</div>
+        <div class="src">api/social-meta.ts (injection SSR) + api/og.tsx (image @vercel/og, runtime edge)</div>
+      </div>
+      <div class="badges">
+        <span class="b dyn">SSR RÉEL</span><span class="b ok">IMAGE GÉNÉRÉE</span>
+      </div>
+    </div>
+    <div class="note">Ce sont les <b>seules</b> URLs dont les métas sont injectées côté serveur (rewrite <code style="font-family:ui-monospace,Menlo,monospace">vercel.json</code> → <code style="font-family:ui-monospace,Menlo,monospace">/api/social-meta</code>). Le titre devient « Réserver avec {Prénom Nom} », la description « {label} — {durée} min — {prix} », et l'image est peinte à la volée avec l'avatar, le prix et la durée.</div>
+    <div class="dyn-form">
+      <input id="dslug" placeholder="slug du lien (ex: demo-30)">
+      <input id="dbase" value="https://www.closeos.fr">
+      <button data-t="booking">Générer /book</button>
+      <button data-t="capture">Générer /capture</button>
+    </div>
+    <div class="dyn-out" id="dout"></div>
+  </div>
+
+  <h2 class="sec">Audit — ce qui manque</h2>
+  <div class="audit" id="audit"></div>
+</div>
+
+<div id="page-suggestions" class="hide">
+  <div class="card" style="border-color:var(--accent-dim)">
+    <div class="c-head">
+      <div style="min-width:0">
+        <div class="route">Visuels générés</div>
+        <div class="src">maquettes public/og-lab.html → PNG + JPEG dans public/og/ · régénérer : <b>node scripts/og-render.mjs</b></div>
+      </div>
+      <div class="badges"><a class="b ok" style="text-decoration:none" href="/og-lab.html" target="_blank">OUVRIR LE LABO ↗</a></div>
+    </div>
+    <div class="note"><b>Logos :</b> toutes les maquettes utilisent les vrais fichiers — <code style="font-family:ui-monospace,Menlo,monospace">logo-sales.png</code>, <code style="font-family:ui-monospace,Menlo,monospace">closeos-business-logo-ecrit-dark.png</code>, <code style="font-family:ui-monospace,Menlo,monospace">CLOSEOS-SIGN-LOGO.png</code>, <code style="font-family:ui-monospace,Menlo,monospace">closeos-business-logo.png</code> pour le mark sur fond clair. Test de contraste fait : les trois lockups produits ne sont lisibles que sur fond sombre (le « Close » de Sales et de Sign est blanc, la version claire de Business a un « Close » crème délavé), d'où les plaques sombres dans les maquettes claires.</div>
+    <div class="note">Rien n'est encore branché sur le site : ce sont des propositions. Dis-moi laquelle tu gardes et je la pose en <code style="font-family:ui-monospace,Menlo,monospace">public/og-eco.png</code> (et je crée <code style="font-family:ui-monospace,Menlo,monospace">og-sign.png</code> + les 2 lignes dans SignLanding). Chaque maquette est du HTML : un mot à changer = un rendu à relancer.</div>
+  </div>
+  <div id="sugg"></div>
+</div>
+
+  <footer>Page locale, non indexée (<code>noindex</code>) — <code>public/og-catalogue.html</code> · sert sur <code>http://localhost:5173/og-catalogue.html</code></footer>
+</main>
+
+<script>
+const HOST = 'www.closeos.fr';
+const DEFAULT_TITLE = { fr: 'CloseOS — Écosystème SaaS pour la vente digitale francophone', en: 'CloseOS — Écosystème SaaS pour la vente digitale francophone' };
+const DEFAULT_DESC = {
+  fr: "Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed.",
+  en: "Outil tout-en-un pour closers (CRM, pipeline, VoIP, KPIs) et infopreneurs (management d'équipe, campagnes, analytics). Alternative iClosed."
+};
+
+const DATA = [
+  // ═══ Pages marketing : métas SSR bilingues (api/social-meta.ts, table PAGES) ═══
+  {
+    id: 'eco', product: 'eco', label: 'Écosystème',
+    route: '/', host: HOST, url: 'https://www.closeos.fr/',
+    title: { fr: "CloseOS — l'écosystème de la vente digitale", en: 'CloseOS — the digital sales ecosystem' },
+    desc: {
+      fr: 'Sales pour les closers, Business pour les équipes, Sign pour signer et encaisser. Un seul écosystème.',
+      en: 'Sales for closers, Business for teams, Sign to sign and get paid. One ecosystem.'
+    },
+    image: '/og-eco.jpg', imageKind: 'dédiée', prerender: true, monoLang: true,
+    src: 'index.html (défauts) + src/pages/EcosystemChoice.tsx · prérendue par scripts/prerender.mjs'
+  },
+  {
+    id: 'sales', product: 'sales', label: 'Sales',
+    route: '/sales', host: HOST, url: 'https://www.closeos.fr/sales',
+    title: { fr: 'CloseOS Sales — le cockpit du closer indépendant', en: "CloseOS Sales — the independent closer's cockpit" },
+    desc: {
+      fr: 'CRM, pipeline, Call Room, relances automatiques, booking et facturation. Le tout-en-un des closers.',
+      en: 'CRM, pipeline, Call Room, automatic follow-ups, booking and invoicing. The all-in-one for closers.'
+    },
+    image: '/og-sales.jpg', imageKind: 'dédiée', prerender: true, monoLang: true,
+    src: 'src/pages/LandingPage.tsx · ajoutée à scripts/prerender.mjs le 30/07',
+    note: "Cette route ne servait qu'une coquille aux moteurs : elle est désormais <b>prérendue</b> comme /landing."
+  },
+  {
+    id: 'landing', product: 'sales', label: 'Sales',
+    route: '/landing', host: HOST, url: 'https://www.closeos.fr/landing',
+    title: { fr: 'CloseOS Sales — le cockpit du closer indépendant', en: "CloseOS Sales — the independent closer's cockpit" },
+    desc: {
+      fr: 'CRM, pipeline, Call Room, relances automatiques, booking et facturation. Le tout-en-un des closers.',
+      en: 'CRM, pipeline, Call Room, automatic follow-ups, booking and invoicing. The all-in-one for closers.'
+    },
+    image: '/og-sales.jpg', imageKind: 'dédiée', prerender: true, monoLang: true,
+    src: 'src/pages/LandingPage.tsx:862 · même page que /sales'
+  },
+  {
+    id: 'business', product: 'business', label: 'Business',
+    route: '/business', host: HOST, url: 'https://www.closeos.fr/business',
+    title: { fr: 'CloseOS Business — pilotez votre équipe de closing', en: 'CloseOS Business — run your closing team' },
+    desc: {
+      fr: "Management d'équipe, acquisition, KPIs, commissions et CloseOS Sign inclus. L'alternative française à iClosed.",
+      en: 'Team management, acquisition, KPIs, commissions and CloseOS Sign included. The French alternative to iClosed.'
+    },
+    image: '/og-business.jpg', imageKind: 'dédiée', prerender: true, monoLang: true,
+    src: 'src/pages/BusinessLanding.tsx:135'
+  },
+  {
+    id: 'sign', product: 'sign', label: 'Sign',
+    route: '/sign', host: 'sign.closeos.fr', url: 'https://sign.closeos.fr/',
+    title: { fr: 'CloseOS Sign — signez le contrat, encaissez le paiement', en: 'CloseOS Sign — sign the contract, collect the payment' },
+    desc: {
+      fr: "Signature électronique avec paiement intégré, multi-signataire, vérification d'identité et certificat de preuve.",
+      en: 'E-signature with built-in payment, multi-signer, identity verification and proof certificate.'
+    },
+    image: '/og-sign.jpg', imageKind: 'dédiée', prerender: true, monoLang: true,
+    src: 'src/pages/SignLanding.tsx:125'
+  },
+  {
+    id: 'tarifs', product: 'eco', label: 'Écosystème',
+    route: '/tarifs', host: HOST, url: 'https://www.closeos.fr/tarifs',
+    title: { fr: 'CloseOS — Tarifs', en: 'CloseOS — Pricing' },
+    desc: {
+      fr: 'Des offres claires pour les closers et les équipes. Essai gratuit, sans engagement.',
+      en: 'Clear plans for closers and teams. Free trial, no commitment.'
+    },
+    image: '/og/page-tarifs-fr.png', imageKind: 'générée (@vercel/og)',
+    prerender: true, monoLang: true,
+    src: 'src/pages/Tarifs.tsx (og:image → /api/og?type=page&slug=tarifs) · carte api/og.tsx PAGE_CARDS.tarifs',
+    note: "Visuel propre à la page depuis le 30/07. La page reste prérendue — c'est l'<b>URL</b> de l'image qui pointe vers le générateur, et une URL traverse le prerender sans problème."
+  },
+  {
+    id: 'feats', product: 'eco', label: 'Écosystème',
+    route: '/fonctionnalites', host: HOST, url: 'https://www.closeos.fr/fonctionnalites',
+    title: { fr: 'CloseOS — Fonctionnalités', en: 'CloseOS — Features' },
+    desc: {
+      fr: "Tout ce qu'un closer et une équipe de vente attendent, réuni en un seul écosystème.",
+      en: 'Everything a closer and a sales team need, in one ecosystem.'
+    },
+    image: '/og/page-fonctionnalites-fr.png', imageKind: 'générée (@vercel/og)',
+    prerender: true, monoLang: true,
+    src: 'src/pages/fonctionnalites/FonctionnalitesHub.tsx (og:image → /api/og?type=page&slug=fonctionnalites)'
+  },
+  {
+    id: 'vsic', product: 'eco', label: 'Écosystème',
+    route: '/comparatifs/closeos-vs-iclosed', host: HOST, url: 'https://www.closeos.fr/comparatifs/closeos-vs-iclosed',
+    title: { fr: "CloseOS vs iClosed — l'alternative française", en: 'CloseOS vs iClosed — the French alternative' },
+    desc: {
+      fr: "CRM, acquisition, management d'équipe et synchronisation bidirectionnelle avec iClosed. 100% RGPD, hébergé en UE.",
+      en: 'CRM, acquisition, team management and two-way sync with iClosed. 100% GDPR, EU-hosted.'
+    },
+    image: '/og/page-comparatif-fr.png', imageKind: 'générée (@vercel/og)',
+    prerender: true, monoLang: true,
+    src: 'src/pages/comparatifs/CloseosVsIclosed.tsx (og:image → /api/og?type=page&slug=comparatif)'
+  },
+  {
+    id: 'altic', product: 'eco', label: 'Écosystème',
+    route: '/comparatifs/alternative-iclosed', host: HOST, url: 'https://www.closeos.fr/comparatifs/alternative-iclosed',
+    title: { fr: "CloseOS vs iClosed — l'alternative française", en: 'CloseOS vs iClosed — the French alternative' },
+    desc: {
+      fr: "CRM, acquisition, management d'équipe et synchronisation bidirectionnelle avec iClosed. 100% RGPD, hébergé en UE.",
+      en: 'CRM, acquisition, team management and two-way sync with iClosed. 100% GDPR, EU-hosted.'
+    },
+    image: '/og/page-comparatif-fr.png', imageKind: 'générée (@vercel/og)',
+    prerender: true, monoLang: true,
+    src: 'src/pages/comparatifs/AlternativeIclosed.tsx (og:image → /api/og?type=page&slug=comparatif)',
+    note: "Cette page et <code>/comparatifs/closeos-vs-iclosed</code> partagent <b>la même carte</b> mais gardent chacune leur titre et leur description, ciblés sur leur requête."
+  },
+  {
+    id: 'crmcloser', product: 'eco', label: 'Écosystème',
+    route: '/fonctionnalites/crm-closer', host: HOST, url: 'https://www.closeos.fr/fonctionnalites/crm-closer',
+    title: { fr: 'CRM Closer, Pipeline de vente pour closers | CloseOS', en: 'CRM Closer, Pipeline de vente pour closers | CloseOS' },
+    desc: {
+      fr: "Le CRM conçu pour les closers : pipeline visuel, suivi des prospects, historique d'appels, et KPIs de closing.",
+      en: "Le CRM conçu pour les closers : pipeline visuel, suivi des prospects, historique d'appels, et KPIs de closing."
+    },
+    twDesc: 'Pipeline visuel, callroom intégrée, facturation et KPIs dans un seul CRM.',
+    image: '/og/page-crm-closer-fr.png', imageKind: 'générée (@vercel/og)', prerender: true, monoLang: true,
+    src: 'src/pages/fonctionnalites/CrmCloser.tsx (og:image → /api/og?type=page&slug=crm-closer)',
+    note: "Elle n'hérite plus de <code>og-eco.jpg</code> : carte dédiée <code>PAGE_CARDS['crm-closer']</code> ajoutée le 30/07."
+  },
+
+  // ═══ Liens publics : métas SSR + image générée ═══
+  {
+    id: 'book', product: 'dyn', label: 'Business',
+    route: '/book/:slug', host: HOST, url: 'https://www.closeos.fr/book/demo-30',
+    title: { fr: 'Réserver avec {Prénom Nom}', en: 'Book with {First Last}' },
+    desc: { fr: '{label du lien} — {durée} min — {prix}', en: '{link label} — {duration} min — {price}' },
+    image: 'https://www.closeos.fr/api/og?type=booking&slug=demo-30&lang=fr',
+    imageEn: 'https://www.closeos.fr/api/og?type=booking&slug=demo-30&lang=en',
+    imageKind: 'générée (@vercel/og)', prerender: 'ssr',
+    src: 'api/social-meta.ts buildBookingMeta · image api/og.tsx loadBookingData',
+    note: "Désormais <b>bilingue</b> : titre, description et libellé du bouton suivent <code>?lang=</code> ou l'en-tête <code>Accept-Language</code>."
+  },
+  {
+    id: 'capture', product: 'dyn', label: 'Business',
+    route: '/capture/:slug', host: HOST, url: 'https://www.closeos.fr/capture/webinar',
+    title: { fr: '{landing_title de la campagne}', en: '{landing_title de la campagne}' },
+    desc: {
+      fr: "{description} ou {sous-titre / nom d'entreprise} — {prix si Stripe activé}",
+      en: '{description} or {subtitle / company name} — {price if Stripe enabled}'
+    },
+    image: 'https://www.closeos.fr/api/og?type=capture&slug=webinar&lang=fr',
+    imageEn: 'https://www.closeos.fr/api/og?type=capture&slug=webinar&lang=en',
+    imageKind: 'générée (@vercel/og)', prerender: 'ssr',
+    src: 'api/social-meta.ts buildCaptureMeta · image api/og.tsx loadCaptureData',
+    note: 'Campagne inactive ou slug inconnu → aucune injection, la carte par défaut est servie.'
+  },
+  {
+    id: 'form', product: 'dyn', label: 'Business',
+    route: '/f/:slug', host: HOST, url: 'https://www.closeos.fr/f/9144a987fa',
+    title: { fr: '{nom du formulaire}', en: '{nom du formulaire}' },
+    desc: {
+      fr: "{description} — à défaut : « Quelques questions, une minute. Vos réponses partent directement à l'équipe. »",
+      en: '{description} — otherwise: “A few questions, one minute. Your answers go straight to the team.”'
+    },
+    image: '/og/og-form-exemple.png', imageKind: 'générée (@vercel/og)', prerender: 'ssr',
+    src: 'api/social-meta.ts buildFormMeta + api/og.tsx (maquette dédiée, type=form)',
+    note: "Le nom du formulaire est <b>peint dans l'image</b> (52/42/34 px selon la longueur), sur la maquette Business validée. L'aperçu est le rendu réel sur le formulaire <code>9144a987fa</code>. Le rewrite porte un <code>missing: embed=true</code> : les formulaires embarqués en iframe restent servis en statique."
+  },
+  {
+    id: 'crmcapture', product: 'dyn', label: 'Sales',
+    route: '/c/:slug', host: HOST, url: 'https://www.closeos.fr/c/abc123',
+    title: { fr: 'Réservez votre appel', en: 'Book your call' },
+    desc: {
+      fr: 'Choisissez votre créneau en quelques secondes. Confirmation immédiate et rappel automatique.',
+      en: 'Pick your slot in seconds. Instant confirmation and automatic reminder.'
+    },
+    image: '/og/og-capture-crm-gabarit.png', imageKind: 'générée (@vercel/og)', prerender: 'ssr',
+    src: 'api/social-meta.ts buildCrmCaptureMeta + api/og.tsx loadCrmCaptureData · table crm_campaigns',
+    note: "<b>Personnalisée depuis le 30/07</b>, comme la capture Business : titre de la campagne, photo du closer (<code>crm_users.avatar_url</code>), durée et prix (Stripe ou formule rattachée). L'aperçu ci-contre est le rendu réel du gabarit sur un lien de réservation — aucune campagne Sales n'est active en base pour l'illustrer directement. Campagne inconnue ou inactive → repli sur la carte statique <code>og-booking-call.jpg</code>."
+  },
+  {
+    id: 'appointment', product: 'dyn', label: 'Business',
+    route: '/appointment/:token', host: HOST, url: 'https://www.closeos.fr/appointment/7f2c…',
+    title: { fr: 'Votre rendez-vous', en: 'Your appointment' },
+    desc: {
+      fr: 'Confirmez, reprogrammez ou annulez votre rendez-vous. Les détails et le lien de visio vous attendent.',
+      en: 'Confirm, reschedule or cancel your appointment. The details and video link are waiting for you.'
+    },
+    image: '/og-appointment.jpg', imageKind: 'dédiée', prerender: 'ssr',
+    src: 'api/social-meta.ts STATIC_LINKS.appointment · page src/pages/AppointmentManage.tsx',
+    note: "Visuel dédié depuis le 30/07 : carte de rendez-vous confirmé, avec les actions attendues. Toujours aucune donnée réelle du RDV exposée."
+  },
+  {
+    id: 'apptresched', product: 'dyn', label: 'Business',
+    route: '/appointment/:token?action=reschedule', host: HOST, url: 'https://www.closeos.fr/appointment/7f2c…?action=reschedule',
+    title: { fr: 'Reprogrammer votre rendez-vous', en: 'Reschedule your appointment' },
+    desc: {
+      fr: "Choisissez une nouvelle date en deux clics. L'ancien créneau se libère automatiquement et tout le monde est prévenu.",
+      en: 'Pick a new date in two clicks. The old slot is freed automatically and everyone is notified.'
+    },
+    image: '/og-appointment-reschedule.jpg', imageKind: 'dédiée', prerender: 'ssr',
+    src: 'api/social-meta.ts STATIC_LINKS.appointment-reschedule · liens construits dans api/business.ts',
+    note: "Même route que la gestion de rendez-vous, distinguée par la <b>query</b> : le rewrite porte un <code>has: action=reschedule</code> et passe avant la règle générique. Sans ça, l'aperçu annonçait « votre rendez-vous est confirmé » sur un lien de reprogrammation."
+  },
+  {
+    id: 'apptcancel', product: 'dyn', label: 'Business',
+    route: '/appointment/:token?action=cancel', host: HOST, url: 'https://www.closeos.fr/appointment/7f2c…?action=cancel',
+    title: { fr: 'Annuler votre rendez-vous', en: 'Cancel your appointment' },
+    desc: {
+      fr: 'Un empêchement ? Libérez le créneau en un clic — et reprogrammez quand vous voulez, le lien reste valable.',
+      en: 'Something came up? Free the slot in one click — and rebook whenever you want, the link stays valid.'
+    },
+    image: '/og-appointment-cancel.jpg', imageKind: 'dédiée', prerender: 'ssr',
+    src: 'api/social-meta.ts STATIC_LINKS.appointment-cancel · liens construits dans api/business.ts',
+    note: "Rewrite conditionné à <code>has: action=cancel</code>. Le ton reste neutre et rassurant — un aperçu d'annulation ne doit pas dramatiser, et il rappelle que le créneau est reprogrammable."
+  },
+  {
+    id: 'signverify', product: 'dyn', label: 'Sign',
+    route: '/sign/verify/:token', host: 'sign.closeos.fr', url: 'https://sign.closeos.fr/sign/verify/9d1b…',
+    title: { fr: 'Certificat de preuve vérifiable', en: 'Verifiable proof certificate' },
+    desc: {
+      fr: "Vérifiez l'authenticité d'un contrat signé : signataires, horodatage, méthode de vérification et empreinte du document.",
+      en: 'Verify the authenticity of a signed contract: signers, timestamp, verification method and document fingerprint.'
+    },
+    image: '/og-sign-doc.jpg', imageKind: 'partagée avec /sign/s/:token', prerender: 'ssr',
+    src: 'api/social-meta.ts STATIC_LINKS.sign-verify · page src/pages/SignVerify.tsx',
+    note: "Page de vérification d'un certificat. Métas statiques et <code>noindex</code> — rien du contrat n'est révélé, ce qui est indispensable ici."
+  },
+
+  // ═══ Liens privés à token ═══
+  {
+    id: 'signdoc', product: 'dyn', label: 'Sign',
+    route: '/sign/s/:token', host: 'sign.closeos.fr', url: 'https://sign.closeos.fr/sign/s/8f3ad2…',
+    title: { fr: 'Un document vous attend', en: 'A document is waiting for you' },
+    desc: {
+      fr: "Signature électronique sécurisée : vérification d'identité, horodatage et certificat de preuve remis à la fin.",
+      en: 'Secure e-signature: identity verification, timestamping and a proof certificate at the end.'
+    },
+    image: '/og-sign-doc.jpg', imageKind: 'dédiée', prerender: 'ssr',
+    src: 'api/social-meta.ts STATIC_LINKS.sign-doc · lien construit dans src/lib/signContracts.ts',
+    note: "Métas <b>statiques et génériques</b>, désormais bilingues : ni nom de client, ni objet du contrat, ni montant — ces liens circulent par mail, WhatsApp et Slack. <code>noindex, nofollow</code> injecté."
+  },
+  {
+    id: 'signjoin', product: 'dyn', label: 'Sign',
+    route: '/sign/join/:token', host: 'sign.closeos.fr', url: 'https://sign.closeos.fr/sign/join/4c19be…',
+    title: { fr: "Vous êtes invité à rejoindre l'équipe", en: "You're invited to join the team" },
+    desc: {
+      fr: "Créez votre accès CloseOS Sign : vos contrats prêts à l'emploi, vos liens de signature et le suivi de vos signatures.",
+      en: 'Set up your CloseOS Sign access: ready-to-use contracts, your signing links and signature tracking.'
+    },
+    image: '/og-sign-invite.jpg', imageKind: 'dédiée', prerender: 'ssr',
+    src: 'api/social-meta.ts STATIC_LINKS.sign-invite · lien construit dans src/lib/signTeam.ts:182',
+    note: "Même principe : aucun nom d'équipe ni d'entreprise exposé, <code>noindex, nofollow</code> injecté."
+  },
+  {
+    id: 'share', product: 'dyn', label: 'Sales',
+    route: '/view/:token', host: HOST, url: 'https://www.closeos.fr/view/7b21ce…',
+    title: { fr: 'Performances de closing, en direct', en: 'Closing performance, live' },
+    desc: {
+      fr: "Pipeline et KPIs à jour, partagés en lecture seule. Les chiffres s'affichent une fois le lien ouvert.",
+      en: 'Live pipeline and KPIs, shared read-only. The numbers appear once the link is opened.'
+    },
+    image: '/og-share.jpg', imageKind: 'dédiée', prerender: 'ssr',
+    src: 'api/social-meta.ts STATIC_LINKS.share-perf · lien créé dans src/components/SharePerformanceButton.tsx:157',
+    note: "Le lien peut être protégé par mot de passe et transféré, donc <b>aucun chiffre</b> dans la carte : l'image montre des valeurs masquées (••• €). <code>noindex, nofollow</code> injecté."
+  }
+];
+
+const ASSETS = [
+  { file: '/og-eco.jpg', usage: 'OFFICIELLE — écosystème, défaut index.html', weight: '58 Ko' },
+  { file: '/og-sales.jpg', usage: 'OFFICIELLE — /sales et /landing', weight: '60 Ko' },
+  { file: '/og-business.jpg', usage: 'OFFICIELLE — /business', weight: '70 Ko' },
+  { file: '/og-sign.jpg', usage: 'OFFICIELLE — sign.closeos.fr', weight: '62 Ko' },
+  { file: '/og-sign-doc.jpg', usage: 'OFFICIELLE — /sign/s/:token et /sign/verify/:token', weight: '53 Ko' },
+  { file: '/og-sign-invite.jpg', usage: "OFFICIELLE — invitations d'équipe /sign/join/:token", weight: '60 Ko' },
+  { file: '/og-share.jpg', usage: 'OFFICIELLE — partage de performances /view/:token', weight: '57 Ko' },
+  { file: '/og-booking-call.jpg', usage: 'REPLI — /c/:slug quand la campagne est inconnue ou inactive', weight: '64 Ko' },
+  { file: '/og-appointment.jpg', usage: 'OFFICIELLE — rendez-vous /appointment/:token', weight: '54 Ko' },
+  { file: '/og-appointment-reschedule.jpg', usage: 'OFFICIELLE — reprogrammation ?action=reschedule', weight: '60 Ko' },
+  { file: '/og-appointment-cancel.jpg', usage: 'OFFICIELLE — annulation ?action=cancel', weight: '53 Ko' }
+];
+
+const AUDIT = [
+  { lev: 'mid', levLabel: 'OUVERT', t: 'Les pages marketing restent en français seulement', p: "Le montage bilingue de <code>PAGES</code> ne pouvait pas fonctionner : sur Vercel « <i>precedence is given to the filesystem prior to rewrites being applied</i> », et chaque page a un fichier généré par le prerender. Le prerender a été gardé — il donne aux moteurs le contenu réel de la page, là où la fonction n'aurait servi que la coquille. Conséquence assumée : <b>une seule langue par URL</b>. La vraie sortie est de donner aux pages anglaises leur propre chemin (<code>/en/…</code>), prérendu lui aussi. La table <code>PAGES</code> et les cartes EN sont conservées comme base de ce chantier." },
+  { lev: 'mid', levLabel: 'OUVERT', t: 'Les visuels ne changent pas avec la langue', p: 'og-eco, og-sales, og-business, og-sign et les six visuels de liens sont en français. Les cartes générées, elles, savent déjà produire leur version anglaise (<code>?lang=en</code>) : le jour où les URLs /en/ existent, elles suivront sans travail supplémentaire.' },
+  { lev: 'ok', levLabel: 'RÉGLÉ', t: 'Rewrites de pages morts supprimés', p: 'Les 9 rewrites <code>type=page</code> qui ne pouvaient jamais s\'exécuter ont été retirés de <code>vercel.json</code> le 30/07. La configuration ne raconte plus une histoire fausse.' },
+  { lev: 'ok', levLabel: 'RÉGLÉ', t: 'Les 5 pages sans visuel ont le leur', p: '/tarifs, /fonctionnalites, /fonctionnalites/crm-closer et les deux comparatifs posent désormais leur <code>og:image</code> vers <code>/api/og?type=page&slug=…</code>. Une URL d\'image traverse le prerender sans problème — c\'est ce qui permet d\'avoir un visuel dédié tout en gardant le contenu prérendu pour le SEO.' },
+  { lev: 'ok', levLabel: 'RÉGLÉ', t: '/sales était servie sans prerender', p: "La route était absente de <code>ROUTES</code> : les moteurs ne recevaient qu'un <code>&lt;div id=\"root\"&gt;</code> vide. Ajoutée au prerender le 30/07, comme /landing." },
+  { lev: 'ok', levLabel: 'RÉGLÉ', t: '/c/:slug et /appointment/:token ont leur visuel', p: 'Fini l\'emprunt aux landings : <code>og-booking-call.jpg</code> montre un choix de créneau, <code>og-appointment.jpg</code> un rendez-vous confirmé avec ses actions. Les deux parlent au destinataire du lien.' },
+  { lev: 'ok', levLabel: 'RÉGLÉ', t: 'twitter:* en name=', p: 'Les balises Twitter d\'<code>index.html</code> et les regex d\'injection de <code>social-meta.ts</code> utilisent <code>name=</code>, conforme à la spec.' },
+  { lev: 'ok', levLabel: 'RÉGLÉ', t: 'Titres des cartes et des métas alignés', p: "Les titres vagues de <code>PAGES</code> (« CloseOS — Tarifs ») reprennent maintenant l'accroche peinte sur la carte (« des offres claires, sans surprise »), pour que les deux tables ne puissent plus diverger sur le fond." },
+  { lev: 'ok', levLabel: 'RÉGLÉ', t: 'Poids des images', p: 'Les neuf visuels statiques sont en JPEG entre 53 et 70 Ko, les cartes générées entre 49 et 59 Ko.' }
+];
+
+const SUGG = [
+  {
+    id: 'og-eco-clair', file: '/og/og-eco-clair.png', kind: 'remplace og-eco.png', target: 'eco',
+    name: 'Écosystème — clair', weight: 'PNG 70 Ko · JPG 62 Ko',
+    why: "Reprend la DA en place (fond clair, cadre vert, vrai mark CloseOS) et range les <b>trois vrais lockups produits</b> en tuiles. Les logos sont posés sur des plaques sombres : c'est la seule façon de les afficher tels quels sur un fond clair, sinon le « Close » blanc de Sales et de Sign disparaît — exactement le défaut de l'image en production."
+  },
+  {
+    id: 'og-eco-blanc', file: '/og/og-eco-blanc.png', kind: 'remplace og-eco.png', target: 'eco', adopted: true,
+    name: 'Écosystème — blanc', weight: 'PNG 248 Ko · JPG 58 Ko',
+    why: "La composition de la version sombre (mark en haut, titre plein cadre, lockups alignés en bas) avec le texte de la version claire et un fond blanc. Pas de cadre, pas de tuiles : le titre respire sur toute la largeur. Dégradé doux blanc → bleu ciel en haut à droite, halo lilas en bas à gauche. Les trois lockups gardent leur plaque sombre, seul moyen de les poser tels quels sur du blanc. <b>À prendre en JPEG</b> : le dégradé fait exploser le PNG (248 Ko contre 58)."
+  },
+  {
+    id: 'og-eco-sombre', file: '/og/og-eco-sombre.png', kind: 'remplace og-eco.png', target: 'eco',
+    name: 'Écosystème — sombre', weight: 'PNG 139 Ko · JPG 53 Ko',
+    why: "Dans un feed LinkedIn ou X (fond blanc partout), une carte sombre sort du lot. Le titre « Vendre. Piloter. Signer. » dit les trois produits, et les <b>trois vrais lockups</b> sont posés en bas dans leurs couleurs d'origine — c'est le fond sur lequel ils sont tous les trois nativement lisibles, sans plaque ni retouche."
+  },
+  {
+    id: 'og-eco-triptyque', file: '/og/og-eco-triptyque.png', kind: 'remplace og-eco.png', target: 'eco',
+    name: 'Écosystème — triptyque', weight: 'PNG 83 Ko · JPG 53 Ko',
+    why: "Les trois produits à parité, chacun dans sa colonne sombre avec son vrai lockup, son liseré de couleur et ses features réelles. La plus explicite pour quelqu'un qui ne connaît pas CloseOS — mais aussi la plus chargée en petit format (WhatsApp, iMessage) où les puces deviennent minuscules."
+  },
+  {
+    id: 'og-eco-minimal', file: '/og/og-eco-minimal.png', kind: 'remplace og-eco.png', target: 'eco',
+    name: 'Écosystème — minimal', weight: 'PNG 58 Ko · JPG 37 Ko',
+    why: "Marque avant tout : le vrai mark en grand, et les trois lockups regroupés dans un bandeau sombre en bas. Ne se périme jamais quand les features bougent, reste lisible en vignette de 200 px, mais raconte le moins."
+  },
+  {
+    id: 'og-sign', file: '/og/og-sign.png', kind: 'nouveau — comble le trou Sign', target: 'sign', adopted: true,
+    name: 'Sign — Sign + Pay', weight: 'PNG 118 Ko · JPG 62 Ko',
+    why: "Sign n'a <b>aucune</b> image aujourd'hui et partage celle de l'écosystème. DA Sign respectée (fond #191E1E, lime #CEFF8F), vrai lockup <code style=\"font-family:ui-monospace,Menlo,monospace\">CLOSEOS-SIGN-LOGO.png</code> en tête, promesse produit en titre et les trois preuves en chips."
+  },
+  {
+    id: 'og-sales', file: '/og/og-sales.png', kind: 'remplace og-sales.png', target: 'product', refId: 'landing', adopted: true,
+    name: 'Sales — refonte DA V5', weight: 'PNG 199 Ko · JPG 59 Ko',
+    why: "L'image en production date de l'ancienne DA Sales : dégradé indigo/violet, texte en anglais et capture d'un dashboard qui n'existe plus sous cette forme. Celle-ci reprend la <b>DA V5</b> (blanc, sky-500, slate) et le discours réel de la LP — « Le CRM pour closer, tout-en-un. Récupérez 10 h par semaine. » La carte de droite montre le produit sans capture d'écran : cash généré, commissions, et l'entonnoir prospects → R1 → closés. Le logo est sur une plaque <code style=\"font-family:ui-monospace,Menlo,monospace\">#020617</code> parce que le mot « Close » de <code style=\"font-family:ui-monospace,Menlo,monospace\">logo-sales.png</code> est <b>peint en blanc</b> : sur un fond clair il disparaît. C'est la convention du produit lui-même — <code style=\"font-family:ui-monospace,Menlo,monospace\">BusinessLanding.tsx:395</code> pose ce logo sur une tuile <code style=\"font-family:ui-monospace,Menlo,monospace\">bg-[#020617]</code>. La plaque saute le jour où un <code style=\"font-family:ui-monospace,Menlo,monospace\">logo-sales-light.png</code> existe (« Close » en navy au lieu de blanc).",
+    adopt: "cp public/og/og-sales.jpg public/og-sales.jpg\n\n<span class=\"p\"># puis dans src/pages/LandingPage.tsx : og-sales.png → og-sales.jpg (og-image + tw-image)</span>\n<span class=\"p\"># et og-image-type repasse à image/jpeg (la ligne image/png devient inutile)</span>"
+  },
+  {
+    id: 'og-business-bento', file: '/og/og-business-bento.png', kind: 'remplace og-business.png', target: 'product', refId: 'business', adopted: true,
+    name: 'Business — bento clair', weight: 'PNG 221 Ko · JPG 70 Ko',
+    why: "<b>Silhouette différente de Sales</b> : titre pleine largeur en haut, rangée de trois tuiles en bas — là où Sales est en texte-à-gauche / carte-à-droite. Le fond redevient <b>chaud</b> (#f4f2f1, halo orangé en haut à droite, violet en bas à gauche), à l'opposé du bleu ciel de Sales : les deux ne riment plus, même en vignette. Les trois tuiles disent le produit : l'équipe, les campagnes et l'objectif du mois. Logo sans plaque, variante claire <code style=\"font-family:ui-monospace,Menlo,monospace\">closeos-business-logo-ecrit.png</code> comme le header de sa LP.",
+    adopt: "cp public/og/og-business-bento.jpg public/og-business.jpg\n\n<span class=\"p\"># puis dans src/pages/BusinessLanding.tsx : og-business.png → og-business.jpg</span>\n<span class=\"p\"># et og-image-type repasse à image/jpeg (la ligne image/png devient inutile)</span>"
+  },
+  {
+    id: 'og-business-sombre', file: '/og/og-business-sombre.png', kind: 'remplace og-business.png', target: 'product', refId: 'business',
+    name: 'Business — sombre', weight: 'PNG 139 Ko · JPG 67 Ko',
+    why: "Même composition en tuiles, mais sur le noir #111111 de la DA Business, avec le halo violet et une pointe de magenta. <b>Aucune confusion possible avec Sales</b>, et ça tranche dans un fil LinkedIn où tout est blanc. Contrepartie : trois des cinq images officielles seraient alors sombres (les deux Sign et celle-ci) — l'écosystème et Sales restent clairs pour équilibrer.",
+    adopt: "cp public/og/og-business-sombre.jpg public/og-business.jpg\n\n<span class=\"p\"># puis dans src/pages/BusinessLanding.tsx : og-business.png → og-business.jpg</span>\n<span class=\"p\"># et og-image-type repasse à image/jpeg (la ligne image/png devient inutile)</span>"
+  },
+  {
+    id: 'og-booking-call', file: '/og/og-booking-call.png', kind: "réservation d'appel", target: 'signlink', refId: 'crmcapture', adopted: true,
+    name: 'Sales — réservation d\'appel', weight: 'PNG 200 Ko · JPG 64 Ko',
+    why: "Filet de sécurité pour <code style=\"font-family:ui-monospace,Menlo,monospace\">/c/:slug</code> : depuis le 30/07 la carte est <b>générée et personnalisée</b> (titre de campagne, photo du closer, prix), et ce visuel statique ne sert plus que lorsque la campagne est inconnue ou désactivée. Mieux qu'un repli sur la landing Sales, qui ne parlait pas au destinataire.",
+    adopt: "cp public/og/og-booking-call.jpg public/og-booking-call.jpg\n\n<span class=\"p\"># déjà en place : STATIC_LINKS['capture-crm'].image = 'og-booking-call'</span>"
+  },
+  {
+    id: 'og-appointment-reschedule', file: '/og/og-appointment-reschedule.png', kind: 'reprogrammation', target: 'signlink', refId: 'apptresched', adopted: true,
+    name: 'Business — reprogrammer un RDV', weight: 'PNG 188 Ko · JPG 60 Ko',
+    why: "L'ancien créneau barré, la nouvelle date à choisir : on comprend l'action avant d'ouvrir le lien. Les dates sont des exemples figés, rien du rendez-vous réel n'est lu.",
+    adopt: "cp public/og/og-appointment-reschedule.jpg public/og-appointment-reschedule.jpg\n\n<span class=\"p\"># rewrite vercel.json /appointment/:token + has action=reschedule</span>"
+  },
+  {
+    id: 'og-appointment-cancel', file: '/og/og-appointment-cancel.png', kind: 'annulation', target: 'signlink', refId: 'apptcancel', adopted: true,
+    name: 'Business — annuler un RDV', weight: 'PNG 183 Ko · JPG 53 Ko',
+    why: "Ton neutre : un aperçu d'annulation ne doit pas dramatiser. Le rouge est réservé au bouton de confirmation, et le texte rappelle qu'on peut reprogrammer ensuite.",
+    adopt: "cp public/og/og-appointment-cancel.jpg public/og-appointment-cancel.jpg\n\n<span class=\"p\"># rewrite vercel.json /appointment/:token + has action=cancel</span>"
+  },
+  {
+    id: 'og-appointment', file: '/og/og-appointment.png', kind: 'gestion de rendez-vous', target: 'signlink', refId: 'appointment', adopted: true,
+    name: 'Business — rendez-vous confirmé', weight: 'PNG 187 Ko · JPG 54 Ko',
+    why: "Pour <code style=\"font-family:ui-monospace,Menlo,monospace\">/appointment/:token</code>, qui empruntait le visuel de la landing Business. La carte annonce un rendez-vous confirmé et les deux actions possibles. Les valeurs affichées sont des exemples figés : <b>rien du rendez-vous réel</b> n'est exposé dans l'aperçu.",
+    adopt: "cp public/og/og-appointment.jpg public/og-appointment.jpg\n\n<span class=\"p\"># déjà en place : STATIC_LINKS['appointment'].image = 'og-appointment'</span>"
+  },
+  {
+    id: 'og-form', file: '/og/og-form-exemple.png', kind: 'formulaires publics · générée', target: 'signlink', refId: 'form', adopted: true,
+    name: 'Business — formulaire public', weight: '~79 Ko par image générée',
+    why: "La maquette validée, avec le <b>nom du formulaire en accroche</b> à la place du texte générique. Ce n'est donc plus un fichier fixe : chaque formulaire produit sa propre image via <code style=\"font-family:ui-monospace,Menlo,monospace\">api/og.tsx</code>. Le titre se redimensionne tout seul — 52 px jusqu'à 22 caractères, 42 px jusqu'à 44, 34 px au-delà, coupé à 60. Le rendu ci-dessus est la vraie sortie du générateur sur ton formulaire <code style=\"font-family:ui-monospace,Menlo,monospace\">9144a987fa</code> ; le sous-titre « admin » est le <code style=\"font-family:ui-monospace,Menlo,monospace\">company_name</code> du compte, affiché faute de description sur le formulaire.",
+    adopt: "<span class=\"p\"># déjà en place, rien à copier — l'image n'est plus un fichier</span>\n<span class=\"p\"># /f/:slug → /api/social-meta?type=form  (titre + description)</span>\n<span class=\"p\"># og:image → /api/og?type=form&slug=…      (image peinte à la volée)</span>"
+  },
+  {
+    id: 'og-share', file: '/og/og-share.png', kind: 'partage de performances', target: 'signlink', refId: 'share', adopted: true,
+    name: 'Sales — partage de performances', weight: 'PNG 191 Ko · JPG 57 Ko',
+    why: "Ce que voit celui à qui un closer envoie son lien <code style=\"font-family:ui-monospace,Menlo,monospace\">/view/:token</code>. DA Sales V5, et une carte qui montre la <b>forme</b> des données sans les données : valeurs masquées en <code style=\"font-family:ui-monospace,Menlo,monospace\">••• €</code> et histogramme sans échelle. Le lien étant protégeable par mot de passe et souvent transféré, la carte de partage ne doit rien révéler du chiffre d'affaires du closer.",
+    adopt: "cp public/og/og-share.jpg public/og-share.jpg\n\n<span class=\"p\"># servi par le rewrite vercel.json /view/:token → /api/social-meta?type=share-perf</span>\n<span class=\"p\"># métas dans api/social-meta.ts (table STATIC_LINKS), avec noindex</span>"
+  },
+  {
+    id: 'og-sign-doc', file: '/og/og-sign-doc.png', kind: 'lien de signature', target: 'signlink', refId: 'signdoc', adopted: true,
+    name: 'Sign — document à signer', weight: 'PNG 83 Ko · JPG 53 Ko',
+    why: "Ce que voit le prospect quand le lien <code style=\"font-family:ui-monospace,Menlo,monospace\">/sign/s/:token</code> est collé dans WhatsApp, iMessage, Slack ou un mail. Rassurant et <b>sans aucune donnée du dossier</b> : ni nom, ni objet, ni montant. Le document est figuré par un squelette neutre avec sa zone de signature.",
+    adopt: "cp public/og/og-sign-doc.jpg public/og-sign-doc.jpg\n\n<span class=\"p\"># servi par le rewrite vercel.json /sign/s/:token → /api/social-meta?type=sign-doc</span>\n<span class=\"p\"># métas construites dans api/social-meta.ts (buildSignLinkMeta), avec noindex</span>"
+  },
+  {
+    id: 'og-sign-invite', file: '/og/og-sign-invite.png', kind: "invitation d'équipe", target: 'signlink', refId: 'signjoin', adopted: true,
+    name: 'Sign — invitation équipe', weight: 'PNG 95 Ko · JPG 60 Ko',
+    why: "Pour <code style=\"font-family:ui-monospace,Menlo,monospace\">/sign/join/:token</code>. La carte montre une équipe fictive avec la ligne « Vous » en lime : on comprend l'intention avant même d'ouvrir le lien. Aucun nom réel n'est lu en base, la maquette est fixe.",
+    adopt: "cp public/og/og-sign-invite.jpg public/og-sign-invite.jpg\n\n<span class=\"p\"># servi par le rewrite vercel.json /sign/join/:token → /api/social-meta?type=sign-invite</span>\n<span class=\"p\"># métas construites dans api/social-meta.ts (buildSignLinkMeta), avec noindex</span>"
+  },
+  {
+    id: 'og-sign-contrat', file: '/og/og-sign-contrat.png', kind: 'nouveau — comble le trou Sign', target: 'sign',
+    name: 'Sign — contrat signé', weight: 'PNG 71 Ko · JPG 60 Ko',
+    why: "Même DA, angle preuve : le contrat signé, le montant encaissé, le hash et l'OTP. Plus concret que la version promesse — on voit le produit, pas juste le slogan."
+  }
+];
+
+const PRODUCTS = [
+  { k: 'all', n: 'Tout' },
+  { k: 'eco', n: 'Écosystème' },
+  { k: 'sales', n: 'Sales' },
+  { k: 'business', n: 'Business' },
+  { k: 'sign', n: 'Sign' },
+  { k: 'dyn', n: 'Dynamique' },
+  { k: 'flag', n: '⚠ À corriger' }
+];
+
+let state = { filter: 'all', lang: 'fr', view: 'all', q: '' };
+
+const esc = s => String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+
+function count(k) {
+  if (k === 'all') return DATA.length;
+  if (k === 'flag') return DATA.filter(d => d.flag).length;
+  if (k === 'shadow') return DATA.filter(d => d.shadowed).length;
+  return DATA.filter(d => d.product === k).length;
+}
+
+function renderFilters() {
+  document.getElementById('filters').innerHTML = PRODUCTS.map(p =>
+    `<div class="chip ${p.k === 'flag' ? 'warn' : p.k} ${state.filter === p.k ? 'active' : ''}" data-f="${p.k}">${p.n}<span class="n">${count(p.k)}</span></div>`
+  ).join('');
+}
+
+function renderStats() {
+  const withImg = DATA.filter(d => d.imageKind === 'dédiée' || d.imageKind.startsWith('générée')).length;
+  const pre = DATA.filter(d => d.prerender === true).length;
+  const ssr = DATA.filter(d => d.prerender === 'ssr').length;
+  const spa = DATA.filter(d => d.prerender === false).length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><b>${DATA.length}</b><span>cartes</span></div>
+    <div class="stat"><b>${ASSETS.length}</b><span>images OG</span></div>
+    <div class="stat"><b>${withImg}</b><span>visuel propre</span></div>
+    <div class="stat"><b>${pre}</b><span>prérendues</span></div>
+    <div class="stat"><b>${ssr}</b><span>SSR live</span></div>
+    <div class="stat" style="${spa ? 'border-color:#4a3a1c' : ''}"><b style="${spa ? 'color:var(--warn)' : ''}">${spa}</b><span>JS seul</span></div>
+    <div class="stat" style="border-color:#4a3a1c"><b style="color:var(--warn)">${DATA.filter(d => d.flag).length}</b><span>à corriger</span></div>`;
+}
+
+function T(d) { return d.title[state.lang] || d.title.fr; }
+function D(d) { return d.desc[state.lang] || d.desc.fr; }
+/** Certaines routes ont un visuel par langue (statique en FR, carte générée en EN). */
+function IMG(d) { return state.lang === 'en' && d.imageEn ? d.imageEn : d.image; }
+
+function previews(d) {
+  const t = esc(T(d)), de = esc(D(d)), img = IMG(d), host = d.host, url = esc(d.url);
+  const twD = esc(d.twDesc || D(d));
+  const v = state.view;
+  const show = k => (v === 'all' || v === k) ? '' : 'hide';
+  return `
+  <div class="previews">
+    <div class="pv ${show('li')}">
+      <div class="pv-t">LinkedIn</div>
+      <div class="li"><img src="${img}" alt=""><div class="li-b"><div class="li-title">${t}</div><div class="li-dom">${host}</div></div></div>
+    </div>
+    <div class="pv ${show('fb')}">
+      <div class="pv-t">Facebook</div>
+      <div class="fb"><img src="${img}" alt=""><div class="fb-b"><div class="fb-dom">${host}</div><div class="fb-title">${t}</div><div class="fb-desc">${de}</div></div></div>
+    </div>
+    <div class="pv ${show('tw')}">
+      <div class="pv-t">X — summary_large_image</div>
+      <div class="tw"><img src="${img}" alt=""><div class="tw-ov">${t}</div></div>
+      <div class="tw-dom">Depuis ${host}</div>
+    </div>
+    <div class="pv ${show('wa')}">
+      <div class="pv-t">WhatsApp</div>
+      <div class="wa"><div class="wa-b"><div class="wa-c"><img src="${img}" alt=""><div class="wa-t"><div class="wa-title">${t}</div><div class="wa-desc">${de}</div><div class="wa-url">${url}</div></div></div><div class="wa-time">14:32 ✓✓</div></div></div>
+    </div>
+    <div class="pv ${show('sl')}">
+      <div class="pv-t">Slack</div>
+      <div class="sl"><div class="sl-in"><div class="sl-site">CloseOS</div><div class="sl-title">${t}</div><div class="sl-desc">${twD}</div><img src="${img}" alt=""></div></div>
+    </div>
+    <div class="pv ${show('im')}">
+      <div class="pv-t">iMessage</div>
+      <div class="im"><div class="im-c"><img src="${img}" alt=""><div class="im-t"><div class="im-title">${t}</div><div class="im-dom">${host}</div></div></div></div>
+    </div>
+    <div class="pv ${show('dc')}">
+      <div class="pv-t">Discord</div>
+      <div class="dc"><div class="dc-in"><div class="dc-site">CloseOS</div><div class="dc-title">${t}</div><div class="dc-desc">${twD}</div><img src="${img}" alt=""></div></div>
+    </div>
+  </div>`;
+}
+
+function metaBlock(d) {
+  const abs = IMG(d).startsWith('http') ? IMG(d) : `https://www.closeos.fr${IMG(d)}`;
+  const lines = [
+    ['og:type', 'website'],
+    ['og:site_name', 'CloseOS'],
+    ['og:locale', state.lang === 'fr' ? 'fr_FR' : 'en_US'],
+    ['og:url', d.url],
+    ['og:title', T(d)],
+    ['og:description', D(d)],
+    ['og:image', abs],
+    ['og:image:width', '1200'],
+    ['og:image:height', '630'],
+    ['og:image:type', 'image/png'],
+    ['twitter:card', 'summary_large_image'],
+    ['twitter:url', d.url],
+    ['twitter:title', T(d)],
+    ['twitter:description', d.twDesc || D(d)],
+    ['twitter:image', abs]
+  ];
+  return lines.map(([p, c]) =>
+    `<span class="p">&lt;meta property="</span>${p}<span class="p">" content="</span><span class="v">${esc(c)}</span><span class="p">"&gt;</span>`
+  ).join('\n');
+}
+
+function rawMeta(d) {
+  const abs = IMG(d).startsWith('http') ? IMG(d) : `https://www.closeos.fr${IMG(d)}`;
+  return [
+    ['og:type', 'website'], ['og:site_name', 'CloseOS'],
+    ['og:locale', state.lang === 'fr' ? 'fr_FR' : 'en_US'],
+    ['og:url', d.url], ['og:title', T(d)], ['og:description', D(d)],
+    ['og:image', abs], ['og:image:width', '1200'], ['og:image:height', '630'], ['og:image:type', 'image/png'],
+    ['twitter:card', 'summary_large_image'], ['twitter:url', d.url],
+    ['twitter:title', T(d)], ['twitter:description', d.twDesc || D(d)], ['twitter:image', abs]
+  ].map(([p, c]) => `<meta property="${p}" content="${c}">`).join('\n');
+}
+
+function lens(d) {
+  const tl = T(d).length, dl = D(d).length;
+  return `<div class="lens">
+    <span><b>Titre</b> ${tl} car. <span class="${tl > 90 ? 'ko' : ''}">${tl > 90 ? '— tronqué sur X/WhatsApp (~70-90)' : '✓'}</span></span>
+    <span><b>Description</b> ${dl} car. <span class="${dl > 200 ? 'ko' : ''}">${dl > 200 ? '— tronquée (~160-200)' : '✓'}</span></span>
+    <span><b>Image</b> ${esc(IMG(d))} · ${esc(d.imageKind)}</span>
+  </div>`;
+}
+
+function card(d) {
+  const pre = d.prerender === true
+    ? '<span class="b ok">PRÉRENDUE</span>'
+    : d.prerender === 'ssr'
+      ? '<span class="b dyn">SSR LIVE</span>'
+      : '<span class="b bad">JS SEUL — INVISIBLE CRAWLERS</span>';
+  const imgB = d.imageKind === 'dédiée'
+    ? '<span class="b ok">IMAGE DÉDIÉE</span>'
+    : d.imageKind.startsWith('générée')
+      ? '<span class="b dyn">IMAGE GÉNÉRÉE</span>'
+      : `<span class="b warn">IMAGE ${esc(d.imageKind.toUpperCase())}</span>`;
+  const shadow = d.shadowed
+    ? '<span class="b bad">REWRITE MASQUÉ PAR LE PRERENDER</span>'
+    : '';
+  return `
+  <div class="card ${d.flag || d.shadowed ? 'flag' : ''}">
+    <div class="c-head">
+      <div style="min-width:0">
+        <div class="route">${esc(d.route)} <span class="host">· ${esc(d.host)}</span></div>
+        <div class="src">${esc(d.src)}</div>
+      </div>
+      <div class="badges">
+        <span class="b ${d.product}">${esc(d.label)}</span>${imgB}${pre}${shadow}${d.monoLang ? '<span class="b">FR ONLY</span>' : '<span class="b">FR / EN</span>'}
+      </div>
+    </div>
+    ${d.shadowed ? '<div class="note bad">Le rewrite <code>type=page</code> existe, mais un fichier prérendu occupe déjà cette route : sur Vercel le filesystem passe avant les rewrites, donc la fonction n\'est jamais appelée et <b>la version EN ne sort pas</b>. Voir l\'audit.</div>' : ''}
+    ${d.note ? `<div class="note ${d.flag && d.prerender === false ? 'bad' : ''}">${d.note}</div>` : ''}
+    ${previews(d)}
+    ${lens(d)}
+    <div class="meta-box">
+      <div class="meta-h"><span>Balises servies</span><button data-copy="${d.id}">Copier</button></div>
+      <pre>${metaBlock(d)}</pre>
+    </div>
+  </div>`;
+}
+
+function render() {
+  const q = state.q.toLowerCase();
+  const list = DATA.filter(d => {
+    if (state.filter === 'flag' && !d.flag) return false;
+    if (state.filter === 'shadow' && !d.shadowed) return false;
+    if (!['all', 'flag', 'shadow'].includes(state.filter) && d.product !== state.filter) return false;
+    if (!q) return true;
+    return (d.route + ' ' + d.host + ' ' + T(d) + ' ' + D(d) + ' ' + d.image + ' ' + d.src).toLowerCase().includes(q);
+  });
+  document.getElementById('list').innerHTML = list.length
+    ? list.map(card).join('')
+    : '<div class="empty">Aucune carte ne correspond.</div>';
+  renderFilters();
+}
+
+function renderAssets() {
+  document.getElementById('assets').innerHTML = ASSETS.map(a => `
+    <div class="asset">
+      <img src="${a.file}" alt="" data-dim="${a.file}">
+      <div class="asset-b">
+        <div class="asset-n">${a.file}</div>
+        <div class="asset-m"><span id="dim-${a.file.replace(/\W/g, '')}">…</span> · ${a.weight}</div>
+        <div class="asset-u">${a.usage}</div>
+      </div>
+    </div>`).join('');
+  document.querySelectorAll('[data-dim]').forEach(img => {
+    const set = () => {
+      const el = document.getElementById('dim-' + img.dataset.dim.replace(/\W/g, ''));
+      if (el) {
+        const w = img.naturalWidth, h = img.naturalHeight;
+        const ratio = (w / h).toFixed(2);
+        el.textContent = `${w}×${h} · ratio ${ratio}${Math.abs(w / h - 1.91) > 0.06 ? ' ⚠ hors 1.91' : ''}`;
+      }
+    };
+    img.complete ? set() : img.addEventListener('load', set);
+  });
+}
+
+function suggCard(s) {
+  // Repli sur l'entrée écosystème si la route de référence a été renommée entre-temps.
+  const ref = DATA.find(d => d.id === (s.refId || (s.target === 'sign' ? 'sign' : 'eco'))) || DATA[0];
+  const ghost = { ...ref, image: s.file };
+  return `
+  <div class="card">
+    <div class="c-head">
+      <div style="min-width:0">
+        <div class="route">${s.name}</div>
+        <div class="src">public/og/${s.id}.png · 1200×630 · ${s.weight}</div>
+      </div>
+      <div class="badges">
+        ${s.adopted ? '<span class="b ok">✓ ADOPTÉE — EN PLACE</span>' : ''}
+        <span class="b ${s.target === 'sign' ? 'sign' : 'eco'}">${esc(s.kind)}</span>
+        <a class="b" style="text-decoration:none" href="${s.file}" target="_blank">PLEIN ÉCRAN ↗</a>
+      </div>
+    </div>
+    <img src="${s.file}" alt="" style="display:block;width:100%;max-width:760px;border-radius:12px;border:1px solid var(--line);margin-top:14px">
+    <div class="note" style="max-width:900px">${s.why}</div>
+    <div class="pv-t" style="margin-top:16px">Rendu dans les feeds</div>
+    ${previews(ghost)}
+    <div class="meta-box" style="background:var(--panel2)">
+      <div class="meta-h"><span>Pour l'adopter</span></div>
+      <pre>${s.adopt ? s.adopt : s.target === 'sign'
+        ? `<span class="p"># 1. poser l'image</span>\ncp public/og/${s.id}.png public/og-sign.png\n\n<span class="p"># 2. dans src/pages/SignLanding.tsx, après og-description :</span>\ndocument.getElementById('og-image')?.setAttribute('content', 'https://sign.closeos.fr/og-sign.png');\ndocument.getElementById('tw-image')?.setAttribute('content', 'https://sign.closeos.fr/og-sign.png');`
+        : `<span class="p"># A — garder le nom actuel, aucune autre modif</span>\ncp public/og/${s.id}.png public/og-eco.png\n\n<span class="p"># B — version JPEG (${s.weight}), il faut alors renommer la référence</span>\ncp public/og/${s.id}.jpg public/og-eco.jpg\n<span class="p"># puis og-eco.png → og-eco.jpg dans index.html, EcosystemChoice.tsx,</span>\n<span class="p"># BusinessLanding.tsx, CRMLanding.tsx + og:image:type → image/jpeg</span>`}</pre>
+    </div>
+  </div>`;
+}
+
+function renderSugg() {
+  document.getElementById('sugg').innerHTML =
+    '<h2 class="sec">Remplaçants de og-eco.png</h2>' +
+    SUGG.filter(s => s.target === 'eco').map(suggCard).join('') +
+    '<h2 class="sec">Sales &amp; Business — refonte</h2>' +
+    SUGG.filter(s => s.target === 'product').map(suggCard).join('') +
+    '<h2 class="sec">Nouvelle image Sign</h2>' +
+    SUGG.filter(s => s.target === 'sign').map(suggCard).join('') +
+    '<h2 class="sec">Liens partagés — formulaire, perfs et Sign</h2>' +
+    SUGG.filter(s => s.target === 'signlink').map(suggCard).join('') +
+    `<h2 class="sec">Pour mémoire — l'image remplacée</h2>
+     <div class="card">
+       <div class="c-head">
+         <div><div class="route">og-eco.png <span class="host">· jusqu'au 29/07/2026</span></div>
+         <div class="src">1200×630 · 89 Ko · conservée dans public/og/og-eco-avant.png</div></div>
+         <div class="badges"><span class="b warn">SANS SIGN</span><span class="b warn">EN ANGLAIS</span></div>
+       </div>
+       <img src="/og/og-eco-avant.png" alt="" style="display:block;width:100%;max-width:760px;border-radius:12px;border:1px solid var(--line);margin-top:14px">
+       <div class="note">Deux produits sur trois, texte en anglais alors que les pages sont FR, et le wordmark « CloseOS Sales » presque invisible (lettres blanches sur fond clair).</div>
+     </div>`;
+}
+
+function renderAudit() {
+  document.getElementById('audit').innerHTML = AUDIT.map(a => `
+    <div class="arow">
+      <div class="alev ${a.lev}">${a.levLabel}</div>
+      <div class="atxt"><b>${a.t}</b><p>${a.p}</p></div>
+    </div>`).join('');
+}
+
+document.getElementById('filters').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  state.filter = c.dataset.f; render();
+});
+document.getElementById('q').addEventListener('input', e => { state.q = e.target.value; render(); });
+document.getElementById('lang').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.lang = b.dataset.lang;
+  document.querySelectorAll('#lang button').forEach(x => x.classList.toggle('on', x === b));
+  render(); renderSugg();
+});
+document.getElementById('view').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.view = b.dataset.view;
+  document.querySelectorAll('#view button').forEach(x => x.classList.toggle('on', x === b));
+  render(); renderSugg();
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-copy]'); if (!b) return;
+  const d = DATA.find(x => x.id === b.dataset.copy);
+  navigator.clipboard.writeText(rawMeta(d)).then(() => {
+    const old = b.textContent; b.textContent = 'Copié ✓';
+    setTimeout(() => b.textContent = old, 1400);
+  });
+});
+document.querySelectorAll('.dyn-form button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const slug = document.getElementById('dslug').value.trim();
+    const base = document.getElementById('dbase').value.trim().replace(/\/$/, '');
+    const out = document.getElementById('dout');
+    if (!slug) { out.innerHTML = '<div class="src">Renseigne un slug.</div>'; return; }
+    const u = `${base}/api/og?type=${btn.dataset.t}&slug=${encodeURIComponent(slug)}`;
+    out.innerHTML = `<div class="src" style="margin-bottom:8px">${esc(u)}</div><img src="${esc(u)}" alt="" onerror="this.outerHTML='&lt;div class=\\'note bad\\'&gt;Image non générée : slug inconnu, campagne inactive, ou API indisponible sur cette base.&lt;/div&gt;'">`;
+  });
+});
+
+// Image injoignable (API hors-ligne, hors réseau) : hachures au lieu de l'icône cassée
+document.addEventListener('error', e => {
+  const el = e.target;
+  if (el.tagName !== 'IMG' || el.dataset.failed) return;
+  el.dataset.failed = '1';
+  el.removeAttribute('src');
+  el.style.background = 'repeating-linear-gradient(45deg,#191c1a,#191c1a 9px,#141715 9px,#141715 18px)';
+  el.title = 'Image non chargée (API indisponible depuis localhost)';
+}, true);
+
+document.getElementById('tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const tab = b.dataset.tab;
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.getElementById('page-catalogue').classList.toggle('hide', tab !== 'catalogue');
+  document.getElementById('page-suggestions').classList.toggle('hide', tab !== 'suggestions');
+  document.getElementById('controls').classList.toggle('hide', tab !== 'catalogue');
+  window.scrollTo({ top: 0 });
+});
+
+renderStats();
+renderAssets();
+renderAudit();
+renderSugg();
+render();
+</script>
+</body>
+</html>

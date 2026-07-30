@@ -90,8 +90,15 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
   useEffect(() => {
     document.title = t.seo_title;
     document.querySelector('meta[name="description"]')?.setAttribute('content', t.seo_description);
-    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.png');
-    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.png');
+    document.getElementById('og-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.jpg');
+    document.getElementById('tw-image')?.setAttribute('content', 'https://www.closeos.fr/og-eco.jpg');
+    // Carte sociale traduite (sinon elle reste figée sur les valeurs FR d'index.html)
+    document.getElementById('og-title')?.setAttribute('content', t.seo_title);
+    document.getElementById('tw-title')?.setAttribute('content', t.seo_title);
+    document.getElementById('og-description')?.setAttribute('content', t.seo_description);
+    document.getElementById('tw-description')?.setAttribute('content', t.seo_description);
+    document.getElementById('og-image-alt')?.setAttribute('content', t.seo_title);
+    document.getElementById('og-locale')?.setAttribute('content', lang === 'en' ? 'en_US' : 'fr_FR');
     document.documentElement.lang = lang;
   }, [lang, t]);
 
@@ -260,7 +267,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                   <div className="grid grid-cols-2 gap-3 mb-10">
                     {[
                       { icon: <BarChart3 className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.sales_feat1 },
-                      { icon: <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.sales_feat2 },
+                      { icon: <MessageSquare className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.sales_feat2 },
                       { icon: <Receipt className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.sales_feat3 },
                       { icon: <Calendar className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.sales_feat4 },
                     ].map((feat, i) => (
@@ -366,7 +373,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                     {[
                       { icon: <Users className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.business_feat1 },
                       { icon: <Target className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.business_feat2 },
-                      { icon: <BarChart3 className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.business_feat3 },
+                      { icon: <MessageSquare className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.business_feat3 },
                       { icon: <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.5} />, label: t.business_feat4 },
                     ].map((feat, i) => (
                       <div key={i} className="flex items-center gap-2.5 text-[#5b5b66] text-xs" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -720,6 +727,9 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
           <div className="flex flex-wrap justify-center gap-4 text-[0.68rem] text-[#4a4a56]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             <span>© 2026 CloseOS.fr</span>
             <span className="hidden sm:inline text-black/10">·</span>
+            <a href="/glossaire" className="hover:text-black/50 transition-colors">Glossaire</a>
+            <a href="/ressources" className="hover:text-black/50 transition-colors">Ressources</a>
+            <a href="/comparatifs" className="hover:text-black/50 transition-colors">Comparatifs</a>
             <a href="/mentions-legales" className="hover:text-black/50 transition-colors">{t.footer_legal}</a>
             <span className="hidden sm:inline text-black/10">·</span>
             <a href="/cgu" className="hover:text-black/50 transition-colors">{t.footer_cgu}</a>
@@ -729,6 +739,8 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             <a href="/confidentialite" className="hover:text-black/50 transition-colors">{t.footer_privacy}</a>
             <span className="hidden sm:inline text-black/10">·</span>
             <a href="/business/politique-utilisation" className="hover:text-black/50 transition-colors">{t.footer_business_policy}</a>
+            <span className="hidden sm:inline text-black/10">·</span>
+            <a href="/sign/cgv" className="hover:text-black/50 transition-colors">{t.footer_sign_legal}</a>
           </div>
 
           <div className="flex gap-6 text-[0.68rem]" style={{ fontFamily: "'DM Sans', sans-serif" }}>

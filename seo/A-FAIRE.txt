@@ -1,0 +1,564 @@
+================================================================================
+CLOSEOS — SEO : TOUT CE QU'IL RESTE A FAIRE
+================================================================================
+Genere le 2026-07-30
+Source : seo/SEO-STRATEGY.md, COMPETITOR-ANALYSIS.md, SITE-STRUCTURE.md,
+         CONTENT-CALENDAR.md, IMPLEMENTATION-ROADMAP.md, GEO-ANALYSIS.md
+
+DEJA FAIT (dans le depot, NON DEPLOYE) :
+  Vague 1 — technique
+  - canoniques Sign, /landing -> /sales, SignLegalShell
+  - manifeste unique scripts/seo-routes.mjs
+  - sitemaps generes au build (sitemap.xml + sitemap-sign.xml)
+  - garde-fou anti-regression dans le prerender
+  - robots.txt, llms.txt, schema WebApplication Sign
+  Vague 2 — GEO
+  - 39 reponses FAQ etoffees : mediane 38 -> 135 mots (cible 134-167)
+  - soft 404 corriges + scripts/check-rewrites.mjs (garde-fou au build)
+  - <main> ajoute sur les 7 pages publiques qui en manquaient
+  - public/llms-full.txt cree ; llms.txt : desambiguisation vs Close CRM
+  - FAQ Tarifs et Sales : une seule source pour l'affichage ET le JSON-LD
+  Vague 3 — contenu editorial
+  - blog /ressources, /glossaire et /guides construits (markdown -> pages)
+  - 4 termes de glossaire ecrits (closer, setter, high ticket, taux de closing)
+  - hubs /integrations, /cas-usage, /clients (markdown) + /comparatifs (edito)
+  - maillage entrant : les 8 pages publiques lient glossaire/ressources/comparatifs
+  - prix harmonises sur les 5 sources (schema, LP, tarifs, llms, comparatif)
+  - 5 articles /ressources ecrits (4 en ligne, 1 en brouillon)
+  - sitemap : 14 -> 28 URLs ; prerender : 17 -> 28 pages
+
+AVERTISSEMENT : tous les volumes de recherche cites sont des ESTIMATIONS non
+mesurees. La tache #4 les valide. Ne pas engager de gros budget avant.
+
+================================================================================
+BLOC 0 — MAINTENANT (bloquant, avant tout le reste)
+================================================================================
+
+[ ] 1. DEPLOYER les correctifs presents dans le depot.
+       Rien n'est pousse. Tant que ce n'est pas en ligne, les bugs de
+       canoniques restent actifs en production.
+
+[ ] 2. VERIFIER APRES DEPLOIEMENT (curl, 8 URLs) :
+       curl -s https://www.closeos.fr/                    | grep canonical
+         attendu : https://www.closeos.fr/
+       curl -s https://www.closeos.fr/sales               | grep canonical
+         attendu : https://www.closeos.fr/sales
+       curl -sIL https://www.closeos.fr/landing
+         attendu : 301 -> /sales
+       curl -s https://www.closeos.fr/business            | grep canonical
+         attendu : https://www.closeos.fr/business
+       curl -s https://www.closeos.fr/tarifs              | grep canonical
+         attendu : https://www.closeos.fr/tarifs
+       curl -sIL https://www.closeos.fr/sign
+         attendu : 301 -> https://sign.closeos.fr/sign
+       curl -s https://sign.closeos.fr/sign               | grep canonical
+         attendu : https://sign.closeos.fr/sign
+       curl -s https://sign.closeos.fr/sign/securite      | grep canonical
+         attendu : https://sign.closeos.fr/sign/securite
+
+[ ] 3. SEARCH CONSOLE — creer une PROPRIETE DE DOMAINE "closeos.fr"
+       (PAS une propriete de prefixe d'URL). Elle seule couvre www ET sign,
+       ce qui rend valide la declaration croisee de sitemap-sign.xml.
+       Sans ca, le sitemap Sign ne sera pas pris en compte.
+       [ ] soumettre https://www.closeos.fr/sitemap.xml
+       [ ] soumettre https://sign.closeos.fr/sitemap-sign.xml
+       [ ] verifier 0 erreur d'indexation sur les pages publiques
+
+[ ] 4. MESURER LA BASELINE + VALIDER LES MOTS-CLES  <<< LE PLUS IMPORTANT
+       Tout le plan repose sur des estimations. Cette tache les remplace
+       par des faits. Sans elle, impossible de dire a 6 mois si ca marche.
+       [ ] exporter 3 mois GSC : clics, impressions, position moy., pages indexees
+       [ ] remplir la colonne "Baseline" de SEO-STRATEGY.md section 7
+       [ ] convertir les multiplicateurs (x1,8 / x4 / x8) en valeurs absolues
+       [ ] valider les volumes des 20 mots-cles prioritaires
+           (GSC + Google Keyword Planner, ou /seo-dataforseo si acces ouvert)
+       [ ] REORDONNER CONTENT-CALENDAR.md si les donnees contredisent les estimations
+       [ ] GA4 : creer un evenement de conversion "essai gratuit"
+       [ ] GA4 : creer un segment "organique"
+
+[ ] 5. AUDIT DE PERFORMANCE — jamais fait, les cibles actuelles sont des
+       standards, pas un diagnostic.
+       [ ] lancer /seo-technical ou /seo-page sur /, /business, /tarifs
+       [ ] relever LCP / INP / CLS p75 mobile via CrUX
+       [ ] evaluer le cout de Promotekit (charge a load+5s) et FirstPromoter sur l'INP
+       [ ] evaluer CookieYes + GA4 + script de tracking maison
+       [ ] remplacer les cibles CWV de SEO-STRATEGY.md section 7 par des cibles reelles
+
+[ ] 6. SIGNAUX EXTERNES (hors chemin critique, a lancer des maintenant)
+       [ ] fiche produit Appvizer (tres repris par les AI Overviews en francais)
+       [ ] fiche produit Capterra France
+       [ ] fiche Product Hunt
+       [ ] elargir "sameAs" dans le schema Organization de index.html
+
+================================================================================
+BLOC 1 — FINITIONS TECHNIQUES (reste ouvert apres les correctifs)
+================================================================================
+
+[x] 7. HOME : <title> ALIGNE SUR LE <h1> — FAIT
+       "CloseOS — L'ecosysteme SaaS pour la vente digitale"
+       -> "CloseOS — L'ecosysteme pour closers et infopreneurs"
+       (le h1 dit "Le logiciel pour closers et infopreneurs")
+       --- enonce d'origine ---
+       Aujourd'hui le titre parle de l'ecosysteme, le h1 dit
+       "Le logiciel pour closers". Decision editoriale, deux voies :
+       (a) garder la page de choix + ajouter du vrai contenu dessous
+           (positionnement, 3 produits, preuves, FAQ)  <-- recommande
+       (b) faire de / la landing Sales et deplacer le choix ailleurs
+
+[x] 8. FAQ : ETOFFER LES REPONSES — FAIT
+       Mediane passee de 38 a 135 mots sur les 39 reponses.
+       23/39 dans la fenetre stricte 134-167, les autres a 130-133.
+       Restent a faire : FAQPage sur /fonctionnalites et / ; versions EN de
+       5 reponses Business (clefs non traitees, format de chaine different).
+       --- enonce d'origine ---
+       J'avais ecrit "aucun FAQPage nulle part" : c'etait FAUX.
+       FAQPage existe deja sur /sales, /business, /sign, /tarifs et le
+       comparatif = 33 Q/R au total.
+       LE VRAI PROBLEME : les reponses font ~45 mots de mediane, alors que
+       la fenetre de citation IA est de 134-167 mots. AUCUNE des 33 n'y est.
+       Elles sont ~3x trop courtes pour etre citees.
+       [ ] etoffer les 33 reponses a 134-167 mots (~1 journee de redaction,
+           aucun changement technique) — commencer par /sign et /tarifs
+       [ ] ajouter FAQPage sur /fonctionnalites et / (les 2 qui en manquent)
+       Matiere disponible : CHATBOT_KNOWLEDGE_CLOSEOS.txt
+       Detail : seo/GEO-ANALYSIS.md section 4
+
+[ ] 8ter. VERIFIER 3 PRIX POUR PUBLIER L'ARTICLE EN BROUILLON
+       content/ressources/cout-stack-closing.md est ecrit et pret, mais reste
+       en `draft: true` : votre note du 2026-07-28 dit explicitement que ces
+       prix sont "a spot-checker avant diffusion publique".
+       [ ] prix Yousign (formule Starter et Business)
+           NOTE : yousign.com/fr-fr/tarifs redirige vers youtrust.com, qui
+           renvoie 404. A verifier — possible changement de marque, ce qui
+           impacterait aussi COMPETITOR-ANALYSIS.md et la page
+           /comparatifs/alternative-yousign prevue au calendrier (tache 26).
+       [ ] prix Brevo (page tarifs rendue en JS, non lisible automatiquement)
+       [ ] prix Abby
+       [ ] verifier le taux EUR/USD retenu (1 $ ≈ 0,92 €)
+       [ ] puis passer draft: true -> draft: false et rebuild
+       Les prix Pipedrive, Calendly et Fathom sont deja verifies (votre note).
+
+[x] 8bis. INCOHERENCE DE PRIX — RESOLUE (2026-07-30)
+       Je m'etais trompe en presentant 18 / 25,50 / 34 EUR comme trois
+       chiffres contradictoires de meme valeur. Verification faite dans
+       LandingPage.tsx : le prix de base Sales est 24 EUR, avec remise
+       annuelle x0,75 et trimestrielle x5/6.
+         mensuel     : 24 EUR
+         trimestriel : 20 EUR
+         annuel      : 18 EUR   <- le "des 18 EUR" de /tarifs etait JUSTE
+         34 EUR      : prix barre de reference, personne ne le paie
+       Deux vraies erreurs corrigees :
+       [x] index.html : offers Sales 25,50-34 -> 18-24 (le schema etait
+           calcule sur le prix barre : 34 x 0,75 = 25,50)
+       [x] index.html : offers Business 28-99 -> 39-99 (28 obsolete ;
+           la grille reelle est 39 / 59 / 99)
+       [x] AlternativeIclosed.tsx : "commence a 34 EUR/mois" citait le prix
+           barre comme prix d'entree -> "18 EUR/mois en annuel (24 EUR en mensuel)"
+       [x] cout-stack-closing.md : le 39 EUR y etait attribue a CloseOS Sales
+           alors que c'est la formule Solo de Business. Base de comparaison
+           desormais nommee explicitement dans l'article.
+       [ ] Reste a verifier : /tarifs affiche-t-elle bien les 3 cycles ?
+
+[ ] 9. Valider tout le JSON-LD avec le Rich Results Test de Google
+       (a faire APRES deploiement)
+
+[x] 10. Enrichir la FAQ de public/llms.txt — FAIT
+        [x] 9 Q/R (cible 8-10 atteinte), dont Close CRM, Sales vs Business, limites
+        [x] prix detailles par cycle (annuel / mensuel) plutot qu'un "a partir de"
+        [x] llms-full.txt : FAQ a 9 Q/R
+
+================================================================================
+BLOC 2 — LES 3 ACTIFS DEJA PAYES (meilleur rapport effort / impact)
+================================================================================
+
+[ ] 11. PUBLIER LE CENTRE D'AIDE SALES
+        src/pages/SalesHelpCenter.tsx existe et est redige, mais bloque
+        derriere l'authentification. Travail = rendre public, pas rediger.
+        [ ] version publique indexable sur /aide
+        [ ] UNE URL PAR ARTICLE (un centre d'aide en page unique ne capte rien)
+        [ ] schema TechArticle
+        [ ] ajouter les routes a scripts/seo-routes.mjs
+        [ ] robots.txt : /aide deja autorise
+
+[ ] 12. PUBLIER LE CENTRE D'AIDE BUSINESS
+        src/business/pages/BusinessHelpCenter.tsx — meme traitement
+        [ ] version publique indexable sur /business/aide
+        [ ] une URL par article
+        [ ] schema TechArticle
+        [ ] ajouter les routes a scripts/seo-routes.mjs
+
+[ ] 13. Exploiter CHATBOT_KNOWLEDGE_CLOSEOS.txt en page FAQ publique
+        (schema FAQPage) — voir aussi taches 8 et 10
+
+================================================================================
+BLOC 3 — STRUCTURE EDITORIALE (avant de produire du contenu)
+================================================================================
+
+[x] 14. Creer les hubs — FAIT
+        [x] /glossaire, /ressources, /guides construits, alimentes par des
+            fichiers markdown dans content/<collection>/*.md
+            - ajouter un article = creer un .md, rien d'autre : la route, le
+              sitemap, le prerender et le JSON-LD en decoulent
+            - schema DefinedTerm (glossaire) / Article + author (le reste)
+            - maillage interne par [[slug]] dans le markdown
+            - une collection reste en noindex et hors sitemap sous 3 entrees
+              (seuil MIN_PUBLISHED, aligne entre le code et le build)
+        [x] /integrations, /cas-usage, /clients : memes collections markdown,
+            en noindex tant qu'elles sont vides
+        [x] /comparatifs : hub editorialise (methode de comparaison, engagement
+            de fraicheur des donnees, tableau de couverture CloseOS/iClosed).
+            Indexable des maintenant, ses 2 enfants etant publies.
+        -> les 7 hubs prevus existent. Il reste a les REMPLIR (bloc 4).
+        [x] /ressources depasse le seuil de 3 entrees : INDEXE (4 articles)
+        [ ] /guides, /integrations, /cas-usage, /clients : encore vides
+
+[ ] 15. Poser les 3 flux de maillage interne prioritaires :
+        TOFU -> conversion :
+          /glossaire/setter -> /guides/recruter-un-closer
+          -> /fonctionnalites/gestion-equipe-closers -> /business -> /tarifs
+        Comparaison -> conversion :
+          /comparatifs/alternative-iclosed -> /fonctionnalites/crm-closer
+          -> /sales -> /tarifs
+        Inter-produits (AUJOURD'HUI INEXISTANT, a creer en priorite) :
+          /business -> /fonctionnalites/signature-electronique -> Sign -> /tarifs
+
+[ ] 16. Etendre api/og.tsx aux nouveaux types de page
+        (blog, glossaire, guide, integration, cas d'usage, etude de cas)
+
+[ ] 17. Mettre en place le tableau de bord GSC mensuel
+
+[ ] 18. Mettre en place le protocole de suivi des citations IA
+        10 prompts fixes, 3 plateformes (ChatGPT recherche web, Perplexity,
+        Google AI Overviews), releve date. 15 min/mois.
+        Prompts suggeres :
+          - meilleur CRM pour closer
+          - alternative a iClosed
+          - logiciel pour gerer une equipe de closers
+          - signature electronique avec paiement integre
+          - c'est quoi un setter
+          - comment recruter un closer
+          - alternative francaise a Calendly
+          - logiciel pour infopreneur
+          - taux de closing : comment le calculer
+          - alternative a Yousign
+
+================================================================================
+BLOC 4 — CALENDRIER DE CONTENU : 36 PAGES SUR 12 MOIS
+================================================================================
+Cadence : 3 pages/mois. Ordre par PRIORITE DECROISSANTE.
+En cas de retard : decaler la fin, ne JAMAIS sauter le debut.
+
+--- T1 : SEPTEMBRE 2026 ---
+[ ] 19. /aide + 10 premiers articles              (deja redige, cf. tache 11)
+[ ] 20. /sign/signature-et-paiement               "signature electronique et paiement"
+        est. 50-200/mois, difficulte tres faible. COEUR DU DIFFERENCIATEUR.
+        Aucun concurrent FR ne fait cette page.
+[x] 21. /glossaire + 4 termes — FAIT
+        closer, setter, high ticket, taux de closing. Definitions neutres,
+        ~150 mots chacune, schema DefinedTerm + DefinedTermSet, maillage
+        croise entre les 4 termes. Le glossaire depasse le seuil de 3
+        entrees : il est donc indexable et prerendu.
+        Reste : les 8 termes suivants (taches 24 et 46).
+
+--- T1 : OCTOBRE 2026 ---
+[ ] 22. /fonctionnalites/liens-de-booking         "alternative calendly gratuite"
+        est. 300-800/mois. MEILLEUR RATIO VOLUME/DIFFICULTE DU PLAN.
+        La fonctionnalite est deja livree.
+[ ] 23. /sign/securite — enrichir la page existante (deja indexable depuis
+        les correctifs) : contenu de confiance, conformite, preuves
+[ ] 24. /glossaire + 4 termes : cash collecte, no-show, R1/R2, appel de decouverte
+
+--- T1 : NOVEMBRE 2026 ---
+[ ] 25. /business/aide + 10 articles              (deja redige, cf. tache 12)
+[ ] 26. /comparatifs/alternative-yousign          est. 100-300/mois
+        Angle : signature + ENCAISSEMENT, pas "moins cher".
+        Verifier les tarifs Yousign le jour de la publication.
+[ ] 27. /guides/recruter-un-closer                est. 100-400/mois
+        Plus gros volume TOFU. Concurrence = pages de vente de formations,
+        un guide neutre gagne.
+
+  >>> POINT DE CONTROLE T1 : ~35 pages indexees, premieres impressions.
+      Aucun classement significatif attendu avant le mois 4. C'est NORMAL.
+
+--- T2 : DECEMBRE 2026 ---
+[ ] 28. /fonctionnalites/formulaires              "alternative tally francais"
+        est. 100-300/mois. Module livre le 2026-07-27, aucune page publique.
+[ ] 29. /comparatifs/alternative-docusign         est. 100-300/mois
+[ ] 30. /a-propos                                 E-E-A-T, aucun volume vise
+        Fondateur, parcours, origine du produit, experience terrain du closing.
+        C'est la page que les moteurs generatifs lisent pour savoir qui edite le site.
+
+--- T2 : JANVIER 2027 ---
+[ ] 31. /comparatifs/closeos-vs-notion            est. 50-200/mois
+        Le concurrent reel d'un closer independant, c'est son tableau Notion.
+        Reconnaitre honnetement ce que Notion fait mieux. Personne ne fait cette page.
+[ ] 32. /sign/valeur-juridique                    est. 300-800/mois
+        !! JURIDIQUEMENT EXACT ET PRUDENT. N'affirmer que ce que le produit
+        garantit reellement. Le certificat de preuve donne de la matiere factuelle.
+        Une surpromesse sur eIDAS se paierait bien au-dela du SEO.
+[ ] 33. /guides/remunerer-un-closer                est. 100-300/mois
+
+--- T2 : FEVRIER 2027 ---
+[ ] 34. /fonctionnalites/gestion-equipe-closers    est. 50-180/mois
+[ ] 35. /comparatifs/alternative-gohighlevel       est. 30-100/mois
+        GHL a un contenu francais quasi inexistant : fenetre nette.
+[ ] 36. /guides/kpi-closing-a-suivre               est. 100-300/mois
+[ ] 37. DES FEVRIER : identifier 4 clients candidats pour les etudes de cas
+        et solliciter leur accord (delai externe long, prevoir le double)
+
+  >>> POINT DE CONTROLE T2 : ~55 pages, 15+ mots-cles top 10,
+      premieres citations IA sur les termes de glossaire.
+
+--- T3 : MARS 2027 ---
+[ ] 38. /fonctionnalites/signature-electronique
+        COMBLE LE FLUX INTER-PRODUITS INEXISTANT (Business -> Sign).
+        Sert le pont CRM->Sign, differenciateur produit reel.
+[ ] 39. /integrations (hub) + /integrations/stripe
+[ ] 40. /ressources/iclosed-avis                   "iclosed avis", "iclosed tarif"
+        Requete d'evaluation, en amont de "alternative". Exactitude imperative.
+
+--- T3 : AVRIL 2027 ---
+[ ] 41. /cas-usage/infopreneur
+[ ] 42. /integrations/hubspot + /integrations/pipedrive
+[ ] 43. /guides/gerer-une-equipe-de-setters
+
+--- T3 : MAI 2027 ---
+[ ] 44. /clients/[nom] — ETUDE DE CAS N°1
+        ACTION A PLUS FORT LEVIER DE TOUT LE PLAN.
+        Chiffres reels, avant/apres, verbatim client, schema Article + Organization.
+        Bloquant : accord client (cf. tache 37).
+[ ] 45. /fonctionnalites/campagnes-acquisition
+[ ] 46. /glossaire + 4 termes (total ~12)
+
+  >>> POINT DE CONTROLE T3 : ~70 pages, 45+ top 10, 18+ top 3,
+      essais organiques mesurables.
+  >>> DECISION SIGN : si AUCUN mot-cle Sign en top 20 a 6 mois,
+      rebasculer le budget Sign vers Business.
+      Reconsiderer aussi la consolidation de Sign sur www.closeos.fr/sign.
+
+--- T4 : JUIN 2027 ---
+[ ] 47. /clients/[nom] — ETUDE DE CAS N°2
+[ ] 48. /fonctionnalites/facturation-automatique
+[ ] 49. /ressources/[sujet de tete] — sujet choisi sur les donnees GSC REELLES
+
+--- T4 : JUILLET 2027 ---
+[ ] 50. /cas-usage/agence-de-closing
+[ ] 51. /integrations/gohighlevel + /integrations/systeme-io
+[ ] 52. /securite (plateforme, hors Sign) — E-E-A-T
+
+--- RESERVE : 3 CRENEAUX NON AFFECTES ---
+A decider sur les donnees reelles, pas sur ce document :
+[ ] 53. renforcer une page arrivee en page 2 (plus rapide qu'une page neuve)
+[ ] 54. couvrir une requete decouverte dans le rapport GSC
+[ ] 55. repondre a une nouveaute produit ou concurrente
+
+================================================================================
+BLOC 5 — AUTRES CHANTIERS
+================================================================================
+
+[ ] 56. NETLINKING — profil de backlinks jamais audite
+        [ ] auditer le profil existant (Ahrefs / GSC -> liens)
+        [ ] cibler annuaires SaaS FR, podcasts, communautes closing/infopreneuriat
+        [ ] objectif : +20 domaines referents a 6 mois
+        [ ] NE PAS acheter de liens (domaine de 2025, niche etroite : risque > gain)
+
+[ ] 57. GEO — appliquer retroactivement aux pages du T1 les 5 regles :
+        1. repondre en premier : 2-3 phrases autonomes et extractibles en ouverture
+        2. un H2 = une question, formulee comme l'utilisateur la pose
+        3. chiffres et tableaux HTML plutot que prose (prix, limites, comparaisons)
+        4. formulation de marque stable, repetee A L'IDENTIQUE partout :
+           "La seule suite francophone qui couvre la chaine complete du closing
+            high ticket : acquerir -> prendre le RDV -> closer -> faire signer
+            -> encaisser."
+        5. FAQPage sur les pages de conversion
+
+[ ] 58. PORTER /integrations a 6-8 fiches SUBSTANTIELLES
+        NE PAS produire les 12 integrations de llms.txt en pages minces.
+        6 solides > 12 creuses (risque de contenu mince).
+
+[ ] 59. INDUSTRIALISER
+        [ ] modeles de page par type (comparatif, integration, glossaire)
+        [ ] automatiser la verification trimestrielle des tarifs concurrents
+
+[ ] 60. DECISION INTERNATIONALISATION (au mois 12, sur donnees)
+        Le site est bilingue en interface, sans hreflang ni URLs distinctes.
+        [ ] y a-t-il des impressions anglophones dans GSC ?
+        [ ] si oui : plan hreflang dedie (/seo-hreflang), en projet SEPARE
+        [ ] si non : rester en francais, question tranchee
+
+================================================================================
+BLOC 6 — RECURRENT (a mettre en routine)
+================================================================================
+
+MENSUEL (45 min)
+[ ] releve GSC (clics, impressions, positions, pages indexees)
+[ ] releve des citations IA (protocole tache 18)
+
+TRIMESTRIEL (2h30)
+[ ] verifier les tarifs et fonctionnalites d'iClosed, Yousign et PandaDoc
+    -> mettre a jour TOUTES les pages comparatives
+    NON OPTIONNEL : une donnee perimee detruit la credibilite ET le classement
+[ ] afficher la date de derniere verification sur chaque page comparative
+[ ] veille : nouvelles pages publiees par iClosed
+[ ] lister les requetes ou CloseOS est passe en page 2 -> pages a renforcer
+
+SEMESTRIEL (3h)
+[ ] rafraichir les 5 pages les plus performantes (dateModified a jour)
+
+================================================================================
+BLOC 7 — GEO / VISIBILITE DANS LES MOTEURS GENERATIFS
+================================================================================
+Score actuel : 37/100 en production, 49/100 apres deploiement.
+Detail complet : seo/GEO-ANALYSIS.md
+
+[~] 61. DESAMBIGUISER LA MARQUE FACE A "CLOSE CRM" — PARTIELLEMENT FAIT
+        [x] Q/R dediee ajoutee dans llms.txt ET llms-full.txt : dit
+            explicitement que CloseOS et Close CRM sont deux produits
+            distincts, et que CloseOS s'ecrit en un seul mot.
+        [ ] reste : les 3 autres points ci-dessous (qualificatif dans les
+            <title>, elargissement de sameAs, definition repetee partout).
+            Le sameAs demande des URLs que je n'ai pas (LinkedIn entreprise,
+            YouTube, Product Hunt) : a fournir.
+        --- enonce d'origine ---
+        Une requete "CloseOS CRM avis" est aujourd'hui absorbee par Close CRM,
+        produit americain etabli. Les moteurs repondent en decrivant Close,
+        pas CloseOS. Sans correction, la marque est invisible par ecrasement.
+        [ ] toujours ecrire "CloseOS" en un mot, jamais "Close OS"
+        [ ] accoler un qualificatif dans les <title> et les definitions :
+            "CloseOS, la suite francaise du closing high ticket"
+        [ ] elargir sameAs dans le schema Organization (LinkedIn entreprise,
+            YouTube, Product Hunt, Appvizer, Crunchbase) — c'est le mecanisme
+            qui relie les mentions a UNE entite
+        [ ] publier une definition en une phrase, repetee A L'IDENTIQUE partout
+
+[ ] 62. CORRIGER LA FICHE PERIMEE QUE LES MODELES ONT DE CLOSEOS
+        Les reponses generees decrivent un produit "en V1 avec des bugs",
+        un "essai de 10 jours", des fonctions IA "bientot disponibles", et
+        affirment que CloseOS n'est PAS pour les infopreneurs (faux : c'est
+        exactement Business). CloseOS Sign n'apparait nulle part.
+        -> Ces infos viennent d'une ancienne version du site.
+        -> Le deploiement du llms.txt a jour (tache 1) est le premier remede.
+
+[x] 63. CORRIGER LES SOFT 404 — FAIT
+        Le catch-all SPA exclut desormais les chemins a extension de fichier.
+        Garde-fou scripts/check-rewrites.mjs au build (28 routes servies,
+        18 chemins de fichiers exclus), teste avec le meme moteur que Vercel.
+        Reste : verifier apres deploiement que /rsl.xml renvoie bien 404.
+        --- enonce d'origine ---
+        Toute URL inexistante renvoie HTTP 200 avec la coquille HTML.
+        Verifie : /url-qui-nexiste-pas -> 200 text/html
+        Consequences : espace d'URL infini en 200, budget de crawl gaspille,
+        et /llms-full.txt, /rsl.xml, /.well-known/rsl.xml renvoient du HTML
+        au lieu d'un 404 franc (pire que l'absence).
+        [ ] servir un vrai statut 404 pour les chemins non routes
+        [ ] en particulier ceux portant une extension (.txt .xml .json .php)
+
+[~] 64. RENDRE LE CONTENU EXTRACTIBLE — PARTIELLEMENT FAIT
+        [x] <main> ajoute sur les 7 pages publiques qui en manquaient
+        [ ] ouvrir chaque page par 2-3 phrases DEFINITIONNELLES avant
+            l'argumentaire (le texte de nav pollue actuellement les 60
+            premiers mots de chaque page)
+        [ ] convertir en TABLEAUX HTML les prix et comparaisons de /sales
+            et /business (0 tableau aujourd'hui sur ces 2 pages)
+        [ ] doubler la conclusion chiffree du comparateur de prix en texte
+            statique (il est en JS pur, donc invisible pour les crawlers IA)
+        Modeles de reecriture prets : GEO-ANALYSIS.md section 12
+
+[ ] 65. REFORMULER LES TITRES EN QUESTIONS
+        Seulement 4 H2 sur 42 sont formules en question (10 %).
+        Garder l'accroche commerciale en sur-titre ou en <p> sous le H2 :
+        on conserve la conversion et on gagne l'appariement de requete.
+        Exemples :
+          "Un seul outil. Trois manieres de l'utiliser."
+            -> "Comment un closer independant utilise-t-il CloseOS ?"
+          "Pas juste une signature. Un faisceau de preuves inattaquable."
+            -> "Quelle est la valeur juridique d'une signature CloseOS Sign ?"
+          "Combien vous economisez vraiment"
+            -> "Combien coute CloseOS par rapport a une stack d'outils separes ?"
+
+[ ] 66. CONSTRUIRE UNE EMPREINTE TIERCE
+        SEUL LEVIER qui debloque ChatGPT et Perplexity : ils citent
+        massivement Reddit (46,7 % pour Perplexity) et Wikipedia (47,9 %
+        pour ChatGPT). CloseOS est absent des deux.
+        Les mentions de marque correlent ~3x plus fort avec la visibilite IA
+        que les backlinks (etude Ahrefs, dec. 2025, 75 000 marques).
+        Par ordre de rendement :
+        [ ] fiches Appvizer + Capterra France (cf. tache 6)
+        [ ] YouTube : 2-3 demos produit (correlation la plus forte, ~0,737)
+        [ ] Reddit : participation authentique (r/entrepreneur_fr,
+            r/freelance_fr). ATTENTION : l'autopromotion y est sanctionnee.
+            Contribuer, pas placer des liens.
+        [ ] Trustpilot : collecte d'avis clients
+        [ ] Wikidata AVANT Wikipedia (seuil d'admissibilite bien plus bas,
+            et Wikidata alimente les graphes d'entites)
+
+[ ] 67. PRODUIRE DU CONTENU MULTI-MODAL (+156 % de taux de selection)
+        [ ] au moins une video par landing produit (zero aujourd'hui)
+        [ ] graphiques / donnees visualisees dans le HTML prerendu
+
+[ ] 68. BING WEBMASTER TOOLS + INDEXNOW
+        Bing Copilot s'appuie sur l'index Bing. Inscription non confirmee.
+        [ ] inscrire le site
+        [ ] activer IndexNow
+
+[ ] 69. LANCER LE PROTOCOLE DE MESURE DES CITATIONS IA
+        C'est la seule donnee qui compte vraiment, et elle est a zero releve.
+        Voir tache 18 pour les 10 prompts. A faire EN FRANCAIS, DEPUIS LA
+        FRANCE : l'analyse actuelle repose sur un index americain, donc
+        indicative seulement pour une marque francophone.
+
+[~] 70. A SURVEILLER (pas encore un facteur de citation)
+        [x] /llms-full.txt cree (produits, securite, tarifs, FAQ etendue)
+            -> a enrichir une fois les centres d'aide publies
+        [ ] RSL 1.0 (/rsl.xml) — standard de licence lisible par machine,
+            decembre 2025
+
+================================================================================
+PORTES DE QUALITE — CHECKLIST PAR PAGE PRODUITE
+================================================================================
+Aucune page ne part en production sans :
+
+[ ] <title> unique, 50-60 caracteres, mot-cle cible en tete
+[ ] <meta description> unique, 140-160 caracteres, avec une incitation
+[ ] un seul <h1>, contenant le mot-cle cible
+[ ] canonique auto-referente
+[ ] au moins 600 mots utiles (pas de remplissage)
+[ ] 3 a 5 liens internes contextuels, dont 1 vers une page de conversion
+[ ] un lien depuis son hub (sinon page orpheline)
+[ ] schema JSON-LD conforme au type de page, valide
+[ ] image OG dediee (api/og.tsx)
+[ ] images en alt descriptif + dimensions declarees (CLS)
+[ ] reponse directe et extractible dans les 2 premieres phrases (GEO)
+[ ] ROUTE AJOUTEE A scripts/seo-routes.mjs
+    (c'est le seul endroit : sitemap et prerender en decoulent, et le
+     garde-fou verifiera la coherence au build)
+
+EN PLUS, SUR LES PAGES COMPARATIVES :
+[ ] toutes les donnees concurrentes verifiees a la date de publication
+[ ] date de derniere verification affichee sur la page
+[ ] aucune affirmation inverifiable
+[ ] les forces reelles du concurrent sont mentionnees
+[ ] aucune suggestion d'affiliation ou d'endossement
+
+================================================================================
+OBJECTIFS CHIFFRES (baseline a remplir — tache 4)
+================================================================================
+Metrique                      Baseline   3 mois   6 mois   12 mois
+--------------------------------------------------------------------------------
+Pages indexees                 ______      30       55        80
+Clics organiques / mois        ______     x1,8      x4        x8
+Impressions / mois             ______      x3       x7       x15
+Mots-cles top 10               ______      15       45       110
+Mots-cles top 3                ______       5       18        45
+Essais gratuits organiques     ______    5/mois  15/mois   40/mois
+Domaines referents             ______      +8      +20       +45
+LCP p75 mobile                 ______    <2,5s    <2,2s     <2,0s
+INP p75 mobile                 ______    <200ms  <200ms    <150ms
+CLS p75                        ______     <0,1     <0,1      <0,1
+Citations IA                     0         3       10        30
+
+KPI QUI PRIME SUR TOUS LES AUTRES : essais gratuits attribues a l'organique.
+Un SaaS de niche atteint ses objectifs avec 800 visites/mois tres qualifiees.
+/tarifs et les pages comparatives comptent plus que n'importe quel article.
+
+================================================================================

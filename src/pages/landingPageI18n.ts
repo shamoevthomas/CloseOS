@@ -19,6 +19,10 @@ export interface SalesTranslations {
   ld_faq4_a: string
   ld_faq5_q: string
   ld_faq5_a: string
+  ld_faq6_q: string
+  ld_faq6_a: string
+  ld_faq7_q: string
+  ld_faq7_a: string
 
   // Banner
   banner: string
@@ -100,6 +104,18 @@ export interface SalesTranslations {
   feat11_desc: string
   feat12_title: string
   feat12_desc: string
+  feat13_title: string
+  feat13_desc: string
+  feat13_a_title: string
+  feat13_a_desc: string
+  feat13_b_title: string
+  feat13_b_desc: string
+  feat13_c_title: string
+  feat13_c_desc: string
+  feat14_title: string
+  feat14_desc: string
+  feat15_title: string
+  feat15_desc: string
 
   // Roadmap
   roadmap_badge: string
@@ -217,6 +233,9 @@ export interface SalesTranslations {
   // FAQ
   faq_title: string
   faq_subtitle: string
+  faq_what_q: string
+  faq_what_a1: string
+  faq_what_a2: string
   faq1_q: string
   faq1_a1: string
   faq1_a2: string
@@ -230,6 +249,11 @@ export interface SalesTranslations {
   faq5_q: string
   faq5_a1: string
   faq5_a2: string
+  faq_relance_q: string
+  faq_relance_a1: string
+  faq_relance_a2: string
+  faq_security_q: string
+  faq_security_a: string
 
   // CTA Final
   cta_title_line1: string
@@ -299,15 +323,19 @@ const fr: SalesTranslations = {
   ld_offers: "Essai gratuit 10 jours sans carte bancaire",
   ld_features: "CRM closer, Pipeline closer, Suivi calls closing, Agenda & booking, Facturation automatique closer, KPI closing, Gestion prospects closing, Visioconférence",
   ld_faq1_q: "Est-ce que je peux connecter Calendly à CloseOS ?",
-  ld_faq1_a: "Non, et c'est un choix assumé. Calendly impose un abonnement payant pour les intégrations. CloseOS intègre Cal.com (référence Open Source) : un système de booking ultra-performant, synchronisé à votre agenda, sans surcoût.",
+  ld_faq1_a: "Non, et c'est un choix assumé. Calendly impose un abonnement payant dès que vous voulez connecter votre agenda à un outil tiers : vous payez une formule Pro uniquement pour que Calendly accepte de parler à votre CRM. CloseOS intègre à la place Cal.com, la référence open source de la prise de rendez-vous, sans surcoût et sans palier. Vous obtenez le même résultat : des liens de réservation personnalisés, la synchronisation bidirectionnelle avec votre Google Calendar, la gestion des disponibilités, des fuseaux horaires et des tampons entre rendez-vous, ainsi que les rappels automatiques envoyés au prospect avant l'appel. CloseOS gère aussi le multi-booking, qui permet de proposer plusieurs créneaux en un seul envoi. Si vous tenez à conserver Calendly pour d'autres usages, il reste disponible parmi les intégrations natives de CloseOS.",
   ld_faq2_q: "Comment CloseOS s'engage pour l'environnement ?",
-  ld_faq2_a: "CloseOS prône la Performance Responsable. Sobriété numérique : en remplaçant 10 outils par 1 seul, nous réduisons la consommation d'énergie serveur. Action financière : 1,5% de chaque abonnement est reversé via Stripe Climate pour financer l'élimination du CO2.",
+  ld_faq2_a: "CloseOS défend ce que nous appelons la Performance Responsable, et cela se traduit par deux engagements concrets. Le premier est la sobriété numérique : en remplaçant dix outils par un seul, CloseOS réduit mécaniquement le nombre de serveurs sollicités, de synchronisations permanentes entre applications et de données dupliquées d'un logiciel à l'autre. Une stack fragmentée consomme plus qu'un système unifié, à usage égal. Le second est financier : chaque mois, une partie des revenus de CloseOS est reversée au financement de l'élimination de CO2, et non à de la simple compensation. S'y ajoute un choix d'hébergement en Union européenne, qui limite les transferts de données longue distance tout en garantissant la conformité au RGPD. Ces engagements n'ont pas vocation à être un argument marketing isolé : ils orientent les décisions techniques du produit.",
   ld_faq3_q: "Pourquoi payer CloseOS plutôt qu'utiliser Excel ou Notion ?",
-  ld_faq3_a: "Parce que le bricolage coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio ni ne synchronise vos appels. CloseOS est un système actif qui élimine 80% de l'administratif. Le temps gagné est réinvesti pour signer des contrats.",
+  ld_faq3_a: "Parce que le bricolage coûte des ventes, et le coût est rarement visible sur le moment. Excel et Notion sont des outils passifs : ils stockent l'information que vous y saisissez, mais ils n'agissent pas. Ils n'envoient pas de relance quand un prospect ne répond plus, ne génèrent pas de lien de visioconférence, ne synchronisent pas votre agenda, n'enregistrent pas vos appels, n'émettent pas vos factures et ne calculent pas votre taux de closing. Chacune de ces tâches finit par retomber sur vous, entre deux appels. CloseOS est un système actif : les relances s'enchaînent seules selon les délais que vous définissez, la facture part après la vente, et les KPIs se recalculent en temps réel. Le temps que vous ne passez plus à faire tenir votre outil est du temps rendu au closing.",
   ld_faq4_q: "Est-ce que iClosed est intégré à CloseOS ?",
-  ld_faq4_a: "Oui, en synchronisation bidirectionnelle complète. Tout prospect, deal ou changement de stage modifié d'un côté est reflété en temps réel de l'autre. Vos leads et ventes iClosed remontent dans CloseOS, et vos mises à jour CloseOS (stage, tag, note, RDV) sont repoussées vers iClosed automatiquement.",
+  ld_faq4_a: "Oui, et en synchronisation bidirectionnelle complète, ce qui va plus loin qu'un simple import. Chaque prospect, chaque deal et chaque changement d'étape effectué d'un côté est reflété de l'autre en temps réel : vos leads et vos ventes iClosed remontent dans CloseOS, et toute mise à jour faite dans CloseOS — changement d'étape, tag, note, prise de rendez-vous — est repoussée vers iClosed automatiquement. Vous n'avez ni double saisie, ni désynchronisation, ni fichier à réconcilier en fin de mois. Concrètement, vous conservez votre configuration iClosed existante, vos liens de réservation et vos habitudes d'équipe, et vous ajoutez par-dessus le cockpit CloseOS : pipeline, facturation, KPIs et pilotage. C'est aussi le chemin de migration le plus sûr, puisque rien n'est coupé pendant la transition.",
   ld_faq5_q: "C'est quoi CloseOS Sales ?",
-  ld_faq5_a: "CloseOS Sales est le logiciel tout-en-un pour closers high ticket et freelance en France. Il regroupe CRM closer, pipeline de vente visuel, suivi calls closing, agenda & booking, facturation automatique et KPIs de closing. C'est l'outil qui remplace 10 logiciels différents pour les closers indépendants.",
+  ld_faq5_a: "CloseOS Sales est un CRM conçu pour les closers indépendants et freelances francophones qui vendent en high ticket. Là où un CRM généraliste part du principe qu'une équipe commerciale gère un cycle long, CloseOS Sales part du quotidien réel d'un closer : des appels, un pipeline à faire avancer, des relances à tenir et des commissions à suivre. Il réunit dans un seul outil le pipeline de vente visuel, la Call Room intégrée pour passer et enregistrer les appels, l'agenda et les liens de réservation, les relances automatiques, la facturation connectée à Stripe et les KPIs de closing calculés en temps réel. L'objectif est de remplacer les six à dix logiciels qu'un closer assemble habituellement — tableur, agenda, outil de booking, visio, facturation, tableau de suivi — par un seul environnement cohérent.",
+  ld_faq6_q: "CloseOS gère-t-il mes relances et mon suivi de prospects ?",
+  ld_faq6_a: "Oui, et c'est l'une des fonctions les plus utilisées de CloseOS Sales. Vous définissez vos délais de relance une seule fois — par exemple à trois jours, puis sept, puis quinze — et CloseOS enchaîne ensuite les relances automatiquement. Chaque jour, vous retrouvez la liste des prospects à relancer, sans avoir à la reconstituer de mémoire ou à fouiller vos conversations. Quand un prospect répond, le bouton « Répondu » met immédiatement les relances en pause et bascule le prospect en suivi de discussion, où vous le qualifiez comme qualifié, disqualifié ou en cours. La liste « À relancer & à suivre » réunit les deux vues et montre en un coup d'œil qui attend une relance et avec qui vous êtes en conversation active. Un digest quotidien récapitule les discussions en cours.",
+  ld_faq7_q: "Mes données sont-elles sécurisées et conformes au RGPD ?",
+  ld_faq7_a: "Oui. CloseOS est conforme au RGPD et vos données sont hébergées dans l'Union européenne, jamais transférées hors de cet espace pour le fonctionnement du service. Chaque compte est isolé des autres au niveau de la base de données, et l'accès est restreint par des règles de sécurité appliquées côté serveur : un utilisateur ne peut techniquement pas lire les données d'un autre compte, même en cas de tentative directe. Vous restez propriétaire de vos données. Vous pouvez les exporter à tout moment dans un format réutilisable, et demander leur suppression définitive, qui est alors traitée sans délai artificiel. La connexion est protégée par une double authentification par appareil : une nouvelle connexion déclenche l'envoi d'un code par email et une notification vous avertit de toute connexion depuis un appareil inconnu.",
 
   // Banner
   banner: "\u{1F680} La V1 de CloseOS est officiellement lancée ! Testez gratuitement pendant 10 jours.",
@@ -389,6 +417,18 @@ const fr: SalesTranslations = {
   feat11_desc: "CloseOS repère les fiches en double (même email ou téléphone) et vous les fusionne proprement, en comparaison côte à côte. Votre base reste nette.",
   feat12_title: "Tâches par Prospect",
   feat12_desc: "Attachez des tâches à chaque prospect avec échéance, et retrouvez tout ce qui est à faire aujourd'hui sur votre dashboard. Rien ne passe à la trappe.",
+  feat13_title: "Suivi de Discussion & Taux de Réponse",
+  feat13_desc: "Un prospect vous répond enfin ? Cliquez sur \"Répondu\" : les relances se mettent en pause et il compte dans votre vrai taux de réponse. CloseOS garde le fil de la conversation à votre place.",
+  feat13_a_title: "\u{2709}\u{FE0F} Répondu",
+  feat13_a_desc: "Marque le prospect comme actif, met les relances en pause, et le fait compter dans votre taux de réponse.",
+  feat13_b_title: "\u{1F504} Toujours en discussion ?",
+  feat13_b_desc: "Un jour plus tard, CloseOS vous redemande : reprendre les relances, ou qualifier / disqualifier le prospect.",
+  feat13_c_title: "\u{1F4CB} À relancer & à suivre",
+  feat13_c_desc: "Une liste de travail dédiée : qui relancer aujourd'hui, et qui a répondu et attend votre suivi.",
+  feat14_title: "Digest \"Toujours en discussion ?\"",
+  feat14_desc: "Chaque jour à 17h, un email récap liste vos prospects qui ont répondu mais où la discussion traîne. Vous ne laissez plus jamais une conversation chaude s'éteindre toute seule.",
+  feat15_title: "Rappels à Heure Précise",
+  feat15_desc: "Programmez un rappel à la minute près sur n'importe quel prospect (\"rappeler demain à 14h30\"). L'échéance s'affiche sur la fiche et remonte dans votre liste du jour.",
 
   // Roadmap
   roadmap_badge: "Roadmap 2026",
@@ -500,25 +540,33 @@ const fr: SalesTranslations = {
   pricing_feat8: "Support Prioritaire",
   pricing_cta: "Commencer gratuitement",
   pricing_no_card: "Aucune CB requise. 10 jours gratuits.",
-  pricing_climate: "1,5% de votre abonnement finance l'élimination du CO2 via Stripe Climate.",
+  pricing_climate: "Chaque mois, une partie de nos gains finance l'élimination du CO2.",
   pricing_close_comparison: "Fermer le comparatif",
 
   // FAQ
   faq_title: "Questions Fréquentes",
   faq_subtitle: "Tout ce que vous devez savoir avant de commencer.",
+  faq_what_q: "Qu'est-ce que CloseOS Sales, concrètement ?",
+  faq_what_a1: "C'est le logiciel tout-en-un du closer indépendant. Un seul outil qui réunit votre CRM et votre pipeline visuel, la Call Room (script, pitch, ressources et prise de notes pendant l'appel), les relances automatiques, l'agenda et le booking synchronisés, la facturation et vos KPIs de closing.",
+  faq_what_a2: "L'idée : remplacer les 10 outils que vous bricolez aujourd'hui par un seul cockpit, pour passer moins de temps dans l'administratif et plus de temps à closer.",
   faq1_q: "Est-ce que je peux connecter Calendly ?",
   faq1_a1: "Non, et c'est un choix assumé. Calendly impose un abonnement payant pour permettre les intégrations, une pratique que nous trouvons injuste. Pour vous offrir la meilleure expérience sans surcoût, nous avons intégré Cal.com (la référence Open Source).",
   faq1_a2: "Résultat : vous profitez d'un système de booking ultra-performant, synchronisé à votre agenda, sans avoir à payer un abonnement \"Pro\" à Calendly juste pour qu'il accepte de parler à votre CRM.",
   faq2_q: "Comment CloseOS s'engage pour l'environnement ?",
   faq2_intro: "Nous prônons la \"Performance Responsable\". Concrètement :",
   faq2_item1: "Sobriété numérique : En remplaçant 10 outils par 1 seul, nous réduisons la consommation d'énergie serveur nécessaire à votre activité.",
-  faq2_item2: "Action financière : Nous reversons automatiquement 1,5% de votre abonnement via Stripe Climate pour financer des technologies de pointe d'élimination du CO2. Closer avec nous, c'est aussi contribuer.",
+  faq2_item2: "Action financière : Chaque mois, nous reversons une partie de nos gains pour financer des technologies de pointe d'élimination du CO2. Closer avec nous, c'est aussi contribuer.",
   faq3_q: "Pourquoi payer CloseOS alors que je peux le faire moi-même sur Excel/Notion ?",
   faq3_a1: "Parce que le \"bricolage\" vous coûte des ventes. Excel n'envoie pas de rappels automatiques, Notion ne génère pas vos liens de visio et ne synchronise pas vos appels.",
   faq3_a2: "CloseOS n'est pas un simple tableau de note, c'est un système actif qui élimine 80% de votre administratif. Le temps que vous ne passez plus à configurer vos outils est du temps réinvesti pour signer des contrats.",
   faq5_q: "Est-ce que iClosed est intégré ?",
   faq5_a1: "Oui, et désormais en synchronisation bidirectionnelle complète. Chaque prospect, deal ou changement de stage ajouté ou modifié d'un côté est instantanément reflété de l'autre, plus de double saisie, plus de désynchronisation.",
   faq5_a2: "Concrètement : vos leads et ventes iClosed remontent automatiquement dans CloseOS, et toute mise à jour faite dans CloseOS (stage, tag, note, RDV) est repoussée vers iClosed en temps réel. Vous gardez votre setup iClosed existant et vous gagnez le cockpit CloseOS par-dessus, sans friction.",
+  faq_relance_q: "Est-ce que CloseOS gère mes relances et mon suivi de prospects ?",
+  faq_relance_a1: "Oui, c'est même le cœur du réacteur. Vous définissez vos délais de relance une fois, et CloseOS enchaîne les relances tout seul : chaque jour, vous recevez la liste de vos prospects à relancer. Un bouton « Relance faite » fait passer à la suivante.",
+  faq_relance_a2: "Quand un prospect répond, vous cliquez « Répondu » : les relances se mettent en pause et le prospect bascule en suivi de discussion (qualifié, disqualifié ou encore en cours). La liste « À relancer & à suivre » vous montre en un coup d'œil qui relancer et avec qui vous êtes en discussion, sans jamais rien laisser filer.",
+  faq_security_q: "Mes données sont-elles sécurisées et conformes au RGPD ?",
+  faq_security_a: "Oui. CloseOS est conforme au RGPD, vos données sont hébergées en Union Européenne, isolées et accessibles à vous seul. Vous restez propriétaire de vos données à tout moment et pouvez les exporter ou les supprimer quand vous le souhaitez.",
 
   // CTA Final
   cta_title_line1: "Arrêtez de payer pour 10 outils.",
@@ -598,15 +646,19 @@ const en: SalesTranslations = {
   ld_offers: "10-day free trial, no credit card required",
   ld_features: "Closer CRM, Sales pipeline, Call tracking, Calendar & booking, Automated invoicing, Closing KPIs, Prospect management, Video conferencing",
   ld_faq1_q: "Can I connect Calendly to CloseOS?",
-  ld_faq1_a: "No, and that's by design. Calendly requires a paid subscription for integrations. CloseOS includes Cal.com (the Open Source standard): a high-performance booking system, synced to your calendar, at no extra cost.",
+  ld_faq1_a: "No, and that's a deliberate choice. Calendly requires a paid plan as soon as you want to connect your calendar to a third-party tool: you pay for a Pro subscription purely so Calendly agrees to talk to your CRM. CloseOS integrates Cal.com instead, the open-source standard for scheduling, at no extra cost and with no tiers. You get the same outcome: personalised booking links, two-way sync with your Google Calendar, availability management, time zones and buffers between meetings, plus automatic reminders sent to the prospect before the call. CloseOS also handles multi-booking, letting you offer several time slots in a single send. If you want to keep Calendly for other purposes, it remains available among the native CloseOS integrations.",
   ld_faq2_q: "How does CloseOS contribute to the environment?",
-  ld_faq2_a: "CloseOS champions Responsible Performance. Digital sobriety: by replacing 10 tools with 1, we reduce server energy consumption. Financial action: 1.5% of every subscription is allocated via Stripe Climate to fund CO2 removal.",
+  ld_faq2_a: "CloseOS stands for what we call Responsible Performance, and it translates into two concrete commitments. The first is digital sobriety: by replacing ten tools with one, CloseOS mechanically reduces the number of servers involved, the constant syncing between applications and the data duplicated from one piece of software to the next. A fragmented stack consumes more than a unified system, for the same usage. The second is financial: every month, a share of CloseOS revenue funds CO2 removal rather than simple offsetting. On top of that, hosting in the European Union limits long-distance data transfers while guaranteeing GDPR compliance. These commitments are not meant to be an isolated marketing line: they shape the product's technical decisions.",
   ld_faq3_q: "Why pay for CloseOS instead of using Excel or Notion?",
-  ld_faq3_a: "Because DIY tools cost you deals. Excel doesn't send automatic reminders, Notion doesn't generate meeting links or sync your calls. CloseOS is an active system that eliminates 80% of admin work. The time saved is reinvested in closing contracts.",
+  ld_faq3_a: "Because DIY setups cost you deals, and the cost is rarely visible at the time. Excel and Notion are passive tools: they store whatever you type into them, but they do not act. They do not send a follow-up when a prospect goes quiet, do not generate a video call link, do not sync your calendar, do not record your calls, do not issue your invoices and do not compute your closing rate. Every one of those tasks ends up back on you, between two calls. CloseOS is an active system: follow-ups run on the intervals you set, the invoice goes out after the sale, and KPIs recalculate in real time. The time you stop spending holding your tooling together is time handed back to closing.",
   ld_faq4_q: "Is iClosed integrated with CloseOS?",
-  ld_faq4_a: "Yes, with full bidirectional sync. Every prospect, deal or stage change updated on one side is reflected on the other in real time. Your iClosed leads and sales flow into CloseOS, and your CloseOS updates (stage, tag, note, appointment) are pushed back to iClosed automatically.",
+  ld_faq4_a: "Yes, with full two-way sync, which goes further than a one-off import. Every prospect, deal and stage change made on one side is reflected on the other in real time: your iClosed leads and sales flow into CloseOS, and any update made in CloseOS — stage change, tag, note, booked meeting — is pushed back to iClosed automatically. There is no double entry, no drift and no file to reconcile at month end. In practice, you keep your existing iClosed setup, your booking links and your team's habits, and you add the CloseOS cockpit on top: pipeline, invoicing, KPIs and management. It is also the safest migration path, since nothing is switched off during the transition.",
   ld_faq5_q: "What is CloseOS Sales?",
-  ld_faq5_a: "CloseOS Sales is the all-in-one software for high-ticket and freelance closers. It combines closer CRM, visual sales pipeline, call tracking, calendar & booking, automated invoicing and closing KPIs. It's the tool that replaces 10 different pieces of software for independent closers.",
+  ld_faq5_a: "CloseOS Sales is a CRM built for independent and freelance closers selling high-ticket offers. Where a general-purpose CRM assumes a sales team working a long cycle, CloseOS Sales starts from a closer's actual day: calls, a pipeline to move forward, follow-ups to keep and commissions to track. It brings together in a single tool the visual sales pipeline, the built-in Call Room for placing and recording calls, the calendar and booking links, automatic follow-ups, invoicing connected to Stripe, and closing KPIs computed in real time. The goal is to replace the six to ten pieces of software a closer usually assembles — spreadsheet, calendar, booking tool, video call, invoicing, tracking sheet — with one coherent environment.",
+  ld_faq6_q: "Does CloseOS handle my follow-ups and prospect tracking?",
+  ld_faq6_a: "Yes, and it is one of the most used features in CloseOS Sales. You set your follow-up intervals once — say three days, then seven, then fifteen — and CloseOS chains the reminders automatically from there. Every day you get the list of prospects to follow up, without having to rebuild it from memory or dig through your conversations. When a prospect replies, the \"Replied\" button immediately pauses follow-ups and moves the prospect into discussion tracking, where you mark them qualified, disqualified or ongoing. The \"To follow up & track\" list combines both views and shows at a glance who is waiting on a follow-up and who you are actively talking to. A daily digest recaps ongoing discussions.",
+  ld_faq7_q: "Is my data secure and GDPR-compliant?",
+  ld_faq7_a: "Yes. CloseOS is GDPR-compliant and your data is hosted in the European Union, never transferred outside that area to operate the service. Each account is isolated from the others at the database level, and access is restricted by security rules enforced server-side: a user cannot technically read another account's data, even by direct attempt. You remain the owner of your data. You can export it at any time in a reusable format, and request permanent deletion, which is then processed without artificial delay. Sign-in is protected by per-device two-factor authentication: a new sign-in triggers an emailed code, and a notification warns you of any login from an unknown device.",
 
   // Banner
   banner: "\u{1F680} CloseOS V1 is officially live! Try it free for 10 days.",
@@ -688,6 +740,18 @@ const en: SalesTranslations = {
   feat11_desc: "CloseOS spots duplicate records (same email or phone) and merges them cleanly, side by side. Your database stays spotless.",
   feat12_title: "Per-Prospect Tasks",
   feat12_desc: "Attach tasks to each prospect with a due date, and find everything due today on your dashboard. Nothing slips through.",
+  feat13_title: "Conversation Tracking & Reply Rate",
+  feat13_desc: "A prospect finally replies? Hit \"Replied\": follow-ups pause and they count toward your real reply rate. CloseOS keeps the thread going for you.",
+  feat13_a_title: "\u{2709}\u{FE0F} Replied",
+  feat13_a_desc: "Marks the prospect as active, pauses follow-ups, and makes them count toward your reply rate.",
+  feat13_b_title: "\u{1F504} Still talking?",
+  feat13_b_desc: "A day later, CloseOS asks again: resume follow-ups, or qualify / disqualify the prospect.",
+  feat13_c_title: "\u{1F4CB} To follow up & track",
+  feat13_c_desc: "A dedicated work list: who to follow up today, and who replied and is waiting on you.",
+  feat14_title: "\"Still talking?\" Digest",
+  feat14_desc: "Every day at 5pm, a recap email lists the prospects who replied but where the conversation is stalling. You never let a warm thread die on its own again.",
+  feat15_title: "Reminders at an Exact Time",
+  feat15_desc: "Schedule a to-the-minute reminder on any prospect (\"call back tomorrow at 2:30pm\"). The due time shows on the record and surfaces in your daily list.",
 
   // Roadmap
   roadmap_badge: "Roadmap 2026",
@@ -799,25 +863,33 @@ const en: SalesTranslations = {
   pricing_feat8: "Priority Support",
   pricing_cta: "Start for free",
   pricing_no_card: "No credit card required. 10 free days.",
-  pricing_climate: "1.5% of your subscription funds CO2 removal via Stripe Climate.",
+  pricing_climate: "Every month, a share of our earnings funds CO2 removal.",
   pricing_close_comparison: "Close comparison",
 
   // FAQ
   faq_title: "Frequently Asked Questions",
   faq_subtitle: "Everything you need to know before getting started.",
+  faq_what_q: "What is CloseOS Sales, exactly?",
+  faq_what_a1: "It's the all-in-one software for independent closers. A single tool that brings together your CRM and visual pipeline, the Call Room (script, pitch, resources and note-taking during the call), automatic follow-ups, synced calendar and booking, invoicing and your closing KPIs.",
+  faq_what_a2: "The idea: replace the 10 tools you juggle today with one cockpit, so you spend less time on admin and more time closing.",
   faq1_q: "Can I connect Calendly?",
   faq1_a1: "No, and that's by design. Calendly requires a paid subscription to enable integrations, a practice we find unfair. To give you the best experience at no extra cost, we integrated Cal.com (the Open Source standard).",
   faq1_a2: "The result: you get a high-performance booking system, synced with your calendar, without having to pay for a Calendly \"Pro\" plan just so it talks to your CRM.",
   faq2_q: "How does CloseOS contribute to the environment?",
   faq2_intro: "We champion \"Responsible Performance\". Here's how:",
   faq2_item1: "Digital sobriety: By replacing 10 tools with one, we reduce the server energy consumption required for your business.",
-  faq2_item2: "Financial action: We automatically allocate 1.5% of your subscription via Stripe Climate to fund cutting-edge CO2 removal technologies. Closing with us means contributing too.",
+  faq2_item2: "Financial action: Every month, we give back a share of our earnings to fund cutting-edge CO2 removal technologies. Closing with us means contributing too.",
   faq3_q: "Why pay for CloseOS when I can do it myself on Excel/Notion?",
   faq3_a1: "Because the DIY approach costs you deals. Excel doesn't send automatic reminders, Notion doesn't generate meeting links or sync your calls.",
   faq3_a2: "CloseOS isn't just a note-taking tool, it's an active system that eliminates 80% of your admin work. The time you stop spending on configuring tools is time reinvested in closing deals.",
   faq5_q: "Is iClosed integrated?",
   faq5_a1: "Yes, and now with full bidirectional sync. Every prospect, deal or stage change added or updated on one side is instantly reflected on the other. No more double entry, no more drift.",
   faq5_a2: "In practice: your iClosed leads and sales flow automatically into CloseOS, and any update made in CloseOS (stage, tag, note, appointment) is pushed back to iClosed in real time. Keep your existing iClosed setup and gain the CloseOS cockpit on top, without friction.",
+  faq_relance_q: "Does CloseOS handle my follow-ups and prospect tracking?",
+  faq_relance_a1: "Yes, it's the very core of the product. You set your follow-up intervals once, and CloseOS chains the reminders on its own: every day you get the list of prospects to follow up. A \"Follow-up done\" button moves you to the next one.",
+  faq_relance_a2: "When a prospect replies, you click \"Replied\": follow-ups pause and the prospect moves into discussion tracking (qualified, disqualified or still ongoing). The \"To follow up & track\" list shows at a glance who to chase and who you're in conversation with, so nothing ever slips through.",
+  faq_security_q: "Is my data secure and GDPR-compliant?",
+  faq_security_a: "Yes. CloseOS is GDPR-compliant, your data is hosted in the European Union, isolated and accessible only to you. You remain the owner of your data at all times and can export or delete it whenever you want.",
 
   // CTA Final
   cta_title_line1: "Stop paying for 10 tools.",

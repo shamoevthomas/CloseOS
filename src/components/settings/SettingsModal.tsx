@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   X,
   Shield,
@@ -10,6 +11,8 @@ import {
   Loader2,
   Check,
   AlertCircle,
+  LifeBuoy,
+  ChevronRight,
   CreditCard,
   Headphones,
   ExternalLink,
@@ -48,6 +51,7 @@ interface SettingsModalProps {
 type TabType = 'profile' | 'security' | 'subscription' | 'referral' | 'support' | 'delete_account' | 'data' | 'organization'
 
 export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: SettingsModalProps) {
+  const navigate = useNavigate()
   const { user, profile, updateProfile, updatePassword, isFounder, isPaying, refreshProfile } = useAuth()
   const { lang, setLang } = useLanguage()
   const st = settingsTranslations[lang]
@@ -1248,18 +1252,18 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                     <ExternalLink className="h-5 w-5 text-white/40 group-hover:text-white text-left" />
                 </a>
 
-                <a href="#" className="group flex items-center justify-between p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all text-left">
+                <button onClick={() => { onClose(); navigate('/aide'); }} className="group w-full flex items-center justify-between p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all text-left">
                     <div className="flex items-center gap-4 text-left">
-                      <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors text-left">
-                        <AlertCircle className="h-6 w-6 text-left" />
+                      <div className="p-3 rounded-xl bg-sky-500/10 text-sky-400 group-hover:bg-sky-500/20 group-hover:text-sky-300 transition-colors text-left">
+                        <LifeBuoy className="h-6 w-6 text-left" />
                       </div>
                       <div className="text-left">
                         <p className="font-bold text-white text-sm text-left">{st.support_faq}</p>
                         <p className="text-white/40 text-xs mt-0.5 text-left">{st.support_faq_desc}</p>
                       </div>
                     </div>
-                    <ExternalLink className="h-5 w-5 text-white/40 group-hover:text-white text-left" />
-                </a>
+                    <ChevronRight className="h-5 w-5 text-white/40 group-hover:text-white text-left" />
+                </button>
               </div>
             )}
           </div>

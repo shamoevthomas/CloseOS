@@ -42,6 +42,10 @@ import { FounderOnlyGuard } from './components/FounderOnlyGuard'
 import NotFound from './pages/NotFound'
 import { BusinessLanding } from './pages/BusinessLanding'
 const BusinessDocsAPI = lazy(() => import('./pages/BusinessDocsAPI'))
+// Contenu editorial (glossaire, ressources, guides) — alimente par content/*.md
+const CollectionHub = lazy(() => import('./pages/contenu/CollectionHub'))
+const ContentEntryPage = lazy(() => import('./pages/contenu/ContentEntryPage'))
+const ComparatifsHub = lazy(() => import('./pages/comparatifs/ComparatifsHub'))
 import { EcosystemChoice } from './pages/EcosystemChoice'
 import { CaptureForm } from './pages/CaptureForm'
 const CRMCapture = lazy(() => import('./pages/CRMCapture'))
@@ -52,7 +56,6 @@ import { AppointmentManage } from './pages/AppointmentManage'
 import BusinessAdminReferral from './pages/BusinessAdminReferral'
 const SalesAmbassadorAdmin = lazy(() => import('./pages/SalesAmbassadorAdmin'))
 const SalesAmbassadorDashboard = lazy(() => import('./pages/SalesAmbassadorDashboard'))
-import CRMLanding from './pages/CRMLanding'
 const CRMLayout = lazy(() => import('./crm/layouts/CRMLayout').then(m => ({ default: m.CRMLayout })))
 const CRMLogin = lazy(() => import('./crm/pages/CRMLogin'))
 const CRMCheckout = lazy(() => import('./crm/pages/CRMCheckout'))
@@ -165,6 +168,8 @@ const CloserAgenda = lazy(() => import('./business/pages/CloserAgenda').then(m =
 const CloserFactures = lazy(() => import('./business/pages/CloserFactures').then(m => ({ default: m.CloserFactures })))
 const OwnerFactures = lazy(() => import('./business/pages/OwnerFactures').then(m => ({ default: m.OwnerFactures })))
 const BusinessRevenue = lazy(() => import('./business/pages/BusinessRevenue').then(m => ({ default: m.BusinessRevenue })))
+const BusinessHelpCenter = lazy(() => import('./business/pages/BusinessHelpCenter'))
+const SalesHelpCenter = lazy(() => import('./pages/SalesHelpCenter'))
 const BusinessCheckout = lazy(() => import('./business/pages/BusinessCheckout'))
 const BusinessReturn = lazy(() => import('./business/pages/BusinessReturn'))
 
@@ -388,7 +393,8 @@ function AuthenticatedApp() {
       || p === '/login' || p === '/register' || p === '/checkout'
       || p === '/business/login' || p === '/business/register' || p === '/business/checkout'
       || p === '/mentions-legales' || p === '/cgu' || p === '/cgv' || p === '/confidentialite'
-      || p === '/business/politique-utilisation';
+      || p === '/business/politique-utilisation'
+      || p === '/sign' || p === '/sign/cgv' || p === '/sign/confidentialite' || p === '/sign/securite';
 
     if (showCookieYes) {
       document.body.classList.remove('hide-cookieyes');
@@ -517,6 +523,7 @@ function AuthenticatedApp() {
           </BusinessAuthProvider>
         }>
           <Route path="dashboard" element={<TeamOnboardingGuard><BusinessDashboard /></TeamOnboardingGuard>} />
+          <Route path="aide" element={<BusinessHelpCenter />} />
           <Route path="crm" element={<TeamOnboardingGuard><BusinessCRMRouter /></TeamOnboardingGuard>} />
           <Route path="pipeline-owner" element={<OwnerOnlyWrapper><BusinessPipeline /></OwnerOnlyWrapper>} />
           {/* KPI classique retiré — utiliser setter-kpi et closer-kpi */}
@@ -554,12 +561,12 @@ function AuthenticatedApp() {
           </BusinessAuthProvider>
         } />
 
-        {/* ─── CloseOS CRM (3rd ecosystem) ─── */}
-        {/* CRM landing — visible mais inscription/connexion désactivées (produit suspendu) */}
-        <Route path="/crm" element={<CRMLanding />} />
-        <Route path="/crm/login" element={<Navigate to="/business/login" replace />} />
-        <Route path="/crm/checkout" element={<Navigate to="/business/checkout?plan=solo" replace />} />
-        <Route path="/crm/register" element={<Navigate to="/business/checkout?plan=solo" replace />} />
+        {/* ─── CloseOS CRM (produit retiré) ─── */}
+        {/* Landing, connexion et inscription CRM supprimées et rendues inaccessibles */}
+        <Route path="/crm" element={<Navigate to="/business" replace />} />
+        <Route path="/crm/login" element={<Navigate to="/business" replace />} />
+        <Route path="/crm/checkout" element={<Navigate to="/business" replace />} />
+        <Route path="/crm/register" element={<Navigate to="/business" replace />} />
 
         <Route path="/crm" element={<CRMLayout />}>
           <Route path="dashboard" element={<CRMDashboard />} />
@@ -594,6 +601,22 @@ function AuthenticatedApp() {
         <Route path="/fonctionnalites/crm-closer" element={<CrmCloser />} />
         <Route path="/comparatifs/alternative-iclosed" element={<AlternativeIclosed />} />
         <Route path="/comparatifs/closeos-vs-iclosed" element={<CloseosVsIclosed />} />
+
+        {/* Contenu editorial. Les hubs restent en noindex tant qu'une collection
+            compte moins de 3 entrees (voir src/content/collections.ts). */}
+        <Route path="/glossaire" element={<CollectionHub collection="glossaire" />} />
+        <Route path="/glossaire/:slug" element={<ContentEntryPage collection="glossaire" />} />
+        <Route path="/ressources" element={<CollectionHub collection="ressources" />} />
+        <Route path="/ressources/:slug" element={<ContentEntryPage collection="ressources" />} />
+        <Route path="/guides" element={<CollectionHub collection="guides" />} />
+        <Route path="/guides/:slug" element={<ContentEntryPage collection="guides" />} />
+        <Route path="/integrations" element={<CollectionHub collection="integrations" />} />
+        <Route path="/integrations/:slug" element={<ContentEntryPage collection="integrations" />} />
+        <Route path="/cas-usage" element={<CollectionHub collection="cas-usage" />} />
+        <Route path="/cas-usage/:slug" element={<ContentEntryPage collection="cas-usage" />} />
+        <Route path="/clients" element={<CollectionHub collection="clients" />} />
+        <Route path="/clients/:slug" element={<ContentEntryPage collection="clients" />} />
+        <Route path="/comparatifs" element={<ComparatifsHub />} />
         <Route
           path="/"
           element={<SmartHome />}
@@ -662,6 +685,7 @@ function AuthenticatedApp() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="reminders" element={<RemindersPage />} />
           <Route path="settings/booking" element={<BookingSettings />} />
+          <Route path="aide" element={<SalesHelpCenter />} />
 
           {/* Si page inconnue dans le layout, on renvoie vers le dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
