@@ -167,6 +167,15 @@ export function ContentShell({
             <Link to="/mentions-legales" className="transition-colors hover:text-stone-700">Mentions légales</Link>
             <span className="hidden sm:inline">&middot;</span>
             <Link to="/confidentialite" className="transition-colors hover:text-stone-700">Confidentialité</Link>
+            <span className="hidden sm:inline">&middot;</span>
+            <a
+              href="https://www.linkedin.com/company/111659961/"
+              target="_blank"
+              rel="noopener"
+              className="transition-colors hover:text-stone-700"
+            >
+              LinkedIn
+            </a>
           </div>
         </div>
       </footer>

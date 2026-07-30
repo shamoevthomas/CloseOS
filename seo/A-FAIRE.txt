@@ -486,33 +486,33 @@ BLOC 7 — GEO / VISIBILITE DANS LES MOTEURS GENERATIFS
 Score actuel : 37/100 en production, 49/100 apres deploiement.
 Detail complet : seo/GEO-ANALYSIS.md
 
-[~] 61. DESAMBIGUISER LA MARQUE FACE A "CLOSE CRM" — PARTIELLEMENT FAIT
-        [x] Q/R dediee ajoutee dans llms.txt ET llms-full.txt : dit
-            explicitement que CloseOS et Close CRM sont deux produits
-            distincts, et que CloseOS s'ecrit en un seul mot.
-        [ ] reste : les 3 autres points ci-dessous (qualificatif dans les
-            <title>, elargissement de sameAs, definition repetee partout).
-            Le sameAs demande des URLs que je n'ai pas (LinkedIn entreprise,
-            YouTube, Product Hunt) : a fournir.
-        --- enonce d'origine ---
-        Une requete "CloseOS CRM avis" est aujourd'hui absorbee par Close CRM,
-        produit americain etabli. Les moteurs repondent en decrivant Close,
-        pas CloseOS. Sans correction, la marque est invisible par ecrasement.
-        [ ] toujours ecrire "CloseOS" en un mot, jamais "Close OS"
-        [ ] accoler un qualificatif dans les <title> et les definitions :
-            "CloseOS, la suite francaise du closing high ticket"
-        [ ] elargir sameAs dans le schema Organization (LinkedIn entreprise,
-            YouTube, Product Hunt, Appvizer, Crunchbase) — c'est le mecanisme
-            qui relie les mentions a UNE entite
-        [ ] publier une definition en une phrase, repetee A L'IDENTIQUE partout
+[~] 61. DESAMBIGUISER LA MARQUE FACE A "CLOSE CRM" — AVANCE, PAS RESOLU
+        [x] Q/R dediee dans llms.txt ET llms-full.txt
+        [x] sameAs elargi : page entreprise LinkedIn ajoutee (31/07)
+              https://www.linkedin.com/company/111659961/
+              https://www.linkedin.com/in/thomas-shamoev-570885237/
+            + lien LinkedIn visible en pied des pages editoriales
+        [ ] YouTube : AUCUNE CHAINE. C'est le signal le plus correle a la
+            visibilite IA (~0,737 dans l'etude Ahrefs). 2-3 demos produit
+            suffiraient. Rien d'autre ne compense cette absence.
+        [ ] Product Hunt : aucune fiche.
+        [x] Registre officiel : PISTE FERMEE. L'entreprise est enregistree en
+            NON-DIFFUSIBLE (entrepreneur individuel, SIREN 993427509). La fiche
+            annuaire-entreprises existe mais le nom est masque : aucune valeur
+            pour identifier la marque. Les registres francais ne fourniront donc
+            aucune reference d'entite automatique.
+        [ ] qualificatif dans les <title> : "CloseOS, la suite francaise du
+            closing high ticket" — pas encore fait
+        [ ] definition en une phrase repetee a l'identique sur tout le site
 
-[ ] 62. CORRIGER LA FICHE PERIMEE QUE LES MODELES ONT DE CLOSEOS
-        Les reponses generees decrivent un produit "en V1 avec des bugs",
-        un "essai de 10 jours", des fonctions IA "bientot disponibles", et
-        affirment que CloseOS n'est PAS pour les infopreneurs (faux : c'est
-        exactement Business). CloseOS Sign n'apparait nulle part.
-        -> Ces infos viennent d'une ancienne version du site.
-        -> Le deploiement du llms.txt a jour (tache 1) est le premier remede.
+        >>> LUCIDITE : deux URLs LinkedIn ne suffiront pas. Le schema declare
+            une entite, il ne la rend pas notoire. Tant qu'aucune source tierce
+            ne parle de CloseOS, la collision avec Close CRM persistera et
+            "closeros"/"closeo" resteront hors du top 3.
+            Les 3 leviers reellement disponibles, tous gratuits :
+              1. Appvizer + Capterra France  (repris par les AI Overviews FR)
+              2. Trustpilot                   (avis clients)
+              3. Wikidata                     (seuil d'admissibilite bas)
 
 [x] 63. CORRIGER LES SOFT 404 — FAIT
         Le catch-all SPA exclut desormais les chemins a extension de fichier.
