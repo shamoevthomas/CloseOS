@@ -123,7 +123,21 @@ BLOC 0 — MAINTENANT (bloquant, avant tout le reste)
 
        [x] reindexation demandee pour /sales   (30/07)
        [x] reindexation demandee pour /tarifs  (30/07)
+       ETAT DES 3 LP PRODUIT (verifie le 30/07) :
+         /sales                 NON indexee ("exploree, non indexee")
+                                -> reindexation demandee
+         /business              INDEXEE. Contenu tres modifie ce jour,
+                                -> reindexation demandee aussi
+         sign.closeos.fr/sign   NON VERIFIE — le champ de recherche GSC a
+                                refuse mes saisies. A INSPECTER PAR VOUS.
+                                Probablement non indexee : jusqu'a ce matin
+                                sa canonique pointait vers sign.closeos.fr/
+                                qui pointait vers www.closeos.fr/ — la chaine
+                                cassee. Google n'avait aucune URL a indexer
+                                pour Sign. C'est repare depuis aujourd'hui.
+
        [ ] A FAIRE MANUELLEMENT — ~30 s chacune :
+             https://sign.closeos.fr/sign        <<< PRIORITE, jamais verifiee
            GSC > Inspection de l'URL > coller l'URL > DEMANDER UNE INDEXATION
              https://www.closeos.fr/fonctionnalites
              https://www.closeos.fr/comparatifs/closeos-vs-iclosed
