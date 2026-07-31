@@ -238,7 +238,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 <div className="relative z-10 flex-1">
                   {/* Logo + Tag row */}
                   <div className="flex items-start justify-between mb-10">
-                    <img src="/closeos-logo.png" alt="CloseOS Sales" className="h-16 w-auto object-contain" />
+                    <img src="/closeos-logo.png" alt="CloseOS Sales" className="h-16 w-auto object-contain" loading="lazy" />
                     <span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#0098d6] px-3 py-1.5 rounded-full" style={{
                       background: 'rgba(0,180,255,0.10)',
                       border: '1px solid rgba(0,180,255,0.25)',
@@ -341,7 +341,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
                 <div className="relative z-10 flex-1">
                   {/* Logo + Badges row */}
                   <div className="flex items-start justify-between mb-10">
-                    <img src="/closeos-business-logo.png" alt="CloseOS Business" className="h-12 w-auto object-contain" />
+                    <img src="/closeos-business-logo.png" alt="CloseOS Business" className="h-12 w-auto object-contain" loading="lazy" />
                     <div className="flex items-center gap-2">
                       <span className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#dd7d0e] px-3 py-1.5 rounded-full" style={{
                         background: 'rgba(255,160,40,0.12)',

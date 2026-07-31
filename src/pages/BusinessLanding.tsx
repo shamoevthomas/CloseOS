@@ -2932,9 +2932,9 @@ X-CloseOS-Signature: 7f3a9b2e1c4d...
               <div className="flex items-center gap-3 pt-5 border-t border-white/10">
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">{t.api_mcp_compatible_label}</span>
                 <div className="flex items-center gap-2">
-                  <img src="/claude.webp" alt="Claude" className="size-7 rounded-lg" />
-                  <img src="/chatgpt.webp" alt="ChatGPT" className="size-7 rounded-lg" />
-                  <img src="/mcp.webp" alt="MCP" className="size-7 rounded-lg" />
+                  <img src="/claude.webp" alt="Claude" className="size-7 rounded-lg" loading="lazy" width={28} height={28} />
+                  <img src="/chatgpt.webp" alt="ChatGPT" className="size-7 rounded-lg" loading="lazy" width={28} height={28} />
+                  <img src="/mcp.webp" alt="MCP" className="size-7 rounded-lg" loading="lazy" width={28} height={28} />
                 </div>
               </div>
             </div>
