@@ -495,7 +495,31 @@ Detail complet : seo/GEO-ANALYSIS.md
         [ ] YouTube : AUCUNE CHAINE. C'est le signal le plus correle a la
             visibilite IA (~0,737 dans l'etude Ahrefs). 2-3 demos produit
             suffiraient. Rien d'autre ne compense cette absence.
-        [ ] Product Hunt : aucune fiche.
+        [~] Product Hunt : BROUILLON CREE le 31/07, 100 % des champs requis.
+              https://www.producthunt.com/products/closeos
+            Rempli et verifie caractere par caractere (la frappe simulee
+            perdait des lettres — la description contenait "a team of losers"
+            et "built in Frace" avant correction) :
+              nom, tagline (52/60), description EN (464 car.), lien,
+              3 tags (Sales/SaaS/Productivity), miniature 240x240,
+              4 visuels de galerie, premier commentaire (1238 car.),
+              maker = Thomas, tarification "Paid with free trial"
+            VOLONTAIREMENT NON FAIT, a vous de trancher :
+              - shoutouts : ce sont des avis publies EN VOTRE NOM sur les
+                pages d'autres produits, et citer Supabase/Vercel divulgue
+                publiquement votre infrastructure.
+              - code promo : decision commerciale.
+              - case "solo maker" : je ne sais pas si vous avez une equipe.
+              - video / demo interactive : je ne peux pas en produire.
+            [ ] DECIDER DU LANCEMENT. C'est un evenement A UN COUP : une
+                seule apparition en page d'accueil, mardi-jeudi, avec une
+                audience prete a voter. Lancer sans visuels produit reels
+                ni audience mobilisee brule la carte pour ~15 votes.
+            [ ] Une fois la page PUBLIQUE, l'ajouter au sameAs du schema.
+                Non fait pour l'instant : la page est en brouillon et
+                Cloudflare m'empeche de verifier si elle est deja visible
+                par un anonyme. Un sameAs vers une page inaccessible est
+                un signal casse.
         [x] Registre officiel : PISTE FERMEE. L'entreprise est enregistree en
             NON-DIFFUSIBLE (entrepreneur individuel, SIREN 993427509). La fiche
             annuaire-entreprises existe mais le nom est masque : aucune valeur
