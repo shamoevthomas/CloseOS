@@ -179,11 +179,22 @@ BLOC 0 — MAINTENANT (bloquant, avant tout le reste)
        [ ] evaluer CookieYes + GA4 + script de tracking maison
        [ ] remplacer les cibles CWV de SEO-STRATEGY.md section 7 par des cibles reelles
 
-[ ] 6. SIGNAUX EXTERNES (hors chemin critique, a lancer des maintenant)
-       [ ] fiche produit Appvizer (tres repris par les AI Overviews en francais)
-       [ ] fiche produit Capterra France
-       [ ] fiche Product Hunt
-       [ ] elargir "sameAs" dans le schema Organization de index.html
+[~] 6. SIGNAUX EXTERNES — TEXTES PRETS, COMPTES A CREER PAR VOUS
+       [x] Product Hunt : brouillon complet, lancement programme au 1er aout
+       [x] sameAs elargi : Product Hunt + page entreprise LinkedIn + fondateur
+       [x] KIT DE FICHES PRET : seo/FICHES-ANNUAIRES.txt
+           Tous les textes, categories, tarifs verifies et URLs d'images.
+           Il n'y a qu'a creer le compte et coller.
+       [ ] Appvizer          <<< PRIORITE 1, le plus repris par les AI Overviews FR
+       [ ] Capterra France   <<< PRIORITE 2 — une inscription ouvre AUSSI
+                                 GetApp et Software Advice (meme groupe Gartner)
+       [ ] Trustpilot        (plan gratuit suffisant)
+       [ ] Wikidata          A NE PAS FAIRE MAINTENANT : exige des sources
+                             secondaires, il n'y en a aucune. Un element sans
+                             source serait supprime. A rouvrir apres le
+                             lancement PH ou une fiche Appvizer remplie.
+       RAPPEL : verifier l'acces ANONYME a chaque fiche avant de l'ajouter
+       au sameAs, puis relancer node scripts/indexnow.mjs.
 
 ================================================================================
 BLOC 1 — FINITIONS TECHNIQUES (reste ouvert apres les correctifs)

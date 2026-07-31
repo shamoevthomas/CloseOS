@@ -1,0 +1,267 @@
+================================================================================
+CLOSEOS — KIT DE FICHES ANNUAIRES  (a copier-coller)
+================================================================================
+Genere le 2026-07-31
+
+POURQUOI CES FICHES : c'est le plafond GEO identifie dans seo/GEO-ANALYSIS.md.
+Aujourd'hui aucune source tierce ne parle de CloseOS, ce qui explique deux choses
+mesurees dans vos donnees Search Console :
+  - "closeos avis" est absorbe par Close CRM, produit americain etabli
+  - vous etes en position 6,2 sur "closeros" et 17,4 sur "closeo",
+    des variantes de VOTRE PROPRE nom
+
+Appvizer et Capterra France sont les deux sources que les AI Overviews reprennent
+le plus en francais sur les requetes "meilleur logiciel ...". Elles passent
+devant Product Hunt pour votre marche.
+
+CE QUE JE NE PEUX PAS FAIRE : creer les comptes ni saisir de mot de passe.
+Tout le texte ci-dessous est pret, il n'y a qu'a coller.
+
+TOUTES LES DONNEES CI-DESSOUS SONT VERIFIEES depuis le depot (Tarifs.tsx,
+llms.txt, index.html) au 31/07/2026. Si vous changez un prix, changez-le ici.
+
+================================================================================
+BLOC 0 — LE SOCLE COMMUN (sert sur toutes les plateformes)
+================================================================================
+
+NOM DU PRODUIT
+CloseOS
+
+⚠️ TOUJOURS EN UN SEUL MOT, avec un O et un S majuscules. Jamais "Close OS".
+C'est le point qui vous distingue de Close CRM. Chaque graphie alternative
+publiee ailleurs renforce la confusion.
+
+BASELINE COURTE (60 caracteres max)
+La suite francaise du closing high ticket
+
+BASELINE MOYENNE (150 caracteres)
+CRM, prise de rendez-vous, facturation et signature avec encaissement pour les
+closers et les equipes de vente francophones.
+
+DESCRIPTION COURTE (300 caracteres)
+CloseOS est un ecosysteme SaaS francais pour la vente a distance. Il reunit le
+CRM du closer independant, le pilotage d'une equipe de closers et de setters, et
+la signature electronique avec encaissement integre. Edite en France, heberge
+dans l'Union europeenne, conforme au RGPD.
+
+DESCRIPTION LONGUE (a adapter selon la limite de chaque plateforme)
+
+CloseOS est la seule suite francophone qui couvre la chaine complete du closing
+high ticket : acquerir, prendre le rendez-vous, closer, faire signer, encaisser.
+
+La plupart des outils du marche ne couvrent qu'un segment de cette chaine. Un
+closer francais assemble donc en general six a dix logiciels : un outil de prise
+de rendez-vous, un tableur qui fait office de CRM, une visio, une application de
+facturation, un outil de signature, et un document partage pour suivre l'equipe.
+Chaque passage de l'un a l'autre est un endroit ou un prospect se perd.
+
+CloseOS se decline en trois produits, utilisables separement ou ensemble avec un
+compte unique :
+
+CloseOS Sales — le CRM du closer independant.
+Pipeline de vente visuel, Call Room integree pour passer et enregistrer les
+appels, agenda et liens de reservation, multi-booking, relances automatiques par
+intervalles, suivi de discussion, facturation connectee a Stripe, KPIs de closing
+calcules en temps reel.
+
+CloseOS Business — le pilotage d'equipe.
+Gestion de six roles (proprietaire, Head of Sales, closer, setter, setter-closer,
+admin), attribution automatique des leads et des rendez-vous, campagnes
+d'acquisition, pages de capture gratuites et payantes avec paiement Stripe
+integre au formulaire, formulaires publics, liens de tracking et UTM, objectifs,
+KPIs individuels et collectifs, commissions calculees et rapprochees des
+paiements Stripe reellement encaisses, onboarding automatise des nouveaux
+closers. API REST, webhooks sortants et serveur MCP pour piloter le CRM depuis un
+assistant IA.
+
+CloseOS Sign — la signature qui encaisse.
+La ou un outil de signature classique s'arrete a la signature, CloseOS Sign
+reunit les deux actes : le signataire signe le contrat et regle au meme endroit,
+dans le meme flux, sans changer de page. Comptant, acompte, solde ou abonnement
+recurrent. Multi-signataires en ordre parallele ou sequentiel, verification du
+signataire par code email ou SMS, modeles de contrat reutilisables. Chaque
+signature s'accompagne d'un faisceau de preuves : journal d'evenements horodate
+et inalterable, empreinte SHA-256 du document calculee cote serveur, methode de
+verification du signataire, et certificat de preuve verifiable en ligne.
+Sign est inclus sans surcout dans l'abonnement Business.
+
+⚠️ NE PAS ECRIRE "remplace tous vos outils" ni "fait tout ce que fait X".
+Formulation a tenir : "tout ce dont une activite de closing a besoin".
+Sinon un prospect technique attaque sur la profondeur de Pipedrive ou de Gong.
+
+POUR QUI
+- Closers independants et freelances francophones, en high ticket
+- Infopreneurs qui pilotent une equipe de closers et de setters
+- Head of Sales et agences de closing
+- Toute activite qui fait signer et encaisser des contrats a prix eleve
+
+CE QUE CLOSEOS N'EST PAS (a mettre si la plateforme a un champ "limites")
+Ce n'est pas un CRM generaliste. Pour un cycle de vente B2B long avec beaucoup
+d'intervenants, HubSpot ou Pipedrive restent plus adaptes. CloseOS est concu pour
+des cycles courts, un fort volume d'appels et une remuneration a la commission.
+
+TARIFS  (mensuel / annuel — verifies dans Tarifs.tsx)
+  CloseOS Sales                      24 EUR  /  18 EUR
+  CloseOS Business — Solo            39 EUR  /  28 EUR
+  CloseOS Business — Business        59 EUR  /  42 EUR
+  CloseOS Business + Acquisition     99 EUR  /  71 EUR
+  CloseOS Sign                       12 EUR  /   9 EUR   (inclus avec Business)
+  Sieges supplementaires : de 3,50 a 12 EUR/mois selon le role et le cycle
+  Enterprise / Challenge : sur devis
+
+ESSAIS GRATUITS
+  Sales     10 jours, SANS carte bancaire
+  Business  20 jours, carte demandee mais aucun prelevement pendant l'essai
+  Sign      14 jours, idem
+  Prix a vie : le tarif d'entree reste acquis tant que l'abonnement est actif.
+
+INTEGRATIONS (12 natives)
+  Synchronisation bidirectionnelle : HubSpot, Pipedrive, GoHighLevel, Airtable,
+    iClosed
+  Webhooks entrants : Systeme.io
+  Agenda et paiement : Google Calendar, Stripe, Calendly
+  Automatisation no-code : Zapier, Make, n8n (7 000+ applications)
+  Import/export CSV avec reformatage automatique par IA
+  API REST + webhooks sortants + serveur MCP
+
+LANGUES        Francais et anglais
+HEBERGEMENT    Union europeenne
+CONFORMITE     RGPD
+CREATION       2025
+SITE           https://www.closeos.fr
+SUPPORT        support@closeos.fr
+LINKEDIN       https://www.linkedin.com/company/111659961/
+PRODUCT HUNT   https://www.producthunt.com/products/closeos
+
+LOGO / VISUELS (deja en ligne, collables par URL)
+  https://www.closeos.fr/apple-touch-icon.png      logo carre 180x180
+  https://www.closeos.fr/og-eco.jpg                ecosysteme, 1200x630
+  https://www.closeos.fr/og-sales.jpg              Sales
+  https://www.closeos.fr/og-business.jpg           Business
+  https://www.closeos.fr/og-sign.jpg               Sign
+  Copies locales : ~/Downloads/CloseOS-ProductHunt/
+
+================================================================================
+BLOC 1 — APPVIZER  (priorite n°1)
+================================================================================
+https://www.appvizer.fr  -> "Referencer mon logiciel" / espace editeur
+
+POURQUOI EN PREMIER : Appvizer est massivement repris par les AI Overviews
+francais sur les requetes "meilleur logiciel de ...". C'est la plateforme qui
+rapporte le plus par rapport a l'effort.
+
+CATEGORIES A DEMANDER
+  - CRM (Customer Relationship Management)
+  - Gestion commerciale / Force de vente
+  - Signature electronique          (pour CloseOS Sign)
+  - Prise de rendez-vous en ligne   (si la categorie existe)
+
+CHAMPS
+  Nom              CloseOS
+  Baseline         La suite francaise du closing high ticket
+  Description      -> "DESCRIPTION LONGUE" du bloc 0
+  Tarif d'entree   18 EUR/mois en annuel (CloseOS Sales)
+  Essai gratuit    Oui
+  Version gratuite Non
+  Deploiement      SaaS / Cloud, navigateur
+  Support          Email, francais
+  Pays editeur     France
+
+POINTS FORTS A LISTER (Appvizer a un champ dedie)
+  1. Signature electronique avec encaissement dans le meme geste
+  2. Call Room integree : passer et enregistrer les appels sans outil tiers
+  3. Commissions calculees et rapprochees des paiements Stripe reels
+  4. Synchronisation bidirectionnelle avec HubSpot, Pipedrive, GoHighLevel
+  5. Concu pour le closing francophone, pas adapte d'un CRM generaliste
+
+================================================================================
+BLOC 2 — CAPTERRA FRANCE  (priorite n°2)
+================================================================================
+https://www.capterra.fr  -> "Ajouter votre logiciel" (compte vendeur Gartner)
+
+NOTE : Capterra, GetApp et Software Advice appartiennent au meme groupe
+(Gartner Digital Markets). UNE SEULE inscription alimente les trois.
+C'est donc trois fiches pour le prix d'une.
+
+CATEGORIES
+  - Logiciels CRM
+  - Logiciels de gestion des ventes
+  - Logiciels de signature electronique
+
+CHAMPS
+  Nom                CloseOS
+  Description courte -> "DESCRIPTION COURTE" du bloc 0
+  Description longue -> "DESCRIPTION LONGUE" du bloc 0
+  A partir de        18,00 EUR /mois
+  Version gratuite   Non
+  Essai gratuit      Oui
+  Deploiement        Cloud, SaaS, web
+  Formation          Documentation, support email
+  Assistance         Email, francais et anglais
+
+FONCTIONNALITES A COCHER (vocabulaire Capterra)
+  Gestion des contacts · Gestion du pipeline · Suivi des interactions ·
+  Rapports et statistiques · Gestion des taches · Enregistrement des appels ·
+  Planification de rendez-vous · Facturation · Signature electronique ·
+  Gestion des commissions · Gestion des roles et permissions ·
+  Integrations tierces · API
+
+================================================================================
+BLOC 3 — TRUSTPILOT
+================================================================================
+https://fr.business.trustpilot.com  -> compte gratuit, domaine closeos.fr
+
+INTERET : les avis clients sont une source d'entite et de reassurance. Le plan
+gratuit suffit pour ouvrir la fiche et inviter vos clients.
+
+APRES CREATION
+  - Inviter vos clients actuels a laisser un avis. N'offrez AUCUNE contrepartie :
+    c'est interdit par Trustpilot et par la DGCCRF, et un avis achete detecte
+    detruit la fiche.
+  - Repondre a chaque avis, y compris les negatifs. Une reponse posee a un avis
+    critique vaut mieux que dix avis cinq etoiles sans reponse.
+  - Une fois la fiche active, l'ajouter au sameAs (index.html).
+
+================================================================================
+BLOC 4 — WIKIDATA  (a ne PAS faire tout de suite)
+================================================================================
+https://www.wikidata.org
+
+⚠️ MON AVIS : ATTENDEZ. Wikidata exige des sources secondaires — des articles
+de tiers qui parlent de CloseOS. Aujourd'hui il n'y en a aucun. Un element cree
+sans source serait probablement supprime, et une suppression laisse une trace
+defavorable.
+
+A REOUVRIR quand vous aurez, au choix :
+  - des reprises presse ou blog du lancement Product Hunt
+  - une fiche Appvizer ou Capterra bien remplie
+  - deux ou trois mentions dans des comparatifs tiers
+
+================================================================================
+BLOC 5 — APRES CHAQUE FICHE CREEE
+================================================================================
+
+[ ] Ajouter l'URL au sameAs de l'Organization dans index.html
+    (bloc "sameAs", il contient deja Product Hunt et les 2 LinkedIn)
+[ ] Verifier que la page est accessible ANONYMEMENT avant de l'ajouter.
+    Un sameAs vers une page privee ou en brouillon est un signal casse.
+[ ] Relancer node scripts/indexnow.mjs apres le deploiement
+[ ] Consigner la date dans seo/A-FAIRE.txt
+
+================================================================================
+CE QUI RESTE HORS DE PORTEE, ET QUI COUTE LE PLUS CHER
+================================================================================
+
+YOUTUBE. Aucune chaine. C'est le signal le mieux correle a la visibilite dans
+les moteurs generatifs (~0,737 dans l'etude Ahrefs de decembre 2025, contre
+~0,266 pour le Domain Rating). Aucune fiche annuaire ne le compense.
+
+Deux ou trois demos de trois minutes suffiraient :
+  1. Le pipeline et la Call Room : d'un prospect a un appel enregistre
+  2. Signature + encaissement : le client signe et paie sans quitter la page
+  3. Le pilotage d'equipe : attribution des leads, KPIs, commissions
+
+Ces memes captures regleraient aussi le point faible de votre fiche Product Hunt,
+ou j'ai du me rabattre sur vos images Open Graph faute de visuels produit.
+
+================================================================================
