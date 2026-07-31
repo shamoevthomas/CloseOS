@@ -25,22 +25,22 @@ import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorReportModal } from './components/ErrorReportModal'
 import { ErrorReportTrigger } from './components/ErrorReportTrigger'
-import { CheckoutForm } from './components/CheckoutForm'
+const CheckoutForm = lazy(() => import('./components/CheckoutForm').then(m => ({ default: m.CheckoutForm })))
 // CheckoutStarter supprimé — un seul plan Pro maintenant
 import { Return } from './components/Return'
 
-// Imports des Pages (eager — public/landing)
-import { LandingPage } from './pages/LandingPage'
+// Imports des Pages (public/landing) — lazy pour alléger l'entry (perf mobile)
+const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })))
 import Login from './pages/Login'
 import Register from './pages/Register'
-import { Legal } from './pages/Legal'
-import { CGU } from './pages/CGU'
-import { CGV } from './pages/CGV'
-import { PrivacyPolicy } from './pages/PrivacyPolicy'
-import { BusinessPolitiqueUtilisation } from './pages/BusinessPolitiqueUtilisation'
+const Legal = lazy(() => import('./pages/Legal').then(m => ({ default: m.Legal })))
+const CGU = lazy(() => import('./pages/CGU').then(m => ({ default: m.CGU })))
+const CGV = lazy(() => import('./pages/CGV').then(m => ({ default: m.CGV })))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })))
+const BusinessPolitiqueUtilisation = lazy(() => import('./pages/BusinessPolitiqueUtilisation').then(m => ({ default: m.BusinessPolitiqueUtilisation })))
 import { FounderOnlyGuard } from './components/FounderOnlyGuard'
 import NotFound from './pages/NotFound'
-import { BusinessLanding } from './pages/BusinessLanding'
+const BusinessLanding = lazy(() => import('./pages/BusinessLanding').then(m => ({ default: m.BusinessLanding })))
 const BusinessDocsAPI = lazy(() => import('./pages/BusinessDocsAPI'))
 // Contenu editorial (glossaire, ressources, guides) — alimente par content/*.md
 const CollectionHub = lazy(() => import('./pages/contenu/CollectionHub'))
@@ -48,7 +48,7 @@ const ContentEntryPage = lazy(() => import('./pages/contenu/ContentEntryPage'))
 const ComparatifsHub = lazy(() => import('./pages/comparatifs/ComparatifsHub'))
 // Notes de version publiques — pendant crawlable du pop-up "Quoi de neuf".
 const Nouveautes = lazy(() => import('./pages/contenu/Nouveautes'))
-import { EcosystemChoice } from './pages/EcosystemChoice'
+const EcosystemChoice = lazy(() => import('./pages/EcosystemChoice').then(m => ({ default: m.EcosystemChoice })))
 import { CaptureForm } from './pages/CaptureForm'
 const CRMCapture = lazy(() => import('./pages/CRMCapture'))
 const PublicForm = lazy(() => import('./pages/PublicForm'))
@@ -317,24 +317,30 @@ function SmartHome() {
 
   if (product === 'choice') {
     return (
-      <EcosystemChoice
-        onChooseSales={() => {
-          localStorage.setItem('closeos_product', 'sales')
-          setProduct('sales')
-        }}
-        onChooseBusiness={() => {
-          localStorage.setItem('closeos_product', 'business')
-          navigate('/business')
-        }}
-        onChooseCRM={() => {
-          localStorage.setItem('closeos_product', 'business')
-          navigate('/business/checkout?plan=solo')
-        }}
-      />
+      <Suspense fallback={<LoadingScreen />}>
+        <EcosystemChoice
+          onChooseSales={() => {
+            localStorage.setItem('closeos_product', 'sales')
+            setProduct('sales')
+          }}
+          onChooseBusiness={() => {
+            localStorage.setItem('closeos_product', 'business')
+            navigate('/business')
+          }}
+          onChooseCRM={() => {
+            localStorage.setItem('closeos_product', 'business')
+            navigate('/business/checkout?plan=solo')
+          }}
+        />
+      </Suspense>
     )
   }
 
-  return <LandingPage />
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <LandingPage />
+    </Suspense>
+  )
 }
 
 // Composant de protection des routes

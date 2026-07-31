@@ -1129,7 +1129,7 @@ export function LandingPage() {
           {/* Social proof */}
           <div className="mt-12 flex items-center justify-center gap-4 text-sm font-medium text-slate-500 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
             <div className="flex -space-x-3">
-              {["/U1.jpg", "/U2.jpg", "/U3.jpg", "/U1.png"].map((src, i) => (
+              {["/U1.jpg", "/U2.jpg", "/U3.jpg", "/U4.jpg"].map((src, i) => (
                 <div key={i} className="h-10 w-10 rounded-full border-[3px] border-white relative z-0 hover:z-10 transition-all hover:scale-110">
                   <img src={src} alt="Closer" className="h-full w-full rounded-full object-cover" loading="lazy" width={40} height={40} />
                 </div>
