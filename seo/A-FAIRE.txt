@@ -492,7 +492,7 @@ Detail complet : seo/GEO-ANALYSIS.md
               https://www.linkedin.com/company/111659961/
               https://www.linkedin.com/in/thomas-shamoev-570885237/
             + lien LinkedIn visible en pied des pages editoriales
-        [ ] YouTube : AUCUNE CHAINE. C'est le signal le plus correle a la
+        [ ] YouTube : AUCUNE CHAINE. Reste le manque n°1. C'est le signal le plus correle a la
             visibilite IA (~0,737 dans l'etude Ahrefs). 2-3 demos produit
             suffiraient. Rien d'autre ne compense cette absence.
         [~] Product Hunt : BROUILLON CREE le 31/07, 100 % des champs requis.
@@ -515,11 +515,14 @@ Detail complet : seo/GEO-ANALYSIS.md
                 seule apparition en page d'accueil, mardi-jeudi, avec une
                 audience prete a voter. Lancer sans visuels produit reels
                 ni audience mobilisee brule la carte pour ~15 votes.
-            [ ] Une fois la page PUBLIQUE, l'ajouter au sameAs du schema.
-                Non fait pour l'instant : la page est en brouillon et
-                Cloudflare m'empeche de verifier si elle est deja visible
-                par un anonyme. Un sameAs vers une page inaccessible est
-                un signal casse.
+            [x] Lancement PROGRAMME au 1er aout 2026.
+            [x] Page verifiee accessible anonymement, puis ajoutee au
+                sameAs de l'Organization le 31/07. Le schema compte
+                desormais 3 references tierces (Product Hunt + 2 LinkedIn).
+            [ ] Le 1er aout : verifier que la page de LANCEMENT est bien
+                en ligne et relever le nombre de reprises dans les
+                annuaires et newsletters. C'est cette syndication, plus
+                que la page elle-meme, qui produit le volume de mentions.
         [x] Registre officiel : PISTE FERMEE. L'entreprise est enregistree en
             NON-DIFFUSIBLE (entrepreneur individuel, SIREN 993427509). La fiche
             annuaire-entreprises existe mais le nom est masque : aucune valeur
