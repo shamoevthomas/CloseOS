@@ -80,8 +80,8 @@ export function NewCallModal({ onClose }: NewCallModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
-      <div className="relative w-full max-w-md rounded-2xl bg-[#1a1a1a] border border-white/[0.08] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 overflow-y-auto">
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-[#1a1a1a] border border-white/[0.08] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">📞 Nouveau Call</h2>

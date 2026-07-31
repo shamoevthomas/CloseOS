@@ -419,7 +419,7 @@ export function BusinessKPI() {
     <div className="space-y-6">
       {/* Tabs + Global Member Selector */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-fit">
+        <div className="flex p-1.5 bg-stone-100 dark:bg-neutral-800 rounded-full w-full sm:w-fit overflow-x-auto">
           {TABS.map(tab => (
             <button
               key={tab.key}

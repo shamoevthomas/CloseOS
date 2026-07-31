@@ -765,7 +765,7 @@ export function CallDetails() {
         </div>
 
         {/* --- TABS (Glass Pill) --- */}
-        <div className="flex gap-1 p-1 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-full w-fit mb-8">
+        <div className="flex gap-1 p-1 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-full w-full sm:w-fit overflow-x-auto mb-8">
             <button
                 onClick={() => setActiveTab('qualification')}
                 className={cn(

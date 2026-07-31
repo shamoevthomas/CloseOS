@@ -3,6 +3,11 @@ import { X, Bell, MessageCircle, Check, ChevronRight } from 'lucide-react'
 import { computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import type { BusinessProspect } from '../contexts/BusinessProspectsContext'
 
+// Étapes qui portent déjà la décision de qualification : le lead n'a plus rien à qualifier.
+// Sans ce filtre, un prospect passé en « Non-Qualifié » (ou gagné, perdu…) gardait son
+// responded_at et restait affiché « À qualifier maintenant » indéfiniment.
+const DECIDED_STAGES = ['qualified', 'unqualified', 'won', 'lost', 'noshow']
+
 interface WorklistMember { id: string; first_name?: string; last_name?: string }
 
 interface Props {
@@ -46,7 +51,7 @@ export function BusinessRelanceWorklistModal({ isOpen, onClose, prospects, delay
     .filter(x => x.badge?.due)
 
   const toFollow = visible
-    .filter(p => !!p.responded_at)
+    .filter(p => !!p.responded_at && !DECIDED_STAGES.includes(p.stage))
     .map(p => ({ p, due: p.discussion_next_at ? now >= new Date(p.discussion_next_at).getTime() : false }))
 
   const openAndClose = (p: BusinessProspect) => { onOpen(p); onClose() }

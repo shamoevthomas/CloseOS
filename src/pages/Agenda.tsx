@@ -941,7 +941,7 @@ export function Agenda() {
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-sky-500/10 opacity-30 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-sky-500/5 opacity-20 blur-[100px] rounded-full pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col h-full min-w-[1000px] w-full gap-8">
+      <div className="relative z-10 flex flex-col h-full w-full gap-8">
         <div className="flex flex-1 flex-col">
 
           <div className="mb-8 flex items-center justify-between">

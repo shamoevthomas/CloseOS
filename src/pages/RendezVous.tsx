@@ -674,7 +674,8 @@ export function RendezVous() {
             {showDeleteAction && data.length > 0 && (<button onClick={handleDeleteAllPast} disabled={isDeleting} className="flex items-center gap-2 rounded-full bg-red-500/10 px-4 py-2 text-xs font-bold text-red-600 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50">{isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />} {lang === 'fr' ? 'Tout supprimer' : 'Delete all'}</button>)}
          </div>
          <div className="rounded-2xl bg-white dark:bg-[#1a1a1a] overflow-hidden shadow-[0_1px_3px_rgba(15,23,42,0.05),0_18px_40px_-20px_rgba(15,23,42,0.12)]">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
                <thead><tr className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-neutral-500 text-left"><th className="px-6 py-5">{lang === 'fr' ? 'Date & Heure' : 'Date & Time'}</th><th className="px-6 py-5">Contact</th><th className="px-6 py-5">{lang === 'fr' ? 'Lieu' : 'Location'}</th><th className="px-6 py-5">{lang === 'fr' ? 'Statut' : 'Status'}</th><th className="px-6 py-5 text-right">{lang === 'fr' ? 'Détails' : 'Details'}</th></tr></thead>
                <tbody>
                   {loading ? (
@@ -692,6 +693,7 @@ export function RendezVous() {
                   )}
                </tbody>
             </table>
+            </div>
          </div>
       </div>
    )

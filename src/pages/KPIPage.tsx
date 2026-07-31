@@ -659,7 +659,7 @@ export function KPIPage() {
         </div>
 
         {/* TABS BAR */}
-        <div className="flex gap-1 p-1 bg-slate-50 dark:bg-white/5 backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-full w-fit mb-4">
+        <div className="flex gap-1 p-1 bg-slate-50 dark:bg-white/5 backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-full w-full sm:w-fit overflow-x-auto mb-4">
           <button onClick={() => setActiveTab('global')} className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'global' ? 'bg-sky-600 text-white' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900'}`}>Global</button>
           {activeOffers.map((offer) => (
             <button key={offer.id} onClick={() => setActiveTab(offer.name)} className={`px-8 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${activeTab === offer.name ? 'bg-sky-600 text-white' : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900'}`}>{offer.name}</button>

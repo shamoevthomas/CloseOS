@@ -263,7 +263,7 @@ function AmbassadorCard({ amb, origin, onDelete, onEdit, onPayout }: {
       </div>
 
       {/* Engagement stats */}
-      <div className="grid grid-cols-4 gap-3 mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
         <Stat icon={<MousePointerClick className="w-4 h-4" />} label="Clics" value={amb.stats.clicks} color="text-blue-300" />
         <Stat icon={<Users className="w-4 h-4" />} label="Inscrits" value={amb.stats.signups} color="text-purple-300" />
         <Stat icon={<CreditCard className="w-4 h-4" />} label="Payants" value={amb.stats.paid} color="text-emerald-300" />

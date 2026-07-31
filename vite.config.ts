@@ -29,6 +29,10 @@ export default defineConfig({
           'pdf': ['jspdf', 'jspdf-autotable'],
           'motion': ['motion'],
           'supabase': ['@supabase/supabase-js'],
+          'icons': ['lucide-react'],
+          'oauth': ['@react-oauth/google'],
+          'crop': ['react-easy-crop'],
+          'phone': ['libphonenumber-js'],
         }
       }
     }

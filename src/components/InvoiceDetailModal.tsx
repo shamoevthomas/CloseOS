@@ -133,7 +133,7 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-6xl h-[85vh] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl flex overflow-hidden">
+      <div className="relative w-full max-w-6xl max-h-[90vh] md:h-[85vh] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
 
         <button
           onClick={onClose}
@@ -143,7 +143,7 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
         </button>
 
         {/* GAUCHE: PDF */}
-        <div className="w-1/2 h-full bg-white dark:bg-[#1a1a1a] border-r border-slate-200 dark:border-white/10 p-6 flex flex-col">
+        <div className="w-full md:w-1/2 h-[50vh] md:h-full shrink-0 bg-white dark:bg-[#1a1a1a] border-b md:border-b-0 md:border-r border-slate-200 dark:border-white/10 p-6 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
               <FileText className="w-5 h-5 text-sky-600 dark:text-sky-400" />
@@ -163,7 +163,7 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
         </div>
 
         {/* DROITE: DÉTAILS */}
-        <div className="w-1/2 h-full p-8 overflow-y-auto bg-white dark:bg-[#1a1a1a]">
+        <div className="w-full md:w-1/2 md:h-full p-6 md:p-8 md:overflow-y-auto bg-white dark:bg-[#1a1a1a]">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{invoice.invoice_number}</h2>
             <p className="text-slate-400 dark:text-neutral-500 text-sm">{lang === 'fr' ? 'Générée le' : 'Generated on'} {new Date(invoice.created_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}</p>

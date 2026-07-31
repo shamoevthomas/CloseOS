@@ -1040,7 +1040,7 @@ function ConditionalEditor({
   return (
     <div
       data-block-popover
-      className="absolute left-0 top-full mt-2 z-40 w-[420px] bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-5"
+      className="absolute left-0 top-full mt-2 z-40 w-[420px] max-w-[calc(100vw-1.5rem)] bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-5"
       style={{ boxShadow: '0 20px 50px rgba(0,0,0,0.12)' }}
     >
       <div className="flex items-center justify-between mb-4">

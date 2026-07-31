@@ -17,29 +17,29 @@ import { OrganizationProvider } from './contexts/OrganizationContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 
 // Imports des Composants
-import { SettingsModal } from './components/settings/SettingsModal'
+const SettingsModal = lazy(() => import('./components/settings/SettingsModal').then(m => ({ default: m.SettingsModal })))
 import { OnboardingModal } from './components/OnboardingModal'
-import { OnboardingTutorial } from './components/OnboardingTutorial'
-import { Layout } from './layouts/Layout'
+const OnboardingTutorial = lazy(() => import('./components/OnboardingTutorial').then(m => ({ default: m.OnboardingTutorial })))
+const Layout = lazy(() => import('./layouts/Layout').then(m => ({ default: m.Layout })))
 import { AgendaErrorBoundary } from './components/AgendaErrorBoundary'
 import { LoadingScreen } from './components/LoadingScreen'
 import { ErrorReportModal } from './components/ErrorReportModal'
 import { ErrorReportTrigger } from './components/ErrorReportTrigger'
 const CheckoutForm = lazy(() => import('./components/CheckoutForm').then(m => ({ default: m.CheckoutForm })))
 // CheckoutStarter supprimé — un seul plan Pro maintenant
-import { Return } from './components/Return'
+const Return = lazy(() => import('./components/Return').then(m => ({ default: m.Return })))
 
 // Imports des Pages (public/landing) — lazy pour alléger l'entry (perf mobile)
 const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })))
-import Login from './pages/Login'
-import Register from './pages/Register'
+const Login = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
 const Legal = lazy(() => import('./pages/Legal').then(m => ({ default: m.Legal })))
 const CGU = lazy(() => import('./pages/CGU').then(m => ({ default: m.CGU })))
 const CGV = lazy(() => import('./pages/CGV').then(m => ({ default: m.CGV })))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })))
 const BusinessPolitiqueUtilisation = lazy(() => import('./pages/BusinessPolitiqueUtilisation').then(m => ({ default: m.BusinessPolitiqueUtilisation })))
 import { FounderOnlyGuard } from './components/FounderOnlyGuard'
-import NotFound from './pages/NotFound'
+const NotFound = lazy(() => import('./pages/NotFound'))
 const BusinessLanding = lazy(() => import('./pages/BusinessLanding').then(m => ({ default: m.BusinessLanding })))
 const BusinessDocsAPI = lazy(() => import('./pages/BusinessDocsAPI'))
 // Contenu editorial (glossaire, ressources, guides) — alimente par content/*.md
@@ -49,13 +49,13 @@ const ComparatifsHub = lazy(() => import('./pages/comparatifs/ComparatifsHub'))
 // Notes de version publiques — pendant crawlable du pop-up "Quoi de neuf".
 const Nouveautes = lazy(() => import('./pages/contenu/Nouveautes'))
 const EcosystemChoice = lazy(() => import('./pages/EcosystemChoice').then(m => ({ default: m.EcosystemChoice })))
-import { CaptureForm } from './pages/CaptureForm'
+const CaptureForm = lazy(() => import('./pages/CaptureForm').then(m => ({ default: m.CaptureForm })))
 const CRMCapture = lazy(() => import('./pages/CRMCapture'))
 const PublicForm = lazy(() => import('./pages/PublicForm'))
-import { PublicBooking } from './pages/PublicBooking'
-import { OGPreview } from './pages/OGPreview'
-import { AppointmentManage } from './pages/AppointmentManage'
-import BusinessAdminReferral from './pages/BusinessAdminReferral'
+const PublicBooking = lazy(() => import('./pages/PublicBooking').then(m => ({ default: m.PublicBooking })))
+const OGPreview = lazy(() => import('./pages/OGPreview').then(m => ({ default: m.OGPreview })))
+const AppointmentManage = lazy(() => import('./pages/AppointmentManage').then(m => ({ default: m.AppointmentManage })))
+const BusinessAdminReferral = lazy(() => import('./pages/BusinessAdminReferral'))
 const SalesAmbassadorAdmin = lazy(() => import('./pages/SalesAmbassadorAdmin'))
 const SalesAmbassadorDashboard = lazy(() => import('./pages/SalesAmbassadorDashboard'))
 const CRMLayout = lazy(() => import('./crm/layouts/CRMLayout').then(m => ({ default: m.CRMLayout })))
@@ -715,18 +715,22 @@ function AuthenticatedApp() {
           }} />
           <WhatsNewV5Modal />
           {isTutorialOpen && (
-            <OnboardingTutorial
-              onComplete={async () => {
-                setIsTutorialOpen(false);
-                await updateProfile({ tutorial_completed: true });
-              }}
-            />
+            <Suspense fallback={null}>
+              <OnboardingTutorial
+                onComplete={async () => {
+                  setIsTutorialOpen(false);
+                  await updateProfile({ tutorial_completed: true });
+                }}
+              />
+            </Suspense>
           )}
-          <SettingsModal
-            isOpen={isSettingsOpen}
-            onClose={() => { setIsSettingsOpen(false); setSettingsInitialTab('profile'); }}
-            initialTab={settingsInitialTab}
-          />
+          <Suspense fallback={null}>
+            <SettingsModal
+              isOpen={isSettingsOpen}
+              onClose={() => { setIsSettingsOpen(false); setSettingsInitialTab('profile'); }}
+              initialTab={settingsInitialTab}
+            />
+          </Suspense>
         </>
       )}
     </>

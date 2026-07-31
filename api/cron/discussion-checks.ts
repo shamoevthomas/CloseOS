@@ -102,6 +102,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .from('business_prospects')
       .select('id, contact, firstName, lastName, email, phone, user_id, assigned_setter, assigned_to')
       .not('responded_at', 'is', null)
+      // Un lead déjà qualifié / non-qualifié / gagné / perdu / no-show n'a plus rien à qualifier :
+      // sans ce filtre, le digest relançait indéfiniment sur une décision déjà prise.
+      .not('stage', 'in', '(qualified,unqualified,won,lost,noshow)')
       .eq('discussion_email_sent', false)
       .lte('discussion_next_at', now.toISOString());
 

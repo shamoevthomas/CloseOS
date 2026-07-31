@@ -541,7 +541,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
           </div>
         </div>
       )}
-      <div className="w-full max-w-5xl rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col md:flex-row h-[700px] relative">
+      <div className="w-full max-w-5xl rounded-2xl border border-white/[0.08] bg-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col md:flex-row h-[85vh] max-h-[700px] relative">
 
         {/* Background Gradients */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
@@ -689,7 +689,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                   <div className="space-y-1 col-span-2">
                     <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{st.full_name}</label>
                     <input
@@ -796,7 +796,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = 'profile' }: Setti
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                     <div className="space-y-1 text-left">
                       <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold text-left block">{st.new_password}</label>
                       <input
