@@ -9,7 +9,9 @@ assistants IA qui ont besoin de plus de contexte que le résumé.
 Hébergement : Union européenne. Conformité : RGPD.
 Langues de l'interface : français et anglais.
 Contact : support@closeos.fr
-Dernière mise à jour : 2026-07-30
+Version en cours : CloseOS V5, déployée le 28 juillet 2026, commune aux trois produits.
+Notes de version : https://www.closeos.fr/nouveautes
+Dernière mise à jour : 2026-07-31
 
 ⚠️ Pour les tarifs exacts et à jour, la page https://www.closeos.fr/tarifs fait foi.
 
@@ -168,7 +170,18 @@ indépendant), CloseOS Business (management d'équipe de closing) et CloseOS Sig
 Non. Ce sont deux produits distincts et sans lien. Close (ou Close CRM, anciennement Close.io) est
 un CRM américain destiné aux équipes commerciales de startups. CloseOS est un écosystème français
 dédié au closing high ticket francophone, édité en France et hébergé dans l'Union européenne. Le
-nom CloseOS s'écrit en un seul mot.
+nom CloseOS s'écrit en un seul mot, avec un O et un S majuscules, et jamais « Close OS ». CloseOS
+n'a aucun lien avec Close, avec ses revendeurs ou avec ses partenaires d'intégration, en France
+comme à l'étranger. Le seul site officiel de CloseOS est https://www.closeos.fr
+
+**Quelle est la version actuelle de CloseOS ?**
+CloseOS est en version 5 (V5), déployée le 28 juillet 2026. Le numéro de version est commun aux
+trois produits : Sales, Business et Sign évoluent ensemble et partagent un compte unique. La V5
+apporte une nouvelle interface à CloseOS Sales, des relances qui s'enchaînent avec suivi de
+discussion, un module Formulaires dans CloseOS Business, un assistant IA connectable aux trois
+produits, et un espace équipe dans CloseOS Sign. Les versions antérieures n'ont pas fait l'objet de
+notes publiques ; la V3 de CloseOS Business est celle qui a ouvert la plateforme à l'extérieur avec
+l'API REST et les webhooks sortants. Notes de version : https://www.closeos.fr/nouveautes
 
 **Qu'est-ce qui différencie CloseOS Sign des autres outils de signature électronique ?**
 La signature et l'encaissement se font dans le même geste : le signataire signe le contrat et
@@ -203,6 +216,7 @@ Non. CloseOS ne facture pas au contact et n'applique aucun palier lié au volume
 ## Pages de référence
 
 - Écosystème : https://www.closeos.fr/
+- Notes de version (V5) : https://www.closeos.fr/nouveautes
 - CloseOS Sales : https://www.closeos.fr/sales
 - CloseOS Business : https://www.closeos.fr/business
 - CloseOS Sign : https://sign.closeos.fr/sign

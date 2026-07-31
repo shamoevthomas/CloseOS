@@ -581,6 +581,8 @@ export default function FonctionnalitesHub() {
             <span className="hidden sm:inline">&bull;</span>
             <a href="/comparatifs" className="hover:text-white transition-colors">Comparatifs</a>
             <span className="hidden sm:inline">&bull;</span>
+            <a href="/nouveautes" className="hover:text-white transition-colors">Nouveautés</a>
+            <span className="hidden sm:inline">&bull;</span>
             <a
               href="/mentions-legales"
               className="hover:text-white transition-colors"

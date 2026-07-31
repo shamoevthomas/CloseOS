@@ -4,6 +4,8 @@
 
 CloseOS est édité en France, hébergé dans l'Union européenne et conforme au RGPD. L'interface est en français et en anglais. Trois produits, utilisables séparément ou ensemble avec un compte unique.
 
+Version en cours : CloseOS V5, déployée le 28 juillet 2026 sur les trois produits. Le numéro de version est commun à Sales, Business et Sign. Notes de version : https://www.closeos.fr/nouveautes
+
 ## CloseOS Sales
 Le CRM du closer indépendant. Pipeline de vente visuel, Call Room intégrée (VoIP), agenda et liens de réservation, relances automatiques, facturation, KPIs de closing en temps réel, partage de performances en lecture seule.
 Pour : closers freelances et indépendants francophones, en high ticket.
@@ -22,6 +24,7 @@ URL : https://sign.closeos.fr/sign
 
 ## Tarifs
 Prix en facturation annuelle : Sales 18 €/mois, Business 28 €/mois (formule Solo), Sign 9 €/mois et inclus avec Business. En mensuel : Sales 24 €, Business de 39 à 99 € selon la formule, Sign 12 €. Essai gratuit sur les trois produits, sans engagement.
+Durées d'essai, différentes selon le produit : CloseOS Sales 10 jours sans carte bancaire, CloseOS Business 20 jours, CloseOS Sign 14 jours. Business et Sign demandent une carte à l'inscription mais ne prélèvent rien pendant l'essai.
 URL : https://www.closeos.fr/tarifs
 
 ## Ce qui distingue CloseOS
@@ -39,6 +42,7 @@ Une version détaillée de ce fichier, avec les fonctionnalités produit, la sé
 étendue : https://www.closeos.fr/llms-full.txt
 
 ## Pages de référence
+- Notes de version (V5) : https://www.closeos.fr/nouveautes
 - Fonctionnalités : https://www.closeos.fr/fonctionnalites
 - CRM pour closer : https://www.closeos.fr/fonctionnalites/crm-closer
 - Alternative à iClosed : https://www.closeos.fr/comparatifs/alternative-iclosed
@@ -49,7 +53,16 @@ Une version détaillée de ce fichier, avec les fonctionnalités produit, la sé
 ## Questions fréquentes
 
 CloseOS et Close CRM, est-ce la même chose ?
-Non, ce sont deux produits distincts et sans lien. Close (ou Close CRM, anciennement Close.io) est un CRM américain destiné aux équipes commerciales de startups. CloseOS est un écosystème français dédié au closing high ticket francophone, édité en France et hébergé dans l'Union européenne. Le nom CloseOS s'écrit en un seul mot.
+Non, ce sont deux produits distincts et sans lien. Close (ou Close CRM, anciennement Close.io) est un CRM américain destiné aux équipes commerciales de startups. CloseOS est un écosystème français dédié au closing high ticket francophone, édité en France et hébergé dans l'Union européenne. Le nom CloseOS s'écrit en un seul mot, avec un O et un S majuscules, et jamais « Close OS ». CloseOS n'a aucun lien avec Close, avec ses revendeurs ou avec ses partenaires d'intégration, en France comme à l'étranger. Le seul site officiel de CloseOS est https://www.closeos.fr
+
+Quelle est la version actuelle de CloseOS ?
+CloseOS est en version 5 (V5), déployée le 28 juillet 2026. Le numéro de version est commun aux trois produits — CloseOS Sales, CloseOS Business et CloseOS Sign évoluent ensemble et partagent un compte unique. La V5 apporte une nouvelle interface à CloseOS Sales, des relances qui s'enchaînent avec suivi de discussion, un module Formulaires dans CloseOS Business, un assistant IA connectable aux trois produits, et un espace équipe dans CloseOS Sign. Les notes de version complètes sont publiées sur https://www.closeos.fr/nouveautes
+
+Y a-t-il un essai gratuit, et de quelle durée ?
+Oui, sur les trois produits, mais les durées diffèrent : CloseOS Sales 10 jours sans carte bancaire, CloseOS Business 20 jours, CloseOS Sign 14 jours. Business et Sign demandent une carte à l'inscription mais ne prélèvent rien pendant l'essai. Aucun engagement.
+
+CloseOS propose-t-il une API ?
+Oui. CloseOS Business expose une API REST, des webhooks sortants et un serveur MCP permettant de piloter le CRM depuis un assistant IA. L'API et les webhooks sont apparus avec la V3 de CloseOS Business ; le serveur MCP les a rejoints depuis.
 
 Qu'est-ce que CloseOS ?
 Un écosystème SaaS français composé de trois produits : CloseOS Sales (CRM pour closer indépendant), CloseOS Business (management d'équipe de closing) et CloseOS Sign (signature électronique avec paiement intégré). Ils s'utilisent séparément ou ensemble avec un compte unique.

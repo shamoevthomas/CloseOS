@@ -46,6 +46,8 @@ const BusinessDocsAPI = lazy(() => import('./pages/BusinessDocsAPI'))
 const CollectionHub = lazy(() => import('./pages/contenu/CollectionHub'))
 const ContentEntryPage = lazy(() => import('./pages/contenu/ContentEntryPage'))
 const ComparatifsHub = lazy(() => import('./pages/comparatifs/ComparatifsHub'))
+// Notes de version publiques — pendant crawlable du pop-up "Quoi de neuf".
+const Nouveautes = lazy(() => import('./pages/contenu/Nouveautes'))
 import { EcosystemChoice } from './pages/EcosystemChoice'
 import { CaptureForm } from './pages/CaptureForm'
 const CRMCapture = lazy(() => import('./pages/CRMCapture'))
@@ -617,6 +619,7 @@ function AuthenticatedApp() {
         <Route path="/clients" element={<CollectionHub collection="clients" />} />
         <Route path="/clients/:slug" element={<ContentEntryPage collection="clients" />} />
         <Route path="/comparatifs" element={<ComparatifsHub />} />
+        <Route path="/nouveautes" element={<Nouveautes />} />
         <Route
           path="/"
           element={<SmartHome />}

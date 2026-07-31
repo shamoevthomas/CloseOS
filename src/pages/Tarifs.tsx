@@ -909,6 +909,7 @@ export default function Tarifs() {
             <a href="/glossaire" className="hover:text-white transition-colors">Glossaire</a>
             <a href="/ressources" className="hover:text-white transition-colors">Ressources</a>
             <a href="/comparatifs" className="hover:text-white transition-colors">Comparatifs</a>
+            <a href="/nouveautes" className="hover:text-white transition-colors">Nouveautes</a>
             <a href="/mentions-legales" className="hover:text-white transition-colors">Mentions legales</a>
             <span className="hidden sm:inline">&bull;</span>
             <a href="/cgu" className="hover:text-white transition-colors">CGU</a>

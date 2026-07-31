@@ -84,6 +84,16 @@ export const PUBLIC_ROUTES = [
     title: /CloseOS vs iClosed/i,
   },
 
+  // ── Notes de version ────────────────────────────────────────────────────────
+  {
+    // Seule page publique qui énonce un numéro de version. Sans elle, la seule source
+    // indexée au monde restait un post LinkedIn annonçant la V3 : Perplexity répondait
+    // « les informations disponibles s'arrêtent à la V3 » (constaté le 31/07/2026).
+    path: '/nouveautes', host: 'www', canonical: `${WWW}/nouveautes`,
+    lastmod: '2026-07-31', priority: '0.6', changefreq: 'monthly',
+    title: /Nouveautés CloseOS/i, h1: /V5/,
+  },
+
   // ── Sign : confiance & conformité ───────────────────────────────────────────
   {
     // Page de confiance majeure sur un produit de signature électronique.

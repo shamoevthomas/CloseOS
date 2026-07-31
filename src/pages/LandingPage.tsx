@@ -1936,6 +1936,7 @@ export function LandingPage() {
             <a href="/glossaire" className="hover:text-slate-800 transition-colors">Glossaire</a>
             <a href="/ressources" className="hover:text-slate-800 transition-colors">Ressources</a>
             <a href="/comparatifs" className="hover:text-slate-800 transition-colors">Comparatifs</a>
+            <a href="/nouveautes" className="hover:text-slate-800 transition-colors">Nouveautés</a>
             <a href="/mentions-legales" className="hover:text-slate-800 transition-colors">{t.footer_legal}</a>
             <span className="hidden sm:inline text-slate-300">·</span>
             <a href="/cgu" className="hover:text-slate-800 transition-colors">{t.footer_cgu}</a>

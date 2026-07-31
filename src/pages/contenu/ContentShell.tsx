@@ -164,6 +164,8 @@ export function ContentShell({
             <span className="hidden sm:inline">&middot;</span>
             <Link to="/tarifs" className="transition-colors hover:text-stone-700">Tarifs</Link>
             <span className="hidden sm:inline">&middot;</span>
+            <Link to="/nouveautes" className="transition-colors hover:text-stone-700">Nouveautés</Link>
+            <span className="hidden sm:inline">&middot;</span>
             <Link to="/mentions-legales" className="transition-colors hover:text-stone-700">Mentions légales</Link>
             <span className="hidden sm:inline">&middot;</span>
             <Link to="/confidentialite" className="transition-colors hover:text-stone-700">Confidentialité</Link>

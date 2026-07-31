@@ -730,6 +730,7 @@ export const EcosystemChoice: React.FC<EcosystemChoiceProps> = ({ onChooseSales,
             <a href="/glossaire" className="hover:text-black/50 transition-colors">Glossaire</a>
             <a href="/ressources" className="hover:text-black/50 transition-colors">Ressources</a>
             <a href="/comparatifs" className="hover:text-black/50 transition-colors">Comparatifs</a>
+            <a href="/nouveautes" className="hover:text-black/50 transition-colors">Nouveautés</a>
             <a href="/mentions-legales" className="hover:text-black/50 transition-colors">{t.footer_legal}</a>
             <span className="hidden sm:inline text-black/10">·</span>
             <a href="/cgu" className="hover:text-black/50 transition-colors">{t.footer_cgu}</a>

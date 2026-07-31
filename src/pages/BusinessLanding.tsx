@@ -65,6 +65,7 @@ export const BusinessLanding: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDemoPopup, setShowDemoPopup] = useState(false);
+  const [preloadDemoPopup, setPreloadDemoPopup] = useState(false);
   const demoPopupIframeRef = useRef<HTMLIFrameElement>(null);
   const [lang, setLang] = useState<Lang>('fr');
   const t = translations[lang];
@@ -107,6 +108,14 @@ export const BusinessLanding: React.FC = () => {
       sessionStorage.setItem('closeos_demo_popup_shown', '1');
     }, 45000);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Précharge l'iframe du pop-up démo en arrière-plan (~6s après le chargement),
+  // pour qu'elle soit déjà prête et s'affiche instantanément quand le pop-up s'ouvre (45s).
+  useEffect(() => {
+    if (sessionStorage.getItem('closeos_demo_popup_shown')) return;
+    const t = setTimeout(() => setPreloadDemoPopup(true), 6000);
+    return () => clearTimeout(t);
   }, []);
 
   const handleNavigateToSales = (e: React.MouseEvent) => {
@@ -886,26 +895,35 @@ export const BusinessLanding: React.FC = () => {
         }
       `}</style>
 
-      {/* Demo popup, appears after 45s */}
-      {showDemoPopup && (
-        <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 md:py-10 animate-in fade-in duration-300" onClick={() => setShowDemoPopup(false)}>
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-3xl w-full mx-4 shadow-2xl my-auto animate-in slide-in-from-bottom-4 duration-500" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h3 className="text-xl md:text-2xl font-extrabold text-[#111111] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  {lang === 'fr' ? 'Pas encore convaincu ?' : 'Not convinced yet?'}
-                </h3>
-                <p className="text-sm text-stone-500 mt-1">
-                  {lang === 'fr'
-                    ? 'Réservez un appel de 15 min avec notre équipe, on vous montre comment CloseOS s\'adapte à votre business.'
-                    : 'Book a 15-min call with our team, we\'ll show you how CloseOS fits your business.'}
-                </p>
-              </div>
-              <button onClick={() => setShowDemoPopup(false)} className="text-stone-400 hover:text-stone-600 transition-colors p-1">
-                <X className="h-5 w-5" />
-              </button>
+      {/* Demo popup — overlay toujours monté (caché) pour que l'iframe précharge en arrière-plan.
+          À 45s on ne fait que révéler le modal : l'embed est déjà chargé → affichage instantané. */}
+      <div
+        aria-hidden={!showDemoPopup}
+        className={`fixed inset-0 z-[200] flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 md:py-10 transition-opacity duration-300 ${showDemoPopup ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setShowDemoPopup(false)}
+      >
+        <div
+          className={`bg-white rounded-3xl p-6 md:p-8 max-w-3xl w-full mx-4 shadow-2xl my-auto transition-all duration-500 ${showDemoPopup ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start justify-between mb-2">
+            <div>
+              <h3 className="text-xl md:text-2xl font-extrabold text-[#111111] tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                {lang === 'fr' ? 'Pas encore convaincu ?' : 'Not convinced yet?'}
+              </h3>
+              <p className="text-sm text-stone-500 mt-1">
+                {lang === 'fr'
+                  ? 'Réservez un appel de 15 min avec notre équipe, on vous montre comment CloseOS s\'adapte à votre business.'
+                  : 'Book a 15-min call with our team, we\'ll show you how CloseOS fits your business.'}
+              </p>
             </div>
-            <div className="mt-4">
+            <button onClick={() => setShowDemoPopup(false)} className="text-stone-400 hover:text-stone-600 transition-colors p-1">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="mt-4">
+            {/* Montée dès le préchargement (~6s) : l'iframe charge en cachette bien avant l'ouverture. */}
+            {(preloadDemoPopup || showDemoPopup) && (
               <iframe
                 ref={demoPopupIframeRef}
                 src="https://www.closeos.fr/capture/d8cbeca2-3a35-424a-b549-c0fbe1dd1aee?embed=true&layout=horizontal"
@@ -915,10 +933,10 @@ export const BusinessLanding: React.FC = () => {
                 scrolling="yes"
                 style={{ border: 'none', borderRadius: 12, overflow: 'hidden', transition: 'height 0.4s ease' }}
               />
-            </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
     </LangContext.Provider>
   );
@@ -3445,6 +3463,8 @@ const FooterSection = () => {
           <Link to="/ressources" className="hover:text-stone-700 transition-colors">Ressources</Link>
           <span className="hidden sm:inline">&middot;</span>
           <Link to="/comparatifs" className="hover:text-stone-700 transition-colors">Comparatifs</Link>
+          <span className="hidden sm:inline">&middot;</span>
+          <Link to="/nouveautes" className="hover:text-stone-700 transition-colors">Nouveautés</Link>
           <span className="hidden sm:inline">&middot;</span>
           <Link to="/mentions-legales" className="hover:text-stone-700 transition-colors">{t.footer_mentions}</Link>
           <span className="hidden sm:inline">&middot;</span>
