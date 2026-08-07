@@ -1353,9 +1353,32 @@ async function sendWelcomeEmail(email: string) {
 
 // ─── Main handler ───
 
+// Actions de booking appelées depuis un autre domaine (l'espace membre ClosersLab
+// réserve directement dans l'agenda CloseOS). Seules ces deux actions publiques
+// acceptent le cross-origin ; tout le reste de l'API reste same-origin.
+const PUBLIC_BOOKING_ACTIONS = new Set(['booking-info', 'booking-submit', 'appointment-cancel'])
+const BOOKING_CORS_ORIGINS = new Set([
+  'https://www.closerslab.fr',
+  'https://closerslab.fr',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+])
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
   const action = req.query.action as string
+
+  if (PUBLIC_BOOKING_ACTIONS.has(action)) {
+    const origin = (req.headers.origin || '') as string
+    if (BOOKING_CORS_ORIGINS.has(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin)
+      res.setHeader('Vary', 'Origin')
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+      res.setHeader('Access-Control-Max-Age', '86400')
+    }
+    if (req.method === 'OPTIONS') return res.status(204).end()
+  }
 
   try {
     // ─── Emit outbound webhook from the frontend (after local Supabase mutations) ───
@@ -5598,6 +5621,9 @@ ${notesSection}
     if (action === 'booking-submit' && req.method === 'POST') {
       const { slug, name, email, phone, date, time, prospect_timezone, datetime_utc, appointment_id } = req.body
       if (!slug || !name || !date || !time) return res.status(400).json({ error: 'slug, name, date, time required' })
+      // Motif libre (espace membre ClosersLab) : repris dans les notes du RDV et
+      // dans la description de l'événement Google Calendar.
+      const motif = typeof req.body?.motif === 'string' ? req.body.motif.trim().slice(0, 500) : ''
 
       const { data: link, error: linkErr } = await supabase
         .from('business_booking_links')
@@ -5684,7 +5710,7 @@ ${notesSection}
             timezone: prospect_timezone || null,
             cancel_token: crypto.randomBytes(16).toString('hex'),
             reschedule_token: crypto.randomBytes(16).toString('hex'),
-            notes: `Booking: ${name}${email ? ` — ${email}` : ''}${phone ? ` — ${phone}` : ''}`,
+            notes: `Booking: ${name}${email ? ` — ${email}` : ''}${phone ? ` — ${phone}` : ''}${motif ? ` — Motif: ${motif}` : ''}`,
           })
           .select()
           .single()
@@ -5758,6 +5784,7 @@ ${notesSection}
             const contactLines = [
               email ? `📧 ${email}` : '',
               phone ? `📞 ${phone}` : '',
+              motif ? `🎯 Motif : ${motif}` : '',
             ].filter(Boolean).join('\n')
             const headerDesc = link.description
               ? `${link.description}${contactLines ? `\n\n${contactLines}` : ''}`
