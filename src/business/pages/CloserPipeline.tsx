@@ -9,6 +9,8 @@ import { useBusinessProspects, type BusinessProspect } from '../contexts/Busines
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
+import { UnqualifiedReasonModal } from '../components/UnqualifiedReasonModal'
+import { applyUnqualification } from '../lib/unqualifiedReasons'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import { supabase } from '../../lib/supabase'
@@ -87,6 +89,8 @@ export function CloserPipeline() {
   }, [user?.id])
 
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
+  // Prospect en attente de motif de disqualification (drag & drop vers « Non-Qualifié »)
+  const [unqualifyTarget, setUnqualifyTarget] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set(['noshow', 'lost']))
 
@@ -161,7 +165,15 @@ export function CloserPipeline() {
     const { destination, source, draggableId } = result
     if (!destination) return
     if (destination.droppableId === source.droppableId && destination.index === source.index) return
-    updateProspect(parseInt(draggableId), { stage: destination.droppableId })
+    const prospectId = parseInt(draggableId)
+
+    // Passage en Non-Qualifié : on demande d'abord le motif (email + annulation RDV).
+    if (destination.droppableId === 'unqualified' && source.droppableId !== 'unqualified') {
+      const dragged = prospects.find(p => p.id === prospectId)
+      if (dragged) { setUnqualifyTarget(dragged); return }
+    }
+
+    updateProspect(prospectId, { stage: destination.droppableId })
   }
 
   useEffect(() => {
@@ -575,6 +587,19 @@ export function CloserPipeline() {
             dismissed ? next.add(id) : next.delete(id)
             return next
           })}
+        />
+      )}
+
+      {unqualifyTarget && (
+        <UnqualifiedReasonModal
+          prospect={unqualifyTarget}
+          onClose={() => setUnqualifyTarget(null)}
+          onConfirm={(payload) => applyUnqualification(
+            unqualifyTarget.id,
+            teamMember?.business_owner_id || user?.id,
+            payload,
+            updateProspect,
+          )}
         />
       )}
     </div>

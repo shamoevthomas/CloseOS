@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight, ChevronDown, XCircle } from 'lucide-react'
-import { toUTC, fromUTC } from '../lib/timezone'
+import { Loader2, CheckCircle2, Calendar, ChevronLeft, ChevronRight, Lock, ArrowRight, ChevronDown, XCircle, Globe } from 'lucide-react'
+import { toUTC, fromUTC, getTimezoneLabel } from '../lib/timezone'
 import { captureTranslations, detectCaptureLang } from './captureFormI18n'
 import type { CaptureFormLang } from './captureFormI18n'
 import { sanitizeRichHtml } from '../business/components/RichTextEditor'
@@ -1318,6 +1318,10 @@ export function CaptureForm() {
                             {!freeMode && availableTimesForDate && availableTimesForDate.length === 0 && (
                               <p className="text-xs text-[#444748]/40 mt-2">{t.no_slots}</p>
                             )}
+                            <p className="mt-3 flex items-center gap-1.5 text-[11px] text-[#444748]/50">
+                              <Globe className="h-3 w-3 shrink-0" />
+                              {t.timezone_note(getTimezoneLabel(prospectTimezone))}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -1398,6 +1402,10 @@ export function CaptureForm() {
                           {!freeMode && availableTimesForDate && availableTimesForDate.length === 0 && (
                             <p className="text-xs text-[#444748]/40 mt-2">{t.no_slots}</p>
                           )}
+                          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-[#444748]/50">
+                            <Globe className="h-3 w-3 shrink-0" />
+                            {t.timezone_note(getTimezoneLabel(prospectTimezone))}
+                          </p>
                         </div>
                       ) : (
                         <p className="text-sm text-[#444748]/40">{t.select_date}</p>

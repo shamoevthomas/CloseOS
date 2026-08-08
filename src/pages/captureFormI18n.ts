@@ -43,6 +43,8 @@ export interface CaptureFormTranslations {
   step2_title: string
   change_date: string
   available_slots: string
+  /** Note grisée sous les créneaux — reçoit le fuseau du visiteur, ex. « Paris (UTC+2) » */
+  timezone_note: (tz: string) => string
   no_slots: string
   select_date: string
   loading_slots: string
@@ -107,6 +109,7 @@ const fr: CaptureFormTranslations = {
   step2_title: 'Choisissez un créneau',
   change_date: 'Changer de date',
   available_slots: 'Créneaux disponibles',
+  timezone_note: (tz: string) => `Heures affichées selon votre localisation — ${tz}`,
   no_slots: 'Aucun créneau disponible ce jour. Essayez une autre date.',
   select_date: 'Sélectionnez une date pour voir les créneaux.',
   loading_slots: 'Chargement des disponibilités...',
@@ -163,6 +166,7 @@ const en: CaptureFormTranslations = {
   step2_title: 'Choose a time slot',
   change_date: 'Change date',
   available_slots: 'Available slots',
+  timezone_note: (tz: string) => `Times shown in your local time zone — ${tz}`,
   no_slots: 'No slots available for this day. Try another date.',
   select_date: 'Select a date to see available slots.',
   loading_slots: 'Loading availability...',

@@ -54,6 +54,9 @@ export interface BusinessProspect {
   }[]
   loss_reason?: string
   loss_details?: string
+  unqualified_reason?: string | null
+  unqualified_details?: string | null
+  unqualified_at?: string | null
   pipeline_visible?: boolean
   // Stripe subscription matching
   stripe_customer_id?: string
@@ -622,6 +625,7 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
     probability: 'Probabilité', notes: 'Notes',
     avatar_url: 'Photo de profil', pipeline_visible: 'Visible pipeline',
     loss_reason: 'Raison de perte', loss_details: 'Détails de perte',
+    unqualified_reason: 'Motif de disqualification', unqualified_details: 'Détails de disqualification',
     stripe_subscription_id: 'Abonnement Stripe', subscription_status: 'Statut abonnement',
   }
 

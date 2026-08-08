@@ -1386,6 +1386,12 @@ export function PublicBooking() {
                           })}
                         </div>
                       )}
+                      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-[#444748]/50">
+                        <Globe className="h-3 w-3 shrink-0" />
+                        {lang === 'fr'
+                          ? `Heures affichées selon votre localisation — ${getTimezoneLabel(prospectTimezone)}`
+                          : `Times shown in your local time zone — ${getTimezoneLabel(prospectTimezone)}`}
+                      </p>
                     </div>
                   )}
 

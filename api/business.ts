@@ -3403,6 +3403,128 @@ ${notesSection}
       return res.status(200).json({ cancelled: true, email_sent: emailSent })
     }
 
+    // Prospect passé en « Non-Qualifié » depuis la fiche ou le pipeline : informe le
+    // prospect du motif par email et, si l'utilisateur l'a coché, annule son RDV à venir
+    // (statut + Google Calendar). Un seul email est envoyé, il mentionne l'annulation.
+    if (action === 'prospect-unqualified-notify' && req.method === 'POST') {
+      const { user_id, prospect_id, reason, reason_label, details, send_email, cancel_appointment_id } = req.body || {}
+      if (!user_id || !prospect_id) return res.status(400).json({ error: 'user_id and prospect_id required' })
+
+      const esc = (s: string) => String(s || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+
+      const { data: prospect } = await supabase
+        .from('business_prospects')
+        .select('id, contact, email, timezone, user_id')
+        .eq('id', prospect_id)
+        .eq('user_id', user_id)
+        .single()
+      if (!prospect) return res.status(404).json({ error: 'Prospect not found' })
+
+      // 1. Annulation éventuelle du RDV à venir
+      let cancelledAppt: { dateFr: string; timeFr: string } | null = null
+      if (cancel_appointment_id) {
+        const { data: appt } = await supabase
+          .from('business_appointments')
+          .select('id, status, user_id, assigned_to, date, time, datetime_utc, timezone, google_calendar_event_id')
+          .eq('id', cancel_appointment_id)
+          .eq('user_id', user_id)
+          .single()
+
+        if (appt && appt.status !== 'cancelled') {
+          await supabase.from('business_appointments').update({ status: 'cancelled' }).eq('id', appt.id)
+
+          if (appt.google_calendar_event_id) {
+            try {
+              let authUserId: string | null = null
+              if (!appt.assigned_to || appt.assigned_to === appt.user_id) {
+                authUserId = appt.user_id
+              } else {
+                const { data: tm } = await supabase.from('business_team_members').select('user_id').eq('id', appt.assigned_to).single()
+                authUserId = tm?.user_id || null
+              }
+              if (authUserId) {
+                const gcalToken = await getGoogleAccessToken(supabase, authUserId)
+                if (gcalToken) await deleteGoogleCalendarEvent(gcalToken, appt.google_calendar_event_id)
+              }
+            } catch (e) {
+              console.error('[prospect-unqualified-notify] GCal delete failed:', e)
+            }
+          }
+
+          const { dateFr, timeFr } = buildProspectAppointmentDate(appt, prospect.timezone)
+          cancelledAppt = { dateFr, timeFr }
+        }
+      }
+
+      // 2. Email au prospect (motif repris tel quel)
+      let emailSent = false
+      if (send_email && prospect.email) {
+        const { data: ownerProfile } = await supabase.from('business_users').select('full_name').eq('id', user_id).single()
+        const businessName = ownerProfile?.full_name || 'votre interlocuteur'
+        const motif = esc(reason === 'other' ? (details || reason_label) : (reason_label || ''))
+
+        const html = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Manrope:wght@800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#fbf9f8;font-family:'Inter',Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fbf9f8;padding:64px 20px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+      <tr><td style="padding-bottom:48px;text-align:left;padding-left:24px;">
+        <img src="https://closeos.fr/closeos-business-logo-ecrit.png" alt="CloseOS Business" width="160" style="display:block;">
+      </td></tr>
+      <tr><td style="background-color:#ffffff;border-radius:48px;padding:64px 48px;box-shadow:0 20px 40px rgba(27,28,27,0.04);border:1px solid rgba(196,199,199,0.1);">
+        <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:36px;color:#111111;letter-spacing:-0.04em;line-height:1.1;margin:0 0 16px;">Suite à<br>votre demande</h1>
+        <p style="font-family:'Inter',Helvetica,sans-serif;font-size:16px;color:#1b1c1b;line-height:1.6;margin:0 0 40px;">
+          Bonjour <strong style="color:#111111;">${esc(prospect.contact || '')}</strong>, après étude de votre demande, <strong style="color:#111111;">${esc(businessName)}</strong> ne pourra pas y donner suite.
+        </p>
+        <div style="background-color:#f5f3f2;border-radius:48px;padding:40px 32px;margin-bottom:${cancelledAppt ? '24px' : '40px'};">
+          <p style="margin:0;font-family:'Inter',Helvetica,sans-serif;font-size:12px;color:#747878;text-transform:uppercase;letter-spacing:0.1em;font-weight:500;">Motif</p>
+          <p style="margin:8px 0 0;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:18px;color:#111111;letter-spacing:-0.02em;line-height:1.4;">${motif}</p>
+        </div>
+        ${cancelledAppt ? `<div style="background-color:#fff4f4;border-radius:48px;padding:32px;margin-bottom:40px;">
+          <p style="margin:0;font-family:'Inter',Helvetica,sans-serif;font-size:12px;color:#a33;text-transform:uppercase;letter-spacing:0.1em;font-weight:500;">Rendez-vous annulé</p>
+          <p style="margin:8px 0 0;font-family:'Manrope',Arial,sans-serif;font-weight:800;font-size:18px;color:#111111;letter-spacing:-0.02em;text-decoration:line-through;opacity:0.75;">${cancelledAppt.dateFr} — ${cancelledAppt.timeFr}</p>
+        </div>` : ''}
+        <p style="font-family:'Inter',Helvetica,sans-serif;font-size:14px;color:#1b1c1b;line-height:1.6;margin:0;opacity:0.8;">
+          Merci de l'intérêt que vous nous avez porté. Si vous pensez qu'il s'agit d'une erreur, répondez à cet e-mail ou contactez directement ${esc(businessName)}.
+        </p>
+      </td></tr>
+      <tr><td style="padding-top:48px;text-align:left;padding-left:24px;">
+        <p style="font-family:'Inter',Helvetica,sans-serif;margin:0;font-size:13px;color:#1b1c1b;opacity:0.6;">&copy; 2026 CloseOS - Tous droits réservés</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`
+
+        try {
+          const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY
+          if (BREVO_API_KEY) {
+            const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+              method: 'POST',
+              headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+              body: JSON.stringify({
+                sender: { name: 'CloseOS', email: 'support@closeos.fr' },
+                to: [{ email: prospect.email, name: prospect.contact || '' }],
+                subject: `Suite à votre demande — ${businessName}`,
+                htmlContent: html,
+              }),
+            })
+            emailSent = r.ok
+            if (!r.ok) console.error('[prospect-unqualified-notify] Brevo status:', r.status, await r.text().catch(() => ''))
+          }
+        } catch (e) {
+          console.error('[prospect-unqualified-notify] Brevo error:', e)
+        }
+      }
+
+      return res.status(200).json({ ok: true, email_sent: emailSent, appointment_cancelled: !!cancelledAppt })
+    }
+
     // Internal reschedule from prospect view: auth via owner_id. Updates date/time, GCal, emails prospect (Brevo).
     if (action === 'appointment-reschedule-internal' && req.method === 'POST') {
       const { user_id, appointment_id, date, time, timezone: tzInput } = req.body || {}

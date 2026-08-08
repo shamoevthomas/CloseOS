@@ -23,6 +23,8 @@ import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hoo
 import { BookingAgendaPanel } from './BookingAgendaPanel'
 import { ReassignAppointmentButton } from './ReassignAppointmentButton'
 import { useCustomStages } from '../hooks/useCustomStages'
+import { UnqualifiedReasonModal } from './UnqualifiedReasonModal'
+import { applyUnqualification, unqualifiedReasonLabel } from '../lib/unqualifiedReasons'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -486,6 +488,8 @@ export function BusinessProspectView({
 
   // Reminders
   const [showReminderForm, setShowReminderForm] = useState(false)
+  // Choix proposé au passage en « Suivi » : rappel, R2 ou rien
+  const [showFollowupChoice, setShowFollowupChoice] = useState(false)
   const [reminderTitle, setReminderTitle] = useState('')
   const [reminderDesc, setReminderDesc] = useState('')
   const [reminderDate, setReminderDate] = useState('')
@@ -867,6 +871,7 @@ export function BusinessProspectView({
     if (field === 'assigned_to' || field === 'assigned_setter') return resolveMemberName(value)
     if (field === 'stage') return resolveStageLabel(value)
     if (field === 'formula_id') return resolveFormulaName(value)
+    if (field === 'unqualified_reason') return unqualifiedReasonLabel(value, lang === 'en' ? 'en' : 'fr')
     if (field === 'value') return `${Number(value).toLocaleString('fr-FR')}€`
     if (field === 'probability') return `${value}%`
     if (field === 'pipeline_visible') return value === 'true' ? t.prospect_history_yes : t.prospect_history_no
@@ -877,6 +882,10 @@ export function BusinessProspectView({
     if (field === 'avatar_url') return t.prospect_history_photo_updated
     return value
   }, [resolveMemberName, resolveStageLabel, resolveFormulaName])
+
+  // Motif de disqualification : null = fermé, objet = ouvert avec des updates à fusionner
+  // (ex. remise à zéro de la discussion quand on disqualifie depuis la carte « en discussion »).
+  const [unqualifyPending, setUnqualifyPending] = useState<Partial<BusinessProspect> | null>(null)
 
   // -- Optimistic update helper --
   const handleUpdate = (updates: Partial<BusinessProspect>) => {
@@ -999,14 +1008,14 @@ export function BusinessProspectView({
     if (confirm(t.prospect_confirm_delete.replace('{name}', local.contact))) { onDelete(prospect.id); onClose() }
   }
 
-  const openBookModal = () => {
+  const openBookModal = (titleOverride?: string) => {
     const now = new Date()
     const nextHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours() + 1, 0)
     const pad = (n: number) => String(n).padStart(2, '0')
     setBookDate(`${nextHour.getFullYear()}-${pad(nextHour.getMonth() + 1)}-${pad(nextHour.getDate())}`)
     setBookTime(`${pad(nextHour.getHours())}:${pad(nextHour.getMinutes())}`)
     setBookDuration(30)
-    setBookTitle(`RDV avec ${local.contact || ''}`.trim())
+    setBookTitle(titleOverride || `RDV avec ${local.contact || ''}`.trim())
     setBookDescription('')
     const defaultAssigneeId = isTeamMember ? (teamMember?.id || '') : (user?.id || '')
     setBookAssigneeId(defaultAssigneeId)
@@ -1252,7 +1261,7 @@ export function BusinessProspectView({
             {t.prospect_create_reminder}
           </button>
           <button
-            onClick={openBookModal}
+            onClick={() => openBookModal()}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 rounded-full font-business-display font-bold text-sm transition-all hover:brightness-105 active:scale-95"
           >
             <CalendarPlus className="h-4 w-4" strokeWidth={1.5} />
@@ -1354,7 +1363,7 @@ export function BusinessProspectView({
                       <button onClick={() => { handleUpdate({ stage: 'qualified', ...clearResponse }); setDiscussionOui(false) }} className={`${btnBase} bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 hover:brightness-105`}>
                         <Check className="h-4 w-4" strokeWidth={2} /> {fr ? 'Qualifié' : 'Qualified'}
                       </button>
-                      <button onClick={() => { handleUpdate({ stage: 'unqualified', ...clearResponse }); setDiscussionOui(false) }} className={`${btnBase} bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20`}>
+                      <button onClick={() => { setUnqualifyPending({ ...clearResponse }); setDiscussionOui(false) }} className={`${btnBase} bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20`}>
                         <X className="h-4 w-4" strokeWidth={2} /> {fr ? 'Disqualifié' : 'Disqualified'}
                       </button>
                       <button onClick={() => { handleUpdate({ discussion_next_at: plusOneDay(), discussion_email_sent: false }); setDiscussionOui(false) }} className={`${btnBase} bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-600 text-stone-600 dark:text-neutral-300 hover:bg-stone-50`}>
@@ -1413,9 +1422,15 @@ export function BusinessProspectView({
                     onChange={(e) => {
                       const newStage = e.target.value
                       const wasFollowup = local.stage === 'followup'
+                      // Non-Qualifié : la pop-up de motif se charge de l'enregistrement
+                      if (newStage === 'unqualified' && local.stage !== 'unqualified') {
+                        setUnqualifyPending({})
+                        return
+                      }
                       handleUpdate({ stage: newStage })
+                      // Passage en Suivi : on propose rappel / R2 / rien
                       if (newStage === 'followup' && !wasFollowup) {
-                        openBookModal()
+                        setShowFollowupChoice(true)
                       }
                     }}
                     className={cn(SELECT_CLS, 'py-4 px-5')}
@@ -1493,6 +1508,26 @@ export function BusinessProspectView({
                   </div>
                 )
               })()}
+
+              {/* SECTION MOTIF DE DISQUALIFICATION — visible quand stage = unqualified */}
+              {local.stage === 'unqualified' && (local as any).unqualified_reason && (
+                <div className="animate-in slide-in-from-top-4 fade-in duration-300">
+                  <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-amber-600 dark:text-amber-400 mb-3">
+                    <AlertCircle className="h-4 w-4" /> {lang === 'en' ? 'Disqualification reason' : 'Motif de disqualification'}
+                  </h3>
+                  <div className="space-y-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
+                    <p className="text-sm font-medium text-stone-900 dark:text-white">
+                      {unqualifiedReasonLabel((local as any).unqualified_reason, lang === 'en' ? 'en' : 'fr', (local as any).unqualified_details)}
+                    </p>
+                    <button
+                      onClick={() => setUnqualifyPending({})}
+                      className="text-xs text-stone-400 dark:text-neutral-500 underline underline-offset-2 hover:text-stone-700 dark:hover:text-neutral-300"
+                    >
+                      {lang === 'en' ? 'Change reason' : 'Modifier le motif'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* SECTION PAIEMENT — visible quand stage = won */}
               {local.stage === 'won' && (
@@ -2573,6 +2608,8 @@ export function BusinessProspectView({
                       probability: t.prospect_field_probability, notes: t.prospect_field_notes_label,
                       avatar_url: t.prospect_field_avatar, pipeline_visible: t.prospect_field_pipeline_visible,
                       loss_reason: t.prospect_field_loss_reason, loss_details: t.prospect_field_loss_details,
+                      unqualified_reason: lang === 'en' ? 'Disqualification reason' : 'Motif de disqualification',
+                      unqualified_details: lang === 'en' ? 'Disqualification details' : 'Détails de disqualification',
                       stripe_subscription_id: t.prospect_field_stripe_sub, subscription_status: t.prospect_field_sub_status,
                     }
 
@@ -2961,6 +2998,80 @@ export function BusinessProspectView({
           </div>
         )}
 
+        {/* Passage en Suivi : rappel / R2 / rien */}
+        {showFollowupChoice && (() => {
+          const fr = lang !== 'en'
+          const contactName = local.contact || (fr ? 'ce prospect' : 'this prospect')
+          const rowCls = 'w-full flex items-start gap-3 rounded-2xl border border-stone-200 dark:border-neutral-700 px-4 py-3.5 text-left transition-all hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 active:scale-[0.99]'
+          const openReminder = () => {
+            const d = new Date()
+            d.setDate(d.getDate() + 1)
+            const pad = (n: number) => String(n).padStart(2, '0')
+            setReminderTitle(fr ? `Relancer ${contactName}` : `Follow up with ${contactName}`)
+            setReminderDesc('')
+            setReminderDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`)
+            setReminderTime('')
+            setReminderPreciseTime(false)
+            setShowFollowupChoice(false)
+            setShowReminderForm(true)
+          }
+          return (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => setShowFollowupChoice(false)} />
+              <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+                  <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">
+                    {fr ? 'Et maintenant ?' : 'What is next?'}
+                  </h3>
+                  <button onClick={() => setShowFollowupChoice(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                    <X className="h-4 w-4" strokeWidth={1.5} />
+                  </button>
+                </div>
+                <div className="p-6 space-y-2.5">
+                  <p className="text-xs text-stone-500 dark:text-neutral-400 mb-1">
+                    {fr
+                      ? `${contactName} passe en Suivi. Que veux-tu programmer ?`
+                      : `${contactName} moved to Follow Up. What do you want to schedule?`}
+                  </p>
+
+                  <button onClick={openReminder} className={rowCls}>
+                    <Bell className="mt-0.5 h-4 w-4 shrink-0 text-[#2a1700] dark:text-amber-300" strokeWidth={1.5} />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-stone-900 dark:text-white">{fr ? 'Mettre un rappel' : 'Set a reminder'}</span>
+                      <span className="block text-[11px] text-stone-500 dark:text-neutral-400">
+                        {fr ? 'Une notification pour toi, rien côté prospect.' : 'A notification for you, nothing sent to the prospect.'}
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => { setShowFollowupChoice(false); openBookModal(fr ? `R2 avec ${local.contact || ''}`.trim() : `2nd call with ${local.contact || ''}`.trim()) }}
+                    className={rowCls}
+                  >
+                    <CalendarPlus className="mt-0.5 h-4 w-4 shrink-0 text-[#0a3d2a] dark:text-emerald-300" strokeWidth={1.5} />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-stone-900 dark:text-white">{fr ? 'Programmer un R2' : 'Book a second call'}</span>
+                      <span className="block text-[11px] text-stone-500 dark:text-neutral-400">
+                        {fr ? 'Crée le rendez-vous dans l’agenda.' : 'Creates the appointment in the calendar.'}
+                      </span>
+                    </span>
+                  </button>
+
+                  <button onClick={() => setShowFollowupChoice(false)} className={rowCls}>
+                    <X className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" strokeWidth={1.5} />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-stone-900 dark:text-white">{fr ? 'Rien' : 'Nothing'}</span>
+                      <span className="block text-[11px] text-stone-500 dark:text-neutral-400">
+                        {fr ? 'Le prospect passe en Suivi, c’est tout.' : 'The prospect just moves to Follow Up.'}
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Reminder creation modal */}
         {showReminderForm && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -3082,6 +3193,22 @@ export function BusinessProspectView({
             {t.prospect_footer_save}
           </button>
         </footer>
+
+        {unqualifyPending && (
+          <UnqualifiedReasonModal
+            prospect={{ id: prospect.id, contact: local.contact, email: local.email }}
+            onClose={() => setUnqualifyPending(null)}
+            onConfirm={async (payload) => {
+              await applyUnqualification(
+                prospect.id,
+                isTeamMember ? ownerUserId : user?.id,
+                payload,
+                (_id, updates) => handleUpdate({ ...updates, ...unqualifyPending }),
+              )
+              if (payload.cancelAppointmentId) setApptRefreshKey(k => k + 1)
+            }}
+          />
+        )}
       </aside>
   )
 

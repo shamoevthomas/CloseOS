@@ -16,6 +16,8 @@ import { useBusinessDuplicates } from '../hooks/useBusinessDuplicates'
 import { BusinessContactedRemindersModal } from '../components/BusinessContactedRemindersModal'
 import { BusinessRelanceWorklistModal } from '../components/BusinessRelanceWorklistModal'
 import { BusinessNoShowRelancesModal } from '../components/BusinessNoShowRelancesModal'
+import { UnqualifiedReasonModal } from '../components/UnqualifiedReasonModal'
+import { applyUnqualification } from '../lib/unqualifiedReasons'
 import { useCustomStages, type CustomStage } from '../hooks/useCustomStages'
 import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import { supabase } from '../../lib/supabase'
@@ -132,6 +134,8 @@ export function BusinessPipeline() {
   const [contactedRemindersOpen, setContactedRemindersOpen] = useState(false)
   const [noShowRelancesOpen, setNoShowRelancesOpen] = useState(false)
   const [selectedProspect, setSelectedProspect] = useState<BusinessProspect | null>(null)
+  // Prospect en attente de motif de disqualification (drag & drop vers « Non-Qualifié »)
+  const [unqualifyTarget, setUnqualifyTarget] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [showWorklist, setShowWorklist] = useState(false)
@@ -523,7 +527,15 @@ export function BusinessPipeline() {
     const { destination, source, draggableId } = result
     if (!destination) return
     if (destination.droppableId === source.droppableId && destination.index === source.index) return
-    updateProspect(parseInt(draggableId), { stage: destination.droppableId })
+    const prospectId = parseInt(draggableId)
+
+    // Passage en Non-Qualifié : on demande d'abord le motif (email + annulation RDV).
+    if (destination.droppableId === 'unqualified' && source.droppableId !== 'unqualified') {
+      const dragged = prospects.find(p => p.id === prospectId)
+      if (dragged) { setUnqualifyTarget(dragged); return }
+    }
+
+    updateProspect(prospectId, { stage: destination.droppableId })
   }
 
   useEffect(() => {
@@ -1374,6 +1386,14 @@ export function BusinessPipeline() {
           isOpen={contactedRemindersOpen}
           onClose={() => setContactedRemindersOpen(false)}
           ownerId={effectiveUserId}
+        />
+      )}
+
+      {unqualifyTarget && (
+        <UnqualifiedReasonModal
+          prospect={unqualifyTarget}
+          onClose={() => setUnqualifyTarget(null)}
+          onConfirm={(payload) => applyUnqualification(unqualifyTarget.id, effectiveUserId, payload, updateProspect)}
         />
       )}
 
