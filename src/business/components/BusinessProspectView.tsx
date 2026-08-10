@@ -385,24 +385,27 @@ export function BusinessProspectView({
       })
   }, [prospect.id, user?.id, ownerUserId, isTeamMember, userTimezone, apptRefreshKey])
 
-  // Cancel / Reschedule next appointment (internal flow)
-  const [cancelLoading, setCancelLoading] = useState(false)
+  // Cancel / Reschedule d'un rendez-vous (flux interne).
+  // Les actions ciblent un RDV précis : le prochain RDV depuis la fiche, ou
+  // n'importe lequel depuis la modale « Rendez-vous de … ».
+  const [cancelLoadingId, setCancelLoadingId] = useState<string | null>(null)
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
+  const [rescheduleTarget, setRescheduleTarget] = useState<LinkedAppt | null>(null)
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [rescheduleTime, setRescheduleTime] = useState('')
   const [rescheduleLoading, setRescheduleLoading] = useState(false)
 
-  const handleCancelAppointment = async () => {
-    if (!nextAppointment) return
+  const handleCancelAppointment = async (appt: LinkedAppt | null = nextAppointment) => {
+    if (!appt) return
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId) return
     if (!window.confirm('Annuler ce rendez-vous ? Le prospect recevra un email de notification.')) return
-    setCancelLoading(true)
+    setCancelLoadingId(appt.id)
     try {
       const res = await fetch(`${API_URL}?action=appointment-cancel-internal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: ownerId, appointment_id: nextAppointment.id }),
+        body: JSON.stringify({ user_id: ownerId, appointment_id: appt.id }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -415,19 +418,25 @@ export function BusinessProspectView({
       console.error(e)
       toast.error('Erreur lors de l\'annulation')
     } finally {
-      setCancelLoading(false)
+      setCancelLoadingId(null)
     }
   }
 
-  const openRescheduleModal = () => {
-    if (!nextAppointment) return
-    setRescheduleDate(nextAppointment.date)
-    setRescheduleTime(nextAppointment.time || '')
+  const closeRescheduleModal = () => {
+    setShowRescheduleModal(false)
+    setRescheduleTarget(null)
+  }
+
+  const openRescheduleModal = (appt: LinkedAppt | null = nextAppointment) => {
+    if (!appt) return
+    setRescheduleTarget(appt)
+    setRescheduleDate(appt.date)
+    setRescheduleTime(appt.time || '')
     setShowRescheduleModal(true)
   }
 
   const handleRescheduleSubmit = async () => {
-    if (!nextAppointment || !rescheduleDate || !rescheduleTime) return
+    if (!rescheduleTarget || !rescheduleDate || !rescheduleTime) return
     const ownerId = isTeamMember ? ownerUserId : user?.id
     if (!ownerId) return
     setRescheduleLoading(true)
@@ -437,7 +446,7 @@ export function BusinessProspectView({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: ownerId,
-          appointment_id: nextAppointment.id,
+          appointment_id: rescheduleTarget.id,
           date: rescheduleDate,
           time: rescheduleTime,
           timezone: userTimezone || 'Europe/Paris',
@@ -450,6 +459,7 @@ export function BusinessProspectView({
       }
       toast.success(data.email_sent ? 'Rendez-vous reprogrammé, email envoyé au prospect' : 'Rendez-vous reprogrammé')
       setShowRescheduleModal(false)
+      setRescheduleTarget(null)
       setApptRefreshKey(k => k + 1)
     } catch (e) {
       console.error(e)
@@ -771,6 +781,49 @@ export function BusinessProspectView({
 
   const activeRemindersCount = prospectReminders.filter(r => !r.is_done).length
 
+  // ─── Date d'entrée dans l'étape courante ───
+  // Certaines étapes ont leur propre colonne horodatée (posée par trigger) ;
+  // pour les autres (qualifié, suivi, sans réponse, étapes custom) on lit le
+  // dernier changement de stage tracé dans l'historique.
+  const stageStamp = (() => {
+    const p = local as any
+    switch (local.stage) {
+      case 'prospect': return p.prospect_stage_entered_at || p.created_at
+      case 'contacted': return p.contacted_at
+      case 'won': return p.won_at
+      case 'lost': return p.lost_at
+      case 'noshow': return p.noshow_at
+      case 'unqualified': return p.unqualified_at
+      default: return null
+    }
+  })()
+
+  const [stageSince, setStageSince] = useState<string | null>(stageStamp || null)
+  // Étape changée depuis cette vue : l'insert dans l'historique est asynchrone,
+  // on garde l'instant sous la main pour ne pas afficher un vide entre-temps.
+  const stageChangedNowRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (stageStamp) { setStageSince(stageStamp); return }
+    let cancelled = false
+    setStageSince(null)
+    supabase
+      .from('business_prospect_history')
+      .select('created_at')
+      .eq('prospect_id', prospect.id)
+      .eq('field_name', 'stage')
+      .eq('new_value', local.stage)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (!cancelled) setStageSince(data?.created_at || stageChangedNowRef.current) })
+    return () => { cancelled = true }
+  }, [prospect.id, local.stage, stageStamp])
+
+  const stageSinceLabel = stageSince
+    ? t.prospect_stage_since.replace('{date}', new Date(stageSince).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }))
+    : null
+
   // History
   const [history, setHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -889,6 +942,7 @@ export function BusinessProspectView({
 
   // -- Optimistic update helper --
   const handleUpdate = (updates: Partial<BusinessProspect>) => {
+    if (updates.stage && updates.stage !== local.stage) stageChangedNowRef.current = new Date().toISOString()
     setLocal(prev => ({ ...prev, ...updates }))
     const { id: _id, ...dbUpdates }: any = { ...updates }
     if (updates.call_notes !== undefined) {
@@ -1415,7 +1469,14 @@ export function BusinessProspectView({
 
               {/* Stage */}
               <div>
-                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_current_stage}</label>
+                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>
+                  {t.prospect_current_stage}
+                  {stageSinceLabel && (
+                    <span className="ml-2 font-medium normal-case tracking-normal text-stone-400 dark:text-neutral-600">
+                      {stageSinceLabel}
+                    </span>
+                  )}
+                </label>
                 <div className="relative">
                   <select
                     value={local.stage}
@@ -2386,19 +2447,19 @@ export function BusinessProspectView({
                         </div>
                         <div className="flex items-center flex-wrap gap-2 mt-3 pl-14">
                           <button
-                            onClick={openRescheduleModal}
-                            disabled={cancelLoading || rescheduleLoading}
+                            onClick={() => openRescheduleModal(nextAppointment)}
+                            disabled={!!cancelLoadingId || rescheduleLoading}
                             className="inline-flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-stone-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors disabled:opacity-50"
                           >
                             <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
                             Reprogrammer
                           </button>
                           <button
-                            onClick={handleCancelAppointment}
-                            disabled={cancelLoading || rescheduleLoading}
+                            onClick={() => handleCancelAppointment(nextAppointment)}
+                            disabled={!!cancelLoadingId || rescheduleLoading}
                             className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-3 py-1.5 text-xs font-business-display font-bold text-rose-600 dark:text-rose-400 transition-colors disabled:opacity-50"
                           >
-                            {cancelLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} /> : <XCircle className="h-3.5 w-3.5" strokeWidth={1.5} />}
+                            {cancelLoadingId === nextAppointment.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} /> : <XCircle className="h-3.5 w-3.5" strokeWidth={1.5} />}
                             Annuler
                           </button>
                           <ReassignAppointmentButton
@@ -2925,17 +2986,52 @@ export function BusinessProspectView({
                   const sorted = allAppointments
                     .filter(a => a.status === 'pending' || a.status === 'confirmed')
                     .sort((a, b) => (a.datetime_utc || `${a.date}T${a.time}`).localeCompare(b.datetime_utc || `${b.date}T${b.time}`))
+                  if (sorted.length === 0) {
+                    return <p className="py-6 text-center text-sm text-stone-400 dark:text-neutral-500">Aucun rendez-vous à venir</p>
+                  }
                   return sorted.map(a => {
                     const ui = STATUS_UI[a.status] ?? { label: a.status, cls: 'bg-stone-200/70 text-stone-600' }
+                    const busy = cancelLoadingId === a.id
                     return (
-                      <div key={a.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[#c4c7c7]/15 dark:border-neutral-800 px-4 py-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-business-display font-bold text-stone-900 dark:text-white">{a.time} — {endTime(a.time, a.duration)}</p>
-                          <p className="text-xs text-stone-500 dark:text-neutral-400 capitalize">
-                            {new Date(a.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                          </p>
+                      <div key={a.id} className="rounded-2xl border border-[#c4c7c7]/15 dark:border-neutral-800 px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-business-display font-bold text-stone-900 dark:text-white">{a.time} — {endTime(a.time, a.duration)}</p>
+                            <p className="text-xs text-stone-500 dark:text-neutral-400 capitalize">
+                              {new Date(a.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                          </div>
+                          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${ui.cls}`}>{ui.label}</span>
                         </div>
-                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${ui.cls}`}>{ui.label}</span>
+                        {/* Actions par rendez-vous : réassigner / reprogrammer / annuler */}
+                        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#c4c7c7]/10 dark:border-neutral-800 pt-3">
+                          <ReassignAppointmentButton
+                            appointmentId={a.id}
+                            currentAssignedTo={a.assigned_to ?? null}
+                            ownerId={isTeamMember ? ownerUserId : user?.id}
+                            actorUserId={user?.id}
+                            canReassign={canReassignAppt}
+                            members={teamMembers}
+                            onReassigned={() => setApptRefreshKey(k => k + 1)}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-stone-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors"
+                          />
+                          <button
+                            onClick={() => openRescheduleModal(a)}
+                            disabled={busy || rescheduleLoading}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-stone-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors disabled:opacity-50"
+                          >
+                            <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                            Reprogrammer
+                          </button>
+                          <button
+                            onClick={() => handleCancelAppointment(a)}
+                            disabled={busy || rescheduleLoading}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-3 py-1.5 text-xs font-business-display font-bold text-rose-600 dark:text-rose-400 transition-colors disabled:opacity-50"
+                          >
+                            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} /> : <XCircle className="h-3.5 w-3.5" strokeWidth={1.5} />}
+                            Annuler
+                          </button>
+                        </div>
                       </div>
                     )
                   })
@@ -2946,12 +3042,13 @@ export function BusinessProspectView({
         )}
 
         {showRescheduleModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => !rescheduleLoading && setShowRescheduleModal(false)} />
+          // z-[70] : passe au-dessus de la modale « Rendez-vous de … » (z-[60])
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => !rescheduleLoading && closeRescheduleModal()} />
             <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
               <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
                 <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">Reprogrammer le rendez-vous</h3>
-                <button onClick={() => !rescheduleLoading && setShowRescheduleModal(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                <button onClick={() => !rescheduleLoading && closeRescheduleModal()} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                   <X className="h-4 w-4" strokeWidth={1.5} />
                 </button>
               </div>
@@ -2980,7 +3077,7 @@ export function BusinessProspectView({
               </div>
               <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
                 <button
-                  onClick={() => !rescheduleLoading && setShowRescheduleModal(false)}
+                  onClick={() => !rescheduleLoading && closeRescheduleModal()}
                   disabled={rescheduleLoading}
                   className="px-4 py-2 rounded-full text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
                 >

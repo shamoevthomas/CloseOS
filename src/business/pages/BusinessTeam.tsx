@@ -5,7 +5,7 @@ import {
   Calendar, Clock, BarChart3, GitBranch, CalendarDays, Mail,
   AlertCircle, DollarSign, ShoppingCart, Target, UserX, Ban,
   Save, CreditCard, History, LogIn, LogOut, Pencil, Check, X, Globe,
-  Link2, Copy, ExternalLink, Award, Percent, Receipt,
+  Link2, Copy, ExternalLink, Award, Percent, Receipt, CalendarRange, ChevronDown,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { PhoneInput } from '../components/PhoneInput'
@@ -14,6 +14,7 @@ import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { fromUTC, getTimezoneLabel } from '../../lib/timezone'
 import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
+import { type TempPeriod } from '../../lib/temporaryAvailability'
 import { InviteMemberModal } from '../components/InviteMemberModal'
 import { SeatUpgradeModal } from '../components/SeatUpgradeModal'
 import { TeamKanban } from '../components/TeamKanban'
@@ -269,6 +270,7 @@ export function BusinessTeam() {
   const [ownerInfo, setOwnerInfo] = useState<{ full_name: string; email: string; phone: string | null; avatar_url: string | null; created_at: string; timezone: string | null } | null>(null)
   const [absences, setAbsences] = useState<Absence[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
+  const [tempPeriods, setTempPeriods] = useState<TempPeriod[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [connectionLogs, setConnectionLogs] = useState<ConnectionLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -295,11 +297,12 @@ export function BusinessTeam() {
       const oneWeekAgo = new Date()
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
 
-      const [membersRes, ownerRes, absencesRes, slotsRes, apptsRes, logsRes] = await Promise.all([
+      const [membersRes, ownerRes, absencesRes, slotsRes, tempRes, apptsRes, logsRes] = await Promise.all([
         supabase.from('business_team_members').select('*').eq('business_owner_id', effectiveUserId).order('joined_at', { ascending: true }),
         supabase.from('business_users').select('full_name, email, phone, avatar_url, created_at, timezone').eq('id', effectiveUserId).single(),
         supabase.from('business_absences').select('*').eq('business_owner_id', effectiveUserId),
         supabase.from('business_availability_slots').select('*').eq('business_owner_id', effectiveUserId).order('day_of_week').order('start_time'),
+        supabase.from('business_temporary_availability').select('*').eq('business_owner_id', effectiveUserId).order('start_date', { ascending: true }),
         supabase.from('business_appointments').select('id, date, time, duration, status, assigned_to, prospect_id, created_at, datetime_utc').eq('user_id', effectiveUserId),
         isOwnerView
           ? supabase.from('business_connection_log').select('*').eq('business_owner_id', effectiveUserId).gte('created_at', oneWeekAgo.toISOString()).order('created_at', { ascending: false })
@@ -310,6 +313,7 @@ export function BusinessTeam() {
       if (ownerRes.data) setOwnerInfo(ownerRes.data)
       setAbsences(absencesRes.data || [])
       setSlots(slotsRes.data || [])
+      setTempPeriods((tempRes.data || []) as unknown as TempPeriod[])
       setAppointments(apptsRes.data || [])
       setConnectionLogs((logsRes as any).data || [])
     } finally {
@@ -365,6 +369,7 @@ export function BusinessTeam() {
   const selectedMember = useMemo(() => members.find(m => m.id === selectedMemberId), [members, selectedMemberId])
   const memberAbsences = useMemo(() => selectedMember ? absences.filter(a => a.team_member_id === selectedMember.id) : [], [selectedMember, absences])
   const memberSlots = useMemo(() => selectedMember ? slots.filter(s => s.team_member_id === selectedMember.id) : [], [selectedMember, slots])
+  const memberTempPeriods = useMemo(() => selectedMember ? tempPeriods.filter(p => p.team_member_id === selectedMember.id) : [], [selectedMember, tempPeriods])
   const memberAppointments = useMemo(() => selectedMember ? appointments.filter(a => a.assigned_to === selectedMember.id) : [], [selectedMember, appointments])
   const memberLogs = useMemo(() => selectedMember ? connectionLogs.filter(l => l.team_member_id === selectedMember.id) : [], [selectedMember, connectionLogs])
 
@@ -413,6 +418,7 @@ export function BusinessTeam() {
           member={selectedMember}
           absences={memberAbsences}
           slots={memberSlots}
+          tempPeriods={memberTempPeriods}
           prospects={prospects}
           appointments={memberAppointments}
           connectionLogs={memberLogs}
@@ -721,6 +727,7 @@ function IndividualView({
   member,
   absences,
   slots,
+  tempPeriods,
   prospects,
   appointments,
   connectionLogs,
@@ -733,6 +740,7 @@ function IndividualView({
   member: TeamMember
   absences: Absence[]
   slots: Slot[]
+  tempPeriods: TempPeriod[]
   prospects: any[]
   appointments: Appointment[]
   connectionLogs: ConnectionLog[]
@@ -755,6 +763,10 @@ function IndividualView({
 
   const [payDay, setPayDay] = useState<number>(member.pay_day || 1)
   const [savingPayDay, setSavingPayDay] = useState(false)
+
+  // Carte disponibilité : bascule créneaux hebdo ↔ dispos temporaires
+  const [availTab, setAvailTab] = useState<'weekly' | 'temp'>('weekly')
+  const [openPeriodId, setOpenPeriodId] = useState<string | null>(null)
 
   // ─── Compensation state ───
   const [compType, setCompType] = useState(member.compensation_type || 'commission')
@@ -1468,11 +1480,110 @@ function IndividualView({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Disponibilité */}
             <div className={cn(WHITE_CARD, 'p-6')}>
-              <h3 className={cn(SECTION_TITLE, 'mb-6')}>
-                <Clock className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
-                {t.team_weekly_slots}
-              </h3>
-              {slots.length === 0 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <h3 className={SECTION_TITLE}>
+                  <Clock className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
+                  {availTab === 'weekly' ? t.team_weekly_slots : t.temp_avail_title}
+                </h3>
+                <div className="flex items-center gap-1 rounded-full bg-stone-100 dark:bg-neutral-700/60 p-1">
+                  <button
+                    onClick={() => setAvailTab('weekly')}
+                    className={cn(
+                      'rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors',
+                      availTab === 'weekly'
+                        ? 'bg-white dark:bg-neutral-900 text-stone-900 dark:text-white shadow-sm'
+                        : 'text-stone-500 dark:text-neutral-400 hover:text-stone-800 dark:hover:text-neutral-200'
+                    )}
+                  >
+                    {t.temp_avail_tab_weekly}
+                  </button>
+                  <button
+                    onClick={() => setAvailTab('temp')}
+                    className={cn(
+                      'rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors flex items-center gap-1.5',
+                      availTab === 'temp'
+                        ? 'bg-white dark:bg-neutral-900 text-stone-900 dark:text-white shadow-sm'
+                        : 'text-stone-500 dark:text-neutral-400 hover:text-stone-800 dark:hover:text-neutral-200'
+                    )}
+                  >
+                    {t.temp_avail_tab_temp}
+                    {tempPeriods.length > 0 && (
+                      <span className="rounded-full bg-[#006c49]/10 text-[#006c49] px-1.5 text-[9px] font-black">{tempPeriods.length}</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {availTab === 'temp' ? (
+                tempPeriods.length === 0 ? (
+                  <div className="text-center py-6">
+                    <CalendarRange className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
+                    <p className="text-sm text-stone-400 dark:text-neutral-500">{t.temp_avail_none}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {tempPeriods.map(period => {
+                      const today = new Date().toISOString().split('T')[0]
+                      const status = period.end_date < today ? 'past' : period.start_date > today ? 'upcoming' : 'active'
+                      const isOpen = openPeriodId === period.id
+                      const nbSlots = (period.slots || []).length
+                      return (
+                        <div key={period.id} className={cn(
+                          'rounded-xl border transition-colors',
+                          status === 'past'
+                            ? 'border-stone-100 dark:border-neutral-700 bg-stone-50/60 dark:bg-neutral-800/40 opacity-70'
+                            : 'border-stone-100 dark:border-neutral-700 bg-stone-50 dark:bg-neutral-800'
+                        )}>
+                          <button
+                            onClick={() => setOpenPeriodId(isOpen ? null : period.id)}
+                            className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-sm font-bold text-stone-900 dark:text-white">
+                                  {formatDateLocalized(period.start_date, lang)} — {formatDateLocalized(period.end_date, lang)}
+                                </p>
+                                <span className={cn(
+                                  'rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider',
+                                  status === 'active' ? 'bg-[#006c49]/10 text-[#006c49]'
+                                    : status === 'upcoming' ? 'bg-[#ffddb8] text-[#2a1700] dark:bg-amber-900/30 dark:text-amber-400'
+                                    : 'bg-stone-200 dark:bg-white/10 text-stone-500 dark:text-neutral-400'
+                                )}>
+                                  {status === 'active' ? t.temp_avail_status_active : status === 'upcoming' ? t.temp_avail_status_upcoming : t.temp_avail_status_past}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-stone-500 dark:text-neutral-400 mt-0.5">
+                                {period.label ? `${period.label} · ` : ''}
+                                {t.temp_avail_slot_count.replace('{n}', String(nbSlots)).replace('{s}', nbSlots > 1 ? 'x' : '')}
+                              </p>
+                            </div>
+                            <ChevronDown className={cn('h-4 w-4 text-stone-400 shrink-0 transition-transform', isOpen && 'rotate-180')} strokeWidth={1.5} />
+                          </button>
+                          {isOpen && (
+                            <div className="px-4 pb-4 pt-1 space-y-2 border-t border-stone-100 dark:border-neutral-700">
+                              {DAYS.map((day, idx) => {
+                                const daySlots = (period.slots || []).filter(s => s.day_of_week === idx)
+                                return (
+                                  <div key={idx} className="flex items-center justify-between text-sm">
+                                    <span className="text-stone-500 dark:text-neutral-400 font-medium">{day}</span>
+                                    {daySlots.length > 0 ? (
+                                      <span className="font-bold text-stone-900 dark:text-white">
+                                        {daySlots.map(s => `${s.start_time?.slice(0, 5)} — ${s.end_time?.slice(0, 5)}`).join(', ')}
+                                      </span>
+                                    ) : (
+                                      <span className="text-stone-300 dark:text-neutral-600 italic">{t.team_unavailable}</span>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              ) : slots.length === 0 ? (
                 <div className="text-center py-6">
                   <AlertCircle className="h-6 w-6 text-stone-200 dark:text-neutral-700 mx-auto mb-2" strokeWidth={1.5} />
                   <p className="text-sm text-stone-400 dark:text-neutral-500">{t.team_no_slots}</p>

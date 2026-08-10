@@ -1520,6 +1520,7 @@ export interface BusinessTranslations {
   prospect_tab_reminders: string;
   prospect_tab_history: string;
   prospect_current_stage: string;
+  prospect_stage_since: string;
   prospect_loss_reason_title: string;
   prospect_loss_reason_label: string;
   prospect_loss_reason_select: string;
@@ -2131,6 +2132,104 @@ export interface BusinessTranslations {
   appointments_update: string;
   appointments_create_reminder: string;
   appointments_will_appear_here: string;
+
+  // ─── Report v2 (évolution, sources, offres, formulaires, tracking) ───
+  report_objective_this_week: string;
+  report_objective_this_month: string;
+  report_vs_previous: string;
+  report_evolution: string;
+  report_evolution_desc: string;
+  report_ca_label: string;
+  report_leads_label: string;
+  report_sales_label: string;
+  report_objectives: string;
+  report_no_objectives: string;
+  report_objective_reached: string;
+  report_revenue_split: string;
+  report_one_shot: string;
+  report_mrr: string;
+  report_active_subs: string;
+  report_churned_subs: string;
+  report_cash: string;
+  report_signed: string;
+  report_collected: string;
+  report_outstanding: string;
+  report_overdue: string;
+  report_no_invoices: string;
+  report_by_source: string;
+  report_source: string;
+  report_no_source: string;
+  report_offer: string;
+  report_no_offer: string;
+  report_forms: string;
+  report_form: string;
+  report_responses: string;
+  report_leads_created: string;
+  report_no_forms: string;
+  report_tracking_links: string;
+  report_link: string;
+  report_clicks: string;
+  report_unique_visitors: string;
+  report_returning: string;
+  report_avg_time: string;
+  report_no_tracking_links: string;
+  report_unqualified_reasons: string;
+  report_unqualified_detail_title: string;
+  report_speed_relances: string;
+  report_speed_to_lead: string;
+  report_contacted_1h: string;
+  report_contacted_24h: string;
+  report_in_relance: string;
+  report_relance_reply_rate: string;
+  report_noshow_relance: string;
+  report_noshow_recovered: string;
+  report_calls: string;
+  report_calls_total: string;
+  report_calls_answered: string;
+  report_answer_rate: string;
+  report_talk_time: string;
+  report_no_calls: string;
+  report_setter_booked: string;
+  report_per_booking_total: string;
+  report_commission_note: string;
+  report_no_data_period: string;
+  report_pdf_sources: string;
+  report_pdf_offers: string;
+  report_pdf_forms: string;
+  report_pdf_tracking: string;
+  report_pdf_objectives: string;
+  report_pdf_loss_reasons: string;
+  report_pdf_unqualified_reasons: string;
+  report_pdf_revenue_mix: string;
+  report_pdf_speed: string;
+
+  // ─── Temporary availability (dispos temporaires) ───
+  temp_avail_title: string;
+  temp_avail_subtitle: string;
+  temp_avail_new: string;
+  temp_avail_none: string;
+  temp_avail_none_desc: string;
+  temp_avail_period: string;
+  temp_avail_name: string;
+  temp_avail_name_placeholder: string;
+  temp_avail_copy_base: string;
+  temp_avail_clear_all: string;
+  temp_avail_override_note: string;
+  temp_avail_overlap_error: string;
+  temp_avail_invalid_dates: string;
+  temp_avail_saved: string;
+  temp_avail_deleted: string;
+  temp_avail_delete_confirm: string;
+  temp_avail_status_active: string;
+  temp_avail_status_upcoming: string;
+  temp_avail_status_past: string;
+  temp_avail_slot_count: string;
+  temp_avail_modal_new_title: string;
+  temp_avail_modal_edit_title: string;
+  temp_avail_save: string;
+  temp_avail_no_slot_day: string;
+  temp_avail_tab_weekly: string;
+  temp_avail_tab_temp: string;
 
   // ─── Availability (CloserDisponibilite) ───
   availability_subtitle: string;
@@ -3930,6 +4029,7 @@ export const fr: BusinessTranslations = {
   prospect_tab_reminders: 'Rappels',
   prospect_tab_history: 'Historique',
   prospect_current_stage: 'Etape actuelle',
+  prospect_stage_since: 'depuis le {date}',
   prospect_loss_reason_title: 'Raison de la perte',
   prospect_loss_reason_label: 'Motif',
   prospect_loss_reason_select: 'Selectionnez un motif',
@@ -4573,6 +4673,104 @@ export const fr: BusinessTranslations = {
   appointments_update: 'Mettre à jour',
   appointments_create_reminder: 'Créer le rappel',
   appointments_will_appear_here: 'Vos rendez-vous apparaîtront ici',
+
+  // ─── Report v2 ───
+  report_objective_this_week: 'cette semaine',
+  report_objective_this_month: 'ce mois',
+  report_vs_previous: 'vs période précédente',
+  report_evolution: 'Évolution',
+  report_evolution_desc: 'CA, leads et ventes sur la période',
+  report_ca_label: 'CA',
+  report_leads_label: 'Leads',
+  report_sales_label: 'Ventes',
+  report_objectives: 'Objectifs',
+  report_no_objectives: 'Aucun objectif défini',
+  report_objective_reached: 'Atteint',
+  report_revenue_split: 'Nature du revenu',
+  report_one_shot: 'One-shot',
+  report_mrr: 'MRR',
+  report_active_subs: 'Abonnements actifs',
+  report_churned_subs: 'Abonnements résiliés',
+  report_cash: 'Encaissement',
+  report_signed: 'Signé',
+  report_collected: 'Encaissé',
+  report_outstanding: 'Reste dû',
+  report_overdue: 'En retard',
+  report_no_invoices: 'Aucune facture sur la période',
+  report_by_source: 'Performance par source',
+  report_source: 'Source',
+  report_no_source: 'Sans source',
+  report_offer: 'Offre',
+  report_no_offer: 'Sans offre',
+  report_forms: 'Formulaires',
+  report_form: 'Formulaire',
+  report_responses: 'Réponses',
+  report_leads_created: 'Leads créés',
+  report_no_forms: 'Aucun formulaire',
+  report_tracking_links: 'Liens de tracking',
+  report_link: 'Lien',
+  report_clicks: 'Clics',
+  report_unique_visitors: 'Visiteurs uniques',
+  report_returning: 'Récurrents',
+  report_avg_time: 'Temps moyen',
+  report_no_tracking_links: 'Aucun lien de tracking',
+  report_unqualified_reasons: 'Motifs de disqualification',
+  report_unqualified_detail_title: 'Détail des disqualifications « Autre »',
+  report_speed_relances: 'Vitesse & relances',
+  report_speed_to_lead: 'Délai moyen avant 1er contact',
+  report_contacted_1h: 'Contactés < 1 h',
+  report_contacted_24h: 'Contactés < 24 h',
+  report_in_relance: 'En cours de relance',
+  report_relance_reply_rate: 'Taux de réponse aux relances',
+  report_noshow_relance: 'No-shows relancés',
+  report_noshow_recovered: 'No-shows récupérés',
+  report_calls: 'Activité téléphonique',
+  report_calls_total: 'Appels passés',
+  report_calls_answered: 'Décrochés',
+  report_answer_rate: 'Taux de décroché',
+  report_talk_time: 'Temps au téléphone',
+  report_no_calls: 'Aucun appel sur la période',
+  report_setter_booked: 'RDV set',
+  report_per_booking_total: 'Fixe par RDV (setters)',
+  report_commission_note: 'Taux par membre, surcharge par prospect prise en compte',
+  report_no_data_period: 'Aucune donnée sur la période',
+  report_pdf_sources: 'Performance par source',
+  report_pdf_offers: 'CA par offre',
+  report_pdf_forms: 'Formulaires',
+  report_pdf_tracking: 'Liens de tracking',
+  report_pdf_objectives: 'Objectifs',
+  report_pdf_loss_reasons: 'Motifs de perte',
+  report_pdf_unqualified_reasons: 'Motifs de disqualification',
+  report_pdf_revenue_mix: 'Nature du revenu',
+  report_pdf_speed: 'Vitesse & relances',
+
+  // ─── Temporary availability (dispos temporaires) ───
+  temp_avail_title: 'Disponibilités temporaires',
+  temp_avail_subtitle: 'Sur la période choisie, ces créneaux remplacent vos disponibilités de base.',
+  temp_avail_new: 'Nouvelle période',
+  temp_avail_none: 'Aucune disponibilité temporaire',
+  temp_avail_none_desc: 'Créez une période pour changer vos créneaux sur quelques jours seulement.',
+  temp_avail_period: 'Période',
+  temp_avail_name: 'Nom (optionnel)',
+  temp_avail_name_placeholder: 'Ex. Semaine de salon',
+  temp_avail_copy_base: 'Partir de mes dispos de base',
+  temp_avail_clear_all: 'Tout effacer',
+  temp_avail_override_note: 'Sur cette période, les jours sans créneau seront indisponibles.',
+  temp_avail_overlap_error: 'Cette période en chevauche une autre',
+  temp_avail_invalid_dates: 'Dates invalides',
+  temp_avail_saved: 'Disponibilité temporaire enregistrée',
+  temp_avail_deleted: 'Période supprimée',
+  temp_avail_delete_confirm: 'Supprimer cette période temporaire ?',
+  temp_avail_status_active: 'En cours',
+  temp_avail_status_upcoming: 'À venir',
+  temp_avail_status_past: 'Passée',
+  temp_avail_slot_count: '{n} créneau{s}',
+  temp_avail_modal_new_title: 'Nouvelle disponibilité temporaire',
+  temp_avail_modal_edit_title: 'Modifier la disponibilité temporaire',
+  temp_avail_save: 'Enregistrer',
+  temp_avail_no_slot_day: 'Indisponible',
+  temp_avail_tab_weekly: 'Hebdo',
+  temp_avail_tab_temp: 'Dispo temp',
 
   // ─── Availability (CloserDisponibilite) ───
   availability_subtitle: 'Gérez vos créneaux et absences pour optimiser votre tunnel de vente.',
@@ -6869,6 +7067,104 @@ export const en: BusinessTranslations = {
   availability_from: 'From',
   availability_to: 'To',
   availability_reason: 'Reason',
+  // ─── Report v2 ───
+  report_objective_this_week: 'this week',
+  report_objective_this_month: 'this month',
+  report_vs_previous: 'vs previous period',
+  report_evolution: 'Trend',
+  report_evolution_desc: 'Revenue, leads and sales over the period',
+  report_ca_label: 'Revenue',
+  report_leads_label: 'Leads',
+  report_sales_label: 'Sales',
+  report_objectives: 'Targets',
+  report_no_objectives: 'No target set',
+  report_objective_reached: 'Reached',
+  report_revenue_split: 'Revenue mix',
+  report_one_shot: 'One-off',
+  report_mrr: 'MRR',
+  report_active_subs: 'Active subscriptions',
+  report_churned_subs: 'Churned subscriptions',
+  report_cash: 'Cash collection',
+  report_signed: 'Signed',
+  report_collected: 'Collected',
+  report_outstanding: 'Outstanding',
+  report_overdue: 'Overdue',
+  report_no_invoices: 'No invoice over the period',
+  report_by_source: 'Performance by source',
+  report_source: 'Source',
+  report_no_source: 'No source',
+  report_offer: 'Offer',
+  report_no_offer: 'No offer',
+  report_forms: 'Forms',
+  report_form: 'Form',
+  report_responses: 'Responses',
+  report_leads_created: 'Leads created',
+  report_no_forms: 'No form',
+  report_tracking_links: 'Tracking links',
+  report_link: 'Link',
+  report_clicks: 'Clicks',
+  report_unique_visitors: 'Unique visitors',
+  report_returning: 'Returning',
+  report_avg_time: 'Avg. time',
+  report_no_tracking_links: 'No tracking link',
+  report_unqualified_reasons: 'Disqualification reasons',
+  report_unqualified_detail_title: '"Other" disqualifications detail',
+  report_speed_relances: 'Speed & follow-ups',
+  report_speed_to_lead: 'Avg. time to first contact',
+  report_contacted_1h: 'Contacted < 1h',
+  report_contacted_24h: 'Contacted < 24h',
+  report_in_relance: 'In follow-up',
+  report_relance_reply_rate: 'Follow-up reply rate',
+  report_noshow_relance: 'No-shows followed up',
+  report_noshow_recovered: 'No-shows recovered',
+  report_calls: 'Call activity',
+  report_calls_total: 'Calls made',
+  report_calls_answered: 'Answered',
+  report_answer_rate: 'Answer rate',
+  report_talk_time: 'Talk time',
+  report_no_calls: 'No call over the period',
+  report_setter_booked: 'Booked',
+  report_per_booking_total: 'Per-booking fixed (setters)',
+  report_commission_note: 'Per-member rate, per-prospect override taken into account',
+  report_no_data_period: 'No data over the period',
+  report_pdf_sources: 'Performance by source',
+  report_pdf_offers: 'Revenue by offer',
+  report_pdf_forms: 'Forms',
+  report_pdf_tracking: 'Tracking links',
+  report_pdf_objectives: 'Targets',
+  report_pdf_loss_reasons: 'Loss reasons',
+  report_pdf_unqualified_reasons: 'Disqualification reasons',
+  report_pdf_revenue_mix: 'Revenue mix',
+  report_pdf_speed: 'Speed & follow-ups',
+
+  // ─── Temporary availability ───
+  temp_avail_title: 'Temporary availability',
+  temp_avail_subtitle: 'During the selected period, these slots replace your default availability.',
+  temp_avail_new: 'New period',
+  temp_avail_none: 'No temporary availability',
+  temp_avail_none_desc: 'Create a period to change your slots for a few days only.',
+  temp_avail_period: 'Period',
+  temp_avail_name: 'Name (optional)',
+  temp_avail_name_placeholder: 'e.g. Conference week',
+  temp_avail_copy_base: 'Start from my default slots',
+  temp_avail_clear_all: 'Clear all',
+  temp_avail_override_note: 'During this period, days without a slot will be unavailable.',
+  temp_avail_overlap_error: 'This period overlaps another one',
+  temp_avail_invalid_dates: 'Invalid dates',
+  temp_avail_saved: 'Temporary availability saved',
+  temp_avail_deleted: 'Period deleted',
+  temp_avail_delete_confirm: 'Delete this temporary period?',
+  temp_avail_status_active: 'Active',
+  temp_avail_status_upcoming: 'Upcoming',
+  temp_avail_status_past: 'Past',
+  temp_avail_slot_count: '{n} slot{s}',
+  temp_avail_modal_new_title: 'New temporary availability',
+  temp_avail_modal_edit_title: 'Edit temporary availability',
+  temp_avail_save: 'Save',
+  temp_avail_no_slot_day: 'Unavailable',
+  temp_avail_tab_weekly: 'Weekly',
+  temp_avail_tab_temp: 'Temp. avail.',
+
   availability_subtitle: 'Manage your slots and absences to optimize your sales funnel.',
   availability_weekly_slots: 'Weekly slots',
   availability_unavailable: 'Unavailable',
@@ -7153,6 +7449,7 @@ export const en: BusinessTranslations = {
   prospect_tab_reminders: 'Reminders',
   prospect_tab_history: 'History',
   prospect_current_stage: 'Current stage',
+  prospect_stage_since: 'since {date}',
   prospect_loss_reason_title: 'Loss reason',
   prospect_loss_reason_label: 'Reason',
   prospect_loss_reason_select: 'Select a reason',

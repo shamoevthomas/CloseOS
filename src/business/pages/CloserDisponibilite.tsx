@@ -4,9 +4,12 @@ import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import {
   Calendar, Clock, Plus, Trash2, Loader2, X, CalendarOff, Copy, ChevronDown, Settings2, Shield,
+  CalendarRange, Pencil,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn } from '../../lib/utils'
+import { TemporaryAvailabilityModal } from '../components/TemporaryAvailabilityModal'
+import { type TempPeriod } from '../../lib/temporaryAvailability'
 
 interface Slot {
   id: number
@@ -43,6 +46,9 @@ export function CloserDisponibilite() {
 
   const [slots, setSlots] = useState<Slot[]>([])
   const [absences, setAbsences] = useState<Absence[]>([])
+  const [tempPeriods, setTempPeriods] = useState<TempPeriod[]>([])
+  const [showTempModal, setShowTempModal] = useState(false)
+  const [editingPeriod, setEditingPeriod] = useState<TempPeriod | null>(null)
   const [loading, setLoading] = useState(true)
   const [showOnboardingPopup, setShowOnboardingPopup] = useState(false)
 
@@ -73,13 +79,16 @@ export function CloserDisponibilite() {
     try {
       let slotsQuery = supabase.from('business_availability_slots').select('*')
       let absQuery = supabase.from('business_absences').select('*')
+      let tempQuery = supabase.from('business_temporary_availability').select('*')
 
       if (isOwner) {
         slotsQuery = slotsQuery.eq('business_owner_id', effectiveOwnerId!).is('team_member_id', null)
         absQuery = absQuery.eq('business_owner_id', effectiveOwnerId!).is('team_member_id', null)
+        tempQuery = tempQuery.eq('business_owner_id', effectiveOwnerId!).is('team_member_id', null)
       } else {
         slotsQuery = slotsQuery.eq('team_member_id', effectiveTeamMemberId!)
         absQuery = absQuery.eq('team_member_id', effectiveTeamMemberId!)
+        tempQuery = tempQuery.eq('team_member_id', effectiveTeamMemberId!)
       }
 
       // Fetch booking constraints
@@ -87,13 +96,15 @@ export function CloserDisponibilite() {
         ? supabase.from('business_users').select('max_calls_per_day, buffer_before_booking, min_booking_notice').eq('id', effectiveOwnerId!).single()
         : supabase.from('business_team_members').select('max_calls_per_day, buffer_before_booking, min_booking_notice').eq('id', effectiveTeamMemberId!).single()
 
-      const [slotsRes, absRes, constraintsRes] = await Promise.all([
+      const [slotsRes, absRes, tempRes, constraintsRes] = await Promise.all([
         slotsQuery.order('day_of_week').order('start_time'),
         absQuery.order('start_date', { ascending: false }),
+        tempQuery.order('start_date', { ascending: true }),
         constraintsQuery,
       ])
       setSlots(slotsRes.data || [])
       setAbsences(absRes.data || [])
+      setTempPeriods((tempRes.data || []) as unknown as TempPeriod[])
       if (constraintsRes.data) {
         setMaxCallsPerDay(constraintsRes.data.max_calls_per_day)
         setBufferBeforeBooking(constraintsRes.data.buffer_before_booking || 0)
@@ -313,6 +324,27 @@ export function CloserDisponibilite() {
     finally { setSavingConstraints(false) }
   }
 
+  const handleDeleteTempPeriod = async (period: TempPeriod) => {
+    if (!window.confirm(t.temp_avail_delete_confirm)) return
+    const { error } = await supabase.from('business_temporary_availability').delete().eq('id', period.id)
+    if (error) { toast.error(t.common_error); return }
+    setTempPeriods(prev => prev.filter(p => p.id !== period.id))
+    const fmt = (d: string) => new Date(d).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')
+    await notifyOwnerAndHoS(
+      `${t.temp_avail_title} — ${memberName}`,
+      `${t.temp_avail_deleted} : ${fmt(period.start_date)} → ${fmt(period.end_date)}`
+    )
+    toast.success(t.temp_avail_deleted)
+  }
+
+  // Statut d'une période par rapport à aujourd'hui
+  const periodStatus = (p: TempPeriod): 'past' | 'active' | 'upcoming' => {
+    const today = new Date().toISOString().split('T')[0]
+    if (p.end_date < today) return 'past'
+    if (p.start_date > today) return 'upcoming'
+    return 'active'
+  }
+
   const handleDeleteAbsence = async (id: number) => {
     const { error } = await supabase.from('business_absences').delete().eq('id', id)
     if (error) { toast.error(t.common_error); return }
@@ -524,6 +556,84 @@ export function CloserDisponibilite() {
 
         {/* ─── Right: Absences ─── */}
         <aside className="col-span-12 xl:col-span-4 space-y-8">
+          {/* Temporary availability Card */}
+          <div className={cn(GLASS_PANEL, 'rounded-2xl p-5 md:p-8 shadow-lg relative overflow-hidden')}>
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
+            <h3 className="font-business-display font-extrabold text-lg md:text-2xl mb-2 relative z-10 flex items-center gap-3 text-stone-900 dark:text-white">
+              <CalendarRange className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
+              {t.temp_avail_title}
+            </h3>
+            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-6 relative z-10">{t.temp_avail_subtitle}</p>
+
+            <div className="space-y-3 mb-6 relative z-10">
+              {tempPeriods.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-sm text-stone-400 dark:text-neutral-500">{t.temp_avail_none}</p>
+                  <p className="text-xs text-stone-400/70 dark:text-neutral-500/70 mt-1">{t.temp_avail_none_desc}</p>
+                </div>
+              ) : (
+                tempPeriods.map(period => {
+                  const status = periodStatus(period)
+                  const nbSlots = (period.slots || []).length
+                  return (
+                    <div key={period.id} className={cn(
+                      'p-4 rounded-2xl ring-1 transition-colors',
+                      status === 'past'
+                        ? 'bg-stone-100 dark:bg-white/5 ring-stone-200/50 dark:ring-white/5 opacity-60'
+                        : 'bg-[#efedec] dark:bg-white/5 ring-[#c4c7c7]/10 dark:ring-white/10'
+                    )}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-bold text-stone-900 dark:text-white">
+                              {new Date(period.start_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })} — {new Date(period.end_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
+                            </p>
+                            <span className={cn(
+                              'rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider',
+                              status === 'active' ? 'bg-[#006c49]/10 text-[#006c49]'
+                                : status === 'upcoming' ? 'bg-[#ffddb8] text-[#2a1700] dark:bg-amber-900/30 dark:text-amber-400'
+                                : 'bg-stone-200 dark:bg-white/10 text-stone-500 dark:text-neutral-400'
+                            )}>
+                              {status === 'active' ? t.temp_avail_status_active : status === 'upcoming' ? t.temp_avail_status_upcoming : t.temp_avail_status_past}
+                            </span>
+                          </div>
+                          {period.label && (
+                            <p className="text-[10px] text-stone-500 dark:text-neutral-400 uppercase tracking-wider mt-0.5 truncate">{period.label}</p>
+                          )}
+                          <p className="text-[11px] text-stone-500 dark:text-neutral-400 mt-1">
+                            {t.temp_avail_slot_count.replace('{n}', String(nbSlots)).replace('{s}', nbSlots > 1 ? 'x' : '')}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => { setEditingPeriod(period); setShowTempModal(true) }}
+                            className="text-stone-300 dark:text-neutral-600 hover:text-[#006c49] transition-colors p-1"
+                          >
+                            <Pencil className="h-4 w-4" strokeWidth={1.5} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTempPeriod(period)}
+                            className="text-stone-300 dark:text-neutral-600 hover:text-[#ba1a1a] transition-colors p-1"
+                          >
+                            <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            <button
+              onClick={() => { setEditingPeriod(null); setShowTempModal(true) }}
+              className="w-full py-4 border-2 border-dashed border-[#c4c7c7] dark:border-neutral-700/50 hover:border-[#006c49] hover:text-[#006c49] hover:bg-[#006c49]/5 rounded-2xl transition-all flex items-center justify-center gap-2 text-stone-500 dark:text-neutral-400 relative z-10"
+            >
+              <Plus className="h-4 w-4" strokeWidth={1.5} />
+              <span className="text-sm font-bold">{t.temp_avail_new}</span>
+            </button>
+          </div>
+
           {/* Absences Card */}
           <div className={cn(GLASS_PANEL, 'rounded-2xl p-5 md:p-8 shadow-lg relative overflow-hidden')}>
             <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#006c49]/5 rounded-full blur-3xl" />
@@ -690,6 +800,21 @@ export function CloserDisponibilite() {
           </div>
         </aside>
       </div>
+
+      {/* Temporary availability modal */}
+      <TemporaryAvailabilityModal
+        open={showTempModal}
+        onClose={() => { setShowTempModal(false); setEditingPeriod(null) }}
+        ownerId={effectiveOwnerId!}
+        teamMemberId={effectiveTeamMemberId}
+        baseSlots={slots}
+        periods={tempPeriods}
+        editing={editingPeriod}
+        onSaved={async (summary) => {
+          await notifyOwnerAndHoS(`${t.temp_avail_title} — ${memberName}`, summary)
+          fetchData()
+        }}
+      />
 
       {/* Onboarding Popup */}
       {showOnboardingPopup && (

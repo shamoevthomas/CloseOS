@@ -5,6 +5,7 @@ import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz'
 import { fr as frLocale } from 'date-fns/locale'
 import Stripe from 'stripe'
 import { computeVisibleQuestionIds } from './_lib/questionnaireConditions.js'
+import { resolveDaySlots, type TempPeriod } from './_lib/temporaryAvailability.js'
 import { subPeriodEndIso } from './_lib/stripePeriod.js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
@@ -4372,6 +4373,18 @@ ${notesSection}
         fetchPromises.push(Promise.resolve({ data: [] }))
       }
 
+      // Dispos temporaires : team members + owner
+      if (teamMemberIds.length > 0) {
+        fetchPromises.push(supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at, team_member_id').in('team_member_id', teamMemberIds).gte('end_date', today))
+      } else {
+        fetchPromises.push(Promise.resolve({ data: [] }))
+      }
+      if (isOwnerIncluded) {
+        fetchPromises.push(supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at, team_member_id').eq('business_owner_id', ownerId).is('team_member_id', null).gte('end_date', today))
+      } else {
+        fetchPromises.push(Promise.resolve({ data: [] }))
+      }
+
       // Appointments for team members
       fetchPromises.push(
         supabase.from('business_appointments').select('date, time, duration, assigned_to').in('assigned_to', memberIds).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
@@ -4385,14 +4398,16 @@ ${notesSection}
         fetchPromises.push(Promise.resolve({ data: [] }))
       }
 
-      const [teamSlotsRes, ownerSlotsRes, teamAbsRes, ownerAbsRes, appointmentsRes, ownerApptsRes] = await Promise.all(fetchPromises)
+      const [teamSlotsRes, ownerSlotsRes, teamAbsRes, ownerAbsRes, teamTempRes, ownerTempRes, appointmentsRes, ownerApptsRes] = await Promise.all(fetchPromises)
 
       // Normalize owner slots to use ownerId as "member_id" for unified processing
       const ownerSlots = (ownerSlotsRes.data || []).map((s: any) => ({ ...s, team_member_id: ownerId }))
       const ownerAbsences = (ownerAbsRes.data || []).map((a: any) => ({ ...a, team_member_id: ownerId }))
+      const ownerTempPeriods = (ownerTempRes.data || []).map((p: any) => ({ ...p, team_member_id: ownerId }))
 
       const allSlots = [...(teamSlotsRes.data || []), ...ownerSlots]
       const allAbsences = [...(teamAbsRes.data || []), ...ownerAbsences]
+      const allTempPeriods = [...(teamTempRes.data || []), ...ownerTempPeriods] as TempPeriod[]
       // Normalize owner appointments: set assigned_to = ownerId so conflict check works
       const ownerAppts = (ownerApptsRes.data || []).map((a: any) => ({ ...a, assigned_to: ownerId }))
       const allAppointments = [...(appointmentsRes.data || []), ...ownerAppts]
@@ -4465,7 +4480,13 @@ ${notesSection}
           const isAbsent = allAbsences.some((a: any) => a.team_member_id === memberId && memberDateStr >= a.start_date && memberDateStr <= a.end_date)
           if (isAbsent) continue
 
-          const memberSlots = allSlots.filter((s: any) => s.team_member_id === memberId && s.day_of_week === dayOfWeek)
+          // Dispo temporaire du membre prioritaire sur ses créneaux hebdo
+          const memberSlots = resolveDaySlots(
+            allSlots.filter((s: any) => s.team_member_id === memberId),
+            allTempPeriods.filter((p: any) => p.team_member_id === memberId),
+            memberDateStr,
+            dayOfWeek
+          )
           if (memberSlots.length === 0) continue
 
           // Filter appointments for this member on this local date
@@ -5132,6 +5153,11 @@ ${notesSection}
         ? supabase.from('business_absences').select('start_date, end_date').eq('business_owner_id', ownerId).is('team_member_id', null).gte('end_date', today)
         : supabase.from('business_absences').select('start_date, end_date').eq('team_member_id', link.team_member_id).gte('end_date', today)
 
+      // Dispos temporaires : remplacent les créneaux hebdo sur les jours couverts
+      const tempAvailQuery = isOwnerLink
+        ? supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at').eq('business_owner_id', ownerId).is('team_member_id', null).gte('end_date', today)
+        : supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at').eq('team_member_id', link.team_member_id).gte('end_date', today)
+
       const appointmentsQuery = isOwnerLink
         ? supabase.from('business_appointments').select('date, time, duration, datetime_utc, timezone').eq('user_id', ownerId).is('assigned_to', null).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
         : supabase.from('business_appointments').select('date, time, duration, datetime_utc, timezone').eq('assigned_to', link.team_member_id).gte('date', today).in('status', ['upcoming', 'pending', 'confirmed'])
@@ -5145,9 +5171,10 @@ ${notesSection}
         .eq('status', 'pending')
         .gte('created_at', pendingLockCutoff)
 
-      const [slotsRes, absencesRes, appointmentsRes, pendingSessionsRes] = await Promise.all([slotsQuery, absencesQuery, appointmentsQuery, pendingSessionsQuery])
+      const [slotsRes, absencesRes, tempAvailRes, appointmentsRes, pendingSessionsRes] = await Promise.all([slotsQuery, absencesQuery, tempAvailQuery, appointmentsQuery, pendingSessionsQuery])
 
       const weeklySlots = slotsRes.data || []
+      const tempPeriods = (tempAvailRes.data || []) as unknown as TempPeriod[]
       const absences = absencesRes.data || []
       const existingAppointments = appointmentsRes.data || []
       // Précompute chaque RDV comme un intervalle en UTC absolu. On NE compare JAMAIS les
@@ -5196,7 +5223,8 @@ ${notesSection}
         const isAbsent = absences.some((a: any) => dateStr >= a.start_date && dateStr <= a.end_date)
         if (isAbsent) continue
 
-        const daySlots = weeklySlots.filter((s: any) => s.day_of_week === dayOfWeek)
+        // Dispo temporaire prioritaire sur les créneaux hebdo pour ce jour
+        const daySlots = resolveDaySlots(weeklySlots as any, tempPeriods, dateStr, dayOfWeek)
         if (daySlots.length === 0) continue
 
         const dayAppointments = existingAppointments.filter((a: any) => a.date === dateStr)
@@ -8006,6 +8034,7 @@ ${notesSection}
             // Tables with team_member_id FK
             supabase.from('business_personal_objectives').delete().in('team_member_id', memberIds),
             supabase.from('business_availability_slots').delete().in('team_member_id', memberIds),
+            supabase.from('business_temporary_availability').delete().in('team_member_id', memberIds),
             supabase.from('business_absences').delete().in('team_member_id', memberIds),
             supabase.from('business_user_scripts').delete().in('team_member_id', memberIds),
             supabase.from('business_kpi_config').delete().in('team_member_id', memberIds),
@@ -8250,6 +8279,7 @@ ${notesSection}
           supabase.from('business_objectives').delete().in('team_member_id', memberIds),
           supabase.from('business_personal_objectives').delete().in('team_member_id', memberIds),
           supabase.from('business_availability_slots').delete().in('team_member_id', memberIds),
+          supabase.from('business_temporary_availability').delete().in('team_member_id', memberIds),
           supabase.from('business_absences').delete().in('team_member_id', memberIds),
           supabase.from('business_user_scripts').delete().in('team_member_id', memberIds),
           supabase.from('business_kpi_config').delete().in('team_member_id', memberIds),
@@ -8363,6 +8393,7 @@ ${notesSection}
         supabase.from('business_objectives').delete().eq('team_member_id', tmId),
         supabase.from('business_personal_objectives').delete().eq('team_member_id', tmId),
         supabase.from('business_availability_slots').delete().eq('team_member_id', tmId),
+        supabase.from('business_temporary_availability').delete().eq('team_member_id', tmId),
         supabase.from('business_absences').delete().eq('team_member_id', tmId),
         supabase.from('business_user_scripts').delete().eq('team_member_id', tmId),
         supabase.from('business_formula_commissions').delete().eq('team_member_id', tmId),
@@ -9457,6 +9488,7 @@ ${notesSection}
       await Promise.all([
         supabase.from('business_personal_objectives').delete().in('team_member_id', memberIds),
         supabase.from('business_availability_slots').delete().in('team_member_id', memberIds),
+        supabase.from('business_temporary_availability').delete().in('team_member_id', memberIds),
         supabase.from('business_absences').delete().in('team_member_id', memberIds),
         supabase.from('business_user_scripts').delete().in('team_member_id', memberIds),
         supabase.from('business_kpi_config').delete().in('team_member_id', memberIds),

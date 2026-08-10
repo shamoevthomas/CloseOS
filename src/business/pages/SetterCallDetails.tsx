@@ -12,6 +12,7 @@ import { useBusinessProspects } from '../contexts/BusinessProspectsContext'
 import { useBusinessGoogleCalendar } from '../contexts/BusinessGoogleCalendarContext'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { supabase } from '../../lib/supabase'
+import { resolveDaySlots, type TempPeriod } from '../../lib/temporaryAvailability'
 import { toUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
 
@@ -208,10 +209,13 @@ export function SetterCallDetails() {
     setLoadingSlots(true)
 
     try {
-      const [slotsRes, absencesRes, appointmentsRes] = await Promise.all([
+      const [slotsRes, absencesRes, tempAvailRes, appointmentsRes] = await Promise.all([
         supabase.from('business_availability_slots').select('*')
           .eq('team_member_id', closerId),
         supabase.from('business_absences').select('start_date, end_date')
+          .eq('team_member_id', closerId)
+          .gte('end_date', new Date().toISOString().split('T')[0]),
+        supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at')
           .eq('team_member_id', closerId)
           .gte('end_date', new Date().toISOString().split('T')[0]),
         supabase.from('business_appointments').select('date, time, duration')
@@ -221,6 +225,7 @@ export function SetterCallDetails() {
       ])
 
       const weeklySlots: AvailabilitySlot[] = slotsRes.data || []
+      const tempPeriods = (tempAvailRes.data || []) as unknown as TempPeriod[]
       const absences: Absence[] = absencesRes.data || []
       const existingAppointments = appointmentsRes.data || []
 
@@ -239,7 +244,8 @@ export function SetterCallDetails() {
         const isAbsent = absences.some(a => dateStr >= a.start_date && dateStr <= a.end_date)
         if (isAbsent) continue
 
-        const daySlots = weeklySlots.filter(s => s.day_of_week === dayOfWeek)
+        // Dispo temporaire prioritaire sur les créneaux hebdo pour ce jour
+        const daySlots = resolveDaySlots(weeklySlots, tempPeriods, dateStr, dayOfWeek)
         if (daySlots.length === 0) continue
 
         const dayAppointments = existingAppointments.filter((a: any) => a.date === dateStr)

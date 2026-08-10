@@ -5,6 +5,7 @@ import { toUTC, fromUTC, getTimezoneLabel } from '../lib/timezone'
 import { supabase } from '../lib/supabase'
 import { InlineStripePaymentModal } from '../components/InlineStripePayment'
 import { computeVisibleQuestionIds, type ConditionalRule } from '../lib/questionnaireConditions'
+import { resolveDaySlots, type TempPeriod } from '../lib/temporaryAvailability'
 
 interface SlotData { date: string; time: string; datetime_utc?: string }
 interface CustomField {
@@ -226,6 +227,11 @@ export function PublicBooking() {
               ? supabase.from('business_absences').select('start_date, end_date').eq('business_owner_id', link.business_owner_id).is('team_member_id', null).gte('end_date', today)
               : supabase.from('business_absences').select('start_date, end_date').eq('team_member_id', link.team_member_id).gte('end_date', today)
 
+            // Dispos temporaires : remplacent les créneaux hebdo sur les jours couverts
+            const tempAvailQuery = isOwnerLink
+              ? supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at').eq('business_owner_id', link.business_owner_id).is('team_member_id', null).gte('end_date', today)
+              : supabase.from('business_temporary_availability').select('id, start_date, end_date, slots, created_at').eq('team_member_id', link.team_member_id).gte('end_date', today)
+
             // On récupère datetime_utc + timezone : chaque RDV est stocké dans SON propre fuseau,
             // les conflits doivent donc être calculés en instant UTC absolu (pas en heures locales).
             const appointmentsQuery = isOwnerLink
@@ -237,9 +243,10 @@ export function PublicBooking() {
               ? supabase.from('business_users').select('timezone').eq('id', link.business_owner_id).maybeSingle()
               : supabase.from('business_team_members').select('timezone').eq('id', link.team_member_id).maybeSingle()
 
-            const [slotsRes, absencesRes, appointmentsRes, ownerTzRes] = await Promise.all([slotsQuery, absencesQuery, appointmentsQuery, ownerTzQuery])
+            const [slotsRes, absencesRes, tempAvailRes, appointmentsRes, ownerTzRes] = await Promise.all([slotsQuery, absencesQuery, tempAvailQuery, appointmentsQuery, ownerTzQuery])
 
             const weeklySlots = slotsRes.data || []
+            const tempPeriods = (tempAvailRes.data || []) as unknown as TempPeriod[]
             const absences = absencesRes.data || []
             const existingAppts = appointmentsRes.data || []
             const ownerTz = (ownerTzRes.data as any)?.timezone || 'Europe/Paris'
@@ -264,7 +271,8 @@ export function PublicBooking() {
               const isAbsent = absences.some((a: any) => dateStr >= a.start_date && dateStr <= a.end_date)
               if (isAbsent) continue
 
-              const daySlots = weeklySlots.filter((s: any) => s.day_of_week === dayOfWeek)
+              // Dispo temporaire prioritaire sur les créneaux hebdo pour ce jour
+              const daySlots = resolveDaySlots(weeklySlots as any, tempPeriods, dateStr, dayOfWeek)
               if (daySlots.length === 0) continue
 
               for (const slot of daySlots) {
