@@ -5073,6 +5073,7 @@ ${notesSection}
         } catch {}
       }
 
+      nudgeClosersLab()
       return res.status(200).json({ rescheduled: true, appointment: updated })
     }
 
