@@ -1358,6 +1358,16 @@ async function sendWelcomeEmail(email: string) {
 // réserve directement dans l'agenda CloseOS). Seules ces deux actions publiques
 // acceptent le cross-origin ; tout le reste de l'API reste same-origin.
 const PUBLIC_BOOKING_ACTIONS = new Set(['booking-info', 'booking-submit', 'appointment-cancel'])
+
+// Prévient ClosersLab qu'un rendez-vous vient de bouger, pour qu'il resynchronise
+// tout de suite au lieu d'attendre son passage quotidien. Volontairement silencieux :
+// une reservation ne doit jamais echouer parce que ClosersLab est indisponible.
+function nudgeClosersLab() {
+  const url = process.env.CLOSERSLAB_SYNC_URL
+  const secret = process.env.CLOSERSLAB_SYNC_SECRET
+  if (!url || !secret) return
+  fetch(url, { method: 'POST', headers: { 'x-sync-secret': secret } }).catch(() => {})
+}
 const BOOKING_CORS_ORIGINS = new Set([
   'https://www.closerslab.fr',
   'https://closerslab.fr',
@@ -3401,6 +3411,7 @@ ${notesSection}
         }
       }
 
+      nudgeClosersLab()
       return res.status(200).json({ cancelled: true, email_sent: emailSent })
     }
 
@@ -4675,6 +4686,65 @@ ${notesSection}
       })
     }
 
+    // ─── Synchronisation ClosersLab ──────────────────────────────────────────────
+    // L'espace membre ClosersLab doit connaître les rendez-vous pris ailleurs :
+    // page de booking publique, ou création manuelle dans l'agenda CloseOS. Il
+    // interroge donc cette route (cron quotidien + appel immédiat après chaque
+    // réservation) et rapproche les lignes de ses élèves par e-mail.
+    //
+    // Protégée par un secret partagé : elle expose les coordonnées des prospects.
+    if (action === 'closerslab-sync' && req.method === 'GET') {
+      const secret = (req.headers['x-sync-secret'] || '') as string
+      const attendu = process.env.CLOSERSLAB_SYNC_SECRET || ''
+      if (!attendu || secret !== attendu) return res.status(401).json({ error: 'Unauthorized' })
+
+      const ownerId = (req.query.owner as string) || ''
+      if (!ownerId) return res.status(400).json({ error: 'owner required' })
+      const depuis = (req.query.since as string) || new Date(Date.now() - 90 * 864e5).toISOString()
+
+      const { data: appts, error } = await supabase
+        .from('business_appointments')
+        .select('id, date, time, duration, datetime_utc, timezone, status, notes, prospect_id, cancel_token, google_calendar_event_id')
+        .eq('user_id', ownerId)
+        .gte('datetime_utc', depuis)
+        .order('datetime_utc', { ascending: true })
+        .limit(500)
+      if (error) return res.status(500).json({ error: error.message })
+
+      // E-mail du participant : la fiche prospect d'abord, sinon la ligne
+      // « Booking: Nom — email — tel » laissée par la page publique.
+      const ids = [...new Set((appts || []).map((a: any) => a.prospect_id).filter(Boolean))]
+      const parProspect: Record<string, { email: string; contact: string }> = {}
+      if (ids.length) {
+        const { data: ps } = await supabase.from('business_prospects').select('id, email, contact').in('id', ids)
+        for (const p of (ps || [])) parProspect[p.id] = { email: p.email || '', contact: p.contact || '' }
+      }
+      const mailDeNote = (notes: string | null) => {
+        const m = String(notes || '').match(/[\w.+-]+@[\w-]+\.[\w.-]+/)
+        return m ? m[0] : ''
+      }
+      const nomDeNote = (notes: string | null) => {
+        const m = String(notes || '').match(/^Booking:\s*([^—]+?)\s*(?:—|$)/)
+        return m ? m[1].trim() : ''
+      }
+
+      const lignes = (appts || []).map((a: any) => {
+        const p = a.prospect_id ? parProspect[a.prospect_id] : null
+        return {
+          id: a.id,
+          datetime_utc: a.datetime_utc || null,
+          date: a.date,
+          time: a.time,
+          duration: a.duration || 60,
+          status: a.status,
+          email: (p && p.email) || mailDeNote(a.notes),
+          name: (p && p.contact) || nomDeNote(a.notes),
+          cancel_token: a.cancel_token || null,
+        }
+      })
+      return res.status(200).json({ appointments: lignes })
+    }
+
     // ─── Cancel appointment by token (no auth) ───
     if (action === 'appointment-cancel' && req.method === 'POST') {
       const { token, request_refund } = req.body
@@ -4807,6 +4877,7 @@ ${notesSection}
         })
       } catch {}
 
+      nudgeClosersLab()
       return res.status(200).json({ cancelled: true, refund: refundResult })
     }
 
@@ -5549,6 +5620,7 @@ ${notesSection}
         }
       }
 
+      nudgeClosersLab()
       return res.status(200).json({ success: true })
     }
 
@@ -6124,6 +6196,7 @@ ${notesSection}
         }
       }
 
+      nudgeClosersLab()
       return res.status(200).json({ appointment })
     }
 
