@@ -29,6 +29,9 @@ export interface BusinessProspect {
   responded_at?: string | null
   discussion_next_at?: string | null
   discussion_email_sent?: boolean
+  // Canal de contact (pop-up « à l'écrit / vocal / mail ») — cf. lib/contactChannels.ts
+  first_contact_channel?: 'written' | 'voice' | 'email' | null
+  relance_channels?: ('written' | 'voice' | 'email' | null)[]
   formula_id?: string
   payment_type?: 'once' | 'installments' | 'cash' | 'comptant'
   installments?: number
@@ -702,6 +705,8 @@ export function BusinessProspectsProvider({ children }: { children: ReactNode })
         responded_at: srv.responded_at,
         discussion_next_at: srv.discussion_next_at,
         discussion_email_sent: srv.discussion_email_sent,
+        relance_channels: srv.relance_channels,
+        first_contact_channel: srv.first_contact_channel,
       } : p)))
     }
 

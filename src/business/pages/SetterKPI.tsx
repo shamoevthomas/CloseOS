@@ -8,11 +8,14 @@ import {
   TrendingUp, DollarSign, ShoppingCart, Target, Award,
   Ban, Users, Briefcase, UserX, Settings, X, Save, Loader2, Package,
   PhoneIncoming, CalendarCheck, Download, CalendarDays, Plus, Trash2, AlertTriangle,
+  Repeat, ChevronRight, MessageSquare,
 } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import { cn } from '../../lib/utils'
+import { useContactedReminders, relanceLabel } from '../hooks/useContactedReminders'
+import { CONTACT_CHANNELS, channelResponseStats, hasResponded, isContactChannel, lastRelanceChannel } from '../lib/contactChannels'
 import { getProspectCA } from '../lib/getProspectCA'
 import toast from 'react-hot-toast'
 // @ts-ignore
@@ -88,6 +91,10 @@ export function SetterKPI() {
   const [globalMemberId, setGlobalMemberId] = useState<string | null>(searchParams.get('member'))
   // Formula commission rates
   const [formulaCommRates, setFormulaCommRates] = useState<Record<string, { roles: Record<string, number>; members: Record<string, number> }>>({})
+
+  // Relances (délais configurés) + modale de détail par relance
+  const relanceDelays = useContactedReminders()
+  const [isRelanceDetailOpen, setIsRelanceDetailOpen] = useState(false)
 
   // Period filter
   const [periodFrom, setPeriodFrom] = useState('')
@@ -374,13 +381,46 @@ export function SetterKPI() {
     ? periodProspects.filter(p => !p.assigned_setter || !setterMemberIds.has(p.assigned_setter))
     : periodProspects.filter(p => p.assigned_setter === teamMember?.id)
 
+  // A répondu = bouton "Répondu" cliqué (responded_at) OU avancé au-delà de "Contacté".
+  // 'contacted' seul (en attente) et 'noanswer' ne comptent pas. Partagé avec le Rapport.
+  const isResponded = hasResponded
+
   // Helper: compute setter KPIs for a given set of prospects
   const computeSetterKpis = (src: any[], memberId?: string) => {
     const contacted = src.filter((p: any) => p.stage !== 'prospect')
-    // A répondu = bouton "Répondu" cliqué (responded_at) OU avancé au-delà de "Contacté".
-    // 'contacted' seul (en attente) et 'noanswer' ne comptent pas.
-    const responded = contacted.filter((p: any) => p.responded_at || (p.stage !== 'noanswer' && p.stage !== 'contacted'))
+    const responded = contacted.filter(isResponded)
     const responseRate = contacted.length > 0 ? (responded.length / contacted.length) * 100 : 0
+
+    // ─── Relances ───
+    // relance_step = nb de relances marquées « faites ». Les relances s'arrêtent dès que
+    // le prospect a répondu : relance_step fige donc le nb de relances envoyées avant la réponse.
+    const stepOf = (p: any) => Math.max(0, Number(p.relance_step) || 0)
+    const relanced = contacted.filter((p: any) => stepOf(p) > 0)
+    const relanceReplied = relanced.filter(isResponded)
+    const relanceRate = relanced.length > 0 ? (relanceReplied.length / relanced.length) * 100 : 0
+    // Détail par rang de relance : relancés n°N = ont reçu au moins N relances ;
+    // réponses n°N = ont répondu juste après la relance N (donc relance_step === N).
+    const maxStep = contacted.reduce((m: number, p: any) => Math.max(m, stepOf(p)), relanceDelays.length)
+    const relanceSteps = Array.from({ length: maxStep }, (_, i) => {
+      const n = i + 1
+      const reached = contacted.filter((p: any) => stepOf(p) >= n).length
+      const replied = contacted.filter((p: any) => stepOf(p) === n && isResponded(p)).length
+      return { n, reached, replied, rate: reached > 0 ? (replied / reached) * 100 : 0 }
+    })
+    const neverRelanced = contacted.filter((p: any) => stepOf(p) === 0)
+    const neverRelancedReplied = neverRelanced.filter(isResponded).length
+
+    // ─── Canaux (écrit / vocal / mail) ───
+    // Renseignés par la pop-up posée à chaque contact et à chaque relance.
+    // Premier contact : first_contact_channel. Relance : canal de la DERNIÈRE relance
+    // envoyée (c'est celle à laquelle le prospect a répondu, les relances s'arrêtant après).
+    const channelStats = channelResponseStats(contacted)
+    const channelUnknown = contacted.filter((p: any) => !isContactChannel(p.first_contact_channel)).length
+    const relanceChannelStats = CONTACT_CHANNELS.map(c => {
+      const sent = relanced.filter((p: any) => lastRelanceChannel(p) === c.key)
+      const replied = sent.filter(isResponded).length
+      return { key: c.key, sent: sent.length, replied, rate: sent.length > 0 ? (replied / sent.length) * 100 : 0 }
+    })
 
     const booked = contacted.filter((p: any) => {
       if (p.stage === 'noanswer' || p.stage === 'contacted') return false
@@ -400,6 +440,9 @@ export function SetterKPI() {
     return {
       contacted, responded, responseRate, booked, bookingRate,
       qualifiedAll, won, noShow, lost, conversionRate, noShowRate, revenue,
+      relanced, relanceReplied, relanceRate, relanceSteps,
+      neverRelanced, neverRelancedReplied,
+      channelStats, channelUnknown, relanceChannelStats,
     }
   }
 
@@ -737,7 +780,7 @@ export function SetterKPI() {
 
       {/* Setter-specific KPI Cards (personal or member tab) */}
       {showSetterCards && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
             <div className="flex items-center gap-3 mb-3">
               <PhoneIncoming className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -745,6 +788,20 @@ export function SetterKPI() {
             </div>
             <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(setterDisplay.responseRate)}%</p>
             <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.kpi_responses_contacted.replace('{responses}', String(setterDisplay.responded.length)).replace('{contacted}', String(setterDisplay.contacted.length))}</p>
+          </div>
+          <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50 flex flex-col">
+            <div className="flex items-center gap-3 mb-3">
+              <Repeat className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">{t.kpi_relance_rate}</span>
+            </div>
+            <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(setterDisplay.relanceRate)}%</p>
+            <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.kpi_relance_replied_relanced.replace('{replied}', String(setterDisplay.relanceReplied.length)).replace('{relanced}', String(setterDisplay.relanced.length))}</p>
+            <button
+              onClick={() => setIsRelanceDetailOpen(true)}
+              className="mt-4 self-start flex items-center gap-1 rounded-full border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-3 py-1.5 text-xs font-bold text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-white/10 transition-colors"
+            >
+              {t.kpi_relance_detail_btn} <ChevronRight className="h-3.5 w-3.5" />
+            </button>
           </div>
           <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
             <div className="flex items-center gap-3 mb-3">
@@ -754,6 +811,48 @@ export function SetterKPI() {
             <p className="text-4xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(setterDisplay.bookingRate)}%</p>
             <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.kpi_booked_contacted.replace('{booked}', String(setterDisplay.booked.length)).replace('{contacted}', String(setterDisplay.contacted.length))}</p>
           </div>
+        </div>
+      )}
+
+      {/* Taux de réponse par canal (écrit / vocal / mail) — canal du premier contact */}
+      {showSetterCards && (
+        <div className="bg-white dark:bg-white/5 rounded-2xl p-8 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-100/50 dark:border-neutral-700/50">
+          <div className="flex items-center gap-3 mb-1">
+            <MessageSquare className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <span className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-400">{t.kpi_channel_rate}</span>
+          </div>
+          <p className="text-xs text-stone-400 dark:text-neutral-500 mb-5">{t.kpi_channel_sub}</p>
+          {setterDisplay.channelStats.every((c: any) => c.sent === 0) ? (
+            <p className="text-sm text-stone-400 dark:text-neutral-500 italic">{t.kpi_channel_empty}</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {setterDisplay.channelStats.map((c: any) => {
+                  const meta = CONTACT_CHANNELS.find(x => x.key === c.key)!
+                  return (
+                    <div key={c.key} className="rounded-xl border border-stone-100 dark:border-white/5 bg-stone-50/60 dark:bg-white/[0.02] p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-base leading-none">{meta.emoji}</span>
+                        <span className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{lang === 'en' ? meta.en : meta.fr}</span>
+                      </div>
+                      <p className="text-3xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(c.rate)}%</p>
+                      <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">
+                        {t.kpi_relance_replied_relanced.replace('{replied}', String(c.replied)).replace('{relanced}', String(c.sent))}
+                      </p>
+                      <div className="mt-3 h-1.5 rounded-full bg-stone-200/70 dark:bg-white/5 overflow-hidden">
+                        <div className="h-full rounded-full bg-purple-500 dark:bg-purple-400" style={{ width: `${Math.min(100, c.rate)}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {setterDisplay.channelUnknown > 0 && (
+                <p className="text-xs text-stone-400 dark:text-neutral-500 mt-4">
+                  {t.kpi_channel_unknown.replace('{n}', String(setterDisplay.channelUnknown))}
+                </p>
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -975,6 +1074,113 @@ export function SetterKPI() {
         </div>
         )
       })()}
+
+      {/* Détail des réponses par relance */}
+      {isRelanceDetailOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setIsRelanceDetailOpen(false)} />
+          <div className="relative w-full max-w-2xl mx-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-stone-200 dark:border-white/10 shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-stone-100 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-stone-100 dark:bg-purple-600/20 rounded-lg border border-stone-200 dark:border-purple-500/30">
+                  <Repeat className="w-5 h-5 text-stone-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-stone-900 dark:text-white">{t.kpi_relance_detail_title}</h2>
+                  <p className="text-xs text-stone-500 dark:text-neutral-400">{t.kpi_relance_detail_sub}</p>
+                </div>
+              </div>
+              <button onClick={() => setIsRelanceDetailOpen(false)} className="p-2 rounded-lg text-stone-400 hover:bg-stone-100 dark:hover:bg-white/5 hover:text-stone-600 dark:hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5 max-h-[65vh] overflow-y-auto">
+              {/* Global */}
+              <div className="flex items-center justify-between rounded-xl bg-stone-50 dark:bg-white/[0.03] border border-stone-200 dark:border-white/10 px-4 py-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.kpi_relance_global}</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">
+                    {t.kpi_relance_replied_relanced.replace('{replied}', String(setterDisplay.relanceReplied.length)).replace('{relanced}', String(setterDisplay.relanced.length))}
+                  </p>
+                </div>
+                <p className="text-3xl font-extrabold tracking-tighter text-stone-900 dark:text-white">{formatPercent(setterDisplay.relanceRate)}%</p>
+              </div>
+
+              {/* Répondu sans relance (référence) */}
+              <div className="flex items-center justify-between rounded-xl border border-dashed border-stone-200 dark:border-white/10 px-4 py-3">
+                <div>
+                  <p className="text-sm font-bold text-stone-700 dark:text-neutral-200">{t.kpi_relance_no_relance}</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5">{t.kpi_relance_no_relance_hint}</p>
+                </div>
+                <p className="text-sm font-bold text-stone-500 dark:text-neutral-400">
+                  {setterDisplay.neverRelancedReplied} / {setterDisplay.neverRelanced.length}
+                </p>
+              </div>
+
+              {/* Détail par rang de relance */}
+              {setterDisplay.relanceSteps.length === 0 || setterDisplay.relanced.length === 0 ? (
+                <p className="text-sm text-stone-400 dark:text-neutral-500 italic text-center py-6">{t.kpi_relance_empty}</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-1 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-neutral-500">
+                    <span>{t.kpi_relance_col_step}</span>
+                    <span className="w-16 text-right">{t.kpi_relance_col_relanced}</span>
+                    <span className="w-16 text-right">{t.kpi_relance_col_replied}</span>
+                    <span className="w-14 text-right">{t.kpi_relance_col_rate}</span>
+                  </div>
+                  {setterDisplay.relanceSteps.map((s: any) => (
+                    <div key={s.n} className="rounded-xl border border-stone-100 dark:border-white/5 bg-white dark:bg-white/[0.02] px-4 py-3">
+                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center">
+                        <span className="text-sm font-semibold text-stone-900 dark:text-white">{relanceLabel(s.n, lang !== 'en')}</span>
+                        <span className="w-16 text-right text-sm text-stone-500 dark:text-neutral-400">{s.reached}</span>
+                        <span className="w-16 text-right text-sm text-stone-500 dark:text-neutral-400">{s.replied}</span>
+                        <span className="w-14 text-right text-sm font-bold text-stone-900 dark:text-white">{formatPercent(s.rate)}%</span>
+                      </div>
+                      <div className="mt-2 h-1.5 rounded-full bg-stone-100 dark:bg-white/5 overflow-hidden">
+                        <div className="h-full rounded-full bg-purple-500 dark:bg-purple-400 transition-all" style={{ width: `${Math.min(100, s.rate)}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Par canal de relance */}
+              {setterDisplay.relanceChannelStats.some((c: any) => c.sent > 0) && (
+                <div className="pt-1">
+                  <p className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-neutral-400">{t.kpi_relance_by_channel}</p>
+                  <p className="text-xs text-stone-400 dark:text-neutral-500 mt-0.5 mb-3">{t.kpi_relance_by_channel_sub}</p>
+                  <div className="space-y-2">
+                    {setterDisplay.relanceChannelStats.map((c: any) => {
+                      const meta = CONTACT_CHANNELS.find(x => x.key === c.key)!
+                      return (
+                        <div key={c.key} className="rounded-xl border border-stone-100 dark:border-white/5 bg-white dark:bg-white/[0.02] px-4 py-3">
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="flex items-center gap-2 text-sm font-semibold text-stone-900 dark:text-white">
+                              <span className="text-base leading-none">{meta.emoji}</span>
+                              {lang === 'en' ? meta.en : meta.fr}
+                            </span>
+                            <span className="flex items-center gap-4">
+                              <span className="text-sm text-stone-500 dark:text-neutral-400">{c.replied} / {c.sent}</span>
+                              <span className="w-14 text-right text-sm font-bold text-stone-900 dark:text-white">{formatPercent(c.rate)}%</span>
+                            </span>
+                          </div>
+                          <div className="mt-2 h-1.5 rounded-full bg-stone-100 dark:bg-white/5 overflow-hidden">
+                            <div className="h-full rounded-full bg-purple-500 dark:bg-purple-400" style={{ width: `${Math.min(100, c.rate)}%` }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-stone-400 dark:text-neutral-500 leading-relaxed">{t.kpi_relance_note}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

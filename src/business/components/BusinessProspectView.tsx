@@ -25,6 +25,8 @@ import { ReassignAppointmentButton } from './ReassignAppointmentButton'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { UnqualifiedReasonModal } from './UnqualifiedReasonModal'
 import { applyUnqualification, unqualifiedReasonLabel } from '../lib/unqualifiedReasons'
+import { useChannelPrompt } from '../contexts/BusinessChannelPromptContext'
+import { appendRelanceChannel } from '../lib/contactChannels'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -940,6 +942,9 @@ export function BusinessProspectView({
   // (ex. remise à zéro de la discussion quand on disqualifie depuis la carte « en discussion »).
   const [unqualifyPending, setUnqualifyPending] = useState<Partial<BusinessProspect> | null>(null)
 
+  // Pop-up « à l'écrit / vocal / mail » sur le premier contact et sur chaque relance.
+  const { askChannel } = useChannelPrompt()
+
   // -- Optimistic update helper --
   const handleUpdate = (updates: Partial<BusinessProspect>) => {
     if (updates.stage && updates.stage !== local.stage) stageChangedNowRef.current = new Date().toISOString()
@@ -1365,7 +1370,16 @@ export function BusinessProspectView({
                     <div className="flex flex-wrap gap-2">
                       {relanceDelays.length > 0 && (
                         <button
-                          onClick={() => handleUpdate({ relance_step: (local.relance_step || 0) + 1, last_relance_at: new Date().toISOString() })}
+                          onClick={() => {
+                            const step = local.relance_step || 0
+                            askChannel('relance', { relanceNumber: step + 1, contactName: local.contact }).then(ch =>
+                              handleUpdate({
+                                relance_step: step + 1,
+                                last_relance_at: new Date().toISOString(),
+                                relance_channels: appendRelanceChannel(local.relance_channels, step, ch),
+                              })
+                            )
+                          }}
                           className={`${btnBase} bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 hover:brightness-105`}
                         >
                           <Check className="h-4 w-4" strokeWidth={2} /> {fr ? 'Relance faite' : 'Follow-up done'}
@@ -1486,6 +1500,13 @@ export function BusinessProspectView({
                       // Non-Qualifié : la pop-up de motif se charge de l'enregistrement
                       if (newStage === 'unqualified' && local.stage !== 'unqualified') {
                         setUnqualifyPending({})
+                        return
+                      }
+                      // Premier contact : on demande le canal, écrit dans la même requête
+                      // que le passage en « Contacté » (le trigger serveur ne l'écrase pas).
+                      if (newStage === 'contacted' && local.stage !== 'contacted') {
+                        askChannel('first', { contactName: local.contact })
+                          .then(ch => handleUpdate({ stage: newStage, first_contact_channel: ch }))
                         return
                       }
                       handleUpdate({ stage: newStage })

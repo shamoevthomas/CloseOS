@@ -16,6 +16,7 @@ import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
 import { getProspectCA } from '../lib/getProspectCA'
 import { unqualifiedReasonLabel } from '../lib/unqualifiedReasons'
+import { CONTACT_CHANNELS, channelResponseStats, isContactChannel } from '../lib/contactChannels'
 // @ts-ignore
 import html2pdf from 'html2pdf.js'
 
@@ -70,6 +71,7 @@ interface Prospect {
   contacted_at?: string | null
   responded_at?: string | null
   relance_step?: number | null
+  first_contact_channel?: string | null
   noshow_relance_step?: number | null
   noshow_at?: string | null
   subscription_status?: string | null
@@ -261,7 +263,7 @@ export function BusinessReport() {
       ] = await Promise.all([
         supabase.from('business_team_members').select('id, first_name, last_name, email, role, joined_at, avatar_url, commission_rate, compensation_type, per_booking_amount').eq('business_owner_id', effectiveUserId),
         supabase.from('business_users').select('id, full_name, email, created_at, avatar_url').eq('id', effectiveUserId).single(),
-        supabase.from('business_prospects').select('id, stage, value, created_at, campaign_id, payment_type, installments, assigned_to, assigned_setter, contact, loss_reason, loss_details, call_notes, stripe_subscription_id, subscription_amount, subscription_status, subscription_interval, formula_id, offer, source, previous_stage, won_at, lost_at, unqualified_reason, unqualified_details, unqualified_at, contacted_at, responded_at, relance_step, noshow_relance_step, noshow_at, custom_commission_rate, commission_approval_status').eq('user_id', effectiveUserId),
+        supabase.from('business_prospects').select('id, stage, value, created_at, campaign_id, payment_type, installments, assigned_to, assigned_setter, contact, loss_reason, loss_details, call_notes, stripe_subscription_id, subscription_amount, subscription_status, subscription_interval, formula_id, offer, source, previous_stage, won_at, lost_at, unqualified_reason, unqualified_details, unqualified_at, contacted_at, responded_at, relance_step, first_contact_channel, noshow_relance_step, noshow_at, custom_commission_rate, commission_approval_status').eq('user_id', effectiveUserId),
         supabase.from('business_campaigns').select('id, name, views, is_active, created_at').eq('user_id', effectiveUserId),
         supabase.from('business_appointments').select('id, status, date, campaign_id, prospect_id, created_at, assigned_to').eq('user_id', effectiveUserId),
         supabase.from('reminders').select('id, title, reminder_date, created_at, is_done, user_id, created_by_member_id').eq('user_id', effectiveUserId),
@@ -602,6 +604,19 @@ export function BusinessReport() {
       noshowRecovered: noshowRecovered.length,
     }
   }, [filteredProspects, prospects, inPeriod])
+
+  // Canal du premier contact (écrit / vocal / mail) — renseigné par la pop-up posée
+  // à chaque prise de contact. « A répondu » suit la définition partagée avec les KPI
+  // setter (bouton « Répondu » OU prospect avancé au-delà de « Contacté »).
+  const channelStats = useMemo(() => {
+    const contacted = filteredProspects.filter(p => p.stage !== 'prospect')
+    const rows = channelResponseStats(contacted)
+    return {
+      rows,
+      unknown: contacted.filter(p => !isContactChannel(p.first_contact_channel)).length,
+      any: rows.some(r => r.sent > 0),
+    }
+  }, [filteredProspects])
 
   // ─── Activité téléphonique (B10) ───
   const callStats = useMemo(() => {
@@ -1769,6 +1784,41 @@ export function BusinessReport() {
             <StatLine label={t.report_noshow_relance} value={speedStats.noshowRelanced} color="stone" />
             <StatLine label={t.report_noshow_recovered} value={speedStats.noshowRecovered} color="emerald" />
           </div>
+
+          {/* Taux de réponse par canal de premier contact */}
+          <div className="mt-7 pt-6 border-t border-stone-200/60 dark:border-neutral-700/60">
+            <p className="text-[10px] font-bold text-stone-400 dark:text-neutral-500 uppercase tracking-[0.15em] mb-1">{t.report_channel_rate}</p>
+            <p className="text-xs text-stone-400 dark:text-neutral-500 mb-4">{t.report_channel_sub}</p>
+            {!channelStats.any ? (
+              <p className="text-sm text-stone-400 dark:text-neutral-500 italic">{t.report_channel_empty}</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3">
+                  {channelStats.rows.map(row => {
+                    const meta = CONTACT_CHANNELS.find(c => c.key === row.key)!
+                    return (
+                      <div key={row.key} className="rounded-xl border border-stone-200/70 dark:border-neutral-700/60 p-3">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span className="text-sm leading-none">{meta.emoji}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-neutral-500 truncate">{lang === 'en' ? meta.en : meta.fr}</span>
+                        </div>
+                        <p className="text-2xl font-extrabold text-stone-900 dark:text-white">{formatPct(row.rate)}</p>
+                        <p className="text-[11px] text-stone-400 dark:text-neutral-500 mt-0.5">{row.replied} / {row.sent}</p>
+                        <div className="mt-2 h-1.5 rounded-full bg-stone-200/70 dark:bg-neutral-700/60 overflow-hidden">
+                          <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, row.rate)}%` }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                {channelStats.unknown > 0 && (
+                  <p className="text-[11px] text-stone-400 dark:text-neutral-500 mt-3">
+                    {t.report_channel_unknown.replace('{n}', String(channelStats.unknown))}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         <div className="glass-card p-7 rounded-2xl">
@@ -2332,6 +2382,17 @@ export function BusinessReport() {
               <span>{t.report_calls_total} : <b>{callStats.total}</b></span>
               <span>{t.report_answer_rate} : <b>{formatPct(callStats.answerRate)}</b></span>
             </div>
+            {channelStats.any && (
+              <div style={{ display: 'flex', gap: '16px', fontSize: '12px', flexWrap: 'wrap', marginTop: '6px' }}>
+                <span>{t.report_channel_rate} :</span>
+                {channelStats.rows.map(row => {
+                  const meta = CONTACT_CHANNELS.find(c => c.key === row.key)!
+                  return (
+                    <span key={row.key}>{lang === 'en' ? meta.en : meta.fr} : <b>{formatPct(row.rate)}</b> ({row.replied}/{row.sent})</span>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* PDF Pipeline */}

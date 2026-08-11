@@ -11,6 +11,8 @@ import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { UnqualifiedReasonModal } from '../components/UnqualifiedReasonModal'
 import { applyUnqualification } from '../lib/unqualifiedReasons'
+import { useChannelPrompt } from '../contexts/BusinessChannelPromptContext'
+import { markFirstContact, markRelanceDone } from '../lib/contactChannels'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import { supabase } from '../../lib/supabase'
@@ -51,6 +53,7 @@ export function CloserPipeline() {
   const { t, lang } = useBusinessLang()
   const { customStages } = useCustomStages()
   const relanceDelays = useContactedReminders()
+  const { askChannel } = useChannelPrompt()
 
   // Next appointments per prospect
   const [nextAppointments, setNextAppointments] = useState<Record<number, { date: string; time: string }>>({})
@@ -171,6 +174,12 @@ export function CloserPipeline() {
     if (destination.droppableId === 'unqualified' && source.droppableId !== 'unqualified') {
       const dragged = prospects.find(p => p.id === prospectId)
       if (dragged) { setUnqualifyTarget(dragged); return }
+    }
+
+    // Premier contact : on demande par quel canal le message est parti.
+    if (destination.droppableId === 'contacted' && source.droppableId !== 'contacted') {
+      const dragged = prospects.find(p => p.id === prospectId)
+      if (dragged) { markFirstContact(dragged, askChannel, updateProspect); return }
     }
 
     updateProspect(prospectId, { stage: destination.droppableId })
@@ -354,7 +363,7 @@ export function CloserPipeline() {
                                                     {lang === 'en' ? 'Follow up today' : 'Relance aujourd’hui'}
                                                   </span>
                                                   <button
-                                                    onClick={(e) => { e.stopPropagation(); updateProspect(deal.id, { relance_step: (deal.relance_step || 0) + 1, last_relance_at: new Date().toISOString() }) }}
+                                                    onClick={(e) => { e.stopPropagation(); markRelanceDone(deal, askChannel, updateProspect) }}
                                                     className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#006c49] text-white hover:bg-[#005a3d] transition-colors"
                                                   >
                                                     {lang === 'en' ? 'Follow-up done' : 'Relance faite'}

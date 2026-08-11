@@ -1120,6 +1120,26 @@ export interface BusinessTranslations {
   kpi_booking_rate: string;
   kpi_responses_contacted: string;
   kpi_booked_contacted: string;
+  kpi_relance_rate: string;
+  kpi_relance_replied_relanced: string;
+  kpi_relance_detail_btn: string;
+  kpi_relance_detail_title: string;
+  kpi_relance_detail_sub: string;
+  kpi_relance_col_step: string;
+  kpi_relance_col_relanced: string;
+  kpi_relance_col_replied: string;
+  kpi_relance_col_rate: string;
+  kpi_relance_no_relance: string;
+  kpi_relance_no_relance_hint: string;
+  kpi_relance_empty: string;
+  kpi_relance_note: string;
+  kpi_relance_global: string;
+  kpi_channel_rate: string;
+  kpi_channel_sub: string;
+  kpi_channel_unknown: string;
+  kpi_channel_empty: string;
+  kpi_relance_by_channel: string;
+  kpi_relance_by_channel_sub: string;
   kpi_closing_rate: string;
   kpi_won_qualified: string;
   kpi_noshow_qualified: string;
@@ -2181,6 +2201,10 @@ export interface BusinessTranslations {
   report_contacted_24h: string;
   report_in_relance: string;
   report_relance_reply_rate: string;
+  report_channel_rate: string;
+  report_channel_sub: string;
+  report_channel_unknown: string;
+  report_channel_empty: string;
   report_noshow_relance: string;
   report_noshow_recovered: string;
   report_calls: string;
@@ -3629,6 +3653,26 @@ export const fr: BusinessTranslations = {
   kpi_booking_rate: 'Taux de booking',
   kpi_responses_contacted: 'Reponses / Contactes',
   kpi_booked_contacted: 'Bookes / Contactes',
+  kpi_relance_rate: 'Taux de réponse aux relances',
+  kpi_relance_replied_relanced: '{replied} réponses / {relanced} relancés',
+  kpi_relance_detail_btn: 'Détail par relance',
+  kpi_relance_detail_title: 'Réponses par relance',
+  kpi_relance_detail_sub: 'À quelle relance vos prospects répondent-ils ?',
+  kpi_relance_col_step: 'Relance',
+  kpi_relance_col_relanced: 'Relancés',
+  kpi_relance_col_replied: 'Réponses',
+  kpi_relance_col_rate: 'Taux',
+  kpi_relance_no_relance: 'Sans relance',
+  kpi_relance_no_relance_hint: 'Ont répondu dès le 1er contact',
+  kpi_relance_empty: 'Aucun prospect relancé sur cette période.',
+  kpi_relance_note: 'Relancés n° N = prospects ayant reçu au moins N relances. Réponses = ceux qui ont répondu juste après cette relance (bouton « Répondu » ou passage au-delà de « Contacté »).',
+  kpi_relance_global: 'Global',
+  kpi_channel_rate: 'Taux de réponse par canal',
+  kpi_channel_sub: 'Canal utilisé lors du premier contact',
+  kpi_channel_unknown: '{n} contact(s) sans canal renseigné',
+  kpi_channel_empty: 'Aucun canal renseigné sur cette période. La question est posée à chaque contact et relance (réactivable dans Paramètres › Interface).',
+  kpi_relance_by_channel: 'Par canal de relance',
+  kpi_relance_by_channel_sub: 'Canal de la dernière relance envoyée',
   kpi_closing_rate: 'Taux de closing',
   kpi_won_qualified: 'Gagnes / Qualifies',
   kpi_noshow_qualified: 'No-show / Qualifies',
@@ -4722,6 +4766,10 @@ export const fr: BusinessTranslations = {
   report_contacted_24h: 'Contactés < 24 h',
   report_in_relance: 'En cours de relance',
   report_relance_reply_rate: 'Taux de réponse aux relances',
+  report_channel_rate: 'Taux de réponse par canal',
+  report_channel_sub: 'Canal utilisé lors du premier contact',
+  report_channel_unknown: '{n} contact(s) sans canal renseigné',
+  report_channel_empty: 'Aucun canal renseigné sur cette période. La question est posée à chaque contact et relance.',
   report_noshow_relance: 'No-shows relancés',
   report_noshow_recovered: 'No-shows récupérés',
   report_calls: 'Activité téléphonique',
@@ -6905,6 +6953,26 @@ export const en: BusinessTranslations = {
   kpi_booking_rate: 'Booking rate',
   kpi_responses_contacted: 'Responses / Contacted',
   kpi_booked_contacted: 'Booked / Contacted',
+  kpi_relance_rate: 'Follow-up reply rate',
+  kpi_relance_replied_relanced: '{replied} replies / {relanced} followed up',
+  kpi_relance_detail_btn: 'Breakdown per follow-up',
+  kpi_relance_detail_title: 'Replies per follow-up',
+  kpi_relance_detail_sub: 'Which follow-up do your prospects reply to?',
+  kpi_relance_col_step: 'Follow-up',
+  kpi_relance_col_relanced: 'Followed up',
+  kpi_relance_col_replied: 'Replies',
+  kpi_relance_col_rate: 'Rate',
+  kpi_relance_no_relance: 'No follow-up',
+  kpi_relance_no_relance_hint: 'Replied on first contact',
+  kpi_relance_empty: 'No prospect followed up in this period.',
+  kpi_relance_note: 'Followed up #N = prospects who received at least N follow-ups. Replies = those who replied right after that follow-up ("Replied" button or moved beyond "Contacted").',
+  kpi_relance_global: 'Overall',
+  kpi_channel_rate: 'Response rate by channel',
+  kpi_channel_sub: 'Channel used for the first contact',
+  kpi_channel_unknown: '{n} contact(s) with no channel recorded',
+  kpi_channel_empty: 'No channel recorded in this period. The question is asked on every contact and follow-up (re-enable it in Settings › Interface).',
+  kpi_relance_by_channel: 'By follow-up channel',
+  kpi_relance_by_channel_sub: 'Channel of the last follow-up sent',
   kpi_closing_rate: 'Closing rate',
   kpi_won_qualified: 'Won / Qualified',
   kpi_noshow_qualified: 'No-show / Qualified',
@@ -7115,6 +7183,10 @@ export const en: BusinessTranslations = {
   report_contacted_24h: 'Contacted < 24h',
   report_in_relance: 'In follow-up',
   report_relance_reply_rate: 'Follow-up reply rate',
+  report_channel_rate: 'Reply rate by channel',
+  report_channel_sub: 'Channel used for the first contact',
+  report_channel_unknown: '{n} contact(s) with no channel recorded',
+  report_channel_empty: 'No channel recorded in this period. The question is asked on every contact and follow-up.',
   report_noshow_relance: 'No-shows followed up',
   report_noshow_recovered: 'No-shows recovered',
   report_calls: 'Call activity',

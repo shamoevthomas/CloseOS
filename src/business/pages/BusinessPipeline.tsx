@@ -18,6 +18,8 @@ import { BusinessRelanceWorklistModal } from '../components/BusinessRelanceWorkl
 import { BusinessNoShowRelancesModal } from '../components/BusinessNoShowRelancesModal'
 import { UnqualifiedReasonModal } from '../components/UnqualifiedReasonModal'
 import { applyUnqualification } from '../lib/unqualifiedReasons'
+import { useChannelPrompt } from '../contexts/BusinessChannelPromptContext'
+import { markFirstContact, markRelanceDone } from '../lib/contactChannels'
 import { useCustomStages, type CustomStage } from '../hooks/useCustomStages'
 import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import { supabase } from '../../lib/supabase'
@@ -116,6 +118,7 @@ export function BusinessPipeline() {
 
   const effectiveUserId = ownerUserId || user?.id
   const relanceDelays = useContactedReminders()
+  const { askChannel } = useChannelPrompt()
   const worklistCount = useMemo(() => {
     const now = Date.now()
     const myActorId = isTeamMember ? teamMember?.id : user?.id
@@ -533,6 +536,12 @@ export function BusinessPipeline() {
     if (destination.droppableId === 'unqualified' && source.droppableId !== 'unqualified') {
       const dragged = prospects.find(p => p.id === prospectId)
       if (dragged) { setUnqualifyTarget(dragged); return }
+    }
+
+    // Premier contact : on demande par quel canal le message est parti.
+    if (destination.droppableId === 'contacted' && source.droppableId !== 'contacted') {
+      const dragged = prospects.find(p => p.id === prospectId)
+      if (dragged) { markFirstContact(dragged, askChannel, updateProspect); return }
     }
 
     updateProspect(prospectId, { stage: destination.droppableId })
@@ -967,7 +976,7 @@ export function BusinessPipeline() {
                                                   {lang === 'en' ? 'Follow up today' : 'Relance aujourd’hui'}
                                                 </span>
                                                 <button
-                                                  onClick={(e) => { e.stopPropagation(); updateProspect(deal.id, { relance_step: (deal.relance_step || 0) + 1, last_relance_at: new Date().toISOString() }) }}
+                                                  onClick={(e) => { e.stopPropagation(); markRelanceDone(deal, askChannel, updateProspect) }}
                                                   className="inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#006c49] text-white hover:bg-[#005a3d] transition-colors"
                                                 >
                                                   {lang === 'en' ? 'Follow-up done' : 'Relance faite'}
@@ -1378,7 +1387,7 @@ export function BusinessPipeline() {
         canChooseMember={!isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'}
         members={teamMembers.filter(m => String(m.role || '').toLowerCase().startsWith('setter'))}
         onOpen={(p) => setSelectedProspect(p)}
-        onRelanceDone={(p) => updateProspect(p.id, { relance_step: (p.relance_step || 0) + 1, last_relance_at: new Date().toISOString() })}
+        onRelanceDone={(p) => markRelanceDone(p, askChannel, updateProspect)}
       />
 
       {contactedRemindersOpen && effectiveUserId && (

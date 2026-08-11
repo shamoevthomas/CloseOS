@@ -21,6 +21,7 @@ import {
   ZoomOut,
   ToggleLeft,
   ToggleRight,
+  MessageSquare,
   UserPlus,
   ArrowRight,
   Monitor,
@@ -51,6 +52,7 @@ import {
 import { cn } from '../../lib/utils'
 import { BusinessExtrasModal } from './BusinessExtrasModal'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
+import { useChannelPrompt } from '../contexts/BusinessChannelPromptContext'
 import { useTheme } from '../contexts/BusinessThemeContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { supabase } from '../../lib/supabase'
@@ -109,6 +111,8 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
   const navigate = useNavigate()
   const { user, businessProfile, updateBusinessProfile, businessSettings, updateBusinessSettings, isTeamMember, teamMember, ownerUserId, refreshProfile, isSolo, hasAcquisition } = useBusinessAuth()
   const { dark, toggle: toggleDark } = useTheme()
+  // Pop-up « canal de contact » (écrit / vocal / mail) posée à chaque contact et relance
+  const { askEnabled: askChannelEnabled, setAskEnabled: setAskChannelEnabled } = useChannelPrompt()
   const { lang, setLang, t } = useBusinessLang()
 
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'interface' | 'devices' | 'organisation' | 'mcp' | 'support' | 'delete_account'>(initialTab)
@@ -1558,6 +1562,32 @@ export function BusinessSettingsModal({ isOpen, onClose, initialTab = 'profile' 
                     </div>
                   </div>
                   {dark
+                    ? <ToggleRight className="h-7 w-7 text-[#006c49] shrink-0" />
+                    : <ToggleLeft className="h-7 w-7 text-stone-300 shrink-0" />
+                  }
+                </div>
+
+                {/* Pop-up canal de contact (écrit / vocal / mail) */}
+                <div
+                  onClick={() => setAskChannelEnabled(!askChannelEnabled)}
+                  className="flex items-center justify-between p-6 rounded-2xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 rounded-xl bg-stone-900/10 dark:bg-white/10 text-stone-900 dark:text-white group-hover:bg-stone-900/15 dark:group-hover:bg-white/15 transition-colors">
+                      <MessageSquare className="h-5 w-5" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-stone-900 dark:text-white text-sm">
+                        {lang === 'en' ? 'Ask for the contact channel' : 'Demander le canal de contact'}
+                      </h4>
+                      <p className="text-xs text-stone-500 dark:text-neutral-400 mt-0.5 max-w-md">
+                        {lang === 'en'
+                          ? 'Ask "written, voice or email?" on each first contact and follow-up. Feeds the per-channel response rate in the setter KPIs.'
+                          : 'Poser la question « à l’écrit, vocal ou mail ? » à chaque premier contact et à chaque relance. Alimente le taux de réponse par canal dans les KPI setter.'}
+                      </p>
+                    </div>
+                  </div>
+                  {askChannelEnabled
                     ? <ToggleRight className="h-7 w-7 text-[#006c49] shrink-0" />
                     : <ToggleLeft className="h-7 w-7 text-stone-300 shrink-0" />
                   }

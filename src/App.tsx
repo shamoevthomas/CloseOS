@@ -130,6 +130,7 @@ import { SignLangProvider } from './contexts/SignLangContext'
 import { BusinessAuthProvider, useBusinessAuth } from './business/contexts/BusinessAuthContext'
 import { BusinessProspectsProvider } from './business/contexts/BusinessProspectsContext'
 import { BusinessGoogleCalendarProvider } from './business/contexts/BusinessGoogleCalendarContext'
+import { BusinessChannelPromptProvider } from './business/contexts/BusinessChannelPromptContext'
 import { BusinessLayout } from './business/layouts/BusinessLayout'
 import BusinessLogin from './business/pages/BusinessLogin'
 import BusinessRegister from './business/pages/BusinessRegister'
@@ -522,9 +523,11 @@ function AuthenticatedApp() {
             <BusinessLangWrapper>
             <BusinessProspectsProvider>
               <BusinessGoogleCalendarProvider>
-                <BusinessLayout />
-                <BusinessOnboardingModal />
-                <BusinessWhatsNewModal />
+                <BusinessChannelPromptProvider>
+                  <BusinessLayout />
+                  <BusinessOnboardingModal />
+                  <BusinessWhatsNewModal />
+                </BusinessChannelPromptProvider>
               </BusinessGoogleCalendarProvider>
             </BusinessProspectsProvider>
             </BusinessLangWrapper>
@@ -564,7 +567,9 @@ function AuthenticatedApp() {
         <Route path="/business/cockpit" element={
           <BusinessAuthProvider>
             <BusinessProspectsProvider>
-              <CloserCallRoom />
+              <BusinessChannelPromptProvider>
+                <CloserCallRoom />
+              </BusinessChannelPromptProvider>
             </BusinessProspectsProvider>
           </BusinessAuthProvider>
         } />
