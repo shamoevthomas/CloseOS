@@ -7,7 +7,7 @@ import {
   Bell, Check, Loader2, FileText, ClipboardList,
   Package, ExternalLink, PhoneCall, Tag, Camera,
   CreditCard, Wallet, Link2, Search, Zap, CheckCircle2,
-  Award, AlertCircle, XCircle, Settings2, CalendarPlus, Copy, Globe,
+  Award, AlertCircle, XCircle, Settings2, CalendarPlus, Copy, Globe, ArrowLeft,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { TimezonePicker } from './TimezonePicker'
@@ -116,6 +116,8 @@ export function BusinessProspectView({
   const { t, lang } = useBusinessLang()
   const relanceDelays = useContactedReminders()
   const [discussionOui, setDiscussionOui] = useState(false)
+  // Snapshot de l'état « Répondu » quitté, pour proposer un retour arrière en cas de mauvais clic.
+  const [responseUndo, setResponseUndo] = useState<Partial<BusinessProspect> | null>(null)
   const { customStages } = useCustomStages()
   const STAGE_NAME_MAP: Record<string, string> = {
     prospect: t.stage_prospect, contacted: t.stage_contacted, qualified: t.stage_qualified, unqualified: t.stage_unqualified,
@@ -1354,6 +1356,17 @@ export function BusinessProspectView({
           const clearResponse = { responded_at: null, discussion_next_at: null, discussion_email_sent: false }
           const hoursLeft = Math.max(0, Math.ceil((nextTs - Date.now()) / 3600000))
           const btnBase = 'flex items-center gap-2 px-4 py-2 rounded-full font-business-display font-bold text-sm transition-all active:scale-95'
+          const backBtn = `${btnBase} bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-600 text-stone-600 dark:text-neutral-300 hover:bg-stone-50`
+          // Quitter l'état « Répondu » : on mémorise les champs pour pouvoir revenir en arrière.
+          const leaveResponse = (extra: Partial<BusinessProspect> = {}) => {
+            setResponseUndo({
+              responded_at: local.responded_at,
+              discussion_next_at: local.discussion_next_at,
+              discussion_email_sent: local.discussion_email_sent ?? false,
+            })
+            handleUpdate({ ...clearResponse, ...extra })
+            setDiscussionOui(false)
+          }
           return (
             <section className="px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
               <div className="rounded-2xl border border-stone-200 dark:border-neutral-700 bg-stone-50/70 dark:bg-neutral-800/40 p-4">
@@ -1368,9 +1381,19 @@ export function BusinessProspectView({
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                      {responseUndo && (
+                        <button
+                          onClick={() => { handleUpdate(responseUndo); setResponseUndo(null) }}
+                          className={backBtn}
+                          title={fr ? 'Rétablir « Répondu » et remettre les relances en pause' : 'Restore "Replied" and pause follow-ups again'}
+                        >
+                          <ArrowLeft className="h-4 w-4" strokeWidth={2} /> {fr ? 'Retour' : 'Back'}
+                        </button>
+                      )}
                       {relanceDelays.length > 0 && (
                         <button
                           onClick={() => {
+                            setResponseUndo(null)
                             const step = local.relance_step || 0
                             askChannel('relance', { relanceNumber: step + 1, contactName: local.contact }).then(ch =>
                               handleUpdate({
@@ -1386,7 +1409,7 @@ export function BusinessProspectView({
                         </button>
                       )}
                       <button
-                        onClick={() => handleUpdate({ responded_at: new Date().toISOString(), discussion_next_at: plusOneDay(), discussion_email_sent: false })}
+                        onClick={() => { setResponseUndo(null); handleUpdate({ responded_at: new Date().toISOString(), discussion_next_at: plusOneDay(), discussion_email_sent: false }) }}
                         className={`${btnBase} bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 hover:brightness-105`}
                       >
                         <MessageCircle className="h-4 w-4" strokeWidth={1.5} /> {fr ? 'Répondu' : 'Replied'}
@@ -1399,14 +1422,31 @@ export function BusinessProspectView({
                 )}
 
                 {responded && !promptReady && (
-                  <div className="space-y-1.5">
-                    <p className="text-sm font-business-display font-bold text-emerald-700 dark:text-emerald-300">{fr ? 'En discussion — relances en pause' : 'In discussion — follow-ups paused'}</p>
-                    <p className="text-xs text-stone-500 dark:text-neutral-400">
-                      {fr ? `Point de statut dans ${hoursLeft} h.` : `Status check in ${hoursLeft} h.`}
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-business-display font-bold text-emerald-700 dark:text-emerald-300">{fr ? 'En discussion — relances en pause' : 'In discussion — follow-ups paused'}</p>
+                      <p className="text-xs text-stone-500 dark:text-neutral-400">
+                        {fr ? `Point de statut dans ${hoursLeft} h.` : `Status check in ${hoursLeft} h.`}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => leaveResponse()}
+                        className={backBtn}
+                        title={fr ? 'Annule « Répondu » et reprend les relances' : 'Cancels "Replied" and resumes follow-ups'}
+                      >
+                        <ArrowLeft className="h-4 w-4" strokeWidth={2} /> {fr ? 'Retour' : 'Back'}
+                      </button>
+                      <button
+                        onClick={() => { handleUpdate({ stage: 'qualified', ...clearResponse }); setResponseUndo(null); setDiscussionOui(false) }}
+                        className={`${btnBase} bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 hover:brightness-105`}
+                      >
+                        <Check className="h-4 w-4" strokeWidth={2} /> {fr ? 'Qualifié maintenant' : 'Qualify now'}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-stone-400 dark:text-neutral-500">
+                      {fr ? '« Retour » annule « Répondu » et reprend les relances.' : '"Back" cancels "Replied" and resumes follow-ups.'}
                     </p>
-                    <button onClick={() => { handleUpdate(clearResponse); setDiscussionOui(false) }} className="text-xs text-stone-400 dark:text-neutral-500 underline underline-offset-2 hover:text-stone-700">
-                      {fr ? 'Reprendre les relances maintenant' : 'Resume follow-ups now'}
-                    </button>
                   </div>
                 )}
 
@@ -1414,7 +1454,7 @@ export function BusinessProspectView({
                   <div className="space-y-3">
                     <p className="text-sm font-business-display font-bold text-stone-900 dark:text-white">{fr ? 'Toujours en discussion avec ce prospect ?' : 'Still in discussion with this prospect?'}</p>
                     <div className="flex gap-2">
-                      <button onClick={() => { handleUpdate(clearResponse); setDiscussionOui(false) }} className={`${btnBase} bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-50`}>
+                      <button onClick={() => leaveResponse()} className={`${btnBase} bg-white dark:bg-neutral-800 border border-stone-200 dark:border-neutral-600 text-stone-700 dark:text-neutral-200 hover:bg-stone-50`}>
                         {fr ? 'Non, relancer' : 'No, follow up'}
                       </button>
                       <button onClick={() => setDiscussionOui(true)} className={`${btnBase} bg-stone-900 text-white dark:bg-white dark:text-stone-900 hover:brightness-110`}>
@@ -1428,6 +1468,9 @@ export function BusinessProspectView({
                   <div className="space-y-3">
                     <p className="text-sm font-business-display font-bold text-stone-900 dark:text-white">{fr ? 'Résultat de la discussion' : 'Discussion outcome'}</p>
                     <div className="flex flex-wrap gap-2">
+                      <button onClick={() => setDiscussionOui(false)} className={backBtn} title={fr ? 'Revenir à « Toujours en discussion ? »' : 'Back to "Still in discussion?"'}>
+                        <ArrowLeft className="h-4 w-4" strokeWidth={2} /> {fr ? 'Retour' : 'Back'}
+                      </button>
                       <button onClick={() => { handleUpdate({ stage: 'qualified', ...clearResponse }); setDiscussionOui(false) }} className={`${btnBase} bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 hover:brightness-105`}>
                         <Check className="h-4 w-4" strokeWidth={2} /> {fr ? 'Qualifié' : 'Qualified'}
                       </button>

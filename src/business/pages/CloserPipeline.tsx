@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
-  User, ChevronDown, Search, Loader2, Building2, Calendar,
+  User, ChevronDown, Search, Loader2, Building2, Calendar, Bell,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useBusinessProspects, type BusinessProspect } from '../contexts/BusinessProspectsContext'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
+import { BusinessRelanceWorklistModal } from '../components/BusinessRelanceWorklistModal'
 import { UnqualifiedReasonModal } from '../components/UnqualifiedReasonModal'
 import { applyUnqualification } from '../lib/unqualifiedReasons'
 import { useChannelPrompt } from '../contexts/BusinessChannelPromptContext'
@@ -96,8 +97,19 @@ export function CloserPipeline() {
   const [unqualifyTarget, setUnqualifyTarget] = useState<BusinessProspect | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set(['noshow', 'lost']))
+  const [showWorklist, setShowWorklist] = useState(false)
 
   const myProspects = prospects.filter(p => (p.assigned_to === teamMember?.id || p.assigned_setter === teamMember?.id) && !dismissedIds.has(p.id))
+
+  // Compteur du bouton « Relances » : mes leads à relancer (échéance atteinte) + ceux qui ont répondu.
+  // Même règle de destinataire que le worklist : assigned_setter prime sur assigned_to.
+  const worklistCount = useMemo(() => {
+    const now = Date.now()
+    const mine = myProspects.filter(p => p.pipeline_visible !== false && (p.assigned_setter || p.assigned_to) === teamMember?.id)
+    const rel = mine.filter(p => p.stage === 'contacted' && !p.responded_at && computeRelanceBadge(p.contacted_at, (p as any).last_relance_at, relanceDelays, p.relance_step, now)?.due).length
+    const fol = mine.filter(p => p.stage === 'contacted' && !!p.responded_at).length
+    return rel + fol
+  }, [myProspects, relanceDelays, teamMember?.id])
 
   const filteredProspects = myProspects.filter(p => {
     if (!searchQuery) return true
@@ -251,6 +263,19 @@ export function CloserPipeline() {
                 className="w-64 rounded-full bg-stone-100/50 dark:bg-neutral-800/50 border border-stone-200/20 dark:border-neutral-700/30 py-2 pl-10 pr-4 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 font-medium focus:outline-none focus:ring-1 focus:ring-[#006c49]/30"
               />
             </div>
+
+            {/* À relancer & à suivre (mes leads uniquement) */}
+            <button
+              onClick={() => setShowWorklist(true)}
+              className="relative flex items-center gap-2 rounded-full border border-sky-200 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-500/10 px-4 py-2.5 text-sm font-bold text-sky-700 dark:text-sky-300 hover:border-sky-300 transition-all shrink-0"
+              title={lang === 'en' ? 'To follow up & track' : 'À relancer & à suivre'}
+            >
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">{lang === 'en' ? 'Follow-ups' : 'Relances'}</span>
+              {worklistCount > 0 && (
+                <span className="ml-0.5 bg-sky-600 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">{worklistCount}</span>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -598,6 +623,19 @@ export function CloserPipeline() {
           })}
         />
       )}
+
+      <BusinessRelanceWorklistModal
+        isOpen={showWorklist}
+        onClose={() => setShowWorklist(false)}
+        prospects={myProspects}
+        delays={relanceDelays}
+        lang={lang}
+        myId={teamMember?.id}
+        ownerId={teamMember?.business_owner_id}
+        canChooseMember={false}
+        onOpen={(p) => setSelectedProspect(p)}
+        onRelanceDone={(p) => markRelanceDone(p, askChannel, updateProspect)}
+      />
 
       {unqualifyTarget && (
         <UnqualifiedReasonModal

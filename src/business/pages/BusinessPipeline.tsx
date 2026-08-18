@@ -126,7 +126,7 @@ export function BusinessPipeline() {
     const mine = (p: BusinessProspect) => (p.assigned_setter || p.assigned_to || ownerId) === myActorId
     const vis = prospects.filter(p => p.pipeline_visible !== false && mine(p))
     const rel = vis.filter(p => p.stage === 'contacted' && !p.responded_at && computeRelanceBadge(p.contacted_at, p.last_relance_at, relanceDelays, p.relance_step, now)?.due).length
-    const fol = vis.filter(p => !!p.responded_at).length
+    const fol = vis.filter(p => p.stage === 'contacted' && !!p.responded_at).length
     return rel + fol
   }, [prospects, relanceDelays, isTeamMember, teamMember, user, ownerUserId])
   const { customStages, addCustomStage, deleteCustomStage, canManage } = useCustomStages()
