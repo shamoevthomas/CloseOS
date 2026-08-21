@@ -1640,6 +1640,98 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true, count: rows.length })
     }
 
+    // ─── Relances "Incomplet" (leads stage 'partial', emails au prospect, max 7) ───
+    // Même contrat que les relances No Show ; le bouton pointe vers une CAMPAGNE
+    // (/capture/:slug) au lieu d'un lien de booking.
+
+    if (action === 'partial-relances-list' || action === 'partial-relances-save') {
+      const authHeader = (req.headers['authorization'] || '') as string
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+      if (!token) return res.status(401).json({ error: 'Missing bearer token' })
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token)
+      if (userErr || !userData?.user) return res.status(401).json({ error: 'Invalid token' })
+      const uid = userData.user.id
+      const ownerId = ((req.query.owner_id as string) || (req.body?.owner_id as string) || uid).trim()
+
+      let allowed = uid === ownerId
+      if (!allowed) {
+        const { data: tm } = await supabase
+          .from('business_team_members')
+          .select('role')
+          .eq('user_id', uid)
+          .eq('business_owner_id', ownerId)
+          .maybeSingle()
+        allowed = !!tm && ['Head of Sales', 'Admin'].includes(tm.role || '')
+      }
+      if (!allowed) return res.status(403).json({ error: 'Forbidden' })
+
+      if (action === 'partial-relances-list') {
+        const [{ data: relances, error }, { data: campaigns }] = await Promise.all([
+          supabase
+            .from('business_partial_relances')
+            .select('id, position, delay_days, subject, body, campaign_id, use_origin_campaign, is_active')
+            .eq('business_owner_id', ownerId)
+            .order('position', { ascending: true }),
+          supabase
+            .from('business_campaigns')
+            .select('id, name, slug, is_active')
+            .eq('user_id', ownerId)
+            .order('created_at', { ascending: false }),
+        ])
+        if (error) return res.status(500).json({ error: error.message })
+        return res.status(200).json({ relances: relances || [], campaigns: campaigns || [] })
+      }
+
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+      const raw: any[] = Array.isArray(req.body?.relances) ? req.body.relances : []
+      const rows = raw.slice(0, 7).map((r, index) => {
+        const delay = Math.floor(Number(r?.delay_days))
+        const useOrigin = r?.use_origin_campaign === true
+        return {
+          business_owner_id: ownerId,
+          position: index + 1,
+          delay_days: Number.isFinite(delay) ? Math.min(60, Math.max(0, delay)) : 1,
+          subject: String(r?.subject || '').trim().slice(0, 200) || 'Vous n\'avez pas terminé',
+          body: String(r?.body || '').slice(0, 5000),
+          // « Campagne d'origine » et campagne fixe s'excluent
+          campaign_id: useOrigin ? null : (r?.campaign_id || null),
+          use_origin_campaign: useOrigin,
+          is_active: r?.is_active !== false,
+        }
+      })
+
+      // Les campagnes référencées doivent appartenir au propriétaire
+      const campaignIds = rows.map(r => r.campaign_id).filter(Boolean)
+      if (campaignIds.length > 0) {
+        const { data: owned } = await supabase
+          .from('business_campaigns')
+          .select('id')
+          .eq('user_id', ownerId)
+          .in('id', campaignIds)
+        const ownedIds = new Set((owned || []).map((c: any) => c.id))
+        for (const row of rows) {
+          if (row.campaign_id && !ownedIds.has(row.campaign_id)) row.campaign_id = null
+        }
+      }
+
+      // Upsert par position : les logs anti-doublon référencent relance_id en cascade,
+      // un delete + insert renverrait des relances déjà envoyées.
+      if (rows.length > 0) {
+        const { error: upErr } = await supabase
+          .from('business_partial_relances')
+          .upsert(rows, { onConflict: 'business_owner_id,position' })
+        if (upErr) return res.status(500).json({ error: upErr.message })
+      }
+      await supabase
+        .from('business_partial_relances')
+        .delete()
+        .eq('business_owner_id', ownerId)
+        .gt('position', rows.length)
+
+      return res.status(200).json({ ok: true, count: rows.length })
+    }
+
     // ─── Invitation actions (method-based routing for backward compat) ───
     const PLAN_SEAT_LIMITS: Record<string, number> = { solo: 0, business: 3, business_acquisition: 5, enterprise: 999999 }
 

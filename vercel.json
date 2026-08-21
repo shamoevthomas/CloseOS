@@ -156,6 +156,10 @@
       "schedule": "30 12 * * *"
     },
     {
+      "path": "/api/cron/partial-relances",
+      "schedule": "45 12 * * *"
+    },
+    {
       "path": "/api/cron/sales-weekly-report",
       "schedule": "0 8 * * 1"
     },

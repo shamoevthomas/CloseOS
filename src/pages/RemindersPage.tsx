@@ -132,6 +132,9 @@ export function RemindersPage() {
           reminder_date: data.reminder_date,
           prospect_id: data.prospect_id,
           is_done: false,
+          // L'heure est obligatoire dans cette modale : sans has_time, le cron
+          // reminder-time-emails ignorait le rappel et aucun email ne partait.
+          has_time: true,
         }])
         .select()
         .single()
@@ -441,6 +444,9 @@ function ReminderDetailAndProspectModal({
   onMarkDone: (id: number) => void
   onDelete: (id: number) => void
 }) {
+  const { lang } = useLanguage()
+  // `locale` vivait dans le composant parent : son usage plus bas plantait l'ouverture du détail.
+  const locale = lang === 'fr' ? 'fr-FR' : 'en-US'
   const status = getStatus(reminder)
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
 

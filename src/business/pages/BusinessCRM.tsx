@@ -24,6 +24,7 @@ import {
   Filter,
   Calendar,
   Tag,
+  FileWarning,
   Download,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -34,6 +35,7 @@ import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { ExportProspectsModal } from '../components/ExportProspectsModal'
 import { BusinessCRMIntegrationModal } from '../components/BusinessCRMIntegrationModal'
 import { BusinessProspectView } from '../components/BusinessProspectView'
+import { BusinessPartialRelancesModal } from '../components/BusinessPartialRelancesModal'
 import { supabase } from '../../lib/supabase'
 import { useCustomStages } from '../hooks/useCustomStages'
 import toast from 'react-hot-toast'
@@ -150,6 +152,7 @@ export function BusinessCRM() {
   const isSetterCloser = isTeamMember && teamMember?.role === 'Setter-Closer'
   const isPureCloser = isTeamMember && teamMember?.role === 'Closer'
   const isOwnerView = !isTeamMember || teamMember?.role === 'Head of Sales' || teamMember?.role === 'Admin'
+  const [isPartialRelancesOpen, setIsPartialRelancesOpen] = useState(false)
 
   // Doublons — gérable uniquement par Owner / Head of Sales / Admin
   const { total: duplicateGroupsCount } = useBusinessDuplicates()
@@ -603,6 +606,18 @@ export function BusinessCRM() {
             </span>
           )}
         </button>
+
+        {/* Relances « Incomplet » — réglage du compte, donc owner / HOS / Admin */}
+        {!isReadOnly && isOwnerView && (
+          <button
+            onClick={() => setIsPartialRelancesOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
+            title={lang === 'en' ? 'Configure follow-up emails for incomplete leads' : 'Configurer les emails de relance des leads Incomplet'}
+          >
+            <FileWarning className="h-4 w-4" />
+            <span className="hidden sm:inline">{lang === 'en' ? 'Incomplete' : 'Incomplet'}</span>
+          </button>
+        )}
 
         {!isReadOnly && (
           <button
@@ -1220,6 +1235,14 @@ export function BusinessCRM() {
       )}
 
       {/* Tag Management Modal */}
+      {isPartialRelancesOpen && effectiveUserId && (
+        <BusinessPartialRelancesModal
+          isOpen={isPartialRelancesOpen}
+          onClose={() => setIsPartialRelancesOpen(false)}
+          ownerId={effectiveUserId}
+        />
+      )}
+
       {isTagModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">

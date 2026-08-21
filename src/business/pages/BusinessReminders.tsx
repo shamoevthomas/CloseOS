@@ -145,6 +145,9 @@ export function BusinessReminders() {
         reminder_date: data.reminder_date,
         business_prospect_id: data.prospect_id,
         is_done: false,
+        // L'heure est obligatoire dans cette modale : sans has_time, le cron
+        // reminder-time-emails ignorait le rappel et aucun email ne partait.
+        has_time: true,
       }
       if (data.assigned_to) insertPayload.assigned_to = data.assigned_to
       if (isTeamMember && teamMember?.id) insertPayload.created_by_member_id = teamMember.id

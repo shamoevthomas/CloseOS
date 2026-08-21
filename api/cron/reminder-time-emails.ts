@@ -37,16 +37,20 @@ function wrapEmailHtml(bodyContent: string): string {
 </body></html>`;
 }
 
-function buildReminderEmail(firstName: string, title: string, description: string | null, timeLabel: string, prospectName: string | null, ctaUrl: string): string {
+function buildReminderEmail(firstName: string, title: string, description: string | null, timeLabel: string, prospectName: string | null, ctaUrl: string, precise: boolean): string {
+  const eyebrow = precise ? '⏰ Rappel dans 5 minutes' : '🔔 Rappel du jour';
+  const intro = precise
+    ? `c'est bientôt l'heure : <strong style="color:#0284c7;">${timeLabel}</strong>.`
+    : `vous avez ce rappel prévu aujourd'hui (<strong style="color:#0284c7;">${timeLabel}</strong>).`;
   const body = `
     <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 8px;font-size:13px;color:#0284c7;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">
-      ⏰ Rappel dans 5 minutes
+      ${eyebrow}
     </p>
     <h1 style="font-family:'Manrope',Arial,sans-serif;font-weight:800;margin:0 0 16px;font-size:32px;color:#111111;text-align:left;line-height:1.15;letter-spacing:-0.04em;">
       ${title}
     </h1>
     <p style="font-family:'Inter',Helvetica,sans-serif;margin:0 0 24px;font-size:16px;color:#1b1c1b;line-height:1.6;">
-      Bonjour <strong style="color:#111111;">${firstName || 'à vous'}</strong>, c'est bientôt l'heure : <strong style="color:#0284c7;">${timeLabel}</strong>.
+      Bonjour <strong style="color:#111111;">${firstName || 'à vous'}</strong>, ${intro}
     </p>
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
       ${prospectName ? `
@@ -74,7 +78,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const nowMs = Date.now();
-  // Fenêtre : « 5 min avant l'heure » = on notifie dès reminder_date - 5min, avec rattrapage 15 min max
+  // Fenêtre : heure précise → on notifie dès reminder_date - 5 min ; sans heure précise → à
+  // l'heure stockée (9 h par défaut). Rattrapage 15 min en arrière si un run a échoué.
   const upper = new Date(nowMs + 5 * 60000).toISOString();
   const lower = new Date(nowMs - 15 * 60000).toISOString();
 
@@ -84,8 +89,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { data: reminders, error } = await supabaseAdmin
       .from('reminders')
-      .select('id, user_id, title, description, reminder_date, prospect_id, business_prospect_id, assigned_to, created_by_member_id')
-      .eq('has_time', true)
+      .select('id, user_id, title, description, reminder_date, prospect_id, business_prospect_id, assigned_to, created_by_member_id, has_time')
+      // Les notifications in-app vivent dans la même table avec reminder_date = maintenant :
+      // sans ce filtre, chacune partirait par email.
+      .neq('is_notification', true)
       .eq('email_sent', false)
       .eq('is_done', false)
       .gte('reminder_date', lower)
@@ -106,38 +113,62 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return null;
     };
 
+    const salesOwnerEmail = async (id: string): Promise<Recipient | null> => {
+      const { data: profile } = await supabaseAdmin.from('profiles').select('email, full_name').eq('id', id).maybeSingle();
+      if (profile?.email) return { email: profile.email, firstName: (profile.full_name || '').split(' ')[0] || '' };
+      return null;
+    };
+
     for (const r of reminders) {
-      // 1. Destinataire
+      // 0. Échéance : « heure précise » part 5 min avant, un rappel de journée part à l'heure dite.
+      const dueAt = new Date(r.reminder_date).getTime() - (r.has_time ? 5 * 60000 : 0);
+      if (nowMs < dueAt) continue;
+
+      // 1. Destinataire — un rappel Business n'est pas toujours lié à un prospect,
+      //    donc on s'appuie aussi sur assigned_to / created_by_member_id, avec repli croisé.
       let recipient: Recipient | null = null;
       let prospectName: string | null = null;
+      let isBusiness = !!(r.business_prospect_id || r.assigned_to || r.created_by_member_id);
 
-      if (r.business_prospect_id) {
-        // Rappel Business
+      if (isBusiness) {
         recipient =
           (await businessMemberEmail(r.assigned_to)) ||
           (await businessMemberEmail(r.created_by_member_id)) ||
           (await businessMemberEmail(r.user_id));
-        const { data: bp } = await supabaseAdmin.from('business_prospects').select('contact, firstName, lastName').eq('id', r.business_prospect_id).maybeSingle();
-        if (bp) prospectName = bp.contact || `${bp.firstName || ''} ${bp.lastName || ''}`.trim() || null;
+        if (!recipient) {
+          recipient = await salesOwnerEmail(r.user_id);
+          if (recipient) isBusiness = false;
+        }
       } else {
-        // Rappel Sales → le propriétaire
-        const { data: profile } = await supabaseAdmin.from('profiles').select('email, full_name').eq('id', r.user_id).maybeSingle();
-        if (profile?.email) recipient = { email: profile.email, firstName: (profile.full_name || '').split(' ')[0] || '' };
-        if (r.prospect_id) {
-          const { data: p } = await supabaseAdmin.from('prospects').select('contact, firstName, lastName').eq('id', r.prospect_id).maybeSingle();
-          if (p) prospectName = p.contact || `${p.firstName || ''} ${p.lastName || ''}`.trim() || null;
+        recipient = await salesOwnerEmail(r.user_id);
+        if (!recipient) {
+          recipient = await businessMemberEmail(r.user_id);
+          if (recipient) isBusiness = true;
         }
       }
 
+      if (r.business_prospect_id) {
+        const { data: bp } = await supabaseAdmin.from('business_prospects').select('contact, firstName, lastName').eq('id', r.business_prospect_id).maybeSingle();
+        if (bp) prospectName = bp.contact || `${bp.firstName || ''} ${bp.lastName || ''}`.trim() || null;
+      } else if (r.prospect_id) {
+        const { data: p } = await supabaseAdmin.from('prospects').select('contact, firstName, lastName').eq('id', r.prospect_id).maybeSingle();
+        if (p) prospectName = p.contact || `${p.firstName || ''} ${p.lastName || ''}`.trim() || null;
+      }
+
       if (!recipient?.email) {
-        // Pas de destinataire résolu → on marque quand même pour ne pas boucler
-        await supabaseAdmin.from('reminders').update({ email_sent: true }).eq('id', r.id);
+        // Aucun destinataire résolu : on le trace au lieu de marquer l'email comme envoyé
+        // (l'ancien comportement faisait disparaître le rappel sans rien envoyer).
+        console.error('reminder-time-emails: no recipient resolved', { reminderId: r.id, userId: r.user_id });
+        errorCount++;
         continue;
       }
 
       const timeLabel = new Date(r.reminder_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
-      const ctaUrl = r.business_prospect_id ? 'https://closeos.fr/business/rappels' : 'https://closeos.fr/reminders';
-      const htmlContent = buildReminderEmail(recipient.firstName, r.title || 'Rappel', r.description, timeLabel, prospectName, ctaUrl);
+      const ctaUrl = isBusiness ? 'https://closeos.fr/business/rappels' : 'https://closeos.fr/reminders';
+      const htmlContent = buildReminderEmail(recipient.firstName, r.title || 'Rappel', r.description, timeLabel, prospectName, ctaUrl, !!r.has_time);
+      const subject = r.has_time
+        ? `⏰ Rappel dans 5 min : ${r.title || 'Rappel'}`
+        : `🔔 Rappel aujourd'hui : ${r.title || 'Rappel'}`;
 
       try {
         const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -146,7 +177,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           body: JSON.stringify({
             sender: { email: 'support@closeos.fr', name: 'CloseOS' },
             to: [{ email: recipient.email, name: recipient.firstName || 'CloseOS' }],
-            subject: `⏰ Rappel dans 5 min : ${r.title || 'Rappel'}`,
+            subject,
             htmlContent,
           }),
         });
