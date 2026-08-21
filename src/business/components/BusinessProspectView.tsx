@@ -7,7 +7,7 @@ import {
   Bell, Check, Loader2, FileText, ClipboardList,
   Package, ExternalLink, PhoneCall, Tag, Camera,
   CreditCard, Wallet, Link2, Search, Zap, CheckCircle2,
-  Award, AlertCircle, XCircle, Settings2, CalendarPlus, Copy, Globe, ArrowLeft,
+  Award, AlertCircle, XCircle, Settings2, CalendarPlus, Copy, Globe, ArrowLeft, Building2,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { TimezonePicker } from './TimezonePicker'
@@ -475,6 +475,8 @@ export function BusinessProspectView({
 
   // Client edit
   const [editingClient, setEditingClient] = useState(false)
+  // Les offres portent souvent 6-8 liens (paiement, contrats) : repliés par défaut.
+  const [showFormulaLinks, setShowFormulaLinks] = useState(false)
   const [editingHeaderName, setEditingHeaderName] = useState(false)
   const [headerNameDraft, setHeaderNameDraft] = useState(prospect.contact || '')
   const [editedContact, setEditedContact] = useState(prospect.contact)
@@ -563,7 +565,7 @@ export function BusinessProspectView({
   // Formula & Campaign
   const [formula, setFormula] = useState<Formula | null>(null)
   const [allFormulas, setAllFormulas] = useState<Formula[]>([])
-  const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([])
 
   // Sync local on prospect ID change (new prospect selected)
   useEffect(() => {
@@ -750,18 +752,17 @@ export function BusinessProspectView({
     setStripeMatching(false)
   }
 
-  // Fetch linked campaign
+  // Campagnes : on charge la liste complète (le select de la colonne d'infos
+  // permet de rattacher le prospect à une autre campagne) et on en déduit la sienne.
   useEffect(() => {
     const effectiveId = isTeamMember ? ownerUserId : user?.id
-    if (!effectiveId || !(prospect as any).campaign_id) { setCampaign(null); return }
+    if (!effectiveId) { setAllCampaigns([]); return }
     fetch(`${API_URL}?action=campaigns-list&user_id=${effectiveId}`)
       .then(r => r.json())
-      .then(data => {
-        const c = (data.campaigns || []).find((c: Campaign) => c.id === (prospect as any).campaign_id)
-        setCampaign(c || null)
-      })
-      .catch(() => setCampaign(null))
-  }, [user?.id, ownerUserId, isTeamMember, (prospect as any).campaign_id])
+      .then(data => setAllCampaigns(data.campaigns || []))
+      .catch(() => setAllCampaigns([]))
+  }, [user?.id, ownerUserId, isTeamMember])
+
 
   // Fetch reminders
   useEffect(() => {
@@ -1131,10 +1132,51 @@ export function BusinessProspectView({
   // Parse capture custom data + notes internes depuis la colonne `notes`
   const { capture: captureData, internal: internalNotes } = parseNotesField(local.notes)
 
+  // Changement d'étape — déclenché depuis le bandeau de la pop-up
+  const handleStageChange = (newStage: string) => {
+    const wasFollowup = local.stage === 'followup'
+    // Non-Qualifié : la pop-up de motif se charge de l'enregistrement
+    if (newStage === 'unqualified' && local.stage !== 'unqualified') {
+      setUnqualifyPending({})
+      return
+    }
+    // Premier contact : on demande le canal, écrit dans la même requête
+    // que le passage en « Contacté » (le trigger serveur ne l'écrase pas).
+    if (newStage === 'contacted' && local.stage !== 'contacted') {
+      askChannel('first', { contactName: local.contact })
+        .then(ch => handleUpdate({ stage: newStage, first_contact_channel: ch }))
+      return
+    }
+    handleUpdate({ stage: newStage })
+    // Passage en Suivi : on propose rappel / R2 / rien
+    if (newStage === 'followup' && !wasFollowup) {
+      setShowFollowupChoice(true)
+    }
+  }
+
+  // Listes d'assignation (mêmes règles que l'ancien bloc de l'onglet Infos)
+  const assignableClosers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Head of Sales' || tm.role === 'Admin' || (tm.owner_assignable_roles || []).includes('Closer') || (!isTeamMember && tm.role === 'Owner'))
+  const assignableSetters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Head of Sales' || tm.role === 'Admin' || (tm.owner_assignable_roles || []).includes('Setter') || (!isTeamMember && tm.role === 'Owner'))
+  const canAssignSetter = !isTeamMember || isHosOrAdmin
+
+  // ─── Colonne d'infos de la pop-up (bandeau + 2 colonnes) ───
+  const fmtDate = (v?: string | null) =>
+    v ? new Date(v).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+  const copyValue = (value: string) => { navigator.clipboard.writeText(value); toast.success(t.common_copied) }
+  const sideLabel = 'text-[10px] font-black uppercase tracking-[0.15em] text-stone-400 dark:text-neutral-500'
+  const sideFieldLabel = 'block text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-neutral-400 mb-1 ml-0.5'
+  const sideRow = 'flex items-baseline justify-between gap-3 text-sm'
+  const sideInput = 'w-full rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 py-2 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:ring-2 focus:ring-stone-900/10 focus:outline-none'
+  const sideSelect = 'w-full appearance-none rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 pl-3 pr-8 py-2 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/10 focus:outline-none cursor-pointer'
+  const sideSelectChevron = 'absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none h-3.5 w-3.5 text-stone-400 dark:text-neutral-500'
+  const sideIconBtn = 'shrink-0 p-1 rounded-full text-stone-400 hover:bg-stone-200/60 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors'
+  const sideChip = 'inline-flex items-center gap-1 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 px-2.5 py-1.5 text-[11px] font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors disabled:opacity-50'
+  const upcomingApptCount = allAppointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length
+
   const content = (
       <aside className={inline
         ? "flex flex-col h-full overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
-        : "absolute inset-y-0 right-0 w-full md:max-w-[580px] flex flex-col shadow-2xl md:rounded-l-2xl md:border-l border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
+        : "relative w-full max-w-[1100px] h-full md:h-auto md:max-h-[88vh] flex flex-col shadow-2xl md:rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
       }>
 
         {/* Header */}
@@ -1226,12 +1268,37 @@ export function BusinessProspectView({
                 )}
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="min-w-[36px] min-h-[36px] w-9 h-9 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center hover:bg-[#efedec] dark:hover:bg-neutral-700 transition-colors shrink-0"
-            >
-              <X className="h-5 w-5 text-stone-900 dark:text-white" strokeWidth={1.5} />
-            </button>
+            <div className="flex items-start gap-3 shrink-0">
+              {/* Étape : pilotée depuis le bandeau, visible quel que soit l'onglet */}
+              <div className="hidden sm:block text-right">
+                <label className={cn(LABEL_STYLE, 'block mb-1 mr-1')}>
+                  {t.prospect_current_stage}
+                  {stageSinceLabel && (
+                    <span className="ml-1.5 font-medium normal-case tracking-normal text-stone-400 dark:text-neutral-600">
+                      {stageSinceLabel}
+                    </span>
+                  )}
+                </label>
+                <div className="relative">
+                  <select
+                    value={local.stage}
+                    onChange={(e) => handleStageChange(e.target.value)}
+                    className="w-[190px] appearance-none rounded-full bg-[#f5f3f2] dark:bg-neutral-800 border-0 pl-4 pr-9 py-2 text-sm font-business-display font-bold text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/10 focus:outline-none cursor-pointer"
+                  >
+                    {ALL_STAGES.map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
+                    {customStages.length > 0 && <option disabled>──────────</option>}
+                    {customStages.map(cs => <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>{cs.name}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="min-w-[36px] min-h-[36px] w-9 h-9 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center hover:bg-[#efedec] dark:hover:bg-neutral-700 transition-colors shrink-0"
+              >
+                <X className="h-5 w-5 text-stone-900 dark:text-white" strokeWidth={1.5} />
+              </button>
+            </div>
           </div>
 
           {/* Tags - below name */}
@@ -1343,6 +1410,10 @@ export function BusinessProspectView({
             </button>
           </div>
         </section>
+
+        {/* Corps : contenu à gauche, colonne d'infos à droite (pop-up uniquement) */}
+        <div className={inline ? 'flex-1 flex flex-col overflow-hidden min-h-0' : 'flex-1 flex overflow-hidden min-h-0'}>
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Relance + Réponse (stage Contacté) */}
         {local.stage === 'contacted' && (() => {
@@ -1523,50 +1594,6 @@ export function BusinessProspectView({
           {/* ─── TAB: INFO ─── */}
           {activeTab === 'info' && (
             <div className="space-y-8">
-
-              {/* Stage */}
-              <div>
-                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>
-                  {t.prospect_current_stage}
-                  {stageSinceLabel && (
-                    <span className="ml-2 font-medium normal-case tracking-normal text-stone-400 dark:text-neutral-600">
-                      {stageSinceLabel}
-                    </span>
-                  )}
-                </label>
-                <div className="relative">
-                  <select
-                    value={local.stage}
-                    onChange={(e) => {
-                      const newStage = e.target.value
-                      const wasFollowup = local.stage === 'followup'
-                      // Non-Qualifié : la pop-up de motif se charge de l'enregistrement
-                      if (newStage === 'unqualified' && local.stage !== 'unqualified') {
-                        setUnqualifyPending({})
-                        return
-                      }
-                      // Premier contact : on demande le canal, écrit dans la même requête
-                      // que le passage en « Contacté » (le trigger serveur ne l'écrase pas).
-                      if (newStage === 'contacted' && local.stage !== 'contacted') {
-                        askChannel('first', { contactName: local.contact })
-                          .then(ch => handleUpdate({ stage: newStage, first_contact_channel: ch }))
-                        return
-                      }
-                      handleUpdate({ stage: newStage })
-                      // Passage en Suivi : on propose rappel / R2 / rien
-                      if (newStage === 'followup' && !wasFollowup) {
-                        setShowFollowupChoice(true)
-                      }
-                    }}
-                    className={cn(SELECT_CLS, 'py-4 px-5')}
-                  >
-                    {ALL_STAGES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    {customStages.length > 0 && <option disabled>──────────</option>}
-                    {customStages.map(cs => <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>{cs.name}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
-                </div>
-              </div>
 
               {/* SECTION RAISON DE PERTE — visible quand stage = lost */}
               {local.stage === 'lost' && (() => {
@@ -2081,119 +2108,6 @@ export function BusinessProspectView({
                 </div>
               )}
 
-              {/* Assignment */}
-              {teamMembers.length > 0 && (() => {
-                const closers = teamMembers.filter(tm => tm.role === 'Closer' || tm.role === 'Setter-Closer' || tm.role === 'Head of Sales' || tm.role === 'Admin' || (tm.owner_assignable_roles || []).includes('Closer') || (!isTeamMember && tm.role === 'Owner'))
-                const setters = teamMembers.filter(tm => tm.role === 'Setter' || tm.role === 'Setter-Closer' || tm.role === 'Head of Sales' || tm.role === 'Admin' || (tm.owner_assignable_roles || []).includes('Setter') || (!isTeamMember && tm.role === 'Owner'))
-
-                return (
-                  <div className="grid grid-cols-2 gap-4">
-                    {closers.length > 0 && (
-                      <div>
-                        <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_assign_closer}</label>
-                        <div className="relative">
-                          <select
-                            value={closers.find(c => c.id === (local as any).assigned_to)?.id || ''}
-                            onChange={(e) => handleUpdate({ assigned_to: e.target.value || null } as any)}
-                            disabled={!canAssign}
-                            className={cn(SELECT_CLS, 'text-sm font-semibold font-sans', !canAssign && 'opacity-60 cursor-not-allowed')}
-                          >
-                            <option value="">{t.prospect_assign_none}</option>
-                            {closers.map(tm => (
-                              <option key={tm.id} value={tm.id}>
-                                {tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
-                        </div>
-                      </div>
-                    )}
-
-                    {setters.length > 0 && (
-                      <div>
-                        <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_assign_setter}</label>
-                        <div className="relative">
-                          <select
-                            value={setters.find(s => s.id === (local as any).assigned_setter)?.id || ''}
-                            onChange={(e) => {
-                              const setterId = e.target.value || null
-                              const updates: any = { assigned_setter: setterId }
-                              if (setterId) {
-                                const selected = teamMembers.find(tm => tm.id === setterId)
-                                if (selected?.role === 'Setter-Closer' && selected?.setter_scope === 'self') {
-                                  updates.assigned_to = setterId
-                                }
-                              }
-                              handleUpdate(updates)
-                            }}
-                            disabled={!(!isTeamMember || isHosOrAdmin)}
-                            className={cn(SELECT_CLS, 'text-sm font-semibold font-sans', !(!isTeamMember || isHosOrAdmin) && 'opacity-60 cursor-not-allowed')}
-                          >
-                            <option value="">{t.prospect_assign_none}</option>
-                            {setters.map(tm => (
-                              <option key={tm.id} value={tm.id}>
-                                {tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
-
-              {/* Campagne d'origine */}
-              {campaign && (
-                <div>
-                  <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_campaign_origin}</label>
-                  <div className="rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3.5">
-                    <p className="font-business-display font-bold text-stone-900 dark:text-white">{campaign.name}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Offre / Formule */}
-              <div>
-                <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_offer_formula}</label>
-                <div className="relative">
-                  <select
-                    value={(local as any).formula_id || ''}
-                    onChange={(e) => {
-                      const fId = e.target.value || null
-                      const selected = allFormulas.find(f => f.id === fId)
-                      const hasStripe = !!(local as any).stripe_customer_id || !!(local as any).stripe_subscription_id
-                      handleUpdate({ formula_id: fId, ...(hasStripe ? {} : { value: selected?.price || 0 }) } as any)
-                      setFormula(selected || null)
-                    }}
-                    className={cn(SELECT_CLS, 'py-4 px-5')}
-                  >
-                    <option value="">{t.prospect_no_offer}</option>
-                    {allFormulas.map(f => (
-                      <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none h-5 w-5 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
-                </div>
-                {formula && formula.resources && formula.resources.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {formula.resources.map((r, i) => (
-                      <a
-                        key={i}
-                        href={r.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 py-1.5 text-xs font-medium text-stone-700 dark:text-neutral-200 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
-                      >
-                        <ExternalLink className="h-3 w-3" strokeWidth={1.5} /> {r.name || r.type}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               {/* Capture custom data */}
               {captureData && Object.keys(captureData).length > 0 && (
                 <div>
@@ -2356,192 +2270,6 @@ export function BusinessProspectView({
                   </section>
                 )
               })()}
-
-              {/* Fiche Client */}
-              <section className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5 dark:border-neutral-700">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className={cn(LABEL_STYLE, 'text-xs')}>{t.prospect_client_card}</h3>
-                  <button onClick={() => setEditingClient(!editingClient)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
-                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  </button>
-                </div>
-                {editingClient ? (
-                  <div className="space-y-3">
-                    <input type="text" value={editedContact} onChange={e => setEditedContact(e.target.value)} className={INPUT_CLS} placeholder={t.prospect_field_contact} />
-                    <input type="text" value={editedCompany} onChange={e => setEditedCompany(e.target.value)} className={INPUT_CLS} placeholder={t.prospect_field_company} />
-                    <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className={INPUT_CLS} placeholder="Email" />
-                    <PhoneInput value={editedPhone} onChange={setEditedPhone} />
-                    <div>
-                      <label className="block text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5 ml-1">Fuseau horaire</label>
-                      <TimezonePicker value={editedTimezone} onChange={setEditedTimezone} />
-                    </div>
-                    <div className="flex gap-2 pt-2">
-                      <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-business-display font-bold text-white hover:bg-stone-800 transition-colors">{t.prospect_sauvegarder}</button>
-                      <button onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone); setEditedTimezone(local.timezone || '') }} className="rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors">{t.prospect_cancel_btn}</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-5">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
-                        <Mail className="h-5 w-5" strokeWidth={1.5} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Email</p>
-                        <button onClick={handleOpenGmail} className="text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] truncate text-left transition-colors">{local.email || '—'}</button>
-                      </div>
-                      {local.email && (
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(local.email!); toast.success(t.common_copied) }}
-                          className="shrink-0 p-2 rounded-full text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
-                          title={t.common_copy}
-                          aria-label={t.common_copy}
-                        >
-                          <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
-                        <Phone className="h-5 w-5" strokeWidth={1.5} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{t.prospect_phone}</p>
-                        <button onClick={handleOpenWhatsApp} className="text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] text-left transition-colors">{local.phone || '—'}</button>
-                      </div>
-                      {local.phone && (
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(local.phone!); toast.success(t.common_copied) }}
-                          className="shrink-0 p-2 rounded-full text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
-                          title={t.common_copy}
-                          aria-label={t.common_copy}
-                        >
-                          <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
-                        </button>
-                      )}
-                    </div>
-                    {(() => {
-                      const tz = local.timezone
-                      if (!tz) {
-                        return (
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
-                              <Globe className="h-5 w-5" strokeWidth={1.5} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Fuseau horaire</p>
-                              <button onClick={() => setEditingClient(true)} className="text-sm font-medium text-stone-400 dark:text-neutral-500 hover:text-stone-600 dark:hover:text-neutral-300 italic transition-colors">Non renseigné — cliquer pour ajouter</button>
-                            </div>
-                          </div>
-                        )
-                      }
-                      const local2 = getCurrentLocalTime(tz)
-                      const offset = getTimezoneOffsetHours(tz, userTimezone)
-                      const sign = offset > 0 ? '+' : ''
-                      const offsetTxt = Number.isInteger(offset) ? `${sign}${offset}h` : `${sign}${offset.toFixed(1)}h`
-                      return (
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
-                            <Globe className="h-5 w-5" strokeWidth={1.5} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">Fuseau horaire</p>
-                            <p className="text-sm font-semibold text-stone-900 dark:text-white">{getTimezoneLabel(tz)}</p>
-                            <p className="text-[11px] text-stone-500 dark:text-neutral-400 mt-0.5">
-                              Il est <span className="font-semibold text-stone-700 dark:text-neutral-200">{local2.time}</span> chez le prospect ({local2.day})
-                            </p>
-                            {tz !== userTimezone && (
-                              <p className="text-[11px] text-stone-500 dark:text-neutral-400">
-                                <span className="font-semibold text-stone-700 dark:text-neutral-200">{offsetTxt}</span> par rapport à toi
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })()}
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center text-stone-500 dark:text-neutral-400">
-                        <Calendar className="h-5 w-5" strokeWidth={1.5} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-stone-500 dark:text-neutral-400 uppercase tracking-wider">{t.prospect_creation_date}</p>
-                        <p className="text-sm font-semibold text-stone-900 dark:text-white">
-                          {local.created_at ? new Date(local.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
-                            day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                          }) : '—'}
-                        </p>
-                      </div>
-                    </div>
-                    {nextAppointment && (
-                      <div>
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-[#006c49]/10 flex items-center justify-center text-[#006c49]">
-                            <Calendar className="h-5 w-5" strokeWidth={1.5} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-bold text-[#006c49] uppercase tracking-wider">{t.prospect_next_appointment}</p>
-                            <p className="text-sm font-semibold text-stone-900 dark:text-white">
-                              {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', {
-                                weekday: 'short', day: 'numeric', month: 'long'
-                              })} {lang === 'en' ? 'at' : 'à'} {nextAppointment.time?.slice(0, 5)}
-                            </p>
-                            {(() => {
-                              const ptz = local.timezone
-                              if (!ptz || ptz === userTimezone || !nextAppointment.datetime_utc) return null
-                              const pl = fromUTC(nextAppointment.datetime_utc, ptz)
-                              const pdate = new Date(pl.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })
-                              return (
-                                <p className="text-[11px] text-stone-500 dark:text-neutral-400 mt-0.5 flex items-center gap-1" title={`Heure locale du prospect (${getTimezoneLabel(ptz)})`}>
-                                  <Globe className="h-3 w-3" strokeWidth={1.5} />
-                                  {pdate} {lang === 'en' ? 'at' : 'à'} {pl.time} chez le prospect
-                                </p>
-                              )
-                            })()}
-                          </div>
-                          {allAppointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length > 1 && (
-                            <button
-                              onClick={() => setShowApptsModal(true)}
-                              title="Voir tous les rendez-vous à venir"
-                              className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[#006c49]/10 hover:bg-[#006c49]/20 px-3 py-1.5 text-xs font-business-display font-bold text-[#006c49] transition-colors"
-                            >
-                              <Calendar className="h-3.5 w-3.5" strokeWidth={1.5} />
-                              {allAppointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length}
-                            </button>
-                          )}
-                        </div>
-                        <div className="flex items-center flex-wrap gap-2 mt-3 pl-14">
-                          <button
-                            onClick={() => openRescheduleModal(nextAppointment)}
-                            disabled={!!cancelLoadingId || rescheduleLoading}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-stone-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors disabled:opacity-50"
-                          >
-                            <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
-                            Reprogrammer
-                          </button>
-                          <button
-                            onClick={() => handleCancelAppointment(nextAppointment)}
-                            disabled={!!cancelLoadingId || rescheduleLoading}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-3 py-1.5 text-xs font-business-display font-bold text-rose-600 dark:text-rose-400 transition-colors disabled:opacity-50"
-                          >
-                            {cancelLoadingId === nextAppointment.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} /> : <XCircle className="h-3.5 w-3.5" strokeWidth={1.5} />}
-                            Annuler
-                          </button>
-                          <ReassignAppointmentButton
-                            appointmentId={nextAppointment.id}
-                            currentAssignedTo={nextAppointment.assigned_to ?? null}
-                            ownerId={isTeamMember ? ownerUserId : user?.id}
-                            actorUserId={user?.id}
-                            canReassign={canReassignAppt}
-                            members={teamMembers}
-                            onReassigned={() => setApptRefreshKey(k => k + 1)}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 hover:bg-stone-200 dark:hover:bg-neutral-700 px-3 py-1.5 text-xs font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </section>
 
               {/* Notes internes — enregistrées avec le bouton « Enregistrer » du bas */}
               <div>
@@ -2847,6 +2575,352 @@ export function BusinessProspectView({
               )}
             </div>
           )}
+        </div>
+
+        </div>
+
+        {/* ─── Colonne d'infos : coordonnées, dates, suivi ───
+            Résumé en lecture (avec copie rapide) ; l'édition reste dans l'onglet Infos.
+            Masquée en mode inline et sur petit écran, où tout reste dans l'onglet. */}
+        {!inline && (
+          <aside className="hidden lg:flex w-[320px] shrink-0 flex-col gap-6 overflow-y-auto custom-scrollbar border-l border-[#c4c7c7]/10 dark:border-neutral-700 bg-[#faf9f8]/70 dark:bg-neutral-900/40 p-5">
+
+            {/* Coordonnées — édition sur place */}
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className={sideLabel}>{lang === 'en' ? 'Contact details' : 'Coordonnées'}</h4>
+                <button
+                  onClick={() => setEditingClient(!editingClient)}
+                  className="p-1 rounded-full text-stone-400 hover:bg-stone-200/60 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors"
+                  title={lang === 'en' ? 'Edit' : 'Modifier'}
+                >
+                  <Pencil className="h-3 w-3" strokeWidth={2} />
+                </button>
+              </div>
+
+              {editingClient ? (
+                <div className="space-y-2.5">
+                  <input type="text" value={editedContact} onChange={e => setEditedContact(e.target.value)} className={sideInput} placeholder={t.prospect_field_contact} />
+                  <input type="text" value={editedCompany} onChange={e => setEditedCompany(e.target.value)} className={sideInput} placeholder={t.prospect_field_company} />
+                  <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className={sideInput} placeholder="Email" />
+                  <PhoneInput value={editedPhone} onChange={setEditedPhone} />
+                  <TimezonePicker value={editedTimezone} onChange={setEditedTimezone} />
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-3 py-2 text-xs font-business-display font-bold text-white hover:bg-stone-800 transition-colors">{t.prospect_sauvegarder}</button>
+                    <button
+                      onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone); setEditedTimezone(local.timezone || '') }}
+                      className="rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+                    >
+                      {t.prospect_cancel_btn}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 shrink-0 text-stone-400" strokeWidth={1.5} />
+                    <button
+                      onClick={handleOpenWhatsApp}
+                      disabled={!local.phone}
+                      className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] disabled:cursor-default disabled:text-stone-400 dark:disabled:text-neutral-500 transition-colors"
+                    >
+                      {local.phone || '—'}
+                    </button>
+                    {local.phone && (
+                      <button onClick={() => copyValue(local.phone!)} className={sideIconBtn} title={t.common_copy} aria-label={t.common_copy}>
+                        <Copy className="h-3 w-3" strokeWidth={1.5} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5 shrink-0 text-stone-400" strokeWidth={1.5} />
+                    <button
+                      onClick={handleOpenGmail}
+                      disabled={!local.email}
+                      className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] disabled:cursor-default disabled:text-stone-400 dark:disabled:text-neutral-500 transition-colors"
+                      title={local.email || undefined}
+                    >
+                      {local.email || '—'}
+                    </button>
+                    {local.email && (
+                      <button onClick={() => copyValue(local.email!)} className={sideIconBtn} title={t.common_copy} aria-label={t.common_copy}>
+                        <Copy className="h-3 w-3" strokeWidth={1.5} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 shrink-0 text-stone-400" strokeWidth={1.5} />
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-stone-900 dark:text-white">{local.company || '—'}</span>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Globe className="h-3.5 w-3.5 shrink-0 text-stone-400 mt-0.5" strokeWidth={1.5} />
+                    <div className="min-w-0 flex-1">
+                      {local.timezone ? (
+                        <>
+                          <p className="truncate text-sm font-semibold text-stone-900 dark:text-white">{getTimezoneLabel(local.timezone)}</p>
+                          <p className="text-[11px] text-stone-500 dark:text-neutral-400">
+                            {lang === 'en' ? 'Local time' : 'Il est'}{' '}
+                            <span className="font-semibold text-stone-700 dark:text-neutral-200">{getCurrentLocalTime(local.timezone).time}</span>
+                          </p>
+                        </>
+                      ) : (
+                        <button onClick={() => setEditingClient(true)} className="text-sm font-medium text-stone-400 dark:text-neutral-500 italic hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">
+                          {lang === 'en' ? 'Not set' : 'Non renseigné'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
+
+            {/* Rendez-vous — planifier, reprogrammer, annuler, réassigner */}
+            <section className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <h4 className={sideLabel}>{lang === 'en' ? 'Meetings' : 'Rendez-vous'}</h4>
+                {upcomingApptCount > 1 && (
+                  <button
+                    onClick={() => setShowApptsModal(true)}
+                    title={lang === 'en' ? 'See all upcoming meetings' : 'Voir tous les rendez-vous à venir'}
+                    className="inline-flex items-center gap-1 rounded-full bg-[#006c49]/10 hover:bg-[#006c49]/20 px-2 py-0.5 text-[11px] font-bold text-[#006c49] transition-colors"
+                  >
+                    <Calendar className="h-3 w-3" strokeWidth={1.5} />
+                    {upcomingApptCount}
+                  </button>
+                )}
+              </div>
+
+              {nextAppointment ? (
+                <>
+                  <div className="rounded-xl bg-[#006c49]/8 dark:bg-emerald-500/10 px-3 py-2.5">
+                    <p className="text-sm font-bold text-stone-900 dark:text-white">
+                      {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })}
+                      {' '}{lang === 'en' ? 'at' : 'à'} {nextAppointment.time?.slice(0, 5)}
+                    </p>
+                    {(() => {
+                      const ptz = local.timezone
+                      if (!ptz || ptz === userTimezone || !nextAppointment.datetime_utc) return null
+                      const pl = fromUTC(nextAppointment.datetime_utc, ptz)
+                      return (
+                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-stone-500 dark:text-neutral-400" title={getTimezoneLabel(ptz)}>
+                          <Globe className="h-3 w-3" strokeWidth={1.5} />
+                          {pl.time} {lang === 'en' ? 'for the prospect' : 'chez le prospect'}
+                        </p>
+                      )
+                    })()}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => openRescheduleModal(nextAppointment)}
+                      disabled={!!cancelLoadingId || rescheduleLoading}
+                      className={sideChip}
+                    >
+                      <CalendarPlus className="h-3 w-3" strokeWidth={1.5} />
+                      {lang === 'en' ? 'Reschedule' : 'Reprogrammer'}
+                    </button>
+                    <button
+                      onClick={() => handleCancelAppointment(nextAppointment)}
+                      disabled={!!cancelLoadingId || rescheduleLoading}
+                      className="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-2.5 py-1.5 text-[11px] font-business-display font-bold text-rose-600 dark:text-rose-400 transition-colors disabled:opacity-50"
+                    >
+                      {cancelLoadingId === nextAppointment.id ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <XCircle className="h-3 w-3" strokeWidth={1.5} />}
+                      {lang === 'en' ? 'Cancel' : 'Annuler'}
+                    </button>
+                    <ReassignAppointmentButton
+                      appointmentId={nextAppointment.id}
+                      currentAssignedTo={nextAppointment.assigned_to ?? null}
+                      ownerId={isTeamMember ? ownerUserId : user?.id}
+                      actorUserId={user?.id}
+                      canReassign={canReassignAppt}
+                      members={teamMembers}
+                      onReassigned={() => setApptRefreshKey(k => k + 1)}
+                      className={sideChip}
+                    />
+                  </div>
+                </>
+              ) : (
+                <button onClick={() => openBookModal()} className={cn(sideChip, 'w-full justify-center py-2')}>
+                  <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  {t.prospect_book_appointment}
+                </button>
+              )}
+            </section>
+
+            {/* Dates */}
+            <section className="space-y-2.5">
+              <h4 className={sideLabel}>Dates</h4>
+              <div className={sideRow}>
+                <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Created' : 'Créé'}</span>
+                <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.created_at)}</span>
+              </div>
+              {local.contacted_at && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Contacted' : 'Contacté'}</span>
+                  <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.contacted_at)}</span>
+                </div>
+              )}
+              {local.last_relance_at && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Last follow-up' : 'Dern. relance'}</span>
+                  <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.last_relance_at)}</span>
+                </div>
+              )}
+              {local.responded_at && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Replied' : 'Répondu'}</span>
+                  <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.responded_at)}</span>
+                </div>
+              )}
+              {(local as any).won_at && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Won' : 'Gagné'}</span>
+                  <span className="font-semibold text-[#006c49]">{fmtDate((local as any).won_at)}</span>
+                </div>
+              )}
+              {(local as any).lost_at && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Lost' : 'Perdu'}</span>
+                  <span className="font-semibold text-[#ba1a1a]">{fmtDate((local as any).lost_at)}</span>
+                </div>
+              )}
+            </section>
+
+            {/* Suivi — modifiable directement */}
+            <section className="space-y-3">
+              <h4 className={sideLabel}>{lang === 'en' ? 'Ownership' : 'Suivi'}</h4>
+
+              {assignableClosers.length > 0 && (
+                <div>
+                  <label className={cn(sideFieldLabel)}>{t.prospect_assign_closer}</label>
+                  <div className="relative">
+                    <select
+                      value={assignableClosers.find(c => c.id === (local as any).assigned_to)?.id || ''}
+                      onChange={(e) => handleUpdate({ assigned_to: e.target.value || null } as any)}
+                      disabled={!canAssign}
+                      className={cn(sideSelect, !canAssign && 'opacity-60 cursor-not-allowed')}
+                    >
+                      <option value="">{t.prospect_assign_none}</option>
+                      {assignableClosers.map(tm => (
+                        <option key={tm.id} value={tm.id}>{tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
+                  </div>
+                </div>
+              )}
+
+              {assignableSetters.length > 0 && (
+                <div>
+                  <label className={cn(sideFieldLabel)}>{t.prospect_assign_setter}</label>
+                  <div className="relative">
+                    <select
+                      value={assignableSetters.find(st => st.id === (local as any).assigned_setter)?.id || ''}
+                      onChange={(e) => {
+                        const setterId = e.target.value || null
+                        const updates: any = { assigned_setter: setterId }
+                        if (setterId) {
+                          const selected = teamMembers.find(tm => tm.id === setterId)
+                          // Un Setter-Closer « self » close ses propres leads
+                          if (selected?.role === 'Setter-Closer' && selected?.setter_scope === 'self') {
+                            updates.assigned_to = setterId
+                          }
+                        }
+                        handleUpdate(updates)
+                      }}
+                      disabled={!canAssignSetter}
+                      className={cn(sideSelect, !canAssignSetter && 'opacity-60 cursor-not-allowed')}
+                    >
+                      <option value="">{t.prospect_assign_none}</option>
+                      {assignableSetters.map(tm => (
+                        <option key={tm.id} value={tm.id}>{tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className={cn(sideFieldLabel)}>{t.prospect_campaign_origin}</label>
+                <div className="relative">
+                  <select
+                    value={(local as any).campaign_id || ''}
+                    onChange={(e) => handleUpdate({ campaign_id: e.target.value || null } as any)}
+                    className={sideSelect}
+                  >
+                    <option value="">{lang === 'en' ? 'No campaign' : 'Aucune campagne'}</option>
+                    {allCampaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
+                </div>
+              </div>
+
+              <div>
+                <label className={cn(sideFieldLabel)}>{t.prospect_offer_formula}</label>
+                <div className="relative">
+                  <select
+                    value={(local as any).formula_id || ''}
+                    onChange={(e) => {
+                      const fId = e.target.value || null
+                      const selected = allFormulas.find(f => f.id === fId)
+                      // Un prospect relié à Stripe garde son montant réel
+                      const hasStripe = !!(local as any).stripe_customer_id || !!(local as any).stripe_subscription_id
+                      handleUpdate({ formula_id: fId, ...(hasStripe ? {} : { value: selected?.price || 0 }) } as any)
+                      setFormula(selected || null)
+                    }}
+                    className={sideSelect}
+                  >
+                    <option value="">{t.prospect_no_offer}</option>
+                    {allFormulas.map(f => <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>)}
+                  </select>
+                  <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
+                </div>
+                {formula?.resources && formula.resources.length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      onClick={() => setShowFormulaLinks(v => !v)}
+                      className="flex w-full items-center justify-between gap-2 rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 py-2 text-[11px] font-business-display font-bold text-stone-700 dark:text-neutral-200 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Link2 className="h-3 w-3" strokeWidth={1.5} />
+                        {lang === 'en' ? 'Offer links' : "Liens de l'offre"}
+                        <span className="text-stone-400 dark:text-neutral-500">({formula.resources.length})</span>
+                      </span>
+                      <ChevronDown className={cn('h-3.5 w-3.5 text-stone-400 transition-transform', showFormulaLinks && 'rotate-180')} strokeWidth={1.5} />
+                    </button>
+                    {showFormulaLinks && (
+                      <div className="mt-1.5 space-y-1">
+                        {formula.resources.map((r, i) => (
+                          <a
+                            key={i}
+                            href={r.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={r.name || r.type}
+                            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-stone-700 dark:text-neutral-200 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+                          >
+                            <ExternalLink className="h-3 w-3 shrink-0 text-stone-400" strokeWidth={1.5} />
+                            <span className="min-w-0 truncate">{r.name || r.type}</span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {(local as any).source && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">Source</span>
+                  <span className="font-semibold text-stone-900 dark:text-white text-right truncate">{(local as any).source}</span>
+                </div>
+              )}
+            </section>
+          </aside>
+        )}
         </div>
 
         {/* Quick booking modal */}
@@ -3376,7 +3450,7 @@ export function BusinessProspectView({
   if (inline) return content
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center md:p-6 overflow-hidden">
       <div className="absolute inset-0 bg-stone-900/10 dark:bg-black/40 backdrop-blur-sm" onClick={onClose} />
       {content}
     </div>
