@@ -192,7 +192,26 @@ export function BusinessProspectView({
   useEffect(() => {
     setLocal(prospect)
   }, [prospect.id])
-  const [activeTab, setActiveTab] = useState<'info' | 'notes' | 'rappels' | 'historique'>('info')
+  // Sur telephone/tablette on ouvre sur « Fiche » (coordonnees, RDV, suivi) : c'est la
+  // colonne de pilotage du grand ecran, sinon inaccessible.
+  const [activeTab, setActiveTab] = useState<'fiche' | 'info' | 'notes' | 'rappels' | 'historique'>(
+    () => (typeof window !== 'undefined' && !inline && !window.matchMedia('(min-width: 1024px)').matches ? 'fiche' : 'info')
+  )
+  // La colonne de pilotage n'existe qu'en pop-up sur grand ecran ; partout ailleurs
+  // (telephone, tablette, mode inline) son contenu devient l'onglet « Fiche ».
+  const [isWideScreen, setIsWideScreen] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const onChange = (e: MediaQueryListEvent) => setIsWideScreen(e.matches)
+    setIsWideScreen(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  useEffect(() => {
+    if (activeTab === 'fiche' && !inline && isWideScreen) setActiveTab('info')
+  }, [activeTab, inline, isWideScreen])
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
 
@@ -1172,251 +1191,47 @@ export function BusinessProspectView({
   const sideIconBtn = 'shrink-0 p-1 rounded-full text-stone-400 hover:bg-stone-200/60 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors'
   const sideChip = 'inline-flex items-center gap-1 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 px-2.5 py-1.5 text-[11px] font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors disabled:opacity-50'
   const upcomingApptCount = allAppointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length
+  // Colonne de pilotage a droite : uniquement en pop-up large. Sinon -> onglet « Fiche ».
+  const showSidePanel = !inline && isWideScreen
 
-  const content = (
-      <aside className={inline
-        ? "flex flex-col h-full overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
-        : "relative w-full max-w-[1100px] h-full md:h-auto md:max-h-[88vh] flex flex-col shadow-2xl md:rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
-      }>
+  // Libellé + sélecteur d'étape. Rendus en tête de la colonne de pilotage sur grand
+  // écran, sinon sous les tags du bandeau. Une seule définition pour les deux cas.
+  const stageLabel = (
+    <label className={cn(LABEL_STYLE, 'block ml-1')}>
+      {t.prospect_current_stage}
+      {stageSinceLabel && (
+        <span className="ml-1.5 font-medium normal-case tracking-normal text-stone-400 dark:text-neutral-600">
+          {stageSinceLabel}
+        </span>
+      )}
+    </label>
+  )
+  const stageSelect = (
+    <div className="relative">
+      <select
+        value={local.stage}
+        onChange={(e) => handleStageChange(e.target.value)}
+        className="w-full appearance-none rounded-full bg-[#f5f3f2] dark:bg-neutral-800 border-0 pl-4 pr-9 py-2.5 text-sm font-business-display font-bold text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/10 focus:outline-none cursor-pointer"
+      >
+        {ALL_STAGES.map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
+        {customStages.length > 0 && <option disabled>──────────</option>}
+        {customStages.map(cs => <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>{cs.name}</option>)}
+      </select>
+      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
+    </div>
+  )
+  const closeButton = (
+    <button
+      onClick={onClose}
+      className="min-w-[36px] min-h-[36px] w-9 h-9 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center hover:bg-[#efedec] dark:hover:bg-neutral-700 transition-colors shrink-0"
+    >
+      <X className="h-5 w-5 text-stone-900 dark:text-white" strokeWidth={1.5} />
+    </button>
+  )
 
-        {/* Header */}
-        <header className="p-4 md:p-6 pb-3">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="flex flex-col items-center shrink-0 gap-1">
-                <button
-                  onClick={() => avatarInputRef.current?.click()}
-                  className="relative w-11 h-11 rounded-full bg-[#e4e2e1] dark:bg-neutral-800 flex items-center justify-center overflow-hidden text-lg font-business-display font-extrabold text-stone-500 dark:text-neutral-400 group cursor-pointer"
-                  title={t.prospect_change_photo}
-                >
-                  {local.avatar_url ? (
-                    <img src={local.avatar_url} alt={local.contact} className="w-full h-full object-cover" />
-                  ) : (
-                    (local.contact || '?')[0]?.toUpperCase()
-                  )}
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                    {avatarUploading ? (
-                      <Loader2 className="h-5 w-5 text-white animate-spin" />
-                    ) : (
-                      <Camera className="h-5 w-5 text-white" />
-                    )}
-                  </div>
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                </button>
-                {/* Qualification score ring */}
-                {(() => {
-                  if (!qualificationData?.answers) return null
-                  if (qualificationData.questionnaire?.qualifying === false) return null
-                  const scored = qualificationData.answers.filter(a => a.score !== null && a.score !== undefined)
-                  if (scored.length === 0) return null
-                  const avg = Math.round(scored.reduce((s, a) => s + (a.score ?? 0), 0) / scored.length)
-                  const circumference = 2 * Math.PI * 24 // r=24
-                  const strokeColor = avg < 40 ? 'stroke-red-500' : avg < 70 ? 'stroke-orange-500' : 'stroke-emerald-500'
-                  const textColor = avg < 40 ? 'fill-red-500' : avg < 70 ? 'fill-orange-500' : 'fill-emerald-500'
-                  return (
-                    <svg className="w-10 h-10" viewBox="0 0 56 56">
-                      <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4.5" className="stroke-stone-200 dark:stroke-neutral-700" />
-                      <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4.5"
-                        className={strokeColor}
-                        strokeDasharray={`${(avg / 100) * circumference} ${circumference}`}
-                        strokeLinecap="round"
-                        transform="rotate(-90 28 28)"
-                      />
-                      <text x="28" y="28" textAnchor="middle" dominantBaseline="central"
-                        className={cn('text-xs font-extrabold', textColor)}>
-                        {avg}%
-                      </text>
-                    </svg>
-                  )
-                })()}
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  {editingHeaderName ? (
-                    <input
-                      autoFocus
-                      type="text"
-                      value={headerNameDraft}
-                      onChange={e => setHeaderNameDraft(e.target.value)}
-                      onBlur={handleSaveHeaderName}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') { e.preventDefault(); handleSaveHeaderName() }
-                        else if (e.key === 'Escape') { setHeaderNameDraft(local.contact || ''); setEditingHeaderName(false) }
-                      }}
-                      className="min-w-0 flex-1 text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white bg-transparent border-b-2 border-stone-300 dark:border-neutral-600 focus:border-stone-900 dark:focus:border-white outline-none"
-                      placeholder={t.prospect_no_name}
-                    />
-                  ) : (
-                    <h2
-                      onClick={() => { setHeaderNameDraft(local.contact || ''); setEditingHeaderName(true) }}
-                      title={t.prospect_field_contact}
-                      className="text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate cursor-text rounded px-1 -mx-1 hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors"
-                    >
-                      {local.contact || t.prospect_no_name}
-                    </h2>
-                  )}
-                  <DMRBadge prospect={local} size="sm" />
-                </div>
-                {local.company && (
-                  <p className="text-stone-500 dark:text-neutral-400 font-medium truncate">{local.company}</p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-start gap-3 shrink-0">
-              {/* Étape : pilotée depuis le bandeau, visible quel que soit l'onglet */}
-              <div className="hidden sm:block text-right">
-                <label className={cn(LABEL_STYLE, 'block mb-1 mr-1')}>
-                  {t.prospect_current_stage}
-                  {stageSinceLabel && (
-                    <span className="ml-1.5 font-medium normal-case tracking-normal text-stone-400 dark:text-neutral-600">
-                      {stageSinceLabel}
-                    </span>
-                  )}
-                </label>
-                <div className="relative">
-                  <select
-                    value={local.stage}
-                    onChange={(e) => handleStageChange(e.target.value)}
-                    className="w-[190px] appearance-none rounded-full bg-[#f5f3f2] dark:bg-neutral-800 border-0 pl-4 pr-9 py-2 text-sm font-business-display font-bold text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/10 focus:outline-none cursor-pointer"
-                  >
-                    {ALL_STAGES.map(st => <option key={st.id} value={st.id}>{st.name}</option>)}
-                    {customStages.length > 0 && <option disabled>──────────</option>}
-                    {customStages.map(cs => <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>{cs.name}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="min-w-[36px] min-h-[36px] w-9 h-9 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 flex items-center justify-center hover:bg-[#efedec] dark:hover:bg-neutral-700 transition-colors shrink-0"
-              >
-                <X className="h-5 w-5 text-stone-900 dark:text-white" strokeWidth={1.5} />
-              </button>
-            </div>
-          </div>
-
-          {/* Tags - below name */}
-          <div className="mt-2 ml-0 md:ml-[60px] relative">
-            <div className="flex flex-wrap items-center gap-2">
-              {prospectTagIds.map(tagId => {
-                const tag = allTags.find(t => t.id === tagId)
-                if (!tag) return null
-                if (tag.is_system) {
-                  return (
-                    <button
-                      key={tagId}
-                      onClick={() => handleToggleTag(tagId)}
-                      className="group inline-flex items-center gap-1.5 text-xs font-bold pl-2.5 pr-2 py-1 rounded-full text-white transition-all hover:opacity-90"
-                      style={{ backgroundColor: tag.color }}
-                    >
-                      {tag.name}
-                      <X className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
-                    </button>
-                  )
-                }
-                return (
-                  <button
-                    key={tagId}
-                    onClick={() => handleToggleTag(tagId)}
-                    className="group inline-flex items-center gap-1.5 text-xs font-semibold pl-2 pr-1.5 py-1 rounded-full border transition-all hover:opacity-80"
-                    style={{ borderColor: tag.color, color: tag.color }}
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
-                    {tag.name}
-                    <X className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
-                  </button>
-                )
-              })}
-              <button
-                onClick={() => setShowTagPicker(!showTagPicker)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-stone-400 dark:text-neutral-500 px-2.5 py-1 rounded-full border border-dashed border-stone-300 dark:border-neutral-600 hover:border-stone-400 dark:hover:border-neutral-500 hover:text-stone-500 dark:hover:text-neutral-400 transition-all"
-              >
-                <Plus className="h-3 w-3" strokeWidth={2} />
-                tag
-              </button>
-            </div>
-
-            {/* Tag dropdown */}
-            {showTagPicker && (
-              <div className="absolute left-0 top-full mt-1.5 z-20 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-stone-200/60 dark:border-neutral-700 p-2 min-w-[200px] max-w-[300px]">
-                <div className="flex flex-col gap-0.5">
-                  {allTags.filter(t => !t.is_system).map(tag => {
-                    const isActive = prospectTagIds.includes(tag.id)
-                    return (
-                      <button
-                        key={tag.id}
-                        onClick={() => handleToggleTag(tag.id)}
-                        className={cn(
-                          'flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg text-sm transition-all',
-                          isActive ? 'bg-stone-100 dark:bg-neutral-800 font-semibold' : 'hover:bg-stone-50 dark:hover:bg-neutral-800'
-                        )}
-                      >
-                        <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
-                        <span className="flex-1 text-stone-700 dark:text-neutral-200">{tag.name}</span>
-                        {isActive && <Check className="h-3.5 w-3.5 text-stone-500 dark:text-neutral-400" strokeWidth={2} />}
-                      </button>
-                    )
-                  })}
-                  {allTags.length === 0 && (
-                    <p className="text-xs text-stone-400 dark:text-neutral-500 text-center py-3">{t.prospect_no_tags}</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </header>
-
-        {/* Quick Actions */}
-        <section className="px-6 py-3 flex flex-wrap gap-2.5 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
-          <button
-            onClick={() => navigate(`/business/cockpit?name=${encodeURIComponent(local.contact)}&prospectId=${prospect.id}`)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-full font-business-display font-bold text-sm tracking-wide transition-transform active:scale-95 shadow-lg shadow-stone-900/20"
-          >
-            <PhoneCall className="h-4 w-4" strokeWidth={1.5} />
-            {t.prospect_open_callroom}
-          </button>
-          <button
-            onClick={() => setShowReminderForm(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 rounded-full font-business-display font-bold text-sm transition-all hover:brightness-105 active:scale-95"
-          >
-            <Bell className="h-4 w-4" strokeWidth={1.5} />
-            {t.prospect_create_reminder}
-          </button>
-          <button
-            onClick={() => openBookModal()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 rounded-full font-business-display font-bold text-sm transition-all hover:brightness-105 active:scale-95"
-          >
-            <CalendarPlus className="h-4 w-4" strokeWidth={1.5} />
-            {t.prospect_book_appointment}
-          </button>
-          <div className="flex gap-2">
-            <button
-              onClick={handleOpenGmail}
-              className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
-            >
-              <Mail className="h-4 w-4" strokeWidth={1.5} />
-            </button>
-            <button
-              onClick={handleOpenWhatsApp}
-              className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
-            >
-              <MessageCircle className="h-4 w-4" strokeWidth={1.5} />
-            </button>
-          </div>
-        </section>
-
-        {/* Corps : contenu à gauche, colonne d'infos à droite (pop-up uniquement) */}
-        <div className={inline ? 'flex-1 flex flex-col overflow-hidden min-h-0' : 'flex-1 flex overflow-hidden min-h-0'}>
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-
-        {/* Relance + Réponse (stage Contacté) */}
-        {local.stage === 'contacted' && (() => {
+  // Bloc « Contacté » (relance / réponse / point de discussion).
+  // Rendu sous le sélecteur d'étape du bandeau, pas en pleine largeur.
+  const relanceBlock = local.stage !== 'contacted' ? null : (() => {
           const fr = lang !== 'en'
           const responded = !!local.responded_at
           const nextTs = local.discussion_next_at ? new Date(local.discussion_next_at).getTime() : 0
@@ -1438,8 +1253,7 @@ export function BusinessProspectView({
             handleUpdate({ ...clearResponse, ...extra })
             setDiscussionOui(false)
           }
-          return (
-            <section className="px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+    return (
               <div className="rounded-2xl border border-stone-200 dark:border-neutral-700 bg-stone-50/70 dark:bg-neutral-800/40 p-4">
                 {!responded && (
                   <>
@@ -1556,23 +1370,590 @@ export function BusinessProspectView({
                   </div>
                 )}
               </div>
+    )
+  })()
+
+  // Contenu de la colonne de pilotage. Rendu dans l'aside sur grand écran,
+  // et dans l'onglet « Fiche » sur téléphone/tablette ou en mode inline.
+  const sidePanelSections = (
+    <>
+
+            {/* Coordonnées — édition sur place */}
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className={sideLabel}>{lang === 'en' ? 'Contact details' : 'Coordonnées'}</h4>
+                <button
+                  onClick={() => setEditingClient(!editingClient)}
+                  className="p-1 rounded-full text-stone-400 hover:bg-stone-200/60 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors"
+                  title={lang === 'en' ? 'Edit' : 'Modifier'}
+                >
+                  <Pencil className="h-3 w-3" strokeWidth={2} />
+                </button>
+              </div>
+
+              {editingClient ? (
+                <div className="space-y-2.5">
+                  <input type="text" value={editedContact} onChange={e => setEditedContact(e.target.value)} className={sideInput} placeholder={t.prospect_field_contact} />
+                  <input type="text" value={editedCompany} onChange={e => setEditedCompany(e.target.value)} className={sideInput} placeholder={t.prospect_field_company} />
+                  <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className={sideInput} placeholder="Email" />
+                  <PhoneInput value={editedPhone} onChange={setEditedPhone} />
+                  <TimezonePicker value={editedTimezone} onChange={setEditedTimezone} />
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-3 py-2 text-xs font-business-display font-bold text-white hover:bg-stone-800 transition-colors">{t.prospect_sauvegarder}</button>
+                    <button
+                      onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone); setEditedTimezone(local.timezone || '') }}
+                      className="rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+                    >
+                      {t.prospect_cancel_btn}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 shrink-0 text-stone-400" strokeWidth={1.5} />
+                    <button
+                      onClick={handleOpenWhatsApp}
+                      disabled={!local.phone}
+                      className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] disabled:cursor-default disabled:text-stone-400 dark:disabled:text-neutral-500 transition-colors"
+                    >
+                      {local.phone || '—'}
+                    </button>
+                    {local.phone && (
+                      <button onClick={() => copyValue(local.phone!)} className={sideIconBtn} title={t.common_copy} aria-label={t.common_copy}>
+                        <Copy className="h-3 w-3" strokeWidth={1.5} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5 shrink-0 text-stone-400" strokeWidth={1.5} />
+                    <button
+                      onClick={handleOpenGmail}
+                      disabled={!local.email}
+                      className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] disabled:cursor-default disabled:text-stone-400 dark:disabled:text-neutral-500 transition-colors"
+                      title={local.email || undefined}
+                    >
+                      {local.email || '—'}
+                    </button>
+                    {local.email && (
+                      <button onClick={() => copyValue(local.email!)} className={sideIconBtn} title={t.common_copy} aria-label={t.common_copy}>
+                        <Copy className="h-3 w-3" strokeWidth={1.5} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 shrink-0 text-stone-400" strokeWidth={1.5} />
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-stone-900 dark:text-white">{local.company || '—'}</span>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Globe className="h-3.5 w-3.5 shrink-0 text-stone-400 mt-0.5" strokeWidth={1.5} />
+                    <div className="min-w-0 flex-1">
+                      {local.timezone ? (
+                        <>
+                          <p className="truncate text-sm font-semibold text-stone-900 dark:text-white">{getTimezoneLabel(local.timezone)}</p>
+                          <p className="text-[11px] text-stone-500 dark:text-neutral-400">
+                            {lang === 'en' ? 'Local time' : 'Il est'}{' '}
+                            <span className="font-semibold text-stone-700 dark:text-neutral-200">{getCurrentLocalTime(local.timezone).time}</span>
+                          </p>
+                        </>
+                      ) : (
+                        <button onClick={() => setEditingClient(true)} className="text-sm font-medium text-stone-400 dark:text-neutral-500 italic hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">
+                          {lang === 'en' ? 'Not set' : 'Non renseigné'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </section>
-          )
-        })()}
+
+            {/* Rendez-vous — planifier, reprogrammer, annuler, réassigner */}
+            <section className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <h4 className={sideLabel}>{lang === 'en' ? 'Meetings' : 'Rendez-vous'}</h4>
+                {upcomingApptCount > 1 && (
+                  <button
+                    onClick={() => setShowApptsModal(true)}
+                    title={lang === 'en' ? 'See all upcoming meetings' : 'Voir tous les rendez-vous à venir'}
+                    className="inline-flex items-center gap-1 rounded-full bg-[#006c49]/10 hover:bg-[#006c49]/20 px-2 py-0.5 text-[11px] font-bold text-[#006c49] transition-colors"
+                  >
+                    <Calendar className="h-3 w-3" strokeWidth={1.5} />
+                    {upcomingApptCount}
+                  </button>
+                )}
+              </div>
+
+              {nextAppointment ? (
+                <>
+                  <div className="rounded-xl bg-[#006c49]/8 dark:bg-emerald-500/10 px-3 py-2.5">
+                    <p className="text-sm font-bold text-stone-900 dark:text-white">
+                      {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })}
+                      {' '}{lang === 'en' ? 'at' : 'à'} {nextAppointment.time?.slice(0, 5)}
+                    </p>
+                    {(() => {
+                      const ptz = local.timezone
+                      if (!ptz || ptz === userTimezone || !nextAppointment.datetime_utc) return null
+                      const pl = fromUTC(nextAppointment.datetime_utc, ptz)
+                      return (
+                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-stone-500 dark:text-neutral-400" title={getTimezoneLabel(ptz)}>
+                          <Globe className="h-3 w-3" strokeWidth={1.5} />
+                          {pl.time} {lang === 'en' ? 'for the prospect' : 'chez le prospect'}
+                        </p>
+                      )
+                    })()}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => openRescheduleModal(nextAppointment)}
+                      disabled={!!cancelLoadingId || rescheduleLoading}
+                      className={sideChip}
+                    >
+                      <CalendarPlus className="h-3 w-3" strokeWidth={1.5} />
+                      {lang === 'en' ? 'Reschedule' : 'Reprogrammer'}
+                    </button>
+                    <button
+                      onClick={() => handleCancelAppointment(nextAppointment)}
+                      disabled={!!cancelLoadingId || rescheduleLoading}
+                      className="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-2.5 py-1.5 text-[11px] font-business-display font-bold text-rose-600 dark:text-rose-400 transition-colors disabled:opacity-50"
+                    >
+                      {cancelLoadingId === nextAppointment.id ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <XCircle className="h-3 w-3" strokeWidth={1.5} />}
+                      {lang === 'en' ? 'Cancel' : 'Annuler'}
+                    </button>
+                    <ReassignAppointmentButton
+                      appointmentId={nextAppointment.id}
+                      currentAssignedTo={nextAppointment.assigned_to ?? null}
+                      ownerId={isTeamMember ? ownerUserId : user?.id}
+                      actorUserId={user?.id}
+                      canReassign={canReassignAppt}
+                      members={teamMembers}
+                      onReassigned={() => setApptRefreshKey(k => k + 1)}
+                      className={sideChip}
+                    />
+                  </div>
+                </>
+              ) : (
+                <button onClick={() => openBookModal()} className={cn(sideChip, 'w-full justify-center py-2')}>
+                  <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  {t.prospect_book_appointment}
+                </button>
+              )}
+            </section>
+
+            {/* Dates */}
+            <section className="space-y-2.5">
+              <h4 className={sideLabel}>Dates</h4>
+              <div className={sideRow}>
+                <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Created' : 'Créé'}</span>
+                <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.created_at)}</span>
+              </div>
+              {local.contacted_at && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Contacted' : 'Contacté'}</span>
+                  <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.contacted_at)}</span>
+                </div>
+              )}
+              {local.last_relance_at && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Last follow-up' : 'Dern. relance'}</span>
+                  <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.last_relance_at)}</span>
+                </div>
+              )}
+              {local.responded_at && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Replied' : 'Répondu'}</span>
+                  <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.responded_at)}</span>
+                </div>
+              )}
+              {(local as any).won_at && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Won' : 'Gagné'}</span>
+                  <span className="font-semibold text-[#006c49]">{fmtDate((local as any).won_at)}</span>
+                </div>
+              )}
+              {(local as any).lost_at && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Lost' : 'Perdu'}</span>
+                  <span className="font-semibold text-[#ba1a1a]">{fmtDate((local as any).lost_at)}</span>
+                </div>
+              )}
+            </section>
+
+            {/* Suivi — modifiable directement */}
+            <section className="space-y-3">
+              <h4 className={sideLabel}>{lang === 'en' ? 'Ownership' : 'Suivi'}</h4>
+
+              {assignableClosers.length > 0 && (
+                <div>
+                  <label className={cn(sideFieldLabel)}>{t.prospect_assign_closer}</label>
+                  <div className="relative">
+                    <select
+                      value={assignableClosers.find(c => c.id === (local as any).assigned_to)?.id || ''}
+                      onChange={(e) => handleUpdate({ assigned_to: e.target.value || null } as any)}
+                      disabled={!canAssign}
+                      className={cn(sideSelect, !canAssign && 'opacity-60 cursor-not-allowed')}
+                    >
+                      <option value="">{t.prospect_assign_none}</option>
+                      {assignableClosers.map(tm => (
+                        <option key={tm.id} value={tm.id}>{tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
+                  </div>
+                </div>
+              )}
+
+              {assignableSetters.length > 0 && (
+                <div>
+                  <label className={cn(sideFieldLabel)}>{t.prospect_assign_setter}</label>
+                  <div className="relative">
+                    <select
+                      value={assignableSetters.find(st => st.id === (local as any).assigned_setter)?.id || ''}
+                      onChange={(e) => {
+                        const setterId = e.target.value || null
+                        const updates: any = { assigned_setter: setterId }
+                        if (setterId) {
+                          const selected = teamMembers.find(tm => tm.id === setterId)
+                          // Un Setter-Closer « self » close ses propres leads
+                          if (selected?.role === 'Setter-Closer' && selected?.setter_scope === 'self') {
+                            updates.assigned_to = setterId
+                          }
+                        }
+                        handleUpdate(updates)
+                      }}
+                      disabled={!canAssignSetter}
+                      className={cn(sideSelect, !canAssignSetter && 'opacity-60 cursor-not-allowed')}
+                    >
+                      <option value="">{t.prospect_assign_none}</option>
+                      {assignableSetters.map(tm => (
+                        <option key={tm.id} value={tm.id}>{tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className={cn(sideFieldLabel)}>{t.prospect_campaign_origin}</label>
+                <div className="relative">
+                  <select
+                    value={(local as any).campaign_id || ''}
+                    onChange={(e) => handleUpdate({ campaign_id: e.target.value || null } as any)}
+                    className={sideSelect}
+                  >
+                    <option value="">{lang === 'en' ? 'No campaign' : 'Aucune campagne'}</option>
+                    {allCampaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
+                </div>
+              </div>
+
+              <div>
+                <label className={cn(sideFieldLabel)}>{t.prospect_offer_formula}</label>
+                <div className="relative">
+                  <select
+                    value={(local as any).formula_id || ''}
+                    onChange={(e) => {
+                      const fId = e.target.value || null
+                      const selected = allFormulas.find(f => f.id === fId)
+                      // Un prospect relié à Stripe garde son montant réel
+                      const hasStripe = !!(local as any).stripe_customer_id || !!(local as any).stripe_subscription_id
+                      handleUpdate({ formula_id: fId, ...(hasStripe ? {} : { value: selected?.price || 0 }) } as any)
+                      setFormula(selected || null)
+                    }}
+                    className={sideSelect}
+                  >
+                    <option value="">{t.prospect_no_offer}</option>
+                    {allFormulas.map(f => <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>)}
+                  </select>
+                  <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
+                </div>
+                {formula?.resources && formula.resources.length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      onClick={() => setShowFormulaLinks(v => !v)}
+                      className="flex w-full items-center justify-between gap-2 rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 py-2 text-[11px] font-business-display font-bold text-stone-700 dark:text-neutral-200 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Link2 className="h-3 w-3" strokeWidth={1.5} />
+                        {lang === 'en' ? 'Offer links' : "Liens de l'offre"}
+                        <span className="text-stone-400 dark:text-neutral-500">({formula.resources.length})</span>
+                      </span>
+                      <ChevronDown className={cn('h-3.5 w-3.5 text-stone-400 transition-transform', showFormulaLinks && 'rotate-180')} strokeWidth={1.5} />
+                    </button>
+                    {showFormulaLinks && (
+                      <div className="mt-1.5 space-y-1">
+                        {formula.resources.map((r, i) => (
+                          <a
+                            key={i}
+                            href={r.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={r.name || r.type}
+                            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-stone-700 dark:text-neutral-200 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+                          >
+                            <ExternalLink className="h-3 w-3 shrink-0 text-stone-400" strokeWidth={1.5} />
+                            <span className="min-w-0 truncate">{r.name || r.type}</span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {(local as any).source && (
+                <div className={sideRow}>
+                  <span className="text-stone-500 dark:text-neutral-400">Source</span>
+                  <span className="font-semibold text-stone-900 dark:text-white text-right truncate">{(local as any).source}</span>
+                </div>
+              )}
+            </section>
+    </>
+  )
+
+  const content = (
+      <aside className={inline
+        ? "flex flex-col h-full overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
+        : "relative w-full max-w-[1100px] h-full md:h-auto md:max-h-[88vh] flex flex-col shadow-2xl md:rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
+      }>
+        {/* Corps : bandeau + contenu à gauche, colonne de pilotage à droite (pop-up large).
+            Le bandeau vit dans la colonne de gauche pour que la bordure de séparation
+            coure du haut jusqu'en bas de la fiche. */}
+        <div className={inline ? 'flex-1 flex flex-col overflow-hidden min-h-0' : 'flex-1 flex overflow-hidden min-h-0'}>
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        {/* Header */}
+        <header className="px-4 md:px-6 pt-[calc(1rem+env(safe-area-inset-top))] md:pt-6 pb-3">
+          <div className="flex justify-between items-start gap-3">
+            {/* Identité + tags groupées, la croix reste calée à droite */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="flex flex-col items-center shrink-0 gap-1">
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="relative w-11 h-11 rounded-full bg-[#e4e2e1] dark:bg-neutral-800 flex items-center justify-center overflow-hidden text-lg font-business-display font-extrabold text-stone-500 dark:text-neutral-400 group cursor-pointer"
+                    title={t.prospect_change_photo}
+                  >
+                    {local.avatar_url ? (
+                      <img src={local.avatar_url} alt={local.contact} className="w-full h-full object-cover" />
+                    ) : (
+                      (local.contact || '?')[0]?.toUpperCase()
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                      {avatarUploading ? (
+                        <Loader2 className="h-5 w-5 text-white animate-spin" />
+                      ) : (
+                        <Camera className="h-5 w-5 text-white" />
+                      )}
+                    </div>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                  </button>
+                  {/* Qualification score ring */}
+                  {(() => {
+                    if (!qualificationData?.answers) return null
+                    if (qualificationData.questionnaire?.qualifying === false) return null
+                    const scored = qualificationData.answers.filter(a => a.score !== null && a.score !== undefined)
+                    if (scored.length === 0) return null
+                    const avg = Math.round(scored.reduce((s, a) => s + (a.score ?? 0), 0) / scored.length)
+                    const circumference = 2 * Math.PI * 24 // r=24
+                    const strokeColor = avg < 40 ? 'stroke-red-500' : avg < 70 ? 'stroke-orange-500' : 'stroke-emerald-500'
+                    const textColor = avg < 40 ? 'fill-red-500' : avg < 70 ? 'fill-orange-500' : 'fill-emerald-500'
+                    return (
+                      <svg className="w-10 h-10" viewBox="0 0 56 56">
+                        <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4.5" className="stroke-stone-200 dark:stroke-neutral-700" />
+                        <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4.5"
+                          className={strokeColor}
+                          strokeDasharray={`${(avg / 100) * circumference} ${circumference}`}
+                          strokeLinecap="round"
+                          transform="rotate(-90 28 28)"
+                        />
+                        <text x="28" y="28" textAnchor="middle" dominantBaseline="central"
+                          className={cn('text-xs font-extrabold', textColor)}>
+                          {avg}%
+                        </text>
+                      </svg>
+                    )
+                  })()}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {editingHeaderName ? (
+                      <input
+                        autoFocus
+                        type="text"
+                        value={headerNameDraft}
+                        onChange={e => setHeaderNameDraft(e.target.value)}
+                        onBlur={handleSaveHeaderName}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { e.preventDefault(); handleSaveHeaderName() }
+                          else if (e.key === 'Escape') { setHeaderNameDraft(local.contact || ''); setEditingHeaderName(false) }
+                        }}
+                        className="min-w-0 flex-1 text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white bg-transparent border-b-2 border-stone-300 dark:border-neutral-600 focus:border-stone-900 dark:focus:border-white outline-none"
+                        placeholder={t.prospect_no_name}
+                      />
+                    ) : (
+                      <h2
+                        onClick={() => { setHeaderNameDraft(local.contact || ''); setEditingHeaderName(true) }}
+                        title={t.prospect_field_contact}
+                        className="text-xl font-business-display font-extrabold tracking-tight text-stone-900 dark:text-white truncate cursor-text rounded px-1 -mx-1 hover:bg-stone-100 dark:hover:bg-neutral-800 transition-colors"
+                      >
+                        {local.contact || t.prospect_no_name}
+                      </h2>
+                    )}
+                    <DMRBadge prospect={local} size="sm" />
+                  </div>
+                  {local.company && (
+                    <p className="text-stone-500 dark:text-neutral-400 font-medium truncate">{local.company}</p>
+                  )}
+                </div>
+              </div>
+            {/* Tags - below name */}
+            <div className="mt-2 ml-0 md:ml-[60px] relative">
+              <div className="flex flex-wrap items-center gap-2">
+                {prospectTagIds.map(tagId => {
+                  const tag = allTags.find(t => t.id === tagId)
+                  if (!tag) return null
+                  if (tag.is_system) {
+                    return (
+                      <button
+                        key={tagId}
+                        onClick={() => handleToggleTag(tagId)}
+                        className="group inline-flex items-center gap-1.5 text-xs font-bold pl-2.5 pr-2 py-1 rounded-full text-white transition-all hover:opacity-90"
+                        style={{ backgroundColor: tag.color }}
+                      >
+                        {tag.name}
+                        <X className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
+                      </button>
+                    )
+                  }
+                  return (
+                    <button
+                      key={tagId}
+                      onClick={() => handleToggleTag(tagId)}
+                      className="group inline-flex items-center gap-1.5 text-xs font-semibold pl-2 pr-1.5 py-1 rounded-full border transition-all hover:opacity-80"
+                      style={{ borderColor: tag.color, color: tag.color }}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
+                      {tag.name}
+                      <X className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
+                    </button>
+                  )
+                })}
+                <button
+                  onClick={() => setShowTagPicker(!showTagPicker)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-stone-400 dark:text-neutral-500 px-2.5 py-1 rounded-full border border-dashed border-stone-300 dark:border-neutral-600 hover:border-stone-400 dark:hover:border-neutral-500 hover:text-stone-500 dark:hover:text-neutral-400 transition-all"
+                >
+                  <Plus className="h-3 w-3" strokeWidth={2} />
+                  tag
+                </button>
+              </div>
+
+              {/* Tag dropdown */}
+              {showTagPicker && (
+                <div className="absolute left-0 top-full mt-1.5 z-20 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-stone-200/60 dark:border-neutral-700 p-2 min-w-[200px] max-w-[300px]">
+                  <div className="flex flex-col gap-0.5">
+                    {allTags.filter(t => !t.is_system).map(tag => {
+                      const isActive = prospectTagIds.includes(tag.id)
+                      return (
+                        <button
+                          key={tag.id}
+                          onClick={() => handleToggleTag(tag.id)}
+                          className={cn(
+                            'flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg text-sm transition-all',
+                            isActive ? 'bg-stone-100 dark:bg-neutral-800 font-semibold' : 'hover:bg-stone-50 dark:hover:bg-neutral-800'
+                          )}
+                        >
+                          <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                          <span className="flex-1 text-stone-700 dark:text-neutral-200">{tag.name}</span>
+                          {isActive && <Check className="h-3.5 w-3.5 text-stone-500 dark:text-neutral-400" strokeWidth={2} />}
+                        </button>
+                      )
+                    })}
+                    {allTags.length === 0 && (
+                      <p className="text-xs text-stone-400 dark:text-neutral-500 text-center py-3">{t.prospect_no_tags}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            </div>
+            {/* Sans colonne de pilotage, la croix reste dans le bandeau */}
+            {!showSidePanel && closeButton}
+          </div>
+
+          {/* Sans colonne de pilotage (téléphone, tablette, mode inline), l'étape et le
+              bloc « Contacté » passent en pleine largeur sous les tags */}
+          {!showSidePanel && (
+            <div className="mt-3">
+              {stageLabel}
+              <div className="mt-1.5">{stageSelect}</div>
+              {relanceBlock && <div className="mt-3">{relanceBlock}</div>}
+            </div>
+          )}
+        </header>
+
+        {/* Quick Actions */}
+        <section className="px-4 md:px-6 py-3 flex flex-wrap gap-2 md:gap-2.5 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+          <button
+            onClick={() => navigate(`/business/cockpit?name=${encodeURIComponent(local.contact)}&prospectId=${prospect.id}`)}
+            className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-stone-900 text-white rounded-full font-business-display font-bold text-[13px] md:text-sm tracking-wide transition-transform active:scale-95 shadow-lg shadow-stone-900/20"
+          >
+            <PhoneCall className="h-4 w-4" strokeWidth={1.5} />
+            {t.prospect_open_callroom}
+          </button>
+          <button
+            onClick={() => setShowReminderForm(true)}
+            className="flex items-center gap-2 px-3.5 md:px-4 py-2.5 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 rounded-full font-business-display font-bold text-[13px] md:text-sm transition-all hover:brightness-105 active:scale-95"
+          >
+            <Bell className="h-4 w-4" strokeWidth={1.5} />
+            {t.prospect_create_reminder}
+          </button>
+          <button
+            onClick={() => openBookModal()}
+            className="flex items-center gap-2 px-3.5 md:px-4 py-2.5 bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 rounded-full font-business-display font-bold text-[13px] md:text-sm transition-all hover:brightness-105 active:scale-95"
+          >
+            <CalendarPlus className="h-4 w-4" strokeWidth={1.5} />
+            {t.prospect_book_appointment}
+          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleOpenGmail}
+              className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+            >
+              <Mail className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+            <button
+              onClick={handleOpenWhatsApp}
+              className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+            >
+              <MessageCircle className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+          </div>
+        </section>
 
         {/* Tabs */}
-        <nav className="px-4 md:px-6 pt-4 flex gap-4 md:gap-6 overflow-x-auto">
+        <nav className="px-4 md:px-6 pt-4 flex gap-4 md:gap-6 overflow-x-auto no-scrollbar">
           {([
+            ...(showSidePanel ? [] : [{ key: 'fiche' as const, label: lang === 'en' ? 'Details' : 'Fiche' }]),
             { key: 'info' as const, label: t.prospect_tab_info },
             { key: 'notes' as const, label: t.prospect_tab_call_notes },
             { key: 'rappels' as const, label: t.prospect_tab_reminders, badge: activeRemindersCount },
             { key: 'historique' as const, label: t.prospect_tab_history },
-          ]).map(tab => (
+          ] as { key: 'fiche' | 'info' | 'notes' | 'rappels' | 'historique'; label: string; badge?: number }[]).map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                'pb-4 font-business-display font-bold transition-all flex items-center gap-2',
+                'pb-4 shrink-0 whitespace-nowrap text-sm md:text-base font-business-display font-bold transition-all flex items-center gap-2',
                 activeTab === tab.key
                   ? 'text-stone-900 dark:text-white font-extrabold border-b-2 border-stone-900 dark:border-white'
                   : 'text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white'
@@ -1590,6 +1971,13 @@ export function BusinessProspectView({
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 custom-scrollbar">
+
+          {/* ─── TAB: FICHE (telephone / tablette / inline) ─── */}
+          {activeTab === 'fiche' && !showSidePanel && (
+            <div className="flex flex-col gap-6 max-w-2xl">
+              {sidePanelSections}
+            </div>
+          )}
 
           {/* ─── TAB: INFO ─── */}
           {activeTab === 'info' && (
@@ -2579,356 +2967,35 @@ export function BusinessProspectView({
 
         </div>
 
-        {/* ─── Colonne d'infos : coordonnées, dates, suivi ───
-            Résumé en lecture (avec copie rapide) ; l'édition reste dans l'onglet Infos.
-            Masquée en mode inline et sur petit écran, où tout reste dans l'onglet. */}
-        {!inline && (
-          <aside className="hidden lg:flex w-[320px] shrink-0 flex-col gap-6 overflow-y-auto custom-scrollbar border-l border-[#c4c7c7]/10 dark:border-neutral-700 bg-[#faf9f8]/70 dark:bg-neutral-900/40 p-5">
-
-            {/* Coordonnées — édition sur place */}
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className={sideLabel}>{lang === 'en' ? 'Contact details' : 'Coordonnées'}</h4>
-                <button
-                  onClick={() => setEditingClient(!editingClient)}
-                  className="p-1 rounded-full text-stone-400 hover:bg-stone-200/60 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors"
-                  title={lang === 'en' ? 'Edit' : 'Modifier'}
-                >
-                  <Pencil className="h-3 w-3" strokeWidth={2} />
-                </button>
+        {/* ─── Colonne de pilotage : étape, relance, coordonnées, dates, suivi ───
+            Séparée du contenu par une bordure qui court sur toute la hauteur de la fiche.
+            L'étape et la croix restent fixes en tête ; seul le résumé défile.
+            Sur téléphone/tablette et en mode inline, ce contenu devient l'onglet « Fiche »
+            et l'étape repasse sous les tags du bandeau. */}
+        {showSidePanel && (
+          <aside className="flex w-[320px] shrink-0 flex-col border-l border-[#c4c7c7]/10 dark:border-neutral-700 bg-[#faf9f8]/70 dark:bg-neutral-900/40">
+            <div className="shrink-0 border-b border-[#c4c7c7]/10 dark:border-neutral-700 p-5">
+              <div className="flex items-start justify-between gap-2">
+                {stageLabel}
+                <div className="-mt-1.5">{closeButton}</div>
               </div>
-
-              {editingClient ? (
-                <div className="space-y-2.5">
-                  <input type="text" value={editedContact} onChange={e => setEditedContact(e.target.value)} className={sideInput} placeholder={t.prospect_field_contact} />
-                  <input type="text" value={editedCompany} onChange={e => setEditedCompany(e.target.value)} className={sideInput} placeholder={t.prospect_field_company} />
-                  <input type="email" value={editedEmail} onChange={e => setEditedEmail(e.target.value)} className={sideInput} placeholder="Email" />
-                  <PhoneInput value={editedPhone} onChange={setEditedPhone} />
-                  <TimezonePicker value={editedTimezone} onChange={setEditedTimezone} />
-                  <div className="flex gap-2 pt-1">
-                    <button onClick={handleSaveClient} className="flex-1 rounded-full bg-stone-900 px-3 py-2 text-xs font-business-display font-bold text-white hover:bg-stone-800 transition-colors">{t.prospect_sauvegarder}</button>
-                    <button
-                      onClick={() => { setEditingClient(false); setEditedContact(local.contact); setEditedCompany(local.company); setEditedEmail(local.email); setEditedPhone(local.phone); setEditedTimezone(local.timezone || '') }}
-                      className="rounded-full border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
-                    >
-                      {t.prospect_cancel_btn}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-3.5 w-3.5 shrink-0 text-stone-400" strokeWidth={1.5} />
-                    <button
-                      onClick={handleOpenWhatsApp}
-                      disabled={!local.phone}
-                      className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] disabled:cursor-default disabled:text-stone-400 dark:disabled:text-neutral-500 transition-colors"
-                    >
-                      {local.phone || '—'}
-                    </button>
-                    {local.phone && (
-                      <button onClick={() => copyValue(local.phone!)} className={sideIconBtn} title={t.common_copy} aria-label={t.common_copy}>
-                        <Copy className="h-3 w-3" strokeWidth={1.5} />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-3.5 w-3.5 shrink-0 text-stone-400" strokeWidth={1.5} />
-                    <button
-                      onClick={handleOpenGmail}
-                      disabled={!local.email}
-                      className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-stone-900 dark:text-white hover:text-[#006c49] disabled:cursor-default disabled:text-stone-400 dark:disabled:text-neutral-500 transition-colors"
-                      title={local.email || undefined}
-                    >
-                      {local.email || '—'}
-                    </button>
-                    {local.email && (
-                      <button onClick={() => copyValue(local.email!)} className={sideIconBtn} title={t.common_copy} aria-label={t.common_copy}>
-                        <Copy className="h-3 w-3" strokeWidth={1.5} />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-3.5 w-3.5 shrink-0 text-stone-400" strokeWidth={1.5} />
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-stone-900 dark:text-white">{local.company || '—'}</span>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <Globe className="h-3.5 w-3.5 shrink-0 text-stone-400 mt-0.5" strokeWidth={1.5} />
-                    <div className="min-w-0 flex-1">
-                      {local.timezone ? (
-                        <>
-                          <p className="truncate text-sm font-semibold text-stone-900 dark:text-white">{getTimezoneLabel(local.timezone)}</p>
-                          <p className="text-[11px] text-stone-500 dark:text-neutral-400">
-                            {lang === 'en' ? 'Local time' : 'Il est'}{' '}
-                            <span className="font-semibold text-stone-700 dark:text-neutral-200">{getCurrentLocalTime(local.timezone).time}</span>
-                          </p>
-                        </>
-                      ) : (
-                        <button onClick={() => setEditingClient(true)} className="text-sm font-medium text-stone-400 dark:text-neutral-500 italic hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">
-                          {lang === 'en' ? 'Not set' : 'Non renseigné'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </section>
-
-            {/* Rendez-vous — planifier, reprogrammer, annuler, réassigner */}
-            <section className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <h4 className={sideLabel}>{lang === 'en' ? 'Meetings' : 'Rendez-vous'}</h4>
-                {upcomingApptCount > 1 && (
-                  <button
-                    onClick={() => setShowApptsModal(true)}
-                    title={lang === 'en' ? 'See all upcoming meetings' : 'Voir tous les rendez-vous à venir'}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#006c49]/10 hover:bg-[#006c49]/20 px-2 py-0.5 text-[11px] font-bold text-[#006c49] transition-colors"
-                  >
-                    <Calendar className="h-3 w-3" strokeWidth={1.5} />
-                    {upcomingApptCount}
-                  </button>
-                )}
-              </div>
-
-              {nextAppointment ? (
-                <>
-                  <div className="rounded-xl bg-[#006c49]/8 dark:bg-emerald-500/10 px-3 py-2.5">
-                    <p className="text-sm font-bold text-stone-900 dark:text-white">
-                      {new Date(nextAppointment.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })}
-                      {' '}{lang === 'en' ? 'at' : 'à'} {nextAppointment.time?.slice(0, 5)}
-                    </p>
-                    {(() => {
-                      const ptz = local.timezone
-                      if (!ptz || ptz === userTimezone || !nextAppointment.datetime_utc) return null
-                      const pl = fromUTC(nextAppointment.datetime_utc, ptz)
-                      return (
-                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-stone-500 dark:text-neutral-400" title={getTimezoneLabel(ptz)}>
-                          <Globe className="h-3 w-3" strokeWidth={1.5} />
-                          {pl.time} {lang === 'en' ? 'for the prospect' : 'chez le prospect'}
-                        </p>
-                      )
-                    })()}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <button
-                      onClick={() => openRescheduleModal(nextAppointment)}
-                      disabled={!!cancelLoadingId || rescheduleLoading}
-                      className={sideChip}
-                    >
-                      <CalendarPlus className="h-3 w-3" strokeWidth={1.5} />
-                      {lang === 'en' ? 'Reschedule' : 'Reprogrammer'}
-                    </button>
-                    <button
-                      onClick={() => handleCancelAppointment(nextAppointment)}
-                      disabled={!!cancelLoadingId || rescheduleLoading}
-                      className="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-2.5 py-1.5 text-[11px] font-business-display font-bold text-rose-600 dark:text-rose-400 transition-colors disabled:opacity-50"
-                    >
-                      {cancelLoadingId === nextAppointment.id ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <XCircle className="h-3 w-3" strokeWidth={1.5} />}
-                      {lang === 'en' ? 'Cancel' : 'Annuler'}
-                    </button>
-                    <ReassignAppointmentButton
-                      appointmentId={nextAppointment.id}
-                      currentAssignedTo={nextAppointment.assigned_to ?? null}
-                      ownerId={isTeamMember ? ownerUserId : user?.id}
-                      actorUserId={user?.id}
-                      canReassign={canReassignAppt}
-                      members={teamMembers}
-                      onReassigned={() => setApptRefreshKey(k => k + 1)}
-                      className={sideChip}
-                    />
-                  </div>
-                </>
-              ) : (
-                <button onClick={() => openBookModal()} className={cn(sideChip, 'w-full justify-center py-2')}>
-                  <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  {t.prospect_book_appointment}
-                </button>
-              )}
-            </section>
-
-            {/* Dates */}
-            <section className="space-y-2.5">
-              <h4 className={sideLabel}>Dates</h4>
-              <div className={sideRow}>
-                <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Created' : 'Créé'}</span>
-                <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.created_at)}</span>
-              </div>
-              {local.contacted_at && (
-                <div className={sideRow}>
-                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Contacted' : 'Contacté'}</span>
-                  <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.contacted_at)}</span>
-                </div>
-              )}
-              {local.last_relance_at && (
-                <div className={sideRow}>
-                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Last follow-up' : 'Dern. relance'}</span>
-                  <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.last_relance_at)}</span>
-                </div>
-              )}
-              {local.responded_at && (
-                <div className={sideRow}>
-                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Replied' : 'Répondu'}</span>
-                  <span className="font-semibold text-stone-900 dark:text-white">{fmtDate(local.responded_at)}</span>
-                </div>
-              )}
-              {(local as any).won_at && (
-                <div className={sideRow}>
-                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Won' : 'Gagné'}</span>
-                  <span className="font-semibold text-[#006c49]">{fmtDate((local as any).won_at)}</span>
-                </div>
-              )}
-              {(local as any).lost_at && (
-                <div className={sideRow}>
-                  <span className="text-stone-500 dark:text-neutral-400">{lang === 'en' ? 'Lost' : 'Perdu'}</span>
-                  <span className="font-semibold text-[#ba1a1a]">{fmtDate((local as any).lost_at)}</span>
-                </div>
-              )}
-            </section>
-
-            {/* Suivi — modifiable directement */}
-            <section className="space-y-3">
-              <h4 className={sideLabel}>{lang === 'en' ? 'Ownership' : 'Suivi'}</h4>
-
-              {assignableClosers.length > 0 && (
-                <div>
-                  <label className={cn(sideFieldLabel)}>{t.prospect_assign_closer}</label>
-                  <div className="relative">
-                    <select
-                      value={assignableClosers.find(c => c.id === (local as any).assigned_to)?.id || ''}
-                      onChange={(e) => handleUpdate({ assigned_to: e.target.value || null } as any)}
-                      disabled={!canAssign}
-                      className={cn(sideSelect, !canAssign && 'opacity-60 cursor-not-allowed')}
-                    >
-                      <option value="">{t.prospect_assign_none}</option>
-                      {assignableClosers.map(tm => (
-                        <option key={tm.id} value={tm.id}>{tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
-                  </div>
-                </div>
-              )}
-
-              {assignableSetters.length > 0 && (
-                <div>
-                  <label className={cn(sideFieldLabel)}>{t.prospect_assign_setter}</label>
-                  <div className="relative">
-                    <select
-                      value={assignableSetters.find(st => st.id === (local as any).assigned_setter)?.id || ''}
-                      onChange={(e) => {
-                        const setterId = e.target.value || null
-                        const updates: any = { assigned_setter: setterId }
-                        if (setterId) {
-                          const selected = teamMembers.find(tm => tm.id === setterId)
-                          // Un Setter-Closer « self » close ses propres leads
-                          if (selected?.role === 'Setter-Closer' && selected?.setter_scope === 'self') {
-                            updates.assigned_to = setterId
-                          }
-                        }
-                        handleUpdate(updates)
-                      }}
-                      disabled={!canAssignSetter}
-                      className={cn(sideSelect, !canAssignSetter && 'opacity-60 cursor-not-allowed')}
-                    >
-                      <option value="">{t.prospect_assign_none}</option>
-                      {assignableSetters.map(tm => (
-                        <option key={tm.id} value={tm.id}>{tm.first_name} {tm.last_name}{tm.role === 'Owner' ? ' (Owner)' : ''}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className={cn(sideFieldLabel)}>{t.prospect_campaign_origin}</label>
-                <div className="relative">
-                  <select
-                    value={(local as any).campaign_id || ''}
-                    onChange={(e) => handleUpdate({ campaign_id: e.target.value || null } as any)}
-                    className={sideSelect}
-                  >
-                    <option value="">{lang === 'en' ? 'No campaign' : 'Aucune campagne'}</option>
-                    {allCampaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                  <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
-                </div>
-              </div>
-
-              <div>
-                <label className={cn(sideFieldLabel)}>{t.prospect_offer_formula}</label>
-                <div className="relative">
-                  <select
-                    value={(local as any).formula_id || ''}
-                    onChange={(e) => {
-                      const fId = e.target.value || null
-                      const selected = allFormulas.find(f => f.id === fId)
-                      // Un prospect relié à Stripe garde son montant réel
-                      const hasStripe = !!(local as any).stripe_customer_id || !!(local as any).stripe_subscription_id
-                      handleUpdate({ formula_id: fId, ...(hasStripe ? {} : { value: selected?.price || 0 }) } as any)
-                      setFormula(selected || null)
-                    }}
-                    className={sideSelect}
-                  >
-                    <option value="">{t.prospect_no_offer}</option>
-                    {allFormulas.map(f => <option key={f.id} value={f.id}>{f.name} — {f.price}€</option>)}
-                  </select>
-                  <ChevronDown className={sideSelectChevron} strokeWidth={1.5} />
-                </div>
-                {formula?.resources && formula.resources.length > 0 && (
-                  <div className="mt-2">
-                    <button
-                      onClick={() => setShowFormulaLinks(v => !v)}
-                      className="flex w-full items-center justify-between gap-2 rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 py-2 text-[11px] font-business-display font-bold text-stone-700 dark:text-neutral-200 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <Link2 className="h-3 w-3" strokeWidth={1.5} />
-                        {lang === 'en' ? 'Offer links' : "Liens de l'offre"}
-                        <span className="text-stone-400 dark:text-neutral-500">({formula.resources.length})</span>
-                      </span>
-                      <ChevronDown className={cn('h-3.5 w-3.5 text-stone-400 transition-transform', showFormulaLinks && 'rotate-180')} strokeWidth={1.5} />
-                    </button>
-                    {showFormulaLinks && (
-                      <div className="mt-1.5 space-y-1">
-                        {formula.resources.map((r, i) => (
-                          <a
-                            key={i}
-                            href={r.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title={r.name || r.type}
-                            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-stone-700 dark:text-neutral-200 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
-                          >
-                            <ExternalLink className="h-3 w-3 shrink-0 text-stone-400" strokeWidth={1.5} />
-                            <span className="min-w-0 truncate">{r.name || r.type}</span>
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {(local as any).source && (
-                <div className={sideRow}>
-                  <span className="text-stone-500 dark:text-neutral-400">Source</span>
-                  <span className="font-semibold text-stone-900 dark:text-white text-right truncate">{(local as any).source}</span>
-                </div>
-              )}
-            </section>
+              <div className="mt-1.5">{stageSelect}</div>
+              {relanceBlock && <div className="mt-3">{relanceBlock}</div>}
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col gap-6 p-5">
+              {sidePanelSections}
+            </div>
           </aside>
         )}
         </div>
 
-        {/* Quick booking modal */}
-        {showBookModal && (
-          <>
-          {/* Agenda détaché, positionné dans la zone vide à gauche de l'écran (portail hors du panneau prospect) */}
-          {createPortal(
-            <div className="hidden lg:flex fixed left-8 top-1/2 -translate-y-1/2 z-[70] w-[44vw] max-w-[600px] h-[80vh] max-h-[660px] rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden">
+        {/* Réservation rapide — agenda + formulaire côte à côte, centrés ensemble.
+            Portail vers <body> : la fiche porte un backdrop-filter, qui ferait d'elle le bloc
+            conteneur d'un position:fixed et enfermerait la pop-up dans ses 1100 px. */}
+        {showBookModal && createPortal(
+          <div className="fixed inset-0 z-[60] flex items-center justify-center gap-4 p-4">
+            <div className="absolute inset-0 bg-stone-900/20 dark:bg-black/50 backdrop-blur-sm" onClick={() => !bookSubmitting && setShowBookModal(false)} />
+            <div className="relative hidden lg:flex w-[42vw] max-w-[560px] h-[80vh] max-h-[660px] rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden">
               <BookingAgendaPanel
                 ownerId={effectiveOwnerId || ''}
                 mode={bookAgendaConfig.mode}
@@ -2942,12 +3009,8 @@ export function BusinessProspectView({
                 previewDuration={bookDuration}
                 previewTitle={bookTitle}
               />
-            </div>,
-            document.body
-          )}
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => !bookSubmitting && setShowBookModal(false)} />
-            <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+            </div>
+            <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
               <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
                 <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">{t.prospect_book_modal_title}</h3>
                 <button onClick={() => !bookSubmitting && setShowBookModal(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
@@ -3088,8 +3151,8 @@ export function BusinessProspectView({
                 </button>
               </div>
             </div>
-          </div>
-          </>
+          </div>,
+          document.body
         )}
 
         {/* Reschedule modal */}
@@ -3183,7 +3246,7 @@ export function BusinessProspectView({
           // z-[70] : passe au-dessus de la modale « Rendez-vous de … » (z-[60])
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => !rescheduleLoading && closeRescheduleModal()} />
-            <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+            <div className="relative w-full max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
               <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
                 <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">Reprogrammer le rendez-vous</h3>
                 <button onClick={() => !rescheduleLoading && closeRescheduleModal()} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
@@ -3253,7 +3316,7 @@ export function BusinessProspectView({
           return (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => setShowFollowupChoice(false)} />
-              <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto custom-scrollbar rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
                   <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">
                     {fr ? 'Et maintenant ?' : 'What is next?'}
@@ -3311,7 +3374,7 @@ export function BusinessProspectView({
         {showReminderForm && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => setShowReminderForm(false)} />
-            <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+            <div className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto custom-scrollbar rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
               <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
                 <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">{t.prospect_new_reminder}</h3>
                 <button onClick={() => setShowReminderForm(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
@@ -3378,8 +3441,8 @@ export function BusinessProspectView({
         )}
 
         {/* Footer */}
-        <footer className="p-4 md:p-8 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex justify-between items-center bg-white/20 dark:bg-neutral-900/20">
-          <div className="flex items-center gap-2">
+        <footer className="px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-8 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex flex-col-reverse sm:flex-row gap-3 sm:justify-between sm:items-center bg-white/20 dark:bg-neutral-900/20">
+          <div className="flex flex-wrap items-center gap-2">
             {(isOwner || isHosOrAdmin) && (
               <button
                 onClick={handleDelete}
@@ -3423,7 +3486,7 @@ export function BusinessProspectView({
           </div>
           <button
             onClick={() => handleUpdate({ ...local, notes: computeNotesToStore() })}
-            className="bg-stone-900 text-white px-8 py-3 rounded-full font-business-display font-bold text-sm transition-transform active:scale-95"
+            className="w-full sm:w-auto shrink-0 bg-stone-900 text-white px-8 py-3 rounded-full font-business-display font-bold text-sm transition-transform active:scale-95"
           >
             {t.prospect_footer_save}
           </button>
