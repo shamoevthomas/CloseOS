@@ -1,0 +1,412 @@
+================================================================================
+CLOSEOS — TOUT CE QUI A ÉTÉ AJOUTÉ ET CORRIGÉ DEPUIS LA V5
+================================================================================
+
+Périmètre    : tout ce qui est parti en production après le contenu de la V5.
+Repère V5    : version 5.0, déployée le 28/07/2026 (src/lib/releases.ts).
+               Le contenu de la V5 lui-même (nouvelle interface Sales, relances
+               qui s'enchaînent, suivi de discussion, module Formulaires,
+               assistant IA, espace équipe Sign) est décrit dans
+               src/lib/whatsNewV5.ts et sur la page publique /nouveautes — il
+               N'EST PAS repris ici.
+Coupure      : premier commit post-V5 = 36a3608 (30/07/2026).
+Dernier      : 411d67a (11/08/2026).
+Total        : 25 commits, 203 fichiers, +15 147 / -6 059 lignes.
+Généré le    : 15/08/2026
+
+Légende : [NOUVEAU] fonctionnalité ajoutée · [CORRIGÉ] bug réglé · [INTERNE]
+          outillage, documentation ou refonte sans changement fonctionnel.
+
+
+================================================================================
+1. CLOSEOS BUSINESS — PIPELINE, RELANCES ET KPI
+================================================================================
+
+[NOUVEAU] Pop-up « canal de contact » (écrit / vocal / mail)          411d67a
+  La question « Message envoyé à l'écrit, par vocal ou par mail ? » est posée
+  à chaque premier contact (passage en « Contacté ») et à chaque « Relance
+  faite », sur les 4 surfaces concernées : pipeline owner, pipeline closer,
+  fiche prospect, liste de travail des relances.
+  · Case « Ne plus me poser cette question » : préférence PAR UTILISATEUR (et
+    non par organisation — un setter ne l'impose pas à toute l'équipe),
+    réactivable dans Paramètres › Interface.
+  · Passer / croix / Échap n'annulent pas l'action : le contact ou la relance
+    est enregistré, simplement sans canal.
+
+[NOUVEAU] KPI Setter — Taux de réponse aux relances                    411d67a
+  Nouvelle carte comptant les prospects qui ont répondu parmi ceux ayant reçu
+  au moins une relance.
+
+[NOUVEAU] KPI Setter — Détail par relance                              411d67a
+  Modale « Détail par relance » : pour chaque rang (1ère, 2ème…), combien de
+  prospects l'ont reçue et combien ont répondu juste après. Montre à quelle
+  relance ça décroche vraiment, et si les dernières servent encore.
+  Inclut une section « Par canal de relance ».
+
+[NOUVEAU] KPI Setter — Taux de réponse par canal                       411d67a
+  Bloc Écrit / Vocal / Mail basé sur le canal du premier contact, avec %,
+  réponses/envois et compte des contacts sans canal renseigné.
+
+[NOUVEAU] Rapport — Taux de réponse par canal                          411d67a
+  Même bloc dans la carte « Vitesse & relances », repris dans l'export PDF.
+
+[CORRIGÉ] Définition « a répondu » divergente entre pages               411d67a
+  Factorisée dans src/business/lib/contactChannels.ts pour que les KPI setter
+  et le Rapport comptent pareil sur les canaux.
+  RESTE À FAIRE : la ligne « Taux de réponse aux relances » historique du
+  Rapport garde sa définition stricte (responded_at seul) et reste donc plus
+  basse que celle de la page KPI setter, qui compte aussi les prospects
+  avancés au-delà de « Contacté ». Une ligne à changer si on veut les aligner.
+
+[NOUVEAU] Motif de disqualification obligatoire                        3f99060
+  Pop-up de motif au passage en « Non-Qualifié », sur les 4 chemins possibles :
+  fiche prospect, select d'étape, bouton « Disqualifié » de la carte
+  discussion, drag & drop des deux pipelines. Liste figée + « Autre » libre,
+  email d'information au prospect (motif repris tel quel) et proposition
+  d'annuler le RDV à venir.
+  Nouvelle action API prospect-unqualified-notify : annule le RDV (statut +
+  Google Calendar) puis envoie un seul email Brevo mentionnant l'annulation.
+
+[NOUVEAU] Choix au passage en « Suivi »                                3f99060
+  Le pop-up de prise de RDV automatique devient un choix explicite :
+  « Mettre un rappel » / « Programmer un R2 » / « Rien ».
+
+[NOUVEAU] Actions RDV par ligne dans la fiche prospect                 96d0c33
+  Chaque rendez-vous de la modale a ses propres actions : réassigner,
+  reprogrammer, annuler.
+
+[NOUVEAU] Date d'entrée dans l'étape courante                          96d0c33
+  Affichée à côté de l'étape sur la fiche prospect.
+
+[CORRIGÉ] Leads déjà tranchés bloqués dans « À suivre »                5145c8c
+  Un prospect passé en Non-Qualifié (ou gagné, perdu, no-show) gardait son
+  responded_at — seul un retour en « Contacté » le remet à zéro — et restait
+  affiché « À qualifier maintenant » indéfiniment dans la liste « À relancer
+  & à suivre ». Le même angle mort existait côté serveur : le digest quotidien
+  de 17 h relançait par email sur une décision déjà prise.
+  Corrigé aux 4 endroits : modales Sales et Business, crons discussion-checks
+  et sales-discussion-checks. Mesuré en base : 12 leads remontaient, 10
+  remontent, les 2 exclus sont bien en Non-Qualifié. Aucune donnée modifiée,
+  le filtrage est à l'affichage (responded_at reste dispo pour les KPI).
+
+
+================================================================================
+2. CLOSEOS BUSINESS — DISPONIBILITÉS ET BOOKING
+================================================================================
+
+[NOUVEAU] Disponibilités temporaires                                   96d0c33
+  Une période datée remplace intégralement les créneaux hebdomadaires sur les
+  jours couverts (un jour sans créneau dans la période = indisponible).
+  Répercuté sur les 4 chemins de réservation via un helper partagé
+  (resolveDaySlots) : lien de booking, lien de capture, booking interne setter
+  et closer. Onglet « Dispo temp » en lecture dans la vue équipier.
+
+[NOUVEAU] Fuseau horaire du visiteur sur les pages publiques           3f99060
+  /book/:slug et /capture/:slug affichent une note grisée sous les créneaux
+  indiquant le fuseau dans lequel les horaires sont exprimés.
+
+
+================================================================================
+3. CLOSEOS BUSINESS — REFONTE DU RAPPORT
+================================================================================
+
+[CORRIGÉ] Le CA était filtré sur la date de création du lead             96d0c33
+  Un lead créé en mai et signé hier n'apparaissait pas dans « CA généré ·
+  7 jours ». Le rapport filtre désormais sur la DATE DE DÉCISION (won_at /
+  lost_at, posés par trigger).
+
+[CORRIGÉ] Commissions mal calculées                                     96d0c33
+  Désormais par taux de membre, et additives entre les lignes et le total.
+
+[CORRIGÉ] Setters mal rattachés                                         96d0c33
+  Comptés via assigned_setter.
+
+[CORRIGÉ] Blocs vides pour un Head of Sales                             96d0c33
+  La route /business/report est ouverte à l'owner ET aux Head of Sales /
+  Admin, mais objectifs, formulaires, liens de tracking et historique
+  d'appels étaient en RLS strictement owner : ces blocs s'affichaient vides,
+  sans erreur — donc « 0 » au lieu de « pas le droit ». Lecture seule ouverte
+  à ces deux rôles uniquement.
+
+[NOUVEAU] Nouveaux blocs du rapport                                     96d0c33
+  Courbes d'évolution + deltas vs période précédente, objectifs, one-shot vs
+  MRR, encaissement, sources, offres, formulaires, liens de tracking, motifs
+  de disqualification, vitesse & relances, appels — le tout repris dans
+  l'export PDF.
+
+
+================================================================================
+4. SYNCHRONISATION CLOSERSLAB
+================================================================================
+
+[NOUVEAU] Réservation ClosersLab sur l'agenda CloseOS                  d2b00e8
+  L'espace membre closerslab.fr peut lire les créneaux libres, poser un
+  rendez-vous et l'annuler sans passer par la page publique /book.
+  Trois actions deviennent cross-origin, et uniquement celles-là :
+  booking-info, booking-submit et appointment-cancel, pour les seules origines
+  closerslab.fr (+ localhost en dev). Le reste de l'API reste same-origin.
+  booking-submit accepte en plus un `motif` libre (les Insiders indiquent sur
+  quoi ils veulent travailler), repris dans les notes du RDV et dans la
+  description de l'événement Google Calendar.
+
+[CORRIGÉ] RDV CloseOS invisibles côté ClosersLab                       6f8daee
+  Un élève qui réservait sur une page publique closeos.fr/book/... ou un
+  créneau posé à la main dans l'agenda n'apparaissait nulle part côté
+  ClosersLab : ni sur son tableau de bord, ni dans ses quotas, ni sur sa fiche.
+  · action=closerslab-sync (GET, secret partagé) : les rendez-vous d'une
+    période avec l'e-mail du participant, résolu depuis la fiche prospect ou
+    depuis la ligne « Booking: … » laissée par la page publique.
+  · nudgeClosersLab() après chaque réservation et chaque annulation :
+    ClosersLab resynchronise tout de suite au lieu d'attendre son passage
+    quotidien. Appel silencieux — une réservation ne doit jamais échouer si
+    ClosersLab est indisponible.
+  Nécessite CLOSERSLAB_SYNC_SECRET et CLOSERSLAB_SYNC_URL côté CloseOS.
+
+[CORRIGÉ] Reprogrammation non signalée à ClosersLab                    4ddd8e5
+  Le signal partait à la réservation et à l'annulation, pas au déplacement
+  d'un rendez-vous. L'élève gardait l'ancienne date jusqu'au passage quotidien.
+
+
+================================================================================
+5. SITE PUBLIC — SEO / GEO
+================================================================================
+
+[NOUVEAU] Page publique /nouveautes + version V5 déclarée partout      1b4861d
+  Problème constaté : interrogé sur CloseOS, Perplexity répondait « les
+  informations disponibles s'arrêtent à la V3 » — sa seule source était un
+  post LinkedIn annonçant la V3 de Business. Aucune page publique du site
+  n'énonçait de numéro de version, et le contenu V5 vivait dans un pop-up
+  affiché après connexion, donc invisible pour tout crawler.
+  · /nouveautes : notes de version publiques, DA Business, prérendue. Contenu
+    dérivé de src/lib/whatsNewV5.ts — une seule source, deux sorties (modale
+    in-app privée + page crawlable). H1 « CloseOS est en V5 », chapô
+    autoportant, FAQ 4 Q/R avec FAQPage JSON-LD, 3 nœuds WebApplication.
+  · src/lib/releases.ts : historique des versions. Les versions antérieures à
+    la V5 restent en prose sans date — les dater a posteriori sur la foi d'un
+    post LinkedIn produirait une chronologie fausse.
+  · index.html : softwareVersion 5.0 + releaseNotes sur les 3 WebApplication ;
+    API REST / webhooks / MCP ajoutés au featureList de Business.
+  · llms.txt + llms-full.txt : version en cours, durées d'essai réelles
+    (10/20/14 jours — leur absence faisait inventer « 20 jours » pour Sales),
+    FAQ version et API, désambiguïsation Close CRM élargie aux revendeurs.
+  · 7 liens internes (les 6 LP publiques + footer éditorial) : pas d'orpheline.
+
+[CORRIGÉ] Chaîne de canoniques cassée + soft 404                       36a3608
+  · Canoniques Sign réparées : une seule URL indexable, auto-canonique.
+  · /landing → 301 /sales ; /sales cessait de s'auto-annuler (canonical
+    pointait sur /).
+  · SignLegalShell ne posait aucune canonique : /sign/securite, /sign/cgv et
+    /sign/confidentialite se déclaraient comme la home de l'écosystème.
+  · Soft 404 : le catch-all SPA exclut les chemins à extension ; /rsl.xml et
+    consorts renvoient un vrai 404 au lieu de 200 + coquille HTML.
+
+[NOUVEAU] Source de vérité unique des routes publiques                 36a3608
+  · scripts/seo-routes.mjs : manifeste consommé par le prerender ET la
+    génération de sitemap (fin de la dérive sitemap/routeur).
+  · sitemap.xml (www) + sitemap-sign.xml générés au build.
+  · Garde-fou prerender : canonique, title, description, h1 et unicité
+    vérifiés à chaque build, échec si écart.
+  · Garde-fou check-rewrites : motif du catch-all validé avec path-to-regexp.
+
+[NOUVEAU] Système de contenu éditorial en markdown                     36a3608
+  content/<collection>/*.md → routes, sitemap, prerender, JSON-LD.
+  Hubs /glossaire /ressources /guides /integrations /cas-usage /clients
+  /comparatifs, noindex automatique sous 3 entrées publiées, 4 termes de
+  glossaire + 4 articles, DA Business, maillage entrant depuis les 8 pages
+  publiques.
+
+[NOUVEAU] Optimisation GEO (moteurs génératifs)                        36a3608
+  39 réponses FAQ étoffées (médiane 38 → 135 mots, fenêtre de citation
+  134-167), FAQ Tarifs et Sales avec une seule source pour l'affichage et le
+  JSON-LD, <main> ajouté sur les 7 pages publiques qui en manquaient,
+  llms.txt enrichi, WebApplication CloseOS Sign ajouté au @graph.
+
+[CORRIGÉ] Prix faux dans les schémas et les pages                      36a3608
+  Schéma Sales : 25,50-34 € était calculé sur le prix barré → 18-24 €.
+  alternative-iclosed annonçait 34 € (prix barré) comme prix d'entrée → 18 €.
+
+[NOUVEAU] Page /alternative-iclosed ciblant la requête de marque       d6fc16e
+  Relevé GSC : « iclosed » seul est en position 18,8 (page 2) avec
+  46 impressions et 0 clic, alors que « iclosed alternative » est en position
+  4,2 avec 20 % de CTR. Rien ne ciblait la requête de marque seule, pourtant
+  3× plus recherchée. La page ne cite aucun tarif concurrent (une donnée
+  périmée sur une page de comparaison est pire qu'une absence de donnée).
+
+[CORRIGÉ] Pages comparatifs incohérentes visuellement + prix faux      af57163
+  Le hub /comparatifs était clair et ses deux enfants sombres. Les deux pages
+  reprennent le gabarit ContentShell partagé avec /glossaire et /ressources.
+  Trois corrections de fond au passage :
+  · tarifs iClosed (~29 €/mois, essai 14 jours) retirés : non vérifiés ;
+  · le tableau affichait « 39 € » pour CloseOS sans distinguer mensuel et
+    annuel → grille réelle (Solo 39/28, Business 59/42, B+A 99/71) ;
+  · FAQ : une seule source alimente l'affichage ET le JSON-LD (les deux
+    textes divergeaient).
+
+[CORRIGÉ] Prix concurrents faux ou périmés                             9b9cac8
+  · Youtrust (ex-Yousign, renommé en 2026) : 9 € HT/mois PAR UTILISATEUR.
+    Le tableau équipe de l'article annonçait un forfait (3 utilisateurs =
+    27 €, et non 25 €).
+  · Abby : Start 9 €/mois vérifié.
+  · Brevo : grille rendue en JS, non vérifiable → signalé comme estimation.
+  · content/ressources/cout-stack-closing.md passé en ligne.
+
+[NOUVEAU] Référence d'entité — page entreprise LinkedIn                faabeb5
+  Le schéma Organization ne déclarait qu'une seule URL (le profil du
+  fondateur). Ajout de la page entreprise + lien visible en pied des pages
+  éditoriales (un sameAs vers une page que le site ne lie jamais est un
+  signal plus faible).
+  Piste fermée : l'entreprise est enregistrée en NON-DIFFUSIBLE (entrepreneur
+  individuel, SIREN 993427509) — les registres français ne fourniront aucune
+  référence d'entité automatique.
+
+[NOUVEAU] Référence d'entité — page Product Hunt                       be96a51
+  Vérifiée accessible anonymement avant ajout. Lancement programmé au
+  01/08/2026. Troisième référence d'entité tierce après les deux profils
+  LinkedIn — enjeu direct, la marque étant absorbée par Close CRM sur les
+  requêtes génériques et devancée sur ses propres variantes mal orthographiées
+  (« closeros » en position 6,2 et « closeo » en 17,4).
+
+[NOUVEAU] IndexNow — notification directe de Bing                      dd96741
+  Aucun compte requis : un fichier clé auto-hébergé à la racine du domaine et
+  un POST de la liste d'URLs. Bing Copilot s'appuyant sur l'index Bing, c'est
+  la voie la plus directe pour y faire connaître les nouvelles pages.
+
+
+================================================================================
+6. MARQUE, ANALYTICS ET VISUELS
+================================================================================
+
+[CORRIGÉ] Les 4 favicons étaient en 404, le site affichait le logo Vite fa7a8de
+  apple-touch-icon.png, favicon-16x16, -32x32 et -48x48 renvoyaient tous 404.
+  Seul /vite.svg répondait : c'est donc le logo de Vite qui s'affichait dans
+  les onglets et dans les résultats Google mobile.
+  Regénérés depuis closeos-logo.png, composés sur le bleu nuit de la marque
+  (le symbole comporte une moitié blanche qui disparaissait sur fond clair) +
+  favicon.ico multi-tailles pour les vieux clients et les agrégateurs.
+  Corrige aussi les dimensions du logo dans le schéma Organization : déclaré
+  512x512 alors qu'il fait 512x390 (Google valide ces valeurs).
+
+[CORRIGÉ] GA4 ne suivait ni les conversions ni le blog                 2e8f382
+  Une page absente de GA_PUBLIC n'envoie aucun page_view. Deux trous :
+  · /return et /welcome-founder n'y étaient pas : aucune conversion Sales
+    n'était mesurable (seul /business/return l'était). L'événement clé GA4
+    « essai_gratuit » se déclenche sur un page_view dont l'URL contient
+    /return : il lui fallait ces pages.
+  · Le contenu éditorial (glossaire, ressources, guides, comparatifs…) n'y
+    était pas non plus : le blog ne produisait aucune donnée d'audience.
+  Les préfixes sont désormais dans une liste dédiée.
+
+[NOUVEAU] Visuel OG carré pour l'annonce V5 LinkedIn                   d9114f8
+  1200x1200 (format qui occupe le plus de hauteur dans le fil), rendu par le
+  pipeline og-render existant, DA de la page /nouveautes.
+
+[CORRIGÉ] og-v5.html cassé hors serveur de dev                         e008d97
+  Les src="/logo-*.png" ne résolvent pas en file:// → trois icônes d'image
+  brisée à la place des lockups produits. Logos inlinés en base64,
+  redimensionnés à 3× la taille d'affichage (LANCZOS) avant encodage, sinon
+  le HTML dépassait 350 Ko. Rendu final identique au pixel près.
+
+
+================================================================================
+7. INTERFACE, PERFORMANCE ET DOCUMENTATION
+================================================================================
+
+[CORRIGÉ] Ajustements responsive                                       5145c8c
+  Agenda, KPIs, Rendez-vous et modales.
+
+[INTERNE] Découpage de bundles supplémentaires                         5145c8c
+  vite.config.ts.
+
+[NOUVEAU] Centre d'aide — canal de contact et KPI relances             411d67a
+  Deux articles en vue owner et en vue membre (KPIs & Objectifs), plus une
+  mention ajoutée aux articles relances existants.
+
+[INTERNE] Documentation SEO                          7596111, 41a51bd, 1109eae
+  Journal des actions Search Console / GA4 / IndexNow, état d'indexation réel
+  (4 pages majeures explorées mais non indexées), état d'indexation des 3 LP
+  produit, baseline GSC au 30/07 : 160 clics et 1 810 impressions sur 3 mois,
+  10 pages indexées, position moyenne 16,3 — dont 64 % de clics de marque.
+
+[INTERNE] Kits prêts à coller                                 e2fd21c, 5837ef9
+  Fiches annuaires (Appvizer, Capterra FR — qui ouvre aussi GetApp et Software
+  Advice, Trustpilot) et brouillon Product Hunt : textes, catégories, tarifs
+  et URLs d'images prêts, il ne reste que la création de compte.
+  Wikidata volontairement écarté : la plateforme exige des sources secondaires
+  et il n'en existe aucune sur CloseOS ; un élément sans source serait
+  supprimé, et une suppression laisse une trace défavorable.
+
+
+================================================================================
+8. MIGRATIONS BASE DE DONNÉES APPLIQUÉES DEPUIS LA V5
+================================================================================
+
+20260808_business_unqualified_reason.sql
+  Colonnes unqualified_reason / unqualified_details / unqualified_at sur
+  business_prospects.
+
+20260810_business_prospects_won_lost_at.sql
+  won_at / lost_at posés par trigger : permet de filtrer le CA sur la date de
+  décision et non sur la date de création du lead.
+
+20260810_business_temporary_availability.sql
+  Table business_temporary_availability (périodes datées + créneaux jsonb).
+
+20260810_report_hos_read_access.sql
+  Fonction is_hos_or_admin_of + policies de lecture seule pour Head of Sales
+  et Admin sur objectifs, formulaires, liens de tracking et historique
+  d'appels.
+
+20260811_business_contact_channel.sql
+  first_contact_channel + relance_channels sur business_prospects, reset de
+  relance_channels dans le trigger set_contacted_at, table business_user_prefs
+  (préférence « ne plus me poser la question », RLS sur auth.uid).
+
+
+================================================================================
+9. RÉCAPITULATIF CHIFFRÉ
+================================================================================
+
+Fonctionnalités ajoutées ........ 23
+Bugs corrigés ................... 16
+Éléments internes / docs .........  3
+                                   ---
+Total des entrées ............... 42
+Migrations appliquées ............  5
+
+Répartition par domaine :
+  CloseOS Business (pipeline, relances, KPI) .... 11   (9 ajouts, 2 correctifs)
+  CloseOS Business (rapport) ....................  5   (1 ajout,  4 correctifs)
+  CloseOS Business (dispos, booking) ............  2   (2 ajouts)
+  Synchronisation ClosersLab ....................  3   (1 ajout,  2 correctifs)
+  Site public SEO / GEO ......................... 12   (8 ajouts, 4 correctifs)
+  Marque, analytics, visuels ....................  4   (1 ajout,  3 correctifs)
+  Interface, perf, documentation ................  5   (1 ajout, 1 correctif, 3 internes)
+
+Liste des commits, du plus ancien au plus récent :
+  36a3608  30/07  seo/geo : canoniques, sitemaps, garde-fous, blog markdown
+  9b9cac8  30/07  prix concurrents vérifiés, Yousign → Youtrust
+  dd96741  30/07  IndexNow
+  2e8f382  30/07  GA4 conversions + blog
+  7596111  30/07  journal Search Console / GA4 / IndexNow
+  41a51bd  31/07  état d'indexation réel
+  1109eae  31/07  état d'indexation des 3 LP produit
+  d6fc16e  31/07  page iClosed
+  af57163  31/07  comparatifs en DA Business
+  faabeb5  31/07  LinkedIn entreprise dans sameAs
+  fa7a8de  31/07  favicons en 404
+  5837ef9  31/07  brouillon Product Hunt
+  be96a51  31/07  Product Hunt dans sameAs
+  e0515e7  31/07  Product Hunt programmé
+  e2fd21c  31/07  kit de fiches annuaires
+  1b4861d  31/07  page /nouveautes + version V5 déclarée partout
+  d9114f8  31/07  OG V5 LinkedIn
+  e008d97  31/07  OG V5 logos en base64
+  5145c8c  31/07  leads tranchés hors de « à suivre » + responsive
+  d2b00e8  08/08  réservation ClosersLab sur l'agenda CloseOS
+  3f99060  08/08  motif de disqualification, choix suivi, fuseau booking
+  96d0c33  10/08  dispos temporaires, actions RDV, refonte du rapport
+  6f8daee  10/08  exposition des RDV à ClosersLab
+  4ddd8e5  10/08  ClosersLab prévenu à la reprogrammation
+  411d67a  11/08  canal de contact + KPI par canal et par relance
+
+================================================================================

@@ -1,154 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
+import {
+  COUNTRY_CODES,
+  filterCountries,
+  flagForCode,
+  formatPhoneByCountry,
+  phonePlaceholder,
+  parsePhoneValue,
+  buildFullPhone,
+} from '../../lib/phone'
 
-const PHONE_FORMATS: Record<string, { maxDigits: number; groups: number[] }> = {
-  '+33': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },
-  '+32': { maxDigits: 9, groups: [3, 2, 2, 2] },
-  '+41': { maxDigits: 9, groups: [2, 3, 2, 2] },
-  '+352': { maxDigits: 9, groups: [3, 3, 3] },
-  '+377': { maxDigits: 8, groups: [2, 2, 2, 2] },
-  '+1': { maxDigits: 10, groups: [3, 3, 4] },
-  '+44': { maxDigits: 10, groups: [4, 3, 3] },
-  '+49': { maxDigits: 11, groups: [3, 4, 4] },
-  '+34': { maxDigits: 9, groups: [3, 3, 3] },
-  '+39': { maxDigits: 10, groups: [3, 3, 4] },
-  '+351': { maxDigits: 9, groups: [3, 3, 3] },
-  '+31': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },
-  '+212': { maxDigits: 9, groups: [3, 3, 3] },
-  '+216': { maxDigits: 8, groups: [2, 3, 3] },
-  '+213': { maxDigits: 9, groups: [3, 3, 3] },
-}
-
-function formatPhoneByCountry(raw: string, code: string): string {
-  // On retire le 0 initial (préfixe national) : avec l'indicatif, le numéro
-  // significatif ne le porte jamais. Ça évite de « manger » un chiffre et de
-  // bloquer la saisie du numéro complet (ex. FR : 06 76 70 10 17 → 6 76 70 10 17).
-  const digits = raw.replace(/\D/g, '').replace(/^0+/, '')
-  const fmt = PHONE_FORMATS[code]
-  if (!fmt) return digits.slice(0, 15)
-  const limited = digits.slice(0, fmt.maxDigits)
-  const parts: string[] = []
-  let idx = 0
-  for (const g of fmt.groups) {
-    if (idx >= limited.length) break
-    parts.push(limited.slice(idx, idx + g))
-    idx += g
-  }
-  return parts.join(' ')
-}
-
-const COUNTRY_CODES = [
-  { code: '+33', flag: '🇫🇷', name: 'France' },
-  { code: '+32', flag: '🇧🇪', name: 'Belgique' },
-  { code: '+41', flag: '🇨🇭', name: 'Suisse' },
-  { code: '+352', flag: '🇱🇺', name: 'Luxembourg' },
-  { code: '+377', flag: '🇲🇨', name: 'Monaco' },
-  { code: '+1', flag: '🇺🇸', name: 'États-Unis' },
-  { code: '+1', flag: '🇨🇦', name: 'Canada' },
-  { code: '+44', flag: '🇬🇧', name: 'Royaume-Uni' },
-  { code: '+49', flag: '🇩🇪', name: 'Allemagne' },
-  { code: '+34', flag: '🇪🇸', name: 'Espagne' },
-  { code: '+39', flag: '🇮🇹', name: 'Italie' },
-  { code: '+351', flag: '🇵🇹', name: 'Portugal' },
-  { code: '+31', flag: '🇳🇱', name: 'Pays-Bas' },
-  { code: '+212', flag: '🇲🇦', name: 'Maroc' },
-  { code: '+216', flag: '🇹🇳', name: 'Tunisie' },
-  { code: '+213', flag: '🇩🇿', name: 'Algérie' },
-  { code: '+225', flag: '🇨🇮', name: 'Côte d\'Ivoire' },
-  { code: '+221', flag: '🇸🇳', name: 'Sénégal' },
-  { code: '+237', flag: '🇨🇲', name: 'Cameroun' },
-  { code: '+243', flag: '🇨🇩', name: 'RD Congo' },
-  { code: '+261', flag: '🇲🇬', name: 'Madagascar' },
-  { code: '+242', flag: '🇨🇬', name: 'Congo' },
-  { code: '+228', flag: '🇹🇬', name: 'Togo' },
-  { code: '+229', flag: '🇧🇯', name: 'Bénin' },
-  { code: '+226', flag: '🇧🇫', name: 'Burkina Faso' },
-  { code: '+223', flag: '🇲🇱', name: 'Mali' },
-  { code: '+224', flag: '🇬🇳', name: 'Guinée' },
-  { code: '+222', flag: '🇲🇷', name: 'Mauritanie' },
-  { code: '+235', flag: '🇹🇩', name: 'Tchad' },
-  { code: '+241', flag: '🇬🇦', name: 'Gabon' },
-  { code: '+250', flag: '🇷🇼', name: 'Rwanda' },
-  { code: '+257', flag: '🇧🇮', name: 'Burundi' },
-  { code: '+262', flag: '🇷🇪', name: 'La Réunion' },
-  { code: '+596', flag: '🇲🇶', name: 'Martinique' },
-  { code: '+590', flag: '🇬🇵', name: 'Guadeloupe' },
-  { code: '+594', flag: '🇬🇫', name: 'Guyane' },
-  { code: '+687', flag: '🇳🇨', name: 'Nouvelle-Calédonie' },
-  { code: '+689', flag: '🇵🇫', name: 'Polynésie française' },
-  { code: '+55', flag: '🇧🇷', name: 'Brésil' },
-  { code: '+52', flag: '🇲🇽', name: 'Mexique' },
-  { code: '+81', flag: '🇯🇵', name: 'Japon' },
-  { code: '+86', flag: '🇨🇳', name: 'Chine' },
-  { code: '+91', flag: '🇮🇳', name: 'Inde' },
-  { code: '+971', flag: '🇦🇪', name: 'Émirats arabes unis' },
-  { code: '+966', flag: '🇸🇦', name: 'Arabie saoudite' },
-  { code: '+90', flag: '🇹🇷', name: 'Turquie' },
-  { code: '+7', flag: '🇷🇺', name: 'Russie' },
-  { code: '+48', flag: '🇵🇱', name: 'Pologne' },
-  { code: '+46', flag: '🇸🇪', name: 'Suède' },
-  { code: '+47', flag: '🇳🇴', name: 'Norvège' },
-  { code: '+45', flag: '🇩🇰', name: 'Danemark' },
-  { code: '+358', flag: '🇫🇮', name: 'Finlande' },
-  { code: '+43', flag: '🇦🇹', name: 'Autriche' },
-  { code: '+30', flag: '🇬🇷', name: 'Grèce' },
-  { code: '+353', flag: '🇮🇪', name: 'Irlande' },
-  { code: '+420', flag: '🇨🇿', name: 'Tchéquie' },
-  { code: '+40', flag: '🇷🇴', name: 'Roumanie' },
-  { code: '+36', flag: '🇭🇺', name: 'Hongrie' },
-  { code: '+380', flag: '🇺🇦', name: 'Ukraine' },
-  { code: '+972', flag: '🇮🇱', name: 'Israël' },
-  { code: '+20', flag: '🇪🇬', name: 'Égypte' },
-  { code: '+27', flag: '🇿🇦', name: 'Afrique du Sud' },
-  { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
-  { code: '+254', flag: '🇰🇪', name: 'Kenya' },
-  { code: '+255', flag: '🇹🇿', name: 'Tanzanie' },
-  { code: '+233', flag: '🇬🇭', name: 'Ghana' },
-  { code: '+251', flag: '🇪🇹', name: 'Éthiopie' },
-  { code: '+256', flag: '🇺🇬', name: 'Ouganda' },
-  { code: '+61', flag: '🇦🇺', name: 'Australie' },
-  { code: '+64', flag: '🇳🇿', name: 'Nouvelle-Zélande' },
-  { code: '+82', flag: '🇰🇷', name: 'Corée du Sud' },
-  { code: '+65', flag: '🇸🇬', name: 'Singapour' },
-  { code: '+60', flag: '🇲🇾', name: 'Malaisie' },
-  { code: '+66', flag: '🇹🇭', name: 'Thaïlande' },
-  { code: '+84', flag: '🇻🇳', name: 'Vietnam' },
-  { code: '+62', flag: '🇮🇩', name: 'Indonésie' },
-  { code: '+63', flag: '🇵🇭', name: 'Philippines' },
-  { code: '+92', flag: '🇵🇰', name: 'Pakistan' },
-  { code: '+880', flag: '🇧🇩', name: 'Bangladesh' },
-  { code: '+94', flag: '🇱🇰', name: 'Sri Lanka' },
-  { code: '+57', flag: '🇨🇴', name: 'Colombie' },
-  { code: '+56', flag: '🇨🇱', name: 'Chili' },
-  { code: '+54', flag: '🇦🇷', name: 'Argentine' },
-  { code: '+58', flag: '🇻🇪', name: 'Venezuela' },
-  { code: '+51', flag: '🇵🇪', name: 'Pérou' },
-  { code: '+593', flag: '🇪🇨', name: 'Équateur' },
-  { code: '+502', flag: '🇬🇹', name: 'Guatemala' },
-  { code: '+53', flag: '🇨🇺', name: 'Cuba' },
-  { code: '+509', flag: '🇭🇹', name: 'Haïti' },
-  { code: '+1', flag: '🇩🇴', name: 'République dominicaine' },
-]
-
-export function parsePhoneValue(fullPhone: string): { countryCode: string; localNumber: string } {
-  if (!fullPhone) return { countryCode: '+33', localNumber: '' }
-  const cleaned = fullPhone.replace(/\s+/g, ' ').trim()
-  // Try to match longest country code first
-  const sortedCodes = [...new Set(COUNTRY_CODES.map(c => c.code))].sort((a, b) => b.length - a.length)
-  for (const code of sortedCodes) {
-    if (cleaned.startsWith(code)) {
-      const local = cleaned.slice(code.length).trim()
-      return { countryCode: code, localNumber: formatPhoneByCountry(local, code) }
-    }
-  }
-  return { countryCode: '+33', localNumber: formatPhoneByCountry(cleaned.replace(/^\+?\d{1,3}\s*/, ''), '+33') }
-}
-
-export function buildFullPhone(countryCode: string, localNumber: string): string {
-  const digits = localNumber.replace(/\D/g, '')
-  if (!digits) return ''
-  return `${countryCode} ${localNumber}`
-}
+// Réexportés : plusieurs écrans les importent déjà depuis ce composant.
+export { parsePhoneValue, buildFullPhone, COUNTRY_CODES }
 
 interface PhoneInputProps {
   value: string
@@ -197,15 +60,9 @@ export function PhoneInput({ value, onChange, className = '', inputClassName, co
     onChange('')
   }
 
-  const placeholder = PHONE_FORMATS[countryCode]
-    ? PHONE_FORMATS[countryCode].groups.map(g => '0'.repeat(g)).join(' ')
-    : '6 12 34 56 78'
-
-  const filtered = COUNTRY_CODES.filter(c =>
-    !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.code.includes(search)
-  )
-
-  const currentFlag = COUNTRY_CODES.find(c => c.code === countryCode)?.flag || '🌍'
+  const placeholder = phonePlaceholder(countryCode)
+  const filtered = filterCountries(search)
+  const currentFlag = flagForCode(countryCode)
 
   const baseInputCls = inputClassName || (compact
     ? 'flex-1 min-w-0 bg-transparent border-none py-1 px-2 text-xs text-stone-900 dark:text-white focus:ring-0 focus:outline-none'

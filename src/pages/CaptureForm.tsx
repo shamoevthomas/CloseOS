@@ -7,6 +7,13 @@ import type { CaptureFormLang } from './captureFormI18n'
 import { sanitizeRichHtml } from '../business/components/RichTextEditor'
 import { InlineStripePaymentModal } from '../components/InlineStripePayment'
 import { computeVisibleQuestionIds, type ConditionalRule } from '../lib/questionnaireConditions'
+import {
+  filterCountries,
+  flagForCode,
+  formatPhoneByCountry,
+  phonePlaceholder,
+  PHONE_FORMATS,
+} from '../lib/phone'
 
 interface CustomField {
   label: string
@@ -78,136 +85,6 @@ const TIME_SLOTS = generateTimeSlots()
 
 const isValidEmail = (e: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(e)
 
-// Phone formatting per country code
-// trunkZero: pays où le numéro national s'écrit avec un « 0 » de préfixe qui saute à l'international
-// (France, Belgique…). On retire ce 0 automatiquement si l'utilisateur le laisse.
-const PHONE_FORMATS: Record<string, { maxDigits: number; groups: number[]; trunkZero?: boolean }> = {
-  '+33': { maxDigits: 9, groups: [1, 2, 2, 2, 2], trunkZero: true },     // France: 6 12 34 56 78
-  '+32': { maxDigits: 9, groups: [3, 2, 2, 2], trunkZero: true },          // Belgique: 456 12 34 56
-  '+41': { maxDigits: 9, groups: [2, 3, 2, 2], trunkZero: true },          // Suisse: 79 123 45 67
-  '+352': { maxDigits: 9, groups: [3, 3, 3] },             // Luxembourg (pas de 0)
-  '+377': { maxDigits: 8, groups: [2, 2, 2, 2] },          // Monaco (pas de 0)
-  '+1': { maxDigits: 10, groups: [3, 3, 4] },              // US/CA: 555 123 4567
-  '+44': { maxDigits: 10, groups: [4, 3, 3], trunkZero: true },              // UK: 7911 123 456
-  '+49': { maxDigits: 11, groups: [3, 4, 4], trunkZero: true },             // Allemagne
-  '+34': { maxDigits: 9, groups: [3, 3, 3] },              // Espagne: 612 345 678 (pas de 0)
-  '+39': { maxDigits: 10, groups: [3, 3, 4] },             // Italie (garde le 0 des fixes)
-  '+351': { maxDigits: 9, groups: [3, 3, 3] },             // Portugal (pas de 0)
-  '+31': { maxDigits: 9, groups: [1, 2, 2, 2, 2], trunkZero: true },       // Pays-Bas
-  '+212': { maxDigits: 9, groups: [3, 3, 3], trunkZero: true },             // Maroc
-  '+216': { maxDigits: 8, groups: [2, 3, 3] },             // Tunisie (pas de 0)
-  '+213': { maxDigits: 9, groups: [3, 3, 3], trunkZero: true },             // Algérie
-}
-
-function formatPhoneByCountry(raw: string, code: string): string {
-  let digits = raw.replace(/\D/g, '')
-  const fmt = PHONE_FORMATS[code]
-  if (!fmt) return digits.slice(0, 15)
-  // Retire le 0 de préfixe que certains oublient d'enlever (ex. FR : 06… → 6…)
-  if (fmt.trunkZero) digits = digits.replace(/^0+/, '')
-  const limited = digits.slice(0, fmt.maxDigits)
-  const parts: string[] = []
-  let idx = 0
-  for (const g of fmt.groups) {
-    if (idx >= limited.length) break
-    parts.push(limited.slice(idx, idx + g))
-    idx += g
-  }
-  return parts.join(' ')
-}
-
-const COUNTRY_CODES = [
-  { code: '+33', flag: '🇫🇷', name: 'France' },
-  { code: '+32', flag: '🇧🇪', name: 'Belgique' },
-  { code: '+41', flag: '🇨🇭', name: 'Suisse' },
-  { code: '+352', flag: '🇱🇺', name: 'Luxembourg' },
-  { code: '+377', flag: '🇲🇨', name: 'Monaco' },
-  { code: '+1', flag: '🇺🇸', name: 'États-Unis' },
-  { code: '+1', flag: '🇨🇦', name: 'Canada' },
-  { code: '+44', flag: '🇬🇧', name: 'Royaume-Uni' },
-  { code: '+49', flag: '🇩🇪', name: 'Allemagne' },
-  { code: '+34', flag: '🇪🇸', name: 'Espagne' },
-  { code: '+39', flag: '🇮🇹', name: 'Italie' },
-  { code: '+351', flag: '🇵🇹', name: 'Portugal' },
-  { code: '+31', flag: '🇳🇱', name: 'Pays-Bas' },
-  { code: '+212', flag: '🇲🇦', name: 'Maroc' },
-  { code: '+216', flag: '🇹🇳', name: 'Tunisie' },
-  { code: '+213', flag: '🇩🇿', name: 'Algérie' },
-  { code: '+225', flag: '🇨🇮', name: 'Côte d\'Ivoire' },
-  { code: '+221', flag: '🇸🇳', name: 'Sénégal' },
-  { code: '+237', flag: '🇨🇲', name: 'Cameroun' },
-  { code: '+243', flag: '🇨🇩', name: 'RD Congo' },
-  { code: '+261', flag: '🇲🇬', name: 'Madagascar' },
-  { code: '+242', flag: '🇨🇬', name: 'Congo' },
-  { code: '+228', flag: '🇹🇬', name: 'Togo' },
-  { code: '+229', flag: '🇧🇯', name: 'Bénin' },
-  { code: '+226', flag: '🇧🇫', name: 'Burkina Faso' },
-  { code: '+223', flag: '🇲🇱', name: 'Mali' },
-  { code: '+224', flag: '🇬🇳', name: 'Guinée' },
-  { code: '+222', flag: '🇲🇷', name: 'Mauritanie' },
-  { code: '+235', flag: '🇹🇩', name: 'Tchad' },
-  { code: '+241', flag: '🇬🇦', name: 'Gabon' },
-  { code: '+250', flag: '🇷🇼', name: 'Rwanda' },
-  { code: '+257', flag: '🇧🇮', name: 'Burundi' },
-  { code: '+262', flag: '🇷🇪', name: 'La Réunion' },
-  { code: '+596', flag: '🇲🇶', name: 'Martinique' },
-  { code: '+590', flag: '🇬🇵', name: 'Guadeloupe' },
-  { code: '+594', flag: '🇬🇫', name: 'Guyane' },
-  { code: '+687', flag: '🇳🇨', name: 'Nouvelle-Calédonie' },
-  { code: '+689', flag: '🇵🇫', name: 'Polynésie française' },
-  { code: '+55', flag: '🇧🇷', name: 'Brésil' },
-  { code: '+52', flag: '🇲🇽', name: 'Mexique' },
-  { code: '+81', flag: '🇯🇵', name: 'Japon' },
-  { code: '+86', flag: '🇨🇳', name: 'Chine' },
-  { code: '+91', flag: '🇮🇳', name: 'Inde' },
-  { code: '+971', flag: '🇦🇪', name: 'Émirats arabes unis' },
-  { code: '+966', flag: '🇸🇦', name: 'Arabie saoudite' },
-  { code: '+90', flag: '🇹🇷', name: 'Turquie' },
-  { code: '+7', flag: '🇷🇺', name: 'Russie' },
-  { code: '+48', flag: '🇵🇱', name: 'Pologne' },
-  { code: '+46', flag: '🇸🇪', name: 'Suède' },
-  { code: '+47', flag: '🇳🇴', name: 'Norvège' },
-  { code: '+45', flag: '🇩🇰', name: 'Danemark' },
-  { code: '+358', flag: '🇫🇮', name: 'Finlande' },
-  { code: '+43', flag: '🇦🇹', name: 'Autriche' },
-  { code: '+30', flag: '🇬🇷', name: 'Grèce' },
-  { code: '+353', flag: '🇮🇪', name: 'Irlande' },
-  { code: '+420', flag: '🇨🇿', name: 'Tchéquie' },
-  { code: '+40', flag: '🇷🇴', name: 'Roumanie' },
-  { code: '+36', flag: '🇭🇺', name: 'Hongrie' },
-  { code: '+380', flag: '🇺🇦', name: 'Ukraine' },
-  { code: '+972', flag: '🇮🇱', name: 'Israël' },
-  { code: '+20', flag: '🇪🇬', name: 'Égypte' },
-  { code: '+27', flag: '🇿🇦', name: 'Afrique du Sud' },
-  { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
-  { code: '+254', flag: '🇰🇪', name: 'Kenya' },
-  { code: '+255', flag: '🇹🇿', name: 'Tanzanie' },
-  { code: '+233', flag: '🇬🇭', name: 'Ghana' },
-  { code: '+251', flag: '🇪🇹', name: 'Éthiopie' },
-  { code: '+256', flag: '🇺🇬', name: 'Ouganda' },
-  { code: '+61', flag: '🇦🇺', name: 'Australie' },
-  { code: '+64', flag: '🇳🇿', name: 'Nouvelle-Zélande' },
-  { code: '+82', flag: '🇰🇷', name: 'Corée du Sud' },
-  { code: '+65', flag: '🇸🇬', name: 'Singapour' },
-  { code: '+60', flag: '🇲🇾', name: 'Malaisie' },
-  { code: '+66', flag: '🇹🇭', name: 'Thaïlande' },
-  { code: '+84', flag: '🇻🇳', name: 'Vietnam' },
-  { code: '+62', flag: '🇮🇩', name: 'Indonésie' },
-  { code: '+63', flag: '🇵🇭', name: 'Philippines' },
-  { code: '+92', flag: '🇵🇰', name: 'Pakistan' },
-  { code: '+880', flag: '🇧🇩', name: 'Bangladesh' },
-  { code: '+94', flag: '🇱🇰', name: 'Sri Lanka' },
-  { code: '+57', flag: '🇨🇴', name: 'Colombie' },
-  { code: '+56', flag: '🇨🇱', name: 'Chili' },
-  { code: '+54', flag: '🇦🇷', name: 'Argentine' },
-  { code: '+58', flag: '🇻🇪', name: 'Venezuela' },
-  { code: '+51', flag: '🇵🇪', name: 'Pérou' },
-  { code: '+593', flag: '🇪🇨', name: 'Équateur' },
-  { code: '+502', flag: '🇬🇹', name: 'Guatemala' },
-  { code: '+53', flag: '🇨🇺', name: 'Cuba' },
-  { code: '+509', flag: '🇭🇹', name: 'Haïti' },
-  { code: '+1', flag: '🇩🇴', name: 'République dominicaine' },
-]
 
 export function CaptureForm() {
   const { slug } = useParams<{ slug: string }>()
@@ -955,7 +832,7 @@ export function CaptureForm() {
                         onClick={() => { setShowCountryPicker(!showCountryPicker); setCountrySearch('') }}
                         className="flex items-center gap-1.5 border-b-2 border-[#c4c7c7]/30 py-3 pr-3 hover:border-[#006c49] transition-colors flex-shrink-0"
                       >
-                        <span className="text-base">{COUNTRY_CODES.find(c => c.code === countryCode)?.flag || '🌍'}</span>
+                        <span className="text-base">{flagForCode(countryCode)}</span>
                         <span className="text-sm text-[#1b1c1b] font-medium">{countryCode}</span>
                         <ChevronDown className="h-3 w-3 text-[#444748]/40" />
                       </button>
@@ -971,9 +848,7 @@ export function CaptureForm() {
                               autoFocus
                             />
                           </div>
-                          {COUNTRY_CODES
-                            .filter(c => !countrySearch || c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch))
-                            .map((c, i) => (
+                          {filterCountries(countrySearch).map((c, i) => (
                             <button
                               key={`${c.code}-${c.name}-${i}`}
                               type="button"
@@ -991,7 +866,7 @@ export function CaptureForm() {
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(formatPhoneByCountry(e.target.value, countryCode))}
-                        placeholder={PHONE_FORMATS[countryCode] ? PHONE_FORMATS[countryCode].groups.map(g => '0'.repeat(g)).join(' ') : '6 12 34 56 78'}
+                        placeholder={phonePlaceholder(countryCode)}
                         className="flex-1 bg-transparent border-b-2 border-[#c4c7c7]/30 py-3 pl-3 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:border-[#006c49] focus:ring-0 transition-colors outline-none font-medium"
                         style={hasCustomStyle ? { color: textColor, borderColor: `${primaryColor}33` } : {}}
                       />

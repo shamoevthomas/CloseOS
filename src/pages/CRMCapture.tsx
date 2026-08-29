@@ -6,6 +6,13 @@ import {
 } from 'lucide-react'
 import { toUTC, fromUTC } from '../lib/timezone'
 import { InlineStripePaymentModal } from '../components/InlineStripePayment'
+import {
+  filterCountries,
+  flagForCode,
+  formatPhoneByCountry,
+  phonePlaceholder,
+  PHONE_FORMATS,
+} from '../lib/phone'
 
 const API_URL = '/api/crm-capture'
 
@@ -59,46 +66,6 @@ interface Slot {
   member_ids: string[]
 }
 
-const PHONE_FORMATS: Record<string, { maxDigits: number; groups: number[] }> = {
-  '+33': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },
-  '+32': { maxDigits: 9, groups: [3, 2, 2, 2] },
-  '+41': { maxDigits: 9, groups: [2, 3, 2, 2] },
-  '+352': { maxDigits: 9, groups: [3, 3, 3] },
-  '+1': { maxDigits: 10, groups: [3, 3, 4] },
-  '+44': { maxDigits: 10, groups: [4, 3, 3] },
-  '+49': { maxDigits: 11, groups: [3, 4, 4] },
-  '+34': { maxDigits: 9, groups: [3, 3, 3] },
-  '+39': { maxDigits: 10, groups: [3, 3, 4] },
-  '+212': { maxDigits: 9, groups: [3, 3, 3] },
-}
-
-function formatPhoneByCountry(raw: string, code: string): string {
-  const digits = raw.replace(/\D/g, '')
-  const fmt = PHONE_FORMATS[code]
-  if (!fmt) return digits.slice(0, 15)
-  const limited = digits.slice(0, fmt.maxDigits)
-  const parts: string[] = []
-  let idx = 0
-  for (const g of fmt.groups) {
-    if (idx >= limited.length) break
-    parts.push(limited.slice(idx, idx + g))
-    idx += g
-  }
-  return parts.join(' ')
-}
-
-const COUNTRY_CODES = [
-  { code: '+33', flag: '🇫🇷', name: 'France' },
-  { code: '+32', flag: '🇧🇪', name: 'Belgique' },
-  { code: '+41', flag: '🇨🇭', name: 'Suisse' },
-  { code: '+352', flag: '🇱🇺', name: 'Luxembourg' },
-  { code: '+1', flag: '🇺🇸', name: 'États-Unis / Canada' },
-  { code: '+44', flag: '🇬🇧', name: 'Royaume-Uni' },
-  { code: '+49', flag: '🇩🇪', name: 'Allemagne' },
-  { code: '+34', flag: '🇪🇸', name: 'Espagne' },
-  { code: '+39', flag: '🇮🇹', name: 'Italie' },
-  { code: '+212', flag: '🇲🇦', name: 'Maroc' },
-]
 
 function isValidEmail(e: string) { return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(e) }
 
@@ -168,6 +135,7 @@ export default function CRMCapture() {
   const [phone, setPhone] = useState('')
   const [company, setCompany] = useState('')
   const [countryCode, setCountryCode] = useState('+33')
+  const [countrySearch, setCountrySearch] = useState('')
   const [showCountryPicker, setShowCountryPicker] = useState(false)
   const [customData, setCustomData] = useState<Record<string, string>>({})
   const countryPickerRef = useRef<HTMLDivElement>(null)
@@ -614,10 +582,10 @@ export default function CRMCapture() {
                       <div className="relative flex" ref={countryPickerRef}>
                         <button
                           type="button"
-                          onClick={() => setShowCountryPicker(o => !o)}
+                          onClick={() => { setShowCountryPicker(o => !o); setCountrySearch('') }}
                           className="pl-9 pr-2 py-2.5 rounded-l-xl bg-blue-50/40 border border-r-0 border-blue-100 text-sm text-[#0A0E27] hover:bg-blue-50 transition-colors inline-flex items-center gap-1"
                         >
-                          {COUNTRY_CODES.find(c => c.code === countryCode)?.flag}
+                          {flagForCode(countryCode)}
                           <span className="font-mono text-xs">{countryCode}</span>
                           <ChevronDown className="size-3" />
                         </button>
@@ -625,21 +593,31 @@ export default function CRMCapture() {
                           type="tel"
                           value={phone}
                           onChange={e => setPhone(formatPhoneByCountry(e.target.value, countryCode))}
-                          placeholder="6 12 34 56 78"
+                          placeholder={phonePlaceholder(countryCode)}
                           className="flex-1 px-3 py-2.5 rounded-r-xl bg-blue-50/40 border border-blue-100 text-sm text-[#0A0E27] focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 outline-none transition-all placeholder:text-stone-400"
                         />
                         {showCountryPicker && (
-                          <div className="absolute top-full left-0 mt-1 w-56 max-h-60 overflow-y-auto rounded-xl bg-white border border-blue-100 shadow-xl shadow-blue-500/10 py-1 z-30">
-                            {COUNTRY_CODES.map(c => (
+                          <div className="absolute top-full left-0 mt-1 w-64 max-h-60 overflow-y-auto rounded-xl bg-white border border-blue-100 shadow-xl shadow-blue-500/10 py-1 z-30">
+                            <div className="sticky top-0 bg-white border-b border-blue-50 p-2">
+                              <input
+                                type="text"
+                                value={countrySearch}
+                                onChange={e => setCountrySearch(e.target.value)}
+                                placeholder="Rechercher un pays..."
+                                className="w-full rounded-lg bg-blue-50/40 border border-blue-100 px-3 py-1.5 text-xs text-[#0A0E27] placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                                autoFocus
+                              />
+                            </div>
+                            {filterCountries(countrySearch).map((c, i) => (
                               <button
-                                key={c.code}
+                                key={`${c.code}-${c.iso}-${i}`}
                                 type="button"
-                                onClick={() => { setCountryCode(c.code); setShowCountryPicker(false) }}
+                                onClick={() => { setCountryCode(c.code); setPhone(''); setShowCountryPicker(false); setCountrySearch('') }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-blue-50"
                               >
                                 <span className="text-base">{c.flag}</span>
                                 <span className="font-mono text-stone-500">{c.code}</span>
-                                <span className="font-semibold text-[#0A0E27]">{c.name}</span>
+                                <span className="font-semibold text-[#0A0E27] truncate">{c.name}</span>
                               </button>
                             ))}
                           </div>

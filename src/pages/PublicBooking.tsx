@@ -6,6 +6,12 @@ import { supabase } from '../lib/supabase'
 import { InlineStripePaymentModal } from '../components/InlineStripePayment'
 import { computeVisibleQuestionIds, type ConditionalRule } from '../lib/questionnaireConditions'
 import { resolveDaySlots, type TempPeriod } from '../lib/temporaryAvailability'
+import {
+  filterCountries,
+  flagForCode,
+  formatPhoneByCountry,
+  phonePlaceholder,
+} from '../lib/phone'
 
 interface SlotData { date: string; time: string; datetime_utc?: string }
 interface CustomField {
@@ -56,56 +62,6 @@ interface CreatorInfo {
 
 const API_URL = '/api/business'
 
-const PHONE_FORMATS: Record<string, { maxDigits: number; groups: number[] }> = {
-  '+33': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },
-  '+32': { maxDigits: 9, groups: [3, 2, 2, 2] },
-  '+41': { maxDigits: 9, groups: [2, 3, 2, 2] },
-  '+352': { maxDigits: 9, groups: [3, 3, 3] },
-  '+377': { maxDigits: 8, groups: [2, 2, 2, 2] },
-  '+1': { maxDigits: 10, groups: [3, 3, 4] },
-  '+44': { maxDigits: 10, groups: [4, 3, 3] },
-  '+49': { maxDigits: 11, groups: [3, 4, 4] },
-  '+34': { maxDigits: 9, groups: [3, 3, 3] },
-  '+39': { maxDigits: 10, groups: [3, 3, 4] },
-  '+351': { maxDigits: 9, groups: [3, 3, 3] },
-  '+31': { maxDigits: 9, groups: [1, 2, 2, 2, 2] },
-  '+212': { maxDigits: 9, groups: [3, 3, 3] },
-  '+216': { maxDigits: 8, groups: [2, 3, 3] },
-  '+213': { maxDigits: 9, groups: [3, 3, 3] },
-}
-
-function formatPhoneByCountry(raw: string, code: string): string {
-  const digits = raw.replace(/\D/g, '')
-  const fmt = PHONE_FORMATS[code]
-  if (!fmt) return digits.slice(0, 15)
-  const limited = digits.slice(0, fmt.maxDigits)
-  const parts: string[] = []
-  let idx = 0
-  for (const g of fmt.groups) {
-    if (idx >= limited.length) break
-    parts.push(limited.slice(idx, idx + g))
-    idx += g
-  }
-  return parts.join(' ')
-}
-
-const COUNTRY_CODES = [
-  { code: '+33', flag: '🇫🇷', name: 'France' },
-  { code: '+32', flag: '🇧🇪', name: 'Belgique' },
-  { code: '+41', flag: '🇨🇭', name: 'Suisse' },
-  { code: '+352', flag: '🇱🇺', name: 'Luxembourg' },
-  { code: '+377', flag: '🇲🇨', name: 'Monaco' },
-  { code: '+1', flag: '🇺🇸', name: 'États-Unis' },
-  { code: '+44', flag: '🇬🇧', name: 'Royaume-Uni' },
-  { code: '+49', flag: '🇩🇪', name: 'Allemagne' },
-  { code: '+34', flag: '🇪🇸', name: 'Espagne' },
-  { code: '+39', flag: '🇮🇹', name: 'Italie' },
-  { code: '+351', flag: '🇵🇹', name: 'Portugal' },
-  { code: '+31', flag: '🇳🇱', name: 'Pays-Bas' },
-  { code: '+212', flag: '🇲🇦', name: 'Maroc' },
-  { code: '+216', flag: '🇹🇳', name: 'Tunisie' },
-  { code: '+213', flag: '🇩🇿', name: 'Algérie' },
-]
 
 const DAY_NAMES = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
@@ -1124,7 +1080,7 @@ export function PublicBooking() {
                             onClick={() => { setShowCountryPicker(!showCountryPicker); setCountrySearch('') }}
                             className="flex items-center gap-1.5 border-b-2 border-[#c4c7c7]/30 py-3 pr-3 hover:border-[#006c49] transition-colors flex-shrink-0"
                           >
-                            <span className="text-base">{COUNTRY_CODES.find(c => c.code === countryCode)?.flag || '🌍'}</span>
+                            <span className="text-base">{flagForCode(countryCode)}</span>
                             <span className="text-sm text-[#1b1c1b] font-medium">{countryCode}</span>
                             <ChevronDown className="h-3 w-3 text-[#444748]/40" />
                           </button>
@@ -1140,9 +1096,7 @@ export function PublicBooking() {
                                   autoFocus
                                 />
                               </div>
-                              {COUNTRY_CODES
-                                .filter(c => !countrySearch || c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch))
-                                .map((c, i) => (
+                              {filterCountries(countrySearch).map((c, i) => (
                                 <button
                                   key={`${c.code}-${c.name}-${i}`}
                                   type="button"
@@ -1160,7 +1114,7 @@ export function PublicBooking() {
                             type="tel"
                             value={phone}
                             onChange={(e) => setPhone(formatPhoneByCountry(e.target.value, countryCode))}
-                            placeholder={PHONE_FORMATS[countryCode] ? PHONE_FORMATS[countryCode].groups.map(g => '0'.repeat(g)).join(' ') : '6 12 34 56 78'}
+                            placeholder={phonePlaceholder(countryCode)}
                             className="flex-1 bg-transparent border-b-2 border-[#c4c7c7]/30 py-3 pl-3 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:border-[#006c49] focus:ring-0 transition-colors outline-none font-medium"
                           />
                         </div>
