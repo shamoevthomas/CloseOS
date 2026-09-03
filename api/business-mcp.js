@@ -105,6 +105,54 @@ async function callApi(ctx, path, action, method, { query = {}, body } = {}) {
   return data
 }
 
+// ───────── Google Agenda ─────────
+
+/**
+ * Cree un evenement Google Agenda avec lien Meet, pour le proprietaire du compte.
+ *
+ * L'interface web le fait cote navigateur avec le token de l'utilisateur ; le MCP
+ * n'a pas de navigateur, il recupere donc le meme token via l'endpoint serveur
+ * `google-calendar-refresh` (celui qu'utilise deja le front au chargement).
+ */
+async function createGoogleCalendarEvent(ctx, { title, date, time, duration, description, attendeeEmail }) {
+  const tokenRes = await callApi(ctx, '/api/business', 'google-calendar-refresh', 'GET', {
+    query: { user_id: ctx.owner },
+  })
+  const accessToken = tokenRes?.access_token
+  if (!accessToken) throw new Error('Google Agenda non connecte pour ce compte')
+
+  const [h, m] = String(time).split(':').map(Number)
+  const endMinutes = h * 60 + m + (duration || 30)
+  const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
+
+  const body = {
+    summary: title,
+    description: description || '',
+    start: { dateTime: `${date}T${time}:00`, timeZone: 'Europe/Paris' },
+    end: { dateTime: `${date}T${endTime}:00`, timeZone: 'Europe/Paris' },
+    conferenceData: {
+      createRequest: {
+        requestId: `mcp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        conferenceSolutionKey: { type: 'hangoutsMeet' },
+      },
+    },
+  }
+  // Le prospect est invite : il recoit l'invitation Google et apparait sur l'evenement.
+  if (attendeeEmail) body.attendees = [{ email: attendeeEmail }]
+
+  const r = await fetch(
+    'https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all',
+    {
+      method: 'POST',
+      headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }
+  )
+  const data = await r.json()
+  if (!r.ok) throw new Error(data?.error?.message || `Google Agenda a refuse (${r.status})`)
+  return { id: data.id, hangoutLink: data.hangoutLink || data.conferenceData?.entryPoints?.[0]?.uri || null }
+}
+
 // ───────── Helpers métier ─────────
 
 /** Vérifie qu'un prospect appartient au propriétaire, renvoie la ligne. */
@@ -129,6 +177,16 @@ function randSlug(len = 8) {
 }
 
 /** "2026-07-30" + "14:30" (Europe/Paris) → ISO UTC. Sans heure : 09:00. */
+function hhmmToMinutes(v) {
+  const [h, m] = String(v || '0:0').split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
+
+function minutesToHhmm(total) {
+  const t = Math.max(0, Math.min(total, 24 * 60))
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`
+}
+
 function parisToIso(date, time) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) throw new Error('date attendue au format YYYY-MM-DD.')
   const t = time && /^\d{2}:\d{2}$/.test(time) ? time : '09:00'
@@ -289,6 +347,58 @@ const impl = {
     return {
       prospect: updated[0],
       note: patch.stage ? 'Les automatismes liés au stage (contacted_at, relances no-show…) sont gérés par la base.' : undefined,
+    }
+  },
+
+  /**
+   * Marque une relance « Contacté » comme faite, exactement comme le bouton
+   * « Relance faite » de l'interface : on avance d'un cran et on redate l'ancre.
+   *
+   * Ces champs ne sont volontairement pas dans PROSPECT_WRITABLE : les ecrire a
+   * la main produirait des etats incoherents (relance_step sans last_relance_at,
+   * par exemple). D'ou cet outil metier.
+   */
+  async prospect_relance_done(ctx, a) {
+    if (!a.id) throw new Error('id requis.')
+    const p = await ownedProspect(ctx, a.id, 'id,stage,relance_step,relance_channels')
+    if (p.stage !== 'contacted') {
+      throw new Error(`Le prospect est en stage « ${p.stage} » : les relances ne courent qu'en « contacted ».`)
+    }
+    const step = p.relance_step || 0
+    const canal = a.channel || 'whatsapp'
+    const canaux = Array.isArray(p.relance_channels) ? [...p.relance_channels] : []
+    while (canaux.length < step) canaux.push(null)
+    canaux[step] = canal
+
+    const updated = await sbUpdate('business_prospects', `id=eq.${enc(a.id)}`, {
+      relance_step: step + 1,
+      last_relance_at: new Date().toISOString(),
+      relance_channels: canaux,
+    }, true)
+    return {
+      prospect: updated[0],
+      relance_effectuee: step + 1,
+      note: 'Le compteur repartira de zero si le prospect est repasse en « contacted ».',
+    }
+  },
+
+  /**
+   * Marque le prospect comme ayant repondu : equivalent du bouton « Répondu ».
+   * Cela met les relances en pause et arme le rappel « Toujours en discussion ? »
+   * a +24 h, que CloseOS reposera tant que la discussion n'est pas tranchee.
+   */
+  async prospect_replied(ctx, a) {
+    if (!a.id) throw new Error('id requis.')
+    await ownedProspect(ctx, a.id, 'id,stage')
+    const dans24h = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    const updated = await sbUpdate('business_prospects', `id=eq.${enc(a.id)}`, {
+      responded_at: new Date().toISOString(),
+      discussion_next_at: dans24h,
+      discussion_email_sent: false,
+    }, true)
+    return {
+      prospect: updated[0],
+      note: 'Relances en pause. CloseOS redemandera dans 24 h si la discussion se poursuit ; sinon les relances reprennent.',
     }
   },
 
@@ -527,15 +637,192 @@ const impl = {
 
   async appointment_create(ctx, a) {
     if (!a.date || !a.time) throw new Error('date (YYYY-MM-DD) et time (HH:MM) requis.')
-    if (a.prospect_id) await ownedProspect(ctx, a.prospect_id)
+    let prospect = null
+    if (a.prospect_id) {
+      prospect = await ownedProspect(ctx, a.prospect_id, 'id,contact,email,phone')
+    }
+
+    const duration = a.duration || 30
+
+    // 1. Le RDV d'abord : c'est lui qui porte les jetons d'annulation et de
+    //    reprogrammation, indispensables a la description de l'evenement.
     const body = {
       user_id: ctx.owner, title: a.title || null, date: a.date, time: a.time,
-      duration: a.duration || 30, assigned_to: a.assigned_to || null,
+      duration, assigned_to: a.assigned_to || null,
       prospect_id: a.prospect_id || null, notes: a.notes || null,
       datetime_utc: parisToIso(a.date, a.time), timezone: a.timezone || 'Europe/Paris',
     }
     const data = await callApi(ctx, '/api/business', 'appointments-create', 'POST', { body })
-    return data
+    const appt = data?.appointment
+    if (!appt?.id) return data
+
+    // 2. Evenement Google Agenda, mis en forme comme une reservation classique :
+    //    coordonnees du prospect, liens d'action, et le prospect en invite.
+    let googleMeetLink = null
+    let googleEventId = null
+    let googleErreur = null
+    if (a.with_google_meet !== false) {
+      try {
+        const base = 'https://www.closeos.fr'
+        const lignes = []
+        if (prospect?.email) lignes.push(`📧 ${prospect.email}`)
+        if (prospect?.phone) lignes.push(`📞 ${prospect.phone}`)
+        // ATTENTION : le prospect est invite a l'evenement, il en voit donc la
+        // description. Les notes internes (budget, objections, qualification)
+        // restent dans le CRM et ne doivent jamais y apparaitre.
+        const corps = lignes.join('\n')
+        const actions = [
+          '',
+          '─────────────────',
+          appt.reschedule_token ? `📅 Reprogrammer : ${base}/appointment/${appt.reschedule_token}?action=reschedule` : '',
+          appt.cancel_token ? `❌ Annuler : ${base}/appointment/${appt.cancel_token}?action=cancel` : '',
+        ].filter(Boolean).join('\n')
+
+        const g = await createGoogleCalendarEvent(ctx, {
+          title: a.title || `Rendez-vous avec ${prospect?.contact || 'un prospect'}`,
+          date: a.date,
+          time: a.time,
+          duration,
+          description: `${corps}${actions}`,
+          attendeeEmail: prospect?.email || null,
+        })
+        googleMeetLink = g.hangoutLink || null
+        googleEventId = g.id || null
+
+        // 3. On rattache l'evenement au RDV, comme le fait le flux de reservation.
+        const patch = {}
+        if (googleMeetLink) patch.google_meet_link = googleMeetLink
+        if (googleEventId) patch.google_calendar_event_id = googleEventId
+        if (Object.keys(patch).length) {
+          await sbUpdate('business_appointments', `id=eq.${enc(appt.id)}`, patch)
+          Object.assign(appt, patch)
+        }
+      } catch (e) {
+        // L'agenda ne doit pas faire echouer la prise de RDV.
+        googleErreur = e.message
+        console.error('[mcp] Google Agenda:', e.message)
+      }
+    }
+
+    // 4. Email de confirmation au prospect, comme l'interface.
+    let confirmation = 'aucun prospect lie'
+    if (a.prospect_id) {
+      try {
+        const r = await callApi(ctx, '/api/business', 'appointment-send-confirmation', 'POST', {
+          body: { appointment_id: appt.id, user_id: ctx.owner, google_meet_link: googleMeetLink },
+        })
+        confirmation = r?.skipped ? `ignore (${r.reason})` : 'envoye'
+      } catch (e) {
+        confirmation = `echec (${e.message})`
+      }
+    }
+
+    return {
+      appointment: appt,
+      google_meet_link: googleMeetLink,
+      google_event_id: googleEventId,
+      google_agenda: googleEventId ? 'evenement cree (invite + liens d\'action)' : `non cree${googleErreur ? ` : ${googleErreur}` : ''}`,
+      email_confirmation: confirmation,
+    }
+  },
+
+  /**
+   * Agenda reel d'une journee : RDV du CRM + evenements Google Agenda.
+   *
+   * appointments_list ne montre que les RDV du CRM. Les blocages personnels
+   * poses dans Google Agenda (« PERSO », « REPOS »...) n'y figurent pas, alors
+   * qu'ils rendent bel et bien le creneau indisponible. Sans cette vue, on
+   * propose des horaires deja pris.
+   */
+  async agenda_day(ctx, a) {
+    if (!a.date) throw new Error('date (YYYY-MM-DD) requise.')
+    const busy = []
+
+    const appts = await sbSelect(
+      `business_appointments?user_id=eq.${ctx.owner}&date=eq.${a.date}` +
+      `&status=neq.cancelled&select=id,title,time,duration,status&order=time.asc`
+    )
+    for (const r of appts) {
+      const [h, m] = String(r.time || '00:00').split(':').map(Number)
+      busy.push({
+        source: 'crm',
+        title: r.title || 'RDV',
+        start: String(r.time || '').slice(0, 5),
+        end: minutesToHhmm(h * 60 + m + (r.duration || 30)),
+        status: r.status,
+      })
+    }
+
+    let googleErreur = null
+    try {
+      const tokenRes = await callApi(ctx, '/api/business', 'google-calendar-refresh', 'GET', {
+        query: { user_id: ctx.owner },
+      })
+      const token = tokenRes?.access_token
+      if (!token) throw new Error('Google Agenda non connecte')
+      const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
+      url.searchParams.set('timeMin', `${a.date}T00:00:00+02:00`)
+      url.searchParams.set('timeMax', `${a.date}T23:59:59+02:00`)
+      url.searchParams.set('singleEvents', 'true')
+      url.searchParams.set('orderBy', 'startTime')
+      const r = await fetch(url, { headers: { authorization: `Bearer ${token}` } })
+      const data = await r.json()
+      if (!r.ok) throw new Error(data?.error?.message || `Google (${r.status})`)
+      for (const ev of data.items || []) {
+        if (ev.status === 'cancelled' || !ev.start?.dateTime) continue
+        busy.push({
+          source: 'google',
+          title: ev.summary || '(sans titre)',
+          start: new Date(ev.start.dateTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }),
+          end: new Date(ev.end.dateTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }),
+        })
+      }
+    } catch (e) {
+      googleErreur = e.message
+    }
+
+    // Un evenement qui deborde du jour (ex. « REPOS » 20:00 -> 09:30 le lendemain)
+    // remonte avec une fin anterieure a son debut : on le borne a la journee.
+    for (const b of busy) {
+      if (hhmmToMinutes(b.end) <= hhmmToMinutes(b.start)) b.end = '23:59'
+    }
+
+    // Les RDV du CRM sont aussi pousses dans Google Agenda : sans dedoublonnage,
+    // chacun apparait deux fois.
+    const vus = new Set()
+    const uniques = []
+    for (const b of busy) {
+      const cle = `${b.start}-${b.end}`
+      if (vus.has(cle)) continue
+      vus.add(cle)
+      uniques.push(b)
+    }
+    busy.length = 0
+    busy.push(...uniques)
+
+    busy.sort((x, y) => x.start.localeCompare(y.start))
+
+    // Creneaux libres entre 08:00 et 20:00
+    const libres = []
+    let curseur = 8 * 60
+    const fin = 20 * 60
+    for (const b of busy) {
+      const bs = hhmmToMinutes(b.start)
+      const be = hhmmToMinutes(b.end)
+      if (bs > curseur) libres.push({ start: minutesToHhmm(curseur), end: minutesToHhmm(Math.min(bs, fin)) })
+      curseur = Math.max(curseur, be)
+    }
+    if (curseur < fin) libres.push({ start: minutesToHhmm(curseur), end: minutesToHhmm(fin) })
+
+    return {
+      date: a.date,
+      occupe: busy,
+      creneaux_libres: libres.filter((c) => hhmmToMinutes(c.end) - hhmmToMinutes(c.start) >= 30),
+      google_agenda: googleErreur ? `indisponible (${googleErreur})` : 'inclus',
+      avertissement: googleErreur
+        ? "Les blocages personnels de Google Agenda n'ont pas pu etre lus : verifier avant de confirmer un creneau."
+        : null,
+    }
   },
 
   async appointment_cancel(ctx, a) {
@@ -855,6 +1142,16 @@ const TOOLS = [
     inputSchema: obj({ id: num('Id du prospect'), patch: obj({}, undefined) }, ['id', 'patch']),
   },
   {
+    name: 'prospect_relance_done',
+    description: "Marque une relance « Contacté » comme faite (equivalent du bouton de l'interface) : avance relance_step et redate last_relance_at. Le prospect doit etre en stage 'contacted'. channel : whatsapp | email | phone | dm | sms.",
+    inputSchema: obj({ id: num('Id du prospect'), channel: str('Canal utilise (defaut: whatsapp)') }, ['id']),
+  },
+  {
+    name: 'prospect_replied',
+    description: "Marque le prospect comme ayant repondu (equivalent du bouton « Répondu ») : compte dans le taux de reponse, met les relances en pause et arme le rappel « Toujours en discussion ? » a +24 h.",
+    inputSchema: obj({ id: num('Id du prospect') }, ['id']),
+  },
+  {
     name: 'prospect_delete',
     description: 'Supprime définitivement un prospect (et ses RDV/rappels/tags liés). Exige confirm=true.',
     inputSchema: obj({ id: num('Id du prospect'), confirm: bool('Doit être true') }, ['id']),
@@ -923,6 +1220,11 @@ const TOOLS = [
       date: str('YYYY-MM-DD'), time: str('HH:MM (Europe/Paris)'), duration: num('Minutes, défaut 30'),
       title: str('Titre'), prospect_id: num('Id du prospect'), assigned_to: str('Membre assigné (user_id)'), notes: str('Notes'),
     }, ['date', 'time']),
+  },
+  {
+    name: 'agenda_day',
+    description: "Agenda reel d'une journee : RDV du CRM ET evenements Google Agenda (blocages personnels compris), avec les creneaux libres. A utiliser AVANT de proposer ou confirmer un horaire : appointments_list seul ne voit pas les blocages personnels.",
+    inputSchema: obj({ date: str('YYYY-MM-DD') }, ['date']),
   },
   {
     name: 'appointment_cancel',
