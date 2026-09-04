@@ -769,7 +769,23 @@ const impl = {
       const data = await r.json()
       if (!r.ok) throw new Error(data?.error?.message || `Google (${r.status})`)
       for (const ev of data.items || []) {
-        if (ev.status === 'cancelled' || !ev.start?.dateTime) continue
+        if (ev.status === 'cancelled') continue
+        // Un evenement « journee entiere » porte start.date et non start.dateTime.
+        // La condition precedente les ecartait tous — or ce sont eux qui portent
+        // les blocages structurants (« pas de rdv » le lundi, « OFF » le
+        // dimanche). Ces journees ressortaient donc entierement libres, et un
+        // coaching a fini par etre pose un lundi matin.
+        if (!ev.start?.dateTime) {
+          if (!ev.start?.date) continue
+          busy.push({
+            source: 'google',
+            title: ev.summary || '(sans titre)',
+            start: '00:00',
+            end: '23:59',
+            journee_entiere: true,
+          })
+          continue
+        }
         busy.push({
           source: 'google',
           title: ev.summary || '(sans titre)',
@@ -792,7 +808,9 @@ const impl = {
     const vus = new Set()
     const uniques = []
     for (const b of busy) {
-      const cle = `${b.start}-${b.end}`
+      // Deux evenements journee entiere partagent le meme creneau 00:00-23:59 :
+      // sans le titre dans la cle, le second effacerait le premier.
+      const cle = b.journee_entiere ? `jour-${b.title}` : `${b.start}-${b.end}`
       if (vus.has(cle)) continue
       vus.add(cle)
       uniques.push(b)
