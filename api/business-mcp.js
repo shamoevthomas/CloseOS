@@ -156,6 +156,76 @@ async function createGoogleCalendarEvent(ctx, { title, date, time, duration, des
 // ───────── Helpers métier ─────────
 
 /** Vérifie qu'un prospect appartient au propriétaire, renvoie la ligne. */
+// Champs suivis dans l'historique d'un prospect. Meme liste que le front
+// (BusinessProspectsContext), pour que les deux ecrivent les memes lignes.
+const CHAMPS_SUIVIS = {
+  firstName: 'Prénom', lastName: 'Nom', contact: 'Contact', email: 'Email',
+  phone: 'Téléphone', company: 'Entreprise', title: 'Poste', stage: 'Étape',
+  value: 'Montant', offer: 'Offre', offer_id: 'Offre ID', formula_id: 'Formule',
+  assigned_to: 'Closer', assigned_setter: 'Setter',
+  payment_type: 'Mode de paiement', installments: 'Mensualités',
+  probability: 'Probabilité', notes: 'Notes', source: 'Source',
+  loss_reason: 'Raison de perte', loss_details: 'Détails de perte',
+  campaign_id: 'Campagne', timezone: 'Fuseau horaire',
+}
+
+/**
+ * Ecrit dans l'historique du prospect ce que le MCP vient de changer.
+ *
+ * L'historique etait alimente uniquement par le front : tout ce que l'assistant
+ * modifiait — annulation de rendez-vous, note, changement d'etape — n'y laissait
+ * aucune trace. La fiche affichait « Par : Marianne Galtier, 31 aout » alors que
+ * l'etape venait d'etre changee le jour meme.
+ *
+ * N'echoue jamais : une ligne d'historique manquante ne doit pas faire echouer
+ * l'action qu'elle decrit.
+ */
+/**
+ * Remet la boucle de relance a zero pour un prospect en « Contacté ».
+ *
+ * Le trigger `set_contacted_at` ne se declenche qu'a un CHANGEMENT d'etape. Un
+ * prospect deja en « Contacté » a qui l'on annule un rendez-vous garde donc son
+ * ancre d'origine : Abdellah, contacte le 31 aout, affichait « 1ere relance a
+ * faire » a la seconde ou son rendez-vous du 5 septembre a ete annule.
+ */
+async function relancerDeZero(ctx, prospectId) {
+  try {
+    const p = (await sbSelect(
+      `business_prospects?id=eq.${enc(prospectId)}&user_id=eq.${ctx.owner}&select=stage&limit=1`))[0]
+    if (!p || p.stage !== 'contacted') return
+    await sbUpdate('business_prospects', `id=eq.${enc(prospectId)}`, {
+      contacted_at: new Date().toISOString(),
+      relance_step: 0,
+      last_relance_at: null,
+      responded_at: null,
+    }, false)
+  } catch (e) {
+    console.error('[relance] remise a zero impossible :', e.message)
+  }
+}
+
+async function journaliser(ctx, prospectId, changements) {
+  const lignes = changements
+    .filter((c) => String(c.old ?? '') !== String(c.new ?? ''))
+    .map((c) => ({
+      prospect_id: prospectId,
+      business_owner_id: ctx.owner,
+      changed_by_id: ctx.owner,
+      changed_by_name: 'Assistant',
+      change_type: c.type || (c.field === 'stage' ? 'stage_change' : 'field_update'),
+      field_name: c.field ?? null,
+      old_value: c.old != null ? String(c.old) : null,
+      new_value: c.new != null ? String(c.new) : null,
+      ...(c.metadata ? { metadata: c.metadata } : {}),
+    }))
+  if (!lignes.length) return
+  try {
+    await sbInsert('business_prospect_history', lignes, false)
+  } catch (e) {
+    console.error('[historique] ecriture impossible :', e.message)
+  }
+}
+
 async function ownedProspect(ctx, id, cols = 'id,user_id') {
   // user_id doit toujours faire partie du select : c'est lui qui porte le contrôle d'accès
   const colList = cols.split(',').map((c) => c.trim()).includes('user_id') ? cols : `${cols},user_id`
@@ -383,18 +453,30 @@ const impl = {
       row.lastName = parts.slice(1).join(' ') || ''
     }
     const ins = await sbInsert('business_prospects', row, true)
+    const champsInitiaux = {}
+    for (const cle of Object.keys(CHAMPS_SUIVIS)) {
+      const v = ins[0][cle]
+      if (v != null && v !== '') champsInitiaux[cle] = String(v)
+    }
+    await journaliser(ctx, ins[0].id,
+      [{ type: 'created', field: null, old: null, new: 'x', metadata: champsInitiaux }])
     return { prospect: ins[0] }
   },
 
   async prospect_update(ctx, a) {
     if (!a.id) throw new Error('id requis.')
-    await ownedProspect(ctx, a.id)
+    // On relit les champs suivis AVANT l'ecriture : sans l'ancienne valeur,
+    // l'historique ne peut rien montrer.
+    const avant = await ownedProspect(ctx, a.id, ['id', 'user_id', ...Object.keys(CHAMPS_SUIVIS)].join(','))
     const patch = pick(a.patch, PROSPECT_WRITABLE)
     if (Object.keys(patch).length === 0) throw new Error(`patch vide — champs autorisés : ${[...PROSPECT_WRITABLE].join(', ')}`)
     if (patch.stage && !STAGE_IDS.includes(patch.stage) && !String(patch.stage).startsWith('custom_')) {
       throw new Error(`stage invalide. Valeurs : ${STAGE_IDS.join(', ')}`)
     }
     const updated = await sbUpdate('business_prospects', `id=eq.${enc(a.id)}`, patch, true)
+    await journaliser(ctx, a.id, Object.keys(patch)
+      .filter((f) => f in CHAMPS_SUIVIS)
+      .map((f) => ({ field: f, old: avant[f], new: patch[f] })))
     return {
       prospect: updated[0],
       note: patch.stage ? 'Les automatismes liés au stage (contacted_at, relances no-show…) sont gérés par la base.' : undefined,
@@ -768,6 +850,13 @@ const impl = {
       }
     }
 
+    if (a.prospect_id) {
+      await journaliser(ctx, a.prospect_id, [{
+        type: 'appointment_created', field: 'appointment',
+        old: null, new: `${a.date} ${a.time}`,
+      }])
+    }
+
     return {
       appointment: appt,
       google_meet_link: googleMeetLink,
@@ -979,16 +1068,42 @@ const impl = {
 
   async appointment_cancel(ctx, a) {
     if (!a.appointment_id) throw new Error('appointment_id requis.')
-    return await callApi(ctx, '/api/business', 'appointment-cancel-internal', 'POST', {
+    const rdv = (await sbSelect(
+      `business_appointments?id=eq.${enc(a.appointment_id)}&user_id=eq.${ctx.owner}` +
+      `&select=id,prospect_id,date,time&limit=1`))[0]
+    const res = await callApi(ctx, '/api/business', 'appointment-cancel-internal', 'POST', {
       body: { user_id: ctx.owner, appointment_id: a.appointment_id },
     })
+    if (rdv?.prospect_id) {
+      const quand = `${rdv.date} ${String(rdv.time || '').slice(0, 5)}`
+      await journaliser(ctx, rdv.prospect_id, [{
+        type: 'appointment_cancelled', field: 'appointment',
+        old: quand, new: 'annulé',
+      }])
+      // Le rendez-vous tombe : la relance repart de zero. Sans ca, le prospect
+      // reste ancre a sa premiere mise en « Contacté » — parfois des semaines
+      // plus tot — et la 1ere relance s'affiche « a faire » dans la seconde.
+      await relancerDeZero(ctx, rdv.prospect_id)
+    }
+    return res
   },
 
   async appointment_reschedule(ctx, a) {
     if (!a.appointment_id || !a.date || !a.time) throw new Error('appointment_id, date (YYYY-MM-DD) et time (HH:MM) requis.')
-    return await callApi(ctx, '/api/business', 'appointment-reschedule-internal', 'POST', {
+    const avant = (await sbSelect(
+      `business_appointments?id=eq.${enc(a.appointment_id)}&user_id=eq.${ctx.owner}` +
+      `&select=id,prospect_id,date,time&limit=1`))[0]
+    const res = await callApi(ctx, '/api/business', 'appointment-reschedule-internal', 'POST', {
       body: { user_id: ctx.owner, appointment_id: a.appointment_id, date: a.date, time: a.time, timezone: a.timezone || 'Europe/Paris' },
     })
+    if (avant?.prospect_id) {
+      await journaliser(ctx, avant.prospect_id, [{
+        type: 'appointment_rescheduled', field: 'appointment',
+        old: `${avant.date} ${String(avant.time || '').slice(0, 5)}`,
+        new: `${a.date} ${a.time}`,
+      }])
+    }
+    return res
   },
 
   async appointment_reassign(ctx, a) {
