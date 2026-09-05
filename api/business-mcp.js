@@ -767,11 +767,28 @@ const impl = {
 
   async appointments_list(ctx, a) {
     const limit = Math.min(Math.max(1, a.limit || 50), 200)
-    let q = `business_appointments?user_id=eq.${ctx.owner}&select=id,title,date,time,duration,status,assigned_to,notes,google_meet_link,prospect:business_prospects(id,contact,email,phone),campaign:business_campaigns(id,name)&order=date.desc&limit=${limit}`
+    let q = `business_appointments?user_id=eq.${ctx.owner}&select=id,title,date,time,duration,status,assigned_to,notes,google_meet_link,datetime_utc,timezone,prospect:business_prospects(id,contact,email,phone),campaign:business_campaigns(id,name)&order=date.desc&limit=${limit}`
     if (a.status) q += `&status=eq.${enc(a.status)}`
     if (a.from) q += `&date=gte.${enc(a.from)}`
     if (a.to) q += `&date=lte.${enc(a.to)}`
     const rows = await sbSelect(q)
+
+    // `time` porte tantot l'heure de Paris, tantot celle du prospect selon le
+    // chemin de creation — le rendez-vous de Jeannia Badin est stocke « 18:00 »
+    // avec timezone Asia/Dubai, soit 16:00 a Paris. Tout ce qui lit cette
+    // colonne se trompe : l'agenda a bloque un creneau inexistant, et les
+    // rappels seraient partis deux heures trop tard.
+    //
+    // On ajoute donc l'heure vraie, calculee depuis `datetime_utc`, sans
+    // toucher aux champs d'origine.
+    for (const r of rows) {
+      if (!r.datetime_utc) { r.date_paris = r.date; r.heure_paris = String(r.time || '').slice(0, 5); continue }
+      const d = new Date(r.datetime_utc)
+      r.date_paris = new Intl.DateTimeFormat('fr-CA', {
+        timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+      r.heure_paris = new Intl.DateTimeFormat('fr-FR', {
+        timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }).format(d)
+    }
     return { count: rows.length, appointments: rows }
   },
 
@@ -1528,7 +1545,7 @@ const TOOLS = [
   },
   {
     name: 'appointments_list',
-    description: 'Liste les rendez-vous (avec prospect et campagne). Filtres : status (upcoming, confirmed, pending, completed, cancelled, noshow), from/to (YYYY-MM-DD).',
+    description: "Liste les rendez-vous (avec prospect et campagne). Filtres : status (upcoming, confirmed, pending, completed, cancelled, noshow), from/to (YYYY-MM-DD). **Utilise date_paris et heure_paris, pas date/time** : ces derniers portent parfois l'heure du prospect et non celle de Thomas.",
     inputSchema: obj({ status: str('Filtrer par statut'), from: str('Date min YYYY-MM-DD'), to: str('Date max YYYY-MM-DD'), limit: num('Max 200, défaut 50') }),
   },
   {
