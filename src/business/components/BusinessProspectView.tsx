@@ -7,7 +7,7 @@ import {
   Bell, Check, Loader2, FileText, ClipboardList,
   Package, ExternalLink, PhoneCall, Tag, Camera,
   CreditCard, Wallet, Link2, Search, Zap, CheckCircle2,
-  Award, AlertCircle, XCircle, Settings2, CalendarPlus, Copy, Globe, ArrowLeft, Building2,
+  Award, AlertCircle, XCircle, Settings2, CalendarPlus, Copy, Globe, ArrowLeft, Building2,, CalendarDays,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { TimezonePicker } from './TimezonePicker'
@@ -2860,6 +2860,10 @@ export function BusinessProspectView({
                       stripe_renewal: { icon: CreditCard, bg: 'bg-[#635BFF]/10', text: 'text-[#635BFF]' },
                       stripe_linked: { icon: Link2, bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
                       field_update: { icon: Pencil, bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
+                      // Rendez-vous poses, deplaces ou annules par l'assistant.
+                      appointment_created: { icon: CalendarDays, bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
+                      appointment_rescheduled: { icon: CalendarDays, bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400' },
+                      appointment_cancelled: { icon: CalendarDays, bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400' },
                     }
 
                     const style = CHANGE_ICONS[group.type] || CHANGE_ICONS.field_update
@@ -2875,6 +2879,18 @@ export function BusinessProspectView({
                       title = t.prospect_history_stripe_renewal
                     } else if (group.type === 'stripe_linked') {
                       title = t.prospect_history_stripe_linked
+                    } else if (group.type.startsWith('appointment_')) {
+                      // Sans ce cas, ces entrees tombaient dans le generique et
+                      // s'affichaient « Champ modifié : appointment ».
+                      const e = group.entries[0]
+                      const fr = lang !== 'en'
+                      if (group.type === 'appointment_cancelled') {
+                        title = fr ? `Rendez-vous annulé (${e.old_value})` : `Appointment cancelled (${e.old_value})`
+                      } else if (group.type === 'appointment_rescheduled') {
+                        title = fr ? `Rendez-vous déplacé au ${e.new_value}` : `Appointment moved to ${e.new_value}`
+                      } else {
+                        title = fr ? `Rendez-vous posé le ${e.new_value}` : `Appointment booked on ${e.new_value}`
+                      }
                     } else {
                       const count = group.entries.length
                       title = count === 1

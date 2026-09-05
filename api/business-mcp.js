@@ -206,7 +206,7 @@ async function relancerDeZero(ctx, prospectId) {
 
 async function journaliser(ctx, prospectId, changements) {
   const lignes = changements
-    .filter((c) => String(c.old ?? '') !== String(c.new ?? ''))
+    .filter((c) => c.type === 'created' || String(c.old ?? '') !== String(c.new ?? ''))
     .map((c) => ({
       prospect_id: prospectId,
       business_owner_id: ctx.owner,
@@ -459,7 +459,7 @@ const impl = {
       if (v != null && v !== '') champsInitiaux[cle] = String(v)
     }
     await journaliser(ctx, ins[0].id,
-      [{ type: 'created', field: null, old: null, new: 'x', metadata: champsInitiaux }])
+      [{ type: 'created', field: null, old: null, new: null, metadata: champsInitiaux }])
     return { prospect: ins[0] }
   },
 
