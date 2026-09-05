@@ -214,6 +214,54 @@ function pick(obj, allowed) {
 
 // ───────── Implémentation des outils ─────────
 
+// Disponibilites reelles de l'owner pour une date : creneaux hebdomadaires,
+// remplaces par une periode temporaire si elle couvre le jour, annules par une
+// absence. Sans eux, « libre » voulait dire « entre 08:00 et 20:00 », et
+// l'agenda proposait 8h du matin a un prospect alors que Thomas dort.
+async function disponibilitesDuJour(ctx, date) {
+  const jsDay = new Date(`${date}T12:00:00Z`).getUTCDay()
+  const jour = jsDay === 0 ? 6 : jsDay - 1     // 0 = lundi, 6 = dimanche
+
+  const [hebdo, temporaires, absences, reglages] = await Promise.all([
+    sbSelect(`business_availability_slots?business_owner_id=eq.${ctx.owner}` +
+             `&team_member_id=is.null&select=day_of_week,start_time,end_time`),
+    sbSelect(`business_temporary_availability?business_owner_id=eq.${ctx.owner}` +
+             `&team_member_id=is.null&start_date=lte.${date}&end_date=gte.${date}` +
+             `&select=id,slots,created_at,start_date,end_date`),
+    sbSelect(`business_absences?business_owner_id=eq.${ctx.owner}` +
+             `&start_date=lte.${date}&end_date=gte.${date}&select=start_date,end_date`),
+    sbSelect(`business_users?id=eq.${ctx.owner}` +
+             `&select=max_calls_per_day,buffer_before_booking,min_booking_notice`),
+  ])
+
+  const r = reglages[0] || {}
+  const parametres = {
+    max_rdv_par_jour: r.max_calls_per_day ?? null,
+    buffer_minutes: r.buffer_before_booking || 0,
+    delai_min_heures: (r.min_booking_notice || 0) / 60,
+  }
+
+  if (absences.length) return { fenetres: [], absent: true, parametres }
+
+  // Une periode temporaire REMPLACE l'hebdomadaire sur les jours couverts.
+  // La plus recemment creee gagne, comme cote booking.
+  let source = hebdo
+  if (temporaires.length) {
+    const p = temporaires.slice().sort(
+      (x, y) => String(y.created_at || '').localeCompare(String(x.created_at || '')))[0]
+    source = p.slots || []
+  }
+  const fenetres = source
+    .filter((s) => Number(s.day_of_week) === jour)
+    .map((s) => ({ start: String(s.start_time || '').slice(0, 5),
+                   end: String(s.end_time || '').slice(0, 5) }))
+    .sort((x, y) => x.start.localeCompare(y.start))
+
+return { fenetres, absent: false, parametres }
+}
+
+
+
 const impl = {
   // ═══ Organisation ═══
 
@@ -734,52 +782,6 @@ const impl = {
    * qu'ils rendent bel et bien le creneau indisponible. Sans cette vue, on
    * propose des horaires deja pris.
    */
-  // Disponibilites reelles de l'owner pour une date : creneaux hebdomadaires,
-  // remplaces par une periode temporaire si elle couvre le jour, annules par une
-  // absence. Sans eux, « libre » voulait dire « entre 08:00 et 20:00 », et
-  // l'agenda proposait 8h du matin a un prospect alors que Thomas dort.
-  async _disponibilites(ctx, date) {
-    const jsDay = new Date(`${date}T12:00:00Z`).getUTCDay()
-    const jour = jsDay === 0 ? 6 : jsDay - 1     // 0 = lundi, 6 = dimanche
-
-    const [hebdo, temporaires, absences, reglages] = await Promise.all([
-      sbSelect(`business_availability_slots?business_owner_id=eq.${ctx.owner}` +
-               `&team_member_id=is.null&select=day_of_week,start_time,end_time`),
-      sbSelect(`business_temporary_availability?business_owner_id=eq.${ctx.owner}` +
-               `&team_member_id=is.null&start_date=lte.${date}&end_date=gte.${date}` +
-               `&select=id,slots,created_at,start_date,end_date`),
-      sbSelect(`business_absences?business_owner_id=eq.${ctx.owner}` +
-               `&start_date=lte.${date}&end_date=gte.${date}&select=start_date,end_date`),
-      sbSelect(`business_users?id=eq.${ctx.owner}` +
-               `&select=max_calls_per_day,buffer_before_booking,min_booking_notice`),
-    ])
-
-    const r = reglages[0] || {}
-    const parametres = {
-      max_rdv_par_jour: r.max_calls_per_day ?? null,
-      buffer_minutes: r.buffer_before_booking || 0,
-      delai_min_heures: (r.min_booking_notice || 0) / 60,
-    }
-
-    if (absences.length) return { fenetres: [], absent: true, parametres }
-
-    // Une periode temporaire REMPLACE l'hebdomadaire sur les jours couverts.
-    // La plus recemment creee gagne, comme cote booking.
-    let source = hebdo
-    if (temporaires.length) {
-      const p = temporaires.slice().sort(
-        (x, y) => String(y.created_at || '').localeCompare(String(x.created_at || '')))[0]
-      source = p.slots || []
-    }
-    const fenetres = source
-      .filter((s) => Number(s.day_of_week) === jour)
-      .map((s) => ({ start: String(s.start_time || '').slice(0, 5),
-                     end: String(s.end_time || '').slice(0, 5) }))
-      .sort((x, y) => x.start.localeCompare(y.start))
-
-    return { fenetres, absent: false, parametres }
-  },
-
   async agenda_day(ctx, a) {
     if (!a.date) throw new Error('date (YYYY-MM-DD) requise.')
     const busy = []
@@ -895,7 +897,7 @@ const impl = {
     let dispo = { fenetres: [], absent: false, parametres: {} }
     let dispoErreur = null
     try {
-      dispo = await this._disponibilites(ctx, a.date)
+      dispo = await disponibilitesDuJour(ctx, a.date)
     } catch (e) {
       dispoErreur = e.message
     }
