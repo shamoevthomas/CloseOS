@@ -968,15 +968,29 @@ const impl = {
 
     // Les RDV du CRM sont aussi pousses dans Google Agenda : sans dedoublonnage,
     // chacun apparait deux fois.
-    const vus = new Set()
+    //
+    // On note au passage lesquels ont bien leur double cote Google. Un RDV du
+    // CRM qui n'y figure pas ne s'affichera jamais sur le telephone de Thomas :
+    // il bloque un creneau qu'il croit libre. Six rendez-vous crees le 5/09 a
+    // 06h16 pour Jeannia Badin etaient dans ce cas — dont un 18h-19h le 8/09
+    // que son agenda ne montrait pas.
+    const vus = new Map()
     const uniques = []
     for (const b of busy) {
       // Deux evenements journee entiere partagent le meme creneau 00:00-23:59 :
       // sans le titre dans la cle, le second effacerait le premier.
       const cle = b.journee_entiere ? `jour-${b.title}` : `${b.start}-${b.end}`
-      if (vus.has(cle)) continue
-      vus.add(cle)
+      const deja = vus.get(cle)
+      if (deja) {
+        // Meme creneau des deux cotes : le RDV du CRM est bien dans Google.
+        if (deja.source === 'crm' && b.source === 'google') deja.dans_google = true
+        continue
+      }
+      vus.set(cle, b)
       uniques.push(b)
+    }
+    for (const b of uniques) {
+      if (b.source === 'crm' && !b.dans_google) b.absent_de_google = true
     }
     busy.length = 0
     busy.push(...uniques)
@@ -1057,6 +1071,12 @@ const impl = {
           ? `Disponibilites illisibles (${dispoErreur}) : ne rien proposer sans verifier.`
           : null,
         dispo.absent ? 'Absence declaree sur cette journee : aucun rendez-vous.' : null,
+        busy.some((b) => b.absent_de_google)
+          ? 'Des rendez-vous du CRM ne figurent pas dans Google Agenda ('
+            + busy.filter((b) => b.absent_de_google)
+                  .map((b) => `${b.start} ${b.title || 'RDV'}`).join(', ')
+            + ') : Thomas ne les voit pas sur son telephone, le signaler.'
+          : null,
         !dispoErreur && !dispo.absent && dispo.fenetres.length === 0
           ? 'Aucune disponibilite ce jour-la : ne rien proposer.' : null,
         journeePleine ? `Maximum de ${maxJour} rendez-vous par jour deja atteint.` : null,
