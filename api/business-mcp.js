@@ -247,6 +247,13 @@ function randSlug(len = 8) {
 }
 
 /** "2026-07-30" + "14:30" (Europe/Paris) → ISO UTC. Sans heure : 09:00. */
+/** « 2026-09-08 » + n jours -> « 2026-09-07 » / « 2026-09-09 ». */
+function decalerJour(date, n) {
+  const d = new Date(`${date}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
 function hhmmToMinutes(v) {
   const [h, m] = String(v || '0:0').split(':').map(Number)
   return (h || 0) * 60 + (m || 0)
@@ -878,20 +885,44 @@ const impl = {
     if (!a.date) throw new Error('date (YYYY-MM-DD) requise.')
     const busy = []
 
+    // `time` n'est PAS fiable : selon le chemin de creation, il porte l'heure de
+    // Paris ou celle du prospect. Le rendez-vous de Jeannia Badin du 8/09 etait
+    // stocke « 18:00 » avec timezone Asia/Dubai — soit 16:00 a Paris. L'agenda
+    // affichait donc un creneau occupe de 18h a 19h qui n'existait pas, et un
+    // rendez-vous a 17h45 a ete refuse pour rien.
+    //
+    // `datetime_utc` est la seule verite. On ne retombe sur `time` que pour les
+    // vieilles lignes qui n'en ont pas.
     const appts = await sbSelect(
-      `business_appointments?user_id=eq.${ctx.owner}&date=eq.${a.date}` +
-      `&status=neq.cancelled&select=id,title,time,duration,status&order=time.asc`
+      `business_appointments?user_id=eq.${ctx.owner}` +
+      `&status=neq.cancelled&select=id,title,time,duration,status,datetime_utc,date` +
+      `&or=(date.eq.${a.date},date.eq.${decalerJour(a.date, -1)},date.eq.${decalerJour(a.date, 1)})`
     )
     for (const r of appts) {
-      const [h, m] = String(r.time || '00:00').split(':').map(Number)
+      let jour = r.date
+      let debut = String(r.time || '').slice(0, 5)
+      if (r.datetime_utc) {
+        const d = new Date(r.datetime_utc)
+        jour = new Intl.DateTimeFormat('fr-CA', {
+          timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+        }).format(d)
+        debut = new Intl.DateTimeFormat('fr-FR', {
+          timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false,
+        }).format(d)
+      }
+      // Un fuseau lointain peut faire tomber le rendez-vous la veille ou le
+      // lendemain a Paris : on ne garde que ce qui tombe reellement ce jour-la.
+      if (jour !== a.date) continue
+      const [h, m] = debut.split(':').map(Number)
       busy.push({
         source: 'crm',
         title: r.title || 'RDV',
-        start: String(r.time || '').slice(0, 5),
+        start: debut,
         end: minutesToHhmm(h * 60 + m + (r.duration || 30)),
         status: r.status,
       })
     }
+    busy.sort((x, y) => x.start.localeCompare(y.start))
 
     let googleErreur = null
     try {
