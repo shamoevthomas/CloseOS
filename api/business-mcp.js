@@ -734,6 +734,52 @@ const impl = {
    * qu'ils rendent bel et bien le creneau indisponible. Sans cette vue, on
    * propose des horaires deja pris.
    */
+  // Disponibilites reelles de l'owner pour une date : creneaux hebdomadaires,
+  // remplaces par une periode temporaire si elle couvre le jour, annules par une
+  // absence. Sans eux, « libre » voulait dire « entre 08:00 et 20:00 », et
+  // l'agenda proposait 8h du matin a un prospect alors que Thomas dort.
+  async _disponibilites(ctx, date) {
+    const jsDay = new Date(`${date}T12:00:00Z`).getUTCDay()
+    const jour = jsDay === 0 ? 6 : jsDay - 1     // 0 = lundi, 6 = dimanche
+
+    const [hebdo, temporaires, absences, reglages] = await Promise.all([
+      sbSelect(`business_availability_slots?business_owner_id=eq.${ctx.owner}` +
+               `&team_member_id=is.null&select=day_of_week,start_time,end_time`),
+      sbSelect(`business_temporary_availability?business_owner_id=eq.${ctx.owner}` +
+               `&team_member_id=is.null&start_date=lte.${date}&end_date=gte.${date}` +
+               `&select=id,slots,created_at,start_date,end_date`),
+      sbSelect(`business_absences?business_owner_id=eq.${ctx.owner}` +
+               `&start_date=lte.${date}&end_date=gte.${date}&select=start_date,end_date`),
+      sbSelect(`business_users?id=eq.${ctx.owner}` +
+               `&select=max_calls_per_day,buffer_before_booking,min_booking_notice`),
+    ])
+
+    const r = reglages[0] || {}
+    const parametres = {
+      max_rdv_par_jour: r.max_calls_per_day ?? null,
+      buffer_minutes: r.buffer_before_booking || 0,
+      delai_min_heures: (r.min_booking_notice || 0) / 60,
+    }
+
+    if (absences.length) return { fenetres: [], absent: true, parametres }
+
+    // Une periode temporaire REMPLACE l'hebdomadaire sur les jours couverts.
+    // La plus recemment creee gagne, comme cote booking.
+    let source = hebdo
+    if (temporaires.length) {
+      const p = temporaires.slice().sort(
+        (x, y) => String(y.created_at || '').localeCompare(String(x.created_at || '')))[0]
+      source = p.slots || []
+    }
+    const fenetres = source
+      .filter((s) => Number(s.day_of_week) === jour)
+      .map((s) => ({ start: String(s.start_time || '').slice(0, 5),
+                     end: String(s.end_time || '').slice(0, 5) }))
+      .sort((x, y) => x.start.localeCompare(y.start))
+
+    return { fenetres, absent: false, parametres }
+  },
+
   async agenda_day(ctx, a) {
     if (!a.date) throw new Error('date (YYYY-MM-DD) requise.')
     const busy = []
@@ -761,8 +807,15 @@ const impl = {
       const token = tokenRes?.access_token
       if (!token) throw new Error('Google Agenda non connecte')
       const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
-      url.searchParams.set('timeMin', `${a.date}T00:00:00+02:00`)
-      url.searchParams.set('timeMax', `${a.date}T23:59:59+02:00`)
+      // On demande la veille et le lendemain : un evenement qui commence le 7 a
+      // 20:00 et finit le 8 a 09:30 doit ressortir quand on interroge le 8.
+      const veille = new Date(`${a.date}T12:00:00Z`)
+      veille.setUTCDate(veille.getUTCDate() - 1)
+      const lendemain = new Date(`${a.date}T12:00:00Z`)
+      lendemain.setUTCDate(lendemain.getUTCDate() + 1)
+      const iso = (d) => d.toISOString().slice(0, 10)
+      url.searchParams.set('timeMin', `${iso(veille)}T00:00:00+02:00`)
+      url.searchParams.set('timeMax', `${iso(lendemain)}T23:59:59+02:00`)
       url.searchParams.set('singleEvents', 'true')
       url.searchParams.set('orderBy', 'startTime')
       const r = await fetch(url, { headers: { authorization: `Bearer ${token}` } })
@@ -777,6 +830,8 @@ const impl = {
         // coaching a fini par etre pose un lundi matin.
         if (!ev.start?.dateTime) {
           if (!ev.start?.date) continue
+          // start.date est inclusif, end.date exclusif cote Google.
+          if (a.date < ev.start.date || (ev.end?.date && a.date >= ev.end.date)) continue
           busy.push({
             source: 'google',
             title: ev.summary || '(sans titre)',
@@ -786,11 +841,25 @@ const impl = {
           })
           continue
         }
+        // Un evenement peut franchir minuit (« REPOS de 20:00 a 09:30 ») et
+        // Google le renvoie pour les deux journees qu'il touche. Sans decoupage,
+        // le 8/09 heritait de « 20:00 - 09:30 », borne plus bas en 20:00-23:59 :
+        // la soiree etait bloquee a tort et la matinee paraissait libre.
+        const hParis = (iso) => new Date(iso).toLocaleTimeString('fr-FR', {
+          hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })
+        const jParis = (iso) => new Intl.DateTimeFormat('fr-CA', {
+          timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+        }).format(new Date(iso))
+        const jDebut = jParis(ev.start.dateTime)
+        const jFin = jParis(ev.end.dateTime)
+        if (jFin < a.date || jDebut > a.date) continue
         busy.push({
           source: 'google',
           title: ev.summary || '(sans titre)',
-          start: new Date(ev.start.dateTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }),
-          end: new Date(ev.end.dateTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }),
+          start: jDebut < a.date ? '00:00' : hParis(ev.start.dateTime),
+          end: jFin > a.date ? '23:59' : hParis(ev.end.dateTime),
+          deborde_avant: jDebut < a.date || undefined,
+          deborde_apres: jFin > a.date || undefined,
         })
       }
     } catch (e) {
@@ -820,26 +889,83 @@ const impl = {
 
     busy.sort((x, y) => x.start.localeCompare(y.start))
 
-    // Creneaux libres entre 08:00 et 20:00
-    const libres = []
-    let curseur = 8 * 60
-    const fin = 20 * 60
-    for (const b of busy) {
-      const bs = hhmmToMinutes(b.start)
-      const be = hhmmToMinutes(b.end)
-      if (bs > curseur) libres.push({ start: minutesToHhmm(curseur), end: minutesToHhmm(Math.min(bs, fin)) })
-      curseur = Math.max(curseur, be)
+    // Creneaux libres = fenetres de disponibilite MOINS ce qui est occupe.
+    // Avant, la fenetre etait 08:00-20:00 en dur : le systeme a propose 8h a un
+    // prospect un mardi ou Thomas n'ouvre qu'a 10h.
+    let dispo = { fenetres: [], absent: false, parametres: {} }
+    let dispoErreur = null
+    try {
+      dispo = await this._disponibilites(ctx, a.date)
+    } catch (e) {
+      dispoErreur = e.message
     }
-    if (curseur < fin) libres.push({ start: minutesToHhmm(curseur), end: minutesToHhmm(fin) })
+
+    const libres = []
+    for (const f of dispo.fenetres) {
+      let curseur = hhmmToMinutes(f.start)
+      const fin = hhmmToMinutes(f.end)
+      for (const b of busy) {
+        const bs = hhmmToMinutes(b.start)
+        const be = hhmmToMinutes(b.end)
+        if (be <= curseur || bs >= fin) continue
+        if (bs > curseur) libres.push({ start: minutesToHhmm(curseur), end: minutesToHhmm(Math.min(bs, fin)) })
+        curseur = Math.max(curseur, be)
+        if (curseur >= fin) break
+      }
+      if (curseur < fin) libres.push({ start: minutesToHhmm(curseur), end: minutesToHhmm(fin) })
+    }
+
+    // Le delai minimum avant reservation ampute le debut de la journee courante.
+    const delaiH = dispo.parametres?.delai_min_heures || 0
+    let plancher = null
+    if (delaiH > 0) {
+      const limite = new Date(Date.now() + delaiH * 3600 * 1000)
+      const jourLimite = new Intl.DateTimeFormat('fr-CA', {
+        timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(limite)
+      if (jourLimite === a.date) {
+        plancher = new Intl.DateTimeFormat('fr-FR', {
+          timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false,
+        }).format(limite)
+      } else if (jourLimite > a.date) {
+        plancher = '23:59'   // toute la journee est trop proche
+      }
+    }
+
+    const retenus = []
+    for (const c of libres) {
+      let debut = hhmmToMinutes(c.start)
+      const fin = hhmmToMinutes(c.end)
+      if (plancher) debut = Math.max(debut, hhmmToMinutes(plancher))
+      if (fin - debut >= 30) retenus.push({ start: minutesToHhmm(debut), end: minutesToHhmm(fin) })
+    }
+
+    const nbRdv = busy.filter((b) => b.source === 'crm').length
+    const maxJour = dispo.parametres?.max_rdv_par_jour
+    const journeePleine = maxJour != null && nbRdv >= maxJour
 
     return {
       date: a.date,
       occupe: busy,
-      creneaux_libres: libres.filter((c) => hhmmToMinutes(c.end) - hhmmToMinutes(c.start) >= 30),
+      disponibilites: dispo.fenetres,
+      creneaux_libres: journeePleine ? [] : retenus,
+      parametres_booking: dispo.parametres,
+      rdv_du_jour: nbRdv,
       google_agenda: googleErreur ? `indisponible (${googleErreur})` : 'inclus',
-      avertissement: googleErreur
-        ? "Les blocages personnels de Google Agenda n'ont pas pu etre lus : verifier avant de confirmer un creneau."
-        : null,
+      avertissement: [
+        googleErreur
+          ? "Les blocages personnels de Google Agenda n'ont pas pu etre lus : verifier avant de confirmer un creneau."
+          : null,
+        dispoErreur
+          ? `Disponibilites illisibles (${dispoErreur}) : ne rien proposer sans verifier.`
+          : null,
+        dispo.absent ? 'Absence declaree sur cette journee : aucun rendez-vous.' : null,
+        !dispoErreur && !dispo.absent && dispo.fenetres.length === 0
+          ? 'Aucune disponibilite ce jour-la : ne rien proposer.' : null,
+        journeePleine ? `Maximum de ${maxJour} rendez-vous par jour deja atteint.` : null,
+        plancher && plancher !== '23:59'
+          ? `Delai minimum avant reservation : rien avant ${plancher}.` : null,
+      ].filter(Boolean).join(' ') || null,
     }
   },
 
@@ -1241,7 +1367,7 @@ const TOOLS = [
   },
   {
     name: 'agenda_day',
-    description: "Agenda reel d'une journee : RDV du CRM ET evenements Google Agenda (blocages personnels compris), avec les creneaux libres. A utiliser AVANT de proposer ou confirmer un horaire : appointments_list seul ne voit pas les blocages personnels.",
+    description: "Agenda reel d'une journee : RDV du CRM, evenements Google Agenda (blocages personnels compris), disponibilites declarees et creneaux reellement proposables. A utiliser AVANT de proposer ou confirmer un horaire : appointments_list seul ne voit pas les blocages personnels. `creneaux_libres` tient deja compte des heures d'ouverture du jour, des absences, du delai minimum avant reservation et du maximum de RDV par jour — une liste vide veut dire qu'il n'y a rien a proposer, pas qu'il faut chercher ailleurs dans la journee. `disponibilites` donne les fenetres brutes, `avertissement` dit pourquoi une journee est fermee.",
     inputSchema: obj({ date: str('YYYY-MM-DD') }, ['date']),
   },
   {

@@ -142,6 +142,34 @@ const computeOverlapLayout = (events: { id: string; time: string; data?: any }[]
   return layout
 }
 
+/**
+ * Portion d'un evenement qui tombe reellement sur `day`.
+ *
+ * Google autorise un evenement a franchir minuit — « REPOS de 20:00 a 09:30 »
+ * couvre deux journees. L'agenda ne le montrait que sur son jour de depart, et
+ * `getDuration` rattrapait la duree negative en ajoutant 24 h : le bloc partait
+ * a 20:00 pour 13 h 30, debordait la grille, et le lendemain matin paraissait
+ * libre. On decoupe donc l'evenement par journee, comme Google Agenda.
+ *
+ * Rend null si l'evenement ne touche pas ce jour-la.
+ */
+const clipToDay = (start: Date, end: Date, day: Date) => {
+  const debutJour = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0, 0)
+  const finJour = new Date(debutJour.getTime() + 24 * 60 * 60 * 1000)
+  if (end <= debutJour || start >= finJour) return null
+
+  const avant = start < debutJour
+  const apres = end > finJour
+  const hhmm = (d: Date) => `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+  return {
+    startTime: avant ? '00:00' : hhmm(start),
+    // 24:00 et non 23:59 : le bloc doit atteindre exactement le bas de la grille.
+    endTime: apres ? '24:00' : hhmm(end),
+    continuesBefore: avant,
+    continuesAfter: apres,
+  }
+}
+
 const getStartHourRaw = (time: string) => {
   if (!time) return 0
   const start = time.split(' - ')[0]
@@ -196,6 +224,10 @@ interface CalendarEvent {
   location?: string
   description?: string
   hangoutLink?: string
+  // Evenement a cheval sur minuit : le bloc affiche n'est qu'une portion.
+  continuesBefore?: boolean
+  continuesAfter?: boolean
+  fullTime?: string
 }
 
 const API_URL = '/api/business'
@@ -597,15 +629,20 @@ export function CloserAgenda() {
       if (!ge.start || ge.allDay) continue
       if (ge.id && syncedEventIds.has(ge.id)) continue // reflet Google d'un RDV CloseOS déjà affiché
       const start = ge.start instanceof Date ? ge.start : new Date(ge.start)
-      if (!isSameDay(start, date)) continue
       const end = ge.end instanceof Date ? ge.end : new Date(ge.end)
-      const startTime = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`
-      const endTime = `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`
+      const part = clipToDay(start, end, date)
+      if (!part) continue
+      const hhmm = (d: Date) => `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
       events.push({
-        id: ge.id,
+        // Deux journees affichent le meme evenement : sans suffixe, les cles
+        // React se dupliquent et le second bloc n'apparait pas.
+        id: part.continuesBefore ? `${ge.id}-suite-${formatDateKey(date)}` : ge.id,
         title: ge.title,
-        date: formatDateKey(start),
-        time: `${startTime} - ${endTime}`,
+        date: formatDateKey(date),
+        time: `${part.startTime} - ${part.endTime}`,
+        fullTime: `${hhmm(start)} - ${hhmm(end)}`,
+        continuesBefore: part.continuesBefore,
+        continuesAfter: part.continuesAfter,
         type: 'google',
         color: 'bg-white dark:bg-white/5 text-stone-900 dark:text-white',
         isGoogleEvent: true,
@@ -618,16 +655,17 @@ export function CloserAgenda() {
     // Créneaux "occupé" du membre consulté — bloc rouge anonyme, sans détail
     for (const b of memberBusy) {
       const bStart = new Date(b.start)
-      if (!isSameDay(bStart, date)) continue
-      if (isSyncedApptInstant(bStart)) continue // "Occupé" Google qui double un RDV CloseOS déjà affiché
       const bEnd = new Date(b.end)
-      const st = `${bStart.getHours().toString().padStart(2, '0')}:${bStart.getMinutes().toString().padStart(2, '0')}`
-      const et = `${bEnd.getHours().toString().padStart(2, '0')}:${bEnd.getMinutes().toString().padStart(2, '0')}`
+      const part = clipToDay(bStart, bEnd, date)
+      if (!part) continue
+      if (isSyncedApptInstant(bStart)) continue // "Occupé" Google qui double un RDV CloseOS déjà affiché
       events.push({
-        id: `busy-${b.start}`,
+        id: `busy-${b.start}${part.continuesBefore ? `-suite-${formatDateKey(date)}` : ''}`,
         title: lang === 'en' ? 'Busy' : 'Occupé',
-        date: formatDateKey(bStart),
-        time: `${st} - ${et}`,
+        date: formatDateKey(date),
+        time: `${part.startTime} - ${part.endTime}`,
+        continuesBefore: part.continuesBefore,
+        continuesAfter: part.continuesAfter,
         type: 'busy',
         color: 'bg-red-100 text-red-700',
       })
@@ -1368,7 +1406,11 @@ export function CloserAgenda() {
                   </p>
                   {selectedEvent.time && (
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                      {selectedEvent.time}
+                      {/* Un evenement a cheval sur minuit est affiche en morceaux :
+                          la fiche, elle, donne ses vraies heures. */}
+                      {selectedEvent.fullTime || selectedEvent.time}
+                      {selectedEvent.continuesAfter && ' (fin le lendemain)'}
+                      {selectedEvent.continuesBefore && ' (commence la veille)'}
                       {selectedEvent.type === 'appointment' && selectedEvent.data?.duration > 0 && (
                         <> ({selectedEvent.data.duration >= 60 ? `${Math.floor(selectedEvent.data.duration / 60)}h${selectedEvent.data.duration % 60 > 0 ? ` ${selectedEvent.data.duration % 60}min` : ''}` : `${selectedEvent.data.duration}min`})</>
                       )}
