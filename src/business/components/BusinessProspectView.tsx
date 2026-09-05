@@ -7,7 +7,7 @@ import {
   Bell, Check, Loader2, FileText, ClipboardList,
   Package, ExternalLink, PhoneCall, Tag, Camera,
   CreditCard, Wallet, Link2, Search, Zap, CheckCircle2,
-  Award, AlertCircle, XCircle, Settings2, CalendarPlus, Copy, Globe, ArrowLeft, Building2,, CalendarDays,
+  Award, AlertCircle, XCircle, Settings2, CalendarPlus, Copy, Globe, ArrowLeft, Building2, CalendarDays,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { TimezonePicker } from './TimezonePicker'
