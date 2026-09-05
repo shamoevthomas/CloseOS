@@ -237,8 +237,11 @@ async function disponibilitesDuJour(ctx, date) {
   const r = reglages[0] || {}
   const parametres = {
     max_rdv_par_jour: r.max_calls_per_day ?? null,
+    // buffer_before_booking est en minutes, min_booking_notice en HEURES :
+    // le booking fait `min_booking_notice * 60 * 60 * 1000`. Diviser par 60
+    // transformait « 10 heures avant » en dix minutes.
     buffer_minutes: r.buffer_before_booking || 0,
-    delai_min_heures: (r.min_booking_notice || 0) / 60,
+    delai_min_heures: r.min_booking_notice || 0,
   }
 
   if (absences.length) return { fenetres: [], absent: true, parametres }
@@ -903,12 +906,15 @@ const impl = {
     }
 
     const libres = []
+    const buffer = dispo.parametres?.buffer_minutes || 0
     for (const f of dispo.fenetres) {
       let curseur = hhmmToMinutes(f.start)
       const fin = hhmmToMinutes(f.end)
       for (const b of busy) {
-        const bs = hhmmToMinutes(b.start)
-        const be = hhmmToMinutes(b.end)
+        // Le buffer elargit l'occupation des deux cotes : ce que le booking
+        // refuse, on ne doit pas le proposer a la main non plus.
+        const bs = hhmmToMinutes(b.start) - buffer
+        const be = hhmmToMinutes(b.end) + buffer
         if (be <= curseur || bs >= fin) continue
         if (bs > curseur) libres.push({ start: minutesToHhmm(curseur), end: minutesToHhmm(Math.min(bs, fin)) })
         curseur = Math.max(curseur, be)
