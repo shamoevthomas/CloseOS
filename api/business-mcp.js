@@ -269,7 +269,7 @@ function parisToIso(date, time) {
   return new Date(`${date}T${t}:00${offset}`).toISOString()
 }
 
-const PROSPECT_FIELDS = 'id,contact,firstName,lastName,email,phone,stage,value,source,notes,campaign_id,formula_id,assigned_to,assigned_setter,created_at,last_contact,contacted_at,noshow_at,loss_reason'
+const PROSPECT_FIELDS = 'id,contact,firstName,lastName,email,phone,stage,value,source,notes,campaign_id,formula_id,assigned_to,assigned_setter,created_at,last_contact,contacted_at,noshow_at,loss_reason,relance_step,last_relance_at,responded_at'
 const PROSPECT_WRITABLE = new Set(['contact', 'firstName', 'lastName', 'email', 'phone', 'stage', 'value', 'source', 'notes', 'campaign_id', 'formula_id', 'assigned_to', 'assigned_setter', 'loss_reason', 'loss_details', 'probability', 'payment_type', 'installments', 'timezone', 'company'])
 const BOOKING_LINK_WRITABLE = new Set(['label', 'duration', 'description', 'redirect_url', 'team_member_id', 'email_enabled', 'email_required', 'phone_enabled', 'phone_required', 'google_meet_enabled', 'multi_booking_enabled', 'multi_booking_max', 'multi_booking_period', 'multi_booking_max_per_period', 'multi_booking_gap_days'])
 const CAMPAIGN_WRITABLE = new Set(['name', 'description', 'source', 'utm_source', 'utm_medium', 'utm_campaign', 'custom_fields', 'redirect_url', 'landing_title', 'landing_subtitle', 'landing_text', 'landing_video_url', 'email_required', 'phone_required', 'formula_id', 'capture_type', 'popup_delay', 'booking_duration', 'booking_title', 'booking_description', 'booking_with', 'booking_assign_mode', 'booking_assigned_members', 'booking_distribution', 'booking_via_setter', 'setter_assign_mode', 'setter_assigned_members', 'setter_distribution', 'team_id', 'is_active'])
