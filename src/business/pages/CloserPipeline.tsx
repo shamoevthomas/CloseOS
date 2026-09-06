@@ -17,6 +17,7 @@ import { markFirstContact, markRelanceDone } from '../lib/contactChannels'
 import { useCustomStages } from '../hooks/useCustomStages'
 import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
 import { supabase } from '../../lib/supabase'
+import { phoneMatches } from '../../lib/phone'
 
 const GLASS_CARD = 'bg-white/70 dark:bg-white/5 backdrop-blur-md ring-1 ring-[#c4c7c7]/20 dark:ring-neutral-700'
 const LABEL_STYLE = 'text-[10px] uppercase tracking-widest text-stone-400 dark:text-neutral-500 font-bold'
@@ -119,6 +120,7 @@ export function CloserPipeline() {
       (p.company || '').toLowerCase().includes(q) ||
       (p.email || '').toLowerCase().includes(q) ||
       (p.phone || '').toLowerCase().includes(q) ||
+      phoneMatches(p.phone, searchQuery) ||
       (p.firstName || '').toLowerCase().includes(q) ||
       (p.lastName || '').toLowerCase().includes(q)
     )

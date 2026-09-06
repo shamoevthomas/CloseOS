@@ -25,6 +25,7 @@ import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hoo
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
+import { phoneMatches } from '../../lib/phone'
 
 const STAGES = [
   { id: 'prospect', name: 'Prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
@@ -364,6 +365,7 @@ export function BusinessPipeline() {
         (p.company || '').toLowerCase().includes(q) ||
         (p.email || '').toLowerCase().includes(q) ||
         (p.phone || '').toLowerCase().includes(q) ||
+        phoneMatches(p.phone, searchQuery) ||
         (p.firstName || '').toLowerCase().includes(q) ||
         (p.lastName || '').toLowerCase().includes(q)
       )

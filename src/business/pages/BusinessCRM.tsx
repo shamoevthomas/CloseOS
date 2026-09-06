@@ -39,6 +39,7 @@ import { BusinessPartialRelancesModal } from '../components/BusinessPartialRelan
 import { supabase } from '../../lib/supabase'
 import { useCustomStages } from '../hooks/useCustomStages'
 import toast from 'react-hot-toast'
+import { phoneMatches } from '../../lib/phone'
 
 interface BusinessTag {
   id: string
@@ -338,6 +339,7 @@ export function BusinessCRM() {
         (p.company || '').toLowerCase().includes(q) ||
         (p.email || '').toLowerCase().includes(q) ||
         (p.phone || '').toLowerCase().includes(q) ||
+        phoneMatches(p.phone, searchQuery) ||
         (p.firstName || '').toLowerCase().includes(q) ||
         (p.lastName || '').toLowerCase().includes(q)
       )

@@ -12,6 +12,7 @@ import { useBusinessLang } from '../i18n/BusinessLangContext'
 import { BusinessProspectView } from '../components/BusinessProspectView'
 import { supabase } from '../../lib/supabase'
 import { useCustomStages } from '../hooks/useCustomStages'
+import { phoneMatches } from '../../lib/phone'
 
 const ALL_STAGES = [
   { id: 'prospect', color: 'bg-blue-500', textColor: 'text-blue-700', bgLight: 'bg-blue-50', borderColor: 'border-blue-200' },
@@ -181,7 +182,8 @@ export function CloserCRM() {
           (p.email || '').toLowerCase().includes(q) ||
           (p.firstName || '').toLowerCase().includes(q) ||
           (p.lastName || '').toLowerCase().includes(q) ||
-          (p.phone || '').toLowerCase().includes(q)
+          (p.phone || '').toLowerCase().includes(q) ||
+          phoneMatches(p.phone, searchQuery)
         if (!matchesSearch) return false
       }
 

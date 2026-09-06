@@ -114,3 +114,37 @@ export function buildFullPhone(countryCode: string, localNumber: string): string
   if (!digits) return ''
   return `${countryCode} ${localNumber}`
 }
+
+/**
+ * Un numéro réduit à ses chiffres, sans indicatif ni zéro initial.
+ *
+ * Les deux moitiés du système ne stockent pas les numéros pareil : le CRM
+ * écrit « +33 6 50 16 36 90 », WhatsApp rend « 33650163690 », et un humain
+ * tape ce qui lui passe par la tête. Comparer ces trois formes en texte brut
+ * ne peut pas marcher.
+ */
+export const phoneDigits = (raw?: string | null): string => {
+  const d = (raw || '').replace(/\D/g, '')
+  return d.replace(/^0+/, '')
+}
+
+/** La requête ressemble-t-elle à un numéro plutôt qu'à un nom ? */
+export const looksLikePhone = (query: string): boolean =>
+  phoneDigits(query).length >= 4 && !/[a-zA-ZÀ-ÿ@]/.test(query)
+
+/**
+ * Est-ce que ce numéro correspond à ce qui a été tapé ?
+ *
+ * On compare les neuf derniers chiffres : ça neutralise l'indicatif, les
+ * espaces, les points, le zéro initial et le « +33 » écrit ou non. Marianne
+ * cherchait « +33650163690 » et ne trouvait pas Marion, qui est enregistrée
+ * « +33 6 50 16 36 90 » : les mêmes chiffres, séparés autrement.
+ */
+export const phoneMatches = (phone: string | null | undefined, query: string): boolean => {
+  const cible = phoneDigits(phone)
+  const cherche = phoneDigits(query)
+  if (!cible || cherche.length < 4) return false
+  const queue = (s: string) => s.slice(-9)
+  return cible.includes(cherche) || queue(cible) === queue(cherche)
+    || queue(cible).includes(queue(cherche))
+}
