@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../contexts/LanguageContext'
-import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
+import { useContactedReminders, computeRelanceBadge, relanceHeadline } from '../hooks/useContactedReminders'
 import {
   X,
   Phone,
@@ -1067,7 +1067,7 @@ export function ProspectView({
                 const nextTs = lp.discussion_next_at ? new Date(lp.discussion_next_at).getTime() : 0
                 const promptReady = responded && Date.now() >= nextTs
                 const badge = responded ? null : computeRelanceBadge(localProspect.contacted_at, lp.last_relance_at, relanceDelays, localProspect.relance_step)
-                const relanceDateLabel = badge ? new Date(badge.dueAt).toLocaleDateString(fr ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' }) : ''
+                const headline = relanceHeadline(badge, localProspect.relance_step, relanceDelays.length, lp.last_relance_at, fr)
                 const plusOneDay = () => new Date(Date.now() + 86400000).toISOString()
                 const clearResponse = { responded_at: null, discussion_next_at: null, discussion_email_sent: false } as any
                 const hoursLeft = Math.max(0, Math.ceil((nextTs - Date.now()) / 3600000))
@@ -1080,9 +1080,7 @@ export function ProspectView({
                         <div className="flex items-center gap-2 mb-3">
                           <Bell className="h-4 w-4 text-slate-500 dark:text-neutral-400" />
                           <span className="text-sm font-bold text-slate-900 dark:text-white">
-                            {badge
-                              ? relanceLabel(badge.number, fr) + (badge.due ? (fr ? ' · à faire' : ' · due') : (fr ? ` · le ${relanceDateLabel}` : ` · ${relanceDateLabel}`))
-                              : (fr ? 'Premier contact' : 'First contact')}
+                            {headline}
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-2">

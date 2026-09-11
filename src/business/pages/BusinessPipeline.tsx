@@ -21,7 +21,7 @@ import { applyUnqualification } from '../lib/unqualifiedReasons'
 import { useChannelPrompt } from '../contexts/BusinessChannelPromptContext'
 import { markFirstContact, markRelanceDone } from '../lib/contactChannels'
 import { useCustomStages, type CustomStage } from '../hooks/useCustomStages'
-import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
+import { useContactedReminders, computeRelanceBadge, relanceCardLabel } from '../hooks/useContactedReminders'
 import { supabase } from '../../lib/supabase'
 import { fromUTC } from '../../lib/timezone'
 import toast from 'react-hot-toast'
@@ -964,15 +964,18 @@ export function BusinessPipeline() {
                                         </div>
                                       )}
                                       {stage.id === 'contacted' && (() => {
-                                        const rb = (deal as any).responded_at ? null : computeRelanceBadge(deal.contacted_at, (deal as any).last_relance_at, relanceDelays, deal.relance_step)
+                                        const responded = !!(deal as any).responded_at
+                                        const rb = responded ? null : computeRelanceBadge(deal.contacted_at, (deal as any).last_relance_at, relanceDelays, deal.relance_step)
                                         const badge = rb && (rb.due || (deal.relance_step || 0) > 0) ? rb : null
-                                        if (!badge) return null
+                                        // Séquence terminée : plus d'échéance à calculer, mais on garde le compteur de relances faites.
+                                        const label = responded ? null : relanceCardLabel(badge, deal.relance_step, lang !== 'en')
+                                        if (!label) return null
                                         return (
                                           <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                                            <span className="inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300">
-                                              {relanceLabel(badge.number, lang !== 'en')}
+                                            <span className={`inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full ${badge ? 'bg-sky-100 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300' : 'bg-stone-100 dark:bg-neutral-700/50 text-stone-500 dark:text-neutral-400'}`}>
+                                              {label}
                                             </span>
-                                            {badge.due && (
+                                            {badge?.due && (
                                               <>
                                                 <span className="inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#ba1a1a]/10 dark:bg-red-500/15 text-[#ba1a1a] dark:text-red-300">
                                                   {lang === 'en' ? 'Follow up today' : 'Relance aujourd’hui'}

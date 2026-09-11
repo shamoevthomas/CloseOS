@@ -19,7 +19,7 @@ import { DMRBadge } from './DMRBadge'
 import { useBusinessAuth } from '../contexts/BusinessAuthContext'
 import { createPortal } from 'react-dom'
 import { useBusinessLang } from '../i18n/BusinessLangContext'
-import { useContactedReminders, computeRelanceBadge, relanceLabel } from '../hooks/useContactedReminders'
+import { useContactedReminders, computeRelanceBadge, relanceHeadline } from '../hooks/useContactedReminders'
 import { BookingAgendaPanel } from './BookingAgendaPanel'
 import { ReassignAppointmentButton } from './ReassignAppointmentButton'
 import { useCustomStages } from '../hooks/useCustomStages'
@@ -1237,7 +1237,7 @@ export function BusinessProspectView({
           const nextTs = local.discussion_next_at ? new Date(local.discussion_next_at).getTime() : 0
           const promptReady = responded && Date.now() >= nextTs
           const badge = responded ? null : computeRelanceBadge(local.contacted_at, local.last_relance_at, relanceDelays, local.relance_step)
-          const relanceDateLabel = badge ? new Date(badge.dueAt).toLocaleDateString(fr ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' }) : ''
+          const headline = relanceHeadline(badge, local.relance_step, relanceDelays.length, local.last_relance_at, fr)
           const plusOneDay = () => new Date(Date.now() + 86400000).toISOString()
           const clearResponse = { responded_at: null, discussion_next_at: null, discussion_email_sent: false }
           const hoursLeft = Math.max(0, Math.ceil((nextTs - Date.now()) / 3600000))
@@ -1260,9 +1260,7 @@ export function BusinessProspectView({
                     <div className="flex items-center gap-2 mb-3">
                       <Bell className="h-4 w-4 text-stone-500 dark:text-neutral-400" strokeWidth={1.5} />
                       <span className="text-sm font-business-display font-bold text-stone-900 dark:text-white">
-                        {badge
-                          ? relanceLabel(badge.number, fr) + (badge.due ? (fr ? ' · à faire' : ' · due') : (fr ? ` · le ${relanceDateLabel}` : ` · ${relanceDateLabel}`))
-                          : (fr ? 'Premier contact' : 'First contact')}
+                        {headline}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
