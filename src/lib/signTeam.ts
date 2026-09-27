@@ -119,11 +119,16 @@ export async function memberRegenerate(instanceId: string): Promise<{ token: str
 
 export const mcpConnectorUrl = (key: string) => `https://sign.closeos.fr/api/mcp/${key}`;
 
-export async function getMcpKey(): Promise<string | null> {
+/**
+ * Indice de la clé active (« sk_ab12…9f3e »), ou null si le connecteur est désactivé.
+ * La clé n'est plus stockée en clair : elle n'est visible en entier qu'au retour de generateMcpKey().
+ */
+export async function getMcpKeyHint(): Promise<string | null> {
   const { data } = await supabase.rpc('sign_get_mcp_key');
   return (data as string) || null;
 }
 
+/** Génère une nouvelle clé (l'ancienne cesse de fonctionner) et la renvoie, une seule fois. */
 export async function generateMcpKey(): Promise<string> {
   const { data, error } = await supabase.rpc('sign_generate_mcp_key');
   if (error) throw error;

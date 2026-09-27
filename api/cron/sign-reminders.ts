@@ -118,7 +118,7 @@ export default async function handler(req: Request) {
   // Contrats envoyés, non signés, avec lien.
   const { data: contracts, error } = await supabaseAdmin
     .from('sign_contracts')
-    .select('id,title,status,access_token,sent_at,reminder_started_at,last_reminder_at,contact_id,verification_email')
+    .select('id,title,status,access_token,sent_at,reminder_started_at,last_reminder_at,contact_id,verification_email,purge_hold')
     .eq('status', 'sent')
     .not('access_token', 'is', null)
     .not('sent_at', 'is', null);
@@ -142,7 +142,10 @@ export default async function handler(req: Request) {
 
       const iv = intervalForAge(daysSinceAnchor);
       if (iv === 'delete') {
-        await supabaseAdmin.from('sign_contracts').delete().eq('id', (c as any).id);
+        // Conservation légale : jamais supprimé (la base le refuserait de toute façon).
+        if ((c as any).purge_hold) { out.skipped++; continue; }
+        const { error: delErr } = await supabaseAdmin.from('sign_contracts').delete().eq('id', (c as any).id);
+        if (delErr) { out.errors++; continue; }
         out.deleted++;
         continue;
       }
