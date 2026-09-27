@@ -61,7 +61,7 @@ dans le même geste.
 
 ## 2. Tarifs & abonnement
 
-- **Formule unique à 9 € / mois**, **toutes les fonctionnalités incluses** (multi-signataire, vérif d'identité, Sign+Pay, modèles, espaces closer, certificat…). Pas de paliers.
+- **Formule unique**, trois engagements : **12 € / mois**, **30 € / trimestre** ou **108 € / an** (soit 9 € / mois), prix du checkout `api/sign-checkout.ts`. **Toutes les fonctionnalités incluses** (multi-signataire, vérif d'identité, Sign+Pay, modèles, espaces closer, certificat…). Pas de paliers.
 - **Essai 14 jours** avec **carte bancaire obligatoire** (prélèvement automatique à la fin sauf résiliation).
 - **Sans engagement**, résiliable depuis les Paramètres (portail Stripe).
 - **Inclus pour CloseOS Business** : tout titulaire d'un abonnement **Business actif** accède à Sign **sans payer** (`sign_users.subscription_exempt = true`).
