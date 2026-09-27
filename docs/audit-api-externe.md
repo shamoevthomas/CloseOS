@@ -8,7 +8,7 @@
 
 **Versionné dans le repo :**
 - les 8 Edge Functions déployées, copie conforme (commit `a3a6360`) : `sign-public`, `sign-event`, `sign-verify` v13, `sign-pay` v7, `sign-certificate` v3, `sign-rep` v3, `sign-stripe-webhook` (Edge, en plus de la route Vercel du même nom) et `sign-bootstrap` (neutralisée : répond 410, à supprimer du projet) ; réglages `verify_jwt` dans `supabase/config.toml` ;
-- le schéma Sign complet reconstitué depuis la production : `supabase/migrations/20260927_sign_baseline.sql` (23 tables, 15 policies, 10 triggers, 26 fonctions, bucket), idempotent, testé.
+- le schéma Sign complet reconstitué depuis la production : `supabase/migrations/20260927_sign_baseline.sql` (23 tables, 15 policies, 10 triggers, 24 fonctions, bucket), idempotent, testé.
 
 **Vérifié en production (lecture seule du catalogue) — corrige les « à vérifier » :**
 - RLS activée sur les 23 tables `sign_*`, **aucune policy pour `anon`** ; policies `authenticated` bornées à `user_id = auth.uid()` (ou au propriétaire du contrat parent). Tables de codes, secrets et sessions : RLS sans policy (service_role seul).
