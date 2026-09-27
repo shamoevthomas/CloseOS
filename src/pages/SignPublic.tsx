@@ -400,6 +400,7 @@ export default function SignPublic() {
     setDlError('');
     try {
       await emailSignedPdf({
+        token: token!,
         to: dlEmail.trim(),
         recipientName: dlName.trim(),
         title: contract.title,

@@ -1,4 +1,4 @@
-import { signSupabase as supabase } from './signSupabase';
+import { signSupabase as supabase, signAuthHeader } from './signSupabase';
 
 /**
  * Accès Supabase aux contrats CloseOS Sign (tables sign_*).
@@ -625,7 +625,7 @@ async function sendSignatureEmail(opts: { to: string; name: string; title: strin
 
   const res = await fetch('/api/send-email', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await signAuthHeader()) },
     body: JSON.stringify({
       sender: { email: 'support@closeos.fr', name: 'CloseOS Sign' },
       to: [{ email: opts.to }],

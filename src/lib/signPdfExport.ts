@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { isSignatureType, formatDateFR, cursiveTextToDataUrl, isChecked, CHECKBOX_DEFAULT_TEXT } from './signFieldsMeta';
 import type { SignFreeField, OverlayImage } from './signContracts';
+import { signAuthHeader } from './signSupabase';
 
 /**
  * Génération du PDF du contrat signé — méthode robuste :
@@ -219,10 +220,26 @@ function safeName(title: string): string {
   return (title || 'contrat').replace(/[^a-z0-9-_]+/gi, '-').slice(0, 60);
 }
 
-/** Envoie par email une copie PDF du document signé (pièce jointe Brevo). */
-export async function emailSignedPdf(opts: GenOpts & { to: string; title: string; recipientName?: string }): Promise<void> {
+/**
+ * Envoie par email une copie PDF du document signé (pièce jointe Brevo).
+ * Avec `token` (signataire sans compte) : route dédiée /api/sign-send-copy, qui fixe le contenu du mail.
+ * Sans token (propriétaire connecté, éditeur) : relais /api/send-email authentifié par la session Sign.
+ */
+export async function emailSignedPdf(opts: GenOpts & { to: string; title: string; recipientName?: string; token?: string }): Promise<void> {
   const blob = await buildSignedPdfBlob(opts);
   const base64 = await blobToBase64(blob);
+  if (opts.token) {
+    const res = await fetch('/api/sign-send-copy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: opts.token, to: opts.to, recipientName: opts.recipientName || '', pdfB64: base64 }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => '');
+      throw new Error(`Email copie PDF échoué (${res.status}) ${t}`);
+    }
+    return;
+  }
   const greeting = opts.recipientName ? `Bonjour ${opts.recipientName},<br/>` : '';
   const html = `
   <div style="background:#191E1E;padding:32px 0;font-family:Helvetica,Arial,sans-serif;">
@@ -242,7 +259,7 @@ export async function emailSignedPdf(opts: GenOpts & { to: string; title: string
 
   const res = await fetch('/api/send-email', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await signAuthHeader()) },
     body: JSON.stringify({
       sender: { email: 'support@closeos.fr', name: 'CloseOS Sign' },
       to: [{ email: opts.to }],

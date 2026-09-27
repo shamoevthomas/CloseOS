@@ -294,6 +294,10 @@
       "destination": "/api/email?action=send"
     },
     {
+      "source": "/api/sign-send-copy",
+      "destination": "/api/email?action=sign-copy"
+    },
+    {
       "source": "/api/welcome-email",
       "destination": "/api/email?action=welcome"
     },
