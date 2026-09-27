@@ -1,0 +1,28 @@
+# Réglages des Edge Functions CloseOS Sign (projet qwjvdwpixewsctircibl).
+# verify_jwt reflète la configuration déployée : les fonctions signataire/closer sont appelées
+# sans session (autorisation par token dans le corps), sign-bootstrap exige un JWT.
+project_id = "qwjvdwpixewsctircibl"
+
+[functions.sign-public]
+verify_jwt = false
+
+[functions.sign-event]
+verify_jwt = false
+
+[functions.sign-verify]
+verify_jwt = false
+
+[functions.sign-pay]
+verify_jwt = false
+
+[functions.sign-certificate]
+verify_jwt = false
+
+[functions.sign-rep]
+verify_jwt = false
+
+[functions.sign-stripe-webhook]
+verify_jwt = false
+
+[functions.sign-bootstrap]
+verify_jwt = true
