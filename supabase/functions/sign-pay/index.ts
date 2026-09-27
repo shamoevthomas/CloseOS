@@ -5,6 +5,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { bearerToken, internalEmailHeaders, safeOrigin } from "../_shared/sign-guards.ts";
 import Stripe from "https://esm.sh/stripe@17.7.0?target=denonext";
 
 const cors = {
@@ -21,6 +22,20 @@ const PAY_METHODS = ["card", "link", "amazon_pay", "klarna"];
 const OPTIONAL_METHODS = ["link", "amazon_pay", "klarna"]; // retirables si non activés sur le compte
 // Abonnement (récurrent) : seules card + link gèrent le prélèvement répété.
 const SUB_METHODS = ["card", "link"];
+
+// Secret partagé avec le relais email (api/email.ts) : variable d'environnement, sinon sign_secrets.
+let EMAIL_HEADERS: Record<string, string> | null = null;
+// deno-lint-ignore no-explicit-any
+async function loadEmailHeaders(supabase: any): Promise<void> {
+  if (EMAIL_HEADERS) return;
+  let secret = Deno.env.get("INTERNAL_EMAIL_SECRET") || "";
+  if (!secret) {
+    const { data } = await supabase.from("sign_secrets").select("value").eq("name", "internal_email_secret").maybeSingle();
+    secret = (data?.value || "").trim();
+  }
+  EMAIL_HEADERS = internalEmailHeaders(secret || null);
+}
+const emailHeaders = () => EMAIL_HEADERS ?? internalEmailHeaders(null);
 
 // deno-lint-ignore no-explicit-any
 async function getStripe(supabase: any): Promise<Stripe | null> {
@@ -91,7 +106,7 @@ function signInviteHtml(title: string, link: string, name: string): string {
   return `<div style="background:#191E1E;padding:32px 0;font-family:Helvetica,Arial,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#222828;border:1px solid #3A4242;border-radius:12px;overflow:hidden;"><tr><td style="padding:28px 32px 8px;"><span style="color:#F3F4F6;font-size:18px;font-weight:700;">CloseOS <span style="color:#CEFF8F;">Sign</span></span></td></tr><tr><td style="padding:8px 32px 0;"><h1 style="color:#ffffff;font-size:22px;margin:12px 0 8px;">Vous avez un document à signer</h1><p style="color:#A1A9A9;font-size:14px;line-height:1.6;margin:0 0 4px;">Bonjour ${name || ""},<br/>Vous êtes invité(e) à signer : <strong style="color:#F3F4F6;">${title}</strong>.</p></td></tr><tr><td style="padding:24px 32px;"><a href="${link}" style="display:inline-block;background:#CEFF8F;color:#191E1E;font-weight:700;font-size:15px;text-decoration:none;padding:14px 28px;border-radius:8px;">Consulter &amp; signer</a></td></tr></table></td></tr></table></div>`;
 }
 async function postEmail(to: string, subject: string, htmlContent: string): Promise<boolean> {
-  try { const res = await fetch("https://close-os.vercel.app/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sender: { email: "support@closeos.fr", name: "CloseOS Sign" }, to: [{ email: to }], subject, htmlContent }) }); return res.ok; } catch { return false; }
+  try { const res = await fetch("https://close-os.vercel.app/api/send-email", { method: "POST", headers: emailHeaders(), body: JSON.stringify({ sender: { email: "support@closeos.fr", name: "CloseOS Sign" }, to: [{ email: to }], subject, htmlContent }) }); return res.ok; } catch { return false; }
 }
 
 // deno-lint-ignore no-explicit-any
@@ -130,6 +145,7 @@ Deno.serve(async (req: Request) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const stripe = await getStripe(supabase);
   if (!stripe) return json({ ok: false, error: "stripe_not_configured" }, 503);
+  await loadEmailHeaders(supabase);
   const ip = clientIp(req);
   const ua = req.headers.get("user-agent");
 
@@ -137,19 +153,29 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const action = body.action;
 
+    // Connexion Stripe : réservée au propriétaire connecté. L'ownerId du corps n'est plus pris en
+    // compte (n'importe qui pouvait lier un compte Stripe au compte d'un autre).
+    if (action === "connect" || action === "connect-status") {
+      const jwt = bearerToken(req.headers);
+      const { data: auth } = jwt ? await supabase.auth.getUser(jwt) : { data: { user: null } };
+      const sessionUser = auth?.user?.id ?? null;
+      if (!sessionUser) return json({ ok: false, error: "unauthorized" }, 401);
+      const { data: isOwner } = await supabase.from("sign_users").select("id").eq("id", sessionUser).maybeSingle();
+      if (!isOwner) return json({ ok: false, error: "unauthorized" }, 403);
+      body.ownerId = sessionUser;
+    }
+
     if (action === "connect") {
       const { ownerId, email, origin } = body;
-      if (!ownerId) return json({ ok: false, error: "ownerId" }, 400);
       const { data: u } = await supabase.from("sign_users").select("stripe_account_id").eq("id", ownerId).maybeSingle();
       let accountId = u?.stripe_account_id as string | undefined;
       if (!accountId) { const account = await stripe.accounts.create({ type: "standard", email: email || undefined }); accountId = account.id; await supabase.from("sign_users").update({ stripe_account_id: accountId }).eq("id", ownerId); }
-      const base = (origin || UNLOCK_BASE).replace(/\/$/, "");
+      const base = safeOrigin(origin);
       const link = await stripe.accountLinks.create({ account: accountId, return_url: `${base}/sign/app/profil?tab=parametres&stripe_connected=1`, refresh_url: `${base}/sign/app/profil?tab=parametres`, type: "account_onboarding" });
       return json({ ok: true, url: link.url });
     }
     if (action === "connect-status") {
       const { ownerId } = body;
-      if (!ownerId) return json({ ok: false, error: "ownerId" }, 400);
       const { data: u } = await supabase.from("sign_users").select("stripe_account_id").eq("id", ownerId).maybeSingle();
       if (!u?.stripe_account_id) return json({ ok: true, connected: false });
       const acct = await stripe.accounts.retrieve(u.stripe_account_id);

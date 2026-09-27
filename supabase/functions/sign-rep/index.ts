@@ -14,6 +14,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { internalEmailHeaders } from "../_shared/sign-guards.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -30,6 +31,20 @@ const MAX_CODE_ATTEMPTS = 5;
 const RESEND_COOLDOWN_MS = 60_000;
 const SEND_EMAIL_URL = "https://close-os.vercel.app/api/send-email";
 
+// Secret partagé avec le relais email (api/email.ts) : variable d'environnement, sinon sign_secrets.
+let EMAIL_HEADERS: Record<string, string> | null = null;
+// deno-lint-ignore no-explicit-any
+async function loadEmailHeaders(supabase: any): Promise<void> {
+  if (EMAIL_HEADERS) return;
+  let secret = Deno.env.get("INTERNAL_EMAIL_SECRET") || "";
+  if (!secret) {
+    const { data } = await supabase.from("sign_secrets").select("value").eq("name", "internal_email_secret").maybeSingle();
+    secret = (data?.value || "").trim();
+  }
+  EMAIL_HEADERS = internalEmailHeaders(secret || null);
+}
+const emailHeaders = () => EMAIL_HEADERS ?? internalEmailHeaders(null);
+
 function genToken(): string { return crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, ""); }
 function maskEmail(email: string): string {
   const [l, d] = (email || "").split("@");
@@ -38,7 +53,7 @@ function maskEmail(email: string): string {
 }
 async function postEmail(to: string, subject: string, htmlContent: string): Promise<boolean> {
   try {
-    const res = await fetch(SEND_EMAIL_URL, { method: "POST", headers: { "Content-Type": "application/json" },
+    const res = await fetch(SEND_EMAIL_URL, { method: "POST", headers: emailHeaders(),
       body: JSON.stringify({ sender: { email: "support@closeos.fr", name: "CloseOS Sign" }, to: [{ email: to }], subject, htmlContent }) });
     return res.ok;
   } catch { return false; }
@@ -116,6 +131,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "method" }, 405);
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  await loadEmailHeaders(supabase);
   try {
     const body = await req.json();
     const { action, repToken, deviceToken } = body;

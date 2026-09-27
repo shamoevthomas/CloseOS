@@ -4,10 +4,12 @@
 // empreintes sur les OCTETS REÇUS (jamais un hash fourni par le client) et gèle le fichier stocké
 // dans le bucket privé (source unique). À la finalisation, le PDF final (doc+certificat) est envoyé
 // automatiquement EN PIÈCE JOINTE à toutes les parties (émetteur + signataires) via Brevo.
-// verify_jwt=false (accès par token signataire ou contractId).
+// verify_jwt=false. Accès : token du signataire, ou contractId + session du propriétaire du contrat
+// (régénération depuis l'éditeur). `verify` reste public : il ne renvoie que titre et empreintes.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { bearerToken, certificateAccess, internalEmailHeaders } from "../_shared/sign-guards.ts";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1?target=denonext";
 
 const cors = {
@@ -19,6 +21,20 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 const clientIp = (req: Request): string | null => (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || null;
 const BUCKET = "sign-documents";
 const SEND_EMAIL_URL = "https://close-os.vercel.app/api/send-email";
+
+// Secret partagé avec le relais email (api/email.ts) : variable d'environnement, sinon sign_secrets.
+let EMAIL_HEADERS: Record<string, string> | null = null;
+// deno-lint-ignore no-explicit-any
+async function loadEmailHeaders(supabase: any): Promise<void> {
+  if (EMAIL_HEADERS) return;
+  let secret = Deno.env.get("INTERNAL_EMAIL_SECRET") || "";
+  if (!secret) {
+    const { data } = await supabase.from("sign_secrets").select("value").eq("name", "internal_email_secret").maybeSingle();
+    secret = (data?.value || "").trim();
+  }
+  EMAIL_HEADERS = internalEmailHeaders(secret || null);
+}
+const emailHeaders = () => EMAIL_HEADERS ?? internalEmailHeaders(null);
 
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", bytes);
@@ -73,7 +89,7 @@ async function emailFinalToParties(supabase: any, contract: any, finalBytes: Uin
   for (const to of recips) {
     await fetch(SEND_EMAIL_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: emailHeaders(),
       body: JSON.stringify({
         sender: { email: "support@closeos.fr", name: "CloseOS Sign" },
         to: [{ email: to }],
@@ -86,15 +102,28 @@ async function emailFinalToParties(supabase: any, contract: any, finalBytes: Uin
 }
 
 // deno-lint-ignore no-explicit-any
-async function resolveContractId(supabase: any, body: any): Promise<string | null> {
-  if (body.token) {
-    const { data: s } = await supabase.from("sign_contract_signers").select("contract_id").eq("access_token", body.token).maybeSingle();
-    if (s?.contract_id) return s.contract_id;
-    const { data: c } = await supabase.from("sign_contracts").select("id").eq("access_token", body.token).maybeSingle();
-    if (c?.id) return c.id;
+async function contractIdFromToken(supabase: any, token: unknown): Promise<string | null> {
+  if (!token) return null;
+  const { data: s } = await supabase.from("sign_contract_signers").select("contract_id").eq("access_token", token).maybeSingle();
+  if (s?.contract_id) return s.contract_id;
+  const { data: c } = await supabase.from("sign_contracts").select("id").eq("access_token", token).maybeSingle();
+  return c?.id ?? null;
+}
+
+// Signataire (token) ou propriétaire connecté (contractId + JWT) ; un contractId seul ne suffit plus.
+// deno-lint-ignore no-explicit-any
+async function resolveContractId(supabase: any, req: Request, body: any): Promise<{ contractId: string } | { error: string }> {
+  const tokenContractId = await contractIdFromToken(supabase, body.token);
+  const requestedContractId = body.contractId ? String(body.contractId) : null;
+  let sessionUserId: string | null = null;
+  let ownerOfRequested: string | null = null;
+  if (!tokenContractId && requestedContractId) {
+    const jwt = bearerToken(req.headers);
+    if (jwt) sessionUserId = (await supabase.auth.getUser(jwt)).data?.user?.id ?? null;
+    const { data: c } = await supabase.from("sign_contracts").select("user_id").eq("id", requestedContractId).maybeSingle();
+    ownerOfRequested = c?.user_id ?? null;
   }
-  if (body.contractId) return body.contractId;
-  return null;
+  return certificateAccess({ tokenContractId, requestedContractId, sessionUserId, ownerOfRequested });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -127,6 +156,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "method" }, 405);
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  await loadEmailHeaders(supabase);
 
   try {
     const body = await req.json();
@@ -139,8 +169,9 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, title: c.title, originalHash: c.document_hash, sealedHash: c.sealed_hash, certificateHash: c.certificate_hash, certifiedAt: c.certified_at });
     }
 
-    const contractId = await resolveContractId(supabase, body);
-    if (!contractId) return json({ ok: false, error: "contract" });
+    const access = await resolveContractId(supabase, req, body);
+    if ("error" in access) return json({ ok: false, error: access.error }, access.error === "unauthorized" ? 401 : 200);
+    const contractId = access.contractId;
     const { data: contract } = await supabase.from("sign_contracts")
       .select("id,title,owner_email,status,signing_order,verification_method,payment_enabled,payment_amount,payment_mode,currency,document_hash,sealed_hash,certificate_hash,certificate_path,certificate_id,certified_at")
       .eq("id", contractId).maybeSingle();
