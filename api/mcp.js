@@ -1,20 +1,23 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // CloseOS Sign — serveur MCP (Model Context Protocol) pour Claude.ai.
 // Transport : Streamable HTTP (JSON-RPC sur POST), stateless (serverless Vercel).
-// Auth : jeton secret en query (?key=...) comparé à process.env.SIGN_MCP_SECRET.
-//   → URL du connecteur : https://sign.closeos.fr/api/mcp/<SECRET>  (ou ?key=<SECRET>)
+// Auth : clé MCP du propriétaire (sign_users.mcp_key_hash = SHA-256 de la clé), passée en
+//   en-tête `Authorization: Bearer <clé>` ou dans l'URL du connecteur
+//   https://sign.closeos.fr/api/mcp/<clé> (les connecteurs Claude ne savent passer que l'URL).
 //
 // AUCUNE dépendance npm importée (pattern éprouvé, cf. ClosersLab) : on tape Supabase en
 // REST via fetch() → la fonction ne peut pas crasher au chargement (le bundling de
 // @modelcontextprotocol/sdk + pdf-lib faisait échouer l'invocation Vercel).
 //
 // GARDE-FOU : ne crée QUE des brouillons (status='draft') et refuse de modifier un contrat
-// envoyé/signé/verrouillé. Mono-compte : agit pour SIGN_OWNER_EMAIL via la clé service-role.
+// envoyé/signé/verrouillé. Multi-comptes : chaque clé agit pour son seul propriétaire, via la
+// clé service-role et un filtre user_id explicite sur chaque requête.
 // Note PDF : sans pdf-lib, les dimensions de page sont approximées en A4 (794×1122 px) ;
 // le placement x_pct/y_pct reste bon pour de l'A4 et est ajustable dans l'éditeur.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { assertPdf, corsOrigin, extractMcpKey, fetchPdfSafely, hashMcpKey, PDF_MAX_BYTES } from './_lib/sign-security.js'
 
 export const config = { maxDuration: 30 }
 
@@ -24,7 +27,6 @@ const als = new AsyncLocalStorage()
 
 const SB_URL = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '')
 const SB_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
-const OWNER_EMAIL = (process.env.SIGN_OWNER_EMAIL || '').trim()
 const APP_URL = (process.env.SIGN_APP_URL || 'https://sign.closeos.fr').trim().replace(/\/+$/, '')
 const REST = `${SB_URL}/rest/v1`
 
@@ -80,18 +82,17 @@ async function ownerId() {
 }
 function ownerEmailCtx() { const s = als.getStore(); return (s && s.ownerEmail) || '' }
 
-// Résout le propriétaire à partir de la clé de l'URL :
-//  1) clé stockée par propriétaire (sign_users.mcp_key) — mode public/multi-comptes ;
-//  2) repli : ancienne clé globale SIGN_MCP_SECRET + SIGN_OWNER_EMAIL (compat existant).
+// Résout le propriétaire à partir de sa clé : recherche par empreinte SHA-256 (sign_users.mcp_key_hash).
+// Repli transitoire sur l'ancienne colonne en clair, le temps que la migration 20260927_sign_security
+// convertisse les clés existantes ; il ne trouve plus rien une fois la migration appliquée.
 async function resolveOwnerByKey(key) {
-  if (!key) return null
-  const rows = await sbSelect(`sign_users?mcp_key=eq.${encodeURIComponent(key)}&select=id,email&limit=1`)
+  if (!key || key.length < 16) return null
+  let rows = null
+  try {
+    rows = await sbSelect(`sign_users?mcp_key_hash=eq.${hashMcpKey(key)}&select=id,email&limit=1`)
+  } catch { rows = null } // colonne absente tant que la migration n'est pas appliquée
+  if (!rows || !rows[0]) rows = await sbSelect(`sign_users?mcp_key=eq.${encodeURIComponent(key)}&select=id,email&limit=1`)
   if (rows && rows[0]) return { ownerId: rows[0].id, ownerEmail: rows[0].email || '' }
-  const legacy = (process.env.SIGN_MCP_SECRET || '').trim()
-  if (legacy && key === legacy && OWNER_EMAIL) {
-    const r = await sbSelect(`sign_users?email=ilike.${encodeURIComponent(OWNER_EMAIL)}&select=id,email&limit=1`)
-    if (r && r[0]) return { ownerId: r[0].id, ownerEmail: r[0].email || OWNER_EMAIL }
-  }
   return null
 }
 async function getOwnedContract(id, cols) {
@@ -99,7 +100,7 @@ async function getOwnedContract(id, cols) {
   const rows = await sbSelect(`sign_contracts?id=eq.${encodeURIComponent(id)}&select=${cols}&limit=1`)
   if (!rows || !rows[0]) throw new Error(`Contrat ${id} introuvable.`)
   const c = rows[0]
-  if (c.user_id && c.user_id !== uid) throw new Error(`Le contrat ${id} n'appartient pas à ton compte.`)
+  if (c.user_id !== uid) throw new Error(`Le contrat ${id} n'appartient pas à ton compte.`)
   return c
 }
 async function getOwnedFolder(id) {
@@ -123,10 +124,10 @@ async function loadPdf(a) {
   if (a.pdf_base64) {
     const b64 = a.pdf_base64.includes(',') ? a.pdf_base64.split(',')[1] : a.pdf_base64
     bytes = Buffer.from(b64, 'base64')
+    if (bytes.byteLength > PDF_MAX_BYTES) throw new Error(`PDF trop volumineux (max ${Math.round(PDF_MAX_BYTES / 1048576)} Mo).`)
+    assertPdf(bytes)
   } else if (a.pdf_url) {
-    const r = await fetch(a.pdf_url)
-    if (!r.ok) throw new Error(`Téléchargement du PDF échoué (${r.status})`)
-    bytes = Buffer.from(await r.arrayBuffer())
+    bytes = await fetchPdfSafely(a.pdf_url)
   } else {
     throw new Error('Fournir pdf_base64 ou pdf_url.')
   }
@@ -505,13 +506,13 @@ const impl = {
     return { contract_id: c.id, updated: Object.keys(patch).filter((k) => k !== 'pdf_data'), editor_url: `${APP_URL}/sign/app/contrat/${c.id}` }
   },
 
-  // ── Supprimer un contrat (garde-fou sur les contrats signés/certifiés) ──
+  // ── Supprimer un contrat (jamais un contrat signé, payé, certifié ou sous conservation) ──
   async sign_delete_contract(args) {
     if (!args.contract_id) throw new Error('contract_id requis.')
-    const c = await getOwnedContract(args.contract_id, 'id,user_id,title,status,certificate_id')
-    const protectedC = c.status === 'signed' || c.status === 'paid' || !!c.certificate_id
-    if (protectedC && !args.confirm) {
-      throw new Error(`Le contrat « ${c.title} » est '${c.status}'${c.certificate_id ? '/certifié' : ''} : le supprimer efface la preuve juridique. Rappelle avec confirm=true pour forcer.`)
+    const c = await getOwnedContract(args.contract_id, 'id,user_id,title,status,certificate_id,purge_hold')
+    if (c.purge_hold) throw new Error(`Le contrat « ${c.title} » est sous conservation légale : suppression impossible.`)
+    if (c.status === 'signed' || c.status === 'paid' || c.certificate_id) {
+      throw new Error(`Le contrat « ${c.title} » est '${c.status}'${c.certificate_id ? '/certifié' : ''} : c'est une preuve juridique, il ne peut pas être supprimé par le connecteur.`)
     }
     for (const t of ['sign_contract_fields', 'sign_contract_signers', 'sign_signature_events', 'sign_verification_codes', 'sign_otp_codes']) {
       try { await sbDelete(t, `contract_id=eq.${c.id}`) } catch (e) { /* table sans contract_id ou déjà vide */ }
@@ -725,8 +726,8 @@ const TOOLS = [
   },
   {
     name: 'sign_delete_contract',
-    description: "Supprime définitivement un contrat (et ses champs, signataires, événements). Un contrat signé/payé/certifié nécessite confirm=true (sa suppression efface la preuve juridique).",
-    inputSchema: { type: 'object', properties: { contract_id: { type: 'string' }, confirm: { type: 'boolean', description: "true pour forcer la suppression d'un contrat signé/certifié" } }, required: ['contract_id'] },
+    description: "Supprime définitivement un contrat non signé (et ses champs, signataires, événements). Refusé pour un contrat signé, payé, certifié ou sous conservation légale : c'est une preuve juridique.",
+    inputSchema: { type: 'object', properties: { contract_id: { type: 'string' }, confirm: { type: 'boolean', description: 'Ignoré (conservé pour compatibilité).' } }, required: ['contract_id'] },
   },
   {
     name: 'sign_get_signer_links',
@@ -797,13 +798,18 @@ async function handleMessage(msg) {
 
 // ───────── Handler HTTP (Vercel) ─────────
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Headers', 'content-type, mcp-session-id, mcp-protocol-version')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  // Appelé de serveur à serveur : pas de CORS ouvert, seulement les origines Sign.
+  const origin = corsOrigin(req.headers && req.headers.origin)
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Vary', 'Origin')
+    res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type, mcp-session-id, mcp-protocol-version')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  }
   if (req.method === 'OPTIONS') return res.status(204).end()
 
-  // Résolution du propriétaire à partir de la clé de l'URL (multi-comptes).
-  const key = String((req.query && req.query.key) || '').trim()
+  // Clé en en-tête Bearer, ou dans l'URL du connecteur (toléré : les connecteurs Claude n'ont que l'URL).
+  const { key } = extractMcpKey(req)
   let ctx = null
   try { ctx = await resolveOwnerByKey(key) } catch { ctx = null }
   if (!ctx) return res.status(401).json({ error: 'unauthorized' })

@@ -90,7 +90,7 @@ async function getOwnedContract(contractId, cols = '*') {
     .maybeSingle()
   if (error) throw new Error(`Lecture du contrat échouée : ${error.message}`)
   if (!data) throw new Error(`Contrat ${contractId} introuvable.`)
-  if (data.user_id && data.user_id !== uid) throw new Error(`Le contrat ${contractId} n'appartient pas à ${OWNER_EMAIL}.`)
+  if (data.user_id !== uid) throw new Error(`Le contrat ${contractId} n'appartient pas à ${OWNER_EMAIL}.`)
   return data
 }
 
