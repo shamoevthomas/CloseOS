@@ -1,6 +1,40 @@
 # Audit — CloseOS Sign comme moteur de signature externe (API, webhooks, marque blanche)
 
-*Audit en lecture seule du repo `closeros-mvp`, 27 septembre 2026. Aucun fichier de code n'a été modifié.*
+*Audit en lecture seule du repo `closeros-mvp`, 27 septembre 2026. Mis à jour à la fin du lot 1 (branche `sign/lot1-securite`) : voir « État après le lot 1 » ci-dessous. Les sections 1 à 6 décrivent l'état **avant** le lot 1, corrigées là où la vérification en production a levé un « à vérifier ».*
+
+## État après le lot 1 (sécuriser et versionner)
+
+**Statut :** code corrigé et testé sur la branche ; **pas encore déployé** (migrations, Edge Functions et Vercel à déployer dans l'ordre indiqué dans la PR). Tant que ce n'est pas fait, les failles restent ouvertes en production.
+
+**Versionné dans le repo :**
+- les 8 Edge Functions déployées, copie conforme (commit `a3a6360`) : `sign-public`, `sign-event`, `sign-verify` v13, `sign-pay` v7, `sign-certificate` v3, `sign-rep` v3, `sign-stripe-webhook` (Edge, en plus de la route Vercel du même nom) et `sign-bootstrap` (neutralisée : répond 410, à supprimer du projet) ; réglages `verify_jwt` dans `supabase/config.toml` ;
+- le schéma Sign complet reconstitué depuis la production : `supabase/migrations/20260927_sign_baseline.sql` (23 tables, 15 policies, 10 triggers, 26 fonctions, bucket), idempotent, testé.
+
+**Vérifié en production (lecture seule du catalogue) — corrige les « à vérifier » :**
+- RLS activée sur les 23 tables `sign_*`, **aucune policy pour `anon`** ; policies `authenticated` bornées à `user_id = auth.uid()` (ou au propriétaire du contrat parent). Tables de codes, secrets et sessions : RLS sans policy (service_role seul).
+- Bucket `sign-documents` : **privé**, aucune policy Storage (accès serveur uniquement). Pas de limite de taille ni de type.
+- Triggers de garde présents : `sign_guard_signing`, `sign_signers_guard`, `sign_cert_guard`, `sign_events_immutable`. Ce dernier **autorise** la suppression des événements par cascade quand un propriétaire supprime son contrat depuis l'UI : la preuve d'un contrat signé reste effaçable par son propriétaire (hors `purge_hold`, désormais protégé).
+- `sign-public` ne renvoie que le contrat du token et les signataires sans leurs listes blanches ni leurs tokens.
+
+**Failles supplémentaires trouvées pendant le lot 1 (corrigées sur la branche) :**
+
+| # | Faille | Correctif |
+|---|---|---|
+| 9 | `sign_clone_template_to_instance` et `sign_regenerate_instance_internal` (SECURITY DEFINER) **exécutables par `anon`** : avec un id de modèle, n'importe qui créait une instance dans le compte du propriétaire et lisait le modèle ; avec un id d'instance, réinitialisait un contrat en cours. Reproduit sur la base locale. | droits retirés à `anon`/`authenticated` (service_role seul) |
+| 10 | Policy `sign_users_owner` en écriture sur toute la ligne : un propriétaire pouvait se mettre `subscription_exempt = true`, changer son statut d'abonnement, son compte Stripe ou sa clé MCP ; un compte CloseOS pouvait créer sa ligne `sign_users` déjà exemptée. Reproduit. | trigger `sign_users_guard` sur `current_user` (le provisionnement Business SECURITY DEFINER reste permis) |
+| 11 | `sign-certificate` `seal` / `finalize` acceptaient aussi un simple `contractId` : scellement d'un contrat terminé avec un PDF arbitraire | token du signataire ou session du propriétaire exigés |
+| 12 | 2FA d'appareil : code à 6 chiffres vérifié sans limite d'essais | session exigée, 5 essais par code, 60 s entre deux envois |
+
+**Les 8 failles du §5.3 : toutes corrigées sur la branche** (détail dans le tableau §5.3).
+
+**Reste ouvert, hors lot 1 :**
+- La 2FA d'appareil n'est imposée que par l'interface : une personne qui a le mot de passe obtient un JWT valable pour PostgREST sans passer par le code. La corriger demande d'exiger un facteur côté base (claim AAL ou session d'appareil vérifiée côté serveur) : chantier à part.
+- Un signataire peut toujours sceller son propre contrat avec un PDF de son choix, puisque le PDF final est produit par son navigateur : réglé par le lot 3 (génération serveur).
+- Erreur de typage déjà présente dans la version déployée de `sign-certificate` (`crypto.subtle.digest` sur `Uint8Array`), sans effet à l'exécution.
+
+**Tests :** `npm test` (Vitest), 101 cas : SQL sur Postgres local (`SIGN_TEST_PG`), handlers Vercel, règles des Edge Functions. Chaque correctif a été vérifié en contre-épreuve : ses tests échouent sur l'ancien code.
+
+---
 
 **Sources et fiabilité.**
 - Toute affirmation renvoie à un fichier du repo (`fichier:ligne`).
@@ -222,35 +256,35 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
 
 - **Base partagée :** Sign partage le projet Supabase de CloseOS, avec la même URL et la même clé anon (`src/lib/signSupabase.ts:7-10` vs `src/lib/supabase.ts:3-4`). La clé service-role utilisée par l'API Sign donne donc accès à **toutes** les données CloseOS.
 - **PDF source et signatures :** stockés en **base64 dans Postgres**, dans `sign_contracts.pdf_data`, `sign_contract_fields.value` et `inline_values` (`src/lib/signContracts.ts:205-209`, `api/mcp.js:133`, `CLOSEOS_SIGN.md:147,339`).
-- **PDF scellé et certificat :** bucket `sign-documents`, décrit comme privé, servi par URL signée de 600 s (`CLOSEOS_SIGN.md:267-269,292,354`, `src/lib/signCertificate.ts:242-246`). Aucune référence au bucket dans le repo : caractère privé et policies Storage **à vérifier**.
+- **PDF scellé et certificat :** bucket `sign-documents`, servi par URL signée de 600 s (`supabase/functions/sign-certificate/index.ts`). **Vérifié :** bucket privé, aucune policy Storage, accès service_role uniquement.
 - **Rétention annoncée :** 5 ans pour le PDF final et le journal ; legal hold via `purge_hold` (`CLOSEOS_SIGN.md:309-315`). **Non construit** : purge automatique et cascade Storage « à construire » (`CLOSEOS_SIGN.md:319,409`).
   - Seule purge réelle : suppression à 90 jours des contrats restés `sent` (`api/cron/sign-reminders.ts:35`, `144-146`). Les fichiers Storage ne sont pas nettoyés.
 - **Accès d'un client externe :**
   - lecture des métadonnées : oui ;
   - lecture du PDF ou du certificat : **non**, car `pdf_data` est exclu de `sign_get_contract` (`api/mcp.js:341`) ;
-  - suppression : **oui**, via `sign_delete_contract`, y compris pour un contrat signé. Il suffit de passer `confirm=true`, sans aucun contrôle de `purge_hold` (`api/mcp.js:509-520`). **La preuve peut être effacée.**
+  - suppression : **oui**, via `sign_delete_contract`, y compris pour un contrat signé. Il suffit de passer `confirm=true`, sans aucun contrôle de `purge_hold` (`api/mcp.js:509-520`). **La preuve peut être effacée.** *Lot 1 : refusé pour signé/payé/certifié ; `purge_hold` bloqué en base pour tous les rôles.*
 
 ### 5.2 RLS et cloisonnement
 
 - **Versionné :** seules deux tables ont leur RLS dans le repo.
   - `sign_contract_folders` : policy `owner_all`, `user_id = auth.uid()` (`supabase/migrations/20260705_sign_contract_folders.sql:12-13`).
   - `sign_owner_sign_sessions` : RLS sans policy, donc service-role uniquement (`supabase/migrations/20260705_sign_owner_sign_sessions.sql:20-21`).
-- **Non versionné :** la création, la RLS, les triggers de garde (`sign_guard_signing`, `sign_events_immutable`…, `CLOSEOS_SIGN.md:286-290`) et les RPC des tables de base. La doc affirme « pas de policy anon, authenticated scopées `user_id = auth.uid()` » (`CLOSEOS_SIGN.md:85-87`) : **à vérifier dans le dashboard Supabase**.
-- **Signataire anonyme :** il passe par des Edge Functions en service-role, avec un token dans le corps de la requête ; `src/pages/SignPublic.tsx` ne fait aucun appel direct à la base. Le cloisonnement « le signataire ne voit que son contrat » repose sur `sign-public`, dont le code est absent du repo : **à vérifier**.
-- **API MCP :** le cloisonnement se fait par filtres manuels `user_id=eq.<uid>`. **Faille :** `getOwnedContract` accepte un contrat dont `user_id` est NULL (`api/mcp.js:102` ; même défaut en `sign-mcp/index.mjs:93`).
+- **Non versionné avant le lot 1 :** la création, la RLS, les triggers de garde et les RPC des tables de base. **Vérifié en production et désormais versionné** (`supabase/migrations/20260927_sign_baseline.sql`) : aucune policy `anon`, policies `authenticated` bornées au propriétaire. Deux exceptions graves, corrigées au lot 1 : failles 9 et 10 (voir « État après le lot 1 »).
+- **Signataire anonyme :** il passe par des Edge Functions en service-role, avec un token dans le corps de la requête ; `src/pages/SignPublic.tsx` ne fait aucun appel direct à la base. **Vérifié :** `sign-public` (désormais dans `supabase/functions/sign-public/index.ts`) ne renvoie que le contrat du token, sans listes blanches ni tokens des autres signataires.
+- **API MCP :** le cloisonnement se fait par filtres manuels `user_id=eq.<uid>`. **Faille :** `getOwnedContract` accepte un contrat dont `user_id` est NULL (`api/mcp.js:102` ; même défaut en `sign-mcp/index.mjs:93`). *Lot 1 : corrigé dans les deux fichiers. En base, `user_id` est `not null`.*
 
 ### 5.3 Failles relevées (à corriger avant toute ouverture)
 
-| # | Faille | Source |
-|---|---|---|
-| 1 | `/api/send-email` : relais Brevo **sans authentification**, avec expéditeur et contenu libres | `api/email.ts:53-88` |
-| 2 | `sign-pay` actions `connect` / `connect-status` : `ownerId` lu dans le corps, sans JWT. L'appelant peut créer ou lier un compte Stripe à n'importe quel propriétaire, et `origin` libre ouvre une redirection | `supabase/functions/sign-pay/index.ts:41-55` (repo ; version déployée **à vérifier**) |
-| 3 | [déployé] `sign-certificate` action `get` accepte un `contractId` sans authentification, donc l'URL du PDF certifié est accessible à quiconque connaît l'UUID | code absent du repo ; appel client `src/lib/signCertificate.ts:242-246` |
-| 4 | `pdf_url` téléchargé côté serveur sans filtrage (risque SSRF) | `api/mcp.js:126-127` |
-| 5 | `/api/sign-send-verification-code` sans authentification : un `user_id` suffit pour déclencher un email ou un SMS | `api/sign-auth.ts:191-217` |
-| 6 | Clé MCP en clair, dans l'URL ; clé globale legacy toujours active ; CORS `*` | `api/mcp.js:86-93`, `800` |
-| 7 | Contrat signé supprimable par API, preuve comprise, sans contrôle de legal hold | `api/mcp.js:509-520` |
-| 8 | `api/sign-owner.ts` `send-code` remet le compteur d'essais à 0 et n'est pas limité | `api/sign-owner.ts:96-97`, `108` |
+| # | Faille | Source (avant lot 1) | Lot 1 |
+|---|---|---|---|
+| 1 | `/api/send-email` : relais Brevo **sans authentification**, avec expéditeur et contenu libres | `api/email.ts:53-88` | JWT ou secret interne exigé, expéditeur en liste blanche, 10 destinataires max ; copie du signataire via `/api/sign-send-copy` (token, contenu fixé, 5/24 h) |
+| 2 | `sign-pay` actions `connect` / `connect-status` : `ownerId` lu dans le corps, sans JWT. L'appelant peut créer ou lier un compte Stripe à n'importe quel propriétaire, et `origin` libre ouvre une redirection | `supabase/functions/sign-pay/index.ts` — **vérifié : même code dans la version déployée v7** | session propriétaire exigée, `ownerId` ignoré, origine en liste blanche |
+| 3 | [déployé] `sign-certificate` action `get` accepte un `contractId` sans authentification, donc l'URL du PDF certifié est accessible à quiconque connaît l'UUID (et `seal`/`finalize` aussi, faille 11) | `supabase/functions/sign-certificate/index.ts` | token du signataire ou session du propriétaire |
+| 4 | `pdf_url` téléchargé côté serveur sans filtrage (risque SSRF) | `api/mcp.js:126-127` | https, IP publiques, sans redirection, 15 Mo, contenu %PDF |
+| 5 | `/api/sign-send-verification-code` sans authentification : un `user_id` suffit pour déclencher un email ou un SMS | `api/sign-auth.ts:191-217` | session du compte visé exigée, 60 s entre envois ; vérification bornée à 5 essais (faille 12) |
+| 6 | Clé MCP en clair, dans l'URL ; clé globale legacy toujours active ; CORS `*` | `api/mcp.js:86-93`, `800` | empreinte SHA-256 en base, en-tête Bearer accepté (URL gardée pour les connecteurs Claude), clé globale retirée, CORS limité aux origines Sign |
+| 7 | Contrat signé supprimable par API, preuve comprise, sans contrôle de legal hold | `api/mcp.js:509-520` | refusé pour signé/payé/certifié ; `purge_hold` bloqué en base |
+| 8 | `api/sign-owner.ts` `send-code` remet le compteur d'essais à 0 et n'est pas limité | `api/sign-owner.ts:96-97`, `108` | compteur conservé, 3 envois par session, 60 s d'écart ; CORS limité |
 
 ---
 
@@ -262,7 +296,7 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
 |---|---|---|
 | Interface API pour un SaaS (REST ou JSON-RPC stable, documentée) | **Partiel** (MCP seulement) | M : couche REST au-dessus des handlers de `api/mcp.js` |
 | Clé plateforme + sous-comptes par artisan, création de compte par API | **Absent** | L : entité plateforme, provisioning, facturation plateforme |
-| Clés API hashées, scopes, rotation, en en-tête | **Absent** | S |
+| Clés API hashées, scopes, rotation, en en-tête | **Partiel** après lot 1 (clé MCP hashée + Bearer ; pas de scopes) | S |
 | Import PDF (vraies dimensions, taille, stockage) | **Partiel** | S : reprendre pdf-lib de `sign-mcp/index.mjs:112-133` ; M : passer à Storage |
 | Placement des champs | **Prêt** (limite non-A4) | S |
 | Signataires, ordre, vérification | **Prêt** | S : déblocage d'un signataire, listes blanches multiples |
@@ -278,14 +312,15 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
 | Emails / SMS désactivables ou brandés | **Partiel** (invitation seulement) | M : flag par compte ou contrat sur OTP, séquentiel, final, relances |
 | Paiement désactivable | **Prêt** | — |
 | Refacturation SMS | **Absent** | M : compteur + quotas par compte |
-| Rétention, purge, legal hold | **Absent** | M |
-| Code des Edge Functions et SQL versionnés | **Absent** | S/M : rapatrier le déployé dans le repo |
+| Rétention, purge, legal hold | **Partiel** après lot 1 (`purge_hold` imposé en base ; pas de purge ni de cascade Storage) | M (lot 3) |
+| Code des Edge Functions et SQL versionnés | **Prêt** après lot 1 | — |
+| Failles de sécurité connues (§5.3 + 9 à 12) | **Corrigées** sur la branche lot 1, à déployer | — |
 
 *S = quelques jours, M = 1 à 2 semaines, L = plus de 2 semaines. Estimations indicatives.*
 
 ### 6.2 Chantiers à faire dans Sign, dans l'ordre
 
-1. **Sécuriser et versionner l'existant.**
+1. **Sécuriser et versionner l'existant.** *Fait (lot 1), en attente de déploiement.*
    - Corriger les failles §5.3 : relais email, `sign-pay connect`, `sign-certificate get`, SSRF, suppression de preuve, contrat à `user_id` NULL.
    - Rapatrier dans le repo le code déployé des Edge Functions et le SQL des tables, RLS, triggers et RPC.
    - Sans cela, rien de ce qui est construit dessus n'est vérifiable.
