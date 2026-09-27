@@ -127,3 +127,7 @@ create trigger trg_sign_contracts_purge_hold before delete on public.sign_contra
 
 -- ─── 5. Signature propriétaire : compteur d'envois du code ───
 alter table public.sign_owner_sign_sessions add column if not exists code_sends integer default 0 not null;
+
+-- ─── 6. Code d'appareil (2FA de connexion) : compteur d'essais ───
+-- Avant : vérification par égalité sans limite, un code à 6 chiffres se trouvait par force brute.
+alter table public.sign_device_codes add column if not exists attempts integer default 0 not null;

@@ -18,6 +18,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 const DEVICE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 jours
 const CODE_TTL_MS = 10 * 60 * 1000 // 10 minutes
+const MAX_CODE_ATTEMPTS = 5
+const RESEND_COOLDOWN_MS = 60_000
 
 // ─── Emails (DA Sign : dark + lime) ───
 
@@ -191,7 +193,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'send-verification-code') {
       const { user_id, channel } = req.body || {}
       if (!user_id) return res.status(400).json({ error: 'user_id required' })
+      // Session obligatoire : ce code complète une connexion déjà faite, pas un moyen d'en ouvrir une.
+      if ((await authedUserId(req)) !== user_id) return res.status(401).json({ error: 'unauthorized' })
       if (!(await isSignOwner(user_id))) return res.status(403).json({ error: 'not_sign_owner' })
+      const { data: last } = await supabase.from('sign_device_codes').select('created_at')
+        .eq('user_id', user_id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+      if (last && Date.now() - new Date(last.created_at).getTime() < RESEND_COOLDOWN_MS) {
+        return res.status(429).json({ error: 'rate_limit' })
+      }
 
       const code = Math.floor(100000 + Math.random() * 900000).toString()
       const expiresAt = new Date(Date.now() + CODE_TTL_MS).toISOString()
@@ -220,18 +229,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'verify-code') {
       const { user_id, code, device_fingerprint, auth_method } = req.body || {}
       if (!user_id || !code || !device_fingerprint) return res.status(400).json({ error: 'user_id, code and device_fingerprint required' })
+      if ((await authedUserId(req)) !== user_id) return res.status(401).json({ error: 'unauthorized' })
 
+      // Dernier code valide de l'utilisateur, comparé ici : chaque échec compte, 5 au plus.
       const { data: codeRow } = await supabase
         .from('sign_device_codes')
         .select('*')
         .eq('user_id', user_id)
-        .eq('code', String(code).replace(/\s/g, ''))
         .eq('used', false)
         .gte('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
       if (!codeRow) return res.status(401).json({ error: 'Code invalide ou expiré' })
+      if ((codeRow.attempts ?? 0) >= MAX_CODE_ATTEMPTS) {
+        await supabase.from('sign_device_codes').update({ used: true }).eq('id', codeRow.id)
+        return res.status(429).json({ error: 'too_many' })
+      }
+      if (String(codeRow.code) !== String(code).replace(/\s/g, '')) {
+        await supabase.from('sign_device_codes').update({ attempts: (codeRow.attempts ?? 0) + 1 }).eq('id', codeRow.id)
+        return res.status(401).json({ error: 'Code invalide ou expiré' })
+      }
 
       await supabase.from('sign_device_codes').update({ used: true }).eq('id', codeRow.id)
 
