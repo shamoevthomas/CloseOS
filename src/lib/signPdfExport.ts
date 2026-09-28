@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { isSignatureType, formatDateFR, cursiveTextToDataUrl, isChecked, CHECKBOX_DEFAULT_TEXT } from './signFieldsMeta';
 import type { SignFreeField, OverlayImage } from './signContracts';
+import { isSvgDataUrl, svgDataUrlToPng } from './signSignatureSvg';
 import { signAuthHeader } from './signSupabase';
 
 /**
@@ -133,7 +134,8 @@ async function drawFields(pdf: jsPDF, fields: SignFreeField[], mmPerPx: number) 
 
     if (isSignatureType(f.type)) {
       // Signature : image directe, ou texte d'initiales rasterisé en cursif (rendu identique au site)
-      const dataUrl = v.startsWith('data:') ? v : cursiveTextToDataUrl(v);
+      const raw = v.startsWith('data:') ? v : cursiveTextToDataUrl(v);
+      const dataUrl = raw && isSvgDataUrl(raw) ? await svgDataUrlToPng(raw) : raw;
       if (!dataUrl) continue;
       let dw = w;
       let dh = h;
@@ -169,8 +171,10 @@ export async function buildSignedPdfBlob(opts: GenOpts): Promise<Blob> {
       const pg = opts.pdfPages[i];
       const mmPerPx = A4_W / pg.width;
       const hMm = pg.height * mmPerPx;
-      if (!pdf) pdf = new jsPDF({ unit: 'mm', format: [A4_W, hMm], orientation: 'portrait' });
-      else pdf.addPage([A4_W, hMm]);
+      // L'orientation suit la page : en « portrait » forcé, jsPDF inversait les côtés d'une page paysage.
+      const orientation = hMm >= A4_W ? 'portrait' : 'landscape';
+      if (!pdf) pdf = new jsPDF({ unit: 'mm', format: [A4_W, hMm], orientation });
+      else pdf.addPage([A4_W, hMm], orientation);
       pdf.addImage(pg.dataUrl, 'PNG', 0, 0, A4_W, hMm, undefined, 'FAST');
       await drawImages(pdf, (opts.images ?? []).filter((im) => im.page === i + 1), mmPerPx);
       await drawFields(pdf, opts.fields.filter((f) => f.page === i + 1), mmPerPx);

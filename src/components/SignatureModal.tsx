@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, PenTool, Upload, Type as TypeIcon, Eraser, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { computeInitials, cursiveTextToDataUrl, CURSIVE_FONT } from '../lib/signFieldsMeta';
+import { strokesToSvgDataUrl, type Point } from '../lib/signSignatureSvg';
 import { useSignLang } from '../contexts/SignLangContext';
 
 /**
@@ -35,6 +36,7 @@ export default function SignatureModal({
   const [pending, setPending] = useState(''); // valeur figée avant confirmation (le canvas est démonté à l'étape confirm)
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
+  const strokes = useRef<Point[][]>([]); // tracés (repère du canvas) → signature SVG vectorielle
 
   useEffect(() => {
     if (!open) {
@@ -45,6 +47,7 @@ export default function SignatureModal({
       setHasDrawn(false);
       setConfirmStep(false);
       setPending('');
+      strokes.current = [];
     }
   }, [open]);
 
@@ -72,6 +75,7 @@ export default function SignatureModal({
     const ctx = c.getContext('2d')!;
     drawing.current = true;
     const { x, y } = canvasPos(e);
+    strokes.current.push([{ x, y }]);
     ctx.strokeStyle = '#1a1a1a';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
@@ -83,6 +87,7 @@ export default function SignatureModal({
     if (!drawing.current) return;
     const ctx = canvasRef.current!.getContext('2d')!;
     const { x, y } = canvasPos(e);
+    strokes.current[strokes.current.length - 1]?.push({ x, y });
     ctx.lineTo(x, y);
     ctx.stroke();
     if (!hasDrawn) setHasDrawn(true);
@@ -94,6 +99,7 @@ export default function SignatureModal({
     const c = canvasRef.current;
     if (!c) return;
     c.getContext('2d')!.clearRect(0, 0, c.width, c.height);
+    strokes.current = [];
     setHasDrawn(false);
   };
 
@@ -109,7 +115,7 @@ export default function SignatureModal({
   const currentValue = (): string => {
     if (mode === 'initials') return initials;
     if (mode === 'import') return imported;
-    if (mode === 'draw' && canvasRef.current && hasDrawn) return canvasRef.current.toDataURL('image/png');
+    if (mode === 'draw' && hasDrawn) return strokesToSvgDataUrl(strokes.current, 2.5);
     return '';
   };
   const canValidate = () => {
