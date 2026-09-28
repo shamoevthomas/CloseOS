@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import SignDocLoading from '../components/SignDocLoading';
 import { useParams } from 'react-router-dom';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -508,6 +509,9 @@ export default function SignPublic() {
         />
       ));
 
+  // Écran d'attente identique à celui servi par le serveur : ni landing, ni en-tête vide.
+  if (loading) return <SignDocLoading lang={lang} />;
+
   return (
     <div className="sign-landing min-h-screen bg-[#191E1E] pb-28 font-sans text-[#F3F4F6] antialiased selection:bg-[#CEFF8F] selection:text-[#191E1E]">
       <style>{`
@@ -546,11 +550,7 @@ export default function SignPublic() {
         </div>
       </header>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-32 text-[#A1A9A9]">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </div>
-      ) : !contract ? (
+      {!contract ? (
         <div className="mx-auto max-w-md px-6 py-32 text-center">
           <h1 className="text-2xl font-semibold text-white">{lang === 'fr' ? 'Lien invalide ou expiré' : 'Invalid or expired link'}</h1>
           <p className="mt-2 text-sm text-[#A1A9A9]">{lang === 'fr' ? 'Ce document n’est plus disponible. Contactez l’expéditeur.' : 'This document is no longer available. Please contact the sender.'}</p>

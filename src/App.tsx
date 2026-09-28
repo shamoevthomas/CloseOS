@@ -111,6 +111,7 @@ const SignNewContract = lazy(() => import('./pages/SignNewContract'))
 const SignProfile = lazy(() => import('./pages/SignProfile'))
 const SignContractEditor = lazy(() => import('./pages/SignContractEditor'))
 const SignPublic = lazy(() => import('./pages/SignPublic'))
+import SignDocLoading from './components/SignDocLoading'
 const SignVerify = lazy(() => import('./pages/SignVerify'))
 const SignProtected = lazy(() => import('./components/SignProtected'))
 const SignCheckout = lazy(() => import('./pages/SignCheckout'))
@@ -440,7 +441,10 @@ function AuthenticatedApp() {
   const isCrmPath = location.pathname.startsWith('/crm') || location.pathname.startsWith('/c/')
   const isBusinessPath = location.pathname.startsWith('/business')
   const isSignPath = location.pathname.startsWith('/sign')
-  const suspenseFallback = isCrmPath
+  const isSignDocPath = location.pathname.startsWith('/sign/s/')
+  const suspenseFallback = isSignDocPath
+    ? <SignDocLoading />
+    : isCrmPath
     ? <div className="flex items-center justify-center min-h-screen bg-white"><div className="w-10 h-10 border-4 border-blue-100 border-t-[#3B82F6] rounded-full animate-spin" /></div>
     : isBusinessPath
     ? <div className="flex items-center justify-center min-h-screen bg-[#f4f2f1] dark:bg-neutral-900"><div className="w-10 h-10 border-4 border-stone-300 border-t-stone-900 rounded-full animate-spin" /></div>

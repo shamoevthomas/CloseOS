@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
+import { signDocShell } from './_lib/sign-doc-shell.js'
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -430,7 +431,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return
     }
 
-    const html = injectMeta(shell, meta)
+    // Lien de signature : jamais la landing pré-rendue, l'écran d'attente de la page de signature.
+    const html = injectMeta(type === 'sign-doc' ? signDocShell(shell, lang) : shell, meta)
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=86400')
     res.status(200).send(html)
