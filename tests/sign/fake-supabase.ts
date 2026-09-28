@@ -122,12 +122,22 @@ export class FakeSupabase {
     throw new Error(`méthode ${method}`);
   }
 
-  private storageApi(method: string, url: URL, body: any) {
+  private storageApi(method: string, url: URL, body: any): { status: number; body: any; raw?: boolean } {
     const path = url.pathname.replace('/storage/v1/object/', '');
     if (path.startsWith('sign/')) {
       const key = path.slice(5);
       if (!this.storage.has(key)) return { status: 400, body: { error: 'not_found' } };
       return { status: 200, body: { signedURL: `/object/sign/${key}?token=signed` } };
+    }
+    if (path.startsWith('list/')) {
+      const bucket = path.slice(5);
+      const prefix = `${bucket}/${body.prefix}`;
+      const names = [...this.storage.keys()].filter((k) => k.startsWith(prefix)).map((k) => ({ name: k.slice(prefix.length) }));
+      return { status: 200, body: names };
+    }
+    if (method === 'GET') {
+      const buf = this.storage.get(path);
+      return buf ? { status: 200, body: buf, raw: true } : { status: 400, body: { error: 'not_found' } };
     }
     if (method === 'POST') { this.storage.set(path, Buffer.from(body)); return { status: 200, body: { Key: path } }; }
     if (method === 'DELETE') { for (const pfx of body.prefixes) this.storage.delete(`${path}/${pfx}`); return { status: 200, body: [] }; }
@@ -143,7 +153,7 @@ export class FakeSupabase {
       this.calls.push({ method, url, body });
       this.onRequest?.(method, url);
       const headers = new Headers(init.headers as HeadersInit);
-      let out: { status: number; body: any };
+      let out: { status: number; body: any; raw?: boolean };
       if (url.hostname === 'api.brevo.com') {
         if (this.failEmail) out = { status: 500, body: { message: 'brevo down' } };
         else { this.emails.push(body); out = { status: 201, body: { messageId: 'm' } }; }
@@ -162,6 +172,7 @@ export class FakeSupabase {
       } else {
         throw new Error(`fetch inattendu : ${method} ${url}`);
       }
+      if (out.raw) return new Response(out.body, { status: out.status, headers: { 'content-type': 'application/pdf' } });
       return new Response(out.body == null ? null : JSON.stringify(out.body), { status: out.status, headers: { 'content-type': 'application/json' } });
     });
     vi.stubGlobal('fetch', fn);

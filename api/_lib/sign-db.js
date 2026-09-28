@@ -97,6 +97,23 @@ export async function storageSignedUrl(bucket, path, expiresIn) {
   return signed.startsWith('http') ? signed : `${url()}/storage/v1${signed}`
 }
 
+/** Octets d'un fichier, ou null s'il n'existe pas. */
+export async function storageDownload(bucket, path) {
+  ensureConfig()
+  const r = await fetch(`${url()}/storage/v1/object/${bucket}/${path}`, { headers: { apikey: key(), Authorization: `Bearer ${key()}` } })
+  if (r.status === 400 || r.status === 404) return null
+  if (!r.ok) await fail('Storage téléchargement', r)
+  return Buffer.from(await r.arrayBuffer())
+}
+
+/** Noms des fichiers d'un dossier (un niveau). */
+export async function storageList(bucket, prefix) {
+  ensureConfig()
+  const r = await fetch(`${url()}/storage/v1/object/list/${bucket}`, { method: 'POST', headers: headers(), body: JSON.stringify({ prefix, limit: 1000, offset: 0 }) })
+  if (!r.ok) await fail('Storage liste', r)
+  return ((await r.json()) || []).map((o) => o.name).filter(Boolean)
+}
+
 export async function storageRemove(bucket, paths) {
   ensureConfig()
   const r = await fetch(`${url()}/storage/v1/object/${bucket}`, { method: 'DELETE', headers: headers(), body: JSON.stringify({ prefixes: paths }) })

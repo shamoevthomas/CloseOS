@@ -23,6 +23,12 @@ function sameSecret(a: string, b: string): boolean {
   return ba.length === bb.length && timingSafeEqual(ba, bb);
 }
 
+/** Appel serveur à serveur CloseOS (Edge Functions) : en-tête x-closeos-internal = secret partagé. */
+export function isInternalCall(headers: Record<string, any>, secret: string | undefined): boolean {
+  const got = String(headers['x-closeos-internal'] || '');
+  return !!(got && secret && secret.length >= 32 && sameSecret(got, secret));
+}
+
 export async function authorizeEmailCaller(headers: Record<string, any>, deps: EmailGuardDeps): Promise<EmailCaller | null> {
   const internal = String(headers['x-closeos-internal'] || '');
   if (internal && deps.internalSecret && deps.internalSecret.length >= 32 && sameSecret(internal, deps.internalSecret)) {
