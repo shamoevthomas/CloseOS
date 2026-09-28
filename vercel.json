@@ -482,6 +482,10 @@
       "destination": "/api/sign-stripe-webhook"
     },
     {
+      "source": "/api/sign/v1/:path*",
+      "destination": "/api/sign-v1?path=:path*"
+    },
+    {
       "source": "/api/mcp/:key",
       "destination": "/api/mcp?key=:key"
     },
