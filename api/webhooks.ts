@@ -1050,6 +1050,10 @@ async function handleSyncBrevo(req: any, res: any) {
   if (!email) {
     return res.status(400).json({ error: 'No email provided in record' });
   }
+  // Comptes techniques des artisans de l'API Sign : adresse interne, jamais un contact marketing.
+  if (String(email).toLowerCase().endsWith('@platform.sign.closeos.fr')) {
+    return res.status(200).json({ skipped: 'sign_platform_account' });
+  }
 
   const BREVO_API_KEY = process.env.BREVO_API_KEY;
   if (!BREVO_API_KEY) {

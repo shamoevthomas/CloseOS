@@ -38,3 +38,13 @@ export function certificateAccess(input: {
 export function internalEmailHeaders(secret: string | null): Record<string, string> {
   return { "Content-Type": "application/json", ...(secret ? { "x-closeos-internal": secret } : {}) };
 }
+
+/**
+ * Lien de signature expiré : date d'expiration passée et signataire pas encore signé
+ * (un signataire qui a signé garde l'accès à son document). Sans date : jamais expiré.
+ */
+export function linkExpired(signer: { link_expires_at?: string | null; status?: string | null } | null | undefined, now = Date.now()): boolean {
+  if (!signer || !signer.link_expires_at || signer.status === "signed") return false;
+  const t = Date.parse(signer.link_expires_at);
+  return Number.isFinite(t) && t <= now;
+}

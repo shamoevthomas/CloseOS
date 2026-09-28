@@ -14,10 +14,13 @@
 // clé service-role et un filtre user_id explicite sur chaque requête.
 // Note PDF : sans pdf-lib, les dimensions de page sont approximées en A4 (794×1122 px) ;
 // le placement x_pct/y_pct reste bon pour de l'A4 et est ajustable dans l'éditeur.
+// Import, pose de champs, envoi, statut, déblocage et nouveau lien passent par la couche de
+// service partagée avec l'API REST (api/_lib/sign-service.js).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { assertPdf, corsOrigin, extractMcpKey, fetchPdfSafely, hashMcpKey, PDF_MAX_BYTES } from './_lib/sign-security.js'
+import { corsOrigin, extractMcpKey, hashMcpKey } from './_lib/sign-security.js'
+import * as svc from './_lib/sign-service.js'
 
 export const config = { maxDuration: 30 }
 
@@ -29,22 +32,6 @@ const SB_URL = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '')
 const SB_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
 const APP_URL = (process.env.SIGN_APP_URL || 'https://sign.closeos.fr').trim().replace(/\/+$/, '')
 const REST = `${SB_URL}/rest/v1`
-
-const PAGE_W = 794 // ≈ A4 210mm @96dpi
-const PAGE_H = 1122 // ≈ A4 297mm @96dpi (approx sans pdf-lib)
-
-const FIELD_TYPES = new Set([
-  'signature', 'initials', 'name', 'date', 'time', 'email', 'tel',
-  'address', 'city', 'siret', 'siren', 'tva', 'company_id', 'ape', 'checkbox', 'text',
-])
-const DEFAULT_SIZE = {
-  signature: { w: 200, h: 64 }, initials: { w: 120, h: 64 }, name: { w: 200, h: 40 },
-  date: { w: 150, h: 34 }, time: { w: 120, h: 34 }, email: { w: 220, h: 40 }, tel: { w: 180, h: 40 },
-  address: { w: 260, h: 40 }, city: { w: 180, h: 40 }, siret: { w: 180, h: 40 }, siren: { w: 180, h: 40 },
-  tva: { w: 180, h: 40 }, company_id: { w: 180, h: 40 }, ape: { w: 140, h: 40 }, checkbox: { w: 360, h: 44 }, text: { w: 180, h: 40 },
-}
-const sizeFor = (t) => DEFAULT_SIZE[t] || { w: 180, h: 40 }
-const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
 
 // ───────── Supabase REST (service-role → bypass RLS) ─────────
 function H(extra) {
@@ -69,17 +56,6 @@ async function sbUpdate(table, query, patch) {
   const r = await fetch(`${REST}/${table}?${query}`, { method: 'PATCH', headers: H({ Prefer: 'return=minimal' }), body: JSON.stringify(patch) })
   if (!r.ok) throw new Error(`Supabase update (${r.status}) : ${await r.text()}`)
 }
-async function sbRpc(fn, args) {
-  const r = await fetch(`${REST}/rpc/${fn}`, { method: 'POST', headers: H(), body: JSON.stringify(args) })
-  if (!r.ok) {
-    const txt = await r.text()
-    // Messages métier levés par les fonctions SQL (raise exception 'code') → texte lisible.
-    const known = { signataire_deja_signe: 'Ce signataire a déjà signé : rien à débloquer ni à renouveler.', contrat_non_en_cours: "Le contrat n'est pas en cours de signature (brouillon, signé ou annulé).", signataire_introuvable: 'Signataire introuvable.' }
-    const code = Object.keys(known).find((k) => txt.includes(k))
-    throw new Error(code ? known[code] : `Supabase rpc ${fn} (${r.status}) : ${txt}`)
-  }
-  return await r.json()
-}
 async function sbDelete(table, query) {
   const r = await fetch(`${REST}/${table}?${query}`, { method: 'DELETE', headers: H({ Prefer: 'return=minimal' }) })
   if (!r.ok) throw new Error(`Supabase delete (${r.status}) : ${await r.text()}`)
@@ -92,6 +68,10 @@ async function ownerId() {
   return s.ownerId
 }
 function ownerEmailCtx() { const s = als.getStore(); return (s && s.ownerEmail) || '' }
+// Contexte de la couche de service : PDF en base64 dans la ligne (éditeur actuel), aucun email.
+async function svcCtx() {
+  return { ownerId: await ownerId(), ownerEmail: ownerEmailCtx(), via: 'mcp', appUrl: APP_URL, storage: 'inline' }
+}
 
 // Résout le propriétaire à partir de sa clé : recherche par empreinte SHA-256 (sign_users.mcp_key_hash).
 // Repli transitoire sur l'ancienne colonne en clair, le temps que la migration 20260927_sign_security
@@ -114,16 +94,6 @@ async function getOwnedContract(id, cols) {
   if (c.user_id !== uid) throw new Error(`Le contrat ${id} n'appartient pas à ton compte.`)
   return c
 }
-// Signataire d'un contrat appartenant au compte de la clé (par contract_id + signer_index).
-async function getOwnedSigner(args) {
-  if (!args.contract_id) throw new Error('contract_id requis.')
-  const index = Number(args.signer_index || 1)
-  const c = await getOwnedContract(args.contract_id, 'id,user_id,is_template')
-  if (c.is_template) throw new Error("C'est un modèle, pas un contrat envoyé.")
-  const rows = await sbSelect(`sign_contract_signers?contract_id=eq.${encodeURIComponent(c.id)}&signer_index=eq.${index}&select=id,signer_index,status&limit=1`)
-  if (!rows || !rows[0]) throw new Error(`Signataire n°${index} introuvable sur ce contrat.`)
-  return rows[0]
-}
 async function getOwnedFolder(id) {
   const uid = await ownerId()
   const rows = await sbSelect(`sign_contract_folders?id=eq.${encodeURIComponent(id)}&select=id,user_id,name,parent_id&limit=1`)
@@ -132,46 +102,11 @@ async function getOwnedFolder(id) {
   return rows[0]
 }
 
-// Compte de pages best-effort (sans pdf-lib) : compte les objets /Type /Page.
-function pdfPageCount(bytes) {
-  try {
-    const s = Buffer.from(bytes).toString('latin1')
-    const m = s.match(/\/Type\s*\/Page(?![s])/g)
-    return (m && m.length) || 1
-  } catch { return 1 }
-}
-async function loadPdf(a) {
-  let bytes
-  if (a.pdf_base64) {
-    const b64 = a.pdf_base64.includes(',') ? a.pdf_base64.split(',')[1] : a.pdf_base64
-    bytes = Buffer.from(b64, 'base64')
-    if (bytes.byteLength > PDF_MAX_BYTES) throw new Error(`PDF trop volumineux (max ${Math.round(PDF_MAX_BYTES / 1048576)} Mo).`)
-    assertPdf(bytes)
-  } else if (a.pdf_url) {
-    bytes = await fetchPdfSafely(a.pdf_url)
-  } else {
-    throw new Error('Fournir pdf_base64 ou pdf_url.')
-  }
-  return { dataUrl: `data:application/pdf;base64,${bytes.toString('base64')}`, pageCount: pdfPageCount(bytes) }
-}
-
 // Token aléatoire (Web Crypto global, zéro import).
 function randHex(bytes) {
   const a = new Uint8Array(bytes)
   crypto.getRandomValues(a)
   return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-// Garantit un access_token par signataire → renvoie les liens /sign/s/<token>.
-async function ensureSignerLinks(contractId) {
-  const signers = await sbSelect(`sign_contract_signers?contract_id=eq.${contractId}&select=id,signer_index,name,email,access_token&order=signer_index.asc`)
-  const links = []
-  for (const s of signers || []) {
-    let tok = s.access_token
-    if (!tok) { tok = randHex(16); await sbUpdate('sign_contract_signers', `id=eq.${s.id}`, { access_token: tok }) }
-    links.push({ signer_index: s.signer_index, name: s.name, email: s.email, url: `${APP_URL}/sign/s/${tok}` })
-  }
-  return links
 }
 
 // Valeur à écrire dans un champ 'owner' selon son type (signature + préremplissage profil).
@@ -256,96 +191,31 @@ const impl = {
     return { unassigned: true, template_id: args.template_id, member: { id: member.id, email: member.email } }
   },
   async sign_import_contract(args) {
-    if (!args.title) throw new Error('title requis.')
-    const uid = await ownerId()
-    const isPdf = !!(args.pdf_base64 || args.pdf_url)
-    let row = { user_id: uid, owner_email: ownerEmailCtx(), title: args.title, status: 'draft', theme: 'blank' }
-    let pageCount = 1
-    if (isPdf) {
-      const pdf = await loadPdf(args)
-      pageCount = pdf.pageCount
-      row = { ...row, source_type: 'pdf', pdf_data: pdf.dataUrl, content_html: null, page_count: pageCount }
-    } else {
-      const html = args.html && String(args.html).trim() ? args.html : '<p><br></p>'
-      row = { ...row, source_type: 'text', content_html: html, page_count: 1 }
-    }
-    const ins = await sbInsert('sign_contracts', row, true)
-    const contract = ins[0]
-    const signer = { contract_id: contract.id, signer_index: 1, status: 'pending' }
-    if (args.contact_name) signer.name = args.contact_name
-    if (args.contact_email) signer.email = args.contact_email
-    await sbInsert('sign_contract_signers', signer)
-    const pages = []
-    for (let p = 1; p <= contract.page_count; p++) pages.push({ page: p, width_px: PAGE_W, height_px: PAGE_H })
+    const contract = await svc.createContract(await svcCtx(), args)
     return {
       contract_id: contract.id, status: contract.status, source_type: contract.source_type,
-      page_count: contract.page_count, pages, editor_url: `${APP_URL}/sign/app/contrat/${contract.id}`,
+      page_count: contract.page_count, pages: svc.pageGeometry(contract).map((p) => ({ page: p.page, width_px: p.width_px, height_px: p.height_px })),
+      editor_url: `${APP_URL}/sign/app/contrat/${contract.id}`,
       next: 'Utilise sign_place_fields pour poser les champs (x_pct/y_pct recommandé).',
     }
   },
 
   async sign_place_fields(args) {
     if (!args.contract_id) throw new Error('contract_id requis.')
-    if (!Array.isArray(args.fields) || args.fields.length === 0) throw new Error('fields (tableau non vide) requis.')
-    const c = await getOwnedContract(args.contract_id, 'id,user_id,status,locked,source_type,page_count,signer_count')
-    if (c.status !== 'draft') throw new Error(`Le contrat est '${c.status}' (pas un brouillon). Pose de champs refusée.`)
-    if (c.locked) throw new Error('Le contrat est verrouillé. Pose de champs refusée.')
-
-    const maxFromFields = args.fields.filter((f) => (f.assignee ?? 'signer') === 'signer').reduce((m, f) => Math.max(m, f.signer_index ?? 1), 0)
-    const maxFromArg = (args.signers || []).reduce((m, s) => Math.max(m, s.index), 0)
-    const needed = Math.max(c.signer_count || 1, maxFromFields, maxFromArg, 1)
-
-    const existing = await sbSelect(`sign_contract_signers?contract_id=eq.${c.id}&select=signer_index`)
-    const have = new Set((existing || []).map((s) => s.signer_index))
-    const toCreate = []
-    for (let i = 1; i <= needed; i++) if (!have.has(i)) toCreate.push({ contract_id: c.id, signer_index: i, status: 'pending' })
-    if (toCreate.length) await sbInsert('sign_contract_signers', toCreate)
-    if (needed !== (c.signer_count || 1)) await sbUpdate('sign_contracts', `id=eq.${c.id}`, { signer_count: needed })
-    for (const s of args.signers || []) {
-      const patch = {}
-      if (s.name !== undefined) patch.name = s.name
-      if (s.email !== undefined) patch.email = s.email
-      if (s.phone !== undefined) patch.phone = s.phone
-      if (Object.keys(patch).length) await sbUpdate('sign_contract_signers', `contract_id=eq.${c.id}&signer_index=eq.${s.index}`, patch)
-    }
-
-    if (args.mode === 'replace') await sbDelete('sign_contract_fields', `contract_id=eq.${c.id}&placement=eq.free`)
-    const lastRows = await sbSelect(`sign_contract_fields?contract_id=eq.${c.id}&select=sort_order&order=sort_order.desc&limit=1`)
-    let sort = (lastRows && lastRows[0] ? lastRows[0].sort_order : -1) + 1
-
-    const rows = []
-    const summary = []
-    for (const f of args.fields) {
-      const type = String(f.type)
-      if (!FIELD_TYPES.has(type)) throw new Error(`Type de champ inconnu : ${type}`)
-      const assignee = f.assignee ?? 'signer'
-      const page = f.page ?? 1
-      if (page < 1 || page > (c.page_count || 1)) throw new Error(`Page ${page} hors limites (${c.page_count} page(s)).`)
-      const size = { w: f.w ?? sizeFor(type).w, h: f.h ?? sizeFor(type).h }
-      let px = f.x_pct != null ? f.x_pct * PAGE_W : (f.x ?? 0)
-      let py = f.y_pct != null ? f.y_pct * PAGE_H : (f.y ?? 0)
-      px = clamp(Math.round(px), 0, Math.max(0, PAGE_W - size.w))
-      py = clamp(Math.round(py), 0, Math.max(0, PAGE_H - size.h))
-      const signer_index = assignee === 'signer' ? (f.signer_index ?? 1) : null
-      rows.push({ contract_id: c.id, field_type: type, placement: 'free', page, pos_x: px, pos_y: py, width: size.w, height: size.h, assignee, signer_index, label: f.label ?? null, value: f.value ?? null, required: true, sort_order: sort++ })
-      summary.push({ type, page, x: px, y: py, w: size.w, h: size.h, assignee, signer_index })
-    }
-    await sbInsert('sign_contract_fields', rows)
-    return { contract_id: c.id, status: c.status, mode: args.mode || 'append', signer_count: needed, fields_added: rows.length, fields: summary, editor_url: `${APP_URL}/sign/app/contrat/${c.id}` }
+    await getOwnedContract(args.contract_id, 'id,user_id')
+    const out = await svc.placeFields(await svcCtx(), args.contract_id, args)
+    return { ...out, editor_url: `${APP_URL}/sign/app/contrat/${out.contract_id}` }
   },
 
   async sign_get_status(args) {
     if (!args.contract_id) throw new Error('contract_id requis.')
-    const c = await getOwnedContract(args.contract_id, 'id,user_id,title,status,signed_at,paid_at,sent_at,viewed_at,signer_count')
-    const signers = await sbSelect(`sign_contract_signers?contract_id=eq.${c.id}&select=signer_index,name,email,status,signed_at,paid_at,payment_status&order=signer_index.asc`)
-    const list = signers || []
-    const allSigned = list.length > 0 && list.every((s) => s.status === 'signed')
-    const fully = c.status === 'signed' || c.status === 'paid' || allSigned
-    const fieldRows = await sbSelect(`sign_contract_fields?contract_id=eq.${c.id}&select=id`)
+    await getOwnedContract(args.contract_id, 'id,user_id')
+    const c = await svc.getContract(await svcCtx(), args.contract_id)
+    const allSigned = c.signers.length > 0 && c.signers.every((s) => s.status === 'signed')
     return {
-      contract_id: c.id, title: c.title, status: c.status, fully_signed: fully,
-      signed_at: c.signed_at, paid_at: c.paid_at, sent_at: c.sent_at, field_count: (fieldRows || []).length,
-      signers: list.map((s) => ({ index: s.signer_index, name: s.name, email: s.email, status: s.status, signed: s.status === 'signed', signed_at: s.signed_at, paid_at: s.paid_at, payment_status: s.payment_status })),
+      contract_id: c.id, title: c.title, status: c.status, fully_signed: c.completed || allSigned,
+      signed_at: c.signed_at, sent_at: c.sent_at, viewed_at: c.viewed_at, field_count: c.fields.length,
+      signers: c.signers.map((s) => ({ index: s.index, name: s.name, email: s.email, status: s.status, signed: s.status === 'signed', viewed_at: s.viewed_at, signed_at: s.signed_at, verification_locked: s.verification_locked, link_expires_at: s.link_expires_at })),
     }
   },
 
@@ -360,9 +230,8 @@ const impl = {
 
   async sign_get_contract(args) {
     if (!args.contract_id) throw new Error('contract_id requis.')
-    const c = await getOwnedContract(args.contract_id, 'id,user_id,title,status,source_type,page_count,signer_count,signing_order,locked,created_at,updated_at')
-    const pages = []
-    for (let p = 1; p <= (c.page_count || 1); p++) pages.push({ page: p, width_px: PAGE_W, height_px: PAGE_H })
+    const c = await getOwnedContract(args.contract_id, 'id,user_id,title,status,source_type,page_count,page_sizes,signer_count,signing_order,locked,created_at,updated_at')
+    const pages = svc.pageGeometry(c).map((p) => ({ page: p.page, width_px: p.width_px, height_px: p.height_px }))
     const signers = await sbSelect(`sign_contract_signers?contract_id=eq.${c.id}&select=signer_index,name,email,phone,status,signed_at&order=signer_index.asc`)
     const fields = await sbSelect(`sign_contract_fields?contract_id=eq.${c.id}&select=id,field_type,page,pos_x,pos_y,width,height,assignee,signer_index,label,value,placement&order=sort_order.asc`)
     return {
@@ -421,16 +290,19 @@ const impl = {
     return { contract_id: c.id, configured: patch, signers: (args.signers || []).map((s, i) => ({ index: i + 1, name: s.name, email: s.email })) }
   },
 
-  // ── Envoi : génère les liens signataires, passe en 'sent' (n'envoie PAS d'email) ──
+  // ── Envoi : comme « Envoyer » dans l'app (empreinte, statuts, journal) mais SANS email ──
+  // Contrat déjà envoyé : renvoie simplement ses liens.
   async sign_send_contract(args) {
     if (!args.contract_id) throw new Error('contract_id requis.')
-    const c = await getOwnedContract(args.contract_id, 'id,user_id,status,is_template,locked')
+    const c = await getOwnedContract(args.contract_id, 'id,user_id,is_template')
     if (c.is_template) throw new Error("C'est un modèle : utilise sign_add_closer, ou génère une instance côté app.")
-    const links = await ensureSignerLinks(c.id)
-    if (!links.length) throw new Error('Aucun signataire configuré (utilise sign_configure_contract avec signers).')
-    const patch = { status: 'sent', sent_at: new Date().toISOString() }
-    await sbUpdate('sign_contracts', `id=eq.${c.id}`, patch)
-    return { contract_id: c.id, status: 'sent', signer_links: links, note: 'Aucun email envoyé — transmets ces liens toi-même.' }
+    const out = await svc.sendContract(await svcCtx(), c.id, { idempotent: true, expires_in_days: args.expires_in_days })
+    return {
+      contract_id: c.id, status: out.status,
+      signer_links: out.signer_links.map((l) => ({ signer_index: l.signer_index, name: l.name, email: l.email, url: l.url })),
+      ...(out.link_expires_at ? { link_expires_at: out.link_expires_at } : {}),
+      note: out.already_sent ? 'Contrat déjà envoyé : voici ses liens.' : 'Aucun email envoyé — transmets ces liens toi-même.',
+    }
   },
 
   // ── Modèle : ajoute un closer (nom+email) → lien /sign/rep/<token> ──
@@ -495,7 +367,7 @@ const impl = {
           const v = ownerFieldValue(f.field_type, sess.signature_value, prof, today)
           if (v != null) { await sbUpdate('sign_contract_fields', `id=eq.${f.id}`, { value: v, filled_at: new Date().toISOString() }); filled++ }
         }
-        const links = c.is_template ? [] : await ensureSignerLinks(cid)
+        const links = c.is_template ? [] : await svc.signerLinks(await svcCtx(), cid)
         const patch = { locked: true }
         if (!c.is_template && (c.status === 'draft' || c.status === 'pending')) { patch.status = 'sent'; patch.sent_at = new Date().toISOString() }
         await sbUpdate('sign_contracts', `id=eq.${cid}`, patch)
@@ -516,8 +388,9 @@ const impl = {
     if (args.title != null) patch.title = String(args.title)
     if (args.theme != null) patch.theme = String(args.theme)
     if (args.pdf_base64 || args.pdf_url) {
-      const pdf = await loadPdf(args)
-      patch.source_type = 'pdf'; patch.pdf_data = pdf.dataUrl; patch.content_html = null; patch.page_count = pdf.pageCount
+      const bytes = await svc.loadPdfBytes(args)
+      patch.source_type = 'pdf'; patch.pdf_data = `data:application/pdf;base64,${bytes.toString('base64')}`; patch.content_html = null
+      patch.page_count = svc.roughPageCount(bytes); patch.page_sizes = null
     } else if (args.html != null) {
       patch.source_type = 'text'; patch.content_html = String(args.html) || '<p><br></p>'; patch.pdf_data = null; patch.page_count = 1
     }
@@ -547,7 +420,7 @@ const impl = {
     if (!args.contract_id) throw new Error('contract_id requis.')
     const c = await getOwnedContract(args.contract_id, 'id,user_id,title,status,is_template')
     if (c.is_template) throw new Error("C'est un modèle : utilise sign_list_closers pour les liens closers.")
-    const links = await ensureSignerLinks(c.id)
+    const links = await svc.signerLinks(await svcCtx(), c.id)
     if (!links.length) throw new Error('Aucun signataire (configure-les via sign_configure_contract).')
     return { contract_id: c.id, title: c.title, status: c.status, signer_links: links }
   },
@@ -555,16 +428,16 @@ const impl = {
   // ── Débloquer un signataire verrouillé après trop d'échecs de vérification ──
   // Remet ses essais à zéro et efface ses codes en cours ; son lien actuel redevient utilisable.
   async sign_unlock_signer(args) {
-    const s = await getOwnedSigner(args)
-    await sbRpc('sign_unlock_signer_internal', { p_signer_id: s.id, p_actor: await ownerId(), p_via: 'mcp' })
-    return { contract_id: args.contract_id, signer_index: s.signer_index, unlocked: true, note: 'Le lien existant fonctionne de nouveau. Aucun email envoyé.' }
+    if (!args.contract_id) throw new Error('contract_id requis.')
+    const out = await svc.unlockSigner(await svcCtx(), args.contract_id, { index: args.signer_index || 1 })
+    return { contract_id: args.contract_id, signer_index: out.signer_index, unlocked: true, note: 'Le lien existant fonctionne de nouveau. Aucun email envoyé.' }
   },
 
   // ── Nouveau lien pour un signataire (l'ancien cesse de fonctionner) ──
   async sign_renew_signer_link(args) {
-    const s = await getOwnedSigner(args)
-    const out = await sbRpc('sign_renew_signer_link_internal', { p_signer_id: s.id, p_actor: await ownerId(), p_via: 'mcp' })
-    return { contract_id: args.contract_id, signer_index: s.signer_index, url: `${APP_URL}/sign/s/${out.token}`, note: "Ancien lien invalidé. Aucun email envoyé : transmets ce lien toi-même." }
+    if (!args.contract_id) throw new Error('contract_id requis.')
+    const out = await svc.renewSignerLink(await svcCtx(), args.contract_id, { index: args.signer_index || 1 })
+    return { contract_id: args.contract_id, signer_index: out.signer_index, url: out.url, note: "Ancien lien invalidé. Aucun email envoyé : transmets ce lien toi-même." }
   },
 
   // ── Récupérer les liens des closers d'un modèle (/sign/rep/<token>) ──
@@ -727,7 +600,7 @@ const TOOLS = [
   {
     name: 'sign_send_contract',
     description: "Prépare l'envoi d'un contrat : génère un lien de signature par signataire (/sign/s/<token>) et passe le contrat en 'sent'. N'ENVOIE PAS d'email — te renvoie les liens à transmettre toi-même.",
-    inputSchema: { type: 'object', properties: { contract_id: { type: 'string' } }, required: ['contract_id'] },
+    inputSchema: { type: 'object', properties: { contract_id: { type: 'string' }, expires_in_days: { type: 'integer', description: 'Optionnel : les liens expirent après ce nombre de jours (1 à 365). Par défaut, pas d\'expiration.' } }, required: ['contract_id'] },
   },
   {
     name: 'sign_add_closer',

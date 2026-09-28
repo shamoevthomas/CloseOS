@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  bearerToken, certificateAccess, internalEmailHeaders, safeOrigin,
+  bearerToken, certificateAccess, internalEmailHeaders, linkExpired, safeOrigin,
 } from '../../supabase/functions/_shared/sign-guards';
 
 describe('sign-pay : origine du retour Stripe', () => {
@@ -57,5 +57,20 @@ describe('internalEmailHeaders', () => {
   it("n'ajoute le secret que s'il existe", () => {
     expect(internalEmailHeaders('s'.repeat(40))['x-closeos-internal']).toBe('s'.repeat(40));
     expect(internalEmailHeaders(null)).not.toHaveProperty('x-closeos-internal');
+  });
+});
+
+describe('linkExpired (sign-public, sign-event, sign-verify, sign-pay)', () => {
+  const now = Date.parse('2026-10-01T00:00:00Z');
+  it("n'expire pas sans date (contrats existants)", () => {
+    expect(linkExpired({ link_expires_at: null, status: 'sent' }, now)).toBe(false);
+    expect(linkExpired(null, now)).toBe(false);
+  });
+  it('expire une fois la date passée', () => {
+    expect(linkExpired({ link_expires_at: '2026-09-30T23:59:59Z', status: 'opened' }, now)).toBe(true);
+    expect(linkExpired({ link_expires_at: '2026-10-02T00:00:00Z', status: 'sent' }, now)).toBe(false);
+  });
+  it('laisse un signataire qui a signé accéder à son document', () => {
+    expect(linkExpired({ link_expires_at: '2020-01-01T00:00:00Z', status: 'signed' }, now)).toBe(false);
   });
 });

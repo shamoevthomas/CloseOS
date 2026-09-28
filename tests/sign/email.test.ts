@@ -157,3 +157,14 @@ describe('/api/sign-send-copy (signataire sans compte)', () => {
     expect(calls).toHaveLength(0);
   });
 });
+
+describe("invitation envoyée par l'API (api/_lib/sign-mail.js)", () => {
+  it('échappe le titre et les noms venant du SaaS', async () => {
+    const { inviteHtml } = await import('../../api/_lib/sign-mail.js');
+    const html = inviteHtml({ name: '<b>Marie</b>', title: 'Devis <script>x</script>', link: 'https://sign.closeos.fr/sign/s/abc', senderName: 'Dupont & Fils' });
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('Devis &lt;script&gt;');
+    expect(html).toContain('Dupont &amp; Fils');
+    expect(html).toContain('https://sign.closeos.fr/sign/s/abc');
+  });
+});

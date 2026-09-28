@@ -7,6 +7,8 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encodeBase64 } from "jsr:@std/encoding@1/base64";
+import { linkExpired } from "../_shared/sign-guards.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +22,7 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 async function resolveSigner(supabase: any, token: string): Promise<{ contractId: string; signer: any | null } | null> {
   const { data: signer } = await supabase
     .from("sign_contract_signers")
-    .select("id,contract_id,signer_index,contact_id,status,verification_locked,verification_lock_reason,verification_lock_step,payment_required,payment_status")
+    .select("id,contract_id,signer_index,contact_id,status,verification_locked,verification_lock_reason,verification_lock_step,payment_required,payment_status,link_expires_at")
     .eq("access_token", token).maybeSingle();
   if (signer?.contract_id) return { contractId: signer.contract_id, signer };
   const { data: legacy } = await supabase.from("sign_contracts").select("id").eq("access_token", token).maybeSingle();
@@ -40,14 +42,21 @@ Deno.serve(async (req: Request) => {
     const resolved = await resolveSigner(supabase, token);
     if (!resolved) return json({ ok: false, error: "contract" });
     const { contractId, signer } = resolved;
+    if (linkExpired(signer)) return json({ ok: false, error: "expired" });
 
     // ── GET : payload sûr pour la page signataire (assemblé côté client) ──
     if (action === "get") {
       const { data: contract } = await supabase
         .from("sign_contracts")
-        .select("id,title,content_html,status,source_type,pdf_data,owner_email,theme,images,inline_values,contact_id,signing_order,verification_method,payment_mode,payment_amount,payment_interval,payment_duration_months,payment_trial_days,payment_tva_rate,payment_status")
+        .select("id,title,content_html,status,source_type,pdf_data,pdf_path,owner_email,theme,images,inline_values,contact_id,signing_order,verification_method,payment_mode,payment_amount,payment_interval,payment_duration_months,payment_trial_days,payment_tva_rate,payment_status")
         .eq("id", contractId).maybeSingle();
       if (!contract) return json({ ok: false, error: "contract" });
+      // PDF rangé dans Storage (contrats créés par l'API) : renvoyé comme avant, en data URL.
+      if (!contract.pdf_data && contract.pdf_path) {
+        const { data: file } = await supabase.storage.from("sign-documents").download(contract.pdf_path);
+        if (file) contract.pdf_data = `data:application/pdf;base64,${encodeBase64(new Uint8Array(await file.arrayBuffer()))}`;
+      }
+      delete contract.pdf_path;
 
       const { data: signers } = await supabase
         .from("sign_contract_signers")

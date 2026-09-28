@@ -1,10 +1,10 @@
 # Audit — CloseOS Sign comme moteur de signature externe (API, webhooks, marque blanche)
 
-*Audit en lecture seule du repo `closeros-mvp`, 27 septembre 2026. Mis à jour à la fin du lot 1 (branche `sign/lot1-securite`) : voir « État après le lot 1 » ci-dessous. Les sections 1 à 6 décrivent l'état **avant** le lot 1, corrigées là où la vérification en production a levé un « à vérifier ».*
+*Audit en lecture seule du repo `closeros-mvp`, 27 septembre 2026. Mis à jour à la fin du lot 1 (branche `sign/lot1-securite`) et du lot 2 (branche `sign/lot2-api`) : voir « État après le lot 1 » et « Lot 2 » ci-dessous. Les sections 1 à 6 décrivent l'état **avant** le lot 1, corrigées là où la vérification en production a levé un « à vérifier ».*
 
 ## État après le lot 1 (sécuriser et versionner)
 
-**Statut :** code corrigé et testé sur la branche ; **pas encore déployé** (migrations, Edge Functions et Vercel à déployer dans l'ordre indiqué dans la PR). Tant que ce n'est pas fait, les failles restent ouvertes en production.
+**Statut :** **déployé en production le 28 septembre 2026** (PR #3 et #4), vérifié de bout en bout.
 
 **Versionné dans le repo :**
 - les 8 Edge Functions déployées, copie conforme (commit `a3a6360`) : `sign-public`, `sign-event`, `sign-verify` v13, `sign-pay` v7, `sign-certificate` v3, `sign-rep` v3, `sign-stripe-webhook` (Edge, en plus de la route Vercel du même nom) et `sign-bootstrap` (neutralisée : répond 410, à supprimer du projet) ; réglages `verify_jwt` dans `supabase/config.toml` ;
@@ -39,7 +39,37 @@
 - **MCP :** 25 outils (`sign_unlock_signer`, `sign_renew_signer_link`).
 - **À prévoir dans l'API REST du lot 2 :** `POST /contracts/:id/signers/:sid/unlock` → `sign_unlock_signer_internal(sid, compte, 'api')` et `POST /contracts/:id/signers/:sid/renew-link` → `sign_renew_signer_link_internal(sid, compte, 'api')`, après la même vérification de propriété que le MCP. Toute la logique est dans ces deux fonctions SQL, rien à dupliquer.
 
-**Tests :** `npm test` (Vitest), 101 cas : SQL sur Postgres local (`SIGN_TEST_PG`), handlers Vercel, règles des Edge Functions. Chaque correctif a été vérifié en contre-épreuve : ses tests échouent sur l'ancien code.
+## Lot 2 (API REST pour plateformes)
+
+**Statut :** code et tests sur la branche `sign/lot2-api` ; **pas encore déployé** (migration `20260929_sign_platforms.sql`, Edge Functions `sign-public`, `sign-event`, `sign-verify`, `sign-pay`, puis Vercel).
+
+**Modèle :** une plateforme (`sign_platforms` : nom, clé API en SHA-256, scopes, secret webhook pour le lot 4) agit pour ses artisans. Chaque artisan est un **compte technique** : utilisateur auth `acct-<uuid>@platform.sign.closeos.fr` sans mot de passe (`module: 'sign'`, donc pas de profil Sales), ligne `sign_users` avec `platform_id`, `external_ref` (unique par plateforme), `contact_email` (adresse réelle, copie du certificat) et `subscription_exempt` (la plateforme paie). `platform_id` et `external_ref` sont protégés par `sign_users_guard` comme l'abonnement. Ces comptes ne sont pas synchronisés dans Brevo.
+
+**API `/api/sign/v1`** (`api/sign-v1.js`, une fonction Vercel, routée par `vercel.json`) :
+- `Authorization: Bearer <clé plateforme>` ; `X-Sign-Account: <compte>` sur les routes de contrats ; scopes `accounts:write`, `contracts:write`, `contracts:read` ; `Idempotency-Key` sur tout POST (réponse rejouée, table `sign_api_idempotency`) ; erreurs `{ error: { code, message } }` ; identifiants UUID uniquement.
+- `POST /accounts` (idempotent sur `external_ref`), `GET /accounts/:id`.
+- `POST /contracts` : PDF par base64 ou URL (garde SSRF du lot 1), rangé dans `sign-documents/<contrat>/original.pdf` ; tailles réelles des pages lues avec pdf-lib (`page_sizes`) ; empreinte SHA-256 des octets figée à la création. Signataires et champs acceptés dans le même appel.
+- `POST /contracts/:id/fields` (fractions de page, hauteur réelle des pages non A4), `POST /contracts/:id/signers` (vérification email : le code part à l'email du signataire).
+- `POST /contracts/:id/send` : même logique que l'envoi de l'app (jeton par signataire, statuts `sent`/`pending` selon l'ordre, événement `sent` par signataire invité, contacts), invitation email au nom de l'artisan, liens expirant après 30 jours par défaut (`expires_in_days`). Exige un email et un champ signature par signataire. Un email en échec n'annule pas l'envoi : il est signalé.
+- `GET /contracts/:id` : statut global et, par signataire, `viewed_at`, `signed_at`, `verification_locked`, `link_expires_at`, `link_expired`, `sign_url`.
+- `POST …/signers/:sid/unlock` et `…/renew-link` (fonctions SQL du lot UX, `via: 'api'`) ; un lien renouvelé repart pour 30 jours.
+- `GET /contracts/:id/document` (original, ou PDF signé une fois terminé) et `/certificate` : URL signée de 5 minutes, ou `?redirect=true`. `GET /contracts/:id/events` : journal de preuve.
+- `GET /api/sign/v1/openapi.json` : contrat OpenAPI 3.1.
+
+**Une seule logique :** `api/_lib/sign-service.js` porte la création, les champs, les signataires, l'envoi, le statut, le journal, les documents, le déblocage et le nouveau lien. Le REST et le MCP n'en sont que des adaptateurs. Le MCP garde le PDF en base64 dans la ligne (éditeur actuel) et n'envoie pas d'email ; son envoi suit désormais l'app (empreinte, statuts, événements), et il ne repasse plus en `sent` un contrat signé.
+
+**Expiration des liens :** `sign_contract_signers.link_expires_at` (vide pour les contrats existants : aucun changement). Vérifiée par `sign-public`, `sign-event`, `sign-verify` et au démarrage d'un paiement `sign-pay` ; un signataire qui a signé garde l'accès à son document.
+
+**Page de signature inchangée :** pour un contrat dont le PDF est dans Storage, `sign-public` le renvoie en data URL comme avant.
+
+**Reste ouvert après le lot 2 :**
+- Le PDF signé et le certificat sont encore produits par le navigateur du dernier signataire (`sealed.pdf`, `certificat.pdf`) : l'API les expose dès qu'ils existent. Génération serveur au lot 3.
+- Notifications par polling de `GET /contracts/:id` en attendant les webhooks (lot 4).
+- L'alerte « signataire bloqué » n'est pas envoyée à un artisan de plateforme (il n'a pas accès à l'app) : c'est la plateforme qui débloque, prévenue au lot 4 par `signer.otp_locked`.
+- Pas de quota ni de limitation de débit par plateforme.
+- Création d'une plateforme : `scripts/sign-create-platform.mjs` (clé affichée une fois).
+
+**Tests :** `npm test` (Vitest), 190 cas après le lot 2 : SQL sur Postgres local (`SIGN_TEST_PG`), handlers Vercel, API REST et MCP de bout en bout sur un faux Supabase en mémoire (`tests/sign/fake-supabase.ts`), règles des Edge Functions. Chaque correctif a été vérifié en contre-épreuve : ses tests échouent sur l'ancien code.
 
 ---
 
@@ -301,18 +331,18 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
 
 | Fonctionnalité nécessaire | État | Effort estimé |
 |---|---|---|
-| Interface API pour un SaaS (REST ou JSON-RPC stable, documentée) | **Partiel** (MCP seulement) | M : couche REST au-dessus des handlers de `api/mcp.js` |
-| Clé plateforme + sous-comptes par artisan, création de compte par API | **Absent** | L : entité plateforme, provisioning, facturation plateforme |
-| Clés API hashées, scopes, rotation, en en-tête | **Partiel** après lot 1 (clé MCP hashée + Bearer ; pas de scopes) | S |
-| Import PDF (vraies dimensions, taille, stockage) | **Partiel** | S : reprendre pdf-lib de `sign-mcp/index.mjs:112-133` ; M : passer à Storage |
-| Placement des champs | **Prêt** (limite non-A4) | S |
+| Interface API pour un SaaS (REST ou JSON-RPC stable, documentée) | **Prêt** après lot 2 (`/api/sign/v1`, OpenAPI) | — |
+| Clé plateforme + sous-comptes par artisan, création de compte par API | **Prêt** après lot 2 (facturation plateforme : hors lot) | — |
+| Clés API hashées, scopes, rotation, en en-tête | **Prêt** après lot 2 (clé plateforme hashée, scopes, rotation par script) | — |
+| Import PDF (vraies dimensions, taille, stockage) | **Prêt** par l'API après lot 2 (MCP : base64 et A4, inchangé) | — |
+| Placement des champs | **Prêt** (pages non A4 gérées après lot 2) | — |
 | Signataires, ordre, vérification | **Prêt** | S : déblocage d'un signataire, listes blanches multiples |
-| Liens de signature | **Prêt** (pas d'expiration) | S |
-| Envoi sans email CloseOS | **Prêt** via MCP | S : aligner `document_hash`, l'événement `sent` et les statuts signataires sur l'envoi de l'app |
+| Liens de signature | **Prêt** (expiration après lot 2) | — |
+| Envoi sans email CloseOS | **Prêt** (MCP, ou API avec `notify: false`), aligné sur l'app après lot 2 | — |
 | Statut | **Prêt** (polling) | — |
 | Webhooks sortants signés avec rejeu | **Absent** | M : réutiliser `emit-webhook.ts`, ajouter file + retries, déclencheur sur `sign_signature_events` |
 | PDF signé généré côté serveur, récupérable par API | **Absent** | L : génération serveur (pdf-lib sur le PDF d'origine) au lieu du navigateur |
-| Dossier de preuve récupérable par API | **Partiel** | S : outil `get_certificate` / `get_events` |
+| Dossier de preuve récupérable par API | **Prêt** après lot 2 (`/certificate`, `/events`) | — |
 | Signature propriétaire automatisable | **Absent** (humain requis) | M, décision produit : cachet serveur ou signature pré-enregistrée |
 | Marque blanche page (logo, couleurs, nom) | **Absent** | M |
 | Domaine personnalisé | **Absent** | M/L (domaines Vercel + certificats) |
@@ -321,21 +351,21 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
 | Refacturation SMS | **Absent** | M : compteur + quotas par compte |
 | Rétention, purge, legal hold | **Partiel** après lot 1 (`purge_hold` imposé en base ; pas de purge ni de cascade Storage) | M (lot 3) |
 | Code des Edge Functions et SQL versionnés | **Prêt** après lot 1 | — |
-| Failles de sécurité connues (§5.3 + 9 à 12) | **Corrigées** sur la branche lot 1, à déployer | — |
+| Failles de sécurité connues (§5.3 + 9 à 12) | **Corrigées** et déployées (lot 1) | — |
 
 *S = quelques jours, M = 1 à 2 semaines, L = plus de 2 semaines. Estimations indicatives.*
 
 ### 6.2 Chantiers à faire dans Sign, dans l'ordre
 
-1. **Sécuriser et versionner l'existant.** *Fait (lot 1), en attente de déploiement.*
+1. **Sécuriser et versionner l'existant.** *Fait (lot 1), déployé.*
    - Corriger les failles §5.3 : relais email, `sign-pay connect`, `sign-certificate get`, SSRF, suppression de preuve, contrat à `user_id` NULL.
    - Rapatrier dans le repo le code déployé des Edge Functions et le SQL des tables, RLS, triggers et RPC.
    - Sans cela, rien de ce qui est construit dessus n'est vérifiable.
-2. **Compte plateforme et sous-comptes.**
+2. **Compte plateforme et sous-comptes.** *Fait (lot 2), en attente de déploiement. Le paiement Stripe Connect par sous-compte n'est pas traité.*
    - Entité plateforme avec clé API hashée en en-tête et scopes.
    - Création de sous-comptes (un par artisan) par API, sans carte ni abonnement individuel.
    - Toutes les requêtes portent l'identifiant du sous-compte, et le paiement Stripe Connect est rattaché au sous-compte.
-3. **Fiabiliser le cycle côté serveur.**
+3. **Fiabiliser le cycle côté serveur.** *Lot 2 : envoi API aligné, expiration des liens, récupération par API. Lot 3 : génération serveur.*
    - Générer le PDF signé et le certificat côté serveur à la dernière signature, au lieu du navigateur.
    - Exposer « récupérer PDF signé + preuve » par API.
    - Aligner l'envoi API sur l'envoi app : `document_hash`, événements, statuts.
