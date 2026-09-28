@@ -9,7 +9,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { internalEmailHeaders } from "../_shared/sign-guards.ts";
+import { internalEmailHeaders, linkExpired } from "../_shared/sign-guards.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -143,7 +143,7 @@ async function resolveSigner(supabase: any, token: string): Promise<{ contract: 
   let contractId = signer?.contract_id ?? null;
   if (!contractId) { const { data: legacy } = await supabase.from("sign_contracts").select("id").eq("access_token", token).maybeSingle(); contractId = legacy?.id ?? null; }
   if (!contractId) return null;
-  const { data: contract } = await supabase.from("sign_contracts").select("id,title,owner_email,status,signing_order,verification_method,signer_count").eq("id", contractId).maybeSingle();
+  const { data: contract } = await supabase.from("sign_contracts").select("id,user_id,title,owner_email,status,signing_order,verification_method,signer_count").eq("id", contractId).maybeSingle();
   if (!contract) return null;
   let s = signer;
   if (!s) { const { data: s1 } = await supabase.from("sign_contract_signers").select("*").eq("contract_id", contractId).eq("signer_index", 1).maybeSingle(); s = s1; }
@@ -204,7 +204,9 @@ async function advanceAfterSignerDone(supabase: any, contract: any, signer: any,
 async function lockAndNotify(supabase: any, contract: any, signer: any, reason: "destination" | "code", step: number, ip: string | null) {
   await supabase.from("sign_contract_signers").update({ verification_locked: true, verification_lock_reason: reason, verification_lock_step: step }).eq("id", signer.id);
   await supabase.from("sign_signature_events").insert({ contract_id: contract.id, event_type: "security", ip_address: ip, metadata: { kind: "verification_locked", reason, step, signer_index: signer.signer_index } });
-  if (contract.owner_email) {
+  // Artisan d'une plateforme (compte technique, sans accès à l'app) : c'est la plateforme qui débloque.
+  const { data: owner } = await supabase.from("sign_users").select("platform_id").eq("id", contract.user_id).maybeSingle();
+  if (contract.owner_email && !owner?.platform_id) {
     const reasonLabel = reason === "destination" ? "saisie de la destination (étape 1)" : "saisie du code (étape 2)";
     await postEmail(contract.owner_email, "🔒 Accès signataire bloqué — CloseOS Sign", lockEmailHtml(contract.title || "votre document", reasonLabel, `${UNLOCK_BASE}/sign/app/contrat/${contract.id}`));
   }
@@ -227,6 +229,7 @@ Deno.serve(async (req: Request) => {
     const resolved = await resolveSigner(supabase, token);
     if (!resolved) return json({ ok: false, error: "contract" });
     const { contract, signer } = resolved;
+    if (linkExpired(signer)) return json({ ok: false, error: "expired" });
     const method: string = contract.verification_method;
 
     if (action === "finalize") {

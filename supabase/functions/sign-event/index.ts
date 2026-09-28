@@ -4,6 +4,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { linkExpired } from "../_shared/sign-guards.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +26,8 @@ Deno.serve(async (req: Request) => {
     if (!token || !ALLOWED.has(type)) return json({ ok: false, error: "params" }, 400);
 
     // Résout le signataire par token (fallback legacy sur le contrat)
-    const { data: signer } = await supabase.from("sign_contract_signers").select("contract_id,signer_index,email").eq("access_token", token).maybeSingle();
+    const { data: signer } = await supabase.from("sign_contract_signers").select("contract_id,signer_index,email,status,link_expires_at").eq("access_token", token).maybeSingle();
+    if (linkExpired(signer)) return json({ ok: false, error: "expired" });
     let contractId = signer?.contract_id ?? null;
     const signerIndex = signer?.signer_index ?? 1;
     if (!contractId) {

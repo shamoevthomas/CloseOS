@@ -5,7 +5,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { bearerToken, internalEmailHeaders, safeOrigin } from "../_shared/sign-guards.ts";
+import { bearerToken, internalEmailHeaders, linkExpired, safeOrigin } from "../_shared/sign-guards.ts";
 import Stripe from "https://esm.sh/stripe@17.7.0?target=denonext";
 
 const cors = {
@@ -190,6 +190,7 @@ Deno.serve(async (req: Request) => {
       const resolved = await resolveSigner(supabase, token);
       if (!resolved) return json({ ok: false, error: "contract" });
       const { contract: c, signer } = resolved;
+      if (linkExpired(signer)) return json({ ok: false, error: "expired" });
       if (!c.payment_enabled || !signer.payment_required) return json({ ok: false, error: "no_payment" });
       if (!c.payment_mode || !c.payment_amount || c.payment_amount <= 0) return json({ ok: false, error: "no_payment" });
       if (signer.status === "signed" || signer.payment_status === "paid") return json({ ok: false, error: "already_paid" });
