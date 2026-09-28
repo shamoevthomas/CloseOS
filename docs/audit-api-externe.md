@@ -87,12 +87,14 @@
 
 **Reste ouvert après le lot 3 :**
 - Contrats texte : toujours scellés par le navigateur (le faux scellement reste possible pour eux). Les produire côté serveur demande un rendu HTML serveur (navigateur sans interface) : chantier à part.
-- Fichiers Storage orphelins déjà présents (contrats supprimés avant le lot 3) : inventoriés, non purgés (décision en attente).
+- Fichiers Storage orphelins déjà présents (contrats supprimés avant le lot 3) : archivés sous conservation légale (voir lot 4).
 - `buildCertData` existe en deux exemplaires (Edge pour le chemin navigateur, Node pour le serveur) tant que le chemin navigateur est gardé.
 
 ## Lot 4 (webhooks sortants)
 
-**Statut :** code et tests sur la branche `sign/lot4-webhooks` ; **pas encore déployé** (migration `20261001_sign_webhooks.sql`, variable `CRON_SECRET`, Vercel).
+**Statut :** **déployé en production le 28 septembre 2026** (PR #8), vérifié de bout en bout sans intervention humaine : boîte email jetable (mail.tm) pour l'invitation et le code, signature tracée par Playwright (mobile 390 px), récepteur local exposé par un tunnel Cloudflare. Reçus, tous avec une signature HMAC valide : `webhook.test`, `contract.sent`, `signer.opened` (refusé une fois en 500, renvoyé 1 min 36 plus tard par la tâche planifiée), `signer.signed`, `contract.completed`, `contract.certified` (4 s après), `signer.otp_locked` (raison `destination`), `contract.expired` (détecté par la tâche en moins d'une minute) ; nouveau lien → expiration réarmée. 10 livraisons, 0 échec. `CRON_SECRET` créé : les tâches planifiées refusent désormais les appels non authentifiés.
+
+**Fichiers orphelins :** déplacés (empreintes vérifiées identiques avant et après) dans `sign-documents/_archive/orphelins-2026-09-28/` avec `inventaire.csv`, sous conservation légale (`sign_storage_holds`, respectée par la purge). Aucune purge. Copie de l'inventaire : `~/Backups/sign-fichiers-orphelins-2026-09-28.csv`.
 
 **Déclenchement :** un trigger sur chaque insertion dans `sign_signature_events` (et un sur `sign_contracts.payment_status`) crée une livraison par adresse active abonnée, pour les seuls contrats d'artisans de plateforme. Il rattrape toute erreur : **un webhook ne bloque jamais une signature**.
 
@@ -111,9 +113,9 @@
 
 **API (niveau plateforme, scope `webhooks:write`, ajouté aux plateformes existantes) :** `POST /webhooks` (10 adresses actives maximum), `GET /webhooks`, `DELETE /webhooks/:id`, `POST /webhooks/:id/test` (envoi immédiat de `webhook.test`), `GET /webhooks/:id/deliveries`, `POST /webhooks/secret/rotate` (**un secret par plateforme**, renvoyé une seule fois ; l'ancien reste valable 24 h, les deux signatures sont alors envoyées). OpenAPI : routes et section `webhooks` (9 événements, payload, vérification).
 
-**Trouvé pendant le lot 4 :** `CRON_SECRET` n'est pas défini sur Vercel ; les tâches planifiées existantes ne vérifient l'appelant que s'il l'est, elles sont donc appelables par n'importe qui. La nouvelle tâche l'exige. Le créer protège aussi toutes les autres (Vercel l'envoie automatiquement).
+**Trouvé pendant le lot 4 (corrigé) :** `CRON_SECRET` n'était pas défini sur Vercel ; les tâches planifiées existantes ne vérifiaient l'appelant que s'il l'était, elles étaient donc appelables par n'importe qui. Créé au déploiement (jamais affiché) : `sign-reminders` répond maintenant 401 sans le secret.
 
-**Tests :** `npm test` (Vitest), 242 cas après le lot 4 (219 après le lot 3, 190 après le lot 2) : SQL sur Postgres local (`SIGN_TEST_PG`), handlers Vercel, API REST et MCP de bout en bout sur un faux Supabase en mémoire (`tests/sign/fake-supabase.ts`), règles des Edge Functions. Chaque correctif a été vérifié en contre-épreuve : ses tests échouent sur l'ancien code.
+**Tests :** `npm test` (Vitest), 244 cas après le lot 4 (219 après le lot 3, 190 après le lot 2) : SQL sur Postgres local (`SIGN_TEST_PG`), handlers Vercel, API REST et MCP de bout en bout sur un faux Supabase en mémoire (`tests/sign/fake-supabase.ts`), règles des Edge Functions. Chaque correctif a été vérifié en contre-épreuve : ses tests échouent sur l'ancien code.
 
 ---
 
@@ -414,7 +416,7 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
    - Exposer « récupérer PDF signé + preuve » par API.
    - Aligner l'envoi API sur l'envoi app : `document_hash`, événements, statuts.
    - Ajouter l'expiration des liens.
-4. **Webhooks sortants.** *Fait (lot 4), en attente de déploiement.*
+4. **Webhooks sortants.** *Fait (lot 4), déployé.*
    - Déclencheur sur `sign_signature_events`.
    - Payload signé HMAC avec timestamp.
    - File d'attente avec retries, et configuration par API pour le compte plateforme.
