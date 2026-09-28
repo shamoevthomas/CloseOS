@@ -26,7 +26,7 @@ async function sessionEmail(): Promise<string | null> {
 export type OverlayImage = { id: string; page: number; x: number; y: number; w: number; h: number; src: string };
 export type SignRole = 'owner' | 'signer';
 // signerIndex : 1..N pour un champ de signataire ; null/undefined pour un champ du propriétaire.
-export type SignFreeField = { id: string; type: string; x: number; y: number; w: number; h: number; page: number; role: SignRole; signerIndex?: number | null; value?: string; label?: string };
+export type SignFreeField = { id: string; type: string; x: number; y: number; w: number; h: number; page: number; role: SignRole; signerIndex?: number | null; value?: string; label?: string; required?: boolean };
 
 export type SignSignerStatus = 'pending' | 'sent' | 'opened' | 'signed' | 'declined';
 export type SignSigner = {
@@ -93,6 +93,8 @@ export function mapFieldRow(f: any): SignFreeField {
     signerIndex: f.signer_index != null ? Number(f.signer_index) : role === 'owner' ? null : 1,
     value: f.value ?? '',
     label: f.label ?? '',
+    // Absent (ancienne version de sign-public) = obligatoire, comme avant.
+    required: f.required !== false,
   };
 }
 
