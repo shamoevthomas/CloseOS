@@ -1,6 +1,6 @@
 # Audit — CloseOS Sign comme moteur de signature externe (API, webhooks, marque blanche)
 
-*Audit en lecture seule du repo `closeros-mvp`, 27 septembre 2026. Mis à jour à la fin du lot 1 (branche `sign/lot1-securite`) et du lot 2 (branche `sign/lot2-api`) : voir « État après le lot 1 » et « Lot 2 » ci-dessous. Les sections 1 à 6 décrivent l'état **avant** le lot 1, corrigées là où la vérification en production a levé un « à vérifier ».*
+*Audit en lecture seule du repo `closeros-mvp`, 27 septembre 2026. Mis à jour à la fin du lot 1 (branche `sign/lot1-securite`) du lot 2 (branche `sign/lot2-api`) et du lot 3 (branche `sign/lot3-serveur`) : voir « État après le lot 1 », « Lot 2 » et « Lot 3 » ci-dessous. Les sections 1 à 6 décrivent l'état **avant** le lot 1, corrigées là où la vérification en production a levé un « à vérifier ».*
 
 ## État après le lot 1 (sécuriser et versionner)
 
@@ -41,7 +41,7 @@
 
 ## Lot 2 (API REST pour plateformes)
 
-**Statut :** code et tests sur la branche `sign/lot2-api` ; **pas encore déployé** (migration `20260929_sign_platforms.sql`, Edge Functions `sign-public`, `sign-event`, `sign-verify`, `sign-pay`, puis Vercel).
+**Statut :** **déployé en production le 28 septembre 2026** (PR #5), vérifié de bout en bout : artisan, devis PDF de 2 pages, vérification email, signature réelle, PDF signé et certificat récupérés par l'API (empreinte du fichier = `sealed_hash`). Correctif associé (PR #6) : l'ouverture d'un lien de signature affichait la landing pendant ~3 s (shell pré-rendu servi par `social-meta`) ; remplacée par l'écran « Chargement de votre document… », vérifié en 4G simulée.
 
 **Modèle :** une plateforme (`sign_platforms` : nom, clé API en SHA-256, scopes, secret webhook pour le lot 4) agit pour ses artisans. Chaque artisan est un **compte technique** : utilisateur auth `acct-<uuid>@platform.sign.closeos.fr` sans mot de passe (`module: 'sign'`, donc pas de profil Sales), ligne `sign_users` avec `platform_id`, `external_ref` (unique par plateforme), `contact_email` (adresse réelle, copie du certificat) et `subscription_exempt` (la plateforme paie). `platform_id` et `external_ref` sont protégés par `sign_users_guard` comme l'abonnement. Ces comptes ne sont pas synchronisés dans Brevo.
 
@@ -69,7 +69,28 @@
 - Pas de quota ni de limitation de débit par plateforme.
 - Création d'une plateforme : `scripts/sign-create-platform.mjs` (clé affichée une fois).
 
-**Tests :** `npm test` (Vitest), 190 cas après le lot 2 : SQL sur Postgres local (`SIGN_TEST_PG`), handlers Vercel, API REST et MCP de bout en bout sur un faux Supabase en mémoire (`tests/sign/fake-supabase.ts`), règles des Edge Functions. Chaque correctif a été vérifié en contre-épreuve : ses tests échouent sur l'ancien code.
+## Lot 3 (PDF signé et certificat produits par le serveur)
+
+**Statut :** code et tests sur la branche `sign/lot3-serveur` ; **pas encore déployé** (migration `20260930_sign_server_seal.sql`, Vercel, puis Edge Functions `sign-verify`, `sign-pay`, `sign-certificate`).
+
+**Avant :** le navigateur du dernier signataire rendait chaque page en image (pdf.js), y collait les champs (jsPDF) et envoyait ce PDF au serveur, qui le scellait tel quel. Conséquences : document rasterisé, pages non A4 déformées (une page paysage ressortait en 421×595, constaté au test du lot 2), et un signataire pouvait sceller un PDF de son choix.
+
+**Maintenant (contrats PDF) :**
+- À la dernière signature, `sign-verify` (finalize) et `sign-pay` (confirm) appellent `api/sign-internal.ts?action=seal` (Vercel, secret interne). Ce n'est pas une Edge Function : pdf-lib sur un vrai devis dépasse leurs 2 s de CPU.
+- `api/_lib/sign-seal.js` dessine les valeurs **sur le PDF d'origine** (Storage ou base64) : texte et pages restent vectoriels, dans leur format réel ; une page tournée est redressée sans être rasterisée. Signature dessinée : **SVG** tracé en vectoriel ; image importée : image ; initiales tapées : texte. Images insérées dans l'éditeur, cases à cocher et dates comme dans l'application.
+- `api/_lib/sign-finalize.ts` : verrou (`sign_seal_lock`), `sealed.pdf` + `sealed_hash` + `sealed_by = 'server'`, certificat avec la **même mise en page** que la page signataire (`src/lib/signCertificatePdf.ts`, partagé), `certificat.pdf` = scellé + certificat, événements `sealed` et `certified` (`by: 'server'`), PDF final en pièce jointe à toutes les parties. Idempotent ; une certification interrompue reprend sans rescellement ; un verrou abandonné est repris après 5 minutes.
+- **Signatures SVG :** la modale enregistre les tracés et produit `data:image/svg+xml` (viewBox recadré, `<path>` M/L). Le serveur ne relit que ce format strict (ni script, ni image, ni texte).
+- **Ancien chemin navigateur gardé en secours** : contrats texte (rendu HTML), ou échec du serveur. Il ne peut plus remplacer un scellement serveur (`sign-certificate` refuse `seal`/`finalize` si `sealed_by = 'server'` ou verrou actif). La page signataire et l'éditeur tentent d'abord `server-seal`. Correction au passage : il gardait l'orientation des pages paysage, et convertit une signature SVG en PNG pour jsPDF.
+- Les endpoints du lot 2 exposent ces fichiers sans changement (`/document`, `/certificate`).
+
+**Purge :** supprimer un contrat inscrit son dossier Storage dans `sign_storage_purge_queue` (trigger) ; la tâche planifiée `sign-reminders` la vide (`api/_lib/sign-purge.js`) et ne purge jamais un dossier dont le contrat existe encore. `purge_hold` : la suppression d'un contrat sous conservation reste refusée en base (lot 1), il n'entre donc jamais dans la file.
+
+**Reste ouvert après le lot 3 :**
+- Contrats texte : toujours scellés par le navigateur (le faux scellement reste possible pour eux). Les produire côté serveur demande un rendu HTML serveur (navigateur sans interface) : chantier à part.
+- Fichiers Storage orphelins déjà présents (contrats supprimés avant le lot 3) : non purgés automatiquement ; à inventorier avant toute suppression.
+- `buildCertData` existe en deux exemplaires (Edge pour le chemin navigateur, Node pour le serveur) tant que le chemin navigateur est gardé.
+
+**Tests :** `npm test` (Vitest), 219 cas après le lot 3 (190 après le lot 2) : SQL sur Postgres local (`SIGN_TEST_PG`), handlers Vercel, API REST et MCP de bout en bout sur un faux Supabase en mémoire (`tests/sign/fake-supabase.ts`), règles des Edge Functions. Chaque correctif a été vérifié en contre-épreuve : ses tests échouent sur l'ancien code.
 
 ---
 
@@ -341,7 +362,7 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
 | Envoi sans email CloseOS | **Prêt** (MCP, ou API avec `notify: false`), aligné sur l'app après lot 2 | — |
 | Statut | **Prêt** (polling) | — |
 | Webhooks sortants signés avec rejeu | **Absent** | M : réutiliser `emit-webhook.ts`, ajouter file + retries, déclencheur sur `sign_signature_events` |
-| PDF signé généré côté serveur, récupérable par API | **Absent** | L : génération serveur (pdf-lib sur le PDF d'origine) au lieu du navigateur |
+| PDF signé généré côté serveur, récupérable par API | **Prêt** après lot 3 pour les contrats PDF (texte : navigateur) | — |
 | Dossier de preuve récupérable par API | **Prêt** après lot 2 (`/certificate`, `/events`) | — |
 | Signature propriétaire automatisable | **Absent** (humain requis) | M, décision produit : cachet serveur ou signature pré-enregistrée |
 | Marque blanche page (logo, couleurs, nom) | **Absent** | M |
@@ -349,7 +370,7 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
 | Emails / SMS désactivables ou brandés | **Partiel** (invitation seulement) | M : flag par compte ou contrat sur OTP, séquentiel, final, relances |
 | Paiement désactivable | **Prêt** | — |
 | Refacturation SMS | **Absent** | M : compteur + quotas par compte |
-| Rétention, purge, legal hold | **Partiel** après lot 1 (`purge_hold` imposé en base ; pas de purge ni de cascade Storage) | M (lot 3) |
+| Rétention, purge, legal hold | **Prêt** après lot 3 (`purge_hold` en base, purge Storage en cascade par file) | — |
 | Code des Edge Functions et SQL versionnés | **Prêt** après lot 1 | — |
 | Failles de sécurité connues (§5.3 + 9 à 12) | **Corrigées** et déployées (lot 1) | — |
 
@@ -361,11 +382,11 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
    - Corriger les failles §5.3 : relais email, `sign-pay connect`, `sign-certificate get`, SSRF, suppression de preuve, contrat à `user_id` NULL.
    - Rapatrier dans le repo le code déployé des Edge Functions et le SQL des tables, RLS, triggers et RPC.
    - Sans cela, rien de ce qui est construit dessus n'est vérifiable.
-2. **Compte plateforme et sous-comptes.** *Fait (lot 2), en attente de déploiement. Le paiement Stripe Connect par sous-compte n'est pas traité.*
+2. **Compte plateforme et sous-comptes.** *Fait (lot 2), déployé. Le paiement Stripe Connect par sous-compte n'est pas traité.*
    - Entité plateforme avec clé API hashée en en-tête et scopes.
    - Création de sous-comptes (un par artisan) par API, sans carte ni abonnement individuel.
    - Toutes les requêtes portent l'identifiant du sous-compte, et le paiement Stripe Connect est rattaché au sous-compte.
-3. **Fiabiliser le cycle côté serveur.** *Lot 2 : envoi API aligné, expiration des liens, récupération par API. Lot 3 : génération serveur.*
+3. **Fiabiliser le cycle côté serveur.** *Lot 2 : envoi API aligné, expiration des liens, récupération par API (déployé). Lot 3 : génération serveur (en attente de déploiement).*
    - Générer le PDF signé et le certificat côté serveur à la dernière signature, au lieu du navigateur.
    - Exposer « récupérer PDF signé + preuve » par API.
    - Aligner l'envoi API sur l'envoi app : `document_hash`, événements, statuts.
