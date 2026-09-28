@@ -29,3 +29,5 @@ create table if not exists public.business_team_members (
 grant usage on schema public, auth, extensions to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+-- Comme sur Supabase : les rôles API ont les droits de table (la RLS fait le tri).
+grant all on public.profiles, public.business_users, public.business_team_members to anon, authenticated, service_role;
