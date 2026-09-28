@@ -172,4 +172,13 @@ describe('processPurgeQueue', () => {
     expect([...fake.storage.keys()]).toEqual([`sign-documents/${alive.id}/original.pdf`]);
     expect(fake.table('sign_storage_purge_queue').every((q) => q.done_at)).toBe(true);
   });
+
+  it('ne purge jamais un dossier sous conservation légale', async () => {
+    const id = '22222222-2222-4222-8222-222222222222';
+    fake.storage.set(`sign-documents/${id}/sealed.pdf`, PDF);
+    fake.seed('sign_storage_holds', { prefix: `${id}/`, reason: 'test' });
+    fake.seed('sign_storage_purge_queue', { contract_id: id, attempts: 0, done_at: null, enqueued_at: '2026-09-28T00:00:00Z' });
+    expect(await processPurgeQueue()).toEqual({ purged: 0, files: 0, kept: 1, errors: 0 });
+    expect(fake.storage.has(`sign-documents/${id}/sealed.pdf`)).toBe(true);
+  });
 });

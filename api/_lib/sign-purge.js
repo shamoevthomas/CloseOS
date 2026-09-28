@@ -11,6 +11,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export async function processPurgeQueue({ limit = 50 } = {}) {
   const out = { purged: 0, files: 0, kept: 0, errors: 0 }
+  // Conservation légale (sign_storage_holds) : aucun chemin concerné n'est jamais effacé.
+  const holds = ((await db.select('sign_storage_holds?select=prefix')) || []).map((h) => h.prefix)
+  const held = (folder) => holds.some((p) => folder.startsWith(p) || p.startsWith(folder))
   const queue = (await db.select(`sign_storage_purge_queue?done_at=is.null&attempts=lt.5&select=contract_id,attempts&order=enqueued_at.asc&limit=${limit}`)) || []
   for (const item of queue) {
     const id = item.contract_id
@@ -20,6 +23,11 @@ export async function processPurgeQueue({ limit = 50 } = {}) {
       if (alive && alive.length) {
         out.kept++
         await db.update('sign_storage_purge_queue', `contract_id=eq.${id}`, { done_at: new Date().toISOString(), last_error: 'contrat toujours présent : rien purgé' })
+        continue
+      }
+      if (held(`${id}/`)) {
+        out.kept++
+        await db.update('sign_storage_purge_queue', `contract_id=eq.${id}`, { done_at: new Date().toISOString(), last_error: 'sous conservation légale : rien purgé' })
         continue
       }
       const names = await db.storageList(BUCKET, `${id}/`)

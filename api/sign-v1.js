@@ -15,6 +15,7 @@ import * as svc from './_lib/sign-service.js'
 import { measurePdf } from './_lib/sign-pdf.js'
 import { sendInvite } from './_lib/sign-mail.js'
 import { openapi } from './_lib/sign-openapi.js'
+import * as hooks from './_lib/sign-webhooks.js'
 
 export const config = { maxDuration: 60 }
 
@@ -38,18 +39,26 @@ const ROUTES = [
   { method: 'GET', pattern: ['contracts', ':id', 'document'], scope: 'contracts:read', account: true, run: async (r) => download(r, await svc.getDocument(r.ctx, r.params.id, r.query.type || undefined)) },
   { method: 'GET', pattern: ['contracts', ':id', 'certificate'], scope: 'contracts:read', account: true, run: async (r) => download(r, await svc.getCertificate(r.ctx, r.params.id)) },
   { method: 'GET', pattern: ['contracts', ':id', 'events'], scope: 'contracts:read', account: true, run: async (r) => [200, { data: await svc.listEvents(r.ctx, r.params.id) }] },
+  // Webhooks : niveau plateforme (pas de X-Sign-Account)
+  { method: 'POST', pattern: ['webhooks', 'secret', 'rotate'], scope: 'webhooks:write', run: async (r) => [200, await hooks.rotateSecret(r.platform)] },
+  { method: 'POST', pattern: ['webhooks'], scope: 'webhooks:write', run: async (r) => [201, await hooks.createEndpoint(r.platform, r.body)] },
+  { method: 'GET', pattern: ['webhooks'], scope: 'webhooks:write', run: async (r) => [200, await hooks.listEndpoints(r.platform)] },
+  { method: 'DELETE', pattern: ['webhooks', ':id'], scope: 'webhooks:write', run: async (r) => [200, await hooks.deleteEndpoint(r.platform, r.params.id)] },
+  { method: 'POST', pattern: ['webhooks', ':id', 'test'], scope: 'webhooks:write', run: async (r) => [200, await hooks.testEndpoint(r.platform, r.params.id)] },
+  { method: 'GET', pattern: ['webhooks', ':id', 'deliveries'], scope: 'webhooks:write', run: async (r) => [200, await hooks.listDeliveries(r.platform, r.params.id, r.query)] },
 ]
 
 function match(segments, pattern) {
   if (segments.length !== pattern.length) return null
+  // Segments fixes d'abord : « webhooks/secret/rotate » ne doit pas passer pour « webhooks/:id/... ».
+  if (pattern.some((p, i) => !p.startsWith(':') && p !== segments[i])) return null
   const params = {}
   for (let i = 0; i < pattern.length; i++) {
-    if (pattern[i].startsWith(':')) {
-      const name = pattern[i].slice(1)
-      // Identifiants : UUID uniquement (évite toute injection dans les filtres PostgREST).
-      if (!svc.isUuid(segments[i])) return { params, badId: name }
-      params[name] = segments[i].toLowerCase()
-    } else if (pattern[i] !== segments[i]) return null
+    if (!pattern[i].startsWith(':')) continue
+    const name = pattern[i].slice(1)
+    // Identifiants : UUID uniquement (évite toute injection dans les filtres PostgREST).
+    if (!svc.isUuid(segments[i])) return { params, badId: name }
+    params[name] = segments[i].toLowerCase()
   }
   return { params }
 }

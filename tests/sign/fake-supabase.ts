@@ -12,6 +12,7 @@ const DEFAULTS: Record<string, () => Row> = {
   sign_contract_signers: () => ({ status: 'pending', verification_locked: false, payment_required: false, payment_status: 'none', inline_values: {} }),
   sign_contract_fields: () => ({ placement: 'free', required: true }),
   sign_users: () => ({ subscription_exempt: false, has_onboarded: false }),
+  sign_webhook_endpoints: () => ({ active: true }),
   sign_platforms: () => ({ active: true, scopes: ['accounts:write', 'contracts:write', 'contracts:read'] }),
 };
 // Contraintes d'unicité reproduites : [table, colonnes, nom de l'index].
@@ -53,6 +54,9 @@ export class FakeSupabase {
   rpcs: Record<string, RpcHandler> = {};
   calls: { method: string; url: URL; body?: any }[] = [];
   failEmail = false;
+  /** Requêtes vers des hôtes tiers (webhooks) et réponse à leur faire. */
+  outbound: { url: string; headers: Record<string, string>; body: string }[] = [];
+  outboundStatus: (url: string) => number = () => 200;
   /** Appelé avant chaque requête : permet de simuler une écriture concurrente. */
   onRequest?: (method: string, url: URL) => void;
 
@@ -169,6 +173,11 @@ export class FakeSupabase {
         const id = url.pathname.split('/').pop();
         this.users = this.users.filter((u) => u.id !== id);
         out = { status: 200, body: {} };
+      } else if (url.hostname !== 'sb.test') {
+        const h: Record<string, string> = {};
+        headers.forEach((v, k) => { h[k] = v; });
+        this.outbound.push({ url: url.toString(), headers: h, body: String(init.body ?? '') });
+        return new Response('ok', { status: this.outboundStatus(url.toString()) });
       } else {
         throw new Error(`fetch inattendu : ${method} ${url}`);
       }

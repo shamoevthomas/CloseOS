@@ -1,6 +1,6 @@
 # Audit — CloseOS Sign comme moteur de signature externe (API, webhooks, marque blanche)
 
-*Audit en lecture seule du repo `closeros-mvp`, 27 septembre 2026. Mis à jour à la fin du lot 1 (branche `sign/lot1-securite`) du lot 2 (branche `sign/lot2-api`) et du lot 3 (branche `sign/lot3-serveur`) : voir « État après le lot 1 », « Lot 2 » et « Lot 3 » ci-dessous. Les sections 1 à 6 décrivent l'état **avant** le lot 1, corrigées là où la vérification en production a levé un « à vérifier ».*
+*Audit en lecture seule du repo `closeros-mvp`, 27 septembre 2026. Mis à jour à la fin du lot 1 (branche `sign/lot1-securite`) du lot 2 (branche `sign/lot2-api`), du lot 3 (branche `sign/lot3-serveur`) et du lot 4 (branche `sign/lot4-webhooks`) : voir « État après le lot 1 », « Lot 2 », « Lot 3 » et « Lot 4 » ci-dessous. Les sections 1 à 6 décrivent l'état **avant** le lot 1, corrigées là où la vérification en production a levé un « à vérifier ».*
 
 ## État après le lot 1 (sécuriser et versionner)
 
@@ -71,7 +71,7 @@
 
 ## Lot 3 (PDF signé et certificat produits par le serveur)
 
-**Statut :** code et tests sur la branche `sign/lot3-serveur` ; **pas encore déployé** (migration `20260930_sign_server_seal.sql`, Vercel, puis Edge Functions `sign-verify`, `sign-pay`, `sign-certificate`).
+**Statut :** **déployé en production le 28 septembre 2026** (PR #7), vérifié de bout en bout : devis portrait + paysage signé en dessinant, `sealed_by = server`, pages conservées (842×595), signature en tracés vectoriels sans image, certificat complet ; purge Storage testée en réel (1 dossier, 3 fichiers). Fichiers orphelins antérieurs inventoriés sans purge : `~/Backups/sign-fichiers-orphelins-2026-09-28.csv` (5 contrats, 10 fichiers).
 
 **Avant :** le navigateur du dernier signataire rendait chaque page en image (pdf.js), y collait les champs (jsPDF) et envoyait ce PDF au serveur, qui le scellait tel quel. Conséquences : document rasterisé, pages non A4 déformées (une page paysage ressortait en 421×595, constaté au test du lot 2), et un signataire pouvait sceller un PDF de son choix.
 
@@ -87,10 +87,33 @@
 
 **Reste ouvert après le lot 3 :**
 - Contrats texte : toujours scellés par le navigateur (le faux scellement reste possible pour eux). Les produire côté serveur demande un rendu HTML serveur (navigateur sans interface) : chantier à part.
-- Fichiers Storage orphelins déjà présents (contrats supprimés avant le lot 3) : non purgés automatiquement ; à inventorier avant toute suppression.
+- Fichiers Storage orphelins déjà présents (contrats supprimés avant le lot 3) : inventoriés, non purgés (décision en attente).
 - `buildCertData` existe en deux exemplaires (Edge pour le chemin navigateur, Node pour le serveur) tant que le chemin navigateur est gardé.
 
-**Tests :** `npm test` (Vitest), 219 cas après le lot 3 (190 après le lot 2) : SQL sur Postgres local (`SIGN_TEST_PG`), handlers Vercel, API REST et MCP de bout en bout sur un faux Supabase en mémoire (`tests/sign/fake-supabase.ts`), règles des Edge Functions. Chaque correctif a été vérifié en contre-épreuve : ses tests échouent sur l'ancien code.
+## Lot 4 (webhooks sortants)
+
+**Statut :** code et tests sur la branche `sign/lot4-webhooks` ; **pas encore déployé** (migration `20261001_sign_webhooks.sql`, variable `CRON_SECRET`, Vercel).
+
+**Déclenchement :** un trigger sur chaque insertion dans `sign_signature_events` (et un sur `sign_contracts.payment_status`) crée une livraison par adresse active abonnée, pour les seuls contrats d'artisans de plateforme. Il rattrape toute erreur : **un webhook ne bloque jamais une signature**.
+
+| Événement | Source |
+|---|---|
+| `contract.sent` | premier événement `sent` du contrat |
+| `signer.opened` | première ouverture de chaque signataire |
+| `signer.otp_locked` | événement `security` de type `verification_locked` (avec la raison) |
+| `signer.signed` / `signer.declined` | `signed` / `declined` |
+| `contract.completed` | `completed` (toutes les signatures) |
+| `contract.paid` | `payment_status` du contrat passe à `paid` |
+| `contract.certified` | `certified` : PDF signé et certificat prêts |
+| `contract.expired` | lien échu sans signature : `sign_log_expired_links()` (chaque minute) journalise un événement `expired` par lien, une seule fois ; un nouveau lien peut expirer à nouveau |
+
+**Envoi :** `api/_lib/sign-webhooks.js`, via `api/sign-internal.ts?action=webhooks`, réveillé immédiatement par `pg_net` et repris chaque minute par une tâche Vercel. Corps `{ event, product: 'sign', account_id, contract_id, timestamp, data }` ; `X-CloseOS-Signature: t=<s>,v1=<HMAC-SHA256(secret, t.corps)>` (même principe que `emit-webhook.ts`, plus l'horodatage signé contre le rejeu), `X-CloseOS-Event`, `X-CloseOS-Delivery`. 5 tentatives : immédiate, +1 min, +5 min, +30 min, +2 h. Prise en charge par bail (`sign_webhook_claim`, `for update skip locked`) : pas de double envoi. Adresse revérifiée à chaque envoi (https public, pas de réseau interne), aucune redirection suivie, 10 s maximum. Journal par livraison (statut, essais, dernier code, dernière erreur).
+
+**API (niveau plateforme, scope `webhooks:write`, ajouté aux plateformes existantes) :** `POST /webhooks` (10 adresses actives maximum), `GET /webhooks`, `DELETE /webhooks/:id`, `POST /webhooks/:id/test` (envoi immédiat de `webhook.test`), `GET /webhooks/:id/deliveries`, `POST /webhooks/secret/rotate` (**un secret par plateforme**, renvoyé une seule fois ; l'ancien reste valable 24 h, les deux signatures sont alors envoyées). OpenAPI : routes et section `webhooks` (9 événements, payload, vérification).
+
+**Trouvé pendant le lot 4 :** `CRON_SECRET` n'est pas défini sur Vercel ; les tâches planifiées existantes ne vérifient l'appelant que s'il l'est, elles sont donc appelables par n'importe qui. La nouvelle tâche l'exige. Le créer protège aussi toutes les autres (Vercel l'envoie automatiquement).
+
+**Tests :** `npm test` (Vitest), 242 cas après le lot 4 (219 après le lot 3, 190 après le lot 2) : SQL sur Postgres local (`SIGN_TEST_PG`), handlers Vercel, API REST et MCP de bout en bout sur un faux Supabase en mémoire (`tests/sign/fake-supabase.ts`), règles des Edge Functions. Chaque correctif a été vérifié en contre-épreuve : ses tests échouent sur l'ancien code.
 
 ---
 
@@ -361,7 +384,7 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
 | Liens de signature | **Prêt** (expiration après lot 2) | — |
 | Envoi sans email CloseOS | **Prêt** (MCP, ou API avec `notify: false`), aligné sur l'app après lot 2 | — |
 | Statut | **Prêt** (polling) | — |
-| Webhooks sortants signés avec rejeu | **Absent** | M : réutiliser `emit-webhook.ts`, ajouter file + retries, déclencheur sur `sign_signature_events` |
+| Webhooks sortants signés avec rejeu | **Prêt** après lot 4 (9 événements, HMAC horodaté, 5 tentatives, journal, rotation du secret) | — |
 | PDF signé généré côté serveur, récupérable par API | **Prêt** après lot 3 pour les contrats PDF (texte : navigateur) | — |
 | Dossier de preuve récupérable par API | **Prêt** après lot 2 (`/certificate`, `/events`) | — |
 | Signature propriétaire automatisable | **Absent** (humain requis) | M, décision produit : cachet serveur ou signature pré-enregistrée |
@@ -386,12 +409,12 @@ Aucun flag `send_emails`, `email_from` ou `brand_*` n'existe, ni par compte ni p
    - Entité plateforme avec clé API hashée en en-tête et scopes.
    - Création de sous-comptes (un par artisan) par API, sans carte ni abonnement individuel.
    - Toutes les requêtes portent l'identifiant du sous-compte, et le paiement Stripe Connect est rattaché au sous-compte.
-3. **Fiabiliser le cycle côté serveur.** *Lot 2 : envoi API aligné, expiration des liens, récupération par API (déployé). Lot 3 : génération serveur (en attente de déploiement).*
+3. **Fiabiliser le cycle côté serveur.** *Lots 2 et 3 : faits et déployés.*
    - Générer le PDF signé et le certificat côté serveur à la dernière signature, au lieu du navigateur.
    - Exposer « récupérer PDF signé + preuve » par API.
    - Aligner l'envoi API sur l'envoi app : `document_hash`, événements, statuts.
    - Ajouter l'expiration des liens.
-4. **Webhooks sortants.**
+4. **Webhooks sortants.** *Fait (lot 4), en attente de déploiement.*
    - Déclencheur sur `sign_signature_events`.
    - Payload signé HMAC avec timestamp.
    - File d'attente avec retries, et configuration par API pour le compte plateforme.

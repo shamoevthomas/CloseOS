@@ -7,6 +7,8 @@
  *   … node scripts/sign-create-platform.mjs --rotate <platform_id> --out ./cle.txt
  *
  * Options : --name <nom> | --rotate <id> ; --scopes a,b,c ; --out <fichier>.
+ * Secret de signature des webhooks : la plateforme l'obtient (et le renouvelle) par
+ * POST /api/sign/v1/webhooks/secret/rotate ; il n'est jamais affiché ici.
  */
 import { createHash, randomBytes } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
