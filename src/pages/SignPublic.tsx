@@ -14,7 +14,7 @@ import { THEME_CSS } from '../lib/signThemes';
 import { PAGED_CSS } from '../lib/signPaging';
 import SignPagedDoc from '../components/SignPagedDoc';
 import { emailSignedPdf, buildSignedPdfDataUri } from '../lib/signPdfExport';
-import { generateCertificate, getCertificateUrl } from '../lib/signCertificate';
+import { generateCertificate, getCertificateUrl, tryServerCertificate } from '../lib/signCertificate';
 import { signSupabase as supabase } from '../lib/signSupabase';
 import FillableField from '../components/FillableField';
 import { FitPdfPage } from '../components/FitPdfPage';
@@ -316,17 +316,19 @@ export default function SignPublic() {
 
   // Après signature confirmée (classique OU après paiement) : UI + copie PDF au proprio.
   // La copie au propriétaire n'est envoyée que lorsque TOUS les signataires ont signé (doc complet).
-  const afterSigned = (allDone: boolean) => {
+  const afterSigned = (allDone: boolean, certifiedByServer = false) => {
     setSigned(true);
     window.scrollTo({ top: 0, behavior: 'auto' });
     openDownloadModal();
-    if (!allDone || !token) return;
+    if (!allDone || !token || certifiedByServer) return; // certifié par le serveur : rien à produire ici
     // Document complet → GÉNÉRATION DU CERTIFICAT (scellé serveur). Le serveur envoie ensuite
     // automatiquement le PDF final (doc + certificat) à TOUTES les parties par email (pièce jointe).
     setTimeout(async () => {
       setCertifying(true);
       setCertError('');
       try {
+        // Contrat PDF : le serveur scelle le document d'origine. Chemin navigateur seulement à défaut.
+        if (await tryServerCertificate({ token })) return;
         const uri = await buildSignedPdfDataUri({
           sourceType: contract!.source_type,
           textPageEl: docRef.current,
@@ -424,7 +426,7 @@ export default function SignPublic() {
         return;
       }
       // L'état « tous ont signé » est autoritaire côté serveur (finalize renvoie allSigned) ; repli sur le snapshot si absent.
-      afterSigned(Boolean(fdata?.allSigned ?? othersAllSigned));
+      afterSigned(Boolean(fdata?.allSigned ?? othersAllSigned), Boolean(fdata?.certified));
     } catch (e) {
       console.error('[sign] signature', e);
       window.alert(lang === 'fr' ? 'La signature a échoué, réessayez.' : 'Signing failed, please try again.');
