@@ -86,6 +86,7 @@ import { isValidEmail, CHECKBOX_DEFAULT_TEXT, todayLocalISO, nowLocalHM, isSigna
 import { PG_H, PG_GAP, paginateEl, PAGED_CSS } from '../lib/signPaging';
 import SignPagedDoc from '../components/SignPagedDoc';
 import SignSubscriptionPanel from '../components/SignSubscriptionPanel';
+import SignContractActivity from '../components/SignContractActivity';
 import { parseInlineFields } from '../lib/signInline';
 import { useSignLang, signLocale } from '../contexts/SignLangContext';
 
@@ -367,7 +368,6 @@ export default function SignContractEditor() {
   const [payerScope, setPayerScope] = useState<PayerScope>('all');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   // Verrou de vérif : agrégé sur l'ensemble des signataires (au moins un bloqué)
-  const [unlocking, setUnlocking] = useState(false);
   const lockedSigner = signers.find((s) => s.verificationLocked) ?? null;
   const verificationLocked = !!lockedSigner;
   const verificationLockStep = lockedSigner?.verificationLockStep ?? null;
@@ -984,26 +984,10 @@ export default function SignContractEditor() {
     if (!hadSignature) setShowVerifModal(true);
   };
 
-  // Débloque l'accès signataire (réinitialise compteurs + état de blocage) — pour chaque signataire bloqué.
-  const unlockVerification = async () => {
-    const locked = signersRef.current.filter((s) => s.verificationLocked);
-    if (!locked.length) return;
-    setUnlocking(true);
-    try {
-      await Promise.all(
-        locked.map((s) =>
-          supabase
-            .from('sign_contract_signers')
-            .update({ verification_locked: false, verification_lock_reason: null, verification_lock_step: null, verification_dest_attempts: 0, verification_code_attempts: 0 })
-            .eq('id', s.id),
-        ),
-      );
-      setSigners((prev) => prev.map((s) => (s.verificationLocked ? { ...s, verificationLocked: false, verificationLockReason: null, verificationLockStep: null } : s)));
-    } catch (e) {
-      console.error('[sign] déblocage', e);
-    } finally {
-      setUnlocking(false);
-    }
+  // Le déblocage se fait signataire par signataire dans l'onglet « Suivi » (fonctions serveur) :
+  // la bannière y emmène.
+  const goToLockedSigner = () => {
+    document.getElementById('sign-signers-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
   // Lance l'onboarding Stripe Connect du proprio (redirection).
@@ -2252,11 +2236,10 @@ export default function SignContractEditor() {
               </div>
             </div>
             <button
-              onClick={unlockVerification}
-              disabled={unlocking}
+              onClick={goToLockedSigner}
               className="flex shrink-0 items-center gap-1.5 rounded bg-[#CEFF8F] px-4 py-2 text-xs font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-50"
             >
-              {unlocking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unlock className="h-3.5 w-3.5" />} {lang === 'fr' ? 'Débloquer l’accès' : 'Unblock access'}
+              <Unlock className="h-3.5 w-3.5" /> {lang === 'fr' ? 'Voir le signataire' : 'View signer'}
             </button>
           </div>
         </div>
@@ -2297,6 +2280,7 @@ export default function SignContractEditor() {
               </div>
             )}
 
+            <SignContractActivity contractId={contractId!} signers={signers} onSignersChange={setSigners} lang={lang}>
             {/* Suivi du lien de signature */}
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
               {/* Pré-signature */}
@@ -2356,6 +2340,7 @@ export default function SignContractEditor() {
                 )}
               </div>
             </div>
+            </SignContractActivity>
 
             <div className="pb-2">
               {sourceType === 'pdf' ? (

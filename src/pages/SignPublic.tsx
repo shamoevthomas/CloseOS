@@ -7,6 +7,8 @@ import { getContractByToken, saveSignerFields, saveSignerContact, setSignerInlin
 import { parseInlineFields } from '../lib/signInline';
 import { SignLogo } from '../components/SignLogo';
 import { isValidEmail, todayLocalISO, nowLocalHM } from '../lib/signFieldsMeta';
+import { freeFieldPage, listMissing, missingMessage, remainingLabel, type MissingItem } from '../lib/signMissingFields';
+import { PG_H, PG_GAP } from '../lib/signPaging';
 import { THEME_CSS } from '../lib/signThemes';
 import { PAGED_CSS } from '../lib/signPaging';
 import SignPagedDoc from '../components/SignPagedDoc';
@@ -100,6 +102,11 @@ export default function SignPublic() {
   const [dlError, setDlError] = useState('');
   // Consentement explicite (obligatoire, tous modes) + génération du certificat de preuve
   const [consented, setConsented] = useState(false);
+  // Champs manquants : affichés après un clic sur « Terminer et signer » incomplet.
+  const [showMissing, setShowMissing] = useState(false);
+  const [missingMsg, setMissingMsg] = useState('');
+  const [flashKey, setFlashKey] = useState<string | null>(null);
+  const consentRef = useRef<HTMLLabelElement>(null);
   const [certifying, setCertifying] = useState(false);
   const [certError, setCertError] = useState('');
 
@@ -219,17 +226,57 @@ export default function SignPublic() {
     setShowDownload(true);
   };
 
-  const complete = useMemo(() => {
-    const freeOk = signerFields.every((f) => {
-      const v = (values[f.id] ?? '').trim();
-      if (!v) return false;
-      if (f.type === 'email' && !isValidEmail(v)) return false;
-      return true;
-    });
-    const inlineOk = signerInline.every((f) => (inlineValues[f.fid] ?? '').trim() !== '');
-    // Un signataire sans champ assigné peut tout de même signer (consentement)
-    return signerFields.length + signerInline.length === 0 || (freeOk && inlineOk);
-  }, [signerFields, signerInline, values, inlineValues]);
+  // Position d'un champ du texte dans la pile de pages (coordonnées non réduites, comme celles des
+  // champs libres) : page et hauteur, pour l'ordre du message et le numéro de page.
+  const inlinePosition = (fid: string): { page: number; y: number } | null => {
+    const doc = docRef.current;
+    const el = doc?.querySelector(`[data-fid="${fid}"]`);
+    if (!doc || !el) return null;
+    const docRect = doc.getBoundingClientRect();
+    const scale = doc.offsetHeight ? docRect.height / doc.offsetHeight : 1;
+    const top = (el.getBoundingClientRect().top - docRect.top) / (scale || 1);
+    return { page: Math.max(1, Math.floor(top / (PG_H + PG_GAP)) + 1), y: top };
+  };
+
+  // Éléments encore à remplir (champs obligatoires du signataire + consentement). Un signataire sans
+  // champ assigné signe avec le seul consentement.
+  // Champs du signataire avec leur page réelle (contrat texte : déduite de l'ordonnée).
+  const signerFieldsPaged = useMemo(
+    () => signerFields.map((f) => ({ ...f, page: freeFieldPage(f, contract?.source_type === 'pdf' ? 'pdf' : 'text', PG_H + PG_GAP) })),
+    [signerFields, contract?.source_type],
+  );
+  const missing = useMemo<MissingItem[]>(
+    () => listMissing({ freeFields: signerFieldsPaged, inlineFields: signerInline, values, inlineValues, consented }),
+    [signerFieldsPaged, signerInline, values, inlineValues, consented],
+  );
+  const missingKeys = useMemo(() => new Set(missing.map((m) => m.key)), [missing]);
+
+  // Message à jour au fil de la saisie, une fois qu'il a été affiché ; disparaît quand tout est rempli.
+  useEffect(() => {
+    if (!showMissing) return;
+    if (missing.length === 0) { setShowMissing(false); setMissingMsg(''); return; }
+    const withPages = listMissing({ freeFields: signerFieldsPaged, inlineFields: signerInline, values, inlineValues, consented, inlinePosition });
+    setMissingMsg(missingMessage(withPages, lang === 'fr' ? 'fr' : 'en'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMissing, missing, lang]);
+
+  // Clic sur « Terminer et signer » : signe si tout est prêt, sinon explique ce qui manque et y emmène.
+  const onFinishClick = () => {
+    if (missing.length === 0) { submit(); return; }
+    const withPages = listMissing({ freeFields: signerFieldsPaged, inlineFields: signerInline, values, inlineValues, consented, inlinePosition });
+    setShowMissing(true);
+    setMissingMsg(missingMessage(withPages, lang === 'fr' ? 'fr' : 'en'));
+    const first = withPages[0];
+    const target: Element | null =
+      first.kind === 'consent'
+        ? consentRef.current
+        : first.kind === 'free'
+          ? document.querySelector(`[data-field-id="${first.key}"] > *`)
+          : docRef.current?.querySelector(`[data-fid="${first.key}"]`) ?? null;
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setFlashKey(first.key);
+    window.setTimeout(() => setFlashKey((k) => (k === first.key ? null : k)), 1800);
+  };
 
   const setVal = (id: string, v: string) => setValues((prev) => ({ ...prev, [id]: v }));
   const setInlineVal = (fid: string, v: string) => setInlineValues((prev) => ({ ...prev, [fid]: v }));
@@ -305,7 +352,7 @@ export default function SignPublic() {
   };
 
   const submit = async () => {
-    if (!contract || !complete) return;
+    if (!contract || missing.length > 0) return;
     setSubmitting(true);
     try {
       const updates = signerFields.map((f) => ({ id: f.id, value: values[f.id] ?? '' }));
@@ -428,14 +475,22 @@ export default function SignPublic() {
     (contract?.fields ?? [])
       .filter((f) => f.page === pageNum)
       .map((f) => (
-        <FillableField
+        // Enveloppe sans boîte (display: contents) : sert au repérage et à la mise en évidence.
+        <div
           key={f.id}
-          field={f}
-          value={values[f.id] ?? ''}
-          onChange={(v) => setVal(f.id, v)}
-          readOnly={signed || !myTurn || !(f.role === 'signer' && (f.signerIndex ?? 1) === mySignerIndex)}
-          onBeforeSign={f.role === 'signer' && (f.signerIndex ?? 1) === mySignerIndex ? onBeforeSign : undefined}
-        />
+          style={{ display: 'contents' }}
+          data-field-id={f.id}
+          data-missing={showMissing && missingKeys.has(f.id) ? '1' : undefined}
+          data-flash={flashKey === f.id ? '1' : undefined}
+        >
+          <FillableField
+            field={f}
+            value={values[f.id] ?? ''}
+            onChange={(v) => setVal(f.id, v)}
+            readOnly={signed || !myTurn || !(f.role === 'signer' && (f.signerIndex ?? 1) === mySignerIndex)}
+            onBeforeSign={f.role === 'signer' && (f.signerIndex ?? 1) === mySignerIndex ? onBeforeSign : undefined}
+          />
+        </div>
       ));
 
   const renderImages = (pageNum: number) =>
@@ -457,6 +512,11 @@ export default function SignPublic() {
     <div className="sign-landing min-h-screen bg-[#191E1E] pb-28 font-sans text-[#F3F4F6] antialiased selection:bg-[#CEFF8F] selection:text-[#191E1E]">
       <style>{`
         .sign-landing { font-family: "SF Pro Display","Helvetica Neue",Helvetica,Arial,Inter,sans-serif; }
+        @keyframes signMissingFlash { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,.45); } }
+        [data-missing="1"] > [data-sign-field] { outline: 2px solid #ef4444 !important; outline-offset: 2px !important; }
+        [data-flash="1"] > [data-sign-field], .sign-flash { animation: signMissingFlash .6s ease-in-out 3; }
+        ${showMissing ? signerInline.filter((f) => missingKeys.has(f.fid)).map((f) => `[data-fid="${f.fid}"] { outline: 2px solid #ef4444 !important; outline-offset: 1px !important; }`).join('\n') : ''}
+        ${flashKey && flashKey !== 'consent' ? `[data-fid="${flashKey}"] { animation: signMissingFlash .6s ease-in-out 3; }` : ''}
         .sign-page { position:relative; width:210mm; min-height:297mm; padding:25mm 22mm; margin:0 auto;
           background:#fff; color:#1a1a1a; line-height:1.65; box-shadow:0 10px 50px rgba(0,0,0,.5); box-sizing:border-box; }
         .sign-doc { color:#1a1a1a; line-height:1.65; }
@@ -589,8 +649,25 @@ export default function SignPublic() {
 
           {!signed && myTurn && (
             <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#3A4242] bg-[#191E1E]/95 px-4 py-3 backdrop-blur-md sm:px-6 sm:py-4">
+              {(showMissing && missingMsg) || missing.length > 0 ? (
+                <div className="mx-auto mb-2 max-w-3xl">
+                  {showMissing && missingMsg && (
+                    <p id="sign-missing-msg" role="alert" className="mb-1.5 rounded border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm leading-snug text-[#fecaca]">
+                      {missingMsg}
+                    </p>
+                  )}
+                  {missing.length > 0 && (
+                    <p className="text-right text-xs font-medium text-[#F0B86E]" aria-live="polite">
+                      {remainingLabel(missing.length, lang === 'fr' ? 'fr' : 'en')}
+                    </p>
+                  )}
+                </div>
+              ) : null}
               <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <label className="flex cursor-pointer items-start gap-2 text-xs leading-snug text-[#F3F4F6] sm:max-w-xs">
+                <label
+                  ref={consentRef}
+                  className={`flex cursor-pointer items-start gap-2 rounded text-xs leading-snug text-[#F3F4F6] sm:max-w-xs ${showMissing && !consented ? 'outline outline-2 outline-offset-4 outline-[#ef4444]' : ''} ${flashKey === 'consent' ? 'sign-flash' : ''}`}
+                >
                   <input
                     type="checkbox"
                     checked={consented}
@@ -599,7 +676,6 @@ export default function SignPublic() {
                   />
                   <span>
                     {lang === 'fr' ? 'J’ai lu et j’accepte ce document.' : 'I have read and accept this document.'}
-                    {!complete && <span className="mt-0.5 block text-[#A1A9A9]">{lang === 'fr' ? 'Complétez aussi les champs surlignés.' : 'Also fill in the highlighted fields.'}</span>}
                   </span>
                 </label>
                 <div className="flex items-center gap-2">
@@ -613,11 +689,12 @@ export default function SignPublic() {
                       <RotateCcw className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{lang === 'fr' ? 'Réinitialiser' : 'Reset'}</span>
                     </button>
                   )}
+                  {/* Toujours cliquable (sauf pendant l'envoi) : un clic incomplet explique ce qui manque. */}
                   <button
-                    onClick={submit}
-                    disabled={!complete || !consented || submitting}
-                    title={!consented ? (lang === 'fr' ? 'Cochez « J’ai lu et j’accepte » pour signer' : 'Check “I have read and accept” to sign') : !complete ? (lang === 'fr' ? 'Complétez tous les champs' : 'Fill in all fields') : ''}
-                    className="flex flex-1 items-center justify-center gap-2 rounded bg-[#CEFF8F] px-6 py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-40 sm:flex-none"
+                    onClick={onFinishClick}
+                    disabled={submitting}
+                    aria-describedby={missingMsg ? 'sign-missing-msg' : undefined}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded bg-[#CEFF8F] px-6 py-3 text-sm font-bold text-[#191E1E] transition-colors hover:bg-[#A0E7EC] disabled:opacity-40 sm:flex-none ${missing.length > 0 ? 'opacity-70' : ''}`}
                   >
                     {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenLine className="h-4 w-4" />}
                     {submitting ? (lang === 'fr' ? 'Signature…' : 'Signing…') : (lang === 'fr' ? 'Terminer et signer' : 'Finish and sign')}

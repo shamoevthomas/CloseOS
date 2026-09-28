@@ -139,3 +139,57 @@ describe('api/mcp.js — import de PDF', () => {
     expect(res.body.result.content[0].text).toMatch(/pas un PDF/);
   });
 });
+
+describe('api/mcp.js — débloquer / nouveau lien', () => {
+  const contractOk = (url: URL) =>
+    url.pathname.endsWith('/sign_contracts') && url.search.includes('id=eq.c1')
+      ? [{ id: 'c1', user_id: OWNER, is_template: false }]
+      : undefined;
+  const signer = (url: URL) =>
+    url.pathname.endsWith('/sign_contract_signers') && url.search.includes('signer_index=eq.2')
+      ? [{ id: 'sig-2', signer_index: 2, status: 'opened' }]
+      : undefined;
+
+  it('liste les deux nouveaux outils', async () => {
+    mockFetch([ownerByHash]);
+    const res = fakeRes();
+    await handler(fakeReq({ query: { key: KEY }, body: { jsonrpc: '2.0', id: 1, method: 'tools/list' } }), res);
+    const names = res.body.result.tools.map((t: any) => t.name);
+    expect(names).toEqual(expect.arrayContaining(['sign_unlock_signer', 'sign_renew_signer_link']));
+    expect(names).toHaveLength(25);
+  });
+
+  it('débloque via la fonction serveur, avec le propriétaire comme auteur', async () => {
+    const { calls } = mockFetch([ownerByHash, contractOk, signer, (url) => (url.pathname.endsWith('/rpc/sign_unlock_signer_internal') ? { signer_index: 2 } : undefined)]);
+    const res = fakeRes();
+    await handler(call('sign_unlock_signer', { contract_id: 'c1', signer_index: 2 }), res);
+    expect(res.body.result.isError).toBeUndefined();
+    const rpc = calls.find((c) => c.url.pathname.endsWith('/rpc/sign_unlock_signer_internal'))!;
+    expect(JSON.parse(String(rpc.init.body))).toEqual({ p_signer_id: 'sig-2', p_actor: OWNER, p_via: 'mcp' });
+  });
+
+  it('renvoie le nouveau lien', async () => {
+    mockFetch([ownerByHash, contractOk, signer, (url) => (url.pathname.endsWith('/rpc/sign_renew_signer_link_internal') ? { token: 'b'.repeat(64) } : undefined)]);
+    const res = fakeRes();
+    await handler(call('sign_renew_signer_link', { contract_id: 'c1', signer_index: 2 }), res);
+    expect(JSON.parse(res.body.result.content[0].text).url).toBe(`https://sign.closeos.fr/sign/s/${'b'.repeat(64)}`);
+  });
+
+  it("refuse le contrat d'un autre compte sans appeler la fonction", async () => {
+    const other = (url: URL) =>
+      url.pathname.endsWith('/sign_contracts') ? [{ id: 'c1', user_id: '99999999-9999-9999-9999-999999999999', is_template: false }] : undefined;
+    const { calls } = mockFetch([ownerByHash, other]);
+    const res = fakeRes();
+    await handler(call('sign_unlock_signer', { contract_id: 'c1', signer_index: 2 }), res);
+    expect(res.body.result.isError).toBe(true);
+    expect(calls.some((c) => c.url.pathname.includes('/rpc/'))).toBe(false);
+  });
+
+  it('traduit le refus « déjà signé » en message lisible', async () => {
+    mockFetch([ownerByHash, contractOk, signer, (url) =>
+      url.pathname.endsWith('/rpc/sign_renew_signer_link_internal') ? { __status: 400, __body: { message: 'signataire_deja_signe' } } : undefined]);
+    const res = fakeRes();
+    await handler(call('sign_renew_signer_link', { contract_id: 'c1', signer_index: 2 }), res);
+    expect(res.body.result.content[0].text).toMatch(/déjà signé/);
+  });
+});

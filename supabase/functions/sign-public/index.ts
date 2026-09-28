@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
 
       const { data: fields } = await supabase
         .from("sign_contract_fields")
-        .select("id,field_type,pos_x,pos_y,width,height,page,assignee,signer_index,value,label")
+        .select("id,field_type,pos_x,pos_y,width,height,page,assignee,signer_index,value,label,required")
         .eq("contract_id", contractId).eq("placement", "free").order("sort_order", { ascending: true });
 
       return json({ ok: true, contract, me, signers: signers ?? [], contact, fields: fields ?? [] });
