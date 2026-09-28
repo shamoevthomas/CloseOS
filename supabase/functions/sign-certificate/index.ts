@@ -147,7 +147,7 @@ async function buildCertData(supabase: any, contract: any) {
       continue;
     }
     if (e.event_type === "paid") payments.push({ at: e.created_at, signerIndex: md.signer_index ?? null, amount: contract.payment_amount ?? null, currency: contract.currency ?? "eur", txn: md.txn || null, mode: md.mode || contract.payment_mode || null });
-    if (["created", "sent", "opened", "email_access", "otp_sent", "otp_verified", "consent", "signed", "paid", "sealed", "completed"].includes(e.event_type)) timeline.push(base);
+    if (["created", "sent", "opened", "email_access", "otp_sent", "otp_verified", "consent", "signed", "paid", "sealed", "completed", "unlocked", "link_renewed"].includes(e.event_type)) timeline.push(base);
   }
   return { doc: { title: contract.title || "Document", originalHash: contract.document_hash || null, sealedHash: contract.sealed_hash || null }, method: methodLabel, signers: signerList, timeline, security, payments: contract.payment_enabled ? payments : [], certificateId: contract.certificate_id || null };
 }

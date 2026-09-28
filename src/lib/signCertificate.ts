@@ -39,6 +39,8 @@ const EVENT_LABEL: Record<string, string> = {
   paid: 'Paiement effectué',
   sealed: 'Document scellé',
   completed: 'Contrat complété',
+  unlocked: 'Accès débloqué par l’émetteur',
+  link_renewed: 'Nouveau lien émis par l’émetteur',
 };
 
 const fmtUTC = (iso: string | null): string => {

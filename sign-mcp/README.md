@@ -51,7 +51,7 @@ avec `signer_index` 1..N) ou `owner` (toi).
 
 ## Mode distant — Claude.ai (recommandé)
 
-L'endpoint est la fonction Vercel **`api/mcp.js`** (transport Streamable HTTP, stateless, 23 outils).
+L'endpoint est la fonction Vercel **`api/mcp.js`** (transport Streamable HTTP, stateless, 25 outils, dont `sign_unlock_signer` et `sign_renew_signer_link`).
 **Multi-comptes** : chaque propriétaire Sign génère **sa propre clé** dans Sign → Profil →
 Paramètres → « Connecteur MCP (IA) ». La clé n'est stockée qu'en empreinte SHA-256
 (`sign_users.mcp_key_hash`) et n'est affichée en entier **qu'une fois**, à sa création.

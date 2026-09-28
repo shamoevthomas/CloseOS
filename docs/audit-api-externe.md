@@ -32,6 +32,13 @@
 - Un signataire peut toujours sceller son propre contrat avec un PDF de son choix, puisque le PDF final est produit par son navigateur : réglé par le lot 3 (génération serveur).
 - Erreur de typage déjà présente dans la version déployée de `sign-certificate` (`crypto.subtle.digest` sur `Uint8Array`), sans effet à l'exécution.
 
+## Branche `sign/ux-signature` (après le lot 1)
+
+- **Page de signature :** « Terminer et signer » reste cliquable ; un clic incomplet affiche les éléments manquants par page, fait défiler jusqu'au premier et les cerne de rouge ; compteur « X champs restants ». Seuls les champs `required` bloquent (`sign-public` renvoie désormais ce champ).
+- **Journal et déblocage :** onglet « Journal » (événements de `sign_signature_events`, lecture seule) et, par signataire, « Débloquer » / « Nouveau lien » (`supabase/migrations/20260928_sign_unlock.sql`). Nouveaux événements `unlocked` et `link_renewed`, repris dans le certificat. Le verrou ne peut plus être levé par une écriture directe depuis le navigateur.
+- **MCP :** 25 outils (`sign_unlock_signer`, `sign_renew_signer_link`).
+- **À prévoir dans l'API REST du lot 2 :** `POST /contracts/:id/signers/:sid/unlock` → `sign_unlock_signer_internal(sid, compte, 'api')` et `POST /contracts/:id/signers/:sid/renew-link` → `sign_renew_signer_link_internal(sid, compte, 'api')`, après la même vérification de propriété que le MCP. Toute la logique est dans ces deux fonctions SQL, rien à dupliquer.
+
 **Tests :** `npm test` (Vitest), 101 cas : SQL sur Postgres local (`SIGN_TEST_PG`), handlers Vercel, règles des Edge Functions. Chaque correctif a été vérifié en contre-épreuve : ses tests échouent sur l'ancien code.
 
 ---

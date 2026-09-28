@@ -69,6 +69,17 @@ async function sbUpdate(table, query, patch) {
   const r = await fetch(`${REST}/${table}?${query}`, { method: 'PATCH', headers: H({ Prefer: 'return=minimal' }), body: JSON.stringify(patch) })
   if (!r.ok) throw new Error(`Supabase update (${r.status}) : ${await r.text()}`)
 }
+async function sbRpc(fn, args) {
+  const r = await fetch(`${REST}/rpc/${fn}`, { method: 'POST', headers: H(), body: JSON.stringify(args) })
+  if (!r.ok) {
+    const txt = await r.text()
+    // Messages métier levés par les fonctions SQL (raise exception 'code') → texte lisible.
+    const known = { signataire_deja_signe: 'Ce signataire a déjà signé : rien à débloquer ni à renouveler.', contrat_non_en_cours: "Le contrat n'est pas en cours de signature (brouillon, signé ou annulé).", signataire_introuvable: 'Signataire introuvable.' }
+    const code = Object.keys(known).find((k) => txt.includes(k))
+    throw new Error(code ? known[code] : `Supabase rpc ${fn} (${r.status}) : ${txt}`)
+  }
+  return await r.json()
+}
 async function sbDelete(table, query) {
   const r = await fetch(`${REST}/${table}?${query}`, { method: 'DELETE', headers: H({ Prefer: 'return=minimal' }) })
   if (!r.ok) throw new Error(`Supabase delete (${r.status}) : ${await r.text()}`)
@@ -102,6 +113,16 @@ async function getOwnedContract(id, cols) {
   const c = rows[0]
   if (c.user_id !== uid) throw new Error(`Le contrat ${id} n'appartient pas à ton compte.`)
   return c
+}
+// Signataire d'un contrat appartenant au compte de la clé (par contract_id + signer_index).
+async function getOwnedSigner(args) {
+  if (!args.contract_id) throw new Error('contract_id requis.')
+  const index = Number(args.signer_index || 1)
+  const c = await getOwnedContract(args.contract_id, 'id,user_id,is_template')
+  if (c.is_template) throw new Error("C'est un modèle, pas un contrat envoyé.")
+  const rows = await sbSelect(`sign_contract_signers?contract_id=eq.${encodeURIComponent(c.id)}&signer_index=eq.${index}&select=id,signer_index,status&limit=1`)
+  if (!rows || !rows[0]) throw new Error(`Signataire n°${index} introuvable sur ce contrat.`)
+  return rows[0]
 }
 async function getOwnedFolder(id) {
   const uid = await ownerId()
@@ -531,6 +552,21 @@ const impl = {
     return { contract_id: c.id, title: c.title, status: c.status, signer_links: links }
   },
 
+  // ── Débloquer un signataire verrouillé après trop d'échecs de vérification ──
+  // Remet ses essais à zéro et efface ses codes en cours ; son lien actuel redevient utilisable.
+  async sign_unlock_signer(args) {
+    const s = await getOwnedSigner(args)
+    await sbRpc('sign_unlock_signer_internal', { p_signer_id: s.id, p_actor: await ownerId(), p_via: 'mcp' })
+    return { contract_id: args.contract_id, signer_index: s.signer_index, unlocked: true, note: 'Le lien existant fonctionne de nouveau. Aucun email envoyé.' }
+  },
+
+  // ── Nouveau lien pour un signataire (l'ancien cesse de fonctionner) ──
+  async sign_renew_signer_link(args) {
+    const s = await getOwnedSigner(args)
+    const out = await sbRpc('sign_renew_signer_link_internal', { p_signer_id: s.id, p_actor: await ownerId(), p_via: 'mcp' })
+    return { contract_id: args.contract_id, signer_index: s.signer_index, url: `${APP_URL}/sign/s/${out.token}`, note: "Ancien lien invalidé. Aucun email envoyé : transmets ce lien toi-même." }
+  },
+
   // ── Récupérer les liens des closers d'un modèle (/sign/rep/<token>) ──
   async sign_list_closers(args) {
     if (!args.template_id) throw new Error('template_id requis.')
@@ -733,6 +769,16 @@ const TOOLS = [
     name: 'sign_get_signer_links',
     description: "Récupère les liens de signature (/sign/s/<token>) d'un contrat, un par signataire (génère le token s'il manque, sans marquer 'envoyé'). Pour copier/transmettre les liens.",
     inputSchema: { type: 'object', properties: { contract_id: { type: 'string' } }, required: ['contract_id'] },
+  },
+  {
+    name: 'sign_unlock_signer',
+    description: "Débloque un signataire verrouillé après trop d'échecs au code de vérification : essais remis à zéro, il recommence la vérification avec son lien actuel. Écrit l'événement au journal. Refusé si le signataire a déjà signé. N'envoie pas d'email.",
+    inputSchema: { type: 'object', properties: { contract_id: { type: 'string' }, signer_index: { type: 'integer', minimum: 1, description: 'N° du signataire (1 par défaut)' } }, required: ['contract_id'] },
+  },
+  {
+    name: 'sign_renew_signer_link',
+    description: "Génère un nouveau lien de signature pour un signataire (non verrouillé, essais remis à zéro) et invalide l'ancien. Écrit l'événement au journal. Refusé si le signataire a déjà signé. N'envoie pas d'email : renvoie le lien.",
+    inputSchema: { type: 'object', properties: { contract_id: { type: 'string' }, signer_index: { type: 'integer', minimum: 1, description: 'N° du signataire (1 par défaut)' } }, required: ['contract_id'] },
   },
   {
     name: 'sign_list_closers',

@@ -800,6 +800,43 @@ export async function getOrCreateSignLinkForSigner(signerId: string): Promise<st
   return `${window.location.origin}/sign/s/${token}`;
 }
 
+// ---------- Journal et déblocage (fiche propriétaire) ----------
+
+/** Événements du contrat (lecture seule, policy « propriétaire ») pour l'onglet Journal. */
+export async function listContractEvents(contractId: string): Promise<import('./signJournal').JournalEventRow[]> {
+  const { data, error } = await supabase
+    .from('sign_signature_events')
+    .select('created_at,event_type,email,ip_address,user_agent,metadata')
+    .eq('contract_id', contractId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as import('./signJournal').JournalEventRow[];
+}
+
+// Codes métier levés par les fonctions SQL → messages lisibles.
+function rpcError(e: { message?: string } | null, lang: 'fr' | 'en' = 'fr'): Error {
+  const m = e?.message || '';
+  const fr = lang === 'fr';
+  if (m.includes('signataire_deja_signe')) return new Error(fr ? 'Ce signataire a déjà signé.' : 'This signer has already signed.');
+  if (m.includes('contrat_non_en_cours')) return new Error(fr ? "Le contrat n'est pas en cours de signature." : 'The contract is not out for signature.');
+  if (m.includes('non_autorise')) return new Error(fr ? 'Action non autorisée.' : 'Not allowed.');
+  return new Error(m || (fr ? 'Action impossible.' : 'Action failed.'));
+}
+
+/** Débloque un signataire (serveur : vérifie le propriétaire, journalise). Le lien actuel reste valable. */
+export async function unlockSigner(signerId: string): Promise<void> {
+  const { error } = await supabase.rpc('sign_owner_unlock_signer', { p_signer_id: signerId });
+  if (error) throw rpcError(error);
+}
+
+/** Nouveau lien pour un signataire (l'ancien est invalidé, rien n'est envoyé). Renvoie l'URL. */
+export async function renewSignerLink(signerId: string): Promise<{ token: string; link: string }> {
+  const { data, error } = await supabase.rpc('sign_owner_renew_signer_link', { p_signer_id: signerId });
+  if (error) throw rpcError(error);
+  const token = (data as { token: string }).token;
+  return { token, link: `${window.location.origin}/sign/s/${token}` };
+}
+
 /** Enregistre les valeurs des champs INLINE du signataire (résolu serveur par le token, anti-race). */
 export async function setSignerInlineValues(token: string, values: Record<string, string>): Promise<void> {
   const { data, error } = await supabase.functions.invoke('sign-public', { body: { action: 'save-inline', token, values } });
