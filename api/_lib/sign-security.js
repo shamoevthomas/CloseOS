@@ -57,6 +57,27 @@ export function isPrivateAddress(ip) {
 export const PDF_MAX_BYTES = 15 * 1024 * 1024
 
 /**
+ * URL https publique : pas d'identifiants, port 443, hôte public (toutes les IP résolues publiques).
+ * Sert au PDF par URL et aux adresses de webhooks. `label` préfixe les messages d'erreur.
+ */
+export async function assertPublicHttpsUrl(rawUrl, label, deps = {}) {
+  const lookup = deps.lookup || ((host) => dnsLookup(host, { all: true, verbatim: true }))
+  let url
+  try { url = new URL(String(rawUrl)) } catch { throw new Error(`${label} invalide.`) }
+  if (url.protocol !== 'https:') throw new Error(`${label} doit être en https.`)
+  if (url.username || url.password) throw new Error(`${label} ne doit pas contenir d'identifiants.`)
+  if (url.port && url.port !== '443') throw new Error(`${label} : seul le port 443 est accepté.`)
+  const host = url.hostname.replace(/^\[|\]$/g, '')
+  if (!host || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.internal') || host.endsWith('.local')) {
+    throw new Error(`${label} : hôte non autorisé.`)
+  }
+  const addrs = isIP(host) ? [{ address: host }] : await lookup(host)
+  if (!addrs || addrs.length === 0) throw new Error(`${label} : hôte introuvable.`)
+  if (addrs.some((a) => isPrivateAddress(a.address))) throw new Error(`${label} : adresse réseau non autorisée.`)
+  return url
+}
+
+/**
  * Télécharge un PDF fourni par URL en refusant tout ce qui pourrait viser le réseau interne :
  * https uniquement, pas d'identifiants dans l'URL, toutes les IP résolues doivent être publiques,
  * aucune redirection suivie, taille bornée, contenu commençant par %PDF.
@@ -64,21 +85,8 @@ export const PDF_MAX_BYTES = 15 * 1024 * 1024
  */
 export async function fetchPdfSafely(rawUrl, deps = {}) {
   const doFetch = deps.fetch || fetch
-  const lookup = deps.lookup || ((host) => dnsLookup(host, { all: true, verbatim: true }))
   const maxBytes = deps.maxBytes || PDF_MAX_BYTES
-
-  let url
-  try { url = new URL(String(rawUrl)) } catch { throw new Error('pdf_url invalide.') }
-  if (url.protocol !== 'https:') throw new Error('pdf_url doit être en https.')
-  if (url.username || url.password) throw new Error('pdf_url ne doit pas contenir d\'identifiants.')
-  if (url.port && url.port !== '443') throw new Error('pdf_url : seul le port 443 est accepté.')
-  const host = url.hostname.replace(/^\[|\]$/g, '')
-  if (!host || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.internal') || host.endsWith('.local')) {
-    throw new Error('pdf_url : hôte non autorisé.')
-  }
-  const addrs = isIP(host) ? [{ address: host }] : await lookup(host)
-  if (!addrs || addrs.length === 0) throw new Error('pdf_url : hôte introuvable.')
-  if (addrs.some((a) => isPrivateAddress(a.address))) throw new Error('pdf_url : adresse réseau non autorisée.')
+  const url = await assertPublicHttpsUrl(rawUrl, 'pdf_url', deps)
 
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), deps.timeoutMs || 15000)

@@ -7,6 +7,18 @@ const idParam = (name, description) => ({ name, in: 'path', required: true, desc
 const ACCOUNT = { $ref: '#/components/parameters/Account' }
 const IDEM = { $ref: '#/components/parameters/IdempotencyKey' }
 const CID = idParam('id', 'Identifiant du contrat')
+const EVENTS = ['contract.sent', 'signer.opened', 'signer.otp_locked', 'signer.signed', 'signer.declined', 'contract.completed', 'contract.paid', 'contract.certified', 'contract.expired']
+const EVENT_DOC = {
+  'contract.sent': 'Contrat envoyé (premier envoi).',
+  'signer.opened': 'Première ouverture du document par un signataire.',
+  'signer.otp_locked': 'Signataire bloqué après trop de codes erronés (voir /unlock).',
+  'signer.signed': 'Un signataire a signé.',
+  'signer.declined': 'Un signataire a refusé.',
+  'contract.completed': 'Toutes les signatures sont réunies (le PDF signé est en cours de production).',
+  'contract.paid': 'Le paiement du contrat est réglé.',
+  'contract.certified': 'PDF signé et certificat prêts au téléchargement.',
+  'contract.expired': "Le lien d'un signataire est arrivé à échéance sans signature (relancer via /renew-link).",
+}
 const SID = idParam('sid', 'Identifiant du signataire (signers[].id)')
 
 export function openapi(appUrl) {
@@ -22,6 +34,10 @@ export function openapi(appUrl) {
         "Idempotence : tout POST accepte `Idempotency-Key` ; une requête rejouée avec la même clé renvoie la réponse d'origine (en-tête `Idempotent-Replayed: true`).",
         "Positions des champs : fractions de la page (0 = bord gauche/haut, 1 = bord droit/bas), quelle que soit la taille réelle du PDF.",
         'Taille maximale : 4,5 Mo par requête (PDF en base64 ≈ 3,3 Mo) ; au-delà, passer pdf_url (15 Mo max, https public, sans redirection).',
+        '',
+        "Webhooks : POST JSON vers les adresses enregistrées (/webhooks), corps { event, product: 'sign', account_id, contract_id, timestamp, data }.",
+        'En-tête X-CloseOS-Signature: t=<secondes>,v1=<hex> où hex = HMAC-SHA256(secret, `${t}.${corps brut}`). Refuser si la signature ne correspond pas ou si t a plus de 5 minutes. Pendant 24 h après une rotation du secret, deux v1 sont envoyés (nouveau et ancien).',
+        "Réponse 2xx attendue sous 10 s ; sinon nouvelle tentative après 1 min, 5 min, 30 min puis 2 h (5 tentatives au total). En-têtes X-CloseOS-Event et X-CloseOS-Delivery (identifiant unique, pour dédoublonner).",
       ].join('\n'),
     },
     servers: [{ url: `${appUrl}/api/sign/v1` }],
@@ -119,7 +135,31 @@ export function openapi(appUrl) {
       '/contracts/{id}/events': {
         get: { summary: 'Journal de preuve', operationId: 'listEvents', parameters: [CID, ACCOUNT], responses: { 200: { description: 'Événements', ...json({ type: 'object', properties: { data: { type: 'array', items: ref('Event') } } }) }, ...errors(401, 403, 404) } },
       },
+      '/webhooks': {
+        post: {
+          summary: 'Enregistrer une adresse de webhook',
+          description: 'https public uniquement, 10 adresses actives au maximum. Sans `events`, abonnée à tous les événements.',
+          operationId: 'createWebhook',
+          parameters: [IDEM],
+          requestBody: { required: true, ...json({ type: 'object', required: ['url'], properties: { url: { type: 'string', format: 'uri' }, events: { type: 'array', items: { type: 'string', enum: EVENTS } }, description: { type: 'string', maxLength: 200 } } }) },
+          responses: { 201: { description: 'Créée', ...json(ref('WebhookEndpoint')) }, ...errors(400, 401, 403, 409, 422) },
+        },
+        get: { summary: 'Lister les adresses de webhook', operationId: 'listWebhooks', responses: { 200: { description: 'Adresses', ...json({ type: 'object', properties: { data: { type: 'array', items: ref('WebhookEndpoint') }, events_available: { type: 'array', items: { type: 'string' } } } }) }, ...errors(401, 403) } },
+      },
+      '/webhooks/{id}': {
+        delete: { summary: 'Supprimer une adresse (et son journal)', operationId: 'deleteWebhook', parameters: [idParam('id', "Identifiant de l'adresse")], responses: { 200: { description: 'Supprimée' }, ...errors(401, 403, 404) } },
+      },
+      '/webhooks/{id}/test': {
+        post: { summary: 'Envoyer un événement webhook.test', description: 'Envoi immédiat, sans nouvelle tentative ; journalisé.', operationId: 'testWebhook', parameters: [idParam('id', "Identifiant de l'adresse")], responses: { 200: { description: 'Résultat', ...json({ type: 'object', properties: { delivery_id: { type: 'string' }, delivered: { type: 'boolean' }, status_code: { type: ['integer', 'null'] }, error: { type: 'string' } } }) }, ...errors(401, 403, 404, 409) } },
+      },
+      '/webhooks/{id}/deliveries': {
+        get: { summary: 'Journal des livraisons (100 dernières)', operationId: 'listWebhookDeliveries', parameters: [idParam('id', "Identifiant de l'adresse"), { name: 'status', in: 'query', schema: { type: 'string', enum: ['pending', 'succeeded', 'failed'] } }], responses: { 200: { description: 'Livraisons', ...json({ type: 'object', properties: { data: { type: 'array', items: ref('WebhookDelivery') } } }) }, ...errors(400, 401, 403, 404) } },
+      },
+      '/webhooks/secret/rotate': {
+        post: { summary: 'Nouveau secret de signature', description: "Le secret n'est renvoyé qu'ici, une seule fois. L'ancien reste valable 24 h.", operationId: 'rotateWebhookSecret', responses: { 200: { description: 'Secret', ...json({ type: 'object', properties: { secret: { type: 'string' }, previous_secret_valid_until: { type: ['string', 'null'], format: 'date-time' } } }) }, ...errors(401, 403) } },
+      },
     },
+    webhooks: Object.fromEntries(EVENTS.map((e) => [e, { post: { summary: EVENT_DOC[e], operationId: `on_${e.replace('.', '_')}`, requestBody: { ...json(ref('WebhookPayload')) }, responses: { 200: { description: 'Accusé de réception (tout 2xx)' } } } }])),
     components: {
       securitySchemes: { platformKey: { type: 'http', scheme: 'bearer', description: 'Clé API de la plateforme (affichée une seule fois à sa création).' } },
       parameters: {
@@ -198,6 +238,29 @@ export function openapi(appUrl) {
             documents: { type: 'object', properties: { original: { type: 'boolean' }, signed: { type: 'boolean' }, certificate: { type: 'boolean' } } },
             signers: { type: 'array', items: ref('Signer') },
             fields: { type: 'array', items: { type: 'object' } },
+          },
+        },
+        WebhookEndpoint: { type: 'object', properties: { id: { type: 'string', format: 'uuid' }, url: { type: 'string' }, events: { type: 'array', items: { type: 'string' } }, description: { type: ['string', 'null'] }, active: { type: 'boolean' }, created_at: { type: 'string', format: 'date-time' } } },
+        WebhookDelivery: { type: 'object', properties: { id: { type: 'string' }, event: { type: 'string' }, contract_id: { type: ['string', 'null'] }, account_id: { type: ['string', 'null'] }, status: { type: 'string', enum: ['pending', 'succeeded', 'failed'] }, attempts: { type: 'integer' }, next_attempt_at: { type: ['string', 'null'] }, last_status_code: { type: ['integer', 'null'] }, last_error: { type: ['string', 'null'] }, delivered_at: { type: ['string', 'null'] }, created_at: { type: 'string' } } },
+        WebhookPayload: {
+          type: 'object', required: ['event', 'product', 'timestamp', 'data'],
+          properties: {
+            event: { type: 'string', enum: [...EVENTS, 'webhook.test'] }, product: { const: 'sign' },
+            account_id: { type: ['string', 'null'], format: 'uuid' }, contract_id: { type: ['string', 'null'], format: 'uuid' },
+            timestamp: { type: 'string', format: 'date-time' },
+            data: {
+              type: 'object',
+              properties: {
+                contract: { type: 'object', properties: { status: { type: 'string' }, title: { type: 'string' } } },
+                signer: { type: 'object', description: 'Événements signer.* et contract.expired', properties: { id: { type: 'string' }, index: { type: 'integer' }, name: { type: ['string', 'null'] }, email: { type: ['string', 'null'] }, status: { type: 'string' } } },
+                reason: { type: 'string', description: 'signer.otp_locked : destination | code' },
+                link_expires_at: { type: 'string', description: 'contract.expired' },
+                signed_at: { type: 'string', description: 'contract.completed' },
+                paid_at: { type: 'string', description: 'contract.paid' },
+                certificate_id: { type: 'string', description: 'contract.certified : PDF signé et certificat prêts (GET /contracts/{id}/document et /certificate)' },
+                certified_at: { type: 'string' },
+              },
+            },
           },
         },
         Download: { type: 'object', properties: { contract_id: { type: 'string' }, type: { type: 'string', enum: ['signed', 'original'] }, url: { type: 'string' }, expires_in: { type: 'integer' }, sha256: { type: ['string', 'null'] }, certificate_id: { type: 'string' }, certified_at: { type: 'string' } } },

@@ -112,6 +112,10 @@
       "schedule": "0 10 * * *"
     },
     {
+      "path": "/api/sign-internal?action=webhooks",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/process-deletions",
       "schedule": "0 0 * * *"
     },
