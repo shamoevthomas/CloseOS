@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listMissing, missingMessage, remainingLabel } from '../../src/lib/signMissingFields';
+import { freeFieldPage, listMissing, missingMessage, remainingLabel } from '../../src/lib/signMissingFields';
 
 const base = { values: {}, inlineValues: {}, consented: true, inlineFields: [] };
 
@@ -99,5 +99,16 @@ describe('remainingLabel', () => {
     expect(remainingLabel(3, 'fr')).toBe('3 champs restants');
     expect(remainingLabel(1, 'fr')).toBe('1 champ restant');
     expect(remainingLabel(0, 'fr')).toBe('');
+  });
+});
+
+describe('freeFieldPage', () => {
+  it("déduit la page d'un champ de contrat texte de son ordonnée", () => {
+    expect(freeFieldPage({ page: 1, y: 700 }, 'text', 1123)).toBe(1);
+    expect(freeFieldPage({ page: 1, y: 1123 + 500 }, 'text', 1123)).toBe(2);
+    expect(freeFieldPage({ page: 1, y: 3 * 1123 + 10 }, 'text', 1123)).toBe(4);
+  });
+  it('garde la page stockée pour un PDF', () => {
+    expect(freeFieldPage({ page: 3, y: 200 }, 'pdf', 1123)).toBe(3);
   });
 });

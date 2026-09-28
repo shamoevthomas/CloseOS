@@ -13,6 +13,16 @@ export type MissingItem =
 export interface FreeFieldInput { id: string; type: string; page: number; y?: number; required?: boolean }
 export interface InlineFieldInput { fid: string; type: string }
 
+/**
+ * Page réelle d'un champ libre. Dans un contrat texte, l'éditeur enregistre tous les champs en page 1
+ * avec une ordonnée continue sur la pile de feuilles : la page se déduit de cette ordonnée.
+ * Dans un PDF, le champ porte sa vraie page.
+ */
+export function freeFieldPage(f: { page: number; y?: number }, sourceType: 'text' | 'pdf', pageHeight: number): number {
+  if (sourceType !== 'text' || f.y == null || !(pageHeight > 0)) return f.page || 1;
+  return Math.max(1, Math.floor(f.y / pageHeight) + 1);
+}
+
 /** Un champ libre est rempli s'il a une valeur non vide (et un email valide pour le type email). */
 export function isFreeFieldFilled(type: string, value: string | undefined | null): boolean {
   const v = (value ?? '').trim();

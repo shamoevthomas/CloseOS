@@ -7,7 +7,7 @@ import { getContractByToken, saveSignerFields, saveSignerContact, setSignerInlin
 import { parseInlineFields } from '../lib/signInline';
 import { SignLogo } from '../components/SignLogo';
 import { isValidEmail, todayLocalISO, nowLocalHM } from '../lib/signFieldsMeta';
-import { listMissing, missingMessage, remainingLabel, type MissingItem } from '../lib/signMissingFields';
+import { freeFieldPage, listMissing, missingMessage, remainingLabel, type MissingItem } from '../lib/signMissingFields';
 import { PG_H, PG_GAP } from '../lib/signPaging';
 import { THEME_CSS } from '../lib/signThemes';
 import { PAGED_CSS } from '../lib/signPaging';
@@ -240,9 +240,14 @@ export default function SignPublic() {
 
   // Éléments encore à remplir (champs obligatoires du signataire + consentement). Un signataire sans
   // champ assigné signe avec le seul consentement.
+  // Champs du signataire avec leur page réelle (contrat texte : déduite de l'ordonnée).
+  const signerFieldsPaged = useMemo(
+    () => signerFields.map((f) => ({ ...f, page: freeFieldPage(f, contract?.source_type === 'pdf' ? 'pdf' : 'text', PG_H + PG_GAP) })),
+    [signerFields, contract?.source_type],
+  );
   const missing = useMemo<MissingItem[]>(
-    () => listMissing({ freeFields: signerFields, inlineFields: signerInline, values, inlineValues, consented }),
-    [signerFields, signerInline, values, inlineValues, consented],
+    () => listMissing({ freeFields: signerFieldsPaged, inlineFields: signerInline, values, inlineValues, consented }),
+    [signerFieldsPaged, signerInline, values, inlineValues, consented],
   );
   const missingKeys = useMemo(() => new Set(missing.map((m) => m.key)), [missing]);
 
@@ -250,7 +255,7 @@ export default function SignPublic() {
   useEffect(() => {
     if (!showMissing) return;
     if (missing.length === 0) { setShowMissing(false); setMissingMsg(''); return; }
-    const withPages = listMissing({ freeFields: signerFields, inlineFields: signerInline, values, inlineValues, consented, inlinePosition });
+    const withPages = listMissing({ freeFields: signerFieldsPaged, inlineFields: signerInline, values, inlineValues, consented, inlinePosition });
     setMissingMsg(missingMessage(withPages, lang === 'fr' ? 'fr' : 'en'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showMissing, missing, lang]);
@@ -258,7 +263,7 @@ export default function SignPublic() {
   // Clic sur « Terminer et signer » : signe si tout est prêt, sinon explique ce qui manque et y emmène.
   const onFinishClick = () => {
     if (missing.length === 0) { submit(); return; }
-    const withPages = listMissing({ freeFields: signerFields, inlineFields: signerInline, values, inlineValues, consented, inlinePosition });
+    const withPages = listMissing({ freeFields: signerFieldsPaged, inlineFields: signerInline, values, inlineValues, consented, inlinePosition });
     setShowMissing(true);
     setMissingMsg(missingMessage(withPages, lang === 'fr' ? 'fr' : 'en'));
     const first = withPages[0];
