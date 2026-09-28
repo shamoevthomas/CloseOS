@@ -1,5 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import {
+    authorizeEmailCaller, COPY_MAX_PER_DAY, safePdfName, signCopyEmailHtml, validateSendPayload, validateSignCopy,
+} from './_lib/email-guard.js';
+
+function adminClient() {
+    return createClient(process.env.VITE_SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
+}
+
+async function postBrevo(payload: unknown) {
+    return fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { accept: 'application/json', 'api-key': process.env.BREVO_API_KEY || '', 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+}
 
 // Charte CloseOS Sales (fond crème, carte blanche, accent sky, logo-sales.png) —
 // même gabarit que api/cron/sales-weekly-report.ts / reminder-time-emails.ts.
@@ -50,29 +65,26 @@ async function sendEmail({ to, subject, htmlContent }: { to: string; subject: st
 }
 
 // ─── action=send ───────────────────────────────────────────────────────────────
+// Relais Brevo réservé aux utilisateurs connectés (JWT) et aux Edge Functions CloseOS
+// (en-tête x-closeos-internal). Expéditeur limité à la liste blanche, destinataires bornés.
 async function handleSend(req: any, res: any) {
     if (req.method !== 'POST') {
         return res.status(405).send('Method Not Allowed');
     }
 
     try {
-        const body = req.body;
-
-        // Log pour le debug dans Vercel
-        console.log("Tentative d'envoi d'email via Brevo...");
-
-        const BREVO_API_KEY = process.env.BREVO_API_KEY;
-
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-            method: 'POST',
-            headers: {
-                'accept': 'application/json',
-                'api-key': BREVO_API_KEY || '',
-                'content-type': 'application/json'
-            },
-            body: JSON.stringify(body)
+        const admin = adminClient();
+        const caller = await authorizeEmailCaller(req.headers || {}, {
+            internalSecret: process.env.INTERNAL_EMAIL_SECRET,
+            getUserId: async (jwt) => (await admin.auth.getUser(jwt)).data.user?.id ?? null,
         });
+        if (!caller) return res.status(401).json({ error: 'unauthorized' });
 
+        const body = req.body;
+        const invalid = validateSendPayload(body);
+        if (invalid) return res.status(400).json({ error: invalid });
+
+        const response = await postBrevo(body);
         const data = await response.json();
 
         if (!response.ok) {
@@ -83,6 +95,61 @@ async function handleSend(req: any, res: any) {
         return res.status(response.status).json(data);
     } catch (error) {
         console.error("Erreur critique API:", error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+}
+
+// ─── action=sign-copy ─────────────────────────────────────────────────────────
+// Copie PDF du document signé, demandée par le signataire (sans compte) depuis la page de
+// signature. Autorisée par son token ; seul le destinataire est libre, le contenu est fixé ici.
+// Limite : COPY_MAX_PER_DAY envois par contrat et par 24 h (journal sign_signature_events).
+async function handleSignCopy(req: any, res: any) {
+    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+    try {
+        const token = String(req.body?.token || '').trim();
+        if (!token) return res.status(400).json({ error: 'token requis' });
+        const parsed = validateSignCopy(req.body);
+        if ('error' in parsed) return res.status(400).json({ error: parsed.error });
+
+        const admin = adminClient();
+        const { data: signer } = await admin.from('sign_contract_signers')
+            .select('contract_id,signer_index').eq('access_token', token).maybeSingle();
+        let contractId: string | null = signer?.contract_id ?? null;
+        if (!contractId) {
+            const { data: legacy } = await admin.from('sign_contracts').select('id').eq('access_token', token).maybeSingle();
+            contractId = legacy?.id ?? null;
+        }
+        if (!contractId) return res.status(404).json({ error: 'contract' });
+        const { data: contract } = await admin.from('sign_contracts').select('id,title').eq('id', contractId).maybeSingle();
+        if (!contract) return res.status(404).json({ error: 'contract' });
+
+        const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+        const { count } = await admin.from('sign_signature_events')
+            .select('*', { count: 'exact', head: true })
+            .eq('contract_id', contractId).eq('event_type', 'downloaded')
+            .eq('metadata->>kind', 'email_copy').gte('created_at', since);
+        if ((count || 0) >= COPY_MAX_PER_DAY) return res.status(429).json({ error: 'rate_limit' });
+
+        const response = await postBrevo({
+            sender: { email: 'support@closeos.fr', name: 'CloseOS Sign' },
+            to: [{ email: parsed.to }],
+            subject: `Copie signée : ${contract.title || 'votre document'}`,
+            htmlContent: signCopyEmailHtml(contract.title || 'votre document', parsed.recipientName),
+            attachment: [{ content: parsed.pdf.toString('base64'), name: `${safePdfName(contract.title)}-signe.pdf` }],
+        });
+        if (!response.ok) {
+            console.error('[sign-copy] Brevo', response.status, await response.text().catch(() => ''));
+            return res.status(502).json({ error: 'email_failed' });
+        }
+        const ip = String(req.headers?.['x-forwarded-for'] || '').split(',')[0].trim() || null;
+        await admin.from('sign_signature_events').insert({
+            contract_id: contractId, event_type: 'downloaded', email: parsed.to, ip_address: ip,
+            user_agent: req.headers?.['user-agent'] || null,
+            metadata: { kind: 'email_copy', signer_index: signer?.signer_index ?? 1 },
+        });
+        return res.status(200).json({ ok: true });
+    } catch (error) {
+        console.error('[sign-copy] erreur', error);
         return res.status(500).json({ error: 'Internal Server Error' });
     }
 }
@@ -549,6 +616,8 @@ export default async function handler(req: any, res: any) {
     switch (action) {
         case 'send':
             return handleSend(req, res);
+        case 'sign-copy':
+            return handleSignCopy(req, res);
         case 'welcome':
             return handleWelcome(req, res);
         case 'notify-password-change':

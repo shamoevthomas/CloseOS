@@ -42,7 +42,7 @@ avec `signer_index` 1..N) ou `owner` (toi).
 
 | Mode | Pour quel client | Où |
 |---|---|---|
-| **Distant (HTTP)** | **Claude.ai (web)**, Claude Desktop, Claude Code | `api/mcp.ts` (déployé sur Vercel) |
+| **Distant (HTTP)** | **Claude.ai (web)**, Claude Desktop, Claude Code | `api/mcp.js` (déployé sur Vercel) |
 | Local (stdio) | Claude Desktop / Claude Code uniquement | `sign-mcp/index.mjs` (ce dossier) |
 
 > Claude.ai **ne parle qu'à des serveurs MCP distants HTTPS** → utilise le mode distant.
@@ -51,36 +51,39 @@ avec `signer_index` 1..N) ou `owner` (toi).
 
 ## Mode distant — Claude.ai (recommandé)
 
-L'endpoint est la fonction Vercel **`api/mcp.ts`** (transport Streamable HTTP, stateless),
-sécurisée par une **URL secrète** : le secret `SIGN_MCP_SECRET` doit figurer dans l'URL,
-sinon l'endpoint répond 404.
+L'endpoint est la fonction Vercel **`api/mcp.js`** (transport Streamable HTTP, stateless, 25 outils, dont `sign_unlock_signer` et `sign_renew_signer_link`).
+**Multi-comptes** : chaque propriétaire Sign génère **sa propre clé** dans Sign → Profil →
+Paramètres → « Connecteur MCP (IA) ». La clé n'est stockée qu'en empreinte SHA-256
+(`sign_users.mcp_key_hash`) et n'est affichée en entier **qu'une fois**, à sa création.
+Clé absente ou inconnue → `401 unauthorized`. L'ancienne clé globale `SIGN_MCP_SECRET` n'est plus
+acceptée.
 
 ### 1. Variables d'environnement Vercel (projet CloseOS)
 
-| Variable | Déjà présente ? | Valeur |
-|---|---|---|
-| `SUPABASE_URL` / `VITE_SUPABASE_URL` | ✅ oui | `https://qwjvdwpixewsctircibl.supabase.co` |
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ oui | (secret service_role) |
-| `SIGN_OWNER_EMAIL` | ➕ à ajouter | ton email propriétaire Sign |
-| `SIGN_MCP_SECRET` | ➕ à ajouter | un secret long et aléatoire (ex. `openssl rand -hex 24`) |
-| `SIGN_APP_URL` | (optionnel) | `https://sign.closeos.fr` |
+| Variable | Valeur |
+|---|---|
+| `SUPABASE_URL` / `VITE_SUPABASE_URL` | `https://qwjvdwpixewsctircibl.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | (secret service_role) |
+| `SIGN_APP_URL` | (optionnel) `https://sign.closeos.fr` |
 
-Puis **déploie** (push git → Vercel).
+`SIGN_OWNER_EMAIL` et `SIGN_MCP_SECRET` ne servent plus au mode distant (seulement au mode local).
 
 ### 2. Ajouter le connecteur dans Claude.ai
 
-Paramètres → **Connecteurs** → **Ajouter un connecteur personnalisé** → URL :
+Paramètres → **Connecteurs** → **Ajouter un connecteur personnalisé** → URL copiée depuis le Profil :
 
 ```
-https://sign.closeos.fr/api/mcp/<SIGN_MCP_SECRET>
+https://sign.closeos.fr/api/mcp/<clé sk_…>
 ```
 
-(La forme `https://sign.closeos.fr/api/mcp?key=<SIGN_MCP_SECRET>` fonctionne aussi.)
+Un client qui sait envoyer des en-têtes peut aussi appeler `https://sign.closeos.fr/api/mcp` avec
+`Authorization: Bearer <clé sk_…>` (la clé ne passe alors pas dans l'URL ni dans les journaux).
 
 ### 3. Test rapide (après déploiement)
 
 ```bash
-curl -sS -X POST "https://sign.closeos.fr/api/mcp/<SECRET>" \
+curl -sS -X POST "https://sign.closeos.fr/api/mcp" \
+  -H "Authorization: Bearer <clé sk_…>" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}'

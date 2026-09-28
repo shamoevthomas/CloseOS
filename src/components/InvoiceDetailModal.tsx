@@ -104,9 +104,10 @@ export function InvoiceDetailModal({ invoice, isOpen, onClose, onUpdate }: Invoi
         ]
       };
 
+      const { data: { session } } = await supabase.auth.getSession()
       const response = await fetch('/api/send-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}) },
         body: JSON.stringify(emailPayload)
       });
 

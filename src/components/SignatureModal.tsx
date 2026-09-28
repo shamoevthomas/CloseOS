@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, PenTool, Upload, Type as TypeIcon, Eraser, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { computeInitials, cursiveTextToDataUrl, CURSIVE_FONT } from '../lib/signFieldsMeta';
 import { useSignLang } from '../contexts/SignLangContext';
@@ -129,7 +130,9 @@ export default function SignatureModal({
     </button>
   );
 
-  return (
+  // Portail vers <body> : la page du contrat peut être mise à l'échelle (transform) sur mobile, ce qui
+  // réduirait et enfermerait une modale « fixed » rendue à l'intérieur.
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm">
       <div className="max-h-[calc(100dvh-3rem)] w-full max-w-lg overflow-y-auto rounded-xl border border-[#3A4242] bg-[#222828] p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
@@ -264,7 +267,8 @@ export default function SignatureModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

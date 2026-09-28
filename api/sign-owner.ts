@@ -19,6 +19,11 @@ const BREVO_KEY = (process.env.BREVO_API_KEY || process.env.VITE_BREVO_API_KEY |
 
 const H = (extra?: Record<string, string>) => ({ apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'content-type': 'application/json', ...(extra || {}) })
 const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex')
+const CODE_TTL_MS = 10 * 60 * 1000
+const MAX_CODE_ATTEMPTS = 5
+const MAX_CODE_SENDS = 3
+const RESEND_COOLDOWN_MS = 60_000
+const SIGN_ORIGINS = ['https://sign.closeos.fr', 'https://close-os.vercel.app']
 
 async function sbSelect(pathAndQuery: string): Promise<any[]> {
   const r = await fetch(`${REST}/${pathAndQuery}`, { headers: H() })
@@ -68,8 +73,13 @@ async function sendCodeEmail(to: string, code: string) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Headers', 'content-type')
+  // La page /sign/owner/<token> est servie par Sign lui-même : CORS limité à ses origines.
+  const origin = String(req.headers.origin || '')
+  if (SIGN_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Vary', 'Origin')
+    res.setHeader('Access-Control-Allow-Headers', 'content-type')
+  }
   if (req.method === 'OPTIONS') { res.status(204).end(); return }
 
   const action = String((req.query.action as string) || (req.body && req.body.action) || '')
@@ -92,9 +102,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'send-code') {
+      // 3 envois par session, 60 s d'écart ; le compteur d'essais n'est plus remis à zéro,
+      // sinon renvoyer un code relançait 5 nouveaux essais à chaque fois.
+      if ((s.code_sends || 0) >= MAX_CODE_SENDS) { res.status(429).json({ ok: false, error: 'send_limit' }); return }
+      const sentAt = s.code_expires_at ? new Date(s.code_expires_at).getTime() - CODE_TTL_MS : 0
+      if (sentAt && Date.now() - sentAt < RESEND_COOLDOWN_MS) { res.status(429).json({ ok: false, error: 'rate_limit' }); return }
+      if ((s.code_attempts || 0) >= MAX_CODE_ATTEMPTS) { res.status(429).json({ ok: false, error: 'too_many' }); return }
       const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0')
       await sbUpdate('sign_owner_sign_sessions', `token=eq.${encodeURIComponent(token)}`, {
-        code_hash: sha256(code), code_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), code_attempts: 0, verified: false,
+        code_hash: sha256(code), code_expires_at: new Date(Date.now() + CODE_TTL_MS).toISOString(),
+        code_sends: (s.code_sends || 0) + 1, verified: false,
       })
       await sendCodeEmail(s.owner_email, code)
       res.status(200).json({ ok: true, masked_email: maskEmail(s.owner_email) })
@@ -105,10 +122,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const code = String((req.body && req.body.code) || '').trim()
       if (!s.code_hash) { res.status(400).json({ ok: false, error: 'no_code' }); return }
       if (s.code_expires_at && new Date(s.code_expires_at).getTime() < Date.now()) { res.status(400).json({ ok: false, error: 'expired' }); return }
-      if ((s.code_attempts || 0) >= 5) { res.status(429).json({ ok: false, error: 'too_many' }); return }
+      if ((s.code_attempts || 0) >= MAX_CODE_ATTEMPTS) { res.status(429).json({ ok: false, error: 'too_many' }); return }
       if (sha256(code) !== s.code_hash) {
         await sbUpdate('sign_owner_sign_sessions', `token=eq.${encodeURIComponent(token)}`, { code_attempts: (s.code_attempts || 0) + 1 })
-        res.status(400).json({ ok: false, error: 'invalid', attempts_left: Math.max(0, 5 - (s.code_attempts || 0) - 1) })
+        res.status(400).json({ ok: false, error: 'invalid', attempts_left: Math.max(0, MAX_CODE_ATTEMPTS - (s.code_attempts || 0) - 1) })
         return
       }
       await sbUpdate('sign_owner_sign_sessions', `token=eq.${encodeURIComponent(token)}`, { verified: true })

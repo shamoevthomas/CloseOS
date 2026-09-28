@@ -20,3 +20,10 @@ export const signSupabase = createClient(supabaseUrl, supabaseAnonKey, {
     storageKey: 'closeos-sign-auth',
   },
 });
+
+/** En-tête Authorization de la session Sign, pour les routes /api qui exigent un utilisateur connecté. */
+export async function signAuthHeader(): Promise<Record<string, string>> {
+  const { data } = await signSupabase.auth.getSession();
+  const jwt = data.session?.access_token;
+  return jwt ? { Authorization: `Bearer ${jwt}` } : {};
+}

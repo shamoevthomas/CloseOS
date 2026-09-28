@@ -9,7 +9,7 @@ import {
   getOwnerProfile, updateOwnerProfile, getOwnerStripeStatus, getNotifPrefs, updateNotifPrefs,
   getAccountInfo, exportOwnerData, getOwnerAvatar, uploadSignAvatar, type OwnerProfile, type NotifPrefs,
 } from '../lib/signContracts';
-import { getMcpKey, generateMcpKey, revokeMcpKey, mcpConnectorUrl } from '../lib/signTeam';
+import { getMcpKeyHint, generateMcpKey, revokeMcpKey, mcpConnectorUrl } from '../lib/signTeam';
 import { listTrustedDevices, revokeTrustedDevice, revokeAllTrustedDevices, type TrustedDevice } from '../lib/signDevice';
 import { getSignSubscription, isSubActive, openSignBillingPortal, type SignSubscription } from '../lib/signSubscription';
 import { signSupabase as supabase } from '../lib/signSupabase';
@@ -82,7 +82,9 @@ export default function SignProfile() {
   const [outAllBusy, setOutAllBusy] = useState(false);
   const [sub, setSub] = useState<SignSubscription | null>(null);
   // ── Connecteur MCP ──
+  // La clé complète n'existe que dans cet écran, juste après sa génération ; sinon, seul son indice.
   const [mcpKey, setMcpKey] = useState<string | null>(null);
+  const [mcpHint, setMcpHint] = useState<string | null>(null);
   const [mcpLoaded, setMcpLoaded] = useState(false);
   const [mcpBusy, setMcpBusy] = useState(false);
   const [mcpCopied, setMcpCopied] = useState(false);
@@ -114,18 +116,18 @@ export default function SignProfile() {
     getAuthIdentity().then(setAuthId).catch(() => {});
     getNotifPrefs().then(setNotif).catch(() => {});
     getSignSubscription().then(setSub).catch(() => {});
-    getMcpKey().then((k) => { setMcpKey(k); setMcpLoaded(true); }).catch(() => setMcpLoaded(true));
+    getMcpKeyHint().then((h) => { setMcpHint(h); setMcpLoaded(true); }).catch(() => setMcpLoaded(true));
   }, [tab, owner]);
 
   const genMcp = async () => {
     setMcpBusy(true);
-    try { const k = await generateMcpKey(); setMcpKey(k); } catch (e) { console.error('[sign] génération clé MCP', e); }
+    try { const k = await generateMcpKey(); setMcpKey(k); setMcpHint(`${k.slice(0, 7)}…${k.slice(-4)}`); } catch (e) { console.error('[sign] génération clé MCP', e); }
     finally { setMcpBusy(false); }
   };
   const revokeMcp = async () => {
     if (!confirm(lang === 'fr' ? 'Désactiver le connecteur MCP ? Le lien actuel cessera de fonctionner.' : 'Disable the MCP connector? The current link will stop working.')) return;
     setMcpBusy(true);
-    try { await revokeMcpKey(); setMcpKey(null); } catch (e) { console.error('[sign] révocation clé MCP', e); }
+    try { await revokeMcpKey(); setMcpKey(null); setMcpHint(null); } catch (e) { console.error('[sign] révocation clé MCP', e); }
     finally { setMcpBusy(false); }
   };
   const copyMcp = async () => {
@@ -558,18 +560,24 @@ export default function SignProfile() {
           >
             {!mcpLoaded ? (
               <div className="flex items-center gap-2 text-sm text-[#A1A9A9]"><Loader2 className="h-4 w-4 animate-spin" /> …</div>
-            ) : mcpKey ? (
+            ) : mcpKey || mcpHint ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 rounded-lg border border-[#3A4242] bg-[#191E1E] px-3 py-2.5">
-                  <code className="min-w-0 flex-1 truncate text-xs text-[#A0E7EC]">{mcpConnectorUrl(mcpKey)}</code>
-                  <button onClick={copyMcp} title={lang === 'fr' ? 'Copier' : 'Copy'} className="shrink-0 rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white">
-                    {mcpCopied ? <Check className="h-4 w-4 text-[#CEFF8F]" /> : <Copy className="h-4 w-4" />}
-                  </button>
+                  <code className={`min-w-0 flex-1 truncate text-xs ${mcpKey ? 'text-[#A0E7EC]' : 'text-[#6b7373]'}`}>{mcpConnectorUrl(mcpKey ?? mcpHint!)}</code>
+                  {mcpKey && (
+                    <button onClick={copyMcp} title={lang === 'fr' ? 'Copier' : 'Copy'} className="shrink-0 rounded p-1.5 text-[#A1A9A9] transition-colors hover:bg-[#3A4242] hover:text-white">
+                      {mcpCopied ? <Check className="h-4 w-4 text-[#CEFF8F]" /> : <Copy className="h-4 w-4" />}
+                    </button>
+                  )}
                 </div>
                 <p className="text-xs text-[#A1A9A9]">
-                  {lang === 'fr'
-                    ? 'Ajoute ce lien comme « connecteur personnalisé » dans ton assistant IA. Garde-le secret : quiconque le possède peut piloter ton compte Sign.'
-                    : 'Add this link as a “custom connector” in your AI assistant. Keep it secret: anyone who has it can drive your Sign account.'}
+                  {mcpKey
+                    ? (lang === 'fr'
+                      ? 'Copie ce lien maintenant : il ne sera plus affiché en entier. Ajoute-le comme « connecteur personnalisé » dans ton assistant IA et garde-le secret : quiconque le possède peut piloter ton compte Sign.'
+                      : 'Copy this link now: it will not be shown in full again. Add it as a “custom connector” in your AI assistant and keep it secret: anyone who has it can drive your Sign account.')
+                    : (lang === 'fr'
+                      ? 'Connecteur actif. Par sécurité, le lien complet n’est affiché qu’à sa création. Si tu l’as perdu, régénère la clé : l’ancien lien cessera de fonctionner.'
+                      : 'Connector active. For security, the full link is only shown when it is created. If you lost it, regenerate the key: the old link will stop working.')}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button onClick={genMcp} disabled={mcpBusy} className="inline-flex items-center gap-2 rounded-lg border border-[#3A4242] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:border-[#CEFF8F] disabled:opacity-50">

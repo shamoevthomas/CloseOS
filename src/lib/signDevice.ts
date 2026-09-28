@@ -4,7 +4,7 @@
  * Endpoints serveur : /api/sign-send-verification-code, /api/sign-verify-code, /api/sign-check-device.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { signSupabase } from './signSupabase';
+import { signSupabase, signAuthHeader } from './signSupabase';
 
 const FP_KEY = 'closeos_sign_device_id';
 const TOKEN_KEY = 'closeos_sign_device_token';
@@ -42,7 +42,7 @@ export async function sendDeviceCode(userId: string, channel: 'email' | 'sms' = 
   try {
     const res = await fetch('/api/sign-send-verification-code', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await signAuthHeader()) },
       body: JSON.stringify({ user_id: userId, channel }),
     });
     const data = await res.json();
@@ -58,7 +58,7 @@ export async function verifyDeviceCode(userId: string, code: string, authMethod:
   try {
     const res = await fetch('/api/sign-verify-code', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await signAuthHeader()) },
       body: JSON.stringify({ user_id: userId, code, device_fingerprint: getSignDeviceFingerprint(), auth_method: authMethod }),
     });
     const data = await res.json();

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { todayLocalISO } from '../lib/signFieldsMeta';
 
@@ -69,7 +70,9 @@ export default function DatePickerModal({
   };
   const years = Array.from({ length: 12 }, (_, i) => yearStart + i);
 
-  return (
+  // Portail vers <body> : la page du contrat peut être mise à l'échelle (transform) sur mobile, ce qui
+  // réduirait et enfermerait une modale « fixed » rendue à l'intérieur.
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm" onMouseDown={onClose}>
       <div
         className="w-full max-w-xs rounded-xl border border-[#3A4242] bg-[#222828] p-5 shadow-2xl"
@@ -221,6 +224,7 @@ export default function DatePickerModal({
           Aujourd'hui
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
