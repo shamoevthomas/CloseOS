@@ -270,3 +270,15 @@ as $function$
 $function$;
 revoke execute on function public.sign_webhook_claim(integer) from public, anon, authenticated;
 grant execute on function public.sign_webhook_claim(integer) to service_role;
+
+-- ─── 6. Conservation légale de fichiers Storage sans contrat ───
+-- purge_hold protège un contrat ; ceci protège des fichiers dont le contrat n'existe plus (archive
+-- des orphelins). La purge (api/_lib/sign-purge.js) ne touche jamais un chemin sous conservation.
+create table if not exists public.sign_storage_holds (
+  prefix text not null,
+  reason text not null,
+  inventory_path text,
+  created_at timestamp with time zone default now() not null,
+  constraint sign_storage_holds_pkey primary key (prefix)
+);
+alter table public.sign_storage_holds enable row level security;

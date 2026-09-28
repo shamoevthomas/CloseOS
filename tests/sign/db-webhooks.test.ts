@@ -142,6 +142,12 @@ describe.skipIf(!available)('migration 20261001_sign_webhooks', () => {
     await expect(db.query(`insert into sign_webhook_endpoints (platform_id, url, events) values ($1, 'http://saas.test', '{}')`, [platform])).rejects.toThrow(/https/);
   });
 
+  it('protège la table de conservation Storage (serveur seulement)', async () => {
+    await db.query(`insert into sign_storage_holds (prefix, reason) values ('_archive/x/', 'test')`);
+    const r = await as(db, 'authenticated', owner, (c) => c.query(`select * from sign_storage_holds`));
+    expect(r.rows).toHaveLength(0);
+  });
+
   it('reste idempotente', async () => {
     await applyFile(db, MIGRATIONS[3]);
   });
