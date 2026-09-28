@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { processPurgeQueue } from '../_lib/sign-purge.js';
 
 export const config = { runtime: 'edge' };
 
@@ -202,5 +203,7 @@ export default async function handler(req: Request) {
     }
   }
 
-  return new Response(JSON.stringify(out), { status: 200, headers: { 'content-type': 'application/json' } });
+  // Fichiers Storage des contrats supprimés (y compris ceux supprimés ci-dessus à 90 jours).
+  const purge = await processPurgeQueue().catch((e: any) => ({ error: String(e?.message || e) }));
+  return new Response(JSON.stringify({ ...out, storage_purge: purge }), { status: 200, headers: { 'content-type': 'application/json' } });
 }

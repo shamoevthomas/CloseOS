@@ -9,7 +9,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { internalEmailHeaders, linkExpired } from "../_shared/sign-guards.ts";
+import { internalEmailHeaders, linkExpired, requestServerSeal, serverCertified } from "../_shared/sign-guards.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -240,7 +240,9 @@ Deno.serve(async (req: Request) => {
       if (!(await verificationSatisfied(supabase, contract, signer))) return json({ ok: false, error: "not_verified" });
       if (body.consent) await supabase.from("sign_signature_events").insert({ contract_id: contract.id, event_type: "consent", email: signer.email || null, ip_address: ip, user_agent: ua, metadata: { signer_index: signer.signer_index, text: typeof body.consent === "string" ? body.consent : "J'ai lu et j'accepte ce document" } });
       const allSigned = await advanceAfterSignerDone(supabase, contract, signer, method, body.tzOffset ?? null, ip, ua);
-      return json({ ok: true, allSigned });
+      // Dernière signature : PDF signé et certificat produits par le serveur (contrats PDF).
+      const seal = allSigned ? await requestServerSeal(contract.id, emailHeaders(), { ip, ua }) : null;
+      return json({ ok: true, allSigned, certified: !!seal && serverCertified(seal.status) });
     }
 
     if (signer.status === "signed") return json({ ok: false, error: "already_signed" });

@@ -48,3 +48,35 @@ export function linkExpired(signer: { link_expires_at?: string | null; status?: 
   const t = Date.parse(signer.link_expires_at);
   return Number.isFinite(t) && t <= now;
 }
+
+/** Scellement serveur (Vercel, api/sign-internal.ts) : PDF signé et certificat à la dernière signature. */
+export const SERVER_SEAL_URL = "https://close-os.vercel.app/api/sign-internal?action=seal";
+
+/**
+ * Demande au serveur de sceller et certifier un contrat entièrement signé. Ne lève jamais :
+ * renvoie l'issue (`certified`, `already`, `skipped`…) ou `failed` ; la page signataire garde
+ * alors son chemin de secours.
+ */
+export async function requestServerSeal(
+  contractId: string,
+  headers: Record<string, string>,
+  info: { ip?: string | null; ua?: string | null } = {},
+  deps: { fetch?: typeof fetch; timeoutMs?: number } = {},
+): Promise<{ status: string; certificateId?: string | null }> {
+  if (!headers["x-closeos-internal"]) return { status: "failed" };
+  try {
+    const r = await (deps.fetch ?? fetch)(SERVER_SEAL_URL, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ contractId, ip: info.ip ?? null, ua: info.ua ?? null }),
+      signal: AbortSignal.timeout(deps.timeoutMs ?? 50000),
+    });
+    const j = await r.json().catch(() => null);
+    return r.ok && j?.ok ? { status: String(j.status), certificateId: j.certificateId ?? null } : { status: "failed" };
+  } catch {
+    return { status: "failed" };
+  }
+}
+
+/** Certifié par le serveur (maintenant ou avant) : la page signataire n'a rien à produire. */
+export const serverCertified = (status: string) => status === "certified" || status === "already";

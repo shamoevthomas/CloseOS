@@ -9,7 +9,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { bearerToken, certificateAccess, internalEmailHeaders } from "../_shared/sign-guards.ts";
+import { bearerToken, certificateAccess, internalEmailHeaders, requestServerSeal, serverCertified } from "../_shared/sign-guards.ts";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1?target=denonext";
 
 const cors = {
@@ -173,7 +173,7 @@ Deno.serve(async (req: Request) => {
     if ("error" in access) return json({ ok: false, error: access.error }, access.error === "unauthorized" ? 401 : 200);
     const contractId = access.contractId;
     const { data: contract } = await supabase.from("sign_contracts")
-      .select("id,title,owner_email,status,signing_order,verification_method,payment_enabled,payment_amount,payment_mode,currency,document_hash,sealed_hash,certificate_hash,certificate_path,certificate_id,certified_at")
+      .select("id,title,owner_email,status,source_type,signing_order,verification_method,payment_enabled,payment_amount,payment_mode,currency,document_hash,sealed_hash,sealed_by,seal_started_at,certificate_hash,certificate_path,certificate_id,certified_at")
       .eq("id", contractId).maybeSingle();
     if (!contract) return json({ ok: false, error: "contract" });
 
@@ -187,15 +187,26 @@ Deno.serve(async (req: Request) => {
     const { count: pending } = await supabase.from("sign_contract_signers").select("*", { count: "exact", head: true }).eq("contract_id", contract.id).neq("status", "signed");
     const complete = (pending || 0) === 0;
 
+    // Reprise du scellement serveur (contrat PDF) : la page signataire ou l'éditeur l'appellent avant
+    // de retomber sur l'ancien chemin navigateur.
+    if (action === "server-seal") {
+      if (!complete) return json({ ok: false, error: "not_complete" });
+      const seal = await requestServerSeal(contract.id, emailHeaders(), { ip: clientIp(req), ua: req.headers.get("user-agent") });
+      return json({ ok: serverCertified(seal.status), status: seal.status });
+    }
+
     if (action === "seal") {
       if (!complete) return json({ ok: false, error: "not_complete" });
       if (contract.certified_at) { const data = await buildCertData(supabase, contract); return json({ ok: true, already: true, ...data }); }
+      // Un PDF scellé par le serveur (ou en cours de scellement) n'est jamais remplacé par celui du navigateur.
+      const sealing = contract.seal_started_at && Date.now() - Date.parse(contract.seal_started_at) < 5 * 60 * 1000;
+      if (contract.sealed_by === "server" || sealing) return json({ ok: false, error: "server_sealed" });
       if (!body.sealedPdfB64) return json({ ok: false, error: "no_pdf" }, 400);
       const bytes = b64ToBytes(body.sealedPdfB64);
       const sealedHash = await sha256Hex(bytes); // ← hash sur les OCTETS REÇUS
       await supabase.storage.from(BUCKET).upload(`${contract.id}/sealed.pdf`, bytes, { contentType: "application/pdf", upsert: true });
       const certificateId = contract.certificate_id || crypto.randomUUID();
-      await supabase.from("sign_contracts").update({ sealed_hash: sealedHash, certificate_id: certificateId }).eq("id", contract.id);
+      await supabase.from("sign_contracts").update({ sealed_hash: sealedHash, sealed_by: "browser", certificate_id: certificateId }).eq("id", contract.id);
       await supabase.from("sign_signature_events").insert({ contract_id: contract.id, event_type: "sealed", ip_address: clientIp(req), user_agent: req.headers.get("user-agent"), metadata: { sealed_hash: sealedHash } });
       const fresh = { ...contract, sealed_hash: sealedHash, certificate_id: certificateId };
       const data = await buildCertData(supabase, fresh);
@@ -204,6 +215,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "finalize") {
       if (contract.certified_at) return json({ ok: true, already: true, certificateId: contract.certificate_id, certificateHash: contract.certificate_hash });
+      if (contract.sealed_by !== "browser") return json({ ok: false, error: "server_sealed" });
       if (!complete) return json({ ok: false, error: "not_complete" });
       if (!body.certPdfB64) return json({ ok: false, error: "no_pdf" }, 400);
       const { data: sealedFile } = await supabase.storage.from(BUCKET).download(`${contract.id}/sealed.pdf`);

@@ -81,7 +81,7 @@ import { THEME_CSS, newArticleHtml } from '../lib/signThemes';
 
 const FONT_SIZES = [12, 14, 16, 18, 24, 32];
 import { emailSignedPdf, buildSignedPdfBlob, buildSignedPdfDataUri } from '../lib/signPdfExport';
-import { generateCertificate, getCertificateUrl } from '../lib/signCertificate';
+import { generateCertificate, getCertificateUrl, tryServerCertificate } from '../lib/signCertificate';
 import { isValidEmail, CHECKBOX_DEFAULT_TEXT, todayLocalISO, nowLocalHM, isSignatureType } from '../lib/signFieldsMeta';
 import { PG_H, PG_GAP, paginateEl, PAGED_CSS } from '../lib/signPaging';
 import SignPagedDoc from '../components/SignPagedDoc';
@@ -1642,6 +1642,7 @@ export default function SignContractEditor() {
     setCertBusy(true);
     try {
       let url = await getCertificateUrl({ contractId: cid });
+      if (!url && (await tryServerCertificate({ contractId: cid }))) url = await getCertificateUrl({ contractId: cid });
       if (!url) {
         const uri = await buildSignedPdfDataUri(pdfOpts());
         const r = await generateCertificate({ contractId: cid, signedPdfDataUri: uri });
