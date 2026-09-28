@@ -984,13 +984,14 @@ begin
   return sign_regenerate_instance_internal(p_instance_id);
 end; $function$;
 
--- Droits d'exécution tels qu'en production au 27/09/2026 : toutes les fonctions sont exécutables
--- par PUBLIC (défaut Postgres), sauf les deux fonctions « internes » ci-dessous, retirées de PUBLIC
--- mais accordées explicitement à anon et authenticated (faille corrigée dans la migration suivante).
-revoke execute on function public.sign_clone_template_to_instance(uuid, uuid, text, text, text, integer) from public;
-revoke execute on function public.sign_regenerate_instance_internal(uuid) from public;
-grant execute on function public.sign_clone_template_to_instance(uuid, uuid, text, text, text, integer) to anon, authenticated, service_role;
-grant execute on function public.sign_regenerate_instance_internal(uuid) to anon, authenticated, service_role;
+-- Droits d'exécution tels qu'en production au 28/09/2026 : toutes les fonctions sont exécutables
+-- par PUBLIC (défaut Postgres), sauf les deux fonctions « internes » ci-dessous, réservées à
+-- service_role depuis le correctif appliqué en production le 28/09/2026 (elles étaient ouvertes à
+-- anon et authenticated). Ne jamais les rouvrir : ce fichier, réappliqué, ne doit pas recréer la faille.
+revoke execute on function public.sign_clone_template_to_instance(uuid, uuid, text, text, text, integer) from public, anon, authenticated;
+revoke execute on function public.sign_regenerate_instance_internal(uuid) from public, anon, authenticated;
+grant execute on function public.sign_clone_template_to_instance(uuid, uuid, text, text, text, integer) to service_role;
+grant execute on function public.sign_regenerate_instance_internal(uuid) to service_role;
 
 -- ───────────────────────────── Triggers ─────────────────────────────
 
