@@ -117,6 +117,18 @@ select option:disabled {
   }
 }
 
+/* iPhone : Safari zoome la page dès qu'on touche un champ dont la police fait moins de 16px.
+   On garde donc 16px sur les champs de saisie des petits écrans iOS (n'affecte ni Android ni le bureau). */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 767px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
 /* Hero blob animation */
 @keyframes blob {
   0%, 100% { transform: translate(0, 0) scale(1); }

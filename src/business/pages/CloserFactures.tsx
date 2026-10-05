@@ -15,7 +15,7 @@ import { BusinessPaymentMethodsModal } from '../components/BusinessPaymentMethod
 import { BusinessStripeConnectModal } from '../components/BusinessStripeConnectModal'
 import { BusinessInvoiceGeneratorModal } from '../components/BusinessInvoiceGeneratorModal'
 
-const formatCurrency = (amount: number) =>
+const formatCurrency = (amount: number, lang: string) =>
   new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
 
 const STATUS_OPTIONS = [
@@ -613,7 +613,7 @@ export function CloserFactures() {
             </div>
             <p className="text-xs text-stone-500 dark:text-neutral-400 mt-2 text-right">
               Total : <span className="font-bold text-emerald-600">
-                {formatCurrency(myWonProspects.filter(p => !p.installments || p.installments <= 1).reduce((s, p) => s + (p.value || 0), 0))}
+                {formatCurrency(myWonProspects.filter(p => !p.installments || p.installments <= 1).reduce((s, p) => s + (p.value || 0), 0), lang)}
               </span>
             </p>
           </div>
@@ -640,7 +640,7 @@ export function CloserFactures() {
             </div>
             <p className="text-xs text-stone-500 dark:text-neutral-400 mt-2 text-right">
               Total : <span className="font-bold text-blue-600">
-                {formatCurrency(myWonProspects.filter(p => p.installments && p.installments > 1).reduce((s, p) => s + (p.value || 0), 0))}
+                {formatCurrency(myWonProspects.filter(p => p.installments && p.installments > 1).reduce((s, p) => s + (p.value || 0), 0), lang)}
               </span>
             </p>
           </div>
@@ -684,7 +684,7 @@ export function CloserFactures() {
                         {inv.offer_name && <span className="text-[10px] text-stone-500 dark:text-neutral-400 font-medium">{inv.offer_name}</span>}
                       </div>
                     </td>
-                    <td className="px-4 md:px-8 py-4 md:py-6 text-sm font-extrabold text-stone-900 dark:text-white whitespace-nowrap">{formatCurrency(inv.amount_ttc || 0)}</td>
+                    <td className="px-4 md:px-8 py-4 md:py-6 text-sm font-extrabold text-stone-900 dark:text-white whitespace-nowrap">{formatCurrency(inv.amount_ttc || 0, lang)}</td>
                     <td className="hidden md:table-cell px-8 py-6">
                       {inv.due_date ? (
                         <span className={cn("text-xs font-semibold", isOverdue ? "text-red-500" : "text-stone-500 dark:text-neutral-400")}>

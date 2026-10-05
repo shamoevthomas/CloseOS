@@ -57,7 +57,7 @@ const getStatusConfig = (status: string) => {
   }
 }
 
-const formatCurrency = (amount: number) =>
+const formatCurrency = (amount: number, lang: string) =>
   new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
 
 const ITEMS_PER_PAGE = 10
@@ -371,7 +371,7 @@ export function OwnerFactures() {
                         <span className="text-xs text-[#444748]/40 dark:text-neutral-600">—</span>
                       )}
                     </td>
-                    <td className="px-4 md:px-8 py-4 md:py-6 text-sm font-extrabold text-[#1b1c1b] dark:text-white whitespace-nowrap">{formatCurrency(inv.amount_ttc || 0)}</td>
+                    <td className="px-4 md:px-8 py-4 md:py-6 text-sm font-extrabold text-[#1b1c1b] dark:text-white whitespace-nowrap">{formatCurrency(inv.amount_ttc || 0, lang)}</td>
                     <td className="hidden md:table-cell px-8 py-6">
                       {inv.due_date ? (
                         <span className={cn("text-xs font-semibold", inv.due_date && new Date(inv.due_date) < new Date() && inv.status !== 'payé' ? "text-[#ba1a1a]" : "text-[#444748] dark:text-neutral-400")}>
