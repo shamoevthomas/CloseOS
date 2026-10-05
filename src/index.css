@@ -129,6 +129,12 @@ select option:disabled {
   }
 }
 
+/* CloseOS Business : pas de flash gris au toucher (les éléments ont leurs propres états actifs). */
+.business-app,
+.business-app * {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Hero blob animation */
 @keyframes blob {
   0%, 100% { transform: translate(0, 0) scale(1); }

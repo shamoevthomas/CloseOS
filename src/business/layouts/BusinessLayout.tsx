@@ -319,9 +319,10 @@ function BusinessLayoutInner({
           )
         })()}
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#f4f2f1] dark:bg-[#141211] px-4 sm:px-8 lg:px-12 py-5 sm:py-8 lg:py-10 min-h-0 relative transition-colors duration-300">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#f4f2f1] dark:bg-[#141211] px-4 sm:px-8 lg:px-12 py-5 sm:py-8 lg:py-10 min-h-0 relative transition-colors duration-300">
           {/* Background decorative gradient */}
-          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-emerald-100/20 dark:from-emerald-900/10 to-transparent rounded-full -mr-64 -mt-64 blur-3xl pointer-events-none" />
+          {/* Masqué sur mobile/tablette : un flou de 800px coûte cher au défilement tactile */}
+          <div className="hidden lg:block absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-emerald-100/20 dark:from-emerald-900/10 to-transparent rounded-full -mr-64 -mt-64 blur-3xl pointer-events-none" />
           {/* Pas de z-index ici : `relative` suffit a passer au-dessus du degrade decoratif
               (meme couche, ordre DOM). Un z-10 creerait un contexte d'empilement qui
               enfermerait toutes les pop-up des pages sous le header mobile (z-30). */}
