@@ -92,10 +92,10 @@ export function InstallmentScheduleEditor({
         />
       </div>
 
-      <div className="space-y-2 rounded-xl border p-3 max-h-64 overflow-y-auto">
+      <div className="space-y-2 rounded-xl border p-2.5 sm:p-3 max-h-64 overflow-y-auto overscroll-contain">
         {value.map((entry, idx) => (
           <div key={idx} className="flex items-center gap-2">
-            <span className={cn('text-sm font-medium w-20 shrink-0', dark ? 'text-slate-600 dark:text-neutral-300' : 'text-stone-600')}>
+            <span className={cn('text-sm font-medium w-16 sm:w-20 shrink-0', dark ? 'text-slate-600 dark:text-neutral-300' : 'text-stone-600')}>
               {L.month} {entry.month}
             </span>
             <div className="relative flex-1">

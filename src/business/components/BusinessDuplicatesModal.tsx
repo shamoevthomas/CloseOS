@@ -35,12 +35,13 @@ export function BusinessDuplicatesModal({ isOpen, onClose }: { isOpen: boolean; 
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-md" onClick={onClose} />
-      <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-stone-200 dark:border-neutral-700">
-        <div className="flex items-center justify-between border-b border-stone-200 dark:border-neutral-700 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-400/20">
+      <div className="relative w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-stone-200 dark:border-neutral-700">
+        <div className="relative flex items-center justify-between gap-3 border-b border-stone-200 dark:border-neutral-700 px-4 sm:px-6 pt-5 pb-3 sm:py-4">
+          <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/20">
               <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
@@ -52,15 +53,15 @@ export function BusinessDuplicatesModal({ isOpen, onClose }: { isOpen: boolean; 
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-stone-400 dark:text-neutral-500 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-900">
+          <button onClick={onClose} aria-label={fr ? 'Fermer' : 'Close'} className="shrink-0 rounded-full sm:rounded-lg p-2 bg-stone-100 dark:bg-neutral-800 sm:bg-transparent sm:dark:bg-transparent text-stone-400 dark:text-neutral-500 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-900">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 space-y-3">
           {groups.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-14 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#006c49]/10 mb-4">
+            <div className="flex flex-col items-center justify-center py-8 sm:py-14 text-center">
+              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-[#006c49]/10 mb-3 sm:mb-4">
                 <ShieldCheck className="h-7 w-7 text-[#006c49]" />
               </div>
               <p className="text-sm font-bold text-stone-900 dark:text-white">{fr ? 'Aucun doublon détecté' : 'No duplicate found'}</p>
@@ -71,14 +72,14 @@ export function BusinessDuplicatesModal({ isOpen, onClose }: { isOpen: boolean; 
               const isMerging = mergingGroup === group[0].id
               return (
                 <div key={gi} className="rounded-2xl border border-stone-200 dark:border-neutral-700 bg-stone-50 dark:bg-neutral-800/40 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-200 dark:border-neutral-700">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                  <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-stone-200 dark:border-neutral-700">
+                    <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] font-black uppercase tracking-wider sm:tracking-widest text-amber-600 dark:text-amber-400">
                       <Users className="h-3.5 w-3.5" /> {group.length} {fr ? 'fiches en doublon' : 'duplicate records'}
                     </span>
                     <button
                       onClick={() => quickMerge(group)}
                       disabled={isMerging}
-                      className="flex items-center gap-1.5 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-200 disabled:opacity-50 transition-all active:scale-95"
+                      className="flex shrink-0 items-center gap-1.5 rounded-full bg-stone-900 dark:bg-white dark:text-stone-900 px-3.5 sm:px-3 py-2 sm:py-1.5 text-xs font-bold text-white hover:bg-stone-800 dark:hover:bg-neutral-200 disabled:opacity-50 transition-all active:scale-95"
                     >
                       {isMerging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <GitMerge className="h-3.5 w-3.5" />}
                       {fr ? 'Fusionner' : 'Merge'}
@@ -101,9 +102,9 @@ export function BusinessDuplicatesModal({ isOpen, onClose }: { isOpen: boolean; 
                               <span className="rounded-full bg-[#006c49]/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#006c49] shrink-0">{fr ? 'Maître' : 'Primary'}</span>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 mt-0.5 text-[11px] text-stone-500 dark:text-neutral-400">
-                            {p.email && <span className="inline-flex items-center gap-1 truncate"><Mail className="h-3 w-3 shrink-0" />{p.email}</span>}
-                            {p.phone && <span className="inline-flex items-center gap-1 truncate"><Phone className="h-3 w-3 shrink-0" />{p.phone}</span>}
+                          <div className="flex min-w-0 flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-0.5 mt-0.5 text-[11px] text-stone-500 dark:text-neutral-400">
+                            {p.email && <span className="inline-flex min-w-0 max-w-full items-center gap-1"><Mail className="h-3 w-3 shrink-0" /><span className="truncate">{p.email}</span></span>}
+                            {p.phone && <span className="inline-flex min-w-0 max-w-full items-center gap-1"><Phone className="h-3 w-3 shrink-0" /><span className="truncate">{p.phone}</span></span>}
                           </div>
                         </div>
                         {pi === 0 && <ChevronRight className="h-4 w-4 text-stone-300 dark:text-neutral-600 group-hover:text-[#006c49] transition-colors shrink-0" />}

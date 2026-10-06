@@ -478,9 +478,9 @@ export function BusinessCRM() {
   return (
     <div className="h-full flex flex-col">
       {/* CRM Integration Banner */}
-      <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] px-4 md:px-6 py-4 md:py-5">
-        <div className="flex items-center gap-3">
-          <div className={`h-8 w-8 rounded-lg flex items-center justify-center overflow-hidden ${
+      <div className="mb-3 sm:mb-4 flex items-center justify-between gap-3 rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] px-4 md:px-6 py-3 sm:py-4 md:py-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className={`h-8 w-8 shrink-0 rounded-lg flex items-center justify-center overflow-hidden ${
             crmProvider === 'hubspot' ? 'bg-orange-500' :
             crmProvider === 'pipedrive' ? 'bg-green-500' :
             crmProvider === 'iclosed' ? 'bg-purple-500' :
@@ -492,16 +492,16 @@ export function BusinessCRM() {
               <span className="text-white font-bold text-xs">{crmLabel[0]}</span>
             )}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-stone-900 dark:text-white">CRM : {crmLabel}</p>
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
+              <p className="truncate text-sm font-semibold text-stone-900 dark:text-white">CRM : {crmLabel}</p>
               {((crmProvider === 'hubspot' && hubspotConnected) || (crmProvider === 'pipedrive' && pipedriveConnected) || (crmProvider === 'ghl' && ghlConnected)) && (
-                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
+                <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
                   <Check className="h-2.5 w-2.5" /> {t.crm_connected}
                 </span>
               )}
             </div>
-            <p className="text-xs text-stone-500 dark:text-neutral-400">
+            <p className="truncate text-xs text-stone-500 dark:text-neutral-400">
               {(crmProvider === 'hubspot' && hubspotConnected) || (crmProvider === 'ghl' && ghlConnected)
                 ? t.crm_auto_sync_in.replace('{time}', `${Math.floor(nextSyncSeconds / 60)}:${String(nextSyncSeconds % 60).padStart(2, '0')}`)
                 : t.crm_your_pipeline
@@ -509,7 +509,7 @@ export function BusinessCRM() {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {!isReadOnly && crmProvider === 'hubspot' && hubspotConnected && (
             <button
               onClick={() => syncHubspot()}
@@ -546,18 +546,21 @@ export function BusinessCRM() {
           {!isReadOnly && !isTeamMember && (
             <button
               onClick={() => setIsIntegrationModalOpen(true)}
-              className="flex items-center gap-2 rounded-full bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 transition-all"
+              aria-label={t.crm_integration}
+              className="flex h-10 w-10 items-center justify-center gap-2 rounded-full bg-stone-900 text-xs font-medium text-white hover:opacity-90 active:scale-95 transition-all sm:h-auto sm:w-auto sm:justify-start sm:px-3 sm:py-1.5"
             >
-              <Settings2 className="h-3.5 w-3.5" />
-              {t.crm_integration}
+              <Settings2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              <span className="hidden sm:inline">{t.crm_integration}</span>
             </button>
           )}
         </div>
       </div>
 
       {/* Search & Filters & Add */}
-      <div className="mb-4 flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
+      {/* Téléphone : recherche + « Nouveau » sur la 1re ligne, filtres et actions en icônes sur la 2e
+          (ordre CSS). Dès sm on retrouve la rangée unique d'origine. */}
+      <div className="mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="relative order-1 basis-[calc(100%-3rem)] grow min-w-0 sm:order-none sm:flex-1 sm:min-w-[160px] lg:min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
           <input
             type="text"
@@ -582,11 +585,13 @@ export function BusinessCRM() {
         {isOwnerView && duplicateGroupsCount > 0 && (
           <button
             onClick={() => setIsDuplicatesOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-2.5 text-sm font-bold text-amber-700 dark:text-amber-400 hover:border-amber-400 transition-all shrink-0"
+            className="order-3 sm:order-none flex h-10 sm:h-auto items-center gap-2 whitespace-nowrap rounded-full border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3.5 lg:px-4 py-2.5 text-sm font-bold text-amber-700 dark:text-amber-400 hover:border-amber-400 active:scale-95 transition-all shrink-0"
             title={lang === 'en' ? 'Manage duplicates' : 'Gérer les doublons'}
+            aria-label={lang === 'en' ? 'Manage duplicates' : 'Gérer les doublons'}
           >
             <Users className="h-4 w-4" />
-            {duplicateGroupsCount} {lang === 'en' ? (duplicateGroupsCount > 1 ? 'duplicates' : 'duplicate') : (duplicateGroupsCount > 1 ? 'doublons' : 'doublon')}
+            <span className="lg:hidden">{duplicateGroupsCount}</span>
+            <span className="hidden lg:inline">{duplicateGroupsCount} {lang === 'en' ? (duplicateGroupsCount > 1 ? 'duplicates' : 'duplicate') : (duplicateGroupsCount > 1 ? 'doublons' : 'doublon')}</span>
           </button>
         )}
 
@@ -594,7 +599,7 @@ export function BusinessCRM() {
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={cn(
-            'flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all border',
+            'order-3 sm:order-none flex h-10 sm:h-auto shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition-all border active:scale-95',
             hasActiveFilters
               ? 'bg-stone-100 dark:bg-neutral-800 border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-200'
               : 'bg-white dark:bg-neutral-900 border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800'
@@ -613,46 +618,53 @@ export function BusinessCRM() {
         {!isReadOnly && isOwnerView && (
           <button
             onClick={() => setIsPartialRelancesOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
+            className="order-3 sm:order-none ml-auto sm:ml-0 flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 active:scale-95 transition-all lg:h-auto lg:w-auto lg:justify-start lg:px-4 lg:py-2.5"
             title={lang === 'en' ? 'Configure follow-up emails for incomplete leads' : 'Configurer les emails de relance des leads Incomplet'}
+            aria-label={lang === 'en' ? 'Incomplete' : 'Incomplet'}
           >
             <FileWarning className="h-4 w-4" />
-            <span className="hidden sm:inline">{lang === 'en' ? 'Incomplete' : 'Incomplet'}</span>
+            <span className="hidden lg:inline">{lang === 'en' ? 'Incomplete' : 'Incomplet'}</span>
           </button>
         )}
 
         {!isReadOnly && (
           <button
             onClick={() => setIsTagModalOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
+            aria-label="Tags"
+            className={cn(
+              'order-3 sm:order-none flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 active:scale-95 transition-all lg:h-auto lg:w-auto lg:justify-start lg:px-4 lg:py-2.5',
+              !isOwnerView && 'ml-auto sm:ml-0'
+            )}
           >
             <Tag className="h-4 w-4" />
-            <span className="hidden sm:inline">Tags</span>
+            <span className="hidden lg:inline">Tags</span>
           </button>
         )}
 
         <button
           onClick={() => setIsExportModalOpen(true)}
-          className="flex items-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-all"
+          aria-label={t.crm_export}
+          className="order-3 sm:order-none flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 active:scale-95 transition-all lg:h-auto lg:w-auto lg:justify-start lg:px-4 lg:py-2.5"
         >
           <Download className="h-4 w-4" />
-          <span className="hidden sm:inline">{t.crm_export}</span>
+          <span className="hidden lg:inline">{t.crm_export}</span>
         </button>
 
         {!isReadOnly && (
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-extrabold tracking-tight text-white hover:opacity-90 shadow-lg shadow-stone-900/10 transition-all"
+            aria-label={t.crm_new_prospect}
+            className="order-2 sm:order-none flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-stone-900 text-sm font-extrabold tracking-tight text-white hover:opacity-90 shadow-lg shadow-stone-900/10 active:scale-95 transition-all md:h-auto md:w-auto md:justify-start md:px-4 md:py-2.5"
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">{t.crm_new_prospect}</span>
+            <span className="hidden md:inline">{t.crm_new_prospect}</span>
           </button>
         )}
       </div>
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="mb-4 rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] p-4 space-y-4">
+        <div className="mb-3 sm:mb-4 rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-extrabold text-stone-900 dark:text-white">{t.crm_filters}</h3>
             {hasActiveFilters && (
@@ -668,13 +680,13 @@ export function BusinessCRM() {
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">
                 <Calendar className="h-3 w-3 inline mr-1" />{t.crm_period}
               </label>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5 sm:gap-1">
                 {PERIOD_OPTIONS.map(p => (
                   <button
                     key={p.days}
                     onClick={() => setSelectedPeriod(p.days)}
                     className={cn(
-                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
+                      'px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-full transition-all',
                       selectedPeriod === p.days
                         ? 'bg-stone-900 text-white'
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
@@ -690,13 +702,13 @@ export function BusinessCRM() {
             {teams.length > 0 && (
               <div>
                 <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.crm_team}</label>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5 sm:gap-1">
                   {teams.map(t => (
                     <button
                       key={t.id}
                       onClick={() => toggleMultiSelect(selectedTeams, setSelectedTeams, t.id)}
                       className={cn(
-                        'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
+                        'px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-full transition-all',
                         selectedTeams.includes(t.id)
                           ? 'bg-stone-900 text-white'
                           : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
@@ -713,13 +725,13 @@ export function BusinessCRM() {
             {!isSolo && (
             <div>
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.crm_closer_setter}</label>
-              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+              <div className="flex flex-wrap gap-1.5 sm:gap-1 max-h-28 sm:max-h-24 overflow-y-auto overscroll-contain">
                 {allTeamMembers.map(m => (
                   <button
                     key={m.id}
                     onClick={() => toggleMultiSelect(selectedMembers, setSelectedMembers, m.id)}
                     className={cn(
-                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
+                      'px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-full transition-all',
                       selectedMembers.includes(m.id)
                         ? 'bg-stone-900 text-white'
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
@@ -736,13 +748,13 @@ export function BusinessCRM() {
             {/* Stages */}
             <div>
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.crm_stage}</label>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5 sm:gap-1">
                 {ALL_STAGES.map(s => (
                   <button
                     key={s.id}
                     onClick={() => toggleMultiSelect(selectedStages, setSelectedStages, s.id)}
                     className={cn(
-                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
+                      'px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
                       selectedStages.includes(s.id)
                         ? 'bg-stone-900 text-white'
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
@@ -757,7 +769,7 @@ export function BusinessCRM() {
                     key={`custom_${cs.id}`}
                     onClick={() => toggleMultiSelect(selectedStages, setSelectedStages, `custom_${cs.id}`)}
                     className={cn(
-                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
+                      'px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
                       selectedStages.includes(`custom_${cs.id}`)
                         ? 'bg-stone-900 text-white'
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
@@ -773,13 +785,13 @@ export function BusinessCRM() {
             {/* Offers */}
             <div>
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.crm_offer_formula}</label>
-              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+              <div className="flex flex-wrap gap-1.5 sm:gap-1 max-h-28 sm:max-h-24 overflow-y-auto overscroll-contain">
                 {formulas.map(f => (
                   <button
                     key={f.id}
                     onClick={() => toggleMultiSelect(selectedOffers, setSelectedOffers, f.id)}
                     className={cn(
-                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
+                      'px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-full transition-all',
                       selectedOffers.includes(f.id)
                         ? 'bg-stone-900 text-white'
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
@@ -797,13 +809,13 @@ export function BusinessCRM() {
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">
                 <Tag className="h-3 w-3 inline mr-1" />Tags
               </label>
-              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+              <div className="flex flex-wrap gap-1.5 sm:gap-1 max-h-28 sm:max-h-24 overflow-y-auto overscroll-contain">
                 {tags.map(t => (
                   <button
                     key={t.id}
                     onClick={() => toggleMultiSelect(selectedTags, setSelectedTags, t.id)}
                     className={cn(
-                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
+                      'px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
                       selectedTags.includes(t.id)
                         ? 'text-white'
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
@@ -822,13 +834,13 @@ export function BusinessCRM() {
       )}
 
       {/* Stats */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 md:gap-4 text-xs text-stone-500 dark:text-neutral-400">
-        <span className="font-medium text-stone-700 dark:text-neutral-200">{filteredProspects.length} {filteredProspects.length !== 1 ? t.crm_prospects_plural : t.crm_prospect_singular}</span>
+      <div className="mb-3 -mx-4 px-4 sm:-mx-8 sm:px-8 lg:mx-0 lg:px-0 flex items-center gap-3 sm:gap-2 md:gap-4 overflow-x-auto overscroll-x-contain no-scrollbar lg:flex-wrap lg:overflow-visible text-xs text-stone-500 dark:text-neutral-400">
+        <span className="shrink-0 whitespace-nowrap font-medium text-stone-700 dark:text-neutral-200">{filteredProspects.length} {filteredProspects.length !== 1 ? t.crm_prospects_plural : t.crm_prospect_singular}</span>
         {ALL_STAGES.map(s => {
           const count = filteredProspects.filter(p => p.stage === s.id).length
           if (!count) return null
           return (
-            <span key={s.id} className="flex items-center gap-1">
+            <span key={s.id} className="flex shrink-0 items-center gap-1 whitespace-nowrap">
               <span className={cn('h-1.5 w-1.5 rounded-full', s.color)} />
               {count} {stageNameMap[s.id] || s.name}
             </span>
@@ -836,8 +848,122 @@ export function BusinessCRM() {
         })}
       </div>
 
-      {/* Table View */}
-      <div className="flex-1 overflow-auto rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
+      {/* Liste en lignes (téléphone et tablette, < 1280px) : le tableau à 9 colonnes n'y tient pas.
+          Une seule carte, lignes à fleur de carte. Mêmes données et même clic que le tableau ;
+          colonnes supplémentaires (coordonnées, tags, suppression) quand la largeur le permet. */}
+      <div className="xl:hidden overflow-hidden rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] divide-y divide-stone-100 dark:divide-neutral-800">
+        {filteredProspects.length === 0 ? (
+          <p className="py-8 text-center text-sm text-stone-400 dark:text-neutral-500">{t.crm_no_prospect_found}</p>
+        ) : (
+          filteredProspects.map((deal) => {
+            const stage = ALL_STAGES.find(s => s.id === deal.stage)
+            const dealTags = (prospectTags[deal.id] || []).map(tagId => tags.find(tg => tg.id === tagId)).filter(Boolean) as BusinessTag[]
+            return (
+              <div
+                key={deal.id}
+                onClick={() => setSelectedProspect(deal)}
+                className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors active:bg-stone-100/70 dark:active:bg-neutral-800/70 [@media(hover:hover)]:hover:bg-stone-50/60 dark:[@media(hover:hover)]:hover:bg-neutral-800/30"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-100 dark:bg-neutral-800 text-sm font-bold uppercase text-stone-500 dark:text-neutral-400">
+                  {getDisplayName(deal).charAt(0) || <User className="h-4 w-4" />}
+                </div>
+
+                {/* Nom + étape / entreprise */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-sm font-semibold text-stone-900 dark:text-white">{getDisplayName(deal)}</span>
+                    <DMRBadge prospect={deal} className="shrink-0" />
+                    {deal.commission_approval_status === 'pending' && (
+                      <span title="Commission inhabituelle en attente de validation" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                        <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                        {t.approval_prospect_badge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 flex min-w-0 items-center gap-1.5">
+                    {stage && (
+                      <span className={cn('inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold', stage.bgLight, stage.textColor, 'dark:bg-white/10 dark:text-neutral-200')}>
+                        <span className={cn('h-1.5 w-1.5 rounded-full', stage.color)} />
+                        {stageNameMap[stage.id] || stage.name}
+                      </span>
+                    )}
+                    {deal.company ? (
+                      <span className="truncate text-xs text-stone-500 dark:text-neutral-400">{deal.company}</span>
+                    ) : (
+                      <span className="truncate text-xs text-stone-400 dark:text-neutral-500 md:hidden">{deal.email || deal.phone}</span>
+                    )}
+                  </div>
+                  {dealTags.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1 lg:hidden">
+                      {dealTags.map(tag => (
+                        <span key={tag.id} className="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: tag.color }}>
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Coordonnées (tablette) */}
+                <div className="hidden md:block w-52 lg:w-60 shrink-0 min-w-0 space-y-0.5">
+                  {deal.email ? (
+                    <div className="flex min-w-0 items-center gap-1.5 text-xs text-stone-600 dark:text-neutral-300">
+                      <Mail className="h-3.5 w-3.5 shrink-0 text-stone-400" />
+                      <span className="truncate">{deal.email}</span>
+                    </div>
+                  ) : null}
+                  {deal.phone ? (
+                    <div className="flex min-w-0 items-center gap-1.5 text-xs text-stone-600 dark:text-neutral-300">
+                      <Phone className="h-3.5 w-3.5 shrink-0 text-stone-400" />
+                      <span className="truncate">{deal.phone}</span>
+                    </div>
+                  ) : null}
+                  {!deal.email && !deal.phone && <span className="text-sm text-stone-300 dark:text-neutral-600">—</span>}
+                </div>
+
+                {/* Tags (iPad paysage) */}
+                <div className="hidden lg:flex w-36 shrink-0 flex-wrap gap-1">
+                  {dealTags.map(tag => (
+                    <span key={tag.id} className="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: tag.color }}>
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Valeur + date */}
+                <div className="shrink-0 text-right md:w-24">
+                  {(deal.stripe_subscription_id && deal.subscription_amount) ? (
+                    <p className="whitespace-nowrap text-sm font-bold text-[#635BFF]">{Number(deal.subscription_amount).toLocaleString()} €<span className="ml-0.5 text-[10px] text-[#635BFF]/60">/{deal.subscription_interval === 'year' ? t.prospect_stripe_year : t.prospect_stripe_month}</span></p>
+                  ) : deal.value ? (
+                    <p className="whitespace-nowrap text-sm font-bold text-emerald-600">{deal.value.toLocaleString()} €</p>
+                  ) : (
+                    <p className="text-sm text-stone-300 dark:text-neutral-600">—</p>
+                  )}
+                  {deal.created_at && (
+                    <p className="mt-0.5 whitespace-nowrap text-[11px] text-stone-400 dark:text-neutral-500">
+                      {new Date(deal.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
+                    </p>
+                  )}
+                </div>
+
+                {/* Suppression : tablette uniquement (sur téléphone, depuis la fiche, pour éviter les suppressions au doigt) */}
+                {!isReadOnly && isOwnerView && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteProspect(deal.id) }}
+                    aria-label={lang === 'en' ? 'Delete' : 'Supprimer'}
+                    className="hidden md:flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-stone-300 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* Table View (bureau, ≥ 1280px) */}
+      <div className="hidden xl:block flex-1 overflow-auto rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
         <table className="w-full min-w-[800px]">
           <thead className="sticky top-0 z-10 bg-stone-50/50 dark:bg-neutral-800/50 border-b border-stone-100 dark:border-neutral-700">
             <tr>
@@ -1022,16 +1148,21 @@ export function BusinessCRM() {
 
       {/* Add Prospect Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
-              className="absolute top-4 right-4 text-stone-400 hover:text-stone-600 dark:text-neutral-500 dark:hover:text-neutral-300"
-            >
-              <X className="h-5 w-5" />
-            </button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full max-w-lg rounded-t-3xl sm:rounded-2xl bg-white dark:bg-neutral-900 px-4 sm:p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain">
+            {/* En-tête collant sur téléphone (poignée + titre + fermer) */}
+            <div className="sticky top-0 z-10 -mx-4 bg-white dark:bg-neutral-900 px-4 pt-2 pb-3 sm:static sm:mx-0 sm:p-0 sm:bg-transparent">
+              <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
+              <button
+                onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
+                aria-label={t.common_cancel}
+                className="absolute top-5 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 dark:bg-neutral-800 sm:block sm:h-auto sm:w-auto sm:rounded-none sm:bg-transparent sm:dark:bg-transparent sm:top-4 sm:right-4 text-stone-400 hover:text-stone-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+              >
+                <X className="h-5 w-5" />
+              </button>
 
-            <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-4">{t.crm_new_prospect}</h2>
+              <h2 className="text-lg sm:text-xl font-extrabold text-stone-900 dark:text-white pr-12 sm:pr-0 sm:mb-4">{t.crm_new_prospect}</h2>
+            </div>
 
             <div className="space-y-3">
               <div>
@@ -1108,11 +1239,11 @@ export function BusinessCRM() {
               ) : isPureCloser ? (
                 <div>
                   <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_setter_label} <span className="text-stone-400 dark:text-neutral-500 font-normal">({t.crm_optional})</span></label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap sm:flex-nowrap gap-2">
                     <select
                       value={newSetterId}
                       onChange={(e) => setNewSetterId(e.target.value)}
-                      className="flex-1 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                      className="basis-full grow min-w-0 sm:basis-0 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     >
                       <option value="">{t.crm_no_setter}</option>
                       {teamSetters.map(s => (
@@ -1125,7 +1256,7 @@ export function BusinessCRM() {
                         const next = getNextSetter()
                         if (next) setNewSetterId(next.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-stone-200 dark:border-neutral-700 bg-stone-100 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
+                      className="flex flex-1 sm:flex-initial justify-center sm:justify-start items-center gap-1 rounded-xl border border-stone-200 dark:border-neutral-700 bg-stone-100 dark:bg-neutral-800 px-3 py-2.5 sm:py-2 text-xs font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-200 dark:hover:bg-neutral-700 active:scale-95 transition-all whitespace-nowrap"
                       title={t.crm_round_robin}
                     >
                       <ArrowRightCircle className="h-3.5 w-3.5" />
@@ -1137,7 +1268,7 @@ export function BusinessCRM() {
                         const rnd = getRandomSetter()
                         if (rnd) setNewSetterId(rnd.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-stone-300 dark:border-neutral-600 bg-stone-50 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
+                      className="flex flex-1 sm:flex-initial justify-center sm:justify-start items-center gap-1 rounded-xl border border-stone-300 dark:border-neutral-600 bg-stone-50 dark:bg-neutral-800 px-3 py-2.5 sm:py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-neutral-700 active:scale-95 transition-all whitespace-nowrap"
                       title={t.crm_random}
                     >
                       <Shuffle className="h-3.5 w-3.5" />
@@ -1148,11 +1279,11 @@ export function BusinessCRM() {
               ) : (
                 <div>
                   <label className="block text-sm font-semibold text-stone-900 dark:text-white mb-1">{t.crm_setter_label} <span className="text-stone-400 dark:text-neutral-500 font-normal">({t.crm_optional})</span></label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap sm:flex-nowrap gap-2">
                     <select
                       value={newSetterId}
                       onChange={(e) => setNewSetterId(e.target.value)}
-                      className="flex-1 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
+                      className="basis-full grow min-w-0 sm:basis-0 rounded-xl border-none bg-stone-100 dark:bg-neutral-800 py-2.5 px-4 text-sm text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/20 focus:outline-none"
                     >
                       <option value="">{t.crm_no_setter}</option>
                       {teamSetters.map(s => (
@@ -1165,7 +1296,7 @@ export function BusinessCRM() {
                         const next = getNextSetter()
                         if (next) setNewSetterId(next.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-stone-200 dark:border-neutral-700 bg-stone-100 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
+                      className="flex flex-1 sm:flex-initial justify-center sm:justify-start items-center gap-1 rounded-xl border border-stone-200 dark:border-neutral-700 bg-stone-100 dark:bg-neutral-800 px-3 py-2.5 sm:py-2 text-xs font-medium text-stone-700 dark:text-neutral-200 hover:bg-stone-200 dark:hover:bg-neutral-700 active:scale-95 transition-all whitespace-nowrap"
                       title={t.crm_round_robin}
                     >
                       <ArrowRightCircle className="h-3.5 w-3.5" />
@@ -1177,7 +1308,7 @@ export function BusinessCRM() {
                         const rnd = getRandomSetter()
                         if (rnd) setNewSetterId(rnd.id)
                       }}
-                      className="flex items-center gap-1 rounded-xl border border-stone-300 dark:border-neutral-600 bg-stone-50 dark:bg-neutral-800 px-3 py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-neutral-700 transition-all whitespace-nowrap"
+                      className="flex flex-1 sm:flex-initial justify-center sm:justify-start items-center gap-1 rounded-xl border border-stone-300 dark:border-neutral-600 bg-stone-50 dark:bg-neutral-800 px-3 py-2.5 sm:py-2 text-xs font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-neutral-700 active:scale-95 transition-all whitespace-nowrap"
                       title={t.crm_random}
                     >
                       <Shuffle className="h-3.5 w-3.5" />
@@ -1216,17 +1347,17 @@ export function BusinessCRM() {
                 </div>
               )}
 
-              <div className="flex gap-3 mt-4">
+              <div className="sticky bottom-0 -mx-4 flex gap-3 mt-4 border-t border-stone-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
                 <button
                   onClick={() => { setIsAddModalOpen(false); setNewSetterId(''); setNewCloserId('') }}
-                  className="flex-1 rounded-full bg-stone-100 dark:bg-neutral-800 border-none py-2.5 font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all"
+                  className="flex-1 rounded-full bg-stone-100 dark:bg-neutral-800 border-none py-3 sm:py-2.5 font-medium text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 transition-all"
                 >
                   {t.common_cancel}
                 </button>
                 <button
                   onClick={handleAddProspect}
                   disabled={addLoading || !newContact}
-                  className="flex-1 rounded-full bg-stone-900 py-2.5 font-bold text-white hover:opacity-90 transition-all disabled:opacity-50"
+                  className="flex-1 rounded-full bg-stone-900 py-3 sm:py-2.5 font-bold text-white hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {addLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : t.common_add}
                 </button>
@@ -1246,17 +1377,19 @@ export function BusinessCRM() {
       )}
 
       {isTagModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-neutral-900 px-4 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[92dvh] overflow-y-auto overscroll-contain sm:max-h-none sm:overflow-visible">
+            <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
             <button
               onClick={() => setIsTagModalOpen(false)}
-              className="absolute top-4 right-4 text-stone-400 hover:text-stone-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+              aria-label={t.common_cancel}
+              className="absolute top-5 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 dark:bg-neutral-800 sm:block sm:h-auto sm:w-auto sm:rounded-none sm:bg-transparent sm:dark:bg-transparent sm:top-4 sm:right-4 text-stone-400 hover:text-stone-600 dark:text-neutral-500 dark:hover:text-neutral-300"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <h2 className="text-xl font-extrabold text-stone-900 dark:text-white mb-1">{t.crm_manage_tags}</h2>
-            <p className="text-sm text-stone-500 dark:text-neutral-400 mb-5">{t.crm_manage_tags_desc}</p>
+            <h2 className="text-lg sm:text-xl font-extrabold text-stone-900 dark:text-white mb-1 pr-12 sm:pr-0">{t.crm_manage_tags}</h2>
+            <p className="text-sm text-stone-500 dark:text-neutral-400 mb-4 sm:mb-5">{t.crm_manage_tags_desc}</p>
 
             {/* Create new tag */}
             <div className="flex gap-2 mb-5">
@@ -1278,7 +1411,7 @@ export function BusinessCRM() {
             </div>
 
             {/* Color picker */}
-            <div className="flex gap-2 mb-5">
+            <div className="grid grid-cols-5 justify-items-center gap-y-3 sm:flex sm:gap-2 mb-5">
               {TAG_COLORS.map(c => (
                 <button
                   key={c}
@@ -1293,7 +1426,7 @@ export function BusinessCRM() {
             </div>
 
             {/* Existing tags */}
-            <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="space-y-2 max-h-[45dvh] sm:max-h-60 overflow-y-auto overscroll-contain">
               {tags.length === 0 ? (
                 <p className="text-sm text-stone-400 dark:text-neutral-500 text-center py-4">{t.crm_no_tags_created}</p>
               ) : (
@@ -1307,7 +1440,8 @@ export function BusinessCRM() {
                     {!tag.is_system && (
                       <button
                         onClick={() => handleDeleteTag(tag.id)}
-                        className="p-1 text-stone-300 hover:text-red-500 transition-colors"
+                        aria-label={lang === 'en' ? 'Delete' : 'Supprimer'}
+                        className="-mr-2 p-2 sm:mr-0 sm:p-1 text-stone-300 hover:text-red-500 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

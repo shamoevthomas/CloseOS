@@ -139,12 +139,14 @@ export function BusinessChannelPromptProvider({ children }: { children: ReactNod
     <ChannelPromptContext.Provider value={{ askEnabled, setAskEnabled, askChannel }}>
       {children}
       {pending && createPortal(
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => close(null)} />
-          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+          {/* Feuille du bas sur téléphone, carte centrée dès sm */}
+          <div className="relative w-full max-w-md max-h-[92dvh] overflow-y-auto overscroll-contain sm:max-h-none sm:overflow-visible rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
             {/* Header */}
-            <div className="flex items-start justify-between px-6 pt-5 pb-3">
-              <div>
+            <div className="relative flex items-start justify-between gap-3 px-4 sm:px-6 pt-6 sm:pt-5 pb-3">
+              <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
+              <div className="min-w-0">
                 <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white leading-snug">
                   {fr ? 'Message envoyé à l\'écrit, par vocal ou par mail ?' : 'Message sent in writing, by voice or by email?'}
                 </h3>
@@ -152,20 +154,21 @@ export function BusinessChannelPromptProvider({ children }: { children: ReactNod
               </div>
               <button
                 onClick={() => close(null)}
-                className="shrink-0 rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
+                aria-label={fr ? 'Passer' : 'Skip'}
+                className="shrink-0 rounded-full p-2 bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
               >
                 <X className="h-4 w-4" strokeWidth={1.5} />
               </button>
             </div>
 
             {/* Canaux — un clic vaut validation */}
-            <div className="px-6 space-y-1.5">
+            <div className="px-4 sm:px-6 space-y-1.5">
               {CONTACT_CHANNELS.map(c => (
                 <button
                   key={c.key}
                   type="button"
                   onClick={() => close(c.key)}
-                  className="w-full text-left rounded-2xl border border-stone-200 dark:border-neutral-700 px-4 py-3 transition-all hover:border-stone-900 dark:hover:border-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 active:scale-[0.99]"
+                  className="w-full text-left rounded-2xl border border-stone-200 dark:border-neutral-700 px-4 py-3.5 sm:py-3 transition-all hover:border-stone-900 dark:hover:border-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 active:scale-[0.99]"
                 >
                   <span className="flex items-center gap-3">
                     <span className="text-lg leading-none">{c.emoji}</span>
@@ -179,7 +182,7 @@ export function BusinessChannelPromptProvider({ children }: { children: ReactNod
             </div>
 
             {/* Ne plus demander */}
-            <label className="mx-6 mt-4 flex items-start gap-3 rounded-2xl border border-stone-200 dark:border-neutral-700 p-3.5 cursor-pointer transition-colors hover:bg-[#f5f3f2] dark:hover:bg-neutral-800">
+            <label className="mx-4 sm:mx-6 mt-4 flex items-start gap-3 rounded-2xl border border-stone-200 dark:border-neutral-700 p-3.5 cursor-pointer transition-colors hover:bg-[#f5f3f2] dark:hover:bg-neutral-800">
               <input
                 type="checkbox"
                 checked={dontAsk}
@@ -199,11 +202,11 @@ export function BusinessChannelPromptProvider({ children }: { children: ReactNod
             </label>
 
             {/* Footer */}
-            <div className="flex items-center justify-end px-6 py-4">
+            <div className="flex items-center justify-end px-4 sm:px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-4">
               <button
                 onClick={() => close(null)}
                 className={cn(
-                  'rounded-full px-5 py-2.5 text-sm font-bold transition-colors',
+                  'w-full sm:w-auto rounded-full px-5 py-3 sm:py-2.5 bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-sm font-bold transition-colors',
                   'text-stone-500 dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800'
                 )}
               >

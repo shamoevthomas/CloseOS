@@ -1186,10 +1186,10 @@ export function BusinessProspectView({
   const sideFieldLabel = 'block text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-neutral-400 mb-1 ml-0.5'
   const sideRow = 'flex items-baseline justify-between gap-3 text-sm'
   const sideInput = 'w-full rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 px-3 py-2 text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:ring-2 focus:ring-stone-900/10 focus:outline-none'
-  const sideSelect = 'w-full appearance-none rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 pl-3 pr-8 py-2 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/10 focus:outline-none cursor-pointer'
+  const sideSelect = 'w-full appearance-none rounded-xl bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 pl-3 pr-8 py-2.5 lg:py-2 text-sm font-semibold text-stone-900 dark:text-white focus:ring-2 focus:ring-stone-900/10 focus:outline-none cursor-pointer'
   const sideSelectChevron = 'absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none h-3.5 w-3.5 text-stone-400 dark:text-neutral-500'
-  const sideIconBtn = 'shrink-0 p-1 rounded-full text-stone-400 hover:bg-stone-200/60 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors'
-  const sideChip = 'inline-flex items-center gap-1 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 px-2.5 py-1.5 text-[11px] font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors disabled:opacity-50'
+  const sideIconBtn = 'shrink-0 p-2 -my-1 -mr-1 lg:p-1 lg:my-0 lg:mr-0 rounded-full text-stone-400 hover:bg-stone-200/60 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors'
+  const sideChip = 'inline-flex items-center gap-1 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 px-3 lg:px-2.5 py-2 lg:py-1.5 text-xs lg:text-[11px] font-business-display font-bold text-stone-700 dark:text-neutral-200 transition-colors disabled:opacity-50'
   const upcomingApptCount = allAppointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length
   // Colonne de pilotage a droite : uniquement en pop-up large. Sinon -> onglet « Fiche ».
   const showSidePanel = !inline && isWideScreen
@@ -1382,7 +1382,7 @@ export function BusinessProspectView({
                 <h4 className={sideLabel}>{lang === 'en' ? 'Contact details' : 'Coordonnées'}</h4>
                 <button
                   onClick={() => setEditingClient(!editingClient)}
-                  className="p-1 rounded-full text-stone-400 hover:bg-stone-200/60 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors"
+                  className="p-2 -my-1.5 -mr-1.5 lg:p-1 lg:my-0 lg:mr-0 rounded-full text-stone-400 hover:bg-stone-200/60 dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-white transition-colors"
                   title={lang === 'en' ? 'Edit' : 'Modifier'}
                 >
                   <Pencil className="h-3 w-3" strokeWidth={2} />
@@ -1515,7 +1515,7 @@ export function BusinessProspectView({
                     <button
                       onClick={() => handleCancelAppointment(nextAppointment)}
                       disabled={!!cancelLoadingId || rescheduleLoading}
-                      className="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-2.5 py-1.5 text-[11px] font-business-display font-bold text-rose-600 dark:text-rose-400 transition-colors disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 px-3 lg:px-2.5 py-2 lg:py-1.5 text-xs lg:text-[11px] font-business-display font-bold text-rose-600 dark:text-rose-400 transition-colors disabled:opacity-50"
                     >
                       {cancelLoadingId === nextAppointment.id ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <XCircle className="h-3 w-3" strokeWidth={1.5} />}
                       {lang === 'en' ? 'Cancel' : 'Annuler'}
@@ -1533,7 +1533,7 @@ export function BusinessProspectView({
                   </div>
                 </>
               ) : (
-                <button onClick={() => openBookModal()} className={cn(sideChip, 'w-full justify-center py-2')}>
+                <button onClick={() => openBookModal()} className={cn(sideChip, 'w-full justify-center py-2.5 lg:py-2')}>
                   <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {t.prospect_book_appointment}
                 </button>
@@ -1716,13 +1716,13 @@ export function BusinessProspectView({
   const content = (
       <aside className={inline
         ? "flex flex-col h-full overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
-        : "relative w-full max-w-[1100px] h-full md:h-auto md:max-h-[88vh] flex flex-col shadow-2xl md:rounded-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden bg-white/70 dark:bg-neutral-900/90 backdrop-blur-[20px]"
+        : "relative w-full max-w-[1100px] h-full md:h-auto md:max-h-[88vh] flex flex-col shadow-2xl md:rounded-2xl md:border border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden bg-white dark:bg-neutral-900 md:bg-white/70 md:dark:bg-neutral-900/90 md:backdrop-blur-[20px]"
       }>
         {/* Corps : bandeau + contenu à gauche, colonne de pilotage à droite (pop-up large).
             Le bandeau vit dans la colonne de gauche pour que la bordure de séparation
             coure du haut jusqu'en bas de la fiche. */}
         <div className={inline ? 'flex-1 flex flex-col overflow-hidden min-h-0' : 'flex-1 flex overflow-hidden min-h-0'}>
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div className={inline ? 'flex-1 flex flex-col overflow-hidden min-w-0' : 'flex-1 flex flex-col min-w-0 overflow-y-auto overscroll-contain md:overflow-hidden'}>
         {/* Header */}
         <header className="px-4 md:px-6 pt-[calc(1rem+env(safe-area-inset-top))] md:pt-6 pb-3">
           <div className="flex justify-between items-start gap-3">
@@ -1815,7 +1815,7 @@ export function BusinessProspectView({
                 </div>
               </div>
             {/* Tags - below name */}
-            <div className="mt-2 ml-0 md:ml-[60px] relative">
+            <div className="mt-2 ml-[58px] md:ml-[60px] relative">
               <div className="flex flex-wrap items-center gap-2">
                 {prospectTagIds.map(tagId => {
                   const tag = allTags.find(t => t.id === tagId)
@@ -1829,7 +1829,7 @@ export function BusinessProspectView({
                         style={{ backgroundColor: tag.color }}
                       >
                         {tag.name}
-                        <X className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
+                        <X className="h-3 w-3 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity" strokeWidth={2} />
                       </button>
                     )
                   }
@@ -1842,7 +1842,7 @@ export function BusinessProspectView({
                     >
                       <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
                       {tag.name}
-                      <X className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
+                      <X className="h-3 w-3 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity" strokeWidth={2} />
                     </button>
                   )
                 })}
@@ -1900,75 +1900,85 @@ export function BusinessProspectView({
         </header>
 
         {/* Quick Actions */}
-        <section className="px-4 md:px-6 py-3 flex flex-wrap gap-2 md:gap-2.5 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+        <section className="px-4 md:px-6 py-3 grid grid-cols-5 sm:flex sm:flex-wrap gap-2 md:gap-2.5 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
           <button
             onClick={() => navigate(`/business/cockpit?name=${encodeURIComponent(local.contact)}&prospectId=${prospect.id}`)}
-            className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-stone-900 text-white rounded-full font-business-display font-bold text-[13px] md:text-sm tracking-wide transition-transform active:scale-95 shadow-lg shadow-stone-900/20"
+            className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 md:px-5 py-2.5 bg-stone-900 text-white dark:bg-white dark:text-stone-900 sm:dark:bg-stone-900 sm:dark:text-white rounded-2xl sm:rounded-full font-business-display font-bold text-[11px] sm:text-[13px] md:text-sm sm:tracking-wide transition-transform active:scale-95 shadow-lg shadow-stone-900/20"
           >
             <PhoneCall className="h-4 w-4" strokeWidth={1.5} />
-            {t.prospect_open_callroom}
+            <span className="sm:hidden">{lang === 'en' ? 'Call' : 'Appel'}</span>
+            <span className="hidden sm:inline">{t.prospect_open_callroom}</span>
           </button>
           <button
             onClick={() => setShowReminderForm(true)}
-            className="flex items-center gap-2 px-3.5 md:px-4 py-2.5 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 rounded-full font-business-display font-bold text-[13px] md:text-sm transition-all hover:brightness-105 active:scale-95"
+            className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1 sm:px-3.5 md:px-4 py-2.5 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 rounded-2xl sm:rounded-full font-business-display font-bold text-[11px] sm:text-[13px] md:text-sm transition-all hover:brightness-105 active:scale-95"
           >
             <Bell className="h-4 w-4" strokeWidth={1.5} />
-            {t.prospect_create_reminder}
+            <span className="sm:hidden">{lang === 'en' ? 'Reminder' : 'Rappel'}</span>
+            <span className="hidden sm:inline">{t.prospect_create_reminder}</span>
           </button>
           <button
             onClick={() => openBookModal()}
-            className="flex items-center gap-2 px-3.5 md:px-4 py-2.5 bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 rounded-full font-business-display font-bold text-[13px] md:text-sm transition-all hover:brightness-105 active:scale-95"
+            className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-1 sm:px-3.5 md:px-4 py-2.5 bg-[#d4f0e2] text-[#0a3d2a] dark:bg-emerald-700/30 dark:text-emerald-200 rounded-2xl sm:rounded-full font-business-display font-bold text-[11px] sm:text-[13px] md:text-sm transition-all hover:brightness-105 active:scale-95"
           >
             <CalendarPlus className="h-4 w-4" strokeWidth={1.5} />
-            {t.prospect_book_appointment}
+            <span className="sm:hidden">{lang === 'en' ? 'Meeting' : 'RDV'}</span>
+            <span className="hidden sm:inline">{t.prospect_book_appointment}</span>
           </button>
-          <div className="flex gap-2">
+          <div className="contents sm:flex sm:gap-2">
             <button
               onClick={handleOpenGmail}
-              className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+              aria-label="Email"
+              className="sm:w-10 sm:h-10 rounded-2xl sm:rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-0 py-2.5 sm:py-0 text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 active:scale-95 transition-colors"
             >
               <Mail className="h-4 w-4" strokeWidth={1.5} />
+              <span className="sm:hidden font-business-display font-bold text-[11px]">Email</span>
             </button>
             <button
               onClick={handleOpenWhatsApp}
-              className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex items-center justify-center text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 transition-colors"
+              aria-label="WhatsApp"
+              className="sm:w-10 sm:h-10 rounded-2xl sm:rounded-full bg-white dark:bg-neutral-800 border border-[#c4c7c7]/20 dark:border-neutral-700 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-0 py-2.5 sm:py-0 text-stone-900 dark:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 active:scale-95 transition-colors"
             >
               <MessageCircle className="h-4 w-4" strokeWidth={1.5} />
+              <span className="sm:hidden font-business-display font-bold text-[11px]">WhatsApp</span>
             </button>
           </div>
         </section>
 
         {/* Tabs */}
-        <nav className="px-4 md:px-6 pt-4 flex gap-4 md:gap-6 overflow-x-auto no-scrollbar">
+        <div className={cn(!inline && 'sticky top-0 z-10 bg-white dark:bg-neutral-900 md:static md:bg-transparent md:dark:bg-transparent', 'px-4 py-2 sm:px-0 sm:py-0')}>
+        <nav className="flex gap-1 rounded-xl bg-[#f5f3f2] dark:bg-neutral-800 p-1 sm:rounded-none sm:bg-transparent sm:dark:bg-transparent sm:p-0 sm:px-4 md:px-6 sm:pt-4 sm:gap-4 md:gap-6 overflow-x-auto no-scrollbar">
           {([
             ...(showSidePanel ? [] : [{ key: 'fiche' as const, label: lang === 'en' ? 'Details' : 'Fiche' }]),
-            { key: 'info' as const, label: t.prospect_tab_info },
-            { key: 'notes' as const, label: t.prospect_tab_call_notes },
+            { key: 'info' as const, label: t.prospect_tab_info, short: lang === 'en' ? 'Info' : 'Infos' },
+            { key: 'notes' as const, label: t.prospect_tab_call_notes, short: 'Notes' },
             { key: 'rappels' as const, label: t.prospect_tab_reminders, badge: activeRemindersCount },
             { key: 'historique' as const, label: t.prospect_tab_history },
-          ] as { key: 'fiche' | 'info' | 'notes' | 'rappels' | 'historique'; label: string; badge?: number }[]).map(tab => (
+          ] as { key: 'fiche' | 'info' | 'notes' | 'rappels' | 'historique'; label: string; short?: string; badge?: number }[]).map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                'pb-4 shrink-0 whitespace-nowrap text-sm md:text-base font-business-display font-bold transition-all flex items-center gap-2',
+                'flex-auto justify-center gap-1 rounded-lg px-2 py-1.5 text-xs sm:flex-none sm:justify-start sm:gap-2 sm:rounded-none sm:px-0 sm:py-0 sm:pb-4 whitespace-nowrap sm:text-sm md:text-base font-business-display font-bold transition-all flex items-center',
                 activeTab === tab.key
-                  ? 'text-stone-900 dark:text-white font-extrabold border-b-2 border-stone-900 dark:border-white'
-                  : 'text-stone-400 dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white'
+                  ? 'text-stone-900 dark:text-white font-extrabold bg-white dark:bg-neutral-700 shadow-sm sm:bg-transparent sm:dark:bg-transparent sm:shadow-none sm:border-b-2 border-stone-900 dark:border-white'
+                  : 'text-stone-500 sm:text-stone-400 dark:text-neutral-400 sm:dark:text-neutral-500 hover:text-stone-900 dark:hover:text-white'
               )}
             >
-              {tab.label}
+              <span className="sm:hidden">{tab.short || tab.label}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
               {tab.badge !== undefined && tab.badge > 0 && (
-                <span className="px-2 py-0.5 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 text-[10px] rounded-full font-bold">
+                <span className="px-1.5 sm:px-2 py-0.5 bg-[#ffddb8] text-[#2a1700] dark:bg-amber-700/30 dark:text-amber-200 text-[10px] leading-none sm:leading-normal rounded-full font-bold">
                   {tab.badge}
                 </span>
               )}
             </button>
           ))}
         </nav>
+        </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 custom-scrollbar">
+        <div className={cn('flex-1 p-4 md:p-8 space-y-6 md:space-y-8 custom-scrollbar', inline ? 'overflow-y-auto' : 'md:overflow-y-auto')}>
 
           {/* ─── TAB: FICHE (telephone / tablette / inline) ─── */}
           {activeTab === 'fiche' && !showSidePanel && (
@@ -2000,7 +2010,7 @@ export function BusinessProspectView({
                     <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-red-600 dark:text-red-400 mb-3">
                       <X className="h-4 w-4" /> {t.prospect_loss_reason_title}
                     </h3>
-                    <div className="space-y-3 rounded-2xl border border-red-500/20 bg-red-500/5 dark:bg-red-500/5 p-5">
+                    <div className="space-y-3 rounded-2xl border border-red-500/20 bg-red-500/5 dark:bg-red-500/5 p-4 sm:p-5">
                       {canEditLoss ? (
                         <>
                           <div>
@@ -2053,7 +2063,7 @@ export function BusinessProspectView({
                   <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-amber-600 dark:text-amber-400 mb-3">
                     <AlertCircle className="h-4 w-4" /> {lang === 'en' ? 'Disqualification reason' : 'Motif de disqualification'}
                   </h3>
-                  <div className="space-y-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
+                  <div className="space-y-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 sm:p-5">
                     <p className="text-sm font-medium text-stone-900 dark:text-white">
                       {unqualifiedReasonLabel((local as any).unqualified_reason, lang === 'en' ? 'en' : 'fr', (local as any).unqualified_details)}
                     </p>
@@ -2080,7 +2090,7 @@ export function BusinessProspectView({
                   </div>
 
                   {editingPayment ? (
-                    <div className="space-y-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/5 p-5">
+                    <div className="space-y-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/5 p-4 sm:p-5">
                       {canEditPrice ? (
                         <div>
                           <label className="text-xs font-bold text-stone-500 dark:text-neutral-400">{t.prospect_payment_final_amount}</label>
@@ -2133,7 +2143,7 @@ export function BusinessProspectView({
                             ))}
                           </select>
                           {editScheduleMode === 'custom' && (
-                            <div className="rounded-xl border border-stone-200 dark:border-neutral-700 bg-white/40 dark:bg-neutral-800/40 p-3">
+                            <div className="sm:rounded-xl sm:border border-stone-200 dark:border-neutral-700 sm:bg-white/40 sm:dark:bg-neutral-800/40 sm:p-3">
                               <InstallmentScheduleEditor
                                 value={editCustomSchedule}
                                 onChange={setEditCustomSchedule}
@@ -2151,9 +2161,9 @@ export function BusinessProspectView({
                       )}
                       {!closerIsOwner && (
                       <div className="rounded-xl bg-emerald-500/10 p-4 border border-emerald-500/20 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" /> {t.prospect_payment_commission.replace('{rate}', String(commissionRate))}</span>
-                          <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+                          <span className="whitespace-nowrap text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5 shrink-0" /> {t.prospect_payment_commission.replace('{rate}', String(commissionRate))}</span>
+                          <div className="ml-auto flex shrink-0 items-center gap-2">
                             <button
                               type="button"
                               onClick={() => {
@@ -2166,7 +2176,7 @@ export function BusinessProspectView({
                                 }
                               }}
                               className={cn(
-                                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold transition-all',
+                                'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold transition-all',
                                 editCustomCommissionEnabled
                                   ? 'border-amber-500/60 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'
                                   : 'border-stone-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-500 dark:text-neutral-400 hover:border-amber-500 hover:text-amber-700'
@@ -2210,7 +2220,7 @@ export function BusinessProspectView({
                       <button onClick={handleSavePayment} className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-business-display font-bold text-white hover:bg-emerald-500 transition-colors">{t.prospect_payment_validate}</button>
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/5 p-5">
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/5 p-4 sm:p-5">
                       <div className="flex items-center justify-between mb-2.5">
                         <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.prospect_payment_sale_amount}</span>
                         <span className="text-sm font-extrabold text-stone-900 dark:text-white">{(local.value || 0).toLocaleString()}€</span>
@@ -2250,22 +2260,22 @@ export function BusinessProspectView({
               {/* SECTION COMMISSION INHABITUELLE + ÉCHÉANCIER CUSTOM */}
               {local.stage === 'won' && (local.custom_commission_rate != null || (local.installments_schedule && local.installments_schedule.length > 0)) && (
                 <div className="animate-in slide-in-from-top-4 fade-in duration-300 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-amber-600 dark:text-amber-400">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="flex items-center gap-2 whitespace-nowrap text-sm font-business-display font-extrabold text-amber-600 dark:text-amber-400">
                       <Award className="h-4 w-4" /> Détails inhabituels
                     </h3>
                     {local.commission_approval_status === 'pending' && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-500/15 border border-amber-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-amber-700">
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-amber-100 dark:bg-amber-500/15 border border-amber-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-amber-700">
                         <AlertCircle className="h-3 w-3" /> {t.custom_commission_status_pending}
                       </span>
                     )}
                     {local.commission_approval_status === 'approved' && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-100 dark:bg-emerald-500/15 border border-emerald-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-emerald-700">
                         <CheckCircle2 className="h-3 w-3" /> {t.custom_commission_status_approved}
                       </span>
                     )}
                     {local.commission_approval_status === 'rejected' && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 dark:bg-red-500/15 border border-red-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-red-700">
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-red-100 dark:bg-red-500/15 border border-red-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-red-700">
                         <XCircle className="h-3 w-3" /> {t.custom_commission_status_rejected}
                       </span>
                     )}
@@ -2324,7 +2334,7 @@ export function BusinessProspectView({
                   <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-[#635BFF] mb-3">
                     <CreditCard className="h-4 w-4" /> {t.prospect_stripe_subscription}
                   </h3>
-                  <div className="rounded-2xl border border-[#635BFF]/20 bg-[#635BFF]/5 p-5 space-y-2.5">
+                  <div className="rounded-2xl border border-[#635BFF]/20 bg-[#635BFF]/5 p-4 sm:p-5 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-stone-500 dark:text-neutral-400">{t.prospect_stripe_status}</span>
                       <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full', {
@@ -2375,7 +2385,7 @@ export function BusinessProspectView({
                       {t.prospect_stripe_link_btn}
                     </button>
                   ) : (
-                    <div className="rounded-2xl border border-[#635BFF]/20 bg-[#635BFF]/5 dark:bg-[#635BFF]/5 p-5 space-y-4">
+                    <div className="rounded-2xl border border-[#635BFF]/20 bg-[#635BFF]/5 dark:bg-[#635BFF]/5 p-4 sm:p-5 space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="flex items-center gap-2 text-sm font-business-display font-extrabold text-[#635BFF]">
                           <CreditCard className="h-4 w-4" /> {t.prospect_stripe_link_title}
@@ -2500,11 +2510,11 @@ export function BusinessProspectView({
                   <label className={cn(LABEL_STYLE, 'block mb-2 ml-1 flex items-center gap-2')}>
                     <FileText className="h-3.5 w-3.5" strokeWidth={1.5} /> {t.prospect_capture_responses}
                   </label>
-                  <div className="rounded-xl bg-white dark:bg-neutral-800 p-5 space-y-3 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
+                  <div className="rounded-xl bg-white dark:bg-neutral-800 p-4 sm:p-5 space-y-3 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm">
                     {Object.entries(captureData).map(([key, val]) => (
                       <div key={key} className="flex items-start gap-2">
                         <span className="text-xs font-bold text-stone-500 dark:text-neutral-400 min-w-0 shrink-0">{key} :</span>
-                        <span className="text-sm text-stone-900 dark:text-white">{String(val)}</span>
+                        <span className="min-w-0 break-words text-sm text-stone-900 dark:text-white">{String(val)}</span>
                       </div>
                     ))}
                   </div>
@@ -2523,7 +2533,7 @@ export function BusinessProspectView({
                     <label className={cn(LABEL_STYLE, 'block mb-2 ml-1 flex items-center gap-2')}>
                       <ClipboardList className="h-3.5 w-3.5" strokeWidth={1.5} /> {isQualifying ? t.prospect_qualification : t.prospect_answers}
                     </label>
-                    <div className="rounded-xl bg-white dark:bg-neutral-800 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm space-y-4">
+                    <div className="rounded-xl bg-white dark:bg-neutral-800 p-4 sm:p-5 border border-[#c4c7c7]/10 dark:border-neutral-700 shadow-sm space-y-4">
                       {/* Global summary — only in qualifying mode */}
                       {isQualifying && (
                       <div className="flex items-center justify-between">
@@ -2615,7 +2625,7 @@ export function BusinessProspectView({
                 const arr = Array.isArray(la) ? la : (la && typeof la === 'object' ? Object.entries(la).map(([q, a]) => ({ question: q, answer: a })) : [])
                 if (arr.length === 0) return null
                 return (
-                  <section className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5 dark:border-neutral-700">
+                  <section className="bg-white dark:bg-neutral-800 p-4 sm:p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5 dark:border-neutral-700">
                     <h3 className={cn(LABEL_STYLE, 'text-xs mb-4')}>Réponses du questionnaire externe</h3>
                     <ul className="space-y-3">
                       {arr.map((qa: any, i: number) => {
@@ -2641,7 +2651,7 @@ export function BusinessProspectView({
                 const entries = Object.entries(md).filter(([, v]) => v !== null && v !== undefined && v !== '')
                 if (entries.length === 0) return null
                 return (
-                  <section className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5 dark:border-neutral-700">
+                  <section className="bg-white dark:bg-neutral-800 p-4 sm:p-6 rounded-xl shadow-sm border border-[#c4c7c7]/5 dark:border-neutral-700">
                     <h3 className={cn(LABEL_STYLE, 'text-xs mb-4')}>Données additionnelles</h3>
                     <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                       {entries.map(([k, v]) => (
@@ -2720,7 +2730,7 @@ export function BusinessProspectView({
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <button onClick={e => { e.preventDefault(); handleDeleteNote(note.id) }} className="rounded-full p-1.5 text-stone-400 hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/5 transition-colors opacity-0 group-hover:opacity-100">
+                          <button onClick={e => { e.preventDefault(); handleDeleteNote(note.id) }} className="rounded-full p-1.5 text-stone-400 hover:text-[#ba1a1a] hover:bg-[#ba1a1a]/5 transition-colors [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
                             <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                           </button>
                           <ChevronDown className="h-5 w-5 text-stone-400 dark:text-neutral-500 transition-transform duration-300 group-open:rotate-180" strokeWidth={1.5} />
@@ -2732,9 +2742,9 @@ export function BusinessProspectView({
                     </details>
                   ))
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-3">
-                      <ClipboardList className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
+                  <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
+                    <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-2 sm:mb-3">
+                      <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-stone-400" strokeWidth={1.5} />
                     </div>
                     <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">{t.prospect_no_call_notes}</p>
                     <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.prospect_manual_notes_hint}</p>
@@ -2759,9 +2769,9 @@ export function BusinessProspectView({
                   <Loader2 className="h-6 w-6 animate-spin text-stone-400" strokeWidth={1.5} />
                 </div>
               ) : prospectReminders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-3">
-                    <Bell className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
+                <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
+                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-2 sm:mb-3">
+                    <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-stone-400" strokeWidth={1.5} />
                   </div>
                   <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">{t.prospect_no_reminders}</p>
                   <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.prospect_create_reminder_hint}</p>
@@ -2822,9 +2832,9 @@ export function BusinessProspectView({
                   <Loader2 className="h-6 w-6 animate-spin text-stone-400" strokeWidth={1.5} />
                 </div>
               ) : historyGroups.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-3">
-                    <Clock className="h-6 w-6 text-stone-400" strokeWidth={1.5} />
+                <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center rounded-xl border-2 border-dashed border-stone-200/30 dark:border-neutral-700 bg-[#f5f3f2]/50 dark:bg-neutral-800/50">
+                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 mb-2 sm:mb-3">
+                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-stone-400" strokeWidth={1.5} />
                   </div>
                   <p className="text-sm font-medium text-stone-500 dark:text-neutral-400">{t.prospect_no_history}</p>
                   <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1">{t.prospect_history_changes_hint}</p>
@@ -3007,7 +3017,7 @@ export function BusinessProspectView({
             Portail vers <body> : la fiche porte un backdrop-filter, qui ferait d'elle le bloc
             conteneur d'un position:fixed et enfermerait la pop-up dans ses 1100 px. */}
         {showBookModal && createPortal(
-          <div className="fixed inset-0 z-[60] flex items-center justify-center gap-4 p-4">
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center gap-4 p-0 sm:p-4">
             <div className="absolute inset-0 bg-stone-900/20 dark:bg-black/50 backdrop-blur-sm" onClick={() => !bookSubmitting && setShowBookModal(false)} />
             <div className="relative hidden lg:flex w-[42vw] max-w-[560px] h-[80vh] max-h-[660px] rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700 overflow-hidden">
               <BookingAgendaPanel
@@ -3024,14 +3034,15 @@ export function BusinessProspectView({
                 previewTitle={bookTitle}
               />
             </div>
-            <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+            <div className="relative w-full max-w-md max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain custom-scrollbar rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 rounded-t-3xl sm:static sm:rounded-none sm:bg-transparent sm:dark:bg-transparent flex items-center justify-between px-4 sm:px-6 pt-5 pb-3 sm:py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+                <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
                 <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">{t.prospect_book_modal_title}</h3>
-                <button onClick={() => !bookSubmitting && setShowBookModal(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                <button onClick={() => !bookSubmitting && setShowBookModal(false)} className="shrink-0 rounded-full p-2 bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                   <X className="h-4 w-4" strokeWidth={1.5} />
                 </button>
               </div>
-              <div className="px-6 py-5 space-y-4">
+              <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4">
                 <div>
                   <label className={cn(LABEL_STYLE, 'block mb-2 ml-1')}>{t.prospect_book_title_label}</label>
                   <input
@@ -3148,18 +3159,18 @@ export function BusinessProspectView({
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="sticky bottom-0 bg-white dark:bg-neutral-900 sm:static sm:bg-transparent sm:dark:bg-transparent flex items-center justify-end gap-2 px-4 sm:px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
                 <button
                   onClick={() => !bookSubmitting && setShowBookModal(false)}
                   disabled={bookSubmitting}
-                  className="px-4 py-2 rounded-full text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                  className="flex-1 sm:flex-none px-4 py-3 sm:py-2 rounded-full bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
                 >
                   {t.prospect_book_cancel}
                 </button>
                 <button
                   onClick={handleBookSubmit}
                   disabled={!bookDate || !bookTime || !bookAssigneeId || bookSubmitting}
-                  className="px-5 py-2 rounded-full text-sm font-business-display font-bold bg-stone-900 text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="flex-1 sm:flex-none justify-center px-5 py-3 sm:py-2 rounded-full text-sm font-business-display font-bold bg-stone-900 text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 active:scale-[0.98]"
                 >
                   {bookSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> {t.prospect_book_submitting}</> : t.prospect_book_submit}
                 </button>
@@ -3171,19 +3182,20 @@ export function BusinessProspectView({
 
         {/* Reschedule modal */}
         {showApptsModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
             <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => setShowApptsModal(false)} />
-            <div className="relative w-full max-w-md max-h-[80vh] flex flex-col rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
-                <div className="flex items-center gap-2.5">
-                  <Calendar className="h-5 w-5 text-[#006c49]" strokeWidth={1.5} />
-                  <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">Rendez-vous de {prospect.contact || 'ce prospect'}</h3>
+            <div className="relative w-full max-w-md max-h-[85dvh] sm:max-h-[80vh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="relative flex items-center justify-between gap-3 px-4 sm:px-6 pt-5 pb-3 sm:py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+                <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Calendar className="h-5 w-5 shrink-0 text-[#006c49]" strokeWidth={1.5} />
+                  <h3 className="truncate font-business-display font-extrabold text-stone-900 dark:text-white">Rendez-vous de {prospect.contact || 'ce prospect'}</h3>
                 </div>
-                <button onClick={() => setShowApptsModal(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                <button onClick={() => setShowApptsModal(false)} className="shrink-0 rounded-full p-2 bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                   <X className="h-4 w-4" strokeWidth={1.5} />
                 </button>
               </div>
-              <div className="px-4 py-4 space-y-2 overflow-y-auto">
+              <div className="px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-4 space-y-2 overflow-y-auto overscroll-contain">
                 {(() => {
                   const STATUS_UI: Record<string, { label: string; cls: string }> = {
                     pending: { label: 'En attente', cls: 'bg-amber-100/80 text-amber-700' },
@@ -3258,16 +3270,17 @@ export function BusinessProspectView({
 
         {showRescheduleModal && (
           // z-[70] : passe au-dessus de la modale « Rendez-vous de … » (z-[60])
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4">
             <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => !rescheduleLoading && closeRescheduleModal()} />
-            <div className="relative w-full max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+            <div className="relative w-full max-w-md max-h-[92dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain custom-scrollbar rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 rounded-t-3xl sm:static sm:rounded-none sm:bg-transparent sm:dark:bg-transparent flex items-center justify-between px-4 sm:px-6 pt-5 pb-3 sm:py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+                <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
                 <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">Reprogrammer le rendez-vous</h3>
-                <button onClick={() => !rescheduleLoading && closeRescheduleModal()} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                <button onClick={() => !rescheduleLoading && closeRescheduleModal()} className="shrink-0 rounded-full p-2 bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                   <X className="h-4 w-4" strokeWidth={1.5} />
                 </button>
               </div>
-              <div className="px-6 py-5 space-y-4">
+              <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4">
                 <p className="text-xs text-stone-500 dark:text-neutral-400">Le prospect recevra automatiquement un email avec la nouvelle date.</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -3290,18 +3303,18 @@ export function BusinessProspectView({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="sticky bottom-0 bg-white dark:bg-neutral-900 sm:static sm:bg-transparent sm:dark:bg-transparent flex items-center justify-end gap-2 px-4 sm:px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:py-4 border-t border-[#c4c7c7]/10 dark:border-neutral-700">
                 <button
                   onClick={() => !rescheduleLoading && closeRescheduleModal()}
                   disabled={rescheduleLoading}
-                  className="px-4 py-2 rounded-full text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                  className="flex-1 sm:flex-none px-4 py-3 sm:py-2 rounded-full bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-sm font-business-display font-bold text-stone-500 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleRescheduleSubmit}
                   disabled={!rescheduleDate || !rescheduleTime || rescheduleLoading}
-                  className="px-5 py-2 rounded-full text-sm font-business-display font-bold bg-stone-900 text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="flex-1 sm:flex-none justify-center px-5 py-3 sm:py-2 rounded-full text-sm font-business-display font-bold bg-stone-900 text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 active:scale-[0.98]"
                 >
                   {rescheduleLoading ? <><Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> Envoi…</> : 'Confirmer'}
                 </button>
@@ -3328,18 +3341,19 @@ export function BusinessProspectView({
             setShowReminderForm(true)
           }
           return (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
               <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => setShowFollowupChoice(false)} />
-              <div className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto custom-scrollbar rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="relative w-full sm:max-w-sm max-h-[92dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain custom-scrollbar rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+                <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 rounded-t-3xl sm:static sm:rounded-none sm:bg-transparent sm:dark:bg-transparent flex items-center justify-between px-4 sm:px-6 pt-5 pb-3 sm:py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+                  <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
                   <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">
                     {fr ? 'Et maintenant ?' : 'What is next?'}
                   </h3>
-                  <button onClick={() => setShowFollowupChoice(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                  <button onClick={() => setShowFollowupChoice(false)} className="shrink-0 rounded-full p-2 bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                     <X className="h-4 w-4" strokeWidth={1.5} />
                   </button>
                 </div>
-                <div className="p-6 space-y-2.5">
+                <div className="px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 space-y-2.5">
                   <p className="text-xs text-stone-500 dark:text-neutral-400 mb-1">
                     {fr
                       ? `${contactName} passe en Suivi. Que veux-tu programmer ?`
@@ -3386,16 +3400,17 @@ export function BusinessProspectView({
 
         {/* Reminder creation modal */}
         {showReminderForm && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
             <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-sm" onClick={() => setShowReminderForm(false)} />
-            <div className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto custom-scrollbar rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+            <div className="relative w-full sm:max-w-sm max-h-[92dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain custom-scrollbar rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 shadow-2xl border border-[#c4c7c7]/10 dark:border-neutral-700">
+              <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 rounded-t-3xl sm:static sm:rounded-none sm:bg-transparent sm:dark:bg-transparent flex items-center justify-between px-4 sm:px-6 pt-5 pb-3 sm:py-4 border-b border-[#c4c7c7]/10 dark:border-neutral-700">
+                <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
                 <h3 className="font-business-display font-extrabold text-stone-900 dark:text-white">{t.prospect_new_reminder}</h3>
-                <button onClick={() => setShowReminderForm(false)} className="rounded-full p-2 text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
+                <button onClick={() => setShowReminderForm(false)} className="shrink-0 rounded-full p-2 bg-[#f5f3f2] sm:bg-transparent dark:bg-neutral-800 sm:dark:bg-transparent text-stone-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-700 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
                   <X className="h-4 w-4" strokeWidth={1.5} />
                 </button>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 space-y-4">
                 <div>
                   <label className={cn(LABEL_STYLE, 'block mb-1.5')}>{t.prospect_reminder_title}</label>
                   <input type="text" value={reminderTitle} onChange={e => setReminderTitle(e.target.value)} placeholder={t.prospect_reminder_title_placeholder} className={INPUT_CLS} autoFocus />
@@ -3455,15 +3470,16 @@ export function BusinessProspectView({
         )}
 
         {/* Footer */}
-        <footer className="px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:p-8 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex flex-col-reverse sm:flex-row gap-3 sm:justify-between sm:items-center bg-white/20 dark:bg-neutral-900/20">
-          <div className="flex flex-wrap items-center gap-2">
+        <footer className="px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:p-8 border-t border-[#c4c7c7]/10 dark:border-neutral-700 flex flex-row items-center gap-2 sm:gap-3 sm:justify-between bg-white/20 dark:bg-neutral-900/20">
+          <div className="flex items-center gap-1 sm:flex-wrap sm:gap-2">
             {(isOwner || isHosOrAdmin) && (
               <button
                 onClick={handleDelete}
-                className="text-[#ba1a1a] font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 hover:bg-[#ba1a1a]/5 rounded-full transition-colors"
+                aria-label={t.prospect_footer_delete}
+                className="text-[#ba1a1a] font-business-display font-bold text-sm flex h-11 w-11 sm:h-auto sm:w-auto items-center justify-center sm:justify-start gap-2 sm:px-4 sm:py-2 bg-[#ba1a1a]/5 sm:bg-transparent hover:bg-[#ba1a1a]/5 rounded-full transition-colors active:scale-95"
               >
                 <Trash2 className="h-4 w-4" strokeWidth={1.5} />
-                {t.prospect_footer_delete}
+                <span className="hidden sm:inline">{t.prospect_footer_delete}</span>
               </button>
             )}
             <button
@@ -3485,22 +3501,22 @@ export function BusinessProspectView({
                 } catch { toast.error(t.prospect_toast_error) }
               }}
               className={cn(
-                "font-business-display font-bold text-sm flex items-center gap-2 px-4 py-2 rounded-full transition-colors",
+                "font-business-display font-bold text-sm flex h-11 sm:h-auto items-center gap-1.5 sm:gap-2 px-3 sm:px-4 sm:py-2 rounded-full transition-colors whitespace-nowrap active:scale-95",
                 isDismissed
                   ? "text-[#006c49] hover:bg-[#006c49]/10"
                   : "text-stone-500 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-neutral-800"
               )}
             >
               {isDismissed ? (
-                <><Plus className="h-4 w-4" strokeWidth={1.5} /> {t.prospect_footer_add_pipeline}</>
+                <><Plus className="h-4 w-4" strokeWidth={1.5} /> <span className="sm:hidden">Pipeline</span><span className="hidden sm:inline">{t.prospect_footer_add_pipeline}</span></>
               ) : (
-                <><X className="h-4 w-4" strokeWidth={1.5} /> {t.prospect_footer_remove_pipeline}</>
+                <><X className="h-4 w-4" strokeWidth={1.5} /> <span className="sm:hidden">Pipeline</span><span className="hidden sm:inline">{t.prospect_footer_remove_pipeline}</span></>
               )}
             </button>
           </div>
           <button
             onClick={() => handleUpdate({ ...local, notes: computeNotesToStore() })}
-            className="w-full sm:w-auto shrink-0 bg-stone-900 text-white px-8 py-3 rounded-full font-business-display font-bold text-sm transition-transform active:scale-95"
+            className="flex-1 sm:flex-none sm:w-auto bg-stone-900 text-white px-8 py-3 rounded-full font-business-display font-bold text-sm transition-transform active:scale-95"
           >
             {t.prospect_footer_save}
           </button>

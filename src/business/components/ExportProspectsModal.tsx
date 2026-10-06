@@ -255,7 +255,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
 
   // Pill button style helper
   const pillCls = (active: boolean) => cn(
-    'px-2.5 py-1 text-xs font-medium rounded-full transition-all',
+    'px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-full transition-all',
     active
       ? 'bg-stone-900 dark:bg-white text-white dark:text-stone-900'
       : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
@@ -264,15 +264,16 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 dark:bg-black/50 backdrop-blur-md p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-stone-900/40 dark:bg-black/50 backdrop-blur-md p-0 sm:p-4" onClick={onClose}>
       <div
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-200/20 dark:border-neutral-700 p-6 relative animate-in zoom-in-95 duration-200"
+        className="w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain bg-white dark:bg-neutral-900 sm:bg-white/95 sm:dark:bg-neutral-900/95 sm:backdrop-blur-xl rounded-t-3xl sm:rounded-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-stone-200/20 dark:border-neutral-700 px-4 sm:p-6 relative animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Header — collé en haut sur téléphone (feuille du bas) */}
+        <div className="sticky top-0 z-10 -mx-4 mb-4 flex items-center justify-between bg-white dark:bg-neutral-900 px-4 pt-5 pb-3 sm:static sm:mx-0 sm:mb-6 sm:bg-transparent sm:dark:bg-transparent sm:p-0">
+          <div className="sm:hidden absolute left-1/2 top-1.5 h-1 w-10 -translate-x-1/2 rounded-full bg-stone-300 dark:bg-neutral-700" />
           <h2 className="text-lg font-extrabold tracking-tight text-stone-900 dark:text-white">{t.export_title}</h2>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">
+          <button onClick={onClose} aria-label="Fermer" className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 dark:bg-neutral-800 sm:block sm:h-auto sm:w-auto sm:rounded-none sm:bg-transparent sm:dark:bg-transparent text-stone-400 hover:text-stone-600 dark:hover:text-neutral-300 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -286,7 +287,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
             <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">
               <Calendar className="h-3 w-3 inline mr-1" />{t.export_period_label}
             </label>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5 sm:gap-1">
               {PERIOD_OPTIONS.map(p => (
                 <button
                   key={p.days}
@@ -303,7 +304,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
           {allTeamMembers.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.export_closer_setter}</label>
-              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+              <div className="flex flex-wrap gap-1.5 sm:gap-1 max-h-28 sm:max-h-24 overflow-y-auto overscroll-contain">
                 {allTeamMembers.map(m => (
                   <button
                     key={m.id}
@@ -320,7 +321,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
           {/* Stages */}
           <div>
             <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.export_status_label}</label>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5 sm:gap-1">
               {ALL_STAGES.map(s => (
                 <button
                   key={s.id}
@@ -348,7 +349,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
           {formulas.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">{t.export_offer_formula}</label>
-              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+              <div className="flex flex-wrap gap-1.5 sm:gap-1 max-h-28 sm:max-h-24 overflow-y-auto overscroll-contain">
                 {formulas.map(f => (
                   <button
                     key={f.id}
@@ -368,13 +369,13 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
               <label className="block text-xs font-medium text-stone-500 dark:text-neutral-400 mb-2">
                 <Tag className="h-3 w-3 inline mr-1" />{t.export_tags_label}
               </label>
-              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+              <div className="flex flex-wrap gap-1.5 sm:gap-1 max-h-28 sm:max-h-24 overflow-y-auto overscroll-contain">
                 {tags.map(t => (
                   <button
                     key={t.id}
                     onClick={() => toggleMultiSelect(selectedTags, setSelectedTags, t.id)}
                     className={cn(
-                      'px-2.5 py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
+                      'px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-full transition-all flex items-center gap-1',
                       selectedTags.includes(t.id)
                         ? 'text-white'
                         : 'bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700'
@@ -416,7 +417,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
         </div>
 
         {/* ═══ COLUMNS ═══ */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold text-stone-700 dark:text-neutral-300">{t.export_columns}</h3>
             <button onClick={toggleAllColumns} className="text-xs font-medium text-stone-500 dark:text-neutral-400 hover:text-stone-700 dark:hover:text-neutral-200 transition-colors">
@@ -428,7 +429,7 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
               <button
                 key={col.key}
                 onClick={() => toggleColumn(col.key)}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-stone-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors text-left"
+                className="flex min-w-0 items-center gap-2 rounded-lg px-2 sm:px-3 py-2.5 sm:py-2 text-sm text-stone-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition-colors text-left"
               >
                 {selectedColumns.includes(col.key)
                   ? <CheckSquare className="h-4 w-4 text-stone-900 dark:text-white shrink-0" />
@@ -440,15 +441,17 @@ export function ExportProspectsModal({ isOpen, onClose, prospects, allTeamMember
           </div>
         </div>
 
-        {/* ═══ EXPORT BUTTON ═══ */}
+        {/* ═══ EXPORT BUTTON ═══ (pied collé en bas sur téléphone) */}
+        <div className="sticky bottom-0 -mx-4 border-t border-stone-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:dark:bg-transparent sm:p-0">
         <button
           onClick={handleExport}
           disabled={noneSelected}
-          className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white px-4 py-3 text-sm font-extrabold tracking-tight text-white dark:text-stone-900 hover:opacity-90 shadow-lg shadow-stone-900/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 rounded-full bg-stone-900 dark:bg-white px-4 py-3 text-sm font-extrabold tracking-tight text-white dark:text-stone-900 hover:opacity-90 shadow-lg shadow-stone-900/10 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Download className="h-4 w-4" />
           Exporter ({filteredProspects.length} prospect{filteredProspects.length !== 1 ? 's' : ''})
         </button>
+        </div>
       </div>
     </div>
   )
