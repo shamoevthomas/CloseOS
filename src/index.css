@@ -130,6 +130,16 @@ select option:disabled {
   }
 }
 
+/* Les classes font-['Manrope'] / font-['Inter'] n'ont pas de police de secours : tant que la
+   police web n'est pas chargée (réseau lent, Google Fonts bloqué), le navigateur affichait du Times.
+   On ajoute une pile sans-serif (règle placée après les utilitaires Tailwind, donc prioritaire). */
+[class*="font-['Manrope']"] {
+  font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+[class*="font-['Inter']"] {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
 /* CloseOS Business : fond du body assorti (rebond de défilement iOS, pages plus courtes que l'écran). */
 body:has(.business-app) {
   background-color: #f4f2f1;
