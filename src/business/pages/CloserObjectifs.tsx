@@ -306,7 +306,7 @@ export function CloserObjectifs() {
   }
 
   const deletePersonalObjective = async (obj: PersonalObjective) => {
-    if (!confirm(t.objectives_delete_confirm.replace('{name}', obj.label))) return
+    if (!confirm(t.objectives_delete_confirm.replace('{label}', obj.label))) return
     try {
       await fetch(`${API_URL}?action=personal-objectives-delete&id=${obj.id}&team_member_id=${teamMember?.id}`, { method: 'DELETE' })
       toast.success(t.objectives_deleted)

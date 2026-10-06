@@ -454,7 +454,7 @@ export function CloserFactures() {
           </div>
           <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_fixed_salary}</p>
           <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {fixedSalary.toLocaleString('fr-FR')} <span className="text-sm sm:text-base">€</span>
+            {fixedSalary.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
           <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{t.invoices_monthly}</p>
         </div>
@@ -473,7 +473,7 @@ export function CloserFactures() {
           </div>
           <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_my_commission}</p>
           <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {commissionEstimee.toLocaleString('fr-FR')} <span className="text-sm sm:text-base">€</span>
+            {commissionEstimee.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
           <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{teamMember?.commission_rate || 10}% CA</p>
         </div>
@@ -492,7 +492,7 @@ export function CloserFactures() {
           </div>
           <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">{t.invoices_commission_closer}</p>
           <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {commissionCloser.toLocaleString('fr-FR')} <span className="text-sm sm:text-base">€</span>
+            {commissionCloser.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
           <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{myCloserDeals.length} deal{myCloserDeals.length !== 1 ? 's' : ''}</p>
         </div>
@@ -507,7 +507,7 @@ export function CloserFactures() {
           </div>
           <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">Commission Setter</p>
           <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {commissionSetter.toLocaleString('fr-FR')} <span className="text-sm sm:text-base">€</span>
+            {commissionSetter.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
           <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{mySetterDeals.length} deal{mySetterDeals.length !== 1 ? 's' : ''}</p>
         </div>
@@ -527,7 +527,7 @@ export function CloserFactures() {
           </div>
           <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
           <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {totalRevenue.toLocaleString('fr-FR')} <span className="text-sm sm:text-base">€</span>
+            {totalRevenue.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
           <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</p>
         </div>
@@ -546,7 +546,7 @@ export function CloserFactures() {
           </div>
           <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">CA Généré</p>
           <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {totalRevenue.toLocaleString('fr-FR')} <span className="text-sm sm:text-base">€</span>
+            {totalRevenue.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
           <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{myWonProspects.length} deal{myWonProspects.length !== 1 ? 's' : ''}</p>
         </div>
@@ -565,7 +565,7 @@ export function CloserFactures() {
           </div>
           <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">{lang === 'en' ? 'Booking fee' : 'Fixe RDV bookés'}</p>
           <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {rdvGain.toLocaleString('fr-FR')} <span className="text-sm sm:text-base">€</span>
+            {rdvGain.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
           <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{mySetterBookedDeals.length} RDV × {perBookingAmount}€</p>
         </div>
@@ -582,7 +582,7 @@ export function CloserFactures() {
           </div>
           <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">Payé</p>
           <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-emerald-600" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {paidAmount.toLocaleString('fr-FR')} <span className="text-sm sm:text-base">€</span>
+            {paidAmount.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
         </div>
 
@@ -598,7 +598,7 @@ export function CloserFactures() {
           </div>
           <p className="hidden sm:block text-stone-500 dark:text-neutral-400 text-sm font-medium">En attente</p>
           <p className="text-xl sm:text-2xl font-extrabold sm:mt-1 text-stone-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            {pendingAmount.toLocaleString('fr-FR')} <span className="text-sm sm:text-base">€</span>
+            {pendingAmount.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} <span className="text-sm sm:text-base">€</span>
           </p>
           <p className="sm:hidden mt-0.5 text-[10px] font-bold text-stone-400 dark:text-neutral-500 tracking-wider uppercase truncate">{pendingInvoices.length} facture{pendingInvoices.length !== 1 ? 's' : ''}</p>
         </div>

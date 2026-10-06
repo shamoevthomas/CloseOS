@@ -159,16 +159,16 @@ export function BusinessReminders() {
       if (error) throw error
       setReminders(prev => [...prev, newReminder])
       setShowCreateModal(false)
-      toast.success(t.reminders_toast_created)
+      toast.success(t.reminders_created_toast)
     } catch {
-      toast.error(t.reminders_toast_create_error)
+      toast.error(t.reminders_create_error)
     }
   }
 
   const getProspectName = (prospectId: number | null): string | null => {
     if (!prospectId) return null
     const p = prospects.find(pr => pr.id === prospectId)
-    return p ? (p.contact || p.company || t.reminders_prospect_fallback) : null
+    return p ? (p.contact || p.company || t.reminders_col_linked) : null
   }
 
   // Un rappel Business est lié via business_prospect_id (fiche) OU prospect_id (legacy page Rappels)
@@ -330,7 +330,7 @@ export function BusinessReminders() {
           className="hidden sm:flex bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-8 py-3 rounded-full font-bold items-center gap-2 hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-95 text-sm"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
-          {t.reminders_new}
+          {t.reminders_new_reminder}
         </button>
       </div>
 
@@ -340,8 +340,8 @@ export function BusinessReminders() {
           <div className="w-16 h-16 sm:w-32 sm:h-32 bg-stone-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-4 sm:mb-8">
             <Bell className="h-7 w-7 sm:h-14 sm:w-14 text-stone-300 dark:text-neutral-600" strokeWidth={1} />
           </div>
-          <h3 className="text-lg sm:text-2xl font-extrabold text-stone-900 dark:text-white mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.reminders_all_clear_title}</h3>
-          <p className="text-sm sm:text-base text-stone-500 dark:text-neutral-400 max-w-xs">{t.reminders_all_clear_desc}</p>
+          <h3 className="text-lg sm:text-2xl font-extrabold text-stone-900 dark:text-white mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.reminders_all_up_to_date}</h3>
+          <p className="text-sm sm:text-base text-stone-500 dark:text-neutral-400 max-w-xs">{t.reminders_no_reminders_desc}</p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="mt-5 sm:mt-8 px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base bg-stone-900 dark:bg-white dark:text-stone-900 text-white rounded-full font-bold hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-95"
@@ -558,7 +558,7 @@ export function BusinessReminders() {
                       <Clock className="h-4 w-4 text-stone-400 dark:text-neutral-500" strokeWidth={1.5} />
                       <p className={cn('text-sm font-medium', getStatus(selectedReminder) === 'overdue' ? 'text-red-600' : 'text-stone-900 dark:text-white')}>
                         {detailDate.toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                        {t.reminders_time_separator}
+                        {` ${t.reminders_at_time} `}
                         {detailLocal.time}
                       </p>
                     </div>
@@ -574,7 +574,7 @@ export function BusinessReminders() {
                     {getMemberInitials(selectedReminder.assigned_to || undefined)}
                   </div>
                   <p className="text-sm font-medium text-stone-900 dark:text-white">
-                    {selectedReminder.assigned_to ? (getMemberName(selectedReminder.assigned_to) || t.reminders_member_fallback) : t.reminders_myself}
+                    {selectedReminder.assigned_to ? (getMemberName(selectedReminder.assigned_to) || t.reminders_member) : t.reminders_myself}
                   </p>
                 </div>
               </div>
@@ -588,8 +588,8 @@ export function BusinessReminders() {
                     className="flex items-center gap-2 px-4 py-2.5 bg-stone-50 dark:bg-neutral-800 hover:bg-stone-100 dark:hover:bg-neutral-700 rounded-xl transition-colors w-full text-left"
                   >
                     <User className="h-4 w-4 text-stone-500 dark:text-neutral-400" strokeWidth={1.5} />
-                    <span className="min-w-0 max-sm:truncate text-sm font-semibold text-stone-900 dark:text-white">{getProspectName(reminderProspectId(selectedReminder)) || t.reminders_prospect_fallback}</span>
-                    <span className="ml-auto shrink-0 text-xs text-stone-400 dark:text-neutral-500">{t.reminders_view_prospect}</span>
+                    <span className="min-w-0 max-sm:truncate text-sm font-semibold text-stone-900 dark:text-white">{getProspectName(reminderProspectId(selectedReminder)) || t.reminders_col_linked}</span>
+                    <span className="ml-auto shrink-0 text-xs text-stone-400 dark:text-neutral-500">{t.reminders_view_card}</span>
                   </button>
                 </div>
               )}
@@ -718,7 +718,7 @@ function CreateReminderModal({
           <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
           <div className="flex items-center justify-between">
             <h2 className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              {t.reminders_new}
+              {t.reminders_modal_title}
             </h2>
             <button onClick={onClose} className="p-2 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
               <X className="h-5 w-5" strokeWidth={1.5} />
@@ -734,7 +734,7 @@ function CreateReminderModal({
           </div>
           <div>
             <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_description}</label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t.reminders_form_desc_placeholder} rows={2} className={`${inputCls} resize-none`} />
+            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t.reminders_form_description_placeholder} rows={2} className={`${inputCls} resize-none`} />
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="min-w-0">
@@ -756,7 +756,7 @@ function CreateReminderModal({
                   onChange={e => setAssignedTo(e.target.value)}
                   className="w-full appearance-none rounded-xl bg-stone-50 dark:bg-neutral-800 border-0 pl-10 pr-8 py-3 text-sm text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#006c49]/20"
                 >
-                  <option value="">{t.reminders_form_myself}</option>
+                  <option value="">{t.reminders_form_myself_option}</option>
                   {teamMembers.map(m => (
                     <option key={m.id} value={m.id}>{m.first_name} {m.last_name} ({m.role})</option>
                   ))}

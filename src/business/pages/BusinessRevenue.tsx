@@ -208,7 +208,12 @@ export function BusinessRevenue() {
     try {
       const res = await fetch(`/api/business-revenue-summary?user_id=${user.id}&period=${selectedPeriod}`)
       const json = await res.json()
-      setData(json)
+      // L'API renvoie { error } en cas d'échec : sans ce garde-fou, la page plantait (écran blanc).
+      if (!res.ok || typeof json?.ca !== 'number') {
+        toast.error(t.revenue_load_error)
+      } else {
+        setData(json)
+      }
     } catch {
       toast.error(t.revenue_load_error)
     }
