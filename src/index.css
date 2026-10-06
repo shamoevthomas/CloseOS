@@ -121,9 +121,10 @@ select option:disabled {
    On garde donc 16px sur les champs de saisie des petits écrans iOS (n'affecte ni Android ni le bureau). */
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 767px) {
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
-    select,
-    textarea {
+    /* Les champs déjà plus grands (titres en text-lg…text-4xl) gardent leur taille. */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([class~="text-lg"]):not([class~="text-xl"]):not([class~="text-2xl"]):not([class~="text-3xl"]):not([class~="text-4xl"]),
+    select:not([class~="text-lg"]):not([class~="text-xl"]):not([class~="text-2xl"]),
+    textarea:not([class~="text-lg"]):not([class~="text-xl"]):not([class~="text-2xl"]):not([class~="text-3xl"]):not([class~="text-4xl"]) {
       font-size: 16px !important;
     }
   }
