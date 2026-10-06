@@ -647,7 +647,7 @@ export function CaptureForm() {
               <CheckCircle2 className="h-10 w-10 text-[#006c49]" />
             </div>
           </div>
-          <h2 className="text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.success_title}</h2>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.success_title}</h2>
           <p className="text-[#444748] mb-4">{isInscriptionMode ? t.success_inscription : t.success_rdv}</p>
           {!isInscriptionMode && selectedDate && selectedTime && (
             <div className="rounded-2xl bg-[#f5f3f2] p-5 mb-4">
@@ -678,6 +678,37 @@ export function CaptureForm() {
       </div>
     )
   }
+
+  // Points de bascule responsive. En intégration (iframe sur le site du client), le rendu d'origine revient
+  // dès sm/md : une iframe de bureau fait rarement ≥ 1280px. En page pleine, la mise en page compacte
+  // (calendrier puis créneaux, libellés lisibles) reste jusqu'au bureau (lg/xl), iPad compris.
+  const rx = isEmbed
+    ? {
+        qLabel: 'block text-sm font-bold leading-snug text-[#1b1c1b] sm:inline sm:text-[10px] sm:leading-normal sm:uppercase sm:tracking-widest sm:text-[#444748]/60 sm:ml-1',
+        calGrid: 'grid gap-10 grid-cols-1 md:grid-cols-2',
+        dayBtn: 'h-10 w-full max-w-[2.75rem] mx-auto md:h-auto md:max-w-none md:mx-0 md:p-2.5',
+        slotsTitle: 'mb-3 md:mb-4',
+        slotsWrap: 'md:max-h-72 md:overflow-y-auto md:pr-1',
+        slotsGrid: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-2',
+        slotBtn: 'px-2 md:px-4 gap-1.5 md:gap-2',
+        hDateBtn: 'gap-2.5 md:gap-3',
+        hDate: 'max-md:truncate',
+        hChange: 'hidden md:inline',
+        hSlotsGrid: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5',
+      }
+    : {
+        qLabel: 'block text-sm font-bold leading-snug text-[#1b1c1b] lg:inline lg:text-[10px] lg:leading-normal lg:uppercase lg:tracking-widest lg:text-[#444748]/60 lg:ml-1',
+        calGrid: 'grid gap-6 xl:gap-10 grid-cols-1 xl:grid-cols-2',
+        dayBtn: 'h-10 w-full max-w-[2.75rem] mx-auto xl:h-auto xl:max-w-none xl:mx-0 xl:p-2.5',
+        slotsTitle: 'mb-3 xl:mb-4',
+        slotsWrap: 'xl:max-h-72 xl:overflow-y-auto xl:pr-1',
+        slotsGrid: 'grid-cols-3 sm:grid-cols-4 xl:grid-cols-2',
+        slotBtn: 'px-2 xl:px-4 gap-1.5 xl:gap-2',
+        hDateBtn: 'gap-2.5 xl:gap-3',
+        hDate: 'max-xl:truncate',
+        hChange: 'hidden xl:inline',
+        hSlotsGrid: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-3 xl:grid-cols-5',
+      }
 
   const inputCls = "w-full bg-transparent border-b-2 border-[#c4c7c7]/30 py-3 text-sm text-[#1b1c1b] placeholder:text-[#444748]/40 focus:border-[#006c49] focus:ring-0 transition-colors outline-none font-medium"
   const videoEmbedUrl = campaign?.landing_video_url ? toEmbedUrl(campaign.landing_video_url) : null
@@ -750,31 +781,43 @@ export function CaptureForm() {
         )}
 
         {/* RIGHT SIDE - Form + Calendar */}
-        <div className={`flex-1 flex items-start justify-center ${isEmbed ? (isHorizontal ? 'p-2 sm:p-3' : 'p-4') : 'px-5 sm:px-8 lg:px-12 py-8 lg:py-12'}`}>
-          <div className={`w-full ${isHorizontal ? 'max-w-full' : 'max-w-xl'} ${isEmbed ? '' : 'bg-white rounded-2xl p-8 md:p-12 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'}`} style={{ boxShadow: isEmbed ? undefined : 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
+        <div className={`flex-1 flex items-start justify-center ${isEmbed ? (isHorizontal ? 'p-2 sm:p-3' : 'p-4') : 'px-4 sm:px-8 lg:px-12 py-4 sm:py-8 lg:py-12'}`}>
+          <div className={`w-full ${isHorizontal ? 'max-w-full' : 'max-w-xl'} ${isEmbed ? '' : 'bg-white rounded-3xl sm:rounded-2xl p-5 sm:p-8 md:p-12 shadow-[0_20px_40px_rgba(27,28,27,0.04)]'}`} style={{ boxShadow: isEmbed ? undefined : 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
 
             {/* Mobile header */}
             {!isEmbed && (
-              <div className="lg:hidden mb-6">
+              <div className="lg:hidden mb-6 pb-6 border-b border-[#c4c7c7]/15">
                 {campaign?.landing_subtitle && (
-                  <span className="inline-block px-4 py-1.5 rounded-full bg-[#eae8e7] text-[#444748] text-[10px] font-bold tracking-widest uppercase mb-3">
+                  <span className="inline-block max-w-full truncate px-3 py-1 rounded-full bg-[#eae8e7] text-[#444748] text-[10px] font-bold tracking-wider uppercase mb-3">
                     {campaign.landing_subtitle}
                   </span>
                 )}
-                <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-1" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                <h1 className="text-2xl font-extrabold leading-tight text-[#1b1c1b] mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {campaign?.landing_title || campaign?.name || t.fallback_title}
                 </h1>
                 {campaign?.landing_text && (
                   <div
-                    className="rte-content text-sm text-[#444748] whitespace-pre-wrap"
+                    className="rte-content text-sm leading-relaxed text-[#444748] whitespace-pre-wrap"
                     dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(campaign.landing_text) }}
                   />
+                )}
+                {/* La vidéo de la landing n'était visible qu'au bureau (colonne gauche lg:) : on l'affiche aussi sur mobile/iPad portrait */}
+                {videoEmbedUrl && (
+                  <div className="mt-4 aspect-video rounded-xl overflow-hidden bg-[#f5f3f2]">
+                    <iframe
+                      src={videoEmbedUrl}
+                      className="w-full h-full"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    />
+                  </div>
                 )}
               </div>
             )}
 
             {/* Horizontal layout wrapper */}
-            <div className={isHorizontal && !isInscriptionMode ? (isEmbed ? 'flex flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
+            {/* Intégration horizontale dans une iframe de téléphone (< 480px) : colonnes empilées */}
+            <div className={isHorizontal && !isInscriptionMode ? (isEmbed ? 'flex flex-col min-[480px]:flex-row gap-6' : 'flex flex-col md:flex-row gap-6') : ''}>
             {/* Left column in horizontal mode */}
             <div className={isHorizontal && !isInscriptionMode ? 'flex-1 min-w-0 flex flex-col' : ''}>
 
@@ -783,23 +826,23 @@ export function CaptureForm() {
               {infoCollapsed && (
                 <button
                   onClick={() => setCurrentStep(1)}
-                  className="w-full flex items-center justify-between rounded-full border border-[#006c49]/20 bg-[#006c49]/5 px-5 py-3 mb-6 text-left transition-colors hover:bg-[#006c49]/10"
+                  className="w-full flex items-center justify-between rounded-full border border-[#006c49]/20 bg-[#006c49]/5 px-4 sm:px-5 py-3 mb-4 sm:mb-6 text-left transition-colors hover:bg-[#006c49]/10 active:scale-[0.99]"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                     <CheckCircle2 className="h-5 w-5 text-[#006c49] flex-shrink-0" />
-                    <span className="text-sm font-bold text-[#1b1c1b] truncate">{firstName} {lastName}</span>
+                    <span className={`text-sm font-bold text-[#1b1c1b] truncate ${isEmbed ? '' : 'max-xl:shrink-0 max-xl:max-w-[65%]'}`}>{firstName} {lastName}</span>
                     {email && <span className="text-xs text-[#006c49] truncate hidden sm:inline">{email}</span>}
                   </div>
-                  <span className="text-xs text-[#006c49] font-bold flex-shrink-0 ml-2 uppercase tracking-wider">{t.modify}</span>
+                  <span className="text-xs text-[#006c49] font-bold flex-shrink-0 ml-2 sm:uppercase sm:tracking-wider">{t.modify}</span>
                 </button>
               )}
 
               {!infoCollapsed && (
-                <div className={`${isHorizontal ? 'space-y-4 mb-4' : 'space-y-8 mb-8'}`}>
+                <div className={`${isHorizontal ? 'space-y-4 mb-4' : 'space-y-6 mb-6 sm:space-y-8 sm:mb-8'}`}>
                   {/* Step 1 header */}
                   <div className="flex items-center gap-3">
-                    <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full bg-[#1b1c1b] flex items-center justify-center text-white font-bold flex-shrink-0`}>1</div>
-                    <h2 className={`${isHorizontal ? 'text-lg' : 'text-2xl'} font-bold text-[#1b1c1b]`} style={{ fontFamily: 'Manrope, sans-serif' }}>{t.step1_title}</h2>
+                    <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-8 h-8 text-xs sm:w-10 sm:h-10 sm:text-sm'} rounded-full bg-[#1b1c1b] flex items-center justify-center text-white font-bold flex-shrink-0`}>1</div>
+                    <h2 className={`${isHorizontal ? 'text-lg' : 'text-lg sm:text-2xl'} font-bold text-[#1b1c1b]`} style={{ fontFamily: 'Manrope, sans-serif' }}>{t.step1_title}</h2>
                   </div>
 
                   {/* Prénom / Nom côte à côte */}
@@ -892,7 +935,7 @@ export function CaptureForm() {
                     <button
                       onClick={() => setCurrentStep(hasQuestionnaire ? 2 : (bookingStep as 2 | 3))}
                       disabled={!isInfoComplete || submitting}
-                      className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
+                      className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-4 sm:py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
                       style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                     >
                       {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (
@@ -913,27 +956,28 @@ export function CaptureForm() {
                 {currentStep > 2 && (
                   <button
                     onClick={() => setCurrentStep(2)}
-                    className="w-full flex items-center justify-between rounded-full border border-[#006c49]/20 bg-[#006c49]/5 px-5 py-3 mb-6 text-left transition-colors hover:bg-[#006c49]/10"
+                    className="w-full flex items-center justify-between rounded-full border border-[#006c49]/20 bg-[#006c49]/5 px-4 sm:px-5 py-3 mb-4 sm:mb-6 text-left transition-colors hover:bg-[#006c49]/10 active:scale-[0.99]"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                       <CheckCircle2 className="h-5 w-5 text-[#006c49] flex-shrink-0" />
                       <span className="text-sm font-bold text-[#1b1c1b] truncate">{t.questionnaire_complete || 'Questionnaire complété'}</span>
                     </div>
-                    <span className="text-xs text-[#006c49] font-bold flex-shrink-0 ml-2 uppercase tracking-wider">{t.modify}</span>
+                    <span className="text-xs text-[#006c49] font-bold flex-shrink-0 ml-2 sm:uppercase sm:tracking-wider">{t.modify}</span>
                   </button>
                 )}
                 {currentStep === 2 && (
-                  <div className="space-y-6 mb-6">
+                  <div className="space-y-5 sm:space-y-6 mb-6">
                     {/* Step header */}
                     <div className="flex items-center gap-3">
-                      <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full bg-[#1b1c1b] flex items-center justify-center text-white font-bold flex-shrink-0`}>2</div>
-                      <h2 className={`${isHorizontal ? 'text-lg' : 'text-2xl'} font-bold text-[#1b1c1b]`} style={{ fontFamily: 'Manrope, sans-serif' }}>{t.questionnaire_title || 'Quelques questions'}</h2>
+                      <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-8 h-8 text-xs sm:w-10 sm:h-10 sm:text-sm'} rounded-full bg-[#1b1c1b] flex items-center justify-center text-white font-bold flex-shrink-0`}>2</div>
+                      <h2 className={`${isHorizontal ? 'text-lg' : 'text-lg sm:text-2xl'} font-bold text-[#1b1c1b]`} style={{ fontFamily: 'Manrope, sans-serif' }}>{t.questionnaire_title || 'Quelques questions'}</h2>
                     </div>
 
                     {/* Questions */}
                     {captureQuestions.filter(q => visibleQuestionIds.has(q.id)).map((q) => (
                       <div key={q.id} className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">
+                        {/* Sur téléphone/iPad portrait : question lisible (pas de petites capitales sur 3 lignes) */}
+                        <label className={rx.qLabel}>
                           {q.question_text} {q.is_required ? '*' : ''}
                         </label>
 
@@ -960,13 +1004,13 @@ export function CaptureForm() {
                         )}
 
                         {q.question_type === 'select' && (
-                          <div className="flex flex-wrap gap-2">
+                          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
                             {(q.options || []).map((opt, i) => (
                               <button
                                 key={i}
                                 type="button"
                                 onClick={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                                className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all ${answers[q.id] === opt ? 'bg-[#1b1c1b] text-white scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
+                                className={`w-full sm:w-auto text-left sm:text-center px-4 py-3 sm:py-2.5 rounded-full text-sm font-bold transition-all active:scale-[0.98] ${answers[q.id] === opt ? 'bg-[#1b1c1b] text-white sm:scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
                                 style={answers[q.id] === opt ? btnStyle : undefined}
                               >
                                 {opt}
@@ -988,7 +1032,7 @@ export function CaptureForm() {
                                     const newSel = isSelected ? selected.filter((s: string) => s !== opt) : [...selected, opt]
                                     setAnswers(prev => ({ ...prev, [q.id]: newSel }))
                                   }}
-                                  className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all ${isSelected ? 'bg-[#1b1c1b] text-white scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
+                                  className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all active:scale-[0.98] ${isSelected ? 'bg-[#1b1c1b] text-white scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
                                   style={isSelected ? btnStyle : undefined}
                                 >
                                   {opt}
@@ -1006,7 +1050,7 @@ export function CaptureForm() {
                         <button
                           onClick={() => setCurrentStep(bookingStep as 2 | 3)}
                           disabled={(questionnaire?.required && !isQuestionnaireComplete) || submitting}
-                          className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
+                          className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-4 sm:py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
                           style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                         >
                           {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (
@@ -1034,7 +1078,7 @@ export function CaptureForm() {
                         <button
                           onClick={handleSubmit}
                           disabled={(!isQuestionnaireComplete && questionnaire?.required) || submitting}
-                          className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
+                          className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-4 sm:py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
                           style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                         >
                           {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>{t.inscribe_btn}</span><ArrowRight className="h-5 w-5" /></>}
@@ -1061,7 +1105,7 @@ export function CaptureForm() {
                 <button
                   onClick={handleSubmit}
                   disabled={!isInfoComplete || submitting}
-                  className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
+                  className="w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] py-4 sm:py-5 text-base font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl"
                   style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                 >
                   {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>{t.inscribe_btn}</span><ArrowRight className="h-5 w-5" /></>}
@@ -1088,9 +1132,9 @@ export function CaptureForm() {
               {/* Overlay — lock until booking step is reached */}
               {currentStep < bookingStep && (
                 <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] rounded-2xl flex items-center justify-center cursor-not-allowed">
-                  <div className="bg-white p-5 rounded-2xl shadow-xl flex items-center gap-3 border border-[#c4c7c7]/10">
-                    <Lock className="h-5 w-5 text-[#006c49]" />
-                    <p className="text-sm font-bold text-[#444748]">{t.fill_info}</p>
+                  <div className="mx-4 bg-white px-4 py-3.5 sm:p-5 rounded-2xl shadow-xl flex items-center gap-3 border border-[#c4c7c7]/10">
+                    <Lock className="h-5 w-5 shrink-0 text-[#006c49]" />
+                    <p className="text-[13px] leading-snug sm:text-sm font-bold text-[#444748]">{t.fill_info}</p>
                   </div>
                 </div>
               )}
@@ -1098,8 +1142,8 @@ export function CaptureForm() {
               <div className={`transition-opacity duration-300 ${currentStep >= bookingStep ? 'opacity-100' : 'opacity-30 grayscale pointer-events-none'}`}>
                 {/* Booking step header */}
                 <div className={`flex items-center gap-3 ${isHorizontal ? 'mb-4' : 'mb-6'}`}>
-                  <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'} rounded-full flex items-center justify-center font-bold flex-shrink-0 ${currentStep >= bookingStep ? 'bg-[#1b1c1b] text-white' : 'border-2 border-[#c4c7c7] text-[#c4c7c7]'}`}>{bookingStep}</div>
-                  <h2 className={`${isHorizontal ? 'text-lg' : 'text-2xl'} font-bold ${currentStep >= bookingStep ? 'text-[#1b1c1b]' : 'text-[#1b1c1b]/40'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{t.step2_title}</h2>
+                  <div className={`${isHorizontal ? 'w-8 h-8 text-xs' : 'w-8 h-8 text-xs sm:w-10 sm:h-10 sm:text-sm'} rounded-full flex items-center justify-center font-bold flex-shrink-0 ${currentStep >= bookingStep ? 'bg-[#1b1c1b] text-white' : 'border-2 border-[#c4c7c7] text-[#c4c7c7]'}`}>{bookingStep}</div>
+                  <h2 className={`${isHorizontal ? 'text-lg' : 'text-lg sm:text-2xl'} font-bold ${currentStep >= bookingStep ? 'text-[#1b1c1b]' : 'text-[#1b1c1b]/40'}`} style={{ fontFamily: 'Manrope, sans-serif' }}>{t.step2_title}</h2>
                 </div>
 
                 {/* Compact horizontal layout: calendar swaps with time slots */}
@@ -1161,20 +1205,21 @@ export function CaptureForm() {
                           {/* Back button with selected date */}
                           <button
                             onClick={() => { setSelectedDate(null); setSelectedTime(null) }}
-                            className="flex items-center gap-3 mb-5 px-4 py-2.5 rounded-full bg-[#006c49]/8 hover:bg-[#006c49]/15 transition-colors group"
+                            className={`flex max-w-full items-center ${rx.hDateBtn} mb-5 px-4 py-2.5 rounded-full bg-[#006c49]/8 hover:bg-[#006c49]/15 transition-colors group`}
                           >
-                            <ChevronLeft className="h-4 w-4 text-[#006c49] group-hover:-translate-x-0.5 transition-transform" />
-                            <Calendar className="h-4 w-4 text-[#006c49]" />
-                            <span className="text-sm font-bold text-[#006c49]">
+                            <ChevronLeft className="h-4 w-4 shrink-0 text-[#006c49] group-hover:-translate-x-0.5 transition-transform" />
+                            <Calendar className="h-4 w-4 shrink-0 text-[#006c49]" />
+                            <span className={`min-w-0 ${rx.hDate} text-sm font-bold text-[#006c49]`}>
                               {selectedDate.toLocaleDateString(t.date_locale, { weekday: 'long', day: 'numeric', month: 'long' })}
                             </span>
-                            <span className="text-xs text-[#006c49]/60 font-medium">— {t.change_date}</span>
+                            {/* Colonne étroite (mobile / iPad) : le chevron suffit, le libellé « Changer de date » revient au bureau */}
+                            <span className={`${rx.hChange} text-xs text-[#006c49]/60 font-medium`}>— {t.change_date}</span>
                           </button>
 
                           {/* Time slots in wide grid */}
                           <div>
                             <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-3">{t.available_slots}</h3>
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                            <div className={`grid ${rx.hSlotsGrid} gap-2`}>
                               {(freeMode ? TIME_SLOTS : (availableTimesForDate || []).map(s => s.time)).map(slot => (
                                 <button
                                   key={slot}
@@ -1204,11 +1249,11 @@ export function CaptureForm() {
                   </div>
                 ) : (
                   /* Vertical layout: standard side-by-side grid */
-                  <div className="grid gap-10 grid-cols-1 md:grid-cols-2">
+                  <div className={rx.calGrid}>
                     {/* Calendar */}
                     <div>
-                      <div className="flex items-center justify-between mb-4 px-1">
-                        <span className="text-lg font-bold text-[#1b1c1b]">{t.months[calMonth]} {calYear}</span>
+                      <div className="flex items-center justify-between mb-2 sm:mb-4 px-1">
+                        <span className="text-base sm:text-lg font-bold text-[#1b1c1b]">{t.months[calMonth]} {calYear}</span>
                         <div className="flex gap-1">
                           <button onClick={prevMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
                             <ChevronLeft className="h-5 w-5 text-[#1b1c1b]" />
@@ -1239,7 +1284,7 @@ export function CaptureForm() {
                               key={i}
                               disabled={disabled}
                               onClick={() => { setSelectedDate(day); setSelectedTime(null) }}
-                              className={`p-2.5 rounded-full text-sm font-medium transition-all ${
+                              className={`${rx.dayBtn} rounded-full text-sm font-medium transition-all ${
                                 selected ? 'bg-[#006c49] text-white shadow-lg shadow-[#006c49]/20'
                                   : isToday && !disabled ? 'bg-[#006c49]/10 text-[#006c49] hover:bg-[#006c49]/20'
                                   : disabled ? 'text-[#c4c7c7] cursor-not-allowed'
@@ -1255,15 +1300,15 @@ export function CaptureForm() {
 
                     {/* Time slots */}
                     <div>
-                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-4">{t.available_slots}</h3>
+                      <h3 className={`text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ${rx.slotsTitle}`}>{t.available_slots}</h3>
                       {selectedDate ? (
-                        <div className="max-h-72 overflow-y-auto pr-1">
-                          <div className="grid grid-cols-2 gap-2">
+                        <div className={rx.slotsWrap}>
+                          <div className={`grid ${rx.slotsGrid} gap-2`}>
                             {(freeMode ? TIME_SLOTS : (availableTimesForDate || []).map(s => s.time)).map(slot => (
                               <button
                                 key={slot}
                                 onClick={() => setSelectedTime(slot)}
-                                className={`py-3 px-4 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                                className={`py-3 ${rx.slotBtn} rounded-full text-sm font-bold transition-all flex items-center justify-center active:scale-[0.97] ${
                                   selectedTime === slot
                                     ? 'bg-[#1b1c1b] text-white shadow-lg'
                                     : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49]'
@@ -1322,7 +1367,7 @@ export function CaptureForm() {
                   <button
                     onClick={handleSubmit}
                     disabled={!isInfoComplete || !selectedDate || !selectedTime || submitting}
-                    className={`w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] ${isHorizontal ? 'py-3.5 text-sm' : 'py-5 text-base'} font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-2xl group`}
+                    className={`w-full flex items-center justify-center gap-3 rounded-full bg-[#1b1c1b] ${isHorizontal ? 'py-3.5 text-sm' : 'py-4 sm:py-5 text-base'} font-extrabold text-white hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-2xl group`}
                     style={{ ...btnStyle, fontFamily: 'Manrope, sans-serif' }}
                   >
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>{campaign?.stripe_enabled && campaign.stripe_price && campaign.stripe_price > 0 && !paymentSessionId ? (lang === 'fr' ? `Payer ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ et confirmer` : `Pay ${(campaign.stripe_price / 100).toFixed(2).replace('.00', '')}€ and confirm`) : t.confirm_rdv}</span><ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" /></>}
@@ -1343,8 +1388,8 @@ export function CaptureForm() {
 
       {/* Footer */}
       {!isEmbed && (
-        <footer className="bg-[#fbf9f8] w-full py-10 px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center max-w-screen-2xl mx-auto w-full gap-6">
+        <footer className="bg-[#fbf9f8] w-full py-6 sm:py-10 px-4 sm:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center max-w-screen-2xl mx-auto w-full gap-1.5 md:gap-6">
             <div className="font-bold text-[#1b1c1b] text-lg" style={{ fontFamily: 'Manrope, sans-serif' }}>CloseOS</div>
             <div className="text-[10px] tracking-widest uppercase text-[#444748]/40 font-bold">
               {t.powered_by_footer}

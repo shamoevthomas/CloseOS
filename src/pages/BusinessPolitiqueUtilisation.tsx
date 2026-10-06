@@ -18,21 +18,22 @@ export const BusinessPolitiqueUtilisation = () => {
   }, []);
   return (
     <div className="min-h-screen bg-[#020617] text-slate-300 font-sans selection:bg-blue-500/30">
-      <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link to="/business" className="flex items-center gap-2 group text-slate-400 hover:text-white transition-colors">
+      <nav className="border-b border-white/5 bg-[#020617]/80 backdrop-blur-md px-4 sm:px-6 py-4 sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+          <Link to="/business" className="flex shrink-0 items-center gap-2 group text-slate-400 hover:text-white transition-colors">
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Retour</span>
           </Link>
-          <span className="font-bold text-white">Politique d'Utilisation</span>
+          <span className="min-w-0 truncate font-bold text-white">Politique d'Utilisation</span>
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="text-3xl font-bold text-white mb-2">Politique d'Utilisation — CloseOS Business</h1>
-        <p className="text-slate-500 mb-8">Derniere mise a jour : 29 juillet 2026</p>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <h1 className="text-2xl leading-tight sm:text-3xl font-bold text-white mb-2">Politique d'Utilisation — CloseOS Business</h1>
+        <p className="text-sm sm:text-base text-slate-500 mb-6 sm:mb-8">Derniere mise a jour : 29 juillet 2026</p>
 
-        <div className="space-y-8 text-sm leading-relaxed text-justify">
+        {/* Texte justifié seulement à partir de sm : sur 343px il crée de grands blancs (titres compris) */}
+        <div className="space-y-8 text-sm leading-relaxed text-left sm:text-justify">
 
           {/* 1. Objet */}
           <section>

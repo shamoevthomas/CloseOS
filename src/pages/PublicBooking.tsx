@@ -836,12 +836,12 @@ export function PublicBooking() {
     return (
       <div className="min-h-screen bg-[#fbf9f8] flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 rounded-full bg-[#006c49]/10 flex items-center justify-center">
-              <CheckCircle2 className="h-10 w-10 text-[#006c49]" />
+          <div className="flex justify-center mb-5 sm:mb-6">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#006c49]/10 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10 text-[#006c49]" />
             </div>
           </div>
-          <h2 className="text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {multiEnabled && selectedSlots.length > 1 ? 'Réservations confirmées' : 'Réservation confirmée'}
           </h2>
           <p className="text-[#444748] mb-6">
@@ -850,14 +850,14 @@ export function PublicBooking() {
               : 'Votre rendez-vous a été réservé avec succès.'}
           </p>
           {multiEnabled && selectedSlots.length > 0 ? (
-            <div className="rounded-2xl bg-white p-6 space-y-3 text-left" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
+            <div className="rounded-2xl bg-white p-4 sm:p-6 space-y-3 text-left" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
               {selectedSlots.map(s => (
                 <div key={slotKey(s)} className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-[#f5f3f2] flex items-center justify-center shrink-0">
                     <Calendar className="h-4 w-4 text-[#006c49]" />
                   </div>
-                  <span className="text-sm font-bold text-[#1b1c1b] capitalize">
-                    {new Date(s.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} — {s.time} - {endTime(s.time, info.duration)}
+                  <span className="min-w-0 text-sm font-bold text-[#1b1c1b] capitalize">
+                    {new Date(s.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} — <span className="whitespace-nowrap">{s.time} - {endTime(s.time, info.duration)}</span>
                   </span>
                 </div>
               ))}
@@ -869,7 +869,7 @@ export function PublicBooking() {
               </div>
             </div>
           ) : (
-          <div className="rounded-2xl bg-white p-6 space-y-4 text-left" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
+          <div className="rounded-2xl bg-white p-4 sm:p-6 space-y-3 sm:space-y-4 text-left" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-[#f5f3f2] flex items-center justify-center shrink-0">
                 <Calendar className="h-4 w-4 text-[#444748]" />
@@ -912,8 +912,8 @@ export function PublicBooking() {
   return (
     <div className="min-h-screen bg-[#fbf9f8]">
       {/* Header */}
-      <div className="bg-white/60 backdrop-blur-xl border-b border-[#c4c7c7]/10 py-5">
-        <div className="mx-auto max-w-4xl px-6 flex items-center justify-center gap-3">
+      <div className="bg-white/60 backdrop-blur-xl border-b border-[#c4c7c7]/10 py-3 md:py-5">
+        <div className="mx-auto max-w-4xl px-4 md:px-6 flex items-center justify-center gap-3">
           {info.logoUrl ? (
             <img src={info.logoUrl} alt="" className="h-9 w-9 rounded-xl object-cover" />
           ) : (
@@ -922,45 +922,47 @@ export function PublicBooking() {
             </span>
           )}
           {info.companyName && info.logoUrl && (
-            <span className="text-base font-bold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <span className="min-w-0 max-md:truncate text-base font-bold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {info.companyName}
             </span>
           )}
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-10 md:py-14">
-        <div className="bg-white rounded-[2rem] overflow-hidden" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
-          <div className="md:flex min-h-[480px]">
+      <div className="mx-auto max-w-4xl px-4 py-4 sm:py-10 md:py-14">
+        <div className="bg-white rounded-3xl md:rounded-[2rem] overflow-hidden" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.04)' }}>
+          <div className="md:flex md:min-h-[480px]">
             {/* Left panel — info */}
-            <div className="md:w-80 bg-[#f5f3f2] p-8 md:p-10 border-b md:border-b-0 md:border-r border-[#c4c7c7]/10 flex flex-col">
+            <div className="md:w-80 bg-[#f5f3f2] p-5 sm:p-8 md:p-10 border-b md:border-b-0 md:border-r border-[#c4c7c7]/10 flex flex-col">
+              {/* Logo déjà présent dans l'en-tête : masqué sur mobile pour gagner de la hauteur */}
               {info.logoUrl && (
-                <img src={info.logoUrl} alt="" className="h-14 w-14 rounded-2xl object-cover mb-5" />
+                <img src={info.logoUrl} alt="" className="hidden md:block h-14 w-14 rounded-2xl object-cover mb-5" />
               )}
-              <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-3 leading-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+              <h1 className="text-xl md:text-2xl font-extrabold text-[#1b1c1b] mb-2 md:mb-3 leading-tight md:leading-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                 {info.label}
               </h1>
 
               {info.description && (
-                <p className="text-sm text-[#444748] leading-relaxed mb-4">{info.description}</p>
+                // Sur mobile, la description n'est rappelée qu'à la 1re étape (gain de hauteur au-dessus du calendrier)
+                <p className={`text-sm text-[#444748] leading-relaxed mb-1 md:mb-4 ${step !== 'form' ? 'hidden md:block' : ''}`}>{info.description}</p>
               )}
 
               {/* Contact info recap */}
               {step !== 'form' && name && (
-                <div className="mt-2 pt-5 border-t border-[#c4c7c7]/20 space-y-3">
+                <div className="mt-4 pt-4 md:mt-2 md:pt-5 border-t border-[#c4c7c7]/20 space-y-2 md:space-y-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/50">Vos informations</p>
-                  <div className="space-y-2">
-                    <p className="text-sm text-[#1b1c1b] flex items-center gap-2.5 font-medium">
-                      <User className="h-3.5 w-3.5 text-[#444748]/50" />{name}
+                  <div className="space-y-1.5 md:space-y-2">
+                    <p className="min-w-0 text-sm text-[#1b1c1b] flex items-center gap-2.5 font-medium">
+                      <User className="h-3.5 w-3.5 shrink-0 text-[#444748]/50" /><span className="max-xl:truncate">{name}</span>
                     </p>
                     {email && (
-                      <p className="text-sm text-[#1b1c1b] flex items-center gap-2.5 font-medium">
-                        <Mail className="h-3.5 w-3.5 text-[#444748]/50" />{email}
+                      <p className="min-w-0 text-sm text-[#1b1c1b] flex items-center gap-2.5 font-medium">
+                        <Mail className="h-3.5 w-3.5 shrink-0 text-[#444748]/50" /><span className="max-xl:truncate">{email}</span>
                       </p>
                     )}
                     {phone && (
-                      <p className="text-sm text-[#1b1c1b] flex items-center gap-2.5 font-medium">
-                        <Phone className="h-3.5 w-3.5 text-[#444748]/50" />{countryCode} {phone}
+                      <p className="min-w-0 text-sm text-[#1b1c1b] flex items-center gap-2.5 font-medium">
+                        <Phone className="h-3.5 w-3.5 shrink-0 text-[#444748]/50" /><span className="max-xl:truncate">{countryCode} {phone}</span>
                       </p>
                     )}
                   </div>
@@ -972,20 +974,20 @@ export function PublicBooking() {
 
               {/* Questionnaire recap */}
               {(step === 'calendar' || step === 'confirm') && hasQuestionnaire && Object.keys(questionnaireAnswers).length > 0 && (
-                <div className="mt-4 pt-5 border-t border-[#c4c7c7]/20 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-[#006c49]" />
+                <div className="mt-4 pt-4 md:pt-5 border-t border-[#c4c7c7]/20 flex items-center justify-between gap-3 md:block md:space-y-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[#006c49]" />
                     <span className="text-[10px] font-bold uppercase tracking-widest text-[#006c49]">Questionnaire complété</span>
                   </div>
-                  <button onClick={() => setStep('questionnaire')} className="text-xs text-[#006c49] font-bold hover:underline">
-                    Modifier les réponses
+                  <button onClick={() => setStep('questionnaire')} className="shrink-0 text-xs text-[#006c49] font-bold hover:underline">
+                    <span className="md:hidden">Modifier</span><span className="hidden md:inline">Modifier les réponses</span>
                   </button>
                 </div>
               )}
 
               {/* Selected slots recap (multi) */}
               {multiEnabled && (step === 'calendar' || step === 'confirm') && selectedSlots.length > 0 && (
-                <div className="mt-4 pt-5 border-t border-[#c4c7c7]/20 space-y-2">
+                <div className="hidden md:block mt-4 pt-5 border-t border-[#c4c7c7]/20 space-y-2">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/50 flex items-center gap-2">
                     <CalendarPlus className="h-3.5 w-3.5" /> {selectedSlots.length} créneau{selectedSlots.length > 1 ? 'x' : ''} sélectionné{selectedSlots.length > 1 ? 's' : ''}
                   </p>
@@ -1000,7 +1002,7 @@ export function PublicBooking() {
 
               {/* Selected slot recap */}
               {!multiEnabled && step === 'confirm' && selectedDate && selectedTime && (
-                <div className="mt-4 pt-5 border-t border-[#c4c7c7]/20 space-y-3">
+                <div className="hidden md:block mt-4 pt-5 border-t border-[#c4c7c7]/20 space-y-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/50">Créneau sélectionné</p>
                   <p className="text-sm text-[#1b1c1b] flex items-center gap-2.5 font-medium">
                     <Calendar className="h-3.5 w-3.5 text-[#444748]/50" />
@@ -1015,40 +1017,40 @@ export function PublicBooking() {
                 </div>
               )}
 
-              <div className="mt-auto pt-8 space-y-4">
+              <div className="mt-auto pt-4 md:pt-8 flex flex-wrap items-center gap-x-4 gap-y-2 md:block md:space-y-4">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-[#006c49]" />
                   <span className="text-sm font-bold text-[#444748]">{info.duration} minutes</span>
                 </div>
                 {creator && (
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-2 md:gap-3">
                     {creator.avatarUrl ? (
-                      <img src={creator.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                      <img src={creator.avatarUrl} alt="" className="h-7 w-7 md:h-8 md:w-8 shrink-0 rounded-full object-cover" />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-[#006c49]/10 flex items-center justify-center">
+                      <div className="h-7 w-7 md:h-8 md:w-8 shrink-0 rounded-full bg-[#006c49]/10 flex items-center justify-center">
                         <User className="h-4 w-4 text-[#006c49]" />
                       </div>
                     )}
-                    <span className="text-sm font-semibold text-[#1b1c1b]">{creator.name}</span>
+                    <span className="min-w-0 max-xl:truncate text-sm font-semibold text-[#1b1c1b]">{creator.name}</span>
                   </div>
                 )}
-                <p className="text-[10px] tracking-widest uppercase text-[#444748]/30 font-bold">
+                <p className="basis-full text-[10px] tracking-widest uppercase text-[#444748]/30 font-bold">
                   Propulsé par <span className="text-[#444748]/50">CloseOS</span>
                 </p>
               </div>
             </div>
 
             {/* Right panel — form / calendar */}
-            <div className="flex-1 p-8 md:p-10">
+            <div className="flex-1 min-w-0 p-5 sm:p-8 md:p-10">
               {/* Step 1: Contact info */}
               {step === 'form' && (
                 <div>
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white text-sm font-bold shrink-0">1</div>
-                    <h2 className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Vos coordonnées</h2>
+                  <div className="flex items-center gap-3 mb-5 md:mb-8">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white text-xs md:text-sm font-bold shrink-0">1</div>
+                    <h2 className="text-lg md:text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Vos coordonnées</h2>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-5 md:space-y-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">Nom complet *</label>
                       <input
@@ -1166,14 +1168,15 @@ export function PublicBooking() {
               {/* Questionnaire step */}
               {step === 'questionnaire' && hasQuestionnaire && (
                 <div>
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white text-sm font-bold shrink-0">2</div>
-                    <h2 className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Quelques questions</h2>
+                  <div className="flex items-center gap-3 mb-5 md:mb-8">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white text-xs md:text-sm font-bold shrink-0">2</div>
+                    <h2 className="text-lg md:text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Quelques questions</h2>
                   </div>
                   <div className="space-y-6">
                     {info!.questionnaireQuestions.filter(q => visibleQuestionIds.has(q.client_id)).map((q, idx) => (
                       <div key={q.client_id || idx} className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 ml-1">
+                        {/* Sur téléphone : question lisible (pas de petites capitales sur 3 lignes) */}
+                        <label className="block text-sm font-bold leading-snug text-[#1b1c1b] lg:inline lg:text-[10px] lg:leading-normal lg:uppercase lg:tracking-widest lg:text-[#444748]/60 lg:ml-1">
                           {q.question_text} {q.is_required ? '*' : ''}
                         </label>
                         {q.question_type === 'text' && (
@@ -1195,13 +1198,13 @@ export function PublicBooking() {
                           />
                         )}
                         {q.question_type === 'select' && (
-                          <div className="flex flex-wrap gap-2">
+                          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
                             {(q.options || []).map((opt, i) => (
                               <button
                                 key={i}
                                 type="button"
                                 onClick={() => setQuestionnaireAnswers(prev => ({ ...prev, [q.question_text]: opt }))}
-                                className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all ${questionnaireAnswers[q.question_text] === opt ? 'bg-[#1b1c1b] text-white scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
+                                className={`w-full sm:w-auto text-left sm:text-center px-4 py-3 sm:py-2.5 rounded-full text-sm font-bold transition-all active:scale-[0.98] ${questionnaireAnswers[q.question_text] === opt ? 'bg-[#1b1c1b] text-white sm:scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
                               >
                                 {opt}
                               </button>
@@ -1221,7 +1224,7 @@ export function PublicBooking() {
                                     const newSel = isSelected ? selected.filter(s => s !== opt) : [...selected, opt]
                                     setQuestionnaireAnswers(prev => ({ ...prev, [q.question_text]: newSel }))
                                   }}
-                                  className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all ${isSelected ? 'bg-[#1b1c1b] text-white scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
+                                  className={`px-4 py-2.5 rounded-full text-sm font-bold transition-all active:scale-[0.98] ${isSelected ? 'bg-[#1b1c1b] text-white scale-[1.02]' : 'bg-[#f5f3f2] text-[#444748] hover:bg-[#eae8e7]'}`}
                                 >
                                   {opt}
                                 </button>
@@ -1255,14 +1258,14 @@ export function PublicBooking() {
               {/* Calendar + time slots */}
               {step === 'calendar' && (
                 <div>
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white text-sm font-bold shrink-0">{hasQuestionnaire ? 3 : 2}</div>
-                    <h2 className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Choisissez un créneau</h2>
+                  <div className="flex items-center gap-3 mb-5 md:mb-8">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#1b1c1b] flex items-center justify-center text-white text-xs md:text-sm font-bold shrink-0">{hasQuestionnaire ? 3 : 2}</div>
+                    <h2 className="text-lg md:text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Choisissez un créneau</h2>
                   </div>
 
                   {/* Month nav */}
-                  <div className="flex items-center justify-between mb-4 px-1">
-                    <span className="text-lg font-bold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                  <div className="flex items-center justify-between mb-2 md:mb-4 px-1">
+                    <span className="text-base md:text-lg font-bold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>
                       {MONTHS_FR[calMonth]} {calYear}
                     </span>
                     <div className="flex gap-1">
@@ -1281,7 +1284,7 @@ export function PublicBooking() {
                       <div key={i} className="py-1 text-[10px] font-bold text-[#444748]/40 uppercase tracking-widest">{d}</div>
                     ))}
                   </div>
-                  <div className="grid grid-cols-7 gap-1 mb-6">
+                  <div className="grid grid-cols-7 gap-1 mb-5 md:mb-6">
                     {monthDates.map((d, i) => {
                       const key = formatDateKey(d)
                       const selectable = isDateSelectable(d)
@@ -1294,7 +1297,7 @@ export function PublicBooking() {
                           disabled={!selectable}
                           onClick={() => { setSelectedDate(key); setSelectedTime(null) }}
                           className={`
-                            p-2.5 rounded-full text-sm font-medium transition-all
+                            h-10 md:h-auto md:p-2.5 rounded-full text-sm font-medium transition-all
                             ${!isCurrentMonth ? 'text-[#c4c7c7]/30' : ''}
                             ${selectable && !isSelected ? 'text-[#1b1c1b] hover:bg-[#eae8e7]' : ''}
                             ${selectable && isSelected ? 'bg-[#006c49] text-white shadow-lg shadow-[#006c49]/20' : ''}
@@ -1311,13 +1314,13 @@ export function PublicBooking() {
                   {/* Time slots */}
                   {selectedDate && (
                     <div>
-                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-4">
+                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-3 md:mb-4">
                         Créneaux — {new Date(selectedDate + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                       </h3>
                       {slotsForDate.length === 0 ? (
                         <p className="text-sm text-[#444748]/40 text-center py-4">Aucun créneau disponible ce jour.</p>
                       ) : (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 md:max-h-60 md:overflow-y-auto md:pr-1">
                           {slotsForDate.map(time => {
                             const active = multiEnabled ? isSlotSelected(selectedDate, time) : selectedTime === time
                             const atMax = multiEnabled && !active && selectedSlots.length >= multiMax
@@ -1333,7 +1336,7 @@ export function PublicBooking() {
                                   else { setSelectedTime(time); setStep('confirm') }
                                 }}
                                 className={`
-                                  py-3 px-4 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-2
+                                  py-3 px-2 md:px-4 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-1.5 md:gap-2 active:scale-[0.97]
                                   ${active
                                     ? 'bg-[#1b1c1b] text-white shadow-lg'
                                     : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49] hover:text-[#006c49]'
@@ -1359,7 +1362,7 @@ export function PublicBooking() {
 
                   {/* Multi-booking: selected slots recap + continue */}
                   {multiEnabled && (
-                    <div className="mt-8 border-t border-[#c4c7c7]/20 pt-6">
+                    <div className="mt-6 md:mt-8 border-t border-[#c4c7c7]/20 pt-5 md:pt-6">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 flex items-center gap-2">
                           <CalendarPlus className="h-3.5 w-3.5" /> Créneaux sélectionnés
@@ -1373,14 +1376,14 @@ export function PublicBooking() {
                       ) : (
                         <div className="space-y-2 mb-5">
                           {selectedSlots.map(s => (
-                            <div key={slotKey(s)} className="flex items-center justify-between rounded-xl bg-[#f5f3f2] px-4 py-2.5">
-                              <span className="text-sm font-bold text-[#1b1c1b] capitalize flex items-center gap-2">
-                                <Calendar className="h-3.5 w-3.5 text-[#006c49]" />
+                            <div key={slotKey(s)} className="flex items-center justify-between gap-3 rounded-xl bg-[#f5f3f2] px-4 py-2.5">
+                              <span className="min-w-0 text-sm font-bold text-[#1b1c1b] capitalize flex items-center gap-2">
+                                <Calendar className="h-3.5 w-3.5 shrink-0 text-[#006c49]" />
                                 {new Date(s.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} — {s.time}
                               </span>
                               <button
                                 onClick={() => setSelectedSlots(prev => prev.filter(x => !(x.date === s.date && x.time === s.time)))}
-                                className="text-[#444748]/40 hover:text-[#ba1a1a] transition-colors"
+                                className="-mr-2 shrink-0 p-2 md:mr-0 md:p-0 text-[#444748]/40 hover:text-[#ba1a1a] transition-colors"
                                 aria-label="Retirer"
                               >
                                 <X className="h-4 w-4" />
@@ -1406,26 +1409,26 @@ export function PublicBooking() {
               {/* Step 3: Confirm (multi-booking) */}
               {step === 'confirm' && multiEnabled && (
                 <div>
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 rounded-full bg-[#006c49] flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="h-5 w-5 text-white" />
+                  <div className="flex items-center gap-3 mb-5 md:mb-8">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#006c49] flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-white" />
                     </div>
-                    <h2 className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Confirmer mes rendez-vous</h2>
+                    <h2 className="text-lg md:text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Confirmer mes rendez-vous</h2>
                   </div>
 
-                  <div className="rounded-2xl bg-[#f5f3f2] p-6 mb-6">
-                    <div className="flex items-center gap-2 mb-4">
+                  <div className="rounded-2xl bg-[#f5f3f2] p-3 sm:p-6 mb-4 sm:mb-6">
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4 px-1 sm:px-0">
                       <CalendarPlus className="h-4 w-4 text-[#006c49]" />
                       <span className="text-sm font-bold text-[#1b1c1b]">{selectedSlots.length} créneau{selectedSlots.length > 1 ? 'x' : ''} — {info.duration} min chacun</span>
                     </div>
                     <div className="space-y-2.5">
                       {selectedSlots.map(s => (
-                        <div key={slotKey(s)} className="flex items-center justify-between bg-white rounded-xl px-4 py-3">
-                          <span className="text-sm font-bold text-[#1b1c1b] capitalize flex items-center gap-2.5">
-                            <Calendar className="h-3.5 w-3.5 text-[#006c49]" />
+                        <div key={slotKey(s)} className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 bg-white rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
+                          <span className="min-w-0 text-sm font-bold text-[#1b1c1b] capitalize flex items-center gap-2.5">
+                            <Calendar className="h-3.5 w-3.5 shrink-0 text-[#006c49]" />
                             {new Date(s.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                           </span>
-                          <span className="text-sm font-bold text-[#444748] flex items-center gap-1.5">
+                          <span className="shrink-0 whitespace-nowrap text-sm font-bold text-[#444748] flex items-center gap-2.5 sm:gap-1.5">
                             <Clock className="h-3.5 w-3.5 text-[#444748]/40" />
                             {s.time} - {endTime(s.time, info.duration)}
                           </span>
@@ -1434,12 +1437,12 @@ export function PublicBooking() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl bg-[#f5f3f2] p-6 space-y-4 mb-8">
+                  <div className="rounded-2xl bg-[#f5f3f2] p-4 sm:p-6 space-y-3 sm:space-y-4 mb-6 sm:mb-8">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
                         <User className="h-4 w-4 text-[#006c49]" />
                       </div>
-                      <span className="text-sm font-bold text-[#1b1c1b]">{name}</span>
+                      <span className="min-w-0 max-xl:truncate text-sm font-bold text-[#1b1c1b]">{name}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
@@ -1449,10 +1452,10 @@ export function PublicBooking() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
                     <button
                       onClick={() => setStep('calendar')}
-                      className="flex-1 rounded-full border border-[#c4c7c7]/30 px-5 py-4 text-sm font-bold text-[#444748] hover:bg-[#f5f3f2] transition-all"
+                      className="flex-1 rounded-full border border-[#c4c7c7]/30 px-5 py-3.5 sm:py-4 text-sm font-bold text-[#444748] hover:bg-[#f5f3f2] active:scale-[0.98] transition-all"
                     >
                       <span className="flex items-center justify-center gap-2"><Plus className="h-4 w-4" /> Ajouter / modifier</span>
                     </button>
@@ -1471,7 +1474,7 @@ export function PublicBooking() {
                     </button>
                   </div>
 
-                  <p className="text-center text-[10px] text-[#444748]/40 mt-6 font-medium leading-relaxed">
+                  <p className="text-center text-[10px] text-[#444748]/40 mt-4 sm:mt-6 font-medium leading-relaxed">
                     En confirmant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées.
                   </p>
                 </div>
@@ -1480,14 +1483,14 @@ export function PublicBooking() {
               {/* Step 3: Confirm (single) */}
               {step === 'confirm' && !multiEnabled && selectedDate && selectedTime && (
                 <div>
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 rounded-full bg-[#006c49] flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="h-5 w-5 text-white" />
+                  <div className="flex items-center gap-3 mb-5 md:mb-8">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#006c49] flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-white" />
                     </div>
-                    <h2 className="text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Confirmer</h2>
+                    <h2 className="text-lg md:text-2xl font-extrabold text-[#1b1c1b]" style={{ fontFamily: 'Manrope, sans-serif' }}>Confirmer</h2>
                   </div>
 
-                  <div className="rounded-2xl bg-[#f5f3f2] p-6 space-y-4 mb-8">
+                  <div className="rounded-2xl bg-[#f5f3f2] p-4 sm:p-6 space-y-3 sm:space-y-4 mb-6 sm:mb-8">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
                         <Calendar className="h-4 w-4 text-[#006c49]" />
@@ -1508,7 +1511,7 @@ export function PublicBooking() {
                       <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
                         <User className="h-4 w-4 text-[#006c49]" />
                       </div>
-                      <span className="text-sm font-bold text-[#1b1c1b]">{name}</span>
+                      <span className="min-w-0 max-xl:truncate text-sm font-bold text-[#1b1c1b]">{name}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0">
@@ -1518,10 +1521,10 @@ export function PublicBooking() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
                     <button
                       onClick={() => setStep('calendar')}
-                      className="flex-1 rounded-full border border-[#c4c7c7]/30 px-5 py-4 text-sm font-bold text-[#444748] hover:bg-[#f5f3f2] transition-all"
+                      className="flex-1 rounded-full border border-[#c4c7c7]/30 px-5 py-3.5 sm:py-4 text-sm font-bold text-[#444748] hover:bg-[#f5f3f2] active:scale-[0.98] transition-all"
                     >
                       Modifier
                     </button>
@@ -1543,7 +1546,7 @@ export function PublicBooking() {
                     </button>
                   </div>
 
-                  <p className="text-center text-[10px] text-[#444748]/40 mt-6 font-medium leading-relaxed">
+                  <p className="text-center text-[10px] text-[#444748]/40 mt-4 sm:mt-6 font-medium leading-relaxed">
                     {info.stripe
                       ? 'Paiement sécurisé par Stripe — Apple Pay / Google Pay / CB.'
                       : "En confirmant, vous acceptez d'être recontacté(e) et que vos informations soient enregistrées."}

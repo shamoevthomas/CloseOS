@@ -409,7 +409,8 @@ export const BusinessLanding: React.FC = () => {
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
+          {/* Liens complets à partir de xl : entre 768 et 1279px ils débordaient (logo écrasé, boutons hors écran) */}
+          <div className="hidden xl:flex items-center gap-8 text-sm font-medium text-stone-600">
             <a href="#features" className="hover:text-[#111111] transition-colors">{t.nav_management}</a>
             <a href="#crm" className="hover:text-[#111111] transition-colors">{t.nav_crm}</a>
             <a href="#api" className="hover:text-[#111111] transition-colors">{t.nav_api}</a>
@@ -423,7 +424,7 @@ export const BusinessLanding: React.FC = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
-              className="hidden md:flex items-center gap-1.5 p-3 rounded-lg hover:bg-stone-100 transition-colors text-stone-500"
+              className="hidden xl:flex items-center gap-1.5 p-3 rounded-lg hover:bg-stone-100 transition-colors text-stone-500"
               aria-label="Change language"
             >
               <Globe className="size-4" />
@@ -443,18 +444,18 @@ export const BusinessLanding: React.FC = () => {
             </a>
             <button
               onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}
-              className="md:hidden p-2 text-stone-600"
+              className="xl:hidden p-2 text-stone-600"
               aria-label="Change language"
             >
               <Globe className="size-5" />
             </button>
-            <button className="md:hidden p-3 text-stone-600" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label="Menu" aria-expanded={isMobileMenuOpen}>
+            <button className="xl:hidden p-3 text-stone-600" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label="Menu" aria-expanded={isMobileMenuOpen}>
               {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
           </div>
         </div>
         {isMobileMenuOpen && (
-          <div className="md:hidden mt-2 bg-white/90 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-4 shadow-lg flex flex-col gap-4 text-sm font-medium text-stone-600">
+          <div className="xl:hidden mt-2 bg-white/90 backdrop-blur-md border border-stone-200/50 rounded-2xl px-6 py-4 shadow-lg flex flex-col gap-4 text-sm font-medium text-stone-600">
             <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_management}</a>
             <a href="#crm" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_crm}</a>
             <a href="#roles" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#111111] transition-colors py-1">{t.nav_roles}</a>
@@ -652,7 +653,7 @@ export const BusinessLanding: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Macro Dashboard */}
-            <div className="lg:col-span-3 bg-white rounded-3xl p-8 border border-stone-200 shadow-sm">
+            <div className="md:col-span-2 lg:col-span-3 bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm">
               <div className="mb-8">
                 <h3 className="text-2xl font-bold text-[#111111] mb-2">{t.dashboard_title}</h3>
                 <p className="text-stone-500">{t.dashboard_description}</p>
@@ -1032,7 +1033,7 @@ const RevenueStripe = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.8, delay: 0.3 }}
-      className="lg:col-span-3 bg-gradient-to-br from-[#635BFF]/[0.03] to-white rounded-3xl p-8 md:p-10 border border-[#635BFF]/10 shadow-sm relative overflow-hidden"
+      className="md:col-span-2 lg:col-span-3 bg-gradient-to-br from-[#635BFF]/[0.03] to-white rounded-3xl p-6 sm:p-8 md:p-10 border border-[#635BFF]/10 shadow-sm relative overflow-hidden"
     >
       <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#635BFF]/10 to-emerald-500/5 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
 
@@ -1111,7 +1112,7 @@ const Onboarding = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.8, delay: 0.6 }}
-      className="lg:col-span-3 bg-[#111111] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden"
+      className="md:col-span-2 lg:col-span-3 bg-[#111111] rounded-3xl p-6 sm:p-8 md:p-12 text-white relative overflow-hidden"
     >
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#ff2f2f]/20 to-[#8a43e1]/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
 
@@ -1163,7 +1164,7 @@ const TrackingLinksTile = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.8, delay: 0.2 }}
-      className="lg:col-span-3 bg-white rounded-3xl p-8 md:p-10 border border-stone-200 shadow-sm"
+      className="md:col-span-2 lg:col-span-3 bg-white rounded-3xl p-6 sm:p-8 md:p-10 border border-stone-200 shadow-sm"
     >
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
         <div className="lg:col-span-2 flex flex-col justify-center">
@@ -1250,10 +1251,10 @@ const BoxItem = ({ icon, title, description, dark, index }: any) => (
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     transition={{ duration: 0.5, delay: (index || 0) * 0.1 }}
-    className={`${dark ? 'bg-white/5 border-white/10' : 'bg-stone-50 border-stone-100'} p-6 rounded-2xl border text-left`}
+    className={`${dark ? 'bg-white/5 border-white/10' : 'bg-stone-50 border-stone-100'} p-4 sm:p-6 rounded-2xl border text-left`}
   >
-    <div className="mb-4 bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center">{icon}</div>
-    <h4 className={`font-bold mb-2 ${dark ? 'text-white' : 'text-[#111111]'}`}>{title}</h4>
+    <div className="mb-3 sm:mb-4 bg-white/10 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center">{icon}</div>
+    <h4 className={`text-sm sm:text-base font-bold mb-2 ${dark ? 'text-white' : 'text-[#111111]'}`}>{title}</h4>
     <p className={`text-sm font-medium ${dark ? 'text-stone-400' : 'text-stone-500'}`}>{description}</p>
   </motion.div>
 );
@@ -2408,7 +2409,8 @@ const PricingSection = () => {
                 <Gift className="size-6 text-amber-400" />
                 <h3 className="text-2xl font-bold text-white tracking-tight">Extras</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* 3 colonnes seulement à partir de lg : à 768–1023px les cartes faisaient ~170px (prix et texte qui débordaient) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 {pricingExtras.map((extra, i) => (
                   <motion.div
                     key={extra.name}
@@ -2418,7 +2420,7 @@ const PricingSection = () => {
                     transition={{ duration: 0.5, delay: i * 0.1 }}
                     className="bg-white/5 border border-white/10 rounded-2xl p-6"
                   >
-                    <div className="flex items-baseline gap-2 mb-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2 mb-1">
                       <h4 className="text-white font-bold text-lg">{extra.name}</h4>
                       <span className="text-stone-400 text-sm font-medium">{extra.price} {extra.type}</span>
                     </div>

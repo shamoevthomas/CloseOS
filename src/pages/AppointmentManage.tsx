@@ -296,13 +296,13 @@ export function AppointmentManage() {
   if (cancelled) {
     return (
       <div className="min-h-screen bg-[#fbf9f8] flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="flex justify-center mb-6">
+        <div className="text-center max-w-md mx-auto p-6 sm:p-8">
+          <div className="flex justify-center mb-5 sm:mb-6">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-50">
               <XCircle className="h-10 w-10 text-red-500" />
             </div>
           </div>
-          <h1 className="text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {lang === 'fr' ? 'Rendez-vous annulé' : 'Appointment cancelled'}
           </h1>
           <p className="text-[#444748] mb-6">{lang === 'fr' ? `Votre rendez-vous du ${dateFr} à ${timeHHMM} a été annulé.` : `Your appointment on ${dateFr} at ${timeHHMM} has been cancelled.`}</p>
@@ -317,13 +317,13 @@ export function AppointmentManage() {
     const newDateFr = newDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     return (
       <div className="min-h-screen bg-[#fbf9f8] flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="flex justify-center mb-6">
+        <div className="text-center max-w-md mx-auto p-6 sm:p-8">
+          <div className="flex justify-center mb-5 sm:mb-6">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#006c49]/10">
               <CheckCircle2 className="h-10 w-10 text-[#006c49]" />
             </div>
           </div>
-          <h1 className="text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1b1c1b] mb-3" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {lang === 'fr' ? 'Rendez-vous reprogrammé' : 'Appointment rescheduled'}
           </h1>
           <div className="rounded-2xl bg-[#f5f3f2] p-5 mb-4">
@@ -340,29 +340,29 @@ export function AppointmentManage() {
   if (actionParam === 'cancel') {
     return (
       <div className="min-h-screen bg-[#fbf9f8] flex items-center justify-center">
-        <div className="max-w-lg mx-auto p-8">
-          <div className="bg-white rounded-3xl p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]" style={{ border: '1px solid rgba(196,199,199,0.1)' }}>
-            <div className="flex justify-center mb-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-50">
-                <AlertTriangle className="h-8 w-8 text-amber-500" />
+        <div className="w-full max-w-lg mx-auto p-4 sm:p-8">
+          <div className="bg-white rounded-3xl p-5 sm:p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]" style={{ border: '1px solid rgba(196,199,199,0.1)' }}>
+            <div className="flex justify-center mb-4 sm:mb-6">
+              <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-amber-50">
+                <AlertTriangle className="h-7 w-7 sm:h-8 sm:w-8 text-amber-500" />
               </div>
             </div>
-            <h1 className="text-2xl font-extrabold text-[#1b1c1b] text-center mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[#1b1c1b] text-center mb-1 sm:mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {lang === 'fr' ? 'Annuler votre rendez-vous ?' : 'Cancel your appointment?'}
             </h1>
-            <p className="text-[#444748] text-center mb-8">{lang === 'fr' ? 'Cette action est irréversible.' : 'This action is irreversible.'}</p>
+            <p className="text-sm sm:text-base text-[#444748] text-center mb-5 sm:mb-8">{lang === 'fr' ? 'Cette action est irréversible.' : 'This action is irreversible.'}</p>
 
-            <div className="rounded-2xl bg-[#f5f3f2] p-6 mb-8">
+            <div className="rounded-2xl bg-[#f5f3f2] p-4 sm:p-6 mb-4 sm:mb-8">
               {info.title && (
-                <p className="font-bold text-[#1b1c1b] mb-3">{info.title}</p>
+                <p className="text-sm sm:text-base font-bold text-[#1b1c1b] mb-3">{info.title}</p>
               )}
-              <div className="flex items-center gap-3 mb-3">
-                <Calendar className="h-5 w-5 text-[#006c49]" />
-                <span className="font-bold text-[#1b1c1b] capitalize">{dateFr}</span>
+              <div className="flex items-center gap-3 mb-2 sm:mb-3">
+                <Calendar className="h-5 w-5 shrink-0 text-[#006c49]" />
+                <span className="text-sm sm:text-base font-bold text-[#1b1c1b] capitalize">{dateFr}</span>
               </div>
               <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-[#006c49]" />
-                <span className="font-bold text-[#1b1c1b]">{timeHHMM} — {endTimeStr} ({info.duration} min)</span>
+                <Clock className="h-5 w-5 shrink-0 text-[#006c49]" />
+                <span className="text-sm sm:text-base font-bold text-[#1b1c1b]">{timeHHMM} — {endTimeStr} ({info.duration} min)</span>
               </div>
               {info.assignee_name && (
                 <p className="text-sm text-[#444748] mt-3">{lang === 'fr' ? 'Avec' : 'With'} {info.assignee_name}</p>
@@ -371,15 +371,15 @@ export function AppointmentManage() {
 
             {/* Refund option */}
             {info.stripe_payment_status === 'paid' && info.refund_enabled && refundPercent > 0 && (
-              <div className="rounded-2xl bg-[#635bff]/5 p-5 mb-8">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-[#635bff]" />
+              <div className="rounded-2xl bg-[#635bff]/5 p-4 sm:p-5 mb-5 sm:mb-8">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <CreditCard className="h-4 w-4 shrink-0 text-[#635bff]" />
                     <span className="text-sm font-bold text-[#1b1c1b]">
                       {lang === 'fr' ? 'Demander un remboursement' : 'Request a refund'}
                     </span>
                   </div>
-                  <button onClick={() => setRequestRefund(!requestRefund)} className="relative">
+                  <button onClick={() => setRequestRefund(!requestRefund)} className="relative shrink-0">
                     <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${requestRefund ? 'bg-[#635bff]/20' : 'bg-[#eae8e7]'}`}>
                       <div className={`w-3 h-3 rounded-full absolute transition-all ${requestRefund ? 'bg-[#635bff] right-1' : 'bg-[#747878] left-1'}`} />
                     </div>
@@ -413,24 +413,24 @@ export function AppointmentManage() {
 
   // Reschedule view
   return (
-    <div className="min-h-screen bg-[#fbf9f8] py-12 px-4">
+    <div className="min-h-screen bg-[#fbf9f8] py-4 sm:py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-3xl p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]" style={{ border: '1px solid rgba(196,199,199,0.1)' }}>
-          <h1 className="text-2xl font-extrabold text-[#1b1c1b] mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <div className="bg-white rounded-3xl p-5 sm:p-10 shadow-[0_20px_40px_rgba(27,28,27,0.04)]" style={{ border: '1px solid rgba(196,199,199,0.1)' }}>
+          <h1 className="text-lg sm:text-2xl font-extrabold text-[#1b1c1b] mb-1 sm:mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {lang === 'fr' ? 'Reprogrammer votre rendez-vous' : 'Reschedule your appointment'}
           </h1>
-          <p className="text-[#444748] mb-2">{lang === 'fr' ? 'Rendez-vous actuel :' : 'Current appointment:'}</p>
-          <div className="rounded-2xl bg-[#f5f3f2] p-5 mb-8 flex items-center gap-4">
+          <p className="text-sm sm:text-base text-[#444748] mb-2">{lang === 'fr' ? 'Rendez-vous actuel :' : 'Current appointment:'}</p>
+          <div className="rounded-2xl bg-[#f5f3f2] p-4 sm:p-5 mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4">
             <Calendar className="h-5 w-5 text-[#006c49] shrink-0" />
-            <div>
-              {info.title && <p className="font-bold text-[#1b1c1b] mb-0.5">{info.title}</p>}
+            <div className="min-w-0">
+              {info.title && <p className="text-sm sm:text-base font-bold text-[#1b1c1b] mb-0.5">{info.title}</p>}
               <p className={`font-bold text-[#1b1c1b] capitalize ${info.title ? 'text-sm font-medium' : ''}`}>{dateFr}</p>
               <p className="text-sm text-[#444748]">{timeHHMM} — {endTimeStr}</p>
               {info.assignee_name && <p className="text-xs text-[#444748]/60 mt-1">{lang === 'fr' ? 'Avec' : 'With'} {info.assignee_name}</p>}
             </div>
           </div>
 
-          <h2 className="text-lg font-extrabold text-[#1b1c1b] mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>
+          <h2 className="text-base sm:text-lg font-extrabold text-[#1b1c1b] mb-3 sm:mb-4" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {lang === 'fr' ? 'Choisissez un nouveau créneau' : 'Choose a new time slot'}
           </h2>
 
@@ -448,8 +448,8 @@ export function AppointmentManage() {
             <div>
               {/* Calendar */}
               <div className={`transition-all duration-500 ease-in-out overflow-hidden ${selectedDate ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100'}`}>
-                <div className="flex items-center justify-between mb-3 px-1">
-                  <span className="text-lg font-bold text-[#1b1c1b]">{MONTHS[calMonth]} {calYear}</span>
+                <div className="flex items-center justify-between mb-2 sm:mb-3 px-1">
+                  <span className="text-base sm:text-lg font-bold text-[#1b1c1b]">{MONTHS[calMonth]} {calYear}</span>
                   <div className="flex gap-1">
                     <button onClick={prevMonth} className="p-2 hover:bg-[#f5f3f2] rounded-full transition-colors">
                       <ChevronLeft className="h-5 w-5 text-[#1b1c1b]" />
@@ -477,7 +477,7 @@ export function AppointmentManage() {
                         key={i}
                         disabled={disabled}
                         onClick={() => { setSelectedDate(day); setSelectedTime(null) }}
-                        className={`p-2.5 rounded-full text-sm font-medium transition-all ${
+                        className={`h-10 w-full max-w-[2.75rem] mx-auto sm:h-auto sm:max-w-none sm:mx-0 sm:p-2.5 rounded-full text-sm font-medium transition-all ${
                           isToday && !disabled ? 'bg-[#006c49]/10 text-[#006c49] hover:bg-[#006c49]/20'
                             : disabled ? 'text-[#c4c7c7] cursor-not-allowed'
                             : 'text-[#1b1c1b] hover:bg-[#eae8e7]'
@@ -496,14 +496,15 @@ export function AppointmentManage() {
                   <div>
                     <button
                       onClick={() => { setSelectedDate(null); setSelectedTime(null) }}
-                      className="flex items-center gap-3 mb-5 px-4 py-2.5 rounded-full bg-[#006c49]/8 hover:bg-[#006c49]/15 transition-colors group"
+                      className="flex max-w-full items-center gap-2.5 sm:gap-3 mb-4 sm:mb-5 px-4 py-2.5 rounded-full bg-[#006c49]/8 hover:bg-[#006c49]/15 transition-colors group"
                     >
-                      <ChevronLeft className="h-4 w-4 text-[#006c49] group-hover:-translate-x-0.5 transition-transform" />
-                      <Calendar className="h-4 w-4 text-[#006c49]" />
-                      <span className="text-sm font-bold text-[#006c49]">
+                      <ChevronLeft className="h-4 w-4 shrink-0 text-[#006c49] group-hover:-translate-x-0.5 transition-transform" />
+                      <Calendar className="h-4 w-4 shrink-0 text-[#006c49]" />
+                      <span className="min-w-0 truncate text-sm font-bold text-[#006c49]">
                         {selectedDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
                       </span>
-                      <span className="text-xs text-[#006c49]/60 font-medium">— {lang === 'fr' ? 'Changer de date' : 'Change date'}</span>
+                      {/* Sur téléphone, le chevron suffit : libellé masqué pour garder la date sur une ligne */}
+                      <span className="hidden sm:inline text-xs text-[#006c49]/60 font-medium">— {lang === 'fr' ? 'Changer de date' : 'Change date'}</span>
                     </button>
                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 mb-3">{lang === 'fr' ? 'Créneaux disponibles' : 'Available slots'}</h3>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
@@ -511,7 +512,7 @@ export function AppointmentManage() {
                         <button
                           key={slot.time}
                           onClick={() => setSelectedTime(slot.time)}
-                          className={`py-2.5 px-3 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${
+                          className={`py-2.5 px-2 sm:px-3 rounded-full text-sm font-bold transition-all flex items-center justify-center gap-1.5 active:scale-[0.97] ${
                             selectedTime === slot.time
                               ? 'bg-[#1b1c1b] text-white shadow-lg'
                               : 'border border-[#c4c7c7]/30 text-[#1b1c1b] hover:border-[#006c49]'
@@ -533,7 +534,7 @@ export function AppointmentManage() {
               {selectedDate && selectedTime && (
                 <>
                   {info.reschedule_paid && info.reschedule_price > 0 && (
-                    <div className="mt-6 rounded-2xl bg-[#635bff]/5 p-4 flex items-center gap-3">
+                    <div className="mt-5 sm:mt-6 rounded-2xl bg-[#635bff]/5 p-4 flex items-center gap-3">
                       <CreditCard className="h-4 w-4 text-[#635bff] shrink-0" />
                       <p className="text-xs text-[#444748]">
                         {lang === 'fr' ? 'Frais de reprogrammation :' : 'Rescheduling fee:'}{' '}
