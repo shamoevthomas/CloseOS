@@ -219,38 +219,46 @@ export function BusinessReminders() {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-4 sm:space-y-10">
 
       {/* ─── Page Header ─── */}
-      <div className="flex items-center gap-6">
-        <div className="w-16 h-16 bg-amber-300 rounded-2xl flex items-center justify-center shadow-lg shrink-0">
-          <Bell className="h-7 w-7 text-amber-900" strokeWidth={1.5} />
+      <div className="flex items-center gap-3 sm:gap-6">
+        <div className="w-11 h-11 sm:w-16 sm:h-16 bg-amber-300 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+          <Bell className="h-5 w-5 sm:h-7 sm:w-7 text-amber-900" strokeWidth={1.5} />
         </div>
-        <div>
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <div className="min-w-0 flex-1 sm:flex-none">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-none sm:leading-none" style={{ fontFamily: 'Manrope, sans-serif' }}>
             {t.reminders_title}
           </h1>
-          <div className="flex gap-4 mt-2.5 font-medium">
-            <span className="text-stone-500 dark:text-neutral-400">{reminders.length} {reminders.length !== 1 ? t.reminders_reminders : t.reminders_reminder} {t.reminders_total}</span>
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 sm:gap-4 mt-1 sm:mt-2.5 text-xs sm:text-base font-medium">
+            <span className="whitespace-nowrap text-stone-500 dark:text-neutral-400">{reminders.length} {reminders.length !== 1 ? t.reminders_reminders : t.reminders_reminder} {t.reminders_total}</span>
             {overdueCount > 0 && (
-              <span className="text-red-600 font-bold underline underline-offset-4 decoration-2">{overdueCount} {t.reminders_overdue_count}</span>
+              <span className="whitespace-nowrap text-red-600 font-bold underline underline-offset-4 decoration-2">{overdueCount} {t.reminders_overdue_count}</span>
             )}
           </div>
         </div>
+        {/* Téléphone : l'action principale passe dans l'en-tête (bouton icône) */}
+        <button
+          onClick={() => setShowCreateModal(true)}
+          aria-label={t.reminders_new_reminder}
+          className="sm:hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-900 dark:bg-white text-white dark:text-stone-900 shadow-lg active:scale-95 transition"
+        >
+          <Plus className="h-5 w-5" strokeWidth={2.5} />
+        </button>
       </div>
 
       {/* ─── Overdue Alert ─── */}
       {overdueCount > 0 && (
         <div
-          className="rounded-2xl px-8 py-5 flex items-center justify-between"
+          className="rounded-2xl px-4 py-3 sm:px-8 sm:py-5 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0"
           style={{
             background: 'linear-gradient(135deg, #ffdad6 0%, #ffb95f 100%)',
             boxShadow: '0 20px 40px rgba(27,28,27,0.04)',
           }}
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <AlertTriangle className="h-5 w-5 text-red-800 shrink-0" strokeWidth={1.5} />
-            <p className="font-bold text-red-900 text-sm">
+            <p className="font-bold text-red-900 text-xs leading-snug sm:text-sm sm:leading-5">
               {t.reminders_overdue_alert}
             </p>
           </div>
@@ -260,7 +268,7 @@ export function BusinessReminders() {
               setShowOverdueOnly(next)
               if (next) requestAnimationFrame(() => tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
             }}
-            className="px-6 py-2.5 bg-red-800 text-white rounded-full text-xs font-bold hover:bg-red-900 transition-colors shrink-0 ml-4"
+            className="px-4 py-2 sm:px-6 sm:py-2.5 bg-red-800 text-white rounded-full text-xs font-bold hover:bg-red-900 active:scale-95 transition-all shrink-0 ml-8 sm:ml-4 whitespace-nowrap"
           >
             {showOverdueOnly ? t.reminders_view_all : t.reminders_view_urgent}
           </button>
@@ -269,20 +277,21 @@ export function BusinessReminders() {
 
       {/* ─── Filter Toolbar ─── */}
       <div
-        className="rounded-full px-8 py-4 flex items-center justify-between bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-neutral-800 shadow-sm"
+        className="rounded-2xl sm:rounded-full px-4 py-0.5 sm:px-8 sm:py-4 flex items-center justify-between bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/40 dark:border-neutral-800 shadow-sm"
       >
-        <div className="flex items-center gap-6 flex-1">
+        {/* Téléphone : filtres en liste groupée (une ligne par filtre) ; ≥ sm : barre pilule d'origine */}
+        <div className="flex min-w-0 flex-1 flex-col divide-y divide-stone-200/60 dark:divide-neutral-800 sm:flex-row sm:items-center sm:gap-6 sm:divide-y-0">
           {canAssign && teamMembers.length > 0 && (
             <>
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3 py-2 sm:py-0">
                 <div className="w-8 h-8 rounded-full bg-stone-200 dark:bg-neutral-800 flex items-center justify-center overflow-hidden">
                   <Users className="h-4 w-4 text-stone-600 dark:text-neutral-300" strokeWidth={1.5} />
                 </div>
-                <div className="relative">
+                <div className="relative min-w-0 flex-1 sm:flex-none">
                   <select
                     value={filterMember}
                     onChange={(e) => setFilterMember(e.target.value)}
-                    className="appearance-none bg-transparent dark:bg-neutral-900 border-none focus:ring-0 font-semibold text-stone-900 dark:text-white pr-6 text-sm cursor-pointer"
+                    className="w-full sm:w-auto appearance-none bg-transparent dark:bg-neutral-900 border-none focus:ring-0 font-semibold text-stone-900 dark:text-white pr-6 text-sm cursor-pointer"
                   >
                     <option value="all">{t.reminders_filter_team_all}</option>
                     {teamMembers.map(m => (
@@ -292,24 +301,24 @@ export function BusinessReminders() {
                   <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400 pointer-events-none" />
                 </div>
               </div>
-              <div className="h-6 w-px bg-stone-300/30 dark:bg-neutral-700/30" />
+              <div className="hidden sm:block h-6 w-px bg-stone-300/30 dark:bg-neutral-700/30" />
             </>
           )}
-          <div className="flex items-center gap-3 text-stone-500 dark:text-neutral-400">
-            <Calendar className="h-4 w-4" strokeWidth={1.5} />
+          <div className="flex min-h-[48px] items-center gap-3 sm:min-h-0 text-stone-500 dark:text-neutral-400">
+            <Calendar className="h-4 w-4 mx-2 sm:mx-0 shrink-0" strokeWidth={1.5} />
             <input
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="bg-transparent border-none focus:ring-0 font-semibold text-stone-900 dark:text-white text-sm p-0"
+              className="min-w-0 flex-1 sm:flex-none bg-transparent border-none focus:ring-0 font-semibold text-stone-900 dark:text-white text-sm p-0"
             />
           </div>
           {hasActiveFilters && (
             <>
-              <div className="h-6 w-px bg-stone-300/30 dark:bg-neutral-700/30" />
+              <div className="hidden sm:block h-6 w-px bg-stone-300/30 dark:bg-neutral-700/30" />
               <button
                 onClick={() => { setFilterMember('all'); setFilterDate(''); setShowOverdueOnly(false) }}
-                className="text-xs text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white font-semibold transition-colors"
+                className="py-3 text-left sm:py-0 sm:text-center text-xs text-stone-500 dark:text-neutral-400 hover:text-stone-900 dark:hover:text-white font-semibold transition-colors"
               >
                 {t.reminders_filter_reset}
               </button>
@@ -318,7 +327,7 @@ export function BusinessReminders() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-95 text-sm"
+          className="hidden sm:flex bg-stone-900 dark:bg-white dark:text-stone-900 text-white px-8 py-3 rounded-full font-bold items-center gap-2 hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-95 text-sm"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
           {t.reminders_new}
@@ -327,15 +336,15 @@ export function BusinessReminders() {
 
       {/* ─── Data Table ─── */}
       {filteredReminders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 text-center">
-          <div className="w-32 h-32 bg-stone-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-8">
-            <Bell className="h-14 w-14 text-stone-300 dark:text-neutral-600" strokeWidth={1} />
+        <div className="flex flex-col items-center justify-center py-10 sm:py-32 text-center">
+          <div className="w-16 h-16 sm:w-32 sm:h-32 bg-stone-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mb-4 sm:mb-8">
+            <Bell className="h-7 w-7 sm:h-14 sm:w-14 text-stone-300 dark:text-neutral-600" strokeWidth={1} />
           </div>
-          <h3 className="text-2xl font-extrabold text-stone-900 dark:text-white mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.reminders_all_clear_title}</h3>
-          <p className="text-stone-500 dark:text-neutral-400 max-w-xs">{t.reminders_all_clear_desc}</p>
+          <h3 className="text-lg sm:text-2xl font-extrabold text-stone-900 dark:text-white mb-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{t.reminders_all_clear_title}</h3>
+          <p className="text-sm sm:text-base text-stone-500 dark:text-neutral-400 max-w-xs">{t.reminders_all_clear_desc}</p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="mt-8 px-8 py-3 bg-stone-900 dark:bg-white dark:text-stone-900 text-white rounded-full font-bold hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-95"
+            className="mt-5 sm:mt-8 px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base bg-stone-900 dark:bg-white dark:text-stone-900 text-white rounded-full font-bold hover:bg-stone-800 dark:hover:bg-neutral-200 transition-all active:scale-95"
           >
             {t.reminders_add}
           </button>
@@ -347,7 +356,7 @@ export function BusinessReminders() {
           style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.04)' }}
         >
           {/* Table header — desktop */}
-          <div className="hidden md:grid grid-cols-12 gap-4 bg-stone-50 dark:bg-neutral-800 px-8 py-5">
+          <div className="hidden xl:grid grid-cols-12 gap-4 bg-stone-50 dark:bg-neutral-800 px-8 py-5">
             {[t.reminders_col_title, t.reminders_col_description, t.reminders_col_datetime, t.reminders_col_assigned, t.reminders_col_linked, t.reminders_col_status].map((h, i) => (
               <div key={h} className={cn(
                 'text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400',
@@ -359,7 +368,7 @@ export function BusinessReminders() {
             <div className="col-span-2 text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 text-right">{t.reminders_col_actions}</div>
           </div>
 
-          <div>
+          <div className="divide-y divide-stone-100 dark:divide-neutral-800 xl:divide-y-0">
             {filteredReminders.map(reminder => {
               const status = getStatus(reminder)
               const config = statusConfig[status]
@@ -376,7 +385,7 @@ export function BusinessReminders() {
                   )}
                 >
                   {/* Desktop row */}
-                  <div onClick={() => setSelectedReminder(reminder)} className="hidden md:grid grid-cols-12 gap-4 items-center px-8 py-6 hover:bg-stone-50/40 dark:hover:bg-neutral-800/40 transition-all duration-300 cursor-pointer">
+                  <div onClick={() => setSelectedReminder(reminder)} className="hidden xl:grid grid-cols-12 gap-4 items-center px-8 py-6 hover:bg-stone-50/40 dark:hover:bg-neutral-800/40 transition-all duration-300 cursor-pointer">
                     <div className="col-span-3">
                       <p className={cn(
                         'font-bold text-sm',
@@ -431,7 +440,7 @@ export function BusinessReminders() {
                         {config.label}
                       </span>
                     </div>
-                    <div className="col-span-2 flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="col-span-2 flex items-center justify-end gap-2 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
                       {status !== 'done' && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleMarkDone(reminder.id) }}
@@ -451,50 +460,42 @@ export function BusinessReminders() {
                     </div>
                   </div>
 
-                  {/* Mobile row */}
-                  <div onClick={() => setSelectedReminder(reminder)} className="md:hidden px-6 py-5 space-y-3 cursor-pointer">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className={cn('text-sm font-bold', status === 'done' ? 'text-stone-400 dark:text-neutral-500' : 'text-stone-900 dark:text-white')}>{reminder.title}</p>
-                        {reminder.description && <p className="text-xs text-stone-400 dark:text-neutral-500 mt-1 truncate">{reminder.description}</p>}
-                      </div>
-                      <span className={cn(
-                        'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.1em] border shrink-0',
-                        config.cls
-                      )}>
-                        {config.label}
-                      </span>
+                  {/* Mobile row — [statut] [titre / description / date · membre · prospect] [actions] */}
+                  <div onClick={() => setSelectedReminder(reminder)} className="xl:hidden flex items-center gap-3 px-4 py-3 sm:px-6 sm:py-4 cursor-pointer active:bg-stone-50 dark:active:bg-neutral-800/60 transition-colors">
+                    <div className={cn(
+                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
+                      status === 'overdue' ? 'bg-red-500/10 text-red-600 dark:bg-red-500/15 dark:text-red-400' : status === 'upcoming' ? 'bg-[#006c49]/10 text-[#006c49] dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-stone-100 dark:bg-neutral-800 text-stone-400 dark:text-neutral-500'
+                    )}>
+                      {status === 'done' ? <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} /> : status === 'overdue' ? <AlertTriangle className="h-4 w-4" strokeWidth={1.75} /> : <Clock className="h-4 w-4" strokeWidth={1.75} />}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs text-stone-400 dark:text-neutral-500 flex items-center gap-2">
-                        <span className={cn(isOverdue && status !== 'done' && 'text-red-600 font-medium')}>
-                          {fmtDate}, {fmtTime}
-                        </span>
-                        {reminder.assigned_to && (
-                          <span className="text-stone-500 dark:text-neutral-400">| {getMemberName(reminder.assigned_to)}</span>
-                        )}
-                        {prospectName && (
-                          <span className="text-stone-500 dark:text-neutral-400">| {prospectName}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {status !== 'done' && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleMarkDone(reminder.id) }}
-                            disabled={isLoading}
-                            className="p-2 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors disabled:opacity-50"
-                          >
-                            <CheckCircle2 className="h-4 w-4" strokeWidth={1.5} />
-                          </button>
-                        )}
+                    <div className="min-w-0 flex-1">
+                      <p className={cn('truncate text-sm font-bold', status === 'done' ? 'text-stone-400 dark:text-neutral-500' : 'text-stone-900 dark:text-white')}>{reminder.title}</p>
+                      {reminder.description && <p className="truncate text-xs text-stone-400 dark:text-neutral-500">{reminder.description}</p>}
+                      <p className="mt-0.5 truncate text-xs text-stone-500 dark:text-neutral-400">
+                        <span className={cn('font-medium', isOverdue && status !== 'done' && 'text-red-600 dark:text-red-400')}>{fmtDate}, {fmtTime}</span>
+                        {reminder.assigned_to && getMemberName(reminder.assigned_to) && <> · {getMemberName(reminder.assigned_to)}</>}
+                        {prospectName && <> · {prospectName}</>}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center">
+                      {status !== 'done' && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(reminder.id) }}
+                          onClick={(e) => { e.stopPropagation(); handleMarkDone(reminder.id) }}
                           disabled={isLoading}
-                          className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors disabled:opacity-50"
+                          aria-label={t.reminders_mark_done}
+                          className="p-2 text-[#006c49] hover:bg-[#006c49]/10 rounded-full transition-colors active:scale-90 disabled:opacity-50"
                         >
-                          <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                          <CheckCircle2 className="h-5 w-5" strokeWidth={1.5} />
                         </button>
-                      </div>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(reminder.id) }}
+                        disabled={isLoading}
+                        aria-label={t.reminders_delete}
+                        className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors active:scale-90 disabled:opacity-50"
+                      >
+                        <Trash2 className="h-5 w-5" strokeWidth={1.5} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -506,12 +507,13 @@ export function BusinessReminders() {
 
       {/* Detail Modal */}
       {selectedReminder && !viewProspect && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setSelectedReminder(null)} />
-          <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
-            <div className="px-8 pt-8 pb-4">
+          <div className="relative w-full sm:max-w-md max-h-[92dvh] sm:max-h-none flex flex-col sm:block bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl overflow-hidden" style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}>
+            <div className="shrink-0 px-5 pt-2 pb-3 sm:px-8 sm:pt-8 sm:pb-4">
+              <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-extrabold text-stone-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+                <h2 className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
                   {t.reminders_detail_title}
                 </h2>
                 <button onClick={() => setSelectedReminder(null)} className="p-2 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
@@ -519,7 +521,7 @@ export function BusinessReminders() {
                 </button>
               </div>
             </div>
-            <div className="px-8 pb-8 space-y-5">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain sm:overflow-visible px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8 sm:pb-8 space-y-4 sm:space-y-5">
               {/* Status badge */}
               {(() => {
                 const status = getStatus(selectedReminder)
@@ -534,7 +536,7 @@ export function BusinessReminders() {
               {/* Title */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400 mb-1">{t.reminders_label_title}</label>
-                <p className="text-lg font-extrabold text-stone-900 dark:text-white">{selectedReminder.title}</p>
+                <p className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-white break-words">{selectedReminder.title}</p>
               </div>
 
               {/* Description */}
@@ -586,8 +588,8 @@ export function BusinessReminders() {
                     className="flex items-center gap-2 px-4 py-2.5 bg-stone-50 dark:bg-neutral-800 hover:bg-stone-100 dark:hover:bg-neutral-700 rounded-xl transition-colors w-full text-left"
                   >
                     <User className="h-4 w-4 text-stone-500 dark:text-neutral-400" strokeWidth={1.5} />
-                    <span className="text-sm font-semibold text-stone-900 dark:text-white">{getProspectName(reminderProspectId(selectedReminder)) || t.reminders_prospect_fallback}</span>
-                    <span className="ml-auto text-xs text-stone-400 dark:text-neutral-500">{t.reminders_view_prospect}</span>
+                    <span className="min-w-0 max-sm:truncate text-sm font-semibold text-stone-900 dark:text-white">{getProspectName(reminderProspectId(selectedReminder)) || t.reminders_prospect_fallback}</span>
+                    <span className="ml-auto shrink-0 text-xs text-stone-400 dark:text-neutral-500">{t.reminders_view_prospect}</span>
                   </button>
                 </div>
               )}
@@ -601,7 +603,7 @@ export function BusinessReminders() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:gap-3 sm:pt-2">
                 {getStatus(selectedReminder) !== 'done' && (
                   <button
                     onClick={() => { handleMarkDone(selectedReminder.id); setSelectedReminder(null) }}
@@ -705,16 +707,17 @@ function CreateReminderModal({
   const inputCls = 'w-full rounded-xl bg-stone-50 dark:bg-neutral-800 border-0 px-4 py-3 text-sm text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#006c49]/20 transition-all'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden"
+        className="relative w-full sm:max-w-md max-h-[92dvh] sm:max-h-none flex flex-col sm:block bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl overflow-hidden"
         style={{ boxShadow: '0 20px 40px rgba(27,28,27,0.12)' }}
       >
         {/* Modal header */}
-        <div className="px-8 pt-8 pb-6">
+        <div className="shrink-0 px-5 pt-2 pb-4 sm:px-8 sm:pt-8 sm:pb-6">
+          <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-extrabold text-stone-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-stone-900 dark:text-white tracking-tight" style={{ fontFamily: 'Manrope, sans-serif' }}>
               {t.reminders_new}
             </h2>
             <button onClick={onClose} className="p-2 text-stone-400 dark:text-neutral-500 hover:text-stone-700 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-neutral-800 rounded-full transition-colors">
@@ -724,7 +727,7 @@ function CreateReminderModal({
           <p className="text-sm text-stone-500 dark:text-neutral-400 mt-1">{t.reminders_modal_subtitle}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto overscroll-contain sm:overflow-visible px-5 sm:px-8 sm:pb-8 space-y-4 sm:space-y-5">
           <div>
             <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_title}</label>
             <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t.reminders_form_title_placeholder} className={inputCls} autoFocus required />
@@ -733,12 +736,12 @@ function CreateReminderModal({
             <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_description}</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t.reminders_form_desc_placeholder} rows={2} className={`${inputCls} resize-none`} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="min-w-0">
               <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_date}</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} required />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500 dark:text-neutral-400">{t.reminders_form_time}</label>
               <input type="time" value={time} onChange={e => setTime(e.target.value)} className={inputCls} required />
             </div>
@@ -825,6 +828,8 @@ function CreateReminderModal({
             </div>
           )}
 
+          {/* Téléphone : bouton collé en bas de la feuille */}
+          <div className="sticky bottom-0 -mx-5 px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-white dark:bg-neutral-900 sm:static sm:mx-0 sm:p-0 sm:bg-transparent sm:dark:bg-transparent">
           <button
             type="submit"
             disabled={!title.trim() || !date || !time || submitting || (linkType === 'prospect' && !selectedProspectId)}
@@ -832,6 +837,7 @@ function CreateReminderModal({
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Créer le rappel'}
           </button>
+          </div>
         </form>
       </div>
     </div>

@@ -170,11 +170,11 @@ export function BusinessReminderBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-700 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 px-4 py-3">
-            <div className="flex items-center gap-2">
+        <div className="absolute right-0 top-full mt-2 w-[calc(100vw-1rem)] max-w-sm sm:w-96 sm:max-w-none rounded-2xl sm:rounded-xl bg-white sm:bg-white/95 dark:bg-neutral-900 sm:dark:bg-neutral-900/95 backdrop-blur-xl shadow-[0_16px_48px_rgba(27,28,27,0.18)] sm:shadow-[0_20px_40px_rgba(27,28,27,0.04)] border border-stone-200/20 dark:border-neutral-700 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between gap-3 border-b border-stone-100 dark:border-neutral-800 px-4 py-3">
+            <div className="flex min-w-0 items-center gap-2">
               <Bell className="h-4 w-4 text-stone-500 dark:text-neutral-400" />
-              <h3 className="text-sm font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">{t.reminder_bell_today_reminders}</h3>
+              <h3 className="truncate text-sm font-['Manrope'] font-extrabold tracking-tight text-stone-900 dark:text-white">{t.reminder_bell_today_reminders}</h3>
               {visibleReminders.length > 0 && (
                 <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-100">
                   {visibleReminders.length}
@@ -183,13 +183,13 @@ export function BusinessReminderBell() {
             </div>
             <button
               onClick={() => { setIsOpen(false); navigate('/business/rappels') }}
-              className="text-xs font-semibold text-stone-900 dark:text-white hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
+              className="shrink-0 whitespace-nowrap py-1 sm:py-0 text-xs font-semibold text-stone-900 dark:text-white hover:text-stone-700 dark:hover:text-neutral-200 transition-colors"
             >
               {t.reminder_bell_view_all}
             </button>
           </div>
 
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-[min(20rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain">
             {visibleReminders.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Bell className="h-8 w-8 text-stone-300 dark:text-neutral-600 mx-auto mb-2" />
@@ -233,14 +233,14 @@ export function BusinessReminderBell() {
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => handleMarkDone(reminder.id)}
-                            className="rounded-full p-1.5 text-emerald-500 hover:bg-emerald-50 transition-all"
+                            className="rounded-full p-2 sm:p-1.5 text-emerald-500 hover:bg-emerald-50 active:scale-90 transition-all"
                             title={t.reminder_bell_mark_done}
                           >
                             <Check className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleDismiss(reminder.id)}
-                            className="rounded-full p-1.5 text-stone-400 dark:text-neutral-500 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-600 dark:hover:text-neutral-300 transition-all"
+                            className="rounded-full p-2 sm:p-1.5 text-stone-400 dark:text-neutral-500 active:scale-90 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-stone-600 dark:hover:text-neutral-300 transition-all"
                             title={t.reminder_bell_hide}
                           >
                             <X className="h-3.5 w-3.5" />

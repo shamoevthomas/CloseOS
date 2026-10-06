@@ -96,24 +96,25 @@ export function ReassignAppointmentButton({
         className={className || 'inline-flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-2 text-xs font-bold text-[#1b1c1b] dark:text-neutral-200 hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors'}
         title="Réassigner le rendez-vous"
       >
-        <UserCog className="h-3.5 w-3.5" strokeWidth={1.5} />
+        <UserCog className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
         {label || 'Réassigner'}
       </button>
 
       {open && createPortal(
         <div
-          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm"
           onClick={(e) => { e.stopPropagation(); if (!saving) setOpen(false) }}
         >
           <div
-            className="w-full max-w-md rounded-3xl bg-white dark:bg-neutral-900 border border-[#c4c7c7]/20 dark:border-neutral-700 shadow-2xl p-6"
+            className="w-full sm:max-w-md max-h-[92dvh] overflow-y-auto overscroll-contain sm:max-h-none sm:overflow-visible rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 border border-[#c4c7c7]/20 dark:border-neutral-700 shadow-2xl px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between mb-1">
-              <h3 className="text-lg font-bold text-[#1b1c1b] dark:text-white flex items-center gap-2">
+            <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700" />
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <h3 className="text-base sm:text-lg font-bold text-[#1b1c1b] dark:text-white flex items-center gap-2">
                 <ArrowRightLeft className="h-5 w-5" strokeWidth={1.5} /> Réassigner le rendez-vous
               </h3>
-              <button onClick={() => !saving && setOpen(false)} className="p-1.5 rounded-full text-[#747878] hover:bg-[#f5f3f2] dark:hover:bg-neutral-800">
+              <button onClick={() => !saving && setOpen(false)} aria-label="Fermer" className="shrink-0 p-2 sm:p-1.5 rounded-full text-[#747878] bg-[#f5f3f2] dark:bg-neutral-800 sm:bg-transparent sm:dark:bg-transparent hover:bg-[#f5f3f2] dark:hover:bg-neutral-800">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -136,17 +137,17 @@ export function ReassignAppointmentButton({
               </select>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-5 sm:mt-6">
               <button
                 onClick={() => !saving && setOpen(false)}
-                className="flex-1 rounded-full border border-[#c4c7c7]/40 dark:border-neutral-700 px-4 py-2.5 text-sm font-bold text-[#444748] dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
+                className="flex-1 rounded-full border border-[#c4c7c7]/40 dark:border-neutral-700 px-4 py-3 sm:py-2.5 text-sm font-bold text-[#444748] dark:text-neutral-300 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
               >
                 Annuler
               </button>
               <button
                 onClick={submit}
                 disabled={saving || !selected || selected === currentAssignedTo}
-                className="flex-1 rounded-full bg-[#1b1c1b] dark:bg-white px-4 py-2.5 text-sm font-bold text-white dark:text-[#1b1c1b] hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-1 rounded-full bg-[#1b1c1b] dark:bg-white px-4 py-3 sm:py-2.5 text-sm font-bold text-white dark:text-[#1b1c1b] hover:opacity-90 transition-opacity disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Réassigner
