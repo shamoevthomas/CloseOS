@@ -263,7 +263,7 @@ export function FormBlockEditor({ blocks, onChange, accentColor = '#006c49' }: P
 
   if (blocks.length === 0) {
     return (
-      <div className="py-16 text-center">
+      <div className="py-8 sm:py-16 text-center">
         <p className="text-[#444748] dark:text-neutral-400 mb-6 font-['Inter']">
           Votre formulaire est vide. Ajoutez un premier bloc, puis tapez <kbd className="px-1.5 py-0.5 rounded bg-[#f5f3f2] dark:bg-neutral-800 font-mono text-xs">/</kbd> pour insérer un champ.
         </p>
@@ -454,7 +454,7 @@ function BlockRow(props: BlockRowProps) {
   if (block.type === 'divider' || block.type === 'page_break') {
     const isPageBreak = block.type === 'page_break'
     return (
-      <div className="flex items-center gap-2 py-2">
+      <div className="flex items-center gap-1 sm:gap-2 py-2">
         <Gutter dragHandleProps={dragHandleProps} onInsertAfter={onInsertAfter} />
         <div className="flex-1 flex items-center gap-3">
           <div className={`flex-1 border-t ${isPageBreak ? 'border-dashed border-[#006c49]/40' : 'border-[#c4c7c7]/40 dark:border-neutral-700'}`} />
@@ -467,7 +467,7 @@ function BlockRow(props: BlockRowProps) {
         </div>
         <button
           onClick={onRemove}
-          className="opacity-0 group-hover:opacity-100 p-2 text-[#444748]/40 hover:text-[#ba1a1a] transition-all"
+          className="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 p-2 text-[#444748]/40 hover:text-[#ba1a1a] transition-all"
           title="Supprimer"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -478,9 +478,9 @@ function BlockRow(props: BlockRowProps) {
 
   if (block.type === 'image') {
     return (
-      <div className="flex items-start gap-2 py-2">
+      <div className="flex items-start gap-1 sm:gap-2 py-2">
         <Gutter dragHandleProps={dragHandleProps} onInsertAfter={onInsertAfter} />
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 min-w-0 space-y-2">
           <input
             type="url"
             value={block.url || ''}
@@ -492,7 +492,7 @@ function BlockRow(props: BlockRowProps) {
             <img src={block.url} alt="" className="max-h-48 rounded-xl object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
           )}
         </div>
-        <button onClick={onRemove} className="opacity-0 group-hover:opacity-100 p-2 text-[#444748]/40 hover:text-[#ba1a1a] transition-all" title="Supprimer">
+        <button onClick={onRemove} className="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 p-2 text-[#444748]/40 hover:text-[#ba1a1a] transition-all" title="Supprimer">
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -503,9 +503,9 @@ function BlockRow(props: BlockRowProps) {
 
   const textClass =
     block.type === 'heading'
-      ? "text-3xl font-['Manrope'] font-extrabold tracking-tight"
+      ? "text-2xl sm:text-3xl font-['Manrope'] font-extrabold tracking-tight"
       : block.type === 'subheading'
-        ? "text-xl font-['Manrope'] font-bold"
+        ? "text-lg sm:text-xl font-['Manrope'] font-bold"
         : block.type === 'paragraph'
           ? "text-base font-['Inter'] text-[#444748] dark:text-neutral-300"
           : "text-base font-['Manrope'] font-bold"
@@ -522,7 +522,7 @@ function BlockRow(props: BlockRowProps) {
             : 'Votre question'
 
   return (
-    <div className="flex items-start gap-2 py-1.5">
+    <div className="flex items-start gap-1 sm:gap-2 py-1.5">
       <Gutter dragHandleProps={dragHandleProps} onInsertAfter={onInsertAfter} />
 
       <div className="flex-1 min-w-0 relative">
@@ -573,7 +573,7 @@ function BlockRow(props: BlockRowProps) {
         {slash && (
           <div
             data-block-popover
-            className="absolute left-0 top-full mt-1 z-40 w-80 max-h-80 overflow-y-auto bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 py-2"
+            className="absolute left-0 top-full mt-1 z-40 w-80 max-w-[calc(100vw-4rem)] max-h-80 overflow-y-auto bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 py-2"
             style={{ boxShadow: '0 20px 50px rgba(0,0,0,0.12)' }}
           >
             {slashResults.length === 0 ? (
@@ -626,8 +626,8 @@ function BlockRow(props: BlockRowProps) {
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+      {/* Actions — visibles par défaut au doigt (survol réservé aux souris), en colonne sur mobile pour libérer la largeur */}
+      <div className="flex flex-col sm:flex-row items-center gap-0.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
         {isInput && (
           <>
             {/* La vidéo pilote son obligation depuis son propre bloc (visionnage minimum) */}
@@ -694,7 +694,7 @@ function BlockRow(props: BlockRowProps) {
 
 function Gutter({ dragHandleProps, onInsertAfter }: { dragHandleProps: any; onInsertAfter: () => void }) {
   return (
-    <div className="flex items-center gap-0.5 pt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="flex flex-col sm:flex-row items-center gap-0.5 pt-1 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
       <button
         onClick={onInsertAfter}
         className="p-1 rounded text-[#444748]/40 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors"
@@ -805,14 +805,14 @@ function FieldPreview({ block, accentColor, onUpdate }: { block: FormBlock; acce
       )
     case 'hidden':
       return (
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="text-xs text-[#444748]/60 dark:text-neutral-500 font-['Inter']">Paramètre d'URL :</span>
           <input
             type="text"
             value={block.key || ''}
             onChange={e => onUpdate({ key: e.target.value.replace(/\s/g, '_') })}
             placeholder="utm_source"
-            className="text-xs font-mono bg-[#f5f3f2] dark:bg-neutral-800 border-0 rounded-lg px-2 py-1 text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/40 focus:ring-1 focus:ring-[#006c49]/20"
+            className="min-w-0 text-xs font-mono bg-[#f5f3f2] dark:bg-neutral-800 border-0 rounded-lg px-2 py-1 text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/40 focus:ring-1 focus:ring-[#006c49]/20"
           />
         </div>
       )
@@ -919,7 +919,7 @@ function VideoEditor({ block, accentColor, onUpdate }: { block: FormBlock; accen
         </button>
 
         {block.required && (
-          <div className="pl-[52px] space-y-2">
+          <div className="sm:pl-[52px] space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-[#444748] dark:text-neutral-400 font-['Inter']">Durée minimale</span>
               <input
@@ -995,7 +995,7 @@ function OptionsEditor({ block, accentColor, onUpdate }: { block: FormBlock; acc
           {options.length > 1 && (
             <button
               onClick={() => removeOption(idx)}
-              className="opacity-0 group-hover/opt:opacity-100 p-1 text-[#444748]/40 hover:text-[#ba1a1a] transition-all"
+              className="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/opt:opacity-100 p-1 text-[#444748]/40 hover:text-[#ba1a1a] transition-all"
             >
               <X className="h-3 w-3" />
             </button>
@@ -1040,7 +1040,7 @@ function ConditionalEditor({
   return (
     <div
       data-block-popover
-      className="absolute left-0 top-full mt-2 z-40 w-[420px] max-w-[calc(100vw-1.5rem)] bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-5"
+      className="absolute left-0 top-full mt-2 z-40 w-[420px] max-w-[calc(100vw-4rem)] bg-white dark:bg-neutral-900 rounded-xl border border-[#c4c7c7]/20 dark:border-neutral-700 p-4 sm:p-5"
       style={{ boxShadow: '0 20px 50px rgba(0,0,0,0.12)' }}
     >
       <div className="flex items-center justify-between mb-4">

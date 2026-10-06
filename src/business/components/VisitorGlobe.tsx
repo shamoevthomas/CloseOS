@@ -65,20 +65,23 @@ export function VisitorGlobe({ counts, height = 380 }: Props) {
     const v = valOf(feat)
     return v ? 0.02 + 0.14 * (v / max) : 0.006
   }
+  // Sur un écran étroit (téléphone) le globe reste carré au lieu d'être plus haut que large
+  const h = Math.min(height, Math.max(240, width))
+
   const label = (feat: any) =>
     `<div style="font:600 12px monospace;background:#0e0e0e;color:#f4f1ec;padding:5px 9px;border-radius:6px">${feat.properties.ADMIN} — ${valOf(feat)} clic(s)</div>`
 
   return (
-    <div ref={wrapRef} style={{ width: '100%', minHeight: height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div ref={wrapRef} style={{ width: '100%', minHeight: h, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       {features.length === 0 ? (
-        <div style={{ height, display: 'flex', alignItems: 'center' }} className="text-sm text-stone-400 dark:text-neutral-500">
+        <div style={{ height: h, display: 'flex', alignItems: 'center' }} className="text-sm text-stone-400 dark:text-neutral-500">
           Chargement du globe…
         </div>
       ) : (
         <Globe
           ref={globeRef}
           width={width}
-          height={height}
+          height={h}
           backgroundColor="rgba(0,0,0,0)"
           atmosphereColor="#dc2626"
           atmosphereAltitude={0.2}

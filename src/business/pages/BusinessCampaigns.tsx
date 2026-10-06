@@ -662,26 +662,26 @@ window.addEventListener('message',function(e){
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto space-y-10 pb-12">
-      {/* Header */}
-      <header className="flex justify-between items-end">
-        <div>
-          <h2 className="text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">{t.campaigns_title}</h2>
-          <p className="text-[#444748] dark:text-neutral-400 mt-2 max-w-md">{t.campaigns_subtitle}</p>
+    <div className="max-w-[1200px] mx-auto space-y-5 sm:space-y-10 pb-12">
+      {/* Header — mobile : titre compact + bouton rond « + » sur la même ligne */}
+      <header className="flex justify-between items-start sm:items-end gap-4">
+        <div className="min-w-0">
+          <h2 className="text-2xl sm:text-5xl font-['Manrope'] font-extrabold tracking-tight text-[#1b1c1b] dark:text-white">{t.campaigns_title}</h2>
+          <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-400 mt-1 sm:mt-2 max-w-md">{t.campaigns_subtitle}</p>
         </div>
-        <button onClick={openCreate} className="bg-[#000000] text-white px-8 py-4 rounded-full font-['Manrope'] font-bold flex items-center gap-3 hover:bg-[#1b1c1b] transition-all active:scale-95" style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
-          <Plus className="h-4 w-4" /> {t.campaigns_new}
+        <button onClick={openCreate} aria-label={t.campaigns_new} className="shrink-0 bg-[#000000] text-white h-10 w-10 sm:h-auto sm:w-auto justify-center sm:px-8 sm:py-4 rounded-full font-['Manrope'] font-bold flex items-center gap-3 hover:bg-[#1b1c1b] transition-all active:scale-95" style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+          <Plus className="h-4 w-4" /> <span className="hidden sm:inline">{t.campaigns_new}</span>
         </button>
       </header>
 
       {/* Empty state */}
       {campaigns.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-24 h-24 bg-[#efedec] dark:bg-neutral-800 rounded-full flex items-center justify-center mb-6">
-            <Megaphone className="h-10 w-10 text-[#444748]/30" />
+        <div className="flex flex-col items-center justify-center py-10 sm:py-24 text-center">
+          <div className="w-14 h-14 sm:w-24 sm:h-24 bg-[#efedec] dark:bg-neutral-800 rounded-full flex items-center justify-center mb-4 sm:mb-6">
+            <Megaphone className="h-6 w-6 sm:h-10 sm:w-10 text-[#444748]/30" />
           </div>
-          <h3 className="text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white mb-2">{t.campaigns_no_campaigns}</h3>
-          <p className="text-[#444748] dark:text-neutral-400 max-w-xs mb-6">{t.campaigns_empty_desc}</p>
+          <h3 className="text-lg sm:text-2xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white mb-1 sm:mb-2">{t.campaigns_no_campaigns}</h3>
+          <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-400 max-w-xs mb-5 sm:mb-6">{t.campaigns_empty_desc}</p>
           <button onClick={openCreate} className="bg-[#000000] text-white px-8 py-3 rounded-full font-['Manrope'] font-bold active:scale-95 transition-all">
             {t.campaigns_create_first}
           </button>
@@ -689,46 +689,47 @@ window.addEventListener('message',function(e){
       )}
 
       {/* Campaign cards */}
-      <div className="grid gap-8 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:gap-8 xl:grid-cols-2">
         {campaigns.map((campaign) => {
           const leadCount = campaign.business_prospects?.[0]?.count || 0
           return (
-            <div key={campaign.id} className="rounded-xl p-8 group hover:shadow-[0_30px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_30px_60px_rgba(0,0,0,0.3)] transition-all duration-500 bg-white/70 dark:bg-neutral-800 backdrop-blur-xl border border-[#c4c7c7]/20 dark:border-neutral-700">
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex gap-4 items-center">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${campaign.capture_type === 'without_rdv' ? 'bg-[#ffb95f]/10 text-[#b87500]' : 'bg-[#006c49]/10 text-[#006c49]'}`}>
-                    {campaign.capture_type === 'without_rdv' ? <UserPlus className="h-6 w-6" /> : <CalendarCheck className="h-6 w-6" />}
+            <div key={campaign.id} className="rounded-2xl sm:rounded-xl p-4 sm:p-8 group hover:shadow-[0_30px_60px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_30px_60px_rgba(0,0,0,0.3)] transition-all duration-500 bg-white/70 dark:bg-neutral-800 sm:backdrop-blur-xl border border-[#c4c7c7]/20 dark:border-neutral-700">
+              <div className="flex justify-between items-center sm:items-start gap-3 sm:gap-0 mb-3 sm:mb-6">
+                <div className="flex gap-3 sm:gap-4 items-center min-w-0">
+                  <div className={`w-10 h-10 sm:w-14 sm:h-14 max-xl:shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center ${campaign.capture_type === 'without_rdv' ? 'bg-[#ffb95f]/10 text-[#b87500]' : 'bg-[#006c49]/10 text-[#006c49]'}`}>
+                    {campaign.capture_type === 'without_rdv' ? <UserPlus className="h-5 w-5 sm:h-6 sm:w-6" /> : <CalendarCheck className="h-5 w-5 sm:h-6 sm:w-6" />}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white">{campaign.name}</h3>
-                    <p className="text-sm text-[#444748] dark:text-neutral-400">Source: {campaign.source}</p>
+                  <div className="min-w-0">
+                    <h3 className="text-base sm:text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white max-sm:truncate">{campaign.name}</h3>
+                    <p className="text-xs sm:text-sm text-[#444748] dark:text-neutral-400 max-sm:truncate">Source: {campaign.source}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-[10px] font-bold uppercase tracking-tighter ${campaign.is_active ? 'text-[#006c49]' : 'text-[#444748]'}`}>
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  {/* Sur mobile l'interrupteur seul porte l'état (style iOS), le libellé reste en aria-label */}
+                  <span className={`hidden sm:inline text-[10px] font-bold uppercase tracking-tighter ${campaign.is_active ? 'text-[#006c49]' : 'text-[#444748]'}`}>
                     {campaign.is_active ? t.campaigns_active : t.campaigns_inactive}
                   </span>
-                  <button onClick={() => toggleActive(campaign)} className="relative">
+                  <button onClick={() => toggleActive(campaign)} aria-label={campaign.is_active ? t.campaigns_active : t.campaigns_inactive} className="relative py-2.5 sm:py-0">
                     <div className={`w-10 h-5 rounded-full relative p-1 cursor-pointer transition-colors ${campaign.is_active ? 'bg-[#006c49]/20' : 'bg-[#eae8e7] dark:bg-neutral-700'}`}>
                       <div className={`w-3 h-3 rounded-full absolute transition-all ${campaign.is_active ? 'bg-[#006c49] right-1' : 'bg-[#747878] left-1'}`} />
                     </div>
                   </button>
                 </div>
               </div>
-              {campaign.description && <p className="text-[#444748] dark:text-neutral-400 mb-6 line-clamp-2">{campaign.description}</p>}
-              <div className="flex gap-3 mb-6">
-                <div className="bg-[#eae8e7] dark:bg-neutral-800 px-4 py-2 rounded-full flex items-center gap-2">
+              {campaign.description && <p className="text-sm sm:text-base text-[#444748] dark:text-neutral-400 mb-3 sm:mb-6 line-clamp-2">{campaign.description}</p>}
+              <div className="flex gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <div className="bg-[#eae8e7] dark:bg-neutral-800 px-3 py-1 sm:px-4 sm:py-2 rounded-full flex items-center gap-1.5 sm:gap-2 whitespace-nowrap">
                   {campaign.capture_type === 'without_rdv' ? <UserPlus className="h-3.5 w-3.5 text-[#444748]" /> : <CalendarCheck className="h-3.5 w-3.5 text-[#444748]" />}
-                  <span className="text-xs font-bold text-[#444748] dark:text-neutral-300">Capture: {campaign.capture_type === 'without_rdv' ? t.campaigns_registration : t.campaigns_rdv}</span>
+                  <span className="text-[11px] sm:text-xs font-bold text-[#444748] dark:text-neutral-300">Capture: {campaign.capture_type === 'without_rdv' ? t.campaigns_registration : t.campaigns_rdv}</span>
                 </div>
-                <div className="bg-[#f5f3f2] dark:bg-neutral-800 px-4 py-2 rounded-full flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#1b1c1b] dark:text-white">{leadCount} Lead{leadCount !== 1 ? 's' : ''}</span>
+                <div className="bg-[#f5f3f2] dark:bg-neutral-800 px-3 py-1 sm:px-4 sm:py-2 rounded-full flex items-center gap-2 whitespace-nowrap">
+                  <span className="text-[11px] sm:text-xs font-bold text-[#1b1c1b] dark:text-white">{leadCount} Lead{leadCount !== 1 ? 's' : ''}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 pt-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700/30">
-                <button onClick={() => openEmbedModal(campaign, 'page')} className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] transition-colors">Page</button>
-                <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 text-[#1b1c1b] dark:text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors">Iframe</button>
-                <button onClick={() => openEmbedModal(campaign, 'popup')} className="flex-1 bg-[#006c49]/10 text-[#006c49] py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#006c49]/20 transition-colors" style={{ border: '1px solid rgba(0,108,73,0.2)' }}>Popup</button>
+              <div className="flex items-center gap-1.5 sm:gap-2 pt-4 sm:pt-6 border-t border-[#c4c7c7]/10 dark:border-neutral-700/30">
+                <button onClick={() => openEmbedModal(campaign, 'page')} className="flex-1 bg-[#000000] text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#1b1c1b] active:scale-[0.98] transition-all">Page</button>
+                <button onClick={() => openEmbedModal(campaign, 'iframe')} className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 text-[#1b1c1b] dark:text-white py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#eae8e7] dark:hover:bg-neutral-700 active:scale-[0.98] transition-all">Iframe</button>
+                <button onClick={() => openEmbedModal(campaign, 'popup')} className="flex-1 bg-[#006c49]/10 text-[#006c49] py-3 rounded-xl font-['Manrope'] font-bold text-xs hover:bg-[#006c49]/20 active:scale-[0.98] transition-all" style={{ border: '1px solid rgba(0,108,73,0.2)' }}>Popup</button>
                 <button onClick={() => openEdit(campaign)} className="p-3 text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 rounded-xl transition-colors" title={t.campaigns_edit}>
                   <Pencil className="h-4 w-4" />
                 </button>
@@ -743,20 +744,22 @@ window.addEventListener('message',function(e){
 
       {/* Modal Create/Edit - Tabbed */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 rounded-xl overflow-hidden" style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.08)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full sm:max-w-2xl h-[92dvh] sm:h-auto max-h-[92dvh] sm:max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-xl overflow-hidden" style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.08)', border: '0.5px solid rgba(196,199,199,0.2)' }}>
+            {/* Poignée de la feuille (mobile) */}
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700 flex-shrink-0" />
             {/* Modal header */}
-            <div className="flex items-center justify-between px-8 py-5 flex-shrink-0">
-              <h3 className="text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white">
+            <div className="flex items-center justify-between gap-3 sm:gap-0 px-5 sm:px-8 py-3 sm:py-5 flex-shrink-0">
+              <h3 className="text-lg sm:text-xl font-['Manrope'] font-extrabold text-[#1b1c1b] dark:text-white max-sm:truncate">
                 {editingCampaign ? t.campaigns_config_title : t.campaigns_new_title}
               </h3>
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors">
+              <button onClick={() => { setIsModalOpen(false); resetForm() }} aria-label={t.common_close} className="shrink-0 p-2 -mr-2 sm:mr-0 rounded-full text-[#444748]/60 max-sm:dark:text-neutral-400 sm:text-[#444748]/40 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="flex bg-[#f5f3f2] dark:bg-neutral-800 px-8 pt-5 gap-8 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex-shrink-0 overflow-x-auto">
+            {/* Tabs — rangée défilante sur mobile */}
+            <div className="flex bg-[#f5f3f2] dark:bg-neutral-800 px-5 sm:px-8 pt-3 sm:pt-5 gap-6 sm:gap-8 border-b border-[#c4c7c7]/10 dark:border-neutral-700 flex-shrink-0 overflow-x-auto no-scrollbar overscroll-x-contain">
               {([
                 { key: 'general' as const, label: t.campaigns_tab_general },
                 { key: 'landing' as const, label: t.campaigns_tab_landing },
@@ -768,7 +771,7 @@ window.addEventListener('message',function(e){
                 <button
                   key={tab.key}
                   onClick={() => setModalTab(tab.key)}
-                  className={`pb-4 text-sm font-['Manrope'] font-bold transition-colors whitespace-nowrap ${
+                  className={`shrink-0 pb-3 sm:pb-4 text-sm font-['Manrope'] font-bold transition-colors whitespace-nowrap ${
                     modalTab === tab.key
                       ? 'border-b-2 border-[#000000] dark:border-white text-[#000000] dark:text-white'
                       : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
@@ -780,13 +783,13 @@ window.addEventListener('message',function(e){
             </div>
 
             {/* Tab content - scrollable */}
-            <div className="flex-1 overflow-y-auto p-8">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-8">
               {/* General tab */}
               {modalTab === 'general' && (
-                <div className="space-y-8">
-                  <div className="space-y-6">
+                <div className="space-y-6 sm:space-y-8">
+                  <div className="space-y-3 sm:space-y-6">
                     <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">{t.campaigns_identification}</label>
-                    <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t.campaigns_name} className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/30 dark:border-neutral-700 focus:ring-0 focus:border-[#006c49] transition-all text-xl font-['Manrope'] font-bold py-3 px-0 text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/30 dark:placeholder:text-neutral-500" />
+                    <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t.campaigns_name} className="w-full bg-transparent border-0 border-b border-[#c4c7c7]/30 dark:border-neutral-700 focus:ring-0 focus:border-[#006c49] transition-all text-lg sm:text-xl font-['Manrope'] font-bold py-2.5 sm:py-3 px-0 text-[#1b1c1b] dark:text-white placeholder:text-[#444748]/30 dark:placeholder:text-neutral-500" />
                   </div>
 
                   {/* Team assignment */}
@@ -809,31 +812,31 @@ window.addEventListener('message',function(e){
                   )}
 
                   {/* Capture type switch */}
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">{t.campaigns_capture_type}</label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       <button
                         onClick={() => setFormCaptureType('with_rdv')}
-                        className={`p-6 rounded-xl flex flex-col items-center text-center cursor-pointer transition-all ${
+                        className={`p-4 sm:p-6 rounded-xl flex flex-col items-center text-center cursor-pointer active:scale-[0.98] transition-all ${
                           formCaptureType === 'with_rdv'
                             ? 'border-2 border-[#006c49] bg-[#006c49]/5'
                             : 'border border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#747878] dark:hover:border-neutral-500'
                         }`}
                       >
-                        <CalendarCheck className={`h-7 w-7 mb-3 ${formCaptureType === 'with_rdv' ? 'text-[#006c49]' : 'text-[#747878]'}`} />
-                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_appointment}</h4>
+                        <CalendarCheck className={`h-6 w-6 sm:h-7 sm:w-7 mb-2 sm:mb-3 ${formCaptureType === 'with_rdv' ? 'text-[#006c49]' : 'text-[#747878]'}`} />
+                        <h4 className="text-sm sm:text-base font-['Manrope'] font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_appointment}</h4>
                         <p className="text-[10px] text-[#444748] mt-1">{t.campaigns_direct_planning}</p>
                       </button>
                       <button
                         onClick={() => setFormCaptureType('without_rdv')}
-                        className={`p-6 rounded-xl flex flex-col items-center text-center cursor-pointer transition-all ${
+                        className={`p-4 sm:p-6 rounded-xl flex flex-col items-center text-center cursor-pointer active:scale-[0.98] transition-all ${
                           formCaptureType === 'without_rdv'
                             ? 'border-2 border-[#006c49] bg-[#006c49]/5'
                             : 'border border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#747878] dark:hover:border-neutral-500'
                         }`}
                       >
-                        <UserPlus className={`h-7 w-7 mb-3 ${formCaptureType === 'without_rdv' ? 'text-[#006c49]' : 'text-[#747878]'}`} />
-                        <h4 className="font-['Manrope'] font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_registration}</h4>
+                        <UserPlus className={`h-6 w-6 sm:h-7 sm:w-7 mb-2 sm:mb-3 ${formCaptureType === 'without_rdv' ? 'text-[#006c49]' : 'text-[#747878]'}`} />
+                        <h4 className="text-sm sm:text-base font-['Manrope'] font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_registration}</h4>
                         <p className="text-[10px] text-[#444748] mt-1">{t.campaigns_classic_form}</p>
                       </button>
                     </div>
@@ -861,7 +864,7 @@ window.addEventListener('message',function(e){
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_utm_params}</label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-2">
                       <input type="text" value={formUtmSource} onChange={(e) => setFormUtmSource(e.target.value)} placeholder="utm_source" className={smallInputCls} />
                       <input type="text" value={formUtmMedium} onChange={(e) => setFormUtmMedium(e.target.value)} placeholder="utm_medium" className={smallInputCls} />
                       <input type="text" value={formUtmCampaign} onChange={(e) => setFormUtmCampaign(e.target.value)} placeholder="utm_campaign" className={smallInputCls} />
@@ -883,7 +886,7 @@ window.addEventListener('message',function(e){
                     <>
                       {/* RDV with Closer or Setter switch (only with_rdv) */}
                       {formCaptureType === 'with_rdv' && (
-                        <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                        <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-4 sm:p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
                           <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">{t.campaigns_booking_with}</label>
                           <div className="flex gap-3">
                             <button
@@ -914,7 +917,7 @@ window.addEventListener('message',function(e){
 
                       {/* "Passe par un setter" — only when RDV is with a Closer */}
                       {formCaptureType === 'with_rdv' && formBookingWith === 'closer' && (
-                        <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                        <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-4 sm:p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
                           <button
                             type="button"
                             onClick={() => { setFormBookingViaSetter(v => !v); setFormSetterAssignedMembers([]) }}
@@ -934,11 +937,11 @@ window.addEventListener('message',function(e){
                               <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">
                                 {t.campaigns_assign_mode} Setters
                               </label>
-                              <div className="flex gap-2 flex-wrap">
+                              <div className="grid grid-cols-1 gap-1.5 sm:flex sm:gap-2 sm:flex-wrap">
                                 <button
                                   type="button"
                                   onClick={() => { setFormSetterAssignMode('specific'); setFormSetterAssignedMembers([]) }}
-                                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                                  className={`flex items-center gap-2 sm:gap-1.5 rounded-xl border px-3 py-2.5 sm:py-2 text-xs font-bold transition-all ${
                                     formSetterAssignMode === 'specific'
                                       ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
                                       : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
@@ -949,7 +952,7 @@ window.addEventListener('message',function(e){
                                 <button
                                   type="button"
                                   onClick={() => { setFormSetterAssignMode('all_role'); setFormSetterAssignedMembers([]) }}
-                                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                                  className={`flex items-center gap-2 sm:gap-1.5 rounded-xl border px-3 py-2.5 sm:py-2 text-xs font-bold transition-all ${
                                     formSetterAssignMode === 'all_role'
                                       ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
                                       : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
@@ -960,7 +963,7 @@ window.addEventListener('message',function(e){
                                 <button
                                   type="button"
                                   onClick={() => { setFormSetterAssignMode('multiple'); setFormSetterAssignedMembers([]) }}
-                                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                                  className={`flex items-center gap-2 sm:gap-1.5 rounded-xl border px-3 py-2.5 sm:py-2 text-xs font-bold transition-all ${
                                     formSetterAssignMode === 'multiple'
                                       ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
                                       : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
@@ -1057,22 +1060,22 @@ window.addEventListener('message',function(e){
 
                       {/* Info banner for without_rdv */}
                       {formCaptureType === 'without_rdv' && (
-                        <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                        <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-4 sm:p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
                           <p className="text-sm font-bold text-[#1b1c1b] dark:text-white">{t.campaigns_no_rdv}</p>
                           <p className="text-xs text-[#444748]/60 dark:text-neutral-500 mt-1">{t.campaigns_no_rdv_desc}</p>
                         </div>
                       )}
 
                       {/* Assignment mode */}
-                      <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                      <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-4 sm:p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
                         <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-3">
                           {t.campaigns_assign_mode} {formCaptureType === 'without_rdv' ? 'Setters' : (formBookingWith === 'closer' ? 'Closers' : 'Setters')}
                         </label>
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="grid grid-cols-1 gap-1.5 sm:flex sm:gap-2 sm:flex-wrap">
                           <button
                             type="button"
                             onClick={() => { setFormBookingAssignMode('specific'); setFormBookingAssignedMembers([]) }}
-                            className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                            className={`flex items-center gap-2 sm:gap-1.5 rounded-xl border px-3 py-2.5 sm:py-2 text-xs font-bold transition-all ${
                               formBookingAssignMode === 'specific'
                                 ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
                                 : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
@@ -1083,7 +1086,7 @@ window.addEventListener('message',function(e){
                           <button
                             type="button"
                             onClick={() => { setFormBookingAssignMode('all_role'); setFormBookingAssignedMembers([]) }}
-                            className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                            className={`flex items-center gap-2 sm:gap-1.5 rounded-xl border px-3 py-2.5 sm:py-2 text-xs font-bold transition-all ${
                               formBookingAssignMode === 'all_role'
                                 ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
                                 : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
@@ -1094,7 +1097,7 @@ window.addEventListener('message',function(e){
                           <button
                             type="button"
                             onClick={() => { setFormBookingAssignMode('multiple'); setFormBookingAssignedMembers([]) }}
-                            className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                            className={`flex items-center gap-2 sm:gap-1.5 rounded-xl border px-3 py-2.5 sm:py-2 text-xs font-bold transition-all ${
                               formBookingAssignMode === 'multiple'
                                 ? 'bg-[#1b1c1b] text-white border-[#1b1c1b]'
                                 : 'bg-white dark:bg-neutral-800 text-[#444748] dark:text-neutral-400 border-[#c4c7c7]/30 dark:border-neutral-700 hover:border-[#c4c7c7]/60 dark:hover:border-neutral-500'
@@ -1230,7 +1233,7 @@ window.addEventListener('message',function(e){
                   </div>
 
                   {/* Popup delay config */}
-                  <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
+                  <div className="rounded-xl bg-[#f5f3f2]/50 dark:bg-neutral-800/50 p-4 sm:p-5 border border-[#c4c7c7]/10 dark:border-neutral-700">
                     <label className="flex items-center gap-2 text-sm font-bold text-[#1b1c1b] dark:text-white mb-2">
                       <Clock className="h-4 w-4" /> {t.campaigns_popup_config}
                     </label>
@@ -1308,8 +1311,8 @@ window.addEventListener('message',function(e){
                     )}
                     {formCustomFields.map((field, idx) => (
                       <div key={idx} className="mb-2">
-                        <div className="flex items-center gap-2">
-                          <input type="text" value={field.label} onChange={(e) => updateCustomField(idx, { label: e.target.value })} placeholder={t.campaigns_field_name} className={`flex-1 ${smallInputCls}`} />
+                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                          <input type="text" value={field.label} onChange={(e) => updateCustomField(idx, { label: e.target.value })} placeholder={t.campaigns_field_name} className={`w-full sm:w-auto min-w-0 flex-1 basis-full sm:basis-0 ${smallInputCls}`} />
                           <select value={field.type} onChange={(e) => updateCustomField(idx, { type: e.target.value as CustomField['type'], ...(e.target.value === 'select' ? { options: field.options || [''] } : { options: undefined }) })} className={`${smallInputCls} text-[#1b1c1b]`}>
                             <option value="text">{t.campaigns_type_text}</option>
                             <option value="email">{t.common_email}</option>
@@ -1324,7 +1327,7 @@ window.addEventListener('message',function(e){
                           >
                             {field.required ? t.campaigns_required : t.campaigns_optional}
                           </button>
-                          <button onClick={() => removeCustomField(idx)} className="text-red-400 hover:text-red-600"><X className="h-4 w-4" /></button>
+                          <button onClick={() => removeCustomField(idx)} className="ml-auto sm:ml-0 p-1.5 -m-1.5 sm:p-0 sm:m-0 text-red-400 hover:text-red-600"><X className="h-4 w-4" /></button>
                         </div>
                         {field.type === 'select' && (
                           <div className="ml-2 mt-2 pl-3 border-l-2 border-[#c4c7c7]/30 dark:border-neutral-700 space-y-1.5">
@@ -1427,8 +1430,8 @@ window.addEventListener('message',function(e){
                       {/* Questions builder */}
                       <div>
                         {/* En-tête collant : reste accessible pendant le défilement de la liste
-                            (-mx-8/px-8 pour couvrir le padding du conteneur scrollable) */}
-                        <div className="sticky top-0 z-20 -mx-8 px-8 py-3 mb-3 bg-white dark:bg-neutral-900 border-b border-[#c4c7c7]/10 dark:border-neutral-800 flex items-center justify-between">
+                            (-mx/px identiques au padding du conteneur scrollable : 5 sur mobile, 8 au-delà) */}
+                        <div className="sticky top-0 z-20 -mx-5 px-5 sm:-mx-8 sm:px-8 py-3 mb-3 bg-white dark:bg-neutral-900 border-b border-[#c4c7c7]/10 dark:border-neutral-800 flex items-center justify-between">
                           <label className="text-sm font-bold text-[#1b1c1b] dark:text-white flex items-center gap-2">
                             <ClipboardList className="h-4 w-4" /> Questions ({formQuestions.length})
                           </label>
@@ -1609,7 +1612,7 @@ window.addEventListener('message',function(e){
                                             }
                                           }}
                                           placeholder={t.campaigns_value_or_min}
-                                          className={`w-28 ${smallInputCls}`}
+                                          className={`min-w-0 flex-1 sm:flex-none sm:w-28 ${smallInputCls}`}
                                         />
                                         <span className="text-xs text-[#747878]">—</span>
                                         <input
@@ -1627,7 +1630,7 @@ window.addEventListener('message',function(e){
                                             }
                                           }}
                                           placeholder={t.campaigns_max_optional}
-                                          className={`w-28 ${smallInputCls}`}
+                                          className={`min-w-0 flex-1 sm:flex-none sm:w-28 ${smallInputCls}`}
                                         />
                                       </div>
                                     </div>
@@ -1648,7 +1651,7 @@ window.addEventListener('message',function(e){
                                             }
                                           }}
                                           placeholder={t.campaigns_value_or_min}
-                                          className={`w-28 ${smallInputCls}`}
+                                          className={`min-w-0 flex-1 sm:flex-none sm:w-28 ${smallInputCls}`}
                                         />
                                         <span className="text-xs text-[#747878]">—</span>
                                         <input
@@ -1666,7 +1669,7 @@ window.addEventListener('message',function(e){
                                             }
                                           }}
                                           placeholder={t.campaigns_max_optional}
-                                          className={`w-28 ${smallInputCls}`}
+                                          className={`min-w-0 flex-1 sm:flex-none sm:w-28 ${smallInputCls}`}
                                         />
                                       </div>
                                     </div>
@@ -1735,7 +1738,7 @@ window.addEventListener('message',function(e){
                       {/* Duration */}
                       <div>
                         <label className="block text-xs font-bold text-[#444748] dark:text-neutral-400 mb-2">{t.campaigns_booking_duration}</label>
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
                           {BOOKING_DURATIONS.map(d => (
                             <button
                               key={d.value}
@@ -1913,7 +1916,7 @@ window.addEventListener('message',function(e){
                             <div className="space-y-3 pl-1">
                               <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#747878] dark:text-neutral-500">{t.campaigns_refund_tiers}</label>
                               {formRefundTiers.map((tier, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
+                                <div key={idx} className="flex flex-wrap sm:flex-nowrap items-center gap-x-1.5 sm:gap-x-2 gap-y-1">
                                   <input
                                     type="number"
                                     min="0"
@@ -1923,7 +1926,7 @@ window.addEventListener('message',function(e){
                                       tiers[idx] = { ...tiers[idx], days: parseInt(e.target.value) || 0 }
                                       setFormRefundTiers(tiers)
                                     }}
-                                    className={`${smallInputCls} w-16 text-center`}
+                                    className={`${smallInputCls} w-12 sm:w-16 text-center`}
                                   />
                                   <span className="text-[10px] text-[#444748] dark:text-neutral-400 whitespace-nowrap">{t.campaigns_refund_days_before}</span>
                                   <span className="text-[#444748]/30">→</span>
@@ -1937,7 +1940,7 @@ window.addEventListener('message',function(e){
                                       tiers[idx] = { ...tiers[idx], percent: parseInt(e.target.value) || 0 }
                                       setFormRefundTiers(tiers)
                                     }}
-                                    className={`${smallInputCls} w-16 text-center`}
+                                    className={`${smallInputCls} w-12 sm:w-16 text-center`}
                                   />
                                   <span className="text-[10px] text-[#444748] dark:text-neutral-400">{t.campaigns_refund_percent}</span>
                                   <button
@@ -2042,11 +2045,11 @@ window.addEventListener('message',function(e){
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-3 bg-[#f5f3f2] dark:bg-neutral-800 px-6 py-4 flex-shrink-0 rounded-b-2xl">
-              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700 px-5 py-2.5 text-sm font-bold text-[#444748] dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 transition-colors">
+            <div className="flex justify-end gap-3 bg-[#f5f3f2] dark:bg-neutral-800 px-5 sm:px-6 pt-3 sm:pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-4 flex-shrink-0 sm:rounded-b-2xl">
+              <button onClick={() => { setIsModalOpen(false); resetForm() }} className="flex-1 sm:flex-none rounded-full border border-[#c4c7c7]/30 dark:border-neutral-700 px-5 py-2.5 text-sm font-bold text-[#444748] dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 transition-colors">
                 {t.common_cancel}
               </button>
-              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-full bg-[#1b1c1b] px-5 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
+              <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-full bg-[#1b1c1b] px-5 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 {editingCampaign ? t.campaigns_save : t.campaigns_create}
               </button>
@@ -2056,20 +2059,22 @@ window.addEventListener('message',function(e){
       )}
       {/* Embed Code Modal (Iframe & Popup) */}
       {embedModalCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.08)]" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.08)' }}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full sm:max-w-5xl max-h-[92dvh] sm:max-h-[92vh] flex flex-col rounded-t-3xl sm:rounded-2xl overflow-hidden sm:overflow-visible bg-white dark:bg-neutral-900 shadow-[0_20px_40px_rgba(27,28,27,0.08)]" style={{ boxShadow: 'inset 0 0 0 1px rgba(196,199,199,0.1), 0 20px 40px rgba(27,28,27,0.08)' }}>
+            {/* Poignée de la feuille (mobile) */}
+            <div className="sm:hidden mx-auto mt-2 h-1 w-10 rounded-full bg-stone-300 dark:bg-neutral-700 flex-shrink-0" />
             {/* Header */}
-            <div className="flex items-center justify-between px-8 py-5 flex-shrink-0">
-              <div className="flex items-center gap-5">
-                <div>
-                  <h3 className="text-xl font-extrabold text-[#1b1c1b] dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>{embedModalCampaign.name}</h3>
+            <div className="flex items-start sm:items-center justify-between gap-3 sm:gap-0 px-5 sm:px-8 pt-3 pb-3 sm:py-5 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 min-w-0 flex-1 sm:flex-initial">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-extrabold text-[#1b1c1b] dark:text-white max-sm:truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>{embedModalCampaign.name}</h3>
                   <p className="text-xs text-[#444748] dark:text-neutral-400 mt-0.5">{embedModalFormat === 'page' ? t.campaigns_embed_page_desc : t.campaigns_embed_integrate_desc}</p>
                 </div>
-                {/* Format toggle */}
-                <div className="flex rounded-full bg-[#f5f3f2] dark:bg-neutral-800 p-1 ml-4">
+                {/* Format toggle — contrôle segmenté pleine largeur sur mobile */}
+                <div className="grid grid-cols-3 sm:flex rounded-full bg-[#f5f3f2] dark:bg-neutral-800 p-1 sm:ml-4 shrink-0">
                   <button
                     onClick={() => setEmbedModalFormat('page')}
-                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                    className={`flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
                       embedModalFormat === 'page' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
                     }`}
                   >
@@ -2077,7 +2082,7 @@ window.addEventListener('message',function(e){
                   </button>
                   <button
                     onClick={() => setEmbedModalFormat('iframe')}
-                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                    className={`flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
                       embedModalFormat === 'iframe' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
                     }`}
                   >
@@ -2085,7 +2090,7 @@ window.addEventListener('message',function(e){
                   </button>
                   <button
                     onClick={() => setEmbedModalFormat('popup')}
-                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                    className={`flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all ${
                       embedModalFormat === 'popup' ? 'bg-[#1b1c1b] text-white shadow-lg' : 'text-[#444748] dark:text-neutral-400 hover:text-[#1b1c1b] dark:hover:text-white'
                     }`}
                   >
@@ -2093,17 +2098,17 @@ window.addEventListener('message',function(e){
                   </button>
                 </div>
               </div>
-              <button onClick={() => setEmbedModalCampaign(null)} className="p-2 rounded-full text-[#444748]/40 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors">
+              <button onClick={() => setEmbedModalCampaign(null)} aria-label={t.common_close} className="shrink-0 p-2 -mr-2 sm:mr-0 rounded-full text-[#444748]/60 max-sm:dark:text-neutral-400 sm:text-[#444748]/40 hover:text-[#1b1c1b] dark:hover:text-white hover:bg-[#f5f3f2] dark:hover:bg-neutral-800 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Tabs - hidden for page format */}
             {embedModalFormat !== 'page' && (
-              <div className="flex px-8 flex-shrink-0 gap-1">
+              <div className="grid grid-cols-2 sm:flex px-5 sm:px-8 pb-2 sm:pb-0 flex-shrink-0 gap-1">
                 <button
                   onClick={() => setEmbedTab('code')}
-                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-full transition-all ${
+                  className={`flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-full transition-all ${
                     embedTab === 'code' ? 'bg-[#1b1c1b] text-white' : 'text-[#444748] dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800'
                   }`}
                 >
@@ -2111,7 +2116,7 @@ window.addEventListener('message',function(e){
                 </button>
                 <button
                   onClick={() => setEmbedTab('style')}
-                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-full transition-all ${
+                  className={`flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-full transition-all ${
                     embedTab === 'style' ? 'bg-[#1b1c1b] text-white' : 'text-[#444748] dark:text-neutral-400 hover:bg-[#f5f3f2] dark:hover:bg-neutral-800'
                   }`}
                 >
@@ -2121,21 +2126,21 @@ window.addEventListener('message',function(e){
             )}
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto overscroll-contain">
 
               {/* PAGE FORMAT */}
               {embedModalFormat === 'page' && (
-                <div className="p-8 space-y-6">
-                  {/* Link + Copy */}
+                <div className="p-5 sm:p-8 space-y-5 sm:space-y-6">
+                  {/* Link + Copy — l'URL occupe sa propre ligne sur mobile */}
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500 mb-2.5 block ml-1">{t.campaigns_capture_page_link}</label>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 flex items-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3 text-sm text-[#444748] dark:text-neutral-300 font-mono truncate">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                      <div className="w-full sm:w-auto min-w-0 flex-1 basis-full sm:basis-0 block sm:flex items-center rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm text-[#444748] dark:text-neutral-300 font-mono truncate">
                         {getCaptureUrl(embedModalCampaign.slug)}
                       </div>
                       <button
                         onClick={() => copyToClipboard(getCaptureUrl(embedModalCampaign.slug), t.campaigns_link)}
-                        className="flex items-center gap-1.5 rounded-full bg-[#1b1c1b] px-5 py-3 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all flex-shrink-0"
+                        className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 rounded-full bg-[#1b1c1b] px-5 py-3 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all flex-shrink-0"
                       >
                         <Copy className="h-4 w-4" /> {t.common_copy}
                       </button>
@@ -2143,7 +2148,7 @@ window.addEventListener('message',function(e){
                         href={getCaptureUrl(embedModalCampaign.slug)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors flex-shrink-0"
+                        className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 rounded-full bg-[#f5f3f2] dark:bg-neutral-800 px-5 py-3 text-sm font-bold text-[#1b1c1b] dark:text-white hover:bg-[#eae8e7] dark:hover:bg-neutral-700 transition-colors flex-shrink-0"
                       >
                         <ExternalLink className="h-4 w-4" /> {t.campaigns_open}
                       </a>
@@ -2151,9 +2156,10 @@ window.addEventListener('message',function(e){
                   </div>
 
                   {/* Style customization for page */}
-                  <div className="flex rounded-2xl overflow-hidden min-h-[450px] bg-[#f5f3f2] dark:bg-neutral-800">
-                    {/* Left: Controls */}
-                    <div className="w-[260px] flex-shrink-0 p-6 space-y-5 overflow-y-auto bg-white dark:bg-neutral-900 rounded-2xl m-1">
+                  {/* Sur mobile : réglages à fleur de feuille puis aperçu (pas de carte dans une carte) */}
+                  <div className="flex flex-col gap-5 md:gap-0 md:flex-row rounded-2xl overflow-hidden md:min-h-[450px] md:bg-[#f5f3f2] md:dark:bg-neutral-800">
+                    {/* Left: Controls (au-dessus de l'aperçu sur mobile) */}
+                    <div className="md:w-[260px] flex-shrink-0 md:p-6 space-y-4 md:space-y-5 md:overflow-y-auto md:bg-white md:dark:bg-neutral-900 rounded-2xl md:m-1">
                       <h4 className="text-sm font-extrabold text-[#1b1c1b] dark:text-white flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
                         <Palette className="h-4 w-4 text-[#006c49]" /> {t.campaigns_customize}
                       </h4>
@@ -2259,7 +2265,7 @@ window.addEventListener('message',function(e){
                     </div>
 
                     {/* Right: Preview */}
-                    <div className="flex-1 p-5 flex flex-col">
+                    <div className="flex-1 md:p-5 flex flex-col">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/40 mb-3 flex items-center gap-1.5">
                         <Eye className="h-3.5 w-3.5" /> {t.campaigns_live_preview}
                       </p>
@@ -2285,9 +2291,9 @@ window.addEventListener('message',function(e){
               )}
 
               {embedModalFormat !== 'page' && embedTab === 'code' && (
-                <div className="p-8 space-y-6">
+                <div className="p-5 sm:p-8 space-y-5 sm:space-y-6">
                   {/* Tutorial */}
-                  <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 p-6">
+                  <div className="rounded-2xl bg-[#f5f3f2] dark:bg-neutral-800 p-4 sm:p-6">
                     <h4 className="text-sm font-extrabold text-[#1b1c1b] dark:text-white mb-3 flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
                       <Eye className="h-4 w-4 text-[#006c49]" /> {t.campaigns_how_it_works}
                     </h4>
@@ -2328,16 +2334,16 @@ window.addEventListener('message',function(e){
 
                   {/* Code block */}
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500">{t.campaigns_code_to_embed}</label>
+                    <div className="flex items-center justify-between gap-3 sm:gap-0 mb-3">
+                      <label className="min-w-0 text-[10px] font-bold uppercase tracking-widest text-[#444748]/60 dark:text-neutral-500">{t.campaigns_code_to_embed}</label>
                       <button
                         onClick={() => copyToClipboard(embedModalFormat === 'popup' ? getPopupCode : getIframeCode, `Code ${embedModalFormat}`)}
-                        className="flex items-center gap-1.5 rounded-full bg-[#1b1c1b] px-4 py-2 text-xs font-bold text-white hover:scale-105 active:scale-95 transition-all"
+                        className="shrink-0 flex items-center gap-1.5 rounded-full bg-[#1b1c1b] px-4 py-2 text-xs font-bold text-white hover:scale-105 active:scale-95 transition-all"
                       >
                         <Copy className="h-3.5 w-3.5" /> {t.campaigns_copy_code}
                       </button>
                     </div>
-                    <pre className="rounded-2xl bg-[#1b1c1b] p-5 text-xs text-[#006c49] overflow-x-auto max-h-[250px] overflow-y-auto whitespace-pre-wrap break-all font-mono">
+                    <pre className="rounded-2xl bg-[#1b1c1b] p-4 sm:p-5 text-[11px] sm:text-xs text-[#006c49] overflow-x-auto max-h-[250px] overflow-y-auto whitespace-pre-wrap break-all font-mono">
                       {embedModalFormat === 'popup' ? getPopupCode : getIframeCode}
                     </pre>
                   </div>
@@ -2355,9 +2361,9 @@ window.addEventListener('message',function(e){
               )}
 
               {embedModalFormat !== 'page' && embedTab === 'style' && (
-                <div className="flex min-h-[500px]">
-                  {/* Left: Controls */}
-                  <div className="w-[280px] flex-shrink-0 p-6 space-y-5 overflow-y-auto bg-white dark:bg-neutral-900">
+                <div className="flex flex-col md:flex-row md:min-h-[500px]">
+                  {/* Left: Controls (au-dessus de l'aperçu sur mobile) */}
+                  <div className="md:w-[280px] flex-shrink-0 p-5 md:p-6 space-y-4 md:space-y-5 overflow-y-auto bg-white dark:bg-neutral-900">
                     <h4 className="text-sm font-extrabold text-[#1b1c1b] dark:text-white flex items-center gap-2" style={{ fontFamily: 'Manrope, sans-serif' }}>
                       <Palette className="h-4 w-4 text-[#006c49]" /> {t.campaigns_style}
                     </h4>
@@ -2459,7 +2465,7 @@ window.addEventListener('message',function(e){
                   </div>
 
                   {/* Right: Live preview */}
-                  <div className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 p-5 flex flex-col">
+                  <div className="flex-1 bg-[#f5f3f2] dark:bg-neutral-800 p-3 md:p-5 flex flex-col">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-[#444748]/40 mb-3 flex items-center gap-1.5">
                       <Eye className="h-3.5 w-3.5" /> {t.campaigns_live_preview}
                     </p>
@@ -2476,8 +2482,8 @@ window.addEventListener('message',function(e){
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end bg-[#f5f3f2] dark:bg-neutral-800 px-8 py-4 flex-shrink-0 rounded-b-2xl">
-              <button onClick={() => setEmbedModalCampaign(null)} className="rounded-full bg-[#1b1c1b] px-6 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all">
+            <div className="flex justify-end bg-[#f5f3f2] dark:bg-neutral-800 px-5 sm:px-8 pt-3 sm:pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-4 flex-shrink-0 sm:rounded-b-2xl">
+              <button onClick={() => setEmbedModalCampaign(null)} className="w-full sm:w-auto rounded-full bg-[#1b1c1b] px-6 py-2.5 text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all">
                 {t.common_close}
               </button>
             </div>
